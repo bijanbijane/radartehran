@@ -65,12 +65,14 @@ export class D1AccountLifecycleDispatch {
     if (!result.success) {
       throw storeUnavailable('Failed to persist lifecycle dispatch outbox event.');
     }
-    const inserted = (result.meta?.changes ?? 0) === 1;
-    if (!inserted) {
-      const existing = await d1FirstRow(this.db, Q.SQL_GET_DISPATCH_BY_IDEM, params.idempotencyKey);
-      if (!existing) throw storeUnavailable('Dispatch idempotency key could not be verified after insert.');
+    const changes = result.meta?.changes;
+    if (changes === 1) return { inserted: true };
+    if (changes !== undefined && changes !== 0) {
+      throw storeUnavailable('D1 returned an unverifiable lifecycle outbox insert result.');
     }
-    return { inserted };
+    const existing = await d1FirstRow(this.db, Q.SQL_GET_DISPATCH_BY_IDEM, params.idempotencyKey);
+    if (!existing) throw storeUnavailable('Dispatch idempotency key could not be verified after insert.');
+    return { inserted: false };
   }
 
   public async listPendingDispatch(limit: number, nowIso: string): Promise<DispatchOutboxRow[]> {
@@ -93,7 +95,14 @@ export class D1AccountLifecycleDispatch {
   public async markDispatchSent(idempotencyKey: string, nowIso: string): Promise<boolean> {
     const result = await this.db.prepare(Q.SQL_MARK_DISPATCH_SENT).bind(nowIso, idempotencyKey).run();
     if (!result.success) throw storeUnavailable('Failed to mark lifecycle dispatch as sent.');
-    return (result.meta?.changes ?? 0) === 1;
+    const changes = result.meta?.changes;
+    if (changes === 1) return true;
+    if (changes !== undefined && changes !== 0) {
+      throw storeUnavailable('D1 returned an unverifiable lifecycle dispatch confirmation.');
+    }
+    const current = await d1FirstRow(this.db, Q.SQL_GET_DISPATCH_BY_IDEM, idempotencyKey);
+    if (String(current?.dispatch_status ?? '') === 'DISPATCHED') return false;
+    throw storeUnavailable('D1 did not confirm the lifecycle dispatch state after queue publication.');
   }
 
   public async markDispatchFailed(
@@ -107,6 +116,15 @@ export class D1AccountLifecycleDispatch {
       .bind(errorRedacted.slice(0, 240), nowIso, nextAttemptIso, idempotencyKey)
       .run();
     if (!result.success) throw storeUnavailable('Failed to schedule lifecycle dispatch retry.');
+    const changes = result.meta?.changes;
+    if (changes === 1) return;
+    if (changes !== undefined && changes !== 0) {
+      throw storeUnavailable('D1 returned an unverifiable lifecycle dispatch retry result.');
+    }
+    const current = await d1FirstRow(this.db, Q.SQL_GET_DISPATCH_BY_IDEM, idempotencyKey);
+    const status = String(current?.dispatch_status ?? '');
+    if (status === 'DISPATCH_FAILED' || status === 'DISPATCHED') return;
+    throw storeUnavailable('D1 did not confirm the lifecycle dispatch retry state.');
   }
 
   public async getJobLease(jobId: string): Promise<DispatchJobLease | null> {
@@ -131,11 +149,41 @@ export class D1AccountLifecycleDispatch {
     durationMs?: number;
   }): Promise<{ acquired: boolean; fencingRevision: number }> {
     const durationMs = params.durationMs ?? DEFAULT_LEASE_MS;
-    if (!Number.isSafeInteger(params.nowMs) || durationMs < 5_000 || durationMs > 10 * 60_000) {
-      throw storeUnavailable('Invalid lifecycle execution lease timing.');
+    if (
+      !params.jobId.trim() ||
+      !params.targetUid.trim() ||
+      !params.leaseToken.trim() ||
+      !params.leaseOwner.trim() ||
+      !Number.isSafeInteger(params.nowMs) ||
+      params.nowMs < 0 ||
+      !Number.isSafeInteger(durationMs) ||
+      durationMs < 5_000 ||
+      durationMs > 10 * 60_000
+    ) {
+      throw storeUnavailable('Invalid lifecycle execution lease parameters.');
+    }
+    const expiresMs = params.nowMs + durationMs;
+    if (!Number.isSafeInteger(expiresMs)) {
+      throw storeUnavailable('Invalid lifecycle execution lease expiry.');
     }
     const nowIso = new Date(params.nowMs).toISOString();
-    const expiresMs = params.nowMs + durationMs;
+
+    const assertValidLease = (lease: DispatchJobLease | null): DispatchJobLease => {
+      if (
+        !lease ||
+        lease.jobId !== params.jobId ||
+        lease.targetUid !== params.targetUid ||
+        !lease.leaseToken.trim() ||
+        !lease.leaseOwner.trim() ||
+        !Number.isSafeInteger(lease.fencingRevision) ||
+        lease.fencingRevision < 1 ||
+        !Number.isSafeInteger(lease.leaseExpiresAtMs) ||
+        lease.leaseExpiresAtMs < 0
+      ) {
+        throw storeUnavailable('Persisted lifecycle execution lease is missing or invalid.');
+      }
+      return lease;
+    };
 
     let existing = await this.getJobLease(params.jobId);
     if (!existing) {
@@ -151,16 +199,32 @@ export class D1AccountLifecycleDispatch {
         )
         .run();
       if (!inserted.success) throw storeUnavailable('Failed to create lifecycle execution lease.');
-      if ((inserted.meta?.changes ?? 0) === 1) {
-        const verified = await this.getJobLease(params.jobId);
-        if (verified?.leaseToken === params.leaseToken && verified.fencingRevision === 1 &&
-            verified.leaseExpiresAtMs > params.nowMs) {
-          return { acquired: true, fencingRevision: verified.fencingRevision };
-        }
-        throw storeUnavailable('Initial lifecycle execution lease could not be verified.');
+      const insertChanges = inserted.meta?.changes;
+      if (
+        insertChanges !== undefined &&
+        (!Number.isSafeInteger(insertChanges) || (insertChanges !== 0 && insertChanges !== 1))
+      ) {
+        throw storeUnavailable('D1 returned an unverifiable lifecycle execution lease insert result.');
       }
-      existing = await this.getJobLease(params.jobId);
-      if (!existing) throw storeUnavailable('Lifecycle execution lease row disappeared during acquisition.');
+
+      const persisted = assertValidLease(await this.getJobLease(params.jobId));
+      if (
+        persisted.leaseToken === params.leaseToken &&
+        persisted.leaseOwner === params.leaseOwner &&
+        persisted.fencingRevision === 1 &&
+        persisted.leaseExpiresAtMs === expiresMs
+      ) {
+        return { acquired: true, fencingRevision: persisted.fencingRevision };
+      }
+      existing = persisted;
+    } else {
+      existing = assertValidLease(existing);
+    }
+
+    const previousFencingRevision = existing.fencingRevision;
+    const nextFencingRevision = previousFencingRevision + 1;
+    if (!Number.isSafeInteger(nextFencingRevision)) {
+      throw storeUnavailable('Lifecycle execution fencing revision is out of range.');
     }
 
     const claim = await this.db
@@ -175,16 +239,32 @@ export class D1AccountLifecycleDispatch {
       )
       .run();
     if (!claim.success) throw storeUnavailable('Failed to claim lifecycle execution lease.');
+    const claimChanges = claim.meta?.changes;
+    if (
+      typeof claimChanges !== 'number' ||
+      !Number.isSafeInteger(claimChanges) ||
+      (claimChanges !== 0 && claimChanges !== 1)
+    ) {
+      throw storeUnavailable('D1 returned an unverifiable lifecycle execution lease claim result.');
+    }
 
-    const current = await this.getJobLease(params.jobId);
-    const acquired = (claim.meta?.changes ?? 0) === 1 &&
-      current !== null &&
-      current.leaseToken === params.leaseToken &&
-      current.leaseExpiresAtMs > params.nowMs;
-    return {
-      acquired,
-      fencingRevision: current?.fencingRevision ?? existing.fencingRevision,
-    };
+    const current = assertValidLease(await this.getJobLease(params.jobId));
+    if (claimChanges === 1) {
+      if (
+        current.leaseToken !== params.leaseToken ||
+        current.leaseOwner !== params.leaseOwner ||
+        current.fencingRevision !== nextFencingRevision ||
+        current.leaseExpiresAtMs !== expiresMs
+      ) {
+        throw storeUnavailable('D1 lease claim could not be verified against the persisted fencing revision.');
+      }
+      return { acquired: true, fencingRevision: current.fencingRevision };
+    }
+
+    if (current.leaseToken === params.leaseToken) {
+      throw storeUnavailable('D1 reported an unchanged lease claim for the current lease token.');
+    }
+    return { acquired: false, fencingRevision: current.fencingRevision };
   }
 
   public async verifyJobLease(
