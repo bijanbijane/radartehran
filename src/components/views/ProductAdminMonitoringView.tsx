@@ -257,19 +257,8 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             featureFlags={p.featureFlags} onToggleFeatureFlag={crudActions.handleToggleFeatureFlag}
             onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson} onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
             backupStatusMsg={ui.backupStatusMsg} isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
-            onGoogleSignIn={() => {
-              ui.setAdminPassError('');
-              signInWithPopup(auth, googleProvider).catch((err) =>
-                ui.setAdminPassError(
-                  err?.code === 'auth/popup-blocked'
-                    ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.'
-                    : err?.code === 'auth/popup-closed-by-user'
-                      ? 'پنجره ورود گوگل بسته شد.'
-                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.',
-                ),
-              );
-            }}
-            onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
+            onGoogleSignIn={() => { ui.setAdminPassError(''); getAuthClient().startGoogleLogin(); }}
+          onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
             mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}
             onRetryNeshan={triggerManualNeshanRetry} isFallbackActive={readPersistedFallbackCircuit()}
           />
