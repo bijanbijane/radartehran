@@ -261,8 +261,8 @@ export function renderMacroClustersOnLeaflet(params: {
     );
     cMarker.on('click', () => {
       if (cluster.count === 1) {
+        // The owning selection handler already performs the neighborhood flyTo.
         onSelectNeighborhood(cluster.sampleHood);
-        map.flyTo([cluster.lat, cluster.lng], 12, { duration: 0.65 });
       } else {
         map.flyTo([cluster.lat, cluster.lng], Math.min(12, Math.max(currentZoom + 2, 11)), { duration: 0.65 });
       }
