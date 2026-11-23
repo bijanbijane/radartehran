@@ -491,7 +491,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
       try {
         await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
-        
+        const sessionToken = await issueTestSession(userSqlite.db, uid, undefined, 'sess_drain_1');
         await createUserDataRequestInD1(userSqlite.db, { uid, requestType: 'EXPORT' });
 
         // Seed upload_session + upload_session_chunks to verify orphan cleanup
@@ -939,11 +939,10 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       // Config validator catches migrations_dir mismatch between USER_DB and legacy DB alias
       const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
       const mutated = parseJsonc(raw, 'wrangler.backend.jsonc');
-      const legacyDb = mutated.d1_databases.find((d: { binding: string }) => d.binding === 'DB');
-      legacyDb.migrations_dir = 'migrations/d1';
+      mutated.d1_databases.push({ ...mutated.d1_databases.find((d: { binding: string }) => d.binding === 'USER_DB'), binding: 'DB' });
       const check = validateBackendWranglerConfig(mutated, { skipFsChecks: true });
       assert.equal(check.ok, false);
-      assert.ok(check.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_MIGRATIONS_DIR_MISMATCH')));
+      assert.ok(check.errors.some((e: string) => e.startsWith('LEGACY_DB_ALIAS_FORBIDDEN')));
     });
 
     it('returns 404 for unknown /api/account/* paths and preserves Express field parity aliases', async () => {
@@ -1020,7 +1019,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const drJson = (await drRes.json()) as { requests: unknown[]; items: unknown[] };
         assert.ok(Array.isArray(drJson.requests) && Array.isArray(drJson.items));
       } finally {
-        clearTestJwksForEdgeAuth();
+        // In-memory D1 session fixtures require no external identity-provider cleanup.
       }
     });
   });
