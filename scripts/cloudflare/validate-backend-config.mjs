@@ -4,8 +4,8 @@
  * @description Preflight fail-closed validator for `wrangler.backend.jsonc` (RT-DB-TRIAD-001).
  *
  * Enforces all architectural isolation & safety invariants:
- *  1. Production (`radartehran-api`) declares `USER_DB`, legacy alias `DB`, and `RESEARCH_DB`.
- *  2. `USER_DB.database_id === DB.database_id` (both bound to `radar-user-db`).
+ *  1. Production (`radartehran-api`) declares only canonical `USER_DB` and `RESEARCH_DB`.
+ *  2. Legacy `DB` alias is forbidden; user data has one authoritative binding.
  *  3. `RESEARCH_DB.database_id !== USER_DB.database_id` (physically isolated `radar-researcher-db`).
  *  4. ZERO direct D1 binding or reference to IRNI `radar-neighborhood-db` (`f335efe8-37ac-4c7d-a057-bc9f4480f6c6`).
  *  5. ZERO obsolete/missing legacy D1 IDs (`9bcadfaf...`, `2facfc2d...`, `c5ae237a...`) in active bindings.
@@ -147,23 +147,8 @@ export function validateBackendWranglerConfig(
   const researchDb = prodD1.find((d) => d.binding === 'RESEARCH_DB');
 
   if (!userDb) errors.push('MISSING_PRODUCTION_BINDING:USER_DB');
-  if (!legacyDb) errors.push('MISSING_PRODUCTION_BINDING:DB');
+  if (legacyDb) errors.push('LEGACY_DB_ALIAS_FORBIDDEN:DB');
   if (!researchDb) errors.push('MISSING_PRODUCTION_BINDING:RESEARCH_DB');
-
-  if (userDb && legacyDb) {
-    if (userDb.database_id !== legacyDb.database_id) {
-      errors.push(`USER_DB_AND_DB_ALIAS_MISMATCH:${userDb.database_id}!=${legacyDb.database_id}`);
-    }
-    if (userDb.database_name !== legacyDb.database_name) {
-      errors.push(`USER_DB_AND_DB_NAME_MISMATCH:${userDb.database_name}!=${legacyDb.database_name}`);
-    }
-    if (userDb.migrations_dir !== legacyDb.migrations_dir) {
-      errors.push(`USER_DB_AND_DB_MIGRATIONS_DIR_MISMATCH:${userDb.migrations_dir}!=${legacyDb.migrations_dir}`);
-    }
-    if (userDb.migrations_table !== legacyDb.migrations_table) {
-      errors.push(`USER_DB_AND_DB_MIGRATIONS_TABLE_MISMATCH:${userDb.migrations_table}!=${legacyDb.migrations_table}`);
-    }
-  }
 
   if (userDb) {
     if (userDb.database_name !== EXPECTED_PRODUCTION_BACKEND_TARGETS.userDbName) {
@@ -239,12 +224,10 @@ export function validateBackendWranglerConfig(
     const stgUser = stagingD1.find((d) => d.binding === 'USER_DB');
     const stgDb = stagingD1.find((d) => d.binding === 'DB');
     const stgRes = stagingD1.find((d) => d.binding === 'RESEARCH_DB');
-    if (!stgUser || !stgDb || !stgRes) {
-      errors.push('INCOMPLETE_STAGING_D1_TRIAD_BINDINGS');
+    if (!stgUser || !stgRes) {
+      errors.push('INCOMPLETE_STAGING_D1_BINDINGS');
     }
-    if (stgUser && stgDb && stgUser.database_id !== stgDb.database_id) {
-      errors.push('STAGING_USER_DB_AND_DB_ALIAS_MISMATCH');
-    }
+    if (stgDb) errors.push('STAGING_LEGACY_DB_ALIAS_FORBIDDEN:DB');
     if (stgUser && stgRes && stgUser.database_id === stgRes.database_id) {
       errors.push('STAGING_USER_DB_AND_RESEARCH_DB_SAME_ID_FORBIDDEN');
     }
