@@ -39,6 +39,7 @@ const expected: ExpectedGeographicPublishManifest = {
 
 const head: ActiveGeographicPublishHead = {
   registry_revision: 19,
+  registry_checksum: hashA,
   contract_version: 'IRNI-GEO-1.0.0',
   id_algorithm_version: 'IRGEO-IDENTITY-1.0.0',
   schema_version: 'IR-GEO-1.0.0',
@@ -143,6 +144,22 @@ test('rejects artifacts recorded under a different revision', () => {
   });
   assert.equal(result.matches, false);
   assert.equal(result.mismatches.length, 6);
+});
+
+test('rejects an unexpected extra artifact row in the active import ledger', () => {
+  const result = compareActiveGeographicPublishManifest({
+    activeHead: head,
+    expected,
+    importedArtifacts: [...imports, {
+      artifact_path: 'unexpected/extra.json',
+      artifact_sha256: hashA,
+      record_count: 1,
+      registry_revision: expected.registryRevision,
+    }],
+  });
+  assert.equal(result.matches, false);
+  assert.ok(result.mismatches.includes('artifactLedgerCardinality'));
+  assert.ok(result.mismatches.includes('unexpectedArtifact:unexpected/extra.json'));
 });
 
 test('rejects an unverified or metadata-mismatched head', () => {
