@@ -46,13 +46,17 @@
   // Required Cloudflare Worker Secrets (provision via `wrangler secret put`, NEVER in vars):
   //   - GOOGLE_OAUTH_CLIENT_SECRET
   //   - KAVENEGAR_API_KEY
-  //   - AUTH_PII_HMAC_SECRET
+  //   - AUTH_PII_HMAC_SECRET (minimum 32 random bytes)
   //   - ADMIN_API_SECRET
-  // Media storage is intentionally disabled: R2 is not provisioned or approved yet.
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
   //   - INTERNAL_LIFECYCLE_RPC_SECRET
   //   - IRNI_API_TOKEN (blocked until external IRNI contract is delivered)
+  // Required non-secret variables before enabling login:
+  //   - GOOGLE_OAUTH_CLIENT_ID
+  //   - KAVENEGAR_VERIFY_TEMPLATE
+  //   - GOOGLE_OAUTH_REDIRECT_URI (defaults to APP_URL + /api/auth/google/callback)
+  // Media storage is intentionally disabled until an approved provider is provisioned; do not add R2 bindings.
   "vars": {
     "APP_ENV": "production",
     "APP_URL": "https://radartehran.ir",
