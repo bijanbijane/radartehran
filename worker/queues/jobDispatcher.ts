@@ -1,14 +1,11 @@
 /**
  * @file worker/queues/jobDispatcher.ts
  * @description Real canonical Cloudflare Queue job dispatcher and Cron envelope builder.
- * Every registered job executes durable, verifiable work against D1/R2/KV bindings.
- * Zero no-op handlers, zero silent ACKs on missing dependencies.
+ * Enabled jobs execute durable, verifiable work against D1/R2/KV bindings.
+ * Disabled legacy jobs fail closed; zero silent ACKs on missing dependencies.
  */
-import { getValidatedCityConfig } from '../../src/data/multiCityData';
-import type { CityId } from '../../src/types/models';
 import { processPendingResearchErasureOutbox } from '../account-lifecycle/workerLifecycleRuntime';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
-import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
 import {
   purgeExpiredResearchData,
@@ -25,7 +22,6 @@ import {
 } from './queueAndCronProcessor';
 
 export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
-  'firestore_d1_projection_sync',
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
@@ -34,8 +30,12 @@ export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
   'research_retention_purge',
 ] as const;
 
+/** Legacy queue envelopes are still recognized, but their handler permanently DLQs them. */
+export const DISABLED_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
+  'firestore_d1_projection_sync',
+] as const;
+
 export const UPLOAD_SESSION_TTL_MS = 15 * 60 * 1000;
-const SUPPORTED_CITIES: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'];
 
 export class QueueJobExecutionError extends Error {
   public readonly code: string;
@@ -59,88 +59,13 @@ export interface QueueJobExecutionResult {
 
 async function handleFirestoreD1ProjectionSync(
   envelope: RadarQueueEnvelope,
-  env: WorkerEnv,
+  _env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  const userDb = resolveUserDb(env);
-  if (!userDb) {
-    throw new QueueJobExecutionError(
-      'D1_BINDING_UNAVAILABLE',
-      'D1 database binding (USER_DB/DB) is required for firestore_d1_projection_sync',
-      true,
-    );
-  }
-  const nowIso = new Date().toISOString();
-  const rawCity = typeof envelope.payload?.city === 'string' ? envelope.payload.city.trim().toLowerCase() : '';
-  let targetCities: CityId[];
-  if (!rawCity || rawCity === 'all') {
-    targetCities = [...SUPPORTED_CITIES];
-  } else if ((SUPPORTED_CITIES as readonly string[]).includes(rawCity)) {
-    targetCities = [rawCity as CityId];
-  } else {
-    throw new QueueJobExecutionError(
-      'INVALID_CITY_PAYLOAD',
-      `Unsupported city "${rawCity}" in firestore_d1_projection_sync payload`,
-      false,
-    );
-  }
-
-  let syncedRows = 0;
-  for (const cityId of targetCities) {
-    const cfg = getValidatedCityConfig(cityId);
-    const sliceLimit =
-      typeof envelope.payload?.maxNeighborhoodsPerCity === 'number' &&
-      Number.isInteger(envelope.payload.maxNeighborhoodsPerCity) &&
-      envelope.payload.maxNeighborhoodsPerCity > 0
-        ? Math.min(cfg.neighborhoods.length, envelope.payload.maxNeighborhoodsPerCity)
-        : Math.min(cfg.neighborhoods.length, 25);
-
-    for (const hood of cfg.neighborhoods.slice(0, sliceLimit)) {
-      const dealPerSqm = Math.round(hood.buyPerSqm * 0.92 * 10) / 10;
-      const districtMatch = String(hood.zone || '').match(/\d+/);
-      const district = districtMatch ? Number(districtMatch[0]) : 1;
-      await upsertNeighborhoodProjectionD1(userDb, {
-        city_id: cityId,
-        hood_id: hood.id,
-        name_fa: hood.name,
-        district,
-        buy_per_sqm_million: hood.buyPerSqm,
-        deal_per_sqm_million: dealPerSqm,
-        rahn_80m_million: hood.rahn80m,
-        aqi: 80,
-        investment_score: hood.opportunityScore ?? 75,
-        firestore_version_iso: nowIso,
-        projected_at_iso: nowIso,
-      });
-      syncedRows += 1;
-    }
-
-    await userDb
-      .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-      .bind(`d1_projection_sync:${cityId}`, String(sliceLimit), nowIso)
-      .run();
-  }
-
-  await userDb
-    .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('d1_projection_sync:last_run', nowIso, nowIso)
-    .run();
-
-  if (env.RADAR_KV) {
-    const workerEnv = env.ENVIRONMENT || env.APP_ENV || env.WORKER_ENV || 'staging';
-    await env.RADAR_KV.put(
-      `v1:${workerEnv}:neighborhood_summary:last_sync`,
-      JSON.stringify({ syncedRows, cities: targetCities, syncedAtIso: nowIso }),
-      { expirationTtl: 3600 },
-    );
-  }
-
-  return {
-    jobType: 'firestore_d1_projection_sync',
-    idempotencyKey: envelope.idempotencyKey,
-    executedAtIso: nowIso,
-    affectedCount: syncedRows,
-    summary: { cities: targetCities, syncedRows },
-  };
+  throw new QueueJobExecutionError(
+    'FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE',
+    `firestore_d1_projection_sync (${envelope.idempotencyKey}) is disabled: no authenticated Firestore source adapter is configured. Refusing to write static seed values with Firestore provenance.`,
+    false,
+  );
 }
 
 async function handleExpiredChunkUploadSessionCleanup(
@@ -658,11 +583,8 @@ export function buildCanonicalCronEnvelopes(params: {
     return validated.envelope;
   };
 
-  if (params.cron === '30 0 * * *' || tehranClock.matchedScheduleTask === 'morning_market_and_d1_sync') {
-    return [
-      makeEnvelope('firestore_d1_projection_sync', 'morning_sync'),
-      makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup'),
-    ];
+  if (params.cron === '30 0 * * *' || tehranClock.matchedScheduleTask === 'morning_cleanup_only') {
+    return [makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup')];
   }
 
   if (params.cron === '30 18 * * *' || tehranClock.matchedScheduleTask === 'nightly_orphan_and_telemetry_flush') {
