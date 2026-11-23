@@ -1079,6 +1079,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const irniCheck = validateBackendWranglerConfig(withIrni, { skipFsChecks: true });
       assert.equal(irniCheck.ok, false);
       assert.ok(irniCheck.errors.some((e: string) => e.startsWith('IRNI_DIRECT_D1_BINDING_FORBIDDEN')));
+      assert.equal(irniCheck.summary?.irniDirectBindingPresent, true);
 
       // Rejects Staging using Production D1 UUID
       const stagingProdLeak = structuredClone(parsed);
