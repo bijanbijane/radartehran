@@ -1,4 +1,5 @@
 import type { WorkerEnv } from './types';
+import { CLOUDFLARE_SESSION_ASSERTION_HEADER } from './auth/sessionAssertion';
 
 export const WORKER_HOP_HEADER = 'x-radar-worker-hop';
 export const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
@@ -50,6 +51,7 @@ export async function executeSafeStranglerFallback(params: {
   request: Request;
   env: WorkerEnv;
   correlationId: string;
+  sessionAssertion?: string;
 }): Promise<Response> {
   const decision = evaluateStranglerFallbackSafety({ request: params.request, env: params.env });
   if (!decision.allowed) {
@@ -75,6 +77,11 @@ export async function executeSafeStranglerFallback(params: {
   const originBase = new URL(String(params.env.STRANGLER_ORIGIN_URL).trim());
   const targetUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, originBase.origin);
   const headers = new Headers(params.request.headers);
+  // Never forward a client-supplied bridge assertion. Only the verified Worker may mint one.
+  headers.delete(CLOUDFLARE_SESSION_ASSERTION_HEADER);
+  if (params.sessionAssertion) {
+    headers.set(CLOUDFLARE_SESSION_ASSERTION_HEADER, params.sessionAssertion);
+  }
   headers.set(WORKER_HOP_HEADER, '1');
   headers.set('X-Correlation-Id', params.correlationId);
 
