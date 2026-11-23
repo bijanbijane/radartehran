@@ -16,12 +16,12 @@ test('frontend Service Binding forwards user bearer and Firebase App Check token
     body: originalBody,
   });
 
-  let forwarded: Request | null = null;
+  const captured: { request?: Request } = {};
   const env: WorkerEnv = {
     RADAR_API: {
       fetch: async (input) => {
         assert.ok(input instanceof Request);
-        forwarded = input;
+        captured.request = input;
         return new Response(JSON.stringify({ status: 'ok', received: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
@@ -51,7 +51,8 @@ test('frontend Service Binding forwards user bearer and Firebase App Check token
   assert.equal(result.routePattern, 'API_SERVICE_BINDING');
   assert.equal(result.response.status, 200);
   assert.equal(result.response.headers.get('x-radar-api-proxy'), 'service-binding');
-  assert.ok(forwarded);
+  assert.ok(captured.request);
+  const forwarded = captured.request;
   assert.equal(forwarded.method, 'POST');
   assert.equal(new URL(forwarded.url).pathname, '/api/internal/forwarding-contract');
   assert.equal(forwarded.headers.get('authorization'), 'Bearer user-access-token-test-fixture');
