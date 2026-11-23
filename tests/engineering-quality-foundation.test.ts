@@ -701,9 +701,10 @@ async function runSuite(): Promise<void> {
     assert.equal(mapFirestoreDocToVote('v1', { hoodId: 12.5, air: 8 }), null, 'mapFirestoreDocToVote must reject fractional hoodId');
     assert.equal(mapFirestoreDocToOverride('   ', { buyPerSqm: 120, rahn80m: 1200 }), null, 'mapFirestoreDocToOverride must reject whitespace-only docId');
 
-    const { repairFirestoreDocumentInCloud, quarantineDeleteFirestoreDocument } = await import('../src/data/firestoreNeighborhoodRepository');
-    assert.equal(await repairFirestoreDocumentInCloud('admins', 'u1', {}), false, 'repairFirestoreDocumentInCloud must reject non-repairable collections like admins');
-    assert.equal(await quarantineDeleteFirestoreDocument('bargains', 'sub/path'), false, 'quarantineDeleteFirestoreDocument must reject slash-containing docIds');
+    const { isFirestoreDocumentOperationAllowed } = await import('../src/utils/security');
+    assert.equal(isFirestoreDocumentOperationAllowed('admins', 'u1'), false, 'Firestore repair/delete guard must reject non-repairable collections like admins');
+    assert.equal(isFirestoreDocumentOperationAllowed('bargains', 'sub/path'), false, 'Firestore repair/delete guard must reject slash-containing docIds');
+    assert.equal(isFirestoreDocumentOperationAllowed('bargains', 'sim_test'), true, 'Firestore repair/delete guard must preserve simulation-only records without cloud writes');
 
     const { validateDataCorrectionSubmission } = await import('../src/utils/buyerCorrectionAndAdminGovernance');
     assert.equal(
