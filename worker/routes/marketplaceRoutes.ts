@@ -160,7 +160,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
       hoodIds,
       uid: authenticatedUid,
       includeAdminRecords,
-    });
+    }, ctx.env);
 
     return jsonWorkerResponse(ctx, 200, {
       status: 'ok',
