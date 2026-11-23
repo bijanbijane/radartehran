@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, limit, onSnapshot, query, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type Unsubscribe, } from 'firebase/firestore'; import { db, handleFirestoreError, OperationType, prepareFirestorePayload, recordFirestoreQueryError, } from '../firebase'; import { clampNumber, FeatureFlags } from '../utils/security'; import { convertAreaFromSqm, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; import { BargainListing, BuyerAlertLeadItem, isAuthorizedAdminUser, NeighborhoodSponsor, ResidentVoteDoc, SponsorCrmRequestItem, } from './neighborhoods'; import {
+import { collection, deleteDoc, doc, getDoc, limit, onSnapshot, query, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type Unsubscribe, } from 'firebase/firestore'; import { db, handleFirestoreError, OperationType, prepareFirestorePayload, recordFirestoreQueryError, } from '../firebase'; import { clampNumber, FeatureFlags, isFirestoreDocumentOperationAllowed } from '../utils/security'; import { convertAreaFromSqm, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; import { BargainListing, BuyerAlertLeadItem, isAuthorizedAdminUser, NeighborhoodSponsor, ResidentVoteDoc, SponsorCrmRequestItem, } from './neighborhoods'; import {
   buildSanitizedBargainPayload, buildSanitizedOverridePayload, buildSanitizedSponsorMap, buildSanitizedVotePayload, clearNeighborhoodRepositoryCache, CreateBargainInput, CreateSponsorRequestInput, mapFirestoreDocToBargain, mapFirestoreDocToBuyerLead, mapFirestoreDocToOverride, mapFirestoreDocToSponsorRequest, mapFirestoreDocToVote, mergeNeighborhoodOverridesIntoList, NeighborhoodOverrideDto, normalizeIranMobilePhone, ParsedUserPreferences, recordOverrideCache, SaveNeighborhoodOverrideInput, SaveUserPreferencesInput, shouldSkipRedundantOverrideWrite, SubmitResidentVoteInput, UpsertBuyerAlertInput,
 } from './firestoreNeighborhoodMappers'; export { buildSanitizedBargainPayload, buildSanitizedOverridePayload, buildSanitizedSponsorMap, buildSanitizedVotePayload, clearNeighborhoodRepositoryCache, mapFirestoreDocToBargain,
   mapFirestoreDocToBuyerLead, mapFirestoreDocToOverride, mapFirestoreDocToSponsorRequest, mapFirestoreDocToVote, mergeNeighborhoodOverridesIntoList, normalizeIranMobilePhone, recordOverrideCache, shouldSkipRedundantOverrideWrite, };
@@ -258,11 +258,9 @@ export async function upsertBuyerAlertLead(input: UpsertBuyerAlertInput): Promis
   }
   return alertDocId;
 }
-const REPAIRABLE_COLLECTIONS = new Set(['neighborhoodOverrides', 'bargains', 'votes', 'sponsorRequests', 'buyerAlerts']);
 export async function repairFirestoreDocumentInCloud(collectionName: string, docId: string, sanitizedData: Record<string, unknown>): Promise<boolean> {
-  if (typeof docId !== 'string' || !docId.trim() || docId.includes('/')) return false;
+  if (!isFirestoreDocumentOperationAllowed(collectionName, docId)) return false;
   if (docId.startsWith('sim_')) return true;
-  if (!REPAIRABLE_COLLECTIONS.has(collectionName)) return false;
   try {
     const clean = prepareFirestorePayload(sanitizedData);
     if (collectionName === 'neighborhoodOverrides') await setDoc(doc(db, collectionName, docId), { ...clean, updatedAt: serverTimestamp() });
@@ -274,9 +272,8 @@ export async function repairFirestoreDocumentInCloud(collectionName: string, doc
   }
 }
 export async function quarantineDeleteFirestoreDocument(collectionName: string, docId: string): Promise<boolean> {
-  if (typeof docId !== 'string' || !docId.trim() || docId.includes('/')) return false;
+  if (!isFirestoreDocumentOperationAllowed(collectionName, docId)) return false;
   if (docId.startsWith('sim_')) return true;
-  if (!REPAIRABLE_COLLECTIONS.has(collectionName)) return false;
   try { if (collectionName === 'bargains') { await deleteBargainWithOwner(docId); } else { await deleteDoc(doc(db, collectionName, docId)); } return true; } catch (err) {
     recordFirestoreQueryError(err, OperationType.DELETE, `${collectionName}/${docId}`);
     return false; } }
