@@ -16,6 +16,11 @@ import {
 } from './workerTelemetryErasureAdapter.ts';
 import { d1FirstRow } from './d1ResultHelpers.ts';
 import { consumeLifecycleRpcNonce } from './d1InternalRpcNonceStore';
+import {
+  isStageDLifecycleEnabled,
+  recoverPendingLifecycleDispatch,
+  requireWorkerLifecycleBindings,
+} from './stageDLifecycleRuntime';
 
 interface RecordedCall {
   readonly sql: string;
@@ -437,4 +442,55 @@ test('telemetry receipt counts only rows actually deleted by D1', async () => {
   });
 
   assert.equal(result.receipts[0]?.recordsErased, 0);
+});
+
+
+test('keeps Stage D recovery disabled without explicit opt-in and never touches an unprovisioned DB', async () => {
+  let d1Reads = 0;
+  let queueSends = 0;
+  const unprovisionedDb = {
+    prepare() {
+      d1Reads += 1;
+      throw new Error('UNEXPECTED_STAGE_D_D1_ACCESS');
+    },
+    async batch() {
+      return [];
+    },
+    async exec() {
+      return { count: 0, duration: 0 };
+    },
+  } as unknown as D1Database;
+
+  const env: WorkerEnv = {
+    DB: unprovisionedDb,
+    RADAR_QUEUE: {
+      async send() {
+        queueSends += 1;
+      },
+    },
+  };
+
+  assert.equal(isStageDLifecycleEnabled(env), false);
+  assert.equal(await recoverPendingLifecycleDispatch(env, 25), 0);
+  assert.throws(
+    () => requireWorkerLifecycleBindings(env),
+    /Stage D lifecycle is disabled/,
+  );
+  assert.equal(d1Reads, 0);
+  assert.equal(queueSends, 0);
+});
+
+test('rejects Stage D opt-in when the Worker is also USER_DB-bound', () => {
+  const db = createFakeD1().db;
+  const env = {
+    DB: db,
+    USER_DB: db,
+    STAGE_D_LIFECYCLE_ENABLED: 'true',
+  } as WorkerEnv & { readonly STAGE_D_LIFECYCLE_ENABLED: string };
+
+  assert.equal(isStageDLifecycleEnabled(env), false);
+  assert.throws(
+    () => requireWorkerLifecycleBindings(env),
+    /USER_DB-bound Workers are not eligible/,
+  );
 });
