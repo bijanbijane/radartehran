@@ -190,6 +190,26 @@ CREATE INDEX IF NOT EXISTS idx_auth_revocation_uid_created ON auth_revocation_ev
   },
 ] as const;
 
+export type D1OperationalMigrationScope = 'legacy' | 'user';
+
+const USER_D1_MIGRATION_FILES = [
+  '0001_core_projections_and_watermarks.sql',
+  '0002_upload_sessions_legal_holds_and_rate_limits.sql',
+  '0003_media_objects_and_queue_execution_leases.sql',
+  '0004_user_accounts_privacy_and_sessions.sql',
+  '0005_account_lifecycle_permits_and_outbox.sql',
+  '0006_consent_revision_ordering.sql',
+  '0007_cloudflare_native_identity_and_sessions.sql',
+  '0008_sms_otp_ip_rate_limit.sql',
+  '0009_sms_otp_code_digest.sql',
+] as const;
+
+const USER_D1_MIGRATION_LEDGER = USER_D1_MIGRATION_FILES.map((fileName) => ({
+  name: fileName.replace(/\\.sql$/, ''),
+  fileName,
+  checksumSha256: null as string | null,
+}));
+
 export interface NeighborhoodProjectionRow {
   city_id: string;
   hood_id: number;
@@ -312,7 +332,10 @@ export async function runD1MigrationsIdempotently(db: D1Database): Promise<{
  * Read-only inspection of the authoritative `d1_migrations` ledger, sync watermarks, and queue idempotency log.
  * Never executes DDL or mutates schema state. Safely handles unmigrated databases where `d1_migrations` does not yet exist.
  */
-export async function inspectD1OperationalDiagnostics(db: D1Database | undefined): Promise<{
+export async function inspectD1OperationalDiagnostics(
+  db: D1Database | undefined,
+  scope: D1OperationalMigrationScope = 'legacy',
+): Promise<{
   ledgerTable: typeof AUTHORITATIVE_D1_MIGRATIONS_TABLE;
   expectedCount: number;
   allCanonicalMigrationsApplied: boolean;
@@ -321,26 +344,27 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
     id: number;
     name: string;
     fileName: string;
-    checksum_sha256: string;
+    checksum_sha256: string | null;
     applied_at: string;
   }>;
   watermarks: Array<{ watermark_key: string; watermark_value: string; updated_at_iso: string }>;
   lastQueueProcessedAtIso: string | null;
   lastQueueJobType: string | null;
 }> {
+  const migrationCatalog = scope === 'user' ? USER_D1_MIGRATION_LEDGER : D1_MIGRATIONS;
   if (!db) {
     return {
       ledgerTable: AUTHORITATIVE_D1_MIGRATIONS_TABLE,
-      expectedCount: D1_MIGRATIONS.length,
+      expectedCount: migrationCatalog.length,
       allCanonicalMigrationsApplied: false,
-      pendingMigrations: D1_MIGRATIONS.map((m) => m.fileName),
+      pendingMigrations: migrationCatalog.map((m) => m.fileName),
       migrationsApplied: [],
       watermarks: [],
       lastQueueProcessedAtIso: null,
       lastQueueJobType: null,
     };
   }
-  const byFileName = new Map(D1_MIGRATIONS.map((m) => [m.fileName, m]));
+  const byFileName = new Map(migrationCatalog.map((m) => [m.fileName, m]));
   let rawRows: Array<{ id: number; name: string; applied_at: string }> = [];
   try {
     const res = await db
@@ -360,7 +384,7 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
       applied_at: row.applied_at,
     };
   });
-  const pendingMigrations = D1_MIGRATIONS.filter(
+  const pendingMigrations = migrationCatalog.filter(
     (m) => !migrationsApplied.some((applied) => applied.fileName === m.fileName),
   ).map((m) => m.fileName);
 
@@ -396,7 +420,7 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
 
   return {
     ledgerTable: AUTHORITATIVE_D1_MIGRATIONS_TABLE,
-    expectedCount: D1_MIGRATIONS.length,
+    expectedCount: migrationCatalog.length,
     allCanonicalMigrationsApplied: pendingMigrations.length === 0,
     pendingMigrations,
     migrationsApplied,
