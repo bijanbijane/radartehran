@@ -260,8 +260,9 @@ async function runSuite(): Promise<void> {
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).mapbox, undefined);
     assert.equal(isValidMapTileServerId('neshan'), true);
     assert.equal(isValidMapTileServerId('osm'), true);
-    assert.equal(isValidMapTileServerId('satellite'), true);
-    assert.equal(isValidMapTileServerId('carto_dark'), true);
+    assert.equal(isValidMapTileServerId('satellite'), false, 'Unlicensed Esri imagery must not be selectable');
+    assert.equal(isValidMapTileServerId('carto_dark'), false, 'CARTO basemaps require a configured API key');
+    assert.equal(isValidMapTileServerId('osm_hot'), false, 'OSM France free tiles are not an approved commercial provider');
     assert.equal(isValidMapTileServerId('voyager'), true);
     assert.equal(isValidMapTileServerId('mapbox'), false, 'Removed mapbox must not be valid');
     assert.equal(isValidMapTileServerId('invalid_style'), false);
