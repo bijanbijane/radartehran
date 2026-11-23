@@ -22,6 +22,29 @@ test('future DB write pause blocks mutations while preserving reads and privacy/
   const read = await worker.fetch(new Request('https://radar.test/'), env, executionCtx);
   assert.equal(read.status, 200, 'GET navigation remains available during the write pause');
 
+  const readOnlyQuery = await worker.fetch(
+    new Request('https://radar.test/api/v1/ai/gateway/infer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflow: 'intelligent_search', prompt: 'آپارتمان در منطقه ۵ تهران' }),
+    }),
+    env,
+    executionCtx,
+  );
+  assert.notEqual(readOnlyQuery.status, 503, 'allowlisted read-only POST queries remain available');
+
+  const researchWrite = await worker.fetch(
+    new Request('https://radar.test/api/v1/research/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventType: 'SEARCH' }),
+    }),
+    env,
+    executionCtx,
+  );
+  const researchBody = await researchWrite.json() as { code: string };
+  assert.equal(researchBody.code, 'DB_WRITES_PAUSED', 'research event ingestion remains blocked');
+
   const privacyRequest = await worker.fetch(
     new Request('https://radar.test/api/account/deletion-requests', { method: 'POST' }),
     env,
