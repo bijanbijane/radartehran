@@ -98,6 +98,7 @@ async function main(): Promise<void> {
 
   const created = await store.createOrGetActiveJob(sampleJob(uid, jobId));
   assert.equal(created.createdNew, true);
+  assert.equal(await store.countContinuableDeletionJobs(), 1);
   await assert.rejects(
     () => acquireD1MutationPermit({
       db,
