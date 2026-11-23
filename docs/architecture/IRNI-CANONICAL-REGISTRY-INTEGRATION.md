@@ -21,7 +21,7 @@ A publication revision is accepted only when all artifacts share the same `regis
 
 The publisher transfers the canonical entity object unchanged, together with its exact identity-registry entry and anchor record. The Radar database stores these three records in their corresponding tables. `issuedOrderIndex` is sourced from the canonical ID registry and is not recalculated from alphabetical order or entity IDs.
 
-The current legacy-alias artifact is empty. The publisher fails closed if it becomes non-empty until an explicit alias-transfer dataset is implemented.
+Legacy compatibility aliases are published as a separate, validated dataset. Each legacy key must resolve to exactly one existing canonical entity; ambiguous or unresolved Radar records must not be assigned to a nearby or same-named entity.
 
 ## Publication protocol
 
@@ -53,10 +53,11 @@ All read endpoints fail closed until `geo_registry_head.integrity_verified = 1`.
 - `GET /api/v2/reference/geography/entities?entityType=URBAN_NEIGHBORHOOD&limit=100&offset=0`
 - `GET /api/v2/reference/geography/entities/{geographicEntityId}`
 - `GET /api/v2/reference/geography/relationships?sourceGeographicEntityId={id}`
+- `GET /api/v2/reference/geography/aliases?legacySystemCode=TEHRAN_RADAR&legacyIdentifierValue={legacy-id}`
 
 Entity responses keep the source entity, identity-registry entry, and identity anchor as separate records. Entity lists are ordered by IRNI's `issuedOrderIndex`. Parent and province filters accept canonical IRNI IDs only.
 
-The frontend Worker forwards `/api/*` requests through the `RADAR_API` service binding to `radartehran-api`.
+The frontend Worker forwards `/api/*` requests through the `RADAR_API` service binding to `radartehran-api`. Legacy UI IDs are resolved only through the alias endpoint; display names are never used as an identity join.
 
 ## Deployment status
 
