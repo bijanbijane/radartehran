@@ -206,6 +206,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
           setCloudVotes([]);
           setSponsorRequests([]);
           setBuyerLeads([]);
+          setFavoriteHoodIds([]);
           setHasDelegatedAdminDoc(false);
         }
         setCurrentUser(user);
@@ -337,7 +338,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
         }
         if (Array.isArray(payload.favoriteHoodIds) && currentUser) {
           const ids = payload.favoriteHoodIds.map((id) => finiteNumber(id, -1)).filter((id) => Number.isInteger(id) && id >= 1 && id <= 9999).slice(0, 100);
-          setFavoriteHoodIds((previous) => Array.from(new Set([...previous, ...ids])).slice(0, 100));
+          setFavoriteHoodIds(ids);
         }
         setConnectionStatus('LIVE_SYNC');
       } catch (error) {
