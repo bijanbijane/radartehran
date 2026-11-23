@@ -5,7 +5,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CreditCard, Gift, Percent, RefreshCw, Sparkles, Unlock } from 'lucide-react';
-import { auth, handleFirestoreError, OperationType } from '../firebase';
+import { handleFirestoreError, OperationType } from '../firebase';
+import { getAuthClient } from '../platform/auth';
 import {
   saveMonetizationDiscount,
   subscribeToMonetizationDiscount,
@@ -82,7 +83,7 @@ export function AdminMonetizationCard({
       // Ignore storage error
     }
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    const canWriteCloud = isVerifiedAdmin ?? isAuthorizedAdminUser(auth.currentUser, false);
+    const canWriteCloud = isVerifiedAdmin ?? isAuthorizedAdminUser(getAuthClient().getUser(), false);
     syncTimerRef.current = setTimeout(() => {
       if (canWriteCloud) {
         // Persist via doc(db, 'appConfig', 'monetization') in repository
