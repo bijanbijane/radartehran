@@ -95,7 +95,7 @@ export async function createBundleReport({ manifestPath, outDir }) {
       },
       css: {
         fileCount: css.length,
-        rawBytes: sum(js, 'rawBytes') - sum(js, 'rawBytes') + sum(css, 'rawBytes'),
+        rawBytes: sum(css, 'rawBytes'),
         gzipBytes: sum(css, 'gzipBytes'),
         brotliBytes: sum(css, 'brotliBytes'),
         files: css,
