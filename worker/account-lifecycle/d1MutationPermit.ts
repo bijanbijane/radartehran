@@ -19,6 +19,16 @@ export interface RejectedMutationPermit {
   readonly code: 'ACCOUNT_WRITE_BLOCKED';
 }
 
+export class UserD1MutationPermitError extends Error {
+  readonly code = 'USER_DB_MUTATION_PERMIT_STORE_UNAVAILABLE';
+  readonly httpStatus = 503;
+
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'UserD1MutationPermitError';
+  }
+}
+
 export async function isUserWriteBlockedInD1(userDb: D1Database, uid: string): Promise<boolean> {
   try {
     const row = await userDb
@@ -67,19 +77,27 @@ export async function acquireMutationPermitInD1(params: {
 
   // Single atomic SQL statement prevents TOCTOU race where account_write_blocks is inserted
   // between a prior SELECT and a subsequent INSERT.
-  const res = await params.userDb
-    .prepare(
-      `INSERT INTO account_mutation_permits (
-        permit_id, uid, operation_name, acquired_at_ms, expires_at_ms, released_at_ms
+  let res;
+  try {
+    res = await params.userDb
+      .prepare(
+        `INSERT INTO account_mutation_permits (
+          permit_id, uid, operation_name, acquired_at_ms, expires_at_ms, released_at_ms
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, NULL
+        WHERE NOT EXISTS (
+          SELECT 1 FROM account_write_blocks WHERE uid = ?2 AND released_at_iso IS NULL
+        )`,
       )
-      SELECT ?1, ?2, ?3, ?4, ?5, NULL
-      WHERE NOT EXISTS (
-        SELECT 1 FROM account_write_blocks WHERE uid = ?2 AND released_at_iso IS NULL
-      )`,
-    )
-    .bind(permitId, params.uid, params.operationName.slice(0, 80), nowMs, expiresAtMs)
-    .run();
+      .bind(permitId, params.uid, params.operationName.slice(0, 80), nowMs, expiresAtMs)
+      .run();
+  } catch (error) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit could not be acquired.', { cause: error });
+  }
 
+  if (!res.success) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit could not be acquired.');
+  }
   if ((res.meta?.changes ?? 0) !== 1) {
     return { ok: false, statusCode: 423, code: 'ACCOUNT_WRITE_BLOCKED' };
   }
@@ -99,10 +117,33 @@ export async function releaseMutationPermitInD1(params: {
   nowMs?: number;
 }): Promise<void> {
   const nowMs = params.nowMs ?? Date.now();
-  await params.userDb
-    .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
-    .bind(nowMs, params.permitId)
-    .run();
+  let result;
+  try {
+    result = await params.userDb
+      .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
+      .bind(nowMs, params.permitId)
+      .run();
+  } catch (error) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit release failed.', { cause: error });
+  }
+  if (!result.success) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit release failed.');
+  }
+
+  // A zero-row UPDATE may mean the permit was already released or is missing.
+  // Confirm a durable, non-null release timestamp before acknowledging release.
+  let row: { released_at_ms: number | null } | null;
+  try {
+    row = await params.userDb
+      .prepare('SELECT released_at_ms FROM account_mutation_permits WHERE permit_id = ?1 LIMIT 1')
+      .bind(params.permitId)
+      .first<{ released_at_ms: number | null }>();
+  } catch (error) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit release could not be verified.', { cause: error });
+  }
+  if (!row || row.released_at_ms == null) {
+    throw new UserD1MutationPermitError('USER_DB mutation permit release could not be verified.');
+  }
 }
 
 export async function countActiveMutationPermitsInD1(
@@ -110,11 +151,20 @@ export async function countActiveMutationPermitsInD1(
   uid: string,
   nowMs: number = Date.now(),
 ): Promise<number> {
-  const row = await userDb
-    .prepare(
-      'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
-    )
-    .bind(uid, nowMs)
-    .first<{ cnt: number }>();
-  return Number(row?.cnt ?? 0);
+  let row: { cnt: number | string } | null;
+  try {
+    row = await userDb
+      .prepare(
+        'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
+      )
+      .bind(uid, nowMs)
+      .first<{ cnt: number | string }>();
+  } catch (error) {
+    throw new UserD1MutationPermitError('USER_DB active mutation permits could not be counted.', { cause: error });
+  }
+  const count = Number(row?.cnt);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new UserD1MutationPermitError('USER_DB active mutation permits could not be verified.');
+  }
+  return count;
 }
