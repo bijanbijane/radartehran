@@ -122,10 +122,21 @@ function isMapTileRequest(url) {
   if (pathname.startsWith('/api/osm-tile/')) return true;
   const host = (url.hostname || '').toLowerCase();
   return (
-    host.includes('tile.openstreetmap.org') ||
-    host.includes('basemaps.cartocdn.com') ||
-    host.includes('arcgisonline.com')
+    host === 'tile.openstreetmap.org' ||
+    host.endsWith('.tile.openstreetmap.org') ||
+    host === 'basemaps.cartocdn.com' ||
+    host.endsWith('.basemaps.cartocdn.com') ||
+    host === 'arcgisonline.com' ||
+    host.endsWith('.arcgisonline.com')
   );
+}
+
+/**
+ * Third-party tile providers own their cache directives and usage terms.
+ * Only the same-origin Radar tile proxy may use this Service Worker's tile cache.
+ */
+function isExternalMapTileRequest(url) {
+  return url.origin !== self.location.origin && isMapTileRequest(url);
 }
 
 /**
@@ -244,6 +255,28 @@ self.addEventListener('activate', (event) => {
       } catch {
         // Never block SW claim on cache enumeration failure
       }
+
+      // Purge previously cached third-party tiles. Their opaque responses do not
+      // expose Cache-Control to this Service Worker, so they cannot be safely retained.
+      try {
+        const dataCache = await caches.open(MAP_AND_API_CACHE);
+        const cachedRequests = await dataCache.keys();
+        await Promise.all(
+          cachedRequests.map(async (cachedRequest) => {
+            try {
+              const cachedUrl = new URL(cachedRequest.url);
+              if (isExternalMapTileRequest(cachedUrl)) {
+                await dataCache.delete(cachedRequest);
+              }
+            } catch {
+              // A malformed cache key must not prevent activation.
+            }
+          })
+        );
+      } catch {
+        // Cache cleanup is best-effort; never block SW claim.
+      }
+
       await self.clients.claim();
     })()
   );
@@ -382,8 +415,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Map Tiles: Stale-While-Revalidate with SVG tile placeholder when offline
+  // 3. Same-origin Radar tile proxy: Stale-While-Revalidate with offline placeholder.
+  // External tile providers are network-only; do not store opaque third-party responses.
   if (isMapTileRequest(url)) {
+    if (isExternalMapTileRequest(url)) {
+      event.respondWith(fetch(request));
+      return;
+    }
     event.respondWith(
       (async () => {
         const tileCache = await caches.open(MAP_AND_API_CACHE);
