@@ -85,7 +85,7 @@ jobs:
           RADAR_API_URL: https://radartehran-api.bijanbijane-1.workers.dev
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error "$RADAR_FRONTEND_URL/" -o /tmp/radar-frontend.html
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" "$RADAR_FRONTEND_URL/?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-frontend.html
           grep -q 'id="root"' /tmp/radar-frontend.html
           : > /tmp/radar-frontend-bundles.js
           mapfile -t frontend_assets < <(grep -oE 'src="[^"]+[.]js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
@@ -105,8 +105,8 @@ jobs:
             curl --fail --silent --show-error "$asset_url" >> /tmp/radar-frontend-bundles.js
           done
           echo "Downloaded frontend bundle bytes: $(wc -c < /tmp/radar-frontend-bundles.js)"
-          curl --fail --silent --show-error "$RADAR_API_URL/api/health/database-triad" -o /tmp/radar-d1-health.json
-          curl --fail --silent --show-error -D /tmp/radar-frontend-api-headers.txt "$RADAR_FRONTEND_URL/api/health/database-triad" -o /tmp/radar-frontend-api-health.json
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" "$RADAR_API_URL/api/health/database-triad?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-d1-health.json
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" -D /tmp/radar-frontend-api-headers.txt "$RADAR_FRONTEND_URL/api/health/database-triad?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-frontend-api-health.json
           grep -qi '^x-radar-api-proxy: service-binding' /tmp/radar-frontend-api-headers.txt
           node --input-type=module -e '
             import fs from "node:fs";
