@@ -162,7 +162,7 @@ export function registerSocioeconomicRoutes(
       res.status(200).json({ status: 'ok', seal });
     } catch (err) {
       const code = err instanceof Error ? err.message : 'VALUATION_SEAL_FAILED';
-      res.status(code === 'VALUATION_SEAL_SECRET_MISSING_OR_WEAK' ? 503 : 400).json({ status: 'error', code });
+      res.status(code === 'VALUATION_SEAL_SECRET_UNAVAILABLE' ? 503 : 400).json({ status: 'error', code });
     }
   });
 
