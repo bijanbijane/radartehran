@@ -162,7 +162,7 @@ export function verifyCloudflareSessionAssertion(
   if (!verifiedGoogle && !verifiedPhone) {
     return fail(403, 'AUTH_SESSION_ASSERTION_IDENTITY_UNVERIFIED');
   }
-  if ((value.isPrimaryAdmin || value.isDelegatedAdmin) && !value.isAdmin) {
+  if (value.isAdmin !== (value.isPrimaryAdmin || value.isDelegatedAdmin)) {
     return fail(401, 'AUTH_SESSION_ASSERTION_CLAIMS_INVALID');
   }
 
