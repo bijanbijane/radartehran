@@ -457,6 +457,14 @@ export async function handleIntelligenceAndCommerceRoute(
         ? (body.intlCurrency as IntlCurrencyCode)
         : 'USD';
 
+      const sealSecret = String(ctx.env.VALUATION_SEAL_SECRET || '').trim();
+      if (sealSecret.length < 32) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error',
+          code: 'VALUATION_SEAL_SECRET_UNAVAILABLE',
+        });
+      }
+
       const seal = computeServerValuationSeal({
         cityId: typeof body.cityId === 'string' ? body.cityId : 'tehran',
         hoodId,
@@ -472,7 +480,7 @@ export async function handleIntelligenceAndCommerceRoute(
           ? Number(body.sellerAskingTotalMillion)
           : undefined,
         intlCurrency,
-      });
+      }, { sealSecret });
 
       return jsonWorkerResponse(ctx, 200, { status: 'ok', seal });
     } catch (err) {
