@@ -346,8 +346,6 @@ async function publishPendingOutbox(params: {
     }
     try {
       await queue.send(envelope);
-      await params.dispatch.markDispatchSent(row.idempotencyKey, new Date().toISOString());
-      dispatched += 1;
     } catch {
       await params.dispatch.markDispatchFailed(
         row.idempotencyKey,
@@ -355,7 +353,14 @@ async function publishPendingOutbox(params: {
         new Date(Date.now() + DISPATCH_FAILURE_RETRY_MS).toISOString(),
         'QUEUE_DISPATCH_FAILED',
       );
+      continue;
     }
+
+    // Do not misclassify a durable D1 state-transition failure as a queue-send
+    // failure. The message may already be accepted; leave the outbox recoverable
+    // and surface the D1 confirmation failure to the caller.
+    await params.dispatch.markDispatchSent(row.idempotencyKey, new Date().toISOString());
+    dispatched += 1;
   }
   return dispatched;
 }
