@@ -74,9 +74,9 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
   it('1b. keeps backend staging Cron Triggers disabled until isolated D1 is provisioned', () => {
     const backendRaw = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.backend.jsonc'), 'utf8');
     const backendStripped = backendRaw
-      .split('\\n')
+      .split('\n')
       .filter((line) => !line.trim().startsWith('//'))
-      .join('\\n');
+      .join('\n');
     const backendParsed = JSON.parse(backendStripped) as Record<string, any>;
     const backendStaging = backendParsed.env?.staging as Record<string, any>;
     assert.ok(backendStaging, 'backend staging environment must be explicitly defined');
