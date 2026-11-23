@@ -20,6 +20,7 @@ import {
   jsonWorkerResponse,
 } from './contextAndSecurity';
 import { resolveUserDb } from './db/bindingResolver';
+import { isDbWritePauseExempt, resolveDbWritePauseState } from './db/dbWritePauseGuard';
 import {
   buildCanonicalCronEnvelopes,
   createCanonicalQueueJobDispatcher,
@@ -172,6 +173,17 @@ export default {
   ): Promise<Response> {
     const reqCtx = createWorkerRequestContext(request, env);
     try {
+      const writePause = resolveDbWritePauseState(env.DB_WRITES_PAUSED_UNTIL_UTC);
+      if (writePause && !isDbWritePauseExempt(request.method, reqCtx.pathname)) {
+        const retryAfterSeconds = Math.min(43_200, Math.max(1, writePause.retryAfterSeconds));
+        return jsonWorkerResponse(reqCtx, 503, {
+          status: 'error',
+          code: writePause.configurationInvalid ? 'DB_WRITES_PAUSE_CONFIG_INVALID' : 'DB_WRITES_PAUSED',
+          pausedUntilUtc: writePause.pausedUntilUtc,
+          retryAfterSeconds,
+          message: 'عملیات تغییردهنده تا پایان بازه توقف نوشتن موقتاً غیرفعال است.',
+        }, { extraHeaders: { 'Retry-After': String(retryAfterSeconds) } });
+      }
       const apiOrSeoResult = await dispatchWorkerApiOrSeoRequest(reqCtx);
       if (apiOrSeoResult) {
         buildObservabilityRecord(
@@ -210,6 +222,11 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    const writePause = resolveDbWritePauseState(env.DB_WRITES_PAUSED_UNTIL_UTC);
+    if (writePause) {
+      batch.retryAll({ delaySeconds: Math.min(43_200, Math.max(1, writePause.retryAfterSeconds)) });
+      return;
+    }
     await processRadarQueueBatch({
       batch,
       db: resolveUserDb(env),
@@ -223,6 +240,7 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    if (resolveDbWritePauseState(env.DB_WRITES_PAUSED_UNTIL_UTC)) return;
     if (!env.RADAR_QUEUE) {
       throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');
     }
