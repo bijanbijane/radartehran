@@ -275,7 +275,7 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     console.log(`[DIAGNOSTIC BOOTSTRAP] Creating Vite server in middlewareMode on port ${PORT}...`);
     const vite = await createViteServer({
       server: {
-        middlewareMode: true, host: true, allowedHosts: true, port: PORT,
+        middlewareMode: true, host: true, port: PORT, proxy: undefined,
         watch: { ignored: ["**/node_modules/**", "**/.git/**", "**/.cache-data.json*", "**/.runtime-config.json*", "**/.osm-boundaries-cache.json*", "**/.object-storage-bucket/**", "**/.cache/**"] },
         hmr: process.env.DISABLE_HMR === "true" ? false : { server },
       },

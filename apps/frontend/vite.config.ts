@@ -4,32 +4,48 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
-import { resolveAllowedViteDevHosts } from '../../src/utils/serverConfigValidator';
+import {
+  createViteDevDiagnosticsPlugin,
+  resolveViteDevAllowedHostsSafe,
+  resolveViteDevProxyConfig,
+  resolveViteDevServerHost,
+} from '../../src/utils/viteDevServerDiagnostics';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, repoRoot, '');
-  let allowedHosts: string[] = ['localhost', '127.0.0.1'];
-  try {
-    allowedHosts = resolveAllowedViteDevHosts({
-      ...(typeof process !== 'undefined' && process.env ? process.env : {}),
-      ...env,
-    });
-  } catch {
-    allowedHosts = ['localhost', '127.0.0.1'];
-  }
+  const mergedEnv: Record<string, string | undefined> = {
+    ...(typeof process !== 'undefined' && process.env ? process.env : {}),
+    ...env,
+  };
+  const { allowedHosts, fallbackReason: allowedHostsFallbackReason } =
+    resolveViteDevAllowedHostsSafe(mergedEnv);
+  const hostConfig = resolveViteDevServerHost(mergedEnv);
+  const configuredPort = Number(mergedEnv.VITE_DEV_PORT) || undefined;
+  const proxyConfig = resolveViteDevProxyConfig(mergedEnv, configuredPort);
 
   const enableCloudflareVitePlugin =
     mode === 'cloudflare' ||
-    env.CLOUDFLARE_VITE === '1' ||
-    (typeof process !== 'undefined' && process.env?.CLOUDFLARE_VITE === '1');
+    mergedEnv.CLOUDFLARE_VITE === '1';
+
+  const devServerDiagnosticsPlugin = createViteDevDiagnosticsPlugin({
+    configSource: 'apps/frontend/vite.config.ts',
+    command,
+    mode,
+    env: mergedEnv,
+    hostConfig,
+    configuredAllowedHosts: allowedHosts,
+    allowedHostsFallbackReason,
+    proxyConfig,
+  });
 
   const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
+    devServerDiagnosticsPlugin,
     ...(enableCloudflareVitePlugin
       ? [cloudflare({ configPath: path.resolve(__dirname, 'wrangler.jsonc') })]
       : []),
@@ -43,6 +59,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(repoRoot, 'src'),
+        '@radartehran/contracts': path.resolve(repoRoot, 'packages/contracts/src/index.ts'),
       },
       dedupe: [
         'react',
@@ -196,22 +213,9 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       allowedHosts,
-      port: Number(env.VITE_DEV_PORT || process.env.VITE_DEV_PORT) || undefined,
-      proxy:
-        env.RADAR_DEV_SPLIT === '1' ||
-        env.VITE_RADAR_DEV_SPLIT === '1' ||
-        process.env.RADAR_DEV_SPLIT === '1'
-          ? {
-              '/api': {
-                target:
-                  env.VITE_API_PROXY_TARGET ||
-                  process.env.VITE_API_PROXY_TARGET ||
-                  'http://127.0.0.1:3001',
-                changeOrigin: true,
-                secure: false,
-              },
-            }
-          : undefined,
+      host: hostConfig.host,
+      port: configuredPort,
+      proxy: proxyConfig.proxy,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: {
         ignored: [

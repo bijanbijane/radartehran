@@ -26,6 +26,8 @@ import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { MapToolRail } from './navigation/MapToolRail';
 import { MapExplorerResultsSidebar } from './map/MapExplorerResultsSidebar';
 import { MapExplorerToolbar } from './map/MapExplorerToolbar';
+import { MapViewportPulseDock } from './map/MapViewportPulseDock';
+import { setInteractiveSpatialMode } from './map/interactiveSpatialMeasureLayer';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
 import { setActiveAccountScopeUid } from '../features/account/services/accountStorageScope';
@@ -84,7 +86,21 @@ export function RadarWorkspaceShell() {
     if (except !== 'tools') ui.setShowToolsPopover(false);
     if (except !== 'legend') ui.setShowMapLegendPopover(false);
     if (except !== 'rail') ui.setMapRailPanel(null);
-    if (except !== 'spatial') ui.setShowSpatialTools(false);
+    if (except !== 'spatial') {
+      ui.setShowSpatialTools(false);
+      setInteractiveSpatialMode('explore', { preservePoints: true });
+    }
+  };
+  const handleToggleQuickSpatialMeasure = () => {
+    if (ui.showSpatialTools && !ui.mapRailPanel) {
+      ui.setShowSpatialTools(false);
+      setInteractiveSpatialMode('explore', { preservePoints: false });
+      return;
+    }
+    closeFloatingMapPanels('spatial');
+    ui.setMapRailPanel(null);
+    ui.setShowSpatialTools(true);
+    setInteractiveSpatialMode('measure', { preservePoints: true });
   };
   const navigationIntentRef = useRef<MapNavigationIntent>('initial_mount');
   const applyCityContextTransition = (cityId: CityId, intent: MapNavigationIntent, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
@@ -294,6 +310,7 @@ export function RadarWorkspaceShell() {
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
+        isSpatialMeasureActive={ui.showSpatialTools && !ui.mapRailPanel} onToggleSpatialMeasure={handleToggleQuickSpatialMeasure}
         onNavigateView={(v, sub) => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); closeFloatingMapPanels(); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }} />
       <MapToolRail
         visible={ui.primaryView === 'map'} locale={radarLocale} activeCity={ui.activeCity} selectedHood={selectedHood} evaluatedNeighborhoods={evaluatedNeighborhoods} targetSqm={targetSqm} mapLens={ui.mapLens} setMapLens={ui.setMapLens}
@@ -301,7 +318,7 @@ export function RadarWorkspaceShell() {
         openPanel={ui.mapRailPanel} onChangeOpenPanel={ui.setMapRailPanel} showSpatialTools={ui.showSpatialTools} onChangeShowSpatialTools={ui.setShowSpatialTools}
         onCloseCompetingPanels={() => closeFloatingMapPanels('rail')} onToggleFilterPopover={() => { closeFloatingMapPanels('filter'); ui.setMobileFilterOpen((p) => !p); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
         onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView}
-        statusFilter={ui.statusFilter} setStatusFilter={ui.setStatusFilter} />
+        onSelectNeighborhood={handleSelectNeighborhood} statusFilter={ui.statusFilter} setStatusFilter={ui.setStatusFilter} />
       {ui.primaryView === 'map' && (
         <>
           <MapExplorerResultsSidebar
@@ -321,6 +338,17 @@ export function RadarWorkspaceShell() {
               ui.setMobileFilterOpen(true);
             }}
           />
+          {!ui.invalidCityParam && selectedHood && (
+            <MapViewportPulseDock
+              evaluatedNeighborhoods={evaluatedNeighborhoods}
+              selectedHood={selectedHood}
+              mode={mode}
+              targetSqm={targetSqm}
+              rentAgeMultiplier={rentAgeMultiplier}
+              mapLens={ui.mapLens}
+              onSelectNeighborhood={handleSelectNeighborhood}
+            />
+          )}
         </>
       )}
       {ui.primaryView !== 'map' && (

@@ -4,38 +4,59 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
-import { resolveAllowedViteDevHosts } from './src/utils/serverConfigValidator';
+import {
+  createViteDevDiagnosticsPlugin,
+  resolveViteDevAllowedHostsSafe,
+  resolveViteDevProxyConfig,
+  resolveViteDevServerHost,
+} from './src/utils/viteDevServerDiagnostics';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-  let allowedHosts: string[] = ['localhost', '127.0.0.1'];
-  try {
-    allowedHosts = resolveAllowedViteDevHosts({ ...(typeof process !== 'undefined' && process.env ? process.env : {}), ...env });
-  } catch {
-    allowedHosts = ['localhost', '127.0.0.1'];
-  }
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, __dirname, '');
+  const mergedEnv: Record<string, string | undefined> = {
+    ...(typeof process !== 'undefined' && process.env ? process.env : {}),
+    ...env,
+  };
+  const { allowedHosts, fallbackReason: allowedHostsFallbackReason } =
+    resolveViteDevAllowedHostsSafe(mergedEnv);
+  const hostConfig = resolveViteDevServerHost(mergedEnv);
+  const configuredPort = Number(mergedEnv.VITE_DEV_PORT) || undefined;
+  const proxyConfig = resolveViteDevProxyConfig(mergedEnv, configuredPort);
 
   const enableCloudflareVitePlugin =
     mode === 'cloudflare' ||
-    env.CLOUDFLARE_VITE === '1' ||
-    (typeof process !== 'undefined' && process.env?.CLOUDFLARE_VITE === '1');
+    mergedEnv.CLOUDFLARE_VITE === '1';
+
+  const devServerDiagnosticsPlugin = createViteDevDiagnosticsPlugin({
+    configSource: 'vite.config.ts',
+    command,
+    mode,
+    env: mergedEnv,
+    hostConfig,
+    configuredAllowedHosts: allowedHosts,
+    allowedHostsFallbackReason,
+    proxyConfig,
+  });
 
   const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
-    ...(enableCloudflareVitePlugin ? [cloudflare({ configPath: './wrangler.jsonc' })] : []),
+    devServerDiagnosticsPlugin,
+    ...(enableCloudflareVitePlugin ? [cloudflare({ configPath: path.resolve(__dirname, 'wrangler.jsonc') })] : []),
   ];
 
   return {
+    root: __dirname,
     plugins,
     // Task 458: Never inject server-side GEMINI_API_KEY or other private credentials into frontend bundles.
     define: {},
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@radartehran/contracts': path.resolve(__dirname, './packages/contracts/src/index.ts'),
       },
       dedupe: [
         'react',
@@ -226,19 +247,9 @@ export default defineConfig(({ mode }) => {
     server: {
       // Task 448: Explicit allowedHosts list instead of unrestricted `allowedHosts: true`
       allowedHosts,
-      port: Number(env.VITE_DEV_PORT || process.env.VITE_DEV_PORT) || undefined,
-      proxy:
-        env.RADAR_DEV_SPLIT === '1' ||
-        env.VITE_RADAR_DEV_SPLIT === '1' ||
-        process.env.RADAR_DEV_SPLIT === '1'
-          ? {
-              '/api': {
-                target: env.VITE_API_PROXY_TARGET || process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001',
-                changeOrigin: true,
-                secure: false,
-              },
-            }
-          : undefined,
+      host: hostConfig.host,
+      port: configuredPort,
+      proxy: proxyConfig.proxy,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: {
         ignored: [

@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Tehran Radar React SPA, Vite build, and Cloudflare Worker edge bundle",
   "scripts": {
-    "dev": "vite --config ./vite.config.ts",
-    "dev:split": "RADAR_DEV_SPLIT=1 VITE_DEV_PORT=5173 vite --config ./vite.config.ts",
+    "dev": "tsx ../../scripts/diagnose-dev-environment.ts && vite --config ./vite.config.ts",
+    "dev:split": "RADAR_DEV_SPLIT=1 VITE_DEV_PORT=5173 tsx ../../scripts/diagnose-dev-environment.ts && RADAR_DEV_SPLIT=1 VITE_DEV_PORT=5173 vite --config ./vite.config.ts",
     "build": "node ./scripts/build-production.mjs",
     "preview": "vite preview --config ./vite.config.ts",
     "cf:build": "CLOUDFLARE_VITE=1 vite build --config ./vite.config.ts --mode cloudflare",

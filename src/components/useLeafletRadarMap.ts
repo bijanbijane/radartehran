@@ -15,6 +15,13 @@ import { clearOverlayGroupRef, type MetroLineEntry, type TrafficZoneEntry } from
 import { mountLeafletMapLifecycle, type MapViewportSettledEvent } from './map/leafletMapLifecycle';
 import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
 import { clearWorkRouteAndLandmarkLayers, createEmptyWorkRouteAndLandmarkRefs, reconcileWorkRouteAndLandmarks } from './map/workRouteAndLandmarkLayers';
+import {
+  appendInteractiveSpatialPoint,
+  clearInteractiveSpatialMeasureLayer,
+  getInteractiveSpatialMeasureState,
+  reconcileInteractiveSpatialMeasureLayer,
+  useInteractiveSpatialMeasureState,
+} from './map/interactiveSpatialMeasureLayer';
 import { resolveCityFromCoordinates, type CityResolutionResult } from '../utils/geo/cityGeospatialResolver';
 
 declare global { interface Window { L: any; } }
@@ -49,6 +56,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const metroLinesLayerRef = useRef<any>(null);
   const commuteIsochronesLayerRef = useRef<any>(null);
   const comparisonArcLayerRef = useRef<any>(null);
+  const spatialMeasureLayerRef = useRef<any>(null);
   const trafficEntriesRef = useRef<Map<string, TrafficZoneEntry>>(new Map());
   const metroEntriesRef = useRef<Map<string, MetroLineEntry>>(new Map());
   const isochroneSigRef = useRef<string | null>(null);
@@ -121,6 +129,15 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   }, []);
 
   const advancedOverlayState = useMapAdvancedOverlayState();
+  const spatialMeasureState = useInteractiveSpatialMeasureState();
+  const handleNeighborhoodLayerSelect = useCallback((hood: EvaluatedNeighborhood) => {
+    const st = getInteractiveSpatialMeasureState();
+    if (st.mode === 'measure' || st.mode === 'draw') {
+      appendInteractiveSpatialPoint({ lat: hood.lat, lng: hood.lng });
+      return;
+    }
+    onSelectNeighborhoodRef.current(hood);
+  }, []);
 
   useEffect(() => {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -158,6 +175,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
         clearOverlayGroupRef(map, metroLinesLayerRef, metroEntriesRef.current);
         clearOverlayGroupRef(map, commuteIsochronesLayerRef);
         clearOverlayGroupRef(map, comparisonArcLayerRef);
+        clearInteractiveSpatialMeasureLayer(map, spatialMeasureLayerRef);
         isochroneSigRef.current = null;
         comparisonArcSigRef.current = null;
       },
@@ -202,6 +220,31 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     renderNeighborhoodComparisonArc({ L: window.L, map: mapInstanceRef.current, groupRef: comparisonArcLayerRef, sigRef: comparisonArcSigRef, mode, targetSqm, rentAgeMultiplier, areaUnit, intlCurrency, locale, comparisonArc: advancedOverlayState.comparisonArc });
   }, [advancedOverlayState.comparisonArc, mode, targetSqm, rentAgeMultiplier, areaUnit, intlCurrency, locale, isMapLoaded]);
 
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    reconcileInteractiveSpatialMeasureLayer({ L: window.L, map: mapInstanceRef.current, groupRef: spatialMeasureLayerRef, state: spatialMeasureState, isDarkMap });
+  }, [spatialMeasureState, isDarkMap, isMapLoaded]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const container = mapContainerRef.current;
+    const interactive = spatialMeasureState.mode === 'measure' || spatialMeasureState.mode === 'draw';
+    if (container) container.style.cursor = interactive ? 'crosshair' : '';
+    if (!map || !interactive || typeof map.on !== 'function') return () => { if (container) container.style.cursor = ''; };
+    const onMapClick = (e: any) => {
+      const lat = e?.latlng?.lat;
+      const lng = e?.latlng?.lng;
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        appendInteractiveSpatialPoint({ lat, lng });
+      }
+    };
+    map.on('click', onMapClick);
+    return () => {
+      map.off?.('click', onMapClick);
+      if (container) container.style.cursor = '';
+    };
+  }, [spatialMeasureState.mode, isMapLoaded]);
+
   useEffect(() => { tileLayerRef.current?.syncPreferredStyle(mapTileStyle); }, [mapTileStyle]);
 
   const prevCityRef = useRef(activeCity);
@@ -243,7 +286,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
         deferredMapNeighborhoods.filter((h) => statusFilter === 'all' || h.status === statusFilter),
         d3PriceScaleForCity,
         mode,
-        (hood) => onSelectNeighborhoodRef.current(hood),
+        handleNeighborhoodLayerSelect,
       );
       return { created: hadPrev ? 0 : 1, updated: hadPrev ? 1 : 0, removed: 0, retained: 0 };
     });
@@ -269,7 +312,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       mapLens: pres.mapLens, isDarkMap: pres.isDarkMap, skipGoldPins: true, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode,
       enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale: d3PriceScaleForCity,
       areaUnit: pres.areaUnit, intlCurrency: pres.intlCurrency, locale: pres.locale, reason: 'reconcileGeometryAndLod',
-      onSelectNeighborhood: (hood) => onSelectNeighborhoodRef.current(hood),
+      onSelectNeighborhood: handleNeighborhoodLayerSelect,
     });
     const nextMarkersMap: typeof markersMapRef.current = {};
     reconcilerRefs.current.polygonsByHood.forEach((polyEntry, id) => {
@@ -311,7 +354,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
         mapLens: pres.mapLens, isDarkMap, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode,
         enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale: d3PriceScaleForCity,
         areaUnit: pres.areaUnit, intlCurrency: pres.intlCurrency, locale: pres.locale,
-        onSelectNeighborhood: (hood) => onSelectNeighborhoodRef.current(hood),
+        onSelectNeighborhood: handleNeighborhoodLayerSelect,
       });
     }
     timer('success');

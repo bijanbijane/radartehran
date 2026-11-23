@@ -12,6 +12,8 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
+    "diagnose:dev": "tsx scripts/diagnose-dev-server.ts",
+    "diagnose:env": "tsx scripts/diagnose-dev-environment.ts",
     "sitemap": "tsx scripts/generate-sitemap.ts",
     "build": "npm run build -w radartehran-frontend",
     "start": "tsx server.ts",
@@ -72,6 +74,22 @@
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend"
+  },
+  "dependencies": {
+    "@google/genai": "^1.29.0",
+    "d3-scale": "^4.0.2",
+    "decimal.js": "^10.6.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "firebase": "^12.12.0",
+    "firebase-admin": "^13.7.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "recharts": "^3.10.1",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.67.0",

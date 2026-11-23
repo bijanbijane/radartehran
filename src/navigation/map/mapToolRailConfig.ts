@@ -15,6 +15,8 @@ export interface MapToolRailStateSnapshot {
   hasFilterApplied: boolean;
   isComparing: boolean;
   hasSavedViews: boolean;
+  showSpatialTools?: boolean;
+  isSpatialMeasuring?: boolean;
 }
 
 export function resolveMapToolVisualState(toolId: MapToolId, snap: MapToolRailStateSnapshot): MapToolVisualState {
@@ -26,6 +28,11 @@ export function resolveMapToolVisualState(toolId: MapToolId, snap: MapToolRailSt
   if (toolId === 'filters') {
     if (snap.openPanel === 'filters') return 'open';
     if (snap.hasFilterApplied) return 'active';
+    return 'default';
+  }
+  if (toolId === 'measure') {
+    if (snap.showSpatialTools) return 'open';
+    if (snap.isSpatialMeasuring) return 'active';
     return 'default';
   }
   if (toolId === 'analysis') {

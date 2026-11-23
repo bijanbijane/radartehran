@@ -22,6 +22,19 @@ import {
   NEIGHBORHOOD_SECTION_NAV_8, STAGE_17_ACCEPTANCE_CHECKLIST_30, STAGE_18_MARKET_INTELLIGENCE_SPEC_20,
   buildNeighborhoodIntelligenceProfile, evaluateMarketSampleAdequacy, formatNullSafeMetricValue,
 } from '../../neighborhoods/services/neighborhoodProfileEngine';
+import { computeViewportPulseSnapshot } from '../../../components/map/MapViewportPulseDock';
+import {
+  appendInteractiveSpatialPoint,
+  clearInteractiveSpatialPoints,
+  estimateTravelTimesFromMeters,
+  findNeighborhoodsInsidePolygon,
+  getInteractiveSpatialMeasureState,
+  isPointInsidePolygonWGS84,
+  resetInteractiveSpatialMeasure,
+  setInteractiveSpatialMode,
+  undoInteractiveSpatialPoint,
+} from '../../../components/map/interactiveSpatialMeasureLayer';
+import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
@@ -242,3 +255,135 @@ describe('Stage 16 (RT-UI-LAYERS-001) & Stage 17 (RT-UI-NEIGHBORHOOD-001) Layer 
     assert.equal(STAGE_18_MARKET_INTELLIGENCE_SPEC_20.length, 20);
   });
 });
+
+describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Containment', () => {
+  const SAMPLE_CITY_HOODS: EvaluatedNeighborhood[] = [
+    ...MOCK_HOODS,
+    {
+      id: 3, name: 'پونک', zone: 'منطقه ۵ شهرداری تهران', lat: 35.7620, lng: 51.3310,
+      buyPerSqm: 140, rahn80m: 1500, air: 9, trafficInfo: { trafficScore: 7.4 }, metro: 7, power: 9, internet: 8, security: 8, flat: 8,
+      overallScore: 8.6, status: 'green', diffPercent: -6, bargains: [],
+    } as unknown as EvaluatedNeighborhood,
+    {
+      id: 4, name: 'اکباتان', zone: 'منطقه ۵ شهرداری تهران', lat: 35.7080, lng: 51.3090,
+      buyPerSqm: 130, rahn80m: 1400, air: 6, trafficInfo: { trafficScore: 8.8 }, metro: 9, power: 9, internet: 9, security: 9, flat: 9,
+      overallScore: 8.2, status: 'red', diffPercent: 18, bargains: [],
+    } as unknown as EvaluatedNeighborhood,
+  ];
+
+  it('computes viewport median, v6.4 negotiation scenario, city diff %, and lens-aware top-4 neighborhoods', () => {
+    const westBounds = { north: 35.78, south: 35.70, east: 51.36, west: 51.29, zoom: 12 };
+    const buySnap = computeViewportPulseSnapshot({
+      evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
+      viewportBounds: westBounds,
+      mode: 'buy',
+      targetSqm: 80,
+      rentAgeMultiplier: 1,
+      mapLens: 'budget',
+    });
+    assert.equal(buySnap.inViewportCount, 2);
+    assert.equal(buySnap.affordableCount, 1);
+    assert.equal(buySnap.viewportMedianBuyPerSqm, 135);
+    assert.equal(buySnap.viewportNegotiatedBuyPerSqm, Math.round(135 * 0.88));
+    assert.ok(buySnap.diffVsCityPct !== null && buySnap.diffVsCityPct < 0);
+    assert.equal(buySnap.topNeighborhoods[0].id, 3);
+
+    const airSnap = computeViewportPulseSnapshot({
+      evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
+      viewportBounds: null,
+      mode: 'rent',
+      targetSqm: 100,
+      rentAgeMultiplier: 0.9,
+      mapLens: 'air',
+    });
+    assert.equal(airSnap.usingFullCityFallback, true);
+    assert.equal(airSnap.topNeighborhoods[0].id, 3);
+    assert.ok(airSnap.viewportMedianRahn !== null && airSnap.viewportMedianRahn > 0);
+
+    const trafficSnap = computeViewportPulseSnapshot({
+      evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
+      viewportBounds: null,
+      mode: 'buy',
+      targetSqm: 80,
+      rentAgeMultiplier: 1,
+      mapLens: 'traffic',
+    });
+    assert.equal(trafficSnap.topNeighborhoods[0].id, 4);
+  });
+
+  it('estimates walking and driving times safely and finds neighborhoods inside valid drawn polygons', () => {
+    assert.deepEqual(estimateTravelTimesFromMeters(0), { walkMinutes: 0, driveMinutes: 0 });
+    const times = estimateTravelTimesFromMeters(1500);
+    assert.equal(times.walkMinutes, 20);
+    assert.equal(times.driveMinutes, 4);
+
+    const polygon = [
+      { lat: 35.74, lng: 51.39 },
+      { lat: 35.78, lng: 51.39 },
+      { lat: 35.78, lng: 51.47 },
+      { lat: 35.74, lng: 51.47 },
+    ];
+    assert.equal(isPointInsidePolygonWGS84({ lat: 35.7575, lng: 51.41 }, polygon), true);
+    assert.equal(isPointInsidePolygonWGS84({ lat: 35.708, lng: 51.309 }, polygon), false);
+
+    const match = findNeighborhoodsInsidePolygon(polygon, SAMPLE_CITY_HOODS);
+    assert.equal(match.validPolygon, true);
+    assert.equal(match.matched.length, 2);
+    assert.equal(match.avgBuyPerSqm, 203);
+
+    const selfIntersecting = findNeighborhoodsInsidePolygon(
+      [
+        { lat: 35.75, lng: 51.40 },
+        { lat: 35.77, lng: 51.43 },
+        { lat: 35.77, lng: 51.40 },
+        { lat: 35.75, lng: 51.43 },
+      ],
+      SAMPLE_CITY_HOODS,
+    );
+    assert.equal(selfIntersecting.validPolygon, false);
+    assert.equal(selfIntersecting.matched.length, 0);
+  });
+
+  it('manages interactive spatial store transitions (append, undo, clear) and measure tool rail state', () => {
+    resetInteractiveSpatialMeasure();
+    setInteractiveSpatialMode('measure');
+    appendInteractiveSpatialPoint({ lat: 35.7575, lng: 51.41 });
+    appendInteractiveSpatialPoint({ lat: 35.772, lng: 51.46 });
+    assert.equal(getInteractiveSpatialMeasureState().points.length, 2);
+    undoInteractiveSpatialPoint();
+    assert.equal(getInteractiveSpatialMeasureState().points.length, 1);
+    clearInteractiveSpatialPoints();
+    assert.equal(getInteractiveSpatialMeasureState().points.length, 0);
+    resetInteractiveSpatialMeasure();
+
+    assert.equal(
+      resolveMapToolVisualState('measure', {
+        openPanel: null,
+        activeLens: 'budget',
+        showMetroLines: false,
+        showTrafficZones: false,
+        hasFilterApplied: false,
+        isComparing: false,
+        hasSavedViews: false,
+        showSpatialTools: true,
+        isSpatialMeasuring: true,
+      }),
+      'open',
+    );
+    assert.equal(
+      resolveMapToolVisualState('measure', {
+        openPanel: null,
+        activeLens: 'budget',
+        showMetroLines: false,
+        showTrafficZones: false,
+        hasFilterApplied: false,
+        isComparing: false,
+        hasSavedViews: false,
+        showSpatialTools: false,
+        isSpatialMeasuring: true,
+      }),
+      'active',
+    );
+  });
+});
+

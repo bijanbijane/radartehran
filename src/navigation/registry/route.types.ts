@@ -102,7 +102,7 @@ export interface SecondaryTabDefinition<T extends string = string> {
   status?: RouteAvailabilityStatus;
 }
 
-export type MapToolId = 'layers' | 'filters' | 'analysis' | 'locate' | 'compare' | 'save_view';
+export type MapToolId = 'layers' | 'filters' | 'measure' | 'analysis' | 'locate' | 'compare' | 'save_view';
 export type MapToolVisualState = 'default' | 'active' | 'open' | 'disabled';
 
 export interface SavedMapViewItem {

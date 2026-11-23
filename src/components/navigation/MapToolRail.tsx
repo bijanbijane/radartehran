@@ -2,11 +2,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeftRight, Bookmark, Check, Layers, LineChart, Navigation,
-  SlidersHorizontal, TrafficCone, TrainFront, Trash2, X,
+  Ruler, SlidersHorizontal, TrafficCone, TrainFront, Trash2, X,
 } from 'lucide-react';
 import type { CityId, EvaluatedNeighborhood, MapTileServerId } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
 import { CITY_TRAFFIC_ZONES, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
+import {
+  setInteractiveSpatialMode,
+  useInteractiveSpatialMeasureState,
+} from '../map/interactiveSpatialMeasureLayer';
 import {
   deleteSavedMapView, readSavedMapViews, resolveMapToolVisualState, saveCurrentMapView, toggleMapContextPanel,
   type MapContextPanelId,
@@ -47,6 +51,7 @@ export interface MapToolRailProps {
   onOpenPriceTrendModal: () => void;
   onOpenInspectorDrawer: () => void;
   onRestoreSavedView: (view: SavedMapViewItem) => void;
+  onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
   statusFilter: 'all' | 'green' | 'yellow' | 'red';
   setStatusFilter: React.Dispatch<React.SetStateAction<'all' | 'green' | 'yellow' | 'red'>>;
 }
@@ -83,6 +88,8 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
   const [savedViews, setSavedViews] = useState<SavedMapViewItem[]>(() => readSavedMapViews());
   const [customViewLabel, setCustomViewLabel] = useState('');
   const { showMetroLines, showTrafficZones, comparisonArc, filterRankingByViewport, viewportBounds } = useMapAdvancedOverlayState();
+  const spatialState = useInteractiveSpatialMeasureState();
+  const isSpatialInteractive = spatialState.mode === 'measure' || spatialState.mode === 'draw';
 
   const railRef = useRef<HTMLDivElement | null>(null);
 
@@ -99,12 +106,13 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
         e.preventDefault();
         p.onChangeOpenPanel(null);
         p.onChangeShowSpatialTools(false);
+        setInteractiveSpatialMode('explore', { preservePoints: false });
       }
     };
     const onMouseDown = (e: MouseEvent) => {
       if (railRef.current && !railRef.current.contains(e.target as Node)) {
         p.onChangeOpenPanel(null);
-        p.onChangeShowSpatialTools(false);
+        if (!isSpatialInteractive) p.onChangeShowSpatialTools(false);
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -113,7 +121,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('mousedown', onMouseDown);
     };
-  }, [p.openPanel, p.showSpatialTools, p.onChangeOpenPanel, p.onChangeShowSpatialTools]);
+  }, [p.openPanel, p.showSpatialTools, p.onChangeOpenPanel, p.onChangeShowSpatialTools, isSpatialInteractive]);
 
   if (!p.visible || !p.selectedHood) return null;
 
@@ -125,6 +133,8 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
     hasFilterApplied: p.hasFilterApplied,
     isComparing: Boolean(comparisonArc.active),
     hasSavedViews: savedViews.length > 0,
+    showSpatialTools: p.showSpatialTools,
+    isSpatialMeasuring: isSpatialInteractive || spatialState.points.length > 0,
   };
 
   const stateClass = (toolId: Parameters<typeof resolveMapToolVisualState>[0]) => {
@@ -137,7 +147,20 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
   const handleToggleRailPanel = (target: 'layers' | 'filters' | 'analysis' | 'save_view') => {
     p.onCloseCompetingPanels?.();
     p.onChangeShowSpatialTools(false);
+    setInteractiveSpatialMode('explore', { preservePoints: true });
     p.onChangeOpenPanel((c) => toggleMapContextPanel(c, target));
+  };
+
+  const handleToggleMeasureTool = () => {
+    if (p.showSpatialTools && !p.openPanel) {
+      p.onChangeShowSpatialTools(false);
+      setInteractiveSpatialMode('explore', { preservePoints: false });
+      return;
+    }
+    p.onCloseCompetingPanels?.();
+    p.onChangeOpenPanel(null);
+    p.onChangeShowSpatialTools(true);
+    setInteractiveSpatialMode('measure', { preservePoints: true });
   };
 
   const handleSaveView = (e: React.FormEvent) => {
@@ -176,7 +199,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
     : (CITY_TRAFFIC_ZONES[p.activeCity]?.titleFa || 'محدوده طرح ترافیک');
 
   return (
-    <div ref={railRef} data-testid="map-tool-rail" className={`fixed left-3 top-[164px] sm:top-[160px] lg:top-[124px] ${p.openPanel || p.showSpatialTools ? 'z-[35]' : 'z-20'} flex flex-row-reverse items-start gap-2 pointer-events-none`}>
+    <div ref={railRef} data-testid="map-tool-rail" className={`fixed left-3 top-[164px] sm:top-[160px] lg:top-[124px] ${p.openPanel || p.showSpatialTools ? 'z-[40]' : 'z-20'} flex flex-row-reverse items-start gap-2 pointer-events-none`}>
       {/* Vertical Map Tool Rail (48px width, 40px tools, 8px vertical gap) */}
       <div role="toolbar" aria-label={isEn ? 'Map Tools' : 'ابزارهای تعاملی نقشه'} className="pointer-events-auto w-12 flex flex-col items-center gap-2 apple-vibrancy-bar p-1 rounded-[12px] border border-slate-200/80 dark:border-slate-700/80 shadow-lg">
         <button type="button" onClick={() => handleToggleRailPanel('layers')} aria-expanded={p.openPanel === 'layers'} title={isEn ? 'Map Layers' : 'لایه‌های نقشه'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('layers')}`}>
@@ -186,6 +209,10 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
         <button type="button" onClick={() => handleToggleRailPanel('filters')} aria-expanded={p.openPanel === 'filters'} title={isEn ? 'Map filters' : 'فیلتر نقشه'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('filters')}`}>
           <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
           <span className="text-[9px] font-bold leading-none">{isEn ? 'Filter' : 'فیلتر'}</span>
+        </button>
+        <button type="button" data-testid="map-tool-measure-btn" onClick={handleToggleMeasureTool} aria-expanded={p.showSpatialTools && !p.openPanel} title={isEn ? 'Geodesic Ruler & Draw' : 'خط‌کش ژئودزیک و ترسیم محدوده'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('measure')}`}>
+          <Ruler className="w-4 h-4" aria-hidden="true" />
+          <span className="text-[9px] font-bold leading-none">{isEn ? 'Ruler' : 'خط‌کش'}</span>
         </button>
         <button type="button" onClick={() => handleToggleRailPanel('analysis')} aria-expanded={p.openPanel === 'analysis'} title={isEn ? 'Area Analytics' : 'تحلیل محله'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('analysis')}`}>
           <LineChart className="w-4 h-4" aria-hidden="true" />
@@ -288,7 +315,11 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
         <MapSpatialToolsPopover
           selectedHood={p.selectedHood}
           evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-          onClose={() => p.onChangeShowSpatialTools(false)}
+          onSelectNeighborhood={p.onSelectNeighborhood}
+          onClose={() => {
+            setInteractiveSpatialMode('explore', { preservePoints: false });
+            p.onChangeShowSpatialTools(false);
+          }}
         />
       )}
 

@@ -115,18 +115,56 @@ export function createFirebaseAuthenticatedApiFetch(
   };
 }
 
+export function assignFetchSafely(
+  target: { fetch?: typeof fetch },
+  wrappedFetch: typeof fetch,
+): boolean {
+  if (!target || typeof target !== 'object') return false;
+  const ownDescriptor = Object.getOwnPropertyDescriptor(target, 'fetch');
+  const isGetterOnly = Boolean(ownDescriptor && ownDescriptor.get && !ownDescriptor.set);
+
+  if (!isGetterOnly) {
+    try {
+      target.fetch = wrappedFetch;
+      if (target.fetch === wrappedFetch) return true;
+    } catch {
+      // Fall through to Object.defineProperty when a getter-only accessor exists on target or its prototype.
+    }
+  }
+
+  if (ownDescriptor && ownDescriptor.configurable === false) {
+    return false;
+  }
+
+  try {
+    Object.defineProperty(target, 'fetch', {
+      value: wrappedFetch,
+      writable: true,
+      enumerable: ownDescriptor?.enumerable ?? true,
+      configurable: true,
+    });
+    return target.fetch === wrappedFetch;
+  } catch {
+    return false;
+  }
+}
+
 export function installClientAppCheckFetchInterceptor(
   app: FirebaseApp,
   getFirebaseIdToken: () => Promise<string | null> = async () => null,
+  targetWindow: (Pick<Window, 'fetch'> & { location?: { origin?: string } }) | undefined =
+    typeof window !== 'undefined' ? window : undefined,
 ): boolean {
-  if (typeof window === 'undefined' || !app || typeof app !== 'object') return false;
-  if (fetchInterceptorInstalled.has(window)) return true;
+  if (!targetWindow || !app || typeof app !== 'object') return false;
+  if (fetchInterceptorInstalled.has(targetWindow)) return true;
+  if (typeof targetWindow.fetch !== 'function') return false;
 
   const instance = initializedAppChecks.get(app as unknown as object);
-  const originalFetch = window.fetch.bind(window);
-  window.fetch = createFirebaseAuthenticatedApiFetch(
+  const originalFetch = targetWindow.fetch.bind(targetWindow);
+  const appOrigin = targetWindow.location?.origin || '';
+  const wrappedFetch = createFirebaseAuthenticatedApiFetch(
     originalFetch,
-    window.location.origin,
+    appOrigin,
     getFirebaseIdToken,
     async () => {
       if (!instance) return null;
@@ -134,8 +172,12 @@ export function installClientAppCheckFetchInterceptor(
       return result?.token || null;
     },
   );
-  fetchInterceptorInstalled.add(window);
-  return true;
+
+  const installed = assignFetchSafely(targetWindow, wrappedFetch);
+  if (installed) {
+    fetchInterceptorInstalled.add(targetWindow);
+  }
+  return installed;
 }
 
 export async function getOptionalClientAppCheckHeaders(
