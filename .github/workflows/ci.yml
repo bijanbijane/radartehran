@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -34,7 +34,7 @@ jobs:
       - name: Clean repository checkout
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Set up Node.js 22 with npm lockfile cache
         uses: actions/setup-node@v4
@@ -52,6 +52,19 @@ jobs:
           name: regenerated-package-lock
           path: package-lock.json
           retention-days: 2
+
+      - name: Commit synchronized lockfile to this PR branch (temporary repair step)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: synchronize npm lockfile with package.json"
+            git push origin "HEAD:refs/heads/${BRANCH_NAME}"
+          fi
 
       - name: Deterministic dependency installation
         run: npm ci
