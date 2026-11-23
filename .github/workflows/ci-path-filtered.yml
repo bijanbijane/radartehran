@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   detect:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       api: ${{ steps.filter.outputs.api }}
