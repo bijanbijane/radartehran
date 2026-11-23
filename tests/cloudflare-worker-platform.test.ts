@@ -3,16 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import {
-  clearTestJwksForEdgeAuth,
-  registerTestJwkForEdgeAuth,
-  verifyFirebaseIdTokenOnEdge,
-} from '../worker/auth/firebaseEdgeAuth';
-import {
-  GOOGLE_FIREBASE_APP_CHECK_JWKS_URL,
-  injectMockJwksKeysForTests,
-  resetJwksCacheForTests,
-} from '../worker/auth/jwksClient';
+import { authenticateWorkerSession, sha256Hex } from '../worker/auth/sessionAuth';
 import {
   AUTHORITATIVE_D1_MIGRATIONS_TABLE,
   buildD1SessionBookmarkHeader,
@@ -114,21 +105,18 @@ function createRealSqliteD1Database(): D1Database {
   };
 }
 
-function toBase64Url(bytes: Uint8Array | string): string {
-  const buf = typeof bytes === 'string' ? Buffer.from(bytes, 'utf-8') : Buffer.from(bytes);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function signTestFirebaseJwt(
-  privateKey: CryptoKey,
-  kid: string,
-  payload: Record<string, unknown>,
-): Promise<string> {
-  const headerB64 = toBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const payloadB64 = toBase64Url(JSON.stringify(payload));
-  const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, signingInput);
-  return `${headerB64}.${payloadB64}.${toBase64Url(new Uint8Array(sig))}`;
+async function createSessionUserDb(uid: string, email: string): Promise<{ db: D1Database; token: string }> {
+  const db = createRealSqliteD1Database();
+  const dir = path.resolve(process.cwd(), 'migrations/user-d1');
+  for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.sql')).sort()) {
+    await db.exec(fs.readFileSync(path.join(dir, file), 'utf8'));
+  }
+  const now = new Date().toISOString();
+  const token = `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+  await db.prepare("INSERT INTO user_profiles (uid, display_name, preferred_city, preferred_language, area_unit, intl_currency, role, account_status, created_at_iso, updated_at_iso) VALUES (?1, 'Admin', 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?2, ?2)").bind(uid, now).run();
+  await db.prepare("INSERT INTO auth_identities (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso) VALUES ('google', ?1, ?2, ?3, 1, NULL, ?4, ?4)").bind(`google:${uid}`, uid, email, now).run();
+  await db.prepare("INSERT INTO user_sessions (session_id, uid, device_label, user_agent_summary, ip_prefix, status, created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider) VALUES (?1, ?2, 'test', 'test', '127.0.0', 'ACTIVE', ?3, ?3, ?4, ?5, 'google')").bind(`sess_${uid}`, uid, now, await sha256Hex(token), new Date(Date.now() + 3600000).toISOString()).run();
+  return { db, token };
 }
 
 async function runSuite(): Promise<void> {
@@ -169,106 +157,19 @@ async function runSuite(): Promise<void> {
     console.log('  ✅ 1. First-class Cloudflare R2 provider, auto region, and account endpoint resolution verified');
   }
 
-  // 2. WebCrypto RS256 Firebase JWT verification on Edge
+  // 2. Cloudflare-native D1 session authentication and verified administrator identity
   {
-    clearTestJwksForEdgeAuth();
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-    registerTestJwkForEdgeAuth('test-kid-1', keyPair.publicKey);
-    const db = createLocalD1DatabaseSimulator();
-    await runD1MigrationsIdempotently(db);
-    const env: WorkerEnv = {
-      WORKER_ENV: 'staging',
-      FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
-      ADMIN_EMAIL: 'radio837isf@gmail.com',
-      DB: db,
-    };
-    const nowSec = Math.floor(Date.now() / 1000);
-    const validAdminJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_admin_01',
-      email: 'radio837isf@gmail.com',
-      email_verified: true,
-      iat: nowSec - 60,
-      exp: nowSec + 1800,
-      auth_time: nowSec - 60,
-    });
-    resetJwksCacheForTests();
-    injectMockJwksKeysForTests(GOOGLE_FIREBASE_APP_CHECK_JWKS_URL, {
-      'test-appcheck-kid-1': keyPair.publicKey,
-    });
-    const validAppCheckJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-appcheck-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/935427453422',
-      aud: ['projects/935427453422', 'projects/gen-lang-client-0713157837'],
-      sub: '1:935427453422:web:25817d32df713f2a68deff',
-      app_id: '1:935427453422:web:25817d32df713f2a68deff',
-      iat: nowSec - 30,
-      exp: nowSec + 1800,
-    });
-    const verified = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${validAdminJwt}`,
-      appCheckHeader: validAppCheckJwt,
-      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
-      nowSeconds: nowSec,
-    });
-    assert.equal(verified.authenticated, true);
-    assert.equal(verified.isAdmin, true);
-    assert.equal(verified.appCheckVerified, true);
-
-    const forgedAppCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${validAdminJwt}`,
-      appCheckHeader: 'eyJhbGciOiJSUzI1NiJ9.eyJhcHAiOiJyYWRhciJ9.c2ln',
-      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
-      nowSeconds: nowSec,
-    });
-    assert.equal(forgedAppCheck.authenticated, false);
-    assert.equal(forgedAppCheck.appCheckVerified, false);
-    assert.equal(forgedAppCheck.statusCode, 401);
-
-    const expiredJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_user_02',
-      email: 'user@example.com',
-      email_verified: true,
-      iat: nowSec - 3600,
-      exp: nowSec - 120,
-    });
-    const expiredCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${expiredJwt}`,
-      env,
-      nowSeconds: nowSec,
-    });
-    assert.equal(expiredCheck.authenticated, false);
-    assert.equal(expiredCheck.reasonCode, 'JWT_EXPIRED');
-
-    const unverifiedEmailJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_unverified',
-      email: 'unverified@example.com',
-      email_verified: false,
-      iat: nowSec - 10,
-      exp: nowSec + 600,
-    });
-    const unverifiedCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${unverifiedEmailJwt}`,
-      env,
-      nowSeconds: nowSec,
-    });
-    assert.equal(unverifiedCheck.authenticated, false);
-    assert.equal(unverifiedCheck.statusCode, 403);
-    assert.equal(unverifiedCheck.reasonCode, 'EMAIL_NOT_VERIFIED');
-    console.log('  ✅ 2. WebCrypto RS256 Firebase JWT & App Check edge verification (valid, expired, unverified) verified');
+    const { db, token } = await createSessionUserDb('uid_admin_01', 'radio837isf@gmail.com');
+    const request = new Request('https://radartehran.ir/api/admin/worker-diagnostics', { headers: { Cookie: `__Host-radar_session=${token}` } });
+    const auth = await authenticateWorkerSession({
+      request, method: 'GET', pathname: '/api/admin/worker-diagnostics', url: new URL(request.url),
+      env: { USER_DB: db, APP_URL: 'https://radartehran.ir', ADMIN_EMAIL: 'radio837isf@gmail.com' },
+      environment: 'production', executionCtx: { waitUntil() {} },
+    } as never);
+    assert.equal(auth.authenticated, true);
+    assert.equal(auth.isAdmin, true);
+    assert.equal(auth.email, 'radio837isf@gmail.com');
+    console.log('  ✅ 2. D1-backed opaque session and verified admin identity checks passed');
   }
 
   // 3. Single authoritative D1 migration ledger (d1_migrations), SQL SHA-256 parity, projections, and bookmarks
@@ -571,13 +472,14 @@ async function runSuite(): Promise<void> {
 
     const sqliteDb = createRealSqliteD1Database();
     await runD1MigrationsIdempotently(sqliteDb);
+    const { db: userDb, token: adminSessionToken } = await createSessionUserDb('uid_admin_edge', 'radio837isf@gmail.com');
+    const appUrl = 'https://radartehran-staging.bijanbijane-1.workers.dev';
     const env: WorkerEnv = {
-      WORKER_ENV: 'staging',
-      FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
-      ADMIN_EMAIL: 'radio837isf@gmail.com',
-      DB: sqliteDb,
-      MEDIA_BUCKET: createLocalR2BucketSimulator(),
-      RADAR_KV: createLocalKvNamespaceSimulator(),
+      WORKER_ENV: 'staging', APP_ENV: 'staging', APP_URL: appUrl,
+      ADMIN_EMAIL: 'radio837isf@gmail.com', USER_DB: userDb, DB: sqliteDb,
+      MEDIA_BUCKET: createLocalR2BucketSimulator(), RADAR_KV: createLocalKvNamespaceSimulator(),
+      R2_MEDIA_BUCKET_NAME: 'radartehran-staging-media',
+      R2_SIGNING_SECRET: 'test-signing-secret-0123456789abcdef',
     };
     const execCtx: WorkerExecutionContext = {
       waitUntil() {},
@@ -595,27 +497,6 @@ async function runSuite(): Promise<void> {
     assert.equal(healthJson.registeredRoutesCount, 88);
 
     // Verify D1-backed chunked upload lifecycle on Worker router
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-    registerTestJwkForEdgeAuth('test-kid-router', keyPair.publicKey);
-    const nowSec = Math.floor(Date.now() / 1000);
-    const adminJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-router', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_admin_edge',
-      email: 'radio837isf@gmail.com',
-      email_verified: true,
-      iat: nowSec - 30,
-      exp: nowSec + 1800,
-    });
     const validWebpBytes = new Uint8Array([
       0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00,
       0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20,
@@ -625,7 +506,7 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-init', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: `__Host-radar_session=${adminSessionToken}`, Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -650,7 +531,7 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-chunk', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: `__Host-radar_session=${adminSessionToken}`, Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -668,7 +549,7 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-complete', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: `__Host-radar_session=${adminSessionToken}`, Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ sessionId: initJson.sessionId }),
@@ -683,7 +564,7 @@ async function runSuite(): Promise<void> {
     // Verify Section 16 & 25 operationalVisibility admin diagnostics
     const diagRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/admin/worker-diagnostics', {
-        headers: { Authorization: `Bearer ${adminJwt}` },
+        headers: { Cookie: `__Host-radar_session=${adminSessionToken}`, Origin: appUrl },
       }),
       env,
       execCtx,
