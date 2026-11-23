@@ -1,7 +1,5 @@
 /** @file src/components/RadarWorkspaceShell.tsx — Extracted Spatial GIS & PropTech Workspace Shell (< 275 lines) [RULE-01] */
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
@@ -30,7 +28,21 @@ import { setActiveAccountScopeUid } from '../features/account/services/accountSt
 import type { SavedMapViewItem } from '../navigation/registry/route.types';
 const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDiscoveryModal').then((m) => ({ default: m.ReverseBudgetDiscoveryModal })));
 
+async function signOutCurrentUser(): Promise<void> {
+  const [{ auth }, { signOut }] = await Promise.all([
+    import('../firebase'),
+    import('firebase/auth'),
+  ]);
+  await signOut(auth);
+}
+
 export function RadarWorkspaceShell() {
+  const handleSignOut = (): void => {
+    void signOutCurrentUser().catch((error) => {
+      console.error('RadarTehran sign-out failed:', error);
+    });
+  };
+
   const [, setIntlTick] = useState(0);
   useEffect(() => subscribeAreaUnit(() => setIntlTick((t) => t + 1)), []);
   const areaUnit = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredAreaUnit() : 'sqm';
@@ -288,7 +300,7 @@ export function RadarWorkspaceShell() {
         setBargainHoodId={ui.setBargainHoodId} setSponsorHoodId={ui.setSponsorHoodId} setShowAgencyModal={ui.setShowAgencyModal} totalLiveBargainsCount={totalLiveBargainsCount}
         setShowVisitedModal={ui.setShowVisitedModal} visitedHomesCount={ui.visitedHomes.length} setTradeUpCurrentHoodId={ui.setTradeUpCurrentHoodId} setShowTradeUpModal={ui.setShowTradeUpModal}
         setAlertHoodId={ui.setAlertHoodId} setAlertSubmitMsg={ui.setAlertSubmitMsg} setShowBuyerAlertModal={ui.setShowBuyerAlertModal} setShowPulseModal={ui.setShowPulseModal} marketPulse={ui.marketPulse}
-        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => signOut(auth)} onGoogleSignIn={crudActions.handleSaveUserPreferences}
+        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={handleSignOut} onGoogleSignIn={crudActions.handleSaveUserPreferences}
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
