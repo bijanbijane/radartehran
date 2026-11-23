@@ -6,7 +6,7 @@
 import type { D1DatabaseBinding, D1PreparedStatement, D1Result } from '../db/types.ts';
 import * as Q from './d1Queries.ts';
 import * as DQ from './d1LifecycleDispatchQueries.ts';
-import * as MP from './d1MutationPermit.ts';
+import { SQL_ACQUIRE_D1_MUTATION_PERMIT, SQL_RELEASE_D1_MUTATION_PERMIT } from './d1WriteAdmissionPermit.ts';
 
 type Row = Record<string, unknown>;
 
@@ -461,49 +461,41 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
       const row = this.writeBlocks.get(String(values[0]));
       return { rows: row ? [{ state: row.state }] : [], changes: 0 };
     }
-    if (sql === MP.SQL_INSERT_PERMIT.replace(/\s+/g, ' ').trim()) {
-      this.mutationPermits.set(String(values[0]), {
-        permit_id: values[0],
-        target_uid: values[1],
+    if (sql === SQL_ACQUIRE_D1_MUTATION_PERMIT.replace(/\s+/g, ' ').trim()) {
+      const permitId = String(values[0]);
+      const targetUid = String(values[1]);
+      const block = this.writeBlocks.get(targetUid);
+      if (block && block.state !== 'ACTIVE_WRITES_ALLOWED') {
+        return { rows: [], changes: 0 };
+      }
+      if (this.mutationPermits.has(permitId)) {
+        throw new Error('MUTATION_PERMIT_ID_CONFLICT');
+      }
+      this.mutationPermits.set(permitId, {
+        permit_id: permitId,
+        target_uid: targetUid,
         holder_id: values[2],
         route_signature: values[3],
         acquired_at_iso: values[4],
         expires_at_ms: values[5],
-        status: 'ACQUIRED',
+        released_at_iso: null,
+        status: 'ACTIVE',
       });
       return { rows: [], changes: 1 };
     }
-    if (sql === MP.SQL_RELEASE_PERMIT.replace(/\s+/g, ' ').trim()) {
+    if (sql === SQL_RELEASE_D1_MUTATION_PERMIT.replace(/\s+/g, ' ').trim()) {
       const row = this.mutationPermits.get(String(values[1]));
-      if (row && row.status === 'ACQUIRED') {
-        row.status = 'RELEASED';
-        row.released_at_iso = values[0];
+      if (
+        !row ||
+        row.target_uid !== String(values[2]) ||
+        row.status !== 'ACTIVE' ||
+        row.released_at_iso !== null
+      ) {
+        return { rows: [], changes: 0 };
       }
+      row.status = 'RELEASED';
+      row.released_at_iso = values[0];
       return { rows: [], changes: 1 };
-    }
-    if (sql === MP.SQL_EXPIRE_STALE_PERMITS.replace(/\s+/g, ' ').trim()) {
-      let changes = 0;
-      for (const row of this.mutationPermits.values()) {
-        if (
-          row.target_uid === values[1] &&
-          row.status === 'ACQUIRED' &&
-          Number(row.expires_at_ms) < Number(values[2])
-        ) {
-          row.status = 'EXPIRED';
-          row.released_at_iso = values[0];
-          changes += 1;
-        }
-      }
-      return { rows: [], changes };
-    }
-    if (sql === MP.SQL_COUNT_ACTIVE_PERMITS.replace(/\s+/g, ' ').trim()) {
-      const active = Array.from(this.mutationPermits.values()).filter(
-        (r) =>
-          r.target_uid === values[0] &&
-          r.status === 'ACQUIRED' &&
-          Number(r.expires_at_ms) >= Number(values[1]),
-      ).length;
-      return { rows: [{ active_count: active }], changes: 0 };
     }
 
     if (
@@ -569,7 +561,7 @@ class InMemoryStmt implements D1PreparedStatement {
     return this.run<T>();
   }
 
-  async raw<T extends unknown[]>(): Promise<T[]> {
+  async raw<T = unknown[]>(): Promise<T[]> {
     const res = await this.run<Record<string, unknown>>();
     return res.results.map((r) => Object.values(r)) as T[];
   }
