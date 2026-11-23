@@ -1,7 +1,7 @@
 /**
  * @file src/utils/osmTileProxy.ts
  * @description Keyless Free OpenStreetMap Tile Proxy & Multi-Mirror Failover for `server.ts`.
- * Respects upstream HTTP caching headers (defaulting to >= 7 days per OSM Tile Usage Policy)
+ * Respects provider HTTP caching headers (using the OSM seven-day fallback only when metadata is absent)
  * and returns a genuine HTTP 502 error when all upstream mirrors fail so Leaflet `tileerror`
  * handlers can accurately detect tile failures instead of receiving synthetic 200 SVGs.
  */
@@ -13,6 +13,9 @@ export interface UpstreamTileResult {
   buffer: Buffer;
   contentType: string;
   cacheControl: string;
+  cacheable: boolean;
+  revalidated?: boolean;
+  sourceUrl: string;
   etag?: string;
   lastModified?: string;
   expiresAt: number;
@@ -27,10 +30,20 @@ const ALLOWED_RASTER_TILE_MIMES: ReadonlySet<string> = new Set([
   'image/jpg',
   'image/webp',
 ]);
-const MIN_SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60; // 604,800 seconds (7 days per OSM policy)
-const DEFAULT_CACHE_TTL_MS = MIN_SEVEN_DAYS_SECONDS * 1000;
+const MIN_SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60; // OSM fallback only when upstream cache metadata is absent.
 const tileMemoryCache = new Map<string, UpstreamTileResult>();
 const tileInflightRequests = new Map<string, Promise<UpstreamTileResult | null>>();
+
+function resolveTileProxyReferer(): string {
+  const configuredAppUrl = process.env.APP_URL || 'https://tehranradar.ir';
+  try {
+    const parsed = new URL(configuredAppUrl);
+    if (parsed.protocol === 'https:') return parsed.origin + '/';
+  } catch {
+    // Use the canonical production origin when APP_URL is absent or invalid.
+  }
+  return 'https://tehranradar.ir/';
+}
 
 function hasValidRasterTileMagicBytes(buf: Buffer): boolean {
   if (buf.length < 12) return false;
@@ -43,14 +56,16 @@ function hasValidRasterTileMagicBytes(buf: Buffer): boolean {
 }
 
 export const FREE_OSM_UPSTREAM_MIRRORS: readonly ((z: number, x: number, y: number) => string)[] = [
+  // OSM Standard's exact supported endpoint. Other free mirrors have separate terms
+  // and are not eligible for automatic failover without provider approval.
   (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
-  (z, x, y) => `https://a.tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`,
-  (z, x, y) => `https://b.tile.openstreetmap.fr/osmfr/${z}/${x}/${y}.png`,
 ];
 
 /**
- * Parses upstream `Cache-Control` / `Expires` headers and enforces a minimum 7-day cache TTL
- * when upstream headers are missing or shorter than 7 days, per OSM Tile Usage Policy.
+ * Honors upstream cache directives for the shared server-side tile cache.
+ * The OSM seven-day fallback is used only when no usable Cache-Control/Expires
+ * metadata is supplied; it must never override private/no-store/no-cache or a
+ * shorter explicit freshness lifetime.
  */
 export function resolveUpstreamTileCachePolicy(
   headers: {
@@ -60,55 +75,120 @@ export function resolveUpstreamTileCachePolicy(
   areaUnit: AreaUnit = 'sqm',
   intlCurrency: IntlCurrencyCode = 'USD',
   referenceValuationMillionToman = 10000,
-): { cacheControl: string; expiresAt: number; etag?: string; lastModified?: string; displayAreaUnitLabel: string; referenceValuationIntlText: string } {
+  fallbackTtlSeconds = 0,
+): { cacheControl: string; cacheable: boolean; expiresAt: number; etag?: string; lastModified?: string; displayAreaUnitLabel: string; referenceValuationIntlText: string } {
   const rawCacheControl = (headers.get('cache-control') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim();
-  const rawExpires = headers.get('expires') || '';
+  const rawExpires = (headers.get('expires') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim();
   const etag = (headers.get('etag') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim() || undefined;
   const lastModified = (headers.get('last-modified') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim() || undefined;
+  const directives = rawCacheControl.split(',').map((entry) => entry.trim().toLowerCase()).filter(Boolean);
+  const hasDirective = (name: string): boolean => directives.some((entry) => entry === name || entry.startsWith(`${name}=`));
 
-  let maxAgeSec = 0;
-  const maxAgeMatch = rawCacheControl.match(/max-age=(\d+)/i);
-  if (maxAgeMatch) {
-    maxAgeSec = Number.parseInt(maxAgeMatch[1], 10) || 0;
+  const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
+  const referenceValuationIntlText = formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en');
+  const forbidsSharedStorage = hasDirective('private') || hasDirective('no-store') || hasDirective('no-cache');
+  if (forbidsSharedStorage) {
+    return {
+      cacheControl: rawCacheControl || 'no-store',
+      cacheable: false,
+      expiresAt: nowMs,
+      etag,
+      lastModified,
+      displayAreaUnitLabel,
+      referenceValuationIntlText,
+    };
+  }
+
+  const sMaxAgeMatch = rawCacheControl.match(/(?:^|,)\s*s-maxage=(\d+)/i);
+  const maxAgeMatch = rawCacheControl.match(/(?:^|,)\s*max-age=(\d+)/i);
+  let ttlSeconds: number | null = null;
+  if (sMaxAgeMatch) {
+    ttlSeconds = Number.parseInt(sMaxAgeMatch[1], 10);
+  } else if (maxAgeMatch) {
+    ttlSeconds = Number.parseInt(maxAgeMatch[1], 10);
   } else if (rawExpires) {
-    const parsedExp = Date.parse(rawExpires);
-    if (!Number.isNaN(parsedExp) && parsedExp > nowMs) {
-      maxAgeSec = Math.floor((parsedExp - nowMs) / 1000);
+    const parsedExpires = Date.parse(rawExpires);
+    if (Number.isFinite(parsedExpires)) {
+      ttlSeconds = Math.floor((parsedExpires - nowMs) / 1000);
     }
   }
 
-  const effectiveMaxAgeSec = Math.max(MIN_SEVEN_DAYS_SECONDS, maxAgeSec);
-  const cacheControl =
-    rawCacheControl && maxAgeSec >= MIN_SEVEN_DAYS_SECONDS && !/(?:private|no-store|no-cache)/i.test(rawCacheControl)
-      ? rawCacheControl
-      : `public, max-age=${effectiveMaxAgeSec}, stale-while-revalidate=604800`;
+  const usedFallback = ttlSeconds === null;
+  if (usedFallback) ttlSeconds = Math.max(0, Math.floor(fallbackTtlSeconds));
+  const safeTtlSeconds = Math.max(0, Number.isFinite(ttlSeconds) ? ttlSeconds : 0);
+  const cacheable = safeTtlSeconds > 0;
+  const cacheControl = rawCacheControl || (usedFallback && safeTtlSeconds > 0
+    ? 'public, max-age=' + safeTtlSeconds
+    : safeTtlSeconds > 0
+      ? 'public, max-age=' + safeTtlSeconds
+      : 'no-store');
 
   return {
     cacheControl,
-    expiresAt: nowMs + effectiveMaxAgeSec * 1000 || nowMs + DEFAULT_CACHE_TTL_MS,
+    cacheable,
+    expiresAt: nowMs + safeTtlSeconds * 1000,
     etag,
     lastModified,
-    displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
-    referenceValuationIntlText: formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en'),
+    displayAreaUnitLabel,
+    referenceValuationIntlText,
   };
 }
 
 export async function fetchTileFromMirror(
   url: string,
   timeoutMs: number,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  cached?: UpstreamTileResult,
 ): Promise<UpstreamTileResult | null> {
   let timer: ReturnType<typeof setTimeout> | null = null;
   try {
     const controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
+    const requestHeaders: Record<string, string> = {
+      'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; OSM Standard tile client)',
+      Referer: resolveTileProxyReferer(),
+      Accept: 'image/png,image/webp,image/*;q=0.8',
+    };
+    if (cached?.etag) requestHeaders['If-None-Match'] = cached.etag;
+    if (cached?.lastModified) requestHeaders['If-Modified-Since'] = cached.lastModified;
     const resp = await fetchImpl(url, {
-      headers: {
-        'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; Free OpenStreetMap Client)',
-        Accept: 'image/png,image/webp,image/*;q=0.8',
-      },
+      headers: requestHeaders,
       signal: controller.signal,
     });
+    const upstreamHost = new URL(url).hostname.toLowerCase();
+    const osmStandardFallbackTtl = upstreamHost === 'tile.openstreetmap.org' ? MIN_SEVEN_DAYS_SECONDS : 0;
+    if (resp.status === 304) {
+      if (!cached) return null;
+      const revalidatedHeaders = {
+        get(name: string): string | null {
+          const responseValue = resp.headers.get(name);
+          if (responseValue !== null) return responseValue;
+          const normalizedName = name.toLowerCase();
+          if (normalizedName === 'cache-control') return cached.cacheControl;
+          if (normalizedName === 'etag') return cached.etag ?? null;
+          if (normalizedName === 'last-modified') return cached.lastModified ?? null;
+          return null;
+        },
+      };
+      const cachePolicy = resolveUpstreamTileCachePolicy(
+        revalidatedHeaders,
+        Date.now(),
+        'sqm',
+        'USD',
+        10000,
+        osmStandardFallbackTtl,
+      );
+      return {
+        ...cached,
+        cacheControl: cachePolicy.cacheControl,
+        cacheable: cachePolicy.cacheable,
+        revalidated: true,
+        sourceUrl: url,
+        etag: cachePolicy.etag ?? cached.etag,
+        lastModified: cachePolicy.lastModified ?? cached.lastModified,
+        expiresAt: cachePolicy.expiresAt,
+      };
+    }
     if (!resp.ok) return null;
     const contentType = (resp.headers.get('content-type') || 'image/png').split(';')[0].trim().toLowerCase();
     if (!ALLOWED_RASTER_TILE_MIMES.has(contentType)) return null;
@@ -119,11 +199,21 @@ export async function fetchTileFromMirror(
     const buffer = Buffer.from(arrayBuf);
     if (!hasValidRasterTileMagicBytes(buffer)) return null;
 
-    const cachePolicy = resolveUpstreamTileCachePolicy(resp.headers);
+    const cachePolicy = resolveUpstreamTileCachePolicy(
+      resp.headers,
+      Date.now(),
+      'sqm',
+      'USD',
+      10000,
+      osmStandardFallbackTtl,
+    );
     return {
       buffer,
       contentType,
       cacheControl: cachePolicy.cacheControl,
+      cacheable: cachePolicy.cacheable,
+      revalidated: false,
+      sourceUrl: url,
       etag: cachePolicy.etag,
       lastModified: cachePolicy.lastModified,
       expiresAt: cachePolicy.expiresAt,
@@ -173,6 +263,8 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
         return;
       }
 
+      const staleCached = cached && cached.expiresAt <= now ? cached : undefined;
+
       let pending = tileInflightRequests.get(cacheKey);
       if (!pending) {
         if (tileInflightRequests.size >= MAX_INFLIGHT_TILE_REQUESTS) {
@@ -181,7 +273,9 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
         }
         pending = (async () => {
           for (const buildUrl of FREE_OSM_UPSTREAM_MIRRORS) {
-            const result = await fetchTileFromMirror(buildUrl(z, x, y), 3200, fetchImpl);
+            const tileUrl = buildUrl(z, x, y);
+            const conditionalCache = staleCached?.sourceUrl === tileUrl ? staleCached : undefined;
+            const result = await fetchTileFromMirror(tileUrl, 3200, fetchImpl, conditionalCache);
             if (result) return result;
           }
           return null;
@@ -199,8 +293,9 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
             if (oldestKey) tileMemoryCache.delete(oldestKey);
           }
         }
-        tileMemoryCache.set(cacheKey, result);
-        res.setHeader('Content-Type', result.contentType); res.setHeader('X-Tile-Cache', 'MISS'); res.setHeader('Cache-Control', result.cacheControl);
+        if (result.cacheable) tileMemoryCache.set(cacheKey, result);
+        else tileMemoryCache.delete(cacheKey);
+        res.setHeader('Content-Type', result.contentType); res.setHeader('X-Tile-Cache', result.revalidated ? 'REVALIDATED' : result.cacheable ? 'MISS' : 'BYPASS'); res.setHeader('Cache-Control', result.cacheControl);
         if (result.etag) res.setHeader('ETag', result.etag);
         if (result.lastModified) res.setHeader('Last-Modified', result.lastModified);
         res.setHeader('Access-Control-Allow-Origin', '*');
