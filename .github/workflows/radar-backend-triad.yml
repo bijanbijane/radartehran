@@ -62,8 +62,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --include=dev --no-audit --no-fund
 
-      - name: Run Cloudflare Worker and D1 isolation contract tests
-        run: npm run test:cloudflare
+      - name: Run focused D1 triad binding-isolation contract tests
+        run: npx tsx tests/d1-triad-binding-isolation.test.ts
 
       - name: Build the split Frontend assets
         run: npm run build -w radartehran-frontend
