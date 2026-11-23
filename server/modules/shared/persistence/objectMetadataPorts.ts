@@ -4,7 +4,7 @@
  * Target durable store per Firestore removal workstream: Cloudflare D1 (`media_objects`, migration 0003).
  * Transitional adapter: legacy Firestore documents (no new collections).
  */
-import type { StoredObjectRecord } from '../../../src/utils/serverObjectStorageHelpers';
+import type { StoredObjectRecord } from '../../../../src/utils/serverObjectStorageHelpers';
 
 export type MetadataRepositoryBackendId = 'memory' | 'firestore_legacy' | 'd1';
 
