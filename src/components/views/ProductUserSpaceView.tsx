@@ -282,7 +282,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-[11px] font-bold">
             <span>حذف داده‌های سرور: {deleteLayers.serverDeletion === 'completed' ? 'کامل' : 'جزئی'}</span>
             <span>· پاکسازی محلی حساب ({deleteLayers.removedLocalKeysCount} کلید): {deleteLayers.localCleanup === 'completed' ? 'انجام شد' : 'ناموفق'}</span>
-            <span>· هویت Firebase Auth: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
+            <span>· وضعیت هویت و نشست Cloudflare: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
           </div>
         )}
         {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-xs font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
