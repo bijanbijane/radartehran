@@ -10,6 +10,7 @@ import {
 } from './url/navigationUrlContract';
 import { buildNavigationBreadcrumbs } from './contextual/breadcrumb';
 import { DESKTOP_MEGA_MENU_GROUPS } from './primary/megaMenuAndTabsConfig';
+import { getProductNavigationItems } from '../components/navigation/primaryNavigation';
 import { resolveMapToolVisualState, toggleMapContextPanel } from './map/mapToolRailConfig';
 import {
   LAYOUT_CONTRACT_REGISTRY,
@@ -132,3 +133,39 @@ test('RT-UI-LAYOUT-001 contracts distinguish page max-widths and spacing tokens'
   assert.ok(LAYOUT_CONTRACT_REGISTRY.length >= 9);
 });
 
+
+
+test('RT-UX-ARCH-002: every registered route path resolves to its canonical destination', () => {
+  for (const route of [...PUBLIC_ROUTES, ...ADMIN_ROUTES]) {
+    const resolved = resolveRouteFromLocation(route.path, '');
+    assert.equal(resolved.viewId, route.viewId, `Route ${route.id} (${route.path}) resolves to ${resolved.viewId}, expected ${route.viewId}`);
+    assert.equal(resolved.subTab, route.subTab, `Route ${route.id} (${route.path}) resolves to subTab ${String(resolved.subTab)}, expected ${String(route.subTab)}`);
+  }
+});
+
+test('RT-UX-ARCH-002: every registered route alias resolves to the owning destination', () => {
+  for (const route of [...PUBLIC_ROUTES, ...ADMIN_ROUTES]) {
+    for (const alias of route.aliases ?? []) {
+      const resolved = resolveRouteFromLocation(alias, '');
+      assert.equal(resolved.viewId, route.viewId, `Alias ${alias} for ${route.id} resolves to ${resolved.viewId}, expected ${route.viewId}`);
+    }
+  }
+});
+
+test('RT-UX-ARCH-002: primary navigation destinations have canonical routes and isolated admin access', () => {
+  const navigationItems = getProductNavigationItems('fa');
+  const routes = [...PUBLIC_ROUTES, ...ADMIN_ROUTES];
+
+  for (const item of navigationItems) {
+    const destinations = routes.filter((route) => route.viewId === item.id);
+    assert.ok(destinations.length > 0, `Navigation item ${item.id} has no registered route`);
+
+    if (item.id === 'admin') {
+      assert.equal(item.protected, true, 'Admin navigation item must be explicitly protected');
+      assert.ok(destinations.every((route) => route.shell === 'admin'), 'Admin destinations must remain in the isolated admin shell');
+      assert.ok(destinations.every((route) => route.requiredPermissions.includes('admin:access')), 'Every admin destination must require admin:access');
+    } else {
+      assert.ok(destinations.every((route) => route.shell === 'public'), `Public navigation item ${item.id} must not resolve into the admin shell`);
+    }
+  }
+});
