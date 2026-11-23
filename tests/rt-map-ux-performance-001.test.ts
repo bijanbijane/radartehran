@@ -117,7 +117,8 @@ test('RT-MAP-UX-006: spatial macro clustering retains every neighborhood and sel
   const seed = evaluateSeeds()[0];
   const hoods = Array.from({ length: 300 }, (_, index) => ({
     ...seed,
-    id: 920000 + index,
+    id: 100 + index,
+    name: `محله کرج ${index}`,
     lat: seed.lat + index * 0.00001,
     lng: seed.lng + index * 0.00001,
   }));
@@ -128,5 +129,6 @@ test('RT-MAP-UX-006: spatial macro clustering retains every neighborhood and sel
   }));
   assert.equal(clusters.reduce((sum, cluster) => sum + cluster.count, 0), hoods.length);
   assert.ok(clusters.some((cluster) => cluster.containsSelected));
-  assert.equal(clusters.length, 1, 'nearby Tehran neighborhoods should collapse into one macro cluster at zoom 7');
+  assert.equal(clusters[0].primaryName, hoods[0].name, 'cluster titles must not infer Tehran from numeric neighborhood IDs');
+  assert.equal(clusters.length, 1, 'nearby neighborhoods should collapse into one macro cluster at zoom 7');
 });
