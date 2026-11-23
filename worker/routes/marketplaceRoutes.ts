@@ -1,5 +1,6 @@
 import { authenticateWorkerSession, sha256Hex } from '../auth/sessionAuth';
 import { persistIdempotentMutation } from '../marketplace/d1MarketplaceMutations';
+import { encryptMarketPhone, hashMarketPhone } from '../marketplace/marketPiiCrypto';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { evaluateTieredWorkerRateLimit } from '../cache/kvAndEdgeRateLimiter';
 import { requireUserDb } from '../db/bindingResolver';
@@ -321,6 +322,14 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         !phone || experienceYears === null || !Number.isInteger(experienceYears) || monthlyTariff === null || totalPayable === null) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_SPONSOR_REQUEST' });
     }
+    let phoneCiphertext: string;
+    let phoneHash: string;
+    try {
+      [phoneCiphertext, phoneHash] = await Promise.all([encryptMarketPhone(phone, ctx.env), hashMarketPhone(phone, ctx.env)]);
+    } catch {
+      return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_PII_ENCRYPTION_UNAVAILABLE' });
+    }
+    const phoneLast4 = phone.slice(-4);
     const key = readIdempotencyKey(ctx);
     if (!key) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'IDEMPOTENCY_KEY_REQUIRED' });
     const rateLimited = await enforceMutationLimit(ctx, auth.db!, auth.uid!, 'buyer_lead', 8);
@@ -330,7 +339,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const expiresAtIso = auth.isAdmin
       ? safeText(body.body.expiresAtIso, 60) || new Date(Date.now() + (planMonths === 3 ? 90 : 30) * 86400000).toISOString()
       : null;
-    const normalized = { cityId, hoodId, hoodName, agencyName, phone, specialty, experienceYears, monthlyTariff, planMonths, totalPayable, trackingCode, status, expiresAtIso };
+    const normalized = { cityId, hoodId, hoodName, agencyName, phoneHash, specialty, experienceYears, monthlyTariff, planMonths, totalPayable, trackingCode, status, expiresAtIso };
     const requestHash = await sha256Hex(JSON.stringify(normalized));
     const resourceId = `spr_${(await sha256Hex(`${auth.uid}:sponsor.create:${key}`)).slice(0, 32)}`;
     const mutation = await persistIdempotentMutation({
@@ -339,17 +348,17 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
       resourceStatements: [
         auth.db!.prepare(
           `INSERT INTO sponsor_requests (
-            request_id, owner_uid, city_id, hood_id, hood_name, agency_name, phone_e164,
+            request_id, owner_uid, city_id, hood_id, hood_name, agency_name, phone_ciphertext, phone_hash, phone_last4,
             specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million,
             tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso
           )
-          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?16
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?17
           WHERE EXISTS (
             SELECT 1 FROM market_mutation_idempotency
-            WHERE uid = ?2 AND operation_name = 'sponsor.create' AND idempotency_key = ?17 AND request_hash = ?18
+            WHERE uid = ?2 AND operation_name = 'sponsor.create' AND idempotency_key = ?18 AND request_hash = ?19
           )
           ON CONFLICT(request_id) DO NOTHING`,
-        ).bind(resourceId, auth.uid, cityId, hoodId, hoodName, agencyName, phone, specialty, experienceYears, monthlyTariff, planMonths, totalPayable, trackingCode, status, expiresAtIso, now, key, requestHash),
+        ).bind(resourceId, auth.uid, cityId, hoodId, hoodName, agencyName, phoneCiphertext, phoneHash, phoneLast4, specialty, experienceYears, monthlyTariff, planMonths, totalPayable, trackingCode, status, expiresAtIso, now, key, requestHash),
       ],
     });
     if (mutation.status === 'conflict' || mutation.status === 'not_committed') return idempotencyFailure(ctx, mutation.status);
@@ -380,6 +389,14 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         !phone || !dealType || maxBudgetMillion === null || consentVersion !== 'buyer-alert-2026-10-v1') {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_BUYER_ALERT' });
     }
+    let phoneCiphertext: string;
+    let phoneHash: string;
+    try {
+      [phoneCiphertext, phoneHash] = await Promise.all([encryptMarketPhone(phone, ctx.env), hashMarketPhone(phone, ctx.env)]);
+    } catch {
+      return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_PII_ENCRYPTION_UNAVAILABLE' });
+    }
+    const phoneLast4 = phone.slice(-4);
     const key = readIdempotencyKey(ctx);
     if (!key) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'IDEMPOTENCY_KEY_REQUIRED' });
     const rateLimited = await enforceMutationLimit(ctx, auth.db!, auth.uid!, 'buyer_lead', 5);
@@ -387,7 +404,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const now = new Date();
     const nowIso = now.toISOString();
     const expiresAtIso = new Date(now.getTime() + 90 * 86400000).toISOString();
-    const normalized = { cityId, hoodId, fullName, phone, dealType, maxBudgetMillion, consentVersion };
+    const normalized = { cityId, hoodId, fullName, phoneHash, dealType, maxBudgetMillion, consentVersion };
     const requestHash = await sha256Hex(JSON.stringify(normalized));
     const resourceId = `alr_${(await sha256Hex(`${auth.uid}:buyer-alert.create:${key}`)).slice(0, 32)}`;
     const mutation = await persistIdempotentMutation({
@@ -396,16 +413,16 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
       resourceStatements: [
         auth.db!.prepare(
           `INSERT INTO buyer_alerts (
-            alert_id, owner_uid, city_id, hood_id, full_name, phone_e164, deal_type,
+            alert_id, owner_uid, city_id, hood_id, full_name, phone_ciphertext, phone_hash, phone_last4, deal_type,
             max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso
           )
-          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 'active', ?10, ?10
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 'active', ?12, ?12
           WHERE EXISTS (
             SELECT 1 FROM market_mutation_idempotency
-            WHERE uid = ?2 AND operation_name = 'buyer_alert.create' AND idempotency_key = ?12 AND request_hash = ?13
+            WHERE uid = ?2 AND operation_name = 'buyer_alert.create' AND idempotency_key = ?13 AND request_hash = ?14
           )
           ON CONFLICT(alert_id) DO NOTHING`,
-        ).bind(resourceId, auth.uid, cityId, hoodId, fullName, phone, dealType, maxBudgetMillion, consentVersion, nowIso, expiresAtIso, key, requestHash),
+        ).bind(resourceId, auth.uid, cityId, hoodId, fullName, phoneCiphertext, phoneHash, phoneLast4, dealType, maxBudgetMillion, consentVersion, nowIso, expiresAtIso, key, requestHash),
       ],
     });
     if (mutation.status === 'conflict' || mutation.status === 'not_committed') return idempotencyFailure(ctx, mutation.status);
