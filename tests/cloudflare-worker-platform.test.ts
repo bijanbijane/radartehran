@@ -594,6 +594,28 @@ async function runSuite(): Promise<void> {
     assert.equal(healthJson.runtime, 'cloudflare-workers');
     assert.equal(healthJson.registeredRoutesCount, 88);
 
+    const valuationRequest = () => new Request(
+      'https://radartehran-staging.bijanbijane-1.workers.dev/api/v1/valuation/verify-seal',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cityId: 'tehran', hoodId: 1, sqm: 90, buildYear: 1400 }),
+      },
+    );
+    const missingSealSecret = await workerEntrypoint.fetch(valuationRequest(), env, execCtx);
+    assert.equal(missingSealSecret.status, 503);
+    const missingSealBody = await missingSealSecret.json() as { code?: string };
+    assert.equal(missingSealBody.code, 'VALUATION_SEAL_SECRET_UNAVAILABLE');
+
+    const configuredSeal = await workerEntrypoint.fetch(
+      valuationRequest(),
+      { ...env, VALUATION_SEAL_SECRET: 'test-only-valuation-seal-secret-2026-11' },
+      execCtx,
+    );
+    assert.equal(configuredSeal.status, 200);
+    const configuredSealBody = await configuredSeal.json() as { seal?: { sealSignature?: string } };
+    assert.equal(configuredSealBody.seal?.sealSignature?.length, 64);
+
     // Verify D1-backed chunked upload lifecycle on Worker router
     const keyPair = await crypto.subtle.generateKey(
       {
