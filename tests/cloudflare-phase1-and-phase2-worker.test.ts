@@ -401,9 +401,28 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     );
     assert.equal(catalogRes.status, 200);
     assert.match(catalogRes.headers.get('cache-control') || '', /public, max-age=300/, 'public catalog has an explicit bounded cache TTL');
+    assert.match(catalogRes.headers.get('vary') || '', /(?:^|,\\s*)origin(?:,|$)/i, 'even no-Origin cache entries must vary by Origin');
     const catalogBody = (await catalogRes.json()) as { status: string; products: unknown[] };
     assert.equal(catalogBody.status, 'ok');
     assert.ok(catalogBody.products.length > 0);
+
+    const allowedOriginCatalogRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran.ir/api/v1/commerce/catalog', {
+        headers: { origin: 'https://radartehran.ir' },
+      }),
+      env
+    );
+    assert.equal(allowedOriginCatalogRes.headers.get('access-control-allow-origin'), 'https://radartehran.ir');
+    assert.match(allowedOriginCatalogRes.headers.get('vary') || '', /(?:^|,\\s*)origin(?:,|$)/i);
+
+    const disallowedOriginCatalogRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran.ir/api/v1/commerce/catalog', {
+        headers: { origin: 'https://untrusted.example' },
+      }),
+      env
+    );
+    assert.equal(disallowedOriginCatalogRes.headers.get('access-control-allow-origin'), null);
+    assert.match(disallowedOriginCatalogRes.headers.get('vary') || '', /(?:^|,\\s*)origin(?:,|$)/i);
 
     // Commerce Neighborhood Index: restricted dataset -> 403
     const forbiddenRes = await workerEntrypoint.fetch(
