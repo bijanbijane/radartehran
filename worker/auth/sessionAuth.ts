@@ -12,6 +12,8 @@ export interface WorkerSessionPrincipal {
   uid: string | null;
   email: string | null;
   emailVerified: boolean;
+  phoneNumber: string | null;
+  displayName: string | null;
   isAdmin: boolean;
   authProvider: 'google' | 'phone' | 'unknown' | null;
   authTimeSeconds: number | null;
@@ -45,6 +47,8 @@ export async function authenticateWorkerSession(
     uid: null,
     email: null,
     emailVerified: false,
+    phoneNumber: null,
+    displayName: null,
     isAdmin: false,
     authProvider: null,
     authTimeSeconds: null,
@@ -74,7 +78,7 @@ export async function authenticateWorkerSession(
     const row = await userDb
       .prepare(
         `SELECT s.session_id, s.uid, s.created_at_iso, s.last_seen_at_iso, s.expires_at_iso, s.auth_provider,
-                p.account_status,
+                p.account_status,\n                p.display_name,\n                (SELECT i.phone_e164 FROM auth_identities i WHERE i.uid = s.uid AND i.provider = 'phone' ORDER BY i.last_authenticated_at_iso DESC LIMIT 1) AS phone_number,
                 (SELECT w.watermark_value FROM sync_watermarks w WHERE w.watermark_key = 'revoked_uid:' || s.uid LIMIT 1) AS revocation_watermark,
                 (SELECT i.email FROM auth_identities i
                  WHERE i.uid = s.uid AND i.provider = 'google' AND i.email_verified = 1
@@ -130,6 +134,8 @@ export async function authenticateWorkerSession(
       uid,
       email,
       emailVerified: row.email_verified === 1,
+      phoneNumber: typeof row.phone_number === 'string' ? row.phone_number : null,
+      displayName: typeof row.display_name === 'string' ? row.display_name : null,
       isAdmin,
       authProvider: row.auth_provider === 'google' || row.auth_provider === 'phone' ? row.auth_provider : 'unknown',
       authTimeSeconds,
