@@ -16,6 +16,8 @@ import {
 } from './workerTelemetryErasureAdapter.ts';
 import { d1FirstRow } from './d1ResultHelpers.ts';
 import { consumeLifecycleRpcNonce } from './d1InternalRpcNonceStore';
+import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
+import { createWorkerD1DomainAdapters } from './workerD1DomainAdapters.ts';
 import {
   isStageDLifecycleEnabled,
   recoverPendingLifecycleDispatch,
@@ -492,5 +494,139 @@ test('rejects Stage D opt-in when the Worker is also USER_DB-bound', () => {
   assert.throws(
     () => requireWorkerLifecycleBindings(env),
     /USER_DB-bound Workers are not eligible/,
+  );
+});
+
+
+test('does not acquire a lifecycle lease when the D1 insert cannot be verified', async () => {
+  const fake = createAdapterD1({ failRun: true });
+  const dispatch = new D1AccountLifecycleDispatch(fake.db);
+
+  await assert.rejects(
+    () => dispatch.acquireJobLease({
+      jobId: 'job_123',
+      targetUid: 'uid_123',
+      leaseToken: 'lease_token_123',
+      leaseOwner: 'worker_1',
+      nowMs: 1_000,
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('confirms a newly inserted lifecycle lease before reporting acquisition', async () => {
+  const fake = createAdapterD1({ runChanges: 1 });
+  const dispatch = new D1AccountLifecycleDispatch(fake.db);
+
+  const result = await dispatch.acquireJobLease({
+    jobId: 'job_123',
+    targetUid: 'uid_123',
+    leaseToken: 'lease_token_123',
+    leaseOwner: 'worker_1',
+    nowMs: 1_000,
+  });
+
+  assert.deepEqual(result, { acquired: true, fencingRevision: 1 });
+});
+
+test('does not take over an active lifecycle lease held by another consumer', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      job_id: 'job_123',
+      lease_token: 'other_lease_token',
+      fencing_revision: 4,
+      lease_expires_at_ms: 60_000,
+    }],
+    runChanges: 0,
+  });
+  const dispatch = new D1AccountLifecycleDispatch(fake.db);
+
+  const result = await dispatch.acquireJobLease({
+    jobId: 'job_123',
+    targetUid: 'uid_123',
+    leaseToken: 'lease_token_123',
+    leaseOwner: 'worker_1',
+    nowMs: 1_000,
+  });
+
+  assert.deepEqual(result, { acquired: false, fencingRevision: 4 });
+});
+
+test('fails closed when the D1 lifecycle lease claim query fails', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      job_id: 'job_123',
+      lease_token: 'other_lease_token',
+      fencing_revision: 4,
+      lease_expires_at_ms: 60_000,
+    }],
+    failRun: true,
+  });
+  const dispatch = new D1AccountLifecycleDispatch(fake.db);
+
+  await assert.rejects(
+    () => dispatch.acquireJobLease({
+      jobId: 'job_123',
+      targetUid: 'uid_123',
+      leaseToken: 'lease_token_123',
+      leaseOwner: 'worker_1',
+      nowMs: 1_000,
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('USER_PROFILE domain listing does not convert D1 read failure into an empty page', async () => {
+  const fake = createAdapterD1({ failAll: true });
+  const adapter = createWorkerD1DomainAdapters(fake.db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  await assert.rejects(
+    () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_123', cursor: null, pageSize: 20 }),
+    isStoreUnavailable,
+  );
+});
+
+test('USER_PROFILE deletion does not emit a receipt when D1 deletion fails', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      session_id: 'session_123',
+      owner_uid: 'uid_123',
+      created_at_ms: 1_763_856_000_000,
+    }],
+    failRun: true,
+  });
+  const adapter = createWorkerD1DomainAdapters(fake.db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  await assert.rejects(
+    () => adapter.disposeOwnedRecordsBatch({
+      targetUid: 'uid_123',
+      cursor: null,
+      batchSize: 1,
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('MEDIA_METADATA deletion does not emit a receipt when its D1 update fails', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      object_id: 'media_123',
+      owner_uid: 'uid_123',
+      created_at_iso: '2026-11-23T00:00:00.000Z',
+    }],
+    failRun: true,
+  });
+  const adapter = createWorkerD1DomainAdapters(fake.db).find((candidate) => candidate.source === 'MEDIA_METADATA');
+  assert.ok(adapter);
+
+  await assert.rejects(
+    () => adapter.disposeOwnedRecordsBatch({
+      targetUid: 'uid_123',
+      cursor: null,
+      batchSize: 1,
+    }),
+    isStoreUnavailable,
   );
 });
