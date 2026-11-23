@@ -30,7 +30,10 @@ async function run(): Promise<void> {
     payload: { jobId: 'deljob_u1', targetUid: 'u1', operation: 'DELETION_STEP' as const },
   };
   const v = validateQueueEnvelope(envelope);
-  assert.equal(v.valid, true);
+  assert.equal(v.valid, false);
+  if (v.valid === false) {
+    assert.equal(v.reason, 'UNKNOWN_OR_UNSUPPORTED_JOB_TYPE');
+  }
 
   const db = new InMemoryAccountLifecycleD1();
   const dispatch = new D1AccountLifecycleDispatch(db);
