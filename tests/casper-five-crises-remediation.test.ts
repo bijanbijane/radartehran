@@ -170,6 +170,10 @@ test('Crisis #5: Client App Check resolves configured keys safely and skips plac
   const clientAppCheckSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/clientAppCheck.ts'), 'utf-8');
   assert.ok(!clientAppCheckSrc.includes('firebase-admin'));
   assert.ok(!clientAppCheckSrc.includes('node:crypto'));
+  const firebaseBootstrapSrc = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf-8');
+  assert.match(firebaseBootstrapSrc, /VITE_FIREBASE_APP_CHECK_SITE_KEY:\s*String\(firebaseConfig\.recaptchaSiteKey\s*\|\|\s*''\)/);
+  const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8')) as { recaptchaSiteKey?: string };
+  assert.equal(typeof firebaseConfig.recaptchaSiteKey, 'string', 'Firebase applet config must expose the public App Check site-key slot');
 });
 
 test('Restored property insurance state machine enforces monotonic policy/claim transitions and settlement limits', () => {
