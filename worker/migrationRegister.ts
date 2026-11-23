@@ -45,6 +45,7 @@ const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/sessions',
   'POST /api/account/sessions/:id/revoke',
   'GET /api/account/data-requests',
+  'GET /api/account/export-data',
 ]);
 
 const GROUP_4_VERIFIED_MARKETPLACE_PATHS = new Set<string>([
