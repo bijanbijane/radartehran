@@ -143,14 +143,19 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   const header = decodeBase64UrlJson<{ alg?: string; kid?: string }>(parts[0]);
   const claims = decodeBase64UrlJson<{
     iss?: string; aud?: string | string[]; azp?: string; sub?: string; email?: string; email_verified?: boolean;
-    exp?: number; iat?: number; nonce?: string; name?: string; azp?: string;
+    exp?: number; iat?: number; nonce?: string; name?: string;
   }>(parts[1]);
   if (header.alg !== 'RS256' || !header.kid) throw new Error('GOOGLE_ID_TOKEN_HEADER_INVALID');
 
   const response = await fetch(GOOGLE_JWKS_URL, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(6000) });
   if (!response.ok) throw new Error('GOOGLE_JWKS_UNAVAILABLE');
   const jwks = await response.json() as { keys?: JsonWebKey[] };
-  const jwk = (jwks.keys || []).find((key) => (key as JsonWebKey & { kid?: string }).kid === header.kid);
+  const jwk = (jwks.keys || []).find((key) => {
+    const candidate = key as JsonWebKey & { kid?: string; alg?: string; use?: string };
+    return candidate.kid === header.kid && candidate.kty === 'RSA'
+      && (!candidate.alg || candidate.alg === 'RS256')
+      && (!candidate.use || candidate.use === 'sig');
+  });
   if (!jwk) throw new Error('GOOGLE_SIGNING_KEY_NOT_FOUND');
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
   const signaturePart = parts[2].replace(/-/g, '+').replace(/_/g, '/');
@@ -162,15 +167,17 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!['accounts.google.com', 'https://accounts.google.com'].includes(String(claims.iss))) throw new Error('GOOGLE_ID_TOKEN_ISSUER_INVALID');
   if (!audiences.includes(expectedAudience)) throw new Error('GOOGLE_ID_TOKEN_AUDIENCE_INVALID');
-  if ((audiences.length > 1 && claims.azp !== expectedAudience) || (claims.azp && claims.azp !== expectedAudience)) {
-    throw new Error('GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID');
-  }
   if ((audiences.length > 1 || claims.azp !== undefined) && claims.azp !== expectedAudience) {
     throw new Error('GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID');
   }
   if (!claims.sub || claims.sub.length > 255 || !claims.email || claims.email_verified !== true) throw new Error('GOOGLE_ACCOUNT_NOT_VERIFIED');
-  if (!Number.isFinite(claims.exp) || Number(claims.exp) <= now - 30) throw new Error('GOOGLE_ID_TOKEN_EXPIRED');
-  if (!Number.isFinite(claims.iat) || Number(claims.iat) > now + 30) throw new Error('GOOGLE_ID_TOKEN_IAT_INVALID');
+  if (!Number.isSafeInteger(claims.exp) || Number(claims.exp) <= now - 30) throw new Error('GOOGLE_ID_TOKEN_EXPIRED');
+  if (!Number.isSafeInteger(claims.iat) || Number(claims.iat) > now + 30 || Number(claims.iat) < now - 3600 - 30) {
+    throw new Error('GOOGLE_ID_TOKEN_IAT_INVALID');
+  }
+  if (Number(claims.exp) <= Number(claims.iat) || Number(claims.exp) - Number(claims.iat) > 3600 + 60) {
+    throw new Error('GOOGLE_ID_TOKEN_LIFETIME_INVALID');
+  }
   if (claims.nonce !== expectedNonce) throw new Error('GOOGLE_ID_TOKEN_NONCE_MISMATCH');
   return { sub: claims.sub, email: claims.email.toLowerCase(), name: claims.name, email_verified: true };
 }
