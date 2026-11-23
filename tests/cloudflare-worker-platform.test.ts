@@ -609,7 +609,7 @@ async function runSuite(): Promise<void> {
 
     const configuredSeal = await workerEntrypoint.fetch(
       valuationRequest(),
-      { ...env, VALUATION_SEAL_SECRET: 'test-only-valuation-seal-secret-2026-11' },
+      { ...env, VALUATION_SEAL_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' },
       execCtx,
     );
     assert.equal(configuredSeal.status, 200);
