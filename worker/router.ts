@@ -7,6 +7,8 @@
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
+import { authenticateWorkerSession, hasRadarSessionCookie } from './auth/sessionAuth';
+import { createCloudflareSessionAssertion } from './auth/sessionAssertion';
 import { handleAuthWorkerRoute } from './routes/authRoutes';
 import { handleAccountWorkerRoute } from './routes/accountRoutes';
 import { handleMarketplaceWorkerRoute } from './routes/marketplaceRoutes';
@@ -102,10 +104,63 @@ export async function dispatchWorkerApiOrSeoRequest(
     !conditionallyRoutedMarketplace
   ) {
     const { entry } = registeredMatch;
+    let sessionAssertion: string | undefined;
+
+    // A browser D1 session must be verified at the Worker boundary before an unmigrated
+    // Express route can receive an identity. Invalid cookies never fall back to Firebase
+    // bearer credentials in the same request.
+    if (hasRadarSessionCookie(ctx.request)) {
+      const session = await authenticateWorkerSession(ctx, true);
+      if (!session.authenticated || !session.uid) {
+        return {
+          response: jsonWorkerResponse(ctx, session.statusCode, {
+            status: 'error',
+            code: session.reasonCode,
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+
+      const bridgeSecret = String(ctx.env.AUTH_INTERNAL_HMAC_SECRET || '').trim();
+      if (new TextEncoder().encode(bridgeSecret).byteLength < 32) {
+        return {
+          response: jsonWorkerResponse(ctx, 503, {
+            status: 'error',
+            code: 'AUTH_SESSION_BRIDGE_NOT_CONFIGURED',
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+
+      try {
+        sessionAssertion = await createCloudflareSessionAssertion({
+          request: ctx.request,
+          principal: session,
+          secret: bridgeSecret,
+          correlationId: ctx.correlationId,
+        });
+      } catch {
+        return {
+          response: jsonWorkerResponse(ctx, 503, {
+            status: 'error',
+            code: 'AUTH_SESSION_BRIDGE_SIGNING_FAILED',
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+    }
+
     const proxied = await executeSafeStranglerFallback({
       request: ctx.request,
       env: ctx.env,
       correlationId: ctx.correlationId,
+      sessionAssertion,
     });
     if (proxied.status !== 502 && proxied.status !== 508) {
       return {
