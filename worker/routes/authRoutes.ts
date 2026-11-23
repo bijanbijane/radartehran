@@ -53,7 +53,12 @@ function validMutationOrigin(ctx: WorkerRequestContext): boolean {
 
 function normalizePhone(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
-  const compact = raw.trim().replace(/[\s()-]/g, '');
+  const asciiDigits = raw.replace(/[۰-۹٠-٩]/g, (digit) => {
+    const code = digit.charCodeAt(0);
+    const value = code >= 0x06f0 && code <= 0x06f9 ? code - 0x06f0 : code - 0x0660;
+    return String(value);
+  });
+  const compact = asciiDigits.trim().replace(/[\s()-]/g, '');
   const normalized = /^09\d{9}$/.test(compact)
     ? `+98${compact.slice(1)}`
     : /^989\d{9}$/.test(compact)
