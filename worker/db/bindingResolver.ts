@@ -134,7 +134,7 @@ export interface TriadDomainBindingDiagnostics {
   readonly legacyDbAliasBound: boolean;
   readonly researchDbBound: boolean;
   readonly isolationViolation: boolean;
-  readonly irniDirectDbBindingPresent: false;
+  readonly irniDirectDbBindingPresent: boolean;
   readonly irniApiConfigured: boolean;
 }
 
@@ -151,7 +151,7 @@ export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBin
     legacyDbAliasBound: Boolean(env.DB),
     researchDbBound: Boolean(env.RESEARCH_DB) && !isolationViolation,
     isolationViolation,
-    irniDirectDbBindingPresent: false,
+    irniDirectDbBindingPresent: env.NEIGHBORHOOD_DB !== undefined && env.NEIGHBORHOOD_DB !== null,
     irniApiConfigured: irniBaseUrl.startsWith('https://') && irniToken.length >= 16,
   };
 }
