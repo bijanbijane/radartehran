@@ -221,7 +221,7 @@ export async function uploadMediaChunkedToObjectStorage(params: {
     const base64Data = await blobToBase64Chunk(slice);
     let uploadedChunk = false; let lastErr = 'خطا در ارسال بخش فایل';
     for (let attempt = 0; attempt < 3 && !uploadedChunk; attempt += 1) {
-      const chunkRes = await fetch('/api/object-storage/upload-chunk', { method: 'POST', headers, signal: params.signal, cache: 'no-store',
+      const chunkRes = await fetch('/api/object-storage/upload-chunk', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store',
         body: JSON.stringify({ sessionId, chunkIndex, base64Data }),
       });
       const chunkJson = (await chunkRes.json().catch(() => null)) as { status?: string; message?: string } | null;
@@ -233,7 +233,7 @@ export async function uploadMediaChunkedToObjectStorage(params: {
     params.onProgress?.(Math.min(92, Math.round(15 + ((chunkIndex + 1) / totalChunks) * 77)), `ارسال بخش ${chunkIndex + 1} از ${totalChunks}...`);
   }
   params.onProgress?.(95, 'تأیید و ثبت نهایی فایل در فضای ذخیره‌سازی...');
-  const compRes = await fetch('/api/object-storage/upload-complete', { method: 'POST', headers, signal: params.signal, cache: 'no-store', body: JSON.stringify({ sessionId }) });
+  const compRes = await fetch('/api/object-storage/upload-complete', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store', body: JSON.stringify({ sessionId }) });
   const compJson = (await compRes.json().catch(() => null)) as { status?: string; mediaObject?: ListingMediaObject; message?: string } | null;
   if (!compRes.ok || compJson?.status !== 'ok' || !compJson.mediaObject) throw new Error(compJson?.message || 'خطا در تکمیل و ثبت نهایی فایل');
   params.onProgress?.(100, 'تکمیل شد');
