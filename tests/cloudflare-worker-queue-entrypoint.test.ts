@@ -275,6 +275,69 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     assert.equal(watermark?.watermark_value, '2');
   });
 
+  it('does not let the oldest legally held media rows starve later eligible D1 media rows', async () => {
+    const { db, env, r2 } = await setupMigratedEnv();
+    const nowMs = Date.now() + 10_000;
+    const heldIso = new Date(nowMs - 48 * 60 * 60 * 1000).toISOString();
+    const eligibleIso = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+
+    for (let index = 0; index < 30; index += 1) {
+      const objectId = `held-media-${String(index).padStart(2, '0')}`;
+      await db
+        .prepare(
+          `INSERT INTO media_objects (object_id, owner_uid, bucket_name, storage_key, city_id, hood_id, media_type, mime_type, size_bytes, sha256_checksum, lifecycle_state, deletion_state, legal_hold, created_at_iso, updated_at_iso)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`,
+        )
+        .bind(
+          objectId, 'u1', 'radartehran-staging-media', `held/${objectId}.webp`, 'tehran', 1,
+          'image', 'image/webp', 4, 'b'.repeat(64), 'FAILED_UPLOAD', 'ACTIVE', 1, heldIso, heldIso,
+        )
+        .run();
+    }
+
+    const eligibleKey = 'tehran/1/image/eligible-after-held.webp';
+    await r2.put(eligibleKey, new Uint8Array([1, 2, 3, 4]));
+    await db
+      .prepare(
+        `INSERT INTO media_objects (object_id, owner_uid, bucket_name, storage_key, city_id, hood_id, media_type, mime_type, size_bytes, sha256_checksum, lifecycle_state, deletion_state, legal_hold, created_at_iso, updated_at_iso)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`,
+      )
+      .bind(
+        'eligible-media-after-held', 'u1', 'radartehran-staging-media', eligibleKey, 'tehran', 1,
+        'image', 'image/webp', 4, 'c'.repeat(64), 'FAILED_UPLOAD', 'ACTIVE', 0, eligibleIso, eligibleIso,
+      )
+      .run();
+
+    const envelope: RadarQueueEnvelope = {
+      schemaVersion: '1.0',
+      messageId: 'msg-r2-held-starvation',
+      jobType: 'r2_orphan_media_reconcile',
+      idempotencyKey: 'idem-r2-held-starvation',
+      correlationId: 'corr-r2-held-starvation',
+      createdAtIso: new Date(nowMs).toISOString(),
+      payload: { nowMs, staleThresholdMs: 1_000 },
+    };
+    const wrapped = makeQueueMessage(envelope);
+    await workerEntrypoint.queue(
+      { queue: 'radartehran-jobs', messages: [wrapped.msg], ackAll() {}, retryAll() {} },
+      env,
+    );
+
+    assert.equal(wrapped.getState().acked, true);
+    assert.equal(await r2.head(eligibleKey), null, 'Eligible media behind held rows must be reconciled in the same bounded pass.');
+    const eligibleRow = await db
+      .prepare('SELECT lifecycle_state, deletion_state FROM media_objects WHERE object_id = ?1')
+      .bind('eligible-media-after-held')
+      .first<{ lifecycle_state: string; deletion_state: string }>();
+    assert.equal(eligibleRow?.lifecycle_state, 'DELETED');
+    assert.equal(eligibleRow?.deletion_state, 'PHYSICALLY_DELETED');
+
+    const heldCount = await db
+      .prepare("SELECT COUNT(*) AS count FROM media_objects WHERE lifecycle_state = 'FAILED_UPLOAD' AND legal_hold = 1")
+      .first<{ count: number }>();
+    assert.equal(Number(heldCount?.count ?? 0), 30, 'Legally held records must remain untouched.');
+  });
+
   it('continues bounded R2 orphan scans from a durable cursor after deleting the previous page', async () => {
     const { db, env, r2 } = await setupMigratedEnv();
     const nowMs = Date.now() + 10_000;
