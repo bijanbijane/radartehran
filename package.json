@@ -49,7 +49,7 @@
     "test:rules:static": "tsx scripts/run-firestore-rules-tests.ts static",
     "test:rules": "firebase emulators:exec --only firestore \"tsx scripts/run-firestore-rules-tests.ts\"",
     "test:insights": "vitest run tests/neighborhood-insights.test.ts src/utils/appCheck.test.ts",
-    "test:assess": "tsx tests/assess-004-hedonic-accuracy-benchmark.test.ts && tsx tests/assess-005-legal-and-tax-formulas.test.ts && tsx tests/assess-006-trade-up-swap-model.test.ts && tsx tests/assess-007-008-performance-lod-and-pwa.test.ts && tsx tests/assess-009-010-seo-deeplink-and-crm-funnel.test.ts",
+    "test:assess": "tsx tests/assess-004-hedonic-accuracy-benchmark.test.ts && tsx tests/assess-005-legal-and-tax-formulas.test.ts && tsx tests/assess-006-trade-up-swap-model.test.ts && tsx tests/assess-007-008-performance-lod-and-pwa.test.ts && tsx tests/rt-map-ux-performance-001.test.ts && tsx tests/assess-009-010-seo-deeplink-and-crm-funnel.test.ts",
     "test:vitest": "vitest run",
     "test:worker": "tsx --test tests/cloudflare-phase1-and-phase2-worker.test.ts",
     "test:auth": "tsx --test tests/cloudflare-phase3-identity-and-auth.test.ts",
