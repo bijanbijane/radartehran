@@ -43,6 +43,18 @@ const RECOVERY_SLOT_MS = 60 * 60 * 1000;
 const MAX_RECOVERY_JOBS = 50;
 const VERIFIED_STAGE_D_DATABASES = new WeakSet<object>();
 
+/** Rotate recovery pages so the oldest blocked jobs cannot starve later jobs. */
+export function calculateLifecycleRecoveryOffset(
+  totalJobs: number,
+  pageSize: number,
+  recoverySlot: number,
+): number {
+  const total = Number.isFinite(totalJobs) ? Math.max(0, Math.trunc(totalJobs)) : 0;
+  const size = Number.isFinite(pageSize) ? Math.max(1, Math.trunc(pageSize)) : 1;
+  const slot = Number.isFinite(recoverySlot) ? Math.max(0, Math.trunc(recoverySlot)) : 0;
+  return total > size ? (slot * size) % total : 0;
+}
+
 type StageDLifecycleEnv = WorkerEnv & {
   readonly STAGE_D_LIFECYCLE_ENABLED?: string;
 };
@@ -432,7 +444,9 @@ export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25
   const nowMs = Date.now();
   const recoverySlot = Math.floor(nowMs / RECOVERY_SLOT_MS);
   const recoveryLimit = Math.max(1, Math.min(MAX_RECOVERY_JOBS, Math.trunc(limit || 25)));
-  const jobs = await runtime.store.listContinuableDeletionJobs(recoveryLimit, 0);
+  const continuableJobCount = await runtime.store.countContinuableDeletionJobs();
+  const recoveryOffset = calculateLifecycleRecoveryOffset(continuableJobCount, recoveryLimit, recoverySlot);
+  const jobs = await runtime.store.listContinuableDeletionJobs(recoveryLimit, recoveryOffset);
 
   for (const job of jobs) {
     if (isTerminalAccountDeletionState(job.state)) continue;
