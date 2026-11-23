@@ -30,12 +30,12 @@ export function isAccountLifecyclePath(pathname: string): boolean {
 }
 
 function matchDeletionJobId(pathname: string): string | null {
-  const match = pathname.match(
-    new RegExp(`^${ACCOUNT_LIFECYCLE_API_PREFIX.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}/deletion/([A-Za-z0-9_-]{1,128})$`),
-  );
-  if (!match) return null;
+  const prefix = `${ACCOUNT_LIFECYCLE_API_PREFIX}/deletion/`;
+  if (!pathname.startsWith(prefix)) return null;
+  const remainder = pathname.slice(prefix.length);
+  if (remainder.includes('/')) return null;
   try {
-    const decoded = decodeURIComponent(match[1]);
+    const decoded = decodeURIComponent(remainder);
     return /^[A-Za-z0-9_-]{1,128}$/.test(decoded) ? decoded : null;
   } catch {
     return null;
@@ -199,12 +199,13 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
       });
     }
 
-    const continueMatch = ctx.pathname.match(
-      new RegExp(
-        `^${ACCOUNT_LIFECYCLE_API_PREFIX.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}/deletion/([A-Za-z0-9_-]{1,128})/continue$`,
-      ),
-    );
-    if (ctx.method === 'POST' && continueMatch) {
+    const continuePrefix = `${ACCOUNT_LIFECYCLE_API_PREFIX}/deletion/`;
+    const continueSuffix = '/continue';
+    const isContinueRoute =
+      ctx.method === 'POST' &&
+      ctx.pathname.startsWith(continuePrefix) &&
+      ctx.pathname.endsWith(continueSuffix);
+    if (isContinueRoute) {
       const adminDecision = evaluateWorkerAuthorization(auth, { policy: 'ADMIN' });
       if (!adminDecision.allowed) {
         return jsonWorkerResponse(ctx, adminDecision.statusCode, {
@@ -214,7 +215,14 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
           message: adminDecision.reasonEn,
         });
       }
-      const jobId = continueMatch[1];
+      const jobId = ctx.pathname.slice(continuePrefix.length, -continueSuffix.length);
+      if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) {
+        return jsonWorkerResponse(ctx, 400, {
+          status: 'error',
+          code: 'INVALID_DELETION_JOB_ID',
+          correlationId: ctx.correlationId,
+        });
+      }
       const jobExists = await userDbResult.db
         .prepare('SELECT job_id FROM account_deletion_jobs WHERE job_id = ?1 LIMIT 1')
         .bind(jobId)
