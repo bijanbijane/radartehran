@@ -143,7 +143,7 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   const header = decodeBase64UrlJson<{ alg?: string; kid?: string }>(parts[0]);
   const claims = decodeBase64UrlJson<{
     iss?: string; aud?: string | string[]; azp?: string; sub?: string; email?: string; email_verified?: boolean;
-    exp?: number; iat?: number; nonce?: string; name?: string;
+    exp?: number; iat?: number; nonce?: string; name?: string; azp?: string;
   }>(parts[1]);
   if (header.alg !== 'RS256' || !header.kid) throw new Error('GOOGLE_ID_TOKEN_HEADER_INVALID');
 
@@ -162,6 +162,9 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!['accounts.google.com', 'https://accounts.google.com'].includes(String(claims.iss))) throw new Error('GOOGLE_ID_TOKEN_ISSUER_INVALID');
   if (!audiences.includes(expectedAudience)) throw new Error('GOOGLE_ID_TOKEN_AUDIENCE_INVALID');
+  if ((audiences.length > 1 && claims.azp !== expectedAudience) || (claims.azp && claims.azp !== expectedAudience)) {
+    throw new Error('GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID');
+  }
   if ((audiences.length > 1 || claims.azp !== undefined) && claims.azp !== expectedAudience) {
     throw new Error('GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID');
   }
