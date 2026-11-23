@@ -48,7 +48,7 @@ const head: ActiveGeographicPublishHead = {
   relationship_count: 9827,
   anchor_count: 9828,
   source_mapping_count: 10341,
-  legacy_alias_count: 10,
+  legacy_alias_count: 11,
   integrity_verified: 1,
 };
 
