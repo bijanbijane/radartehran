@@ -1,7 +1,6 @@
 /** @file src/components/RadarWorkspaceShell.tsx — Extracted Spatial GIS & PropTech Workspace Shell (< 275 lines) [RULE-01] */
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import { getAuthClient } from '../platform/auth';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
@@ -288,7 +287,7 @@ export function RadarWorkspaceShell() {
         setBargainHoodId={ui.setBargainHoodId} setSponsorHoodId={ui.setSponsorHoodId} setShowAgencyModal={ui.setShowAgencyModal} totalLiveBargainsCount={totalLiveBargainsCount}
         setShowVisitedModal={ui.setShowVisitedModal} visitedHomesCount={ui.visitedHomes.length} setTradeUpCurrentHoodId={ui.setTradeUpCurrentHoodId} setShowTradeUpModal={ui.setShowTradeUpModal}
         setAlertHoodId={ui.setAlertHoodId} setAlertSubmitMsg={ui.setAlertSubmitMsg} setShowBuyerAlertModal={ui.setShowBuyerAlertModal} setShowPulseModal={ui.setShowPulseModal} marketPulse={ui.marketPulse}
-        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => signOut(auth)} onGoogleSignIn={crudActions.handleSaveUserPreferences}
+        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => { void getAuthClient().logout('workspace_sign_out').catch(() => getAuthClient().setUser(null)); }} onGoogleSignIn={() => getAuthClient().startGoogleLogin(`${window.location.pathname}${window.location.search}`)}
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
@@ -306,7 +305,7 @@ export function RadarWorkspaceShell() {
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent} buyTotalBudget={buyTotalBudget} deposit={deposit} monthlyRent={monthlyRent} counts={counts}
             featureFlags={featureFlags} currentUser={currentUser} isVerifiedAdmin={isVerifiedAdmin} activeCity={ui.activeCity} crudActions={crudActions} handleDeepWebSync={handleDeepWebSync}
-            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => signOut(auth)} />
+            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => { void getAuthClient().logout('workspace_sign_out').catch(() => getAuthClient().setUser(null)); }} />
         </main>
       )}
       {(ui.primaryView === 'map' || ui.mobileSheetOpen) && ui.primaryView !== 'admin' && (
