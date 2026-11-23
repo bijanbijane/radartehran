@@ -1,8 +1,11 @@
 /**
- * @fileoverview Layer 1 & Layer 4: Firebase SDK Initialization, Long-Polling Resilience, * Connection Health Verification, and Structured Firestore Security Error Handler.
+ * @fileoverview Legacy Firestore-only adapter during the Cloudflare D1 migration. Firebase Auth and App Check are not used.
  */
-import { initializeApp, FirebaseApp } from 'firebase/app'; import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth'; import { getFirestore, initializeFirestore, setLogLevel, doc, getDocFromServer,
-  Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security'; import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, initializeFirestore, setLogLevel, doc, getDocFromServer, type Firestore } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
+import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
+import { getAuthClient } from './platform/auth';
 // Suppress noisy internal WebChannel 10s timeout logs on high-latency/proxy networks
 try { setLogLevel('silent'); } catch {
   // Ignore if setLogLevel is unavailable in test environments
@@ -11,7 +14,7 @@ try { setLogLevel('silent'); } catch {
  * Initialized Firebase App singleton configured from `firebase-applet-config.json`.
  */
 export const app: FirebaseApp = initializeApp(firebaseConfig);
-initClientAppCheckIfConfigured(app);
+
 /**
  * Initialized Firestore database instance bound to `firebaseConfig.firestoreDatabaseId`
  * with automatic long-polling detection for restricted proxy/iframe environments.
@@ -21,18 +24,6 @@ export const db: Firestore = (() => { const endTimer = createExecutionTimer('Fir
     endTimer('success'); return instance; } catch { endTimer('fallback');
     return getFirestore(app, firebaseConfig.firestoreDatabaseId); }
 })();
-/**
- * Firebase Authentication singleton instance.
- */
-export const auth: Auth = getAuth(app);
-/**
- * Configured Google OAuth Provider for popup sign-in.
- */
-export const googleProvider: GoogleAuthProvider = (() => { const provider = new GoogleAuthProvider(); try { provider.setCustomParameters({ prompt: 'select_account' });
-  } catch {
-    // Ignore parameter setup issues
-  }
-  return provider; })();
 /**
  * Standard Firestore CRUD operation types used for structured security rule diagnostics.
  */
@@ -163,22 +154,19 @@ export function recordFirestoreQueryError(
 
   const now = new Date();
   const timeFa = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const currentUser = getAuthClient().getUser();
   const entry: FirestoreErrorLogEntry = {
     id: `fs-err-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     error: errMsg,
     operationType,
     path,
     authInfo: {
-      userId: auth.currentUser?.uid ?? null,
-      email: auth.currentUser?.email ?? null,
-      emailVerified: auth.currentUser?.emailVerified ?? null,
-      isAnonymous: auth.currentUser?.isAnonymous ?? null,
-      tenantId: auth.currentUser?.tenantId ?? null,
-      providerInfo:
-        auth.currentUser?.providerData?.map((provider) => ({
-          providerId: provider.providerId,
-          email: provider.email,
-        })) || [],
+      userId: currentUser?.uid ?? null,
+      email: currentUser?.email ?? null,
+      emailVerified: currentUser?.emailVerified ?? null,
+      isAnonymous: false,
+      tenantId: null,
+      providerInfo: currentUser ? [{ providerId: currentUser.authProvider, email: currentUser.email }] : [],
     },
     timeFa,
     timestampMs: Date.now(),
