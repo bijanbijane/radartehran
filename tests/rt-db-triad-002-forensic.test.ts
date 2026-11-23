@@ -41,12 +41,8 @@ import {
   releaseMutationPermitInD1,
 } from '../worker/account-lifecycle/d1MutationPermit';
 import { executeAccountDeletionLifecycle } from '../worker/account-lifecycle/workerLifecycleRuntime';
-import {
-  clearTestJwksForEdgeAuth,
-  isTokenRevokedOrUserDisabled,
-  recordUserRevocationInD1,
-  registerTestJwkForEdgeAuth,
-} from '../worker/auth/firebaseEdgeAuth';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
+import { sha256Hex } from '../worker/auth/sessionAuth';
 import {
   hasUserResearchBindingCollision,
   requireResearchDb,
@@ -72,7 +68,6 @@ import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../wo
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
-const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
   failOnSqlContains?: string | null;
@@ -203,44 +198,21 @@ function applyMigrations(raw: DatabaseSync, relDir: string): string[] {
   return files;
 }
 
-function base64UrlEncode(input: string | Uint8Array): string {
-  const buf = typeof input === 'string' ? Buffer.from(input, 'utf-8') : Buffer.from(input);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function createSignedTestFirebaseJwt(params: { uid: string; email?: string; nowSec?: number }) {
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      modulusLength: 2048,
-      publicExponent: new Uint8Array([1, 0, 1]),
-      hash: 'SHA-256',
-    },
-    true,
-    ['sign', 'verify'],
-  );
-  const kid = `test_kid_${crypto.randomUUID().slice(0, 8)}`;
-  registerTestJwkForEdgeAuth(kid, keyPair.publicKey);
-  const nowSec = params.nowSec ?? Math.floor(Date.now() / 1000);
-  const headerB64 = base64UrlEncode(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const payloadB64 = base64UrlEncode(
-    JSON.stringify({
-      iss: `https://securetoken.google.com/${TEST_PROJECT_ID}`,
-      aud: TEST_PROJECT_ID,
-      sub: params.uid,
-      iat: nowSec - 10,
-      auth_time: nowSec - 10,
-      exp: nowSec + 3600,
-      email: params.email ?? `${params.uid}@example.com`,
-      email_verified: true,
-    }),
-  );
-  const sigBuf = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    keyPair.privateKey,
-    new TextEncoder().encode(`${headerB64}.${payloadB64}`),
-  );
-  return `${headerB64}.${payloadB64}.${base64UrlEncode(new Uint8Array(sigBuf))}`;
+async function issueTestSession(db: D1Database, uid: string, email?: string): Promise<string> {
+  const sessionId = `sess_${crypto.randomUUID()}`;
+  const token = `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const provider = email ? 'google' : 'phone';
+  const subject = email ? `google-sub-${uid}` : `+98912${String(Math.floor(Math.random() * 1_000_000_000)).padStart(9, '0')}`;
+  await upsertUserSessionInD1(db, { sessionId, uid });
+  await db.prepare(
+    "UPDATE user_sessions SET token_hash = ?1, expires_at_iso = ?2, auth_provider = ?3, last_seen_at_iso = ?4 WHERE session_id = ?5",
+  ).bind(await sha256Hex(token), new Date(now.getTime() + 86400000).toISOString(), provider, nowIso, sessionId).run();
+  await db.prepare(
+    "INSERT INTO auth_identities (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+  ).bind(provider, subject, uid, email ?? null, email ? 1 : 0, email ? null : subject, nowIso).run();
+  return token;
 }
 
 function createMinimalR2Bucket(): R2Bucket {
@@ -445,7 +417,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(c10.applied, true);
       assert.equal(c10.idempotentReplay, false);
       assert.equal(c10.statusCode, 200);
-      const disabledCheck = await isTokenRevokedOrUserDisabled('uid_fail_wm', 1_760_000_000, sqlite.db);
+      const disabledCheck = await isUserAuthDisabledOrRevoked('uid_fail_wm', 1_760_000_000, sqlite.db);
       assert.equal(disabledCheck.revoked, true);
     });
   });
@@ -507,7 +479,6 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
 
       const uid = 'uid_drain_lifecycle_01';
-      const jwt = await createSignedTestFirebaseJwt({ uid });
       const env: WorkerEnv = {
         USER_DB: userSqlite.db,
         DB: userSqlite.db,
@@ -516,13 +487,11 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
-        FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
-        FIREBASE_APP_CHECK_MODE: 'disabled',
       };
 
       try {
         await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
-        await upsertUserSessionInD1(userSqlite.db, { sessionId: 'sess_drain_1', uid });
+        const sessionToken = await issueTestSession(userSqlite.db, uid);
         await createUserDataRequestInD1(userSqlite.db, { uid, requestType: 'EXPORT' });
 
         // Seed upload_session + upload_session_chunks to verify orphan cleanup
@@ -577,7 +546,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const deleteMediaRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/object-storage/file/obj_valid_123456', {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { Cookie: `__Host-radar_session=${sessionToken}` },
           }),
           env,
         );
@@ -623,7 +592,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.notEqual(expectedKeyedHash, unkeyedHash);
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
-        clearTestJwksForEdgeAuth();
+        // Test database is in-memory; no external identity-provider state exists.
       }
     });
   });
@@ -981,15 +950,14 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       const userSqlite = createForensicSqliteD1();
       applyMigrations(userSqlite.raw, 'migrations/user-d1');
       const uid = 'uid_parity_01';
-      const jwt = await createSignedTestFirebaseJwt({ uid });
       const env: WorkerEnv = {
         USER_DB: userSqlite.db,
         DB: userSqlite.db,
-        FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
-        FIREBASE_APP_CHECK_MODE: 'disabled',
       };
 
       try {
+        await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'کاوه' });
+        const sessionToken = await issueTestSession(userSqlite.db, uid);
         // Unknown /api/account/* route must return 404 even WITHOUT auth or DB (never hijack with 401/503)
         const unknownRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/does-not-exist', { method: 'GET' }),
@@ -1001,7 +969,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const patchProfile = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/profile', {
             method: 'PATCH',
-            headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+            headers: { Cookie: `__Host-radar_session=${sessionToken}`, Origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
             body: JSON.stringify({ displayName: 'کاوه', preferredCityId: 'isfahan' }),
           }),
           env,
