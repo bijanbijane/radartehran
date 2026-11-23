@@ -980,6 +980,15 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.ok(check.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_MIGRATIONS_DIR_MISMATCH')));
     });
 
+    it('rejects malformed DB_WRITES_PAUSED_UNTIL_UTC in the backend Wrangler config', () => {
+      const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
+      const mutated = parseJsonc(raw, 'wrangler.backend.jsonc');
+      mutated.vars.DB_WRITES_PAUSED_UNTIL_UTC = 'tomorrow';
+      const check = validateBackendWranglerConfig(mutated, { skipFsChecks: true });
+      assert.equal(check.ok, false);
+      assert.ok(check.errors.includes('INVALID_DB_WRITES_PAUSE_TIMESTAMP:production'));
+    });
+
     it('returns 404 for unknown /api/account/* paths and preserves Express field parity aliases', async () => {
       const userSqlite = createForensicSqliteD1();
       applyMigrations(userSqlite.raw, 'migrations/user-d1');
