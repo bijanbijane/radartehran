@@ -1,0 +1,78 @@
+name: Radar Initial Frontend Bundle Budget
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/frontend/**'
+      - 'src/**'
+      - 'index.html'
+      - 'scripts/generate-sitemap.ts'
+      - 'scripts/performance/check-vite-bundle-budget.mjs'
+      - 'tests/performance-bundle-budget.test.mjs'
+      - '.github/workflows/performance-bundle-budget.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/frontend/**'
+      - 'src/**'
+      - 'index.html'
+      - 'scripts/generate-sitemap.ts'
+      - 'scripts/performance/check-vite-bundle-budget.mjs'
+      - 'tests/performance-bundle-budget.test.mjs'
+      - '.github/workflows/performance-bundle-budget.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-initial-bundle-budget-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure-initial-bundle:
+    name: Measure static initial JS and CSS dependency graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: Test bundle graph accounting and path safety
+        run: node --test tests/performance-bundle-budget.test.mjs
+
+      - name: Generate sitemap inputs
+        run: npx tsx scripts/generate-sitemap.ts
+
+      - name: Build production frontend with Vite manifest
+        run: npx vite build --config apps/frontend/vite.config.ts --manifest
+
+      - name: Measure initial static dependency graph
+        run: |
+          node scripts/performance/check-vite-bundle-budget.mjs \
+            --manifest dist/.vite/manifest.json \
+            --out-dir dist \
+            --report dist/performance-bundle-report.json
+
+      - name: Retain bundle measurement report
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-initial-bundle-report
+          path: dist/performance-bundle-report.json
+          if-no-files-found: error
+          retention-days: 14
