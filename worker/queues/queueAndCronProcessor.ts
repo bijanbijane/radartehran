@@ -295,13 +295,19 @@ export async function processRadarQueueBatch(params: {
         continue;
       }
 
-      // Mirror completion to legacy queue_idempotency_keys for diagnostic continuity
-      await params.db
-        .prepare(
-          'INSERT OR REPLACE INTO queue_idempotency_keys (idempotency_key, job_type, processed_at_iso, status) VALUES (?1, ?2, ?3, ?4)',
-        )
-        .bind(envelope.idempotencyKey, envelope.jobType, completedAtIso, 'COMPLETED')
-        .run();
+      // Best-effort compatibility mirror only. The canonical queue_job_executions row
+      // is already durably COMPLETED; a legacy mirror failure must never retry the job
+      // and re-run side effects that have already committed.
+      try {
+        await params.db
+          .prepare(
+            'INSERT OR REPLACE INTO queue_idempotency_keys (idempotency_key, job_type, processed_at_iso, status) VALUES (?1, ?2, ?3, ?4)',
+          )
+          .bind(envelope.idempotencyKey, envelope.jobType, completedAtIso, 'COMPLETED')
+          .run();
+      } catch {
+        // Canonical completion is authoritative; the legacy diagnostic mirror is optional.
+      }
 
       msg.ack();
       processedCount += 1;
