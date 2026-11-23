@@ -65,6 +65,9 @@ jobs:
       - name: Run focused D1 triad binding-isolation contract tests
         run: npx tsx tests/d1-triad-binding-isolation.test.ts
 
+      - name: Verify temporary D1 write-pause deadline behavior
+        run: npx tsx --test worker/db/writePause.test.ts
+
       - name: Build the split Frontend assets
         run: npm run build -w radartehran-frontend
 
