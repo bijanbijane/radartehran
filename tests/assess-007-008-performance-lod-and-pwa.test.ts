@@ -161,7 +161,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     () => false
   );
   assert.equal(tiersZ12.get(1), 'standard_pill', 'Selected neighborhood keeps its readable tier at zoom 12');
-  assert.equal(tiersZ12.get(2), 'compact_chip', 'A fitting compact marker remains visible at zoom 12');
+  assert.equal(tiersZ12.get(2), 'dot', 'Non-selected neighborhoods remain unlabeled through zoom 13');
 
   const tiersZ14 = computeDeclutteredMarkerTiers(
     markerMap,
@@ -183,7 +183,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     1,
     (hood) => hood.id === 3
   );
-  assert.equal(sponsorPriorityTiers.get(3), 'detailed_pill', 'Sponsored neighborhoods retain priority among ordinary markers');
+  assert.equal(sponsorPriorityTiers.get(3), 'standard_pill', 'Sponsored neighborhoods retain priority without using long labels');
   assert.equal(sponsorPriorityTiers.get(2), 'dot', 'Lower-priority colliding markers demote to a dot');
 
   const denseZoomTiers = computeDeclutteredMarkerTiers(
