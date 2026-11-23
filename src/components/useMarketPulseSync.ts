@@ -163,11 +163,12 @@ export function useMarketPulseSync({
     ui.setLastSyncNotice('در حال استعلام زنده از منابع رایگان وب (AQICN، دیوار و شیپور)...');
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (currentUser) { try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ } }
+      /* Cloudflare HttpOnly session cookie is sent automatically. */
       if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current) return;
       const res = await fetch('/api/market-pulse/deep-sync', {
         method: 'POST',
         headers,
+        credentials: 'same-origin',
         credentials: 'same-origin',
         body: JSON.stringify({ city: targetCity }),
         signal: controller.signal,
