@@ -118,12 +118,16 @@ function runDomainRegressionTests(): void {
   shirazSeeds.push(sentinel);
   const nationwideSecond = getAllMultiCityNeighborhoods();
   shirazSeeds.pop();
+  const firstAggregateLength = nationwideFirst.length;
+  nationwideFirst.pop();
+  const nationwideThird = getAllMultiCityNeighborhoods();
   assert(
     '0. Nationwide neighborhood aggregation is memoized and returns isolated arrays',
     !nationwideSecond.some((hood) => hood.id === sentinelId) &&
       nationwideFirst !== nationwideSecond &&
-      nationwideFirst.length === nationwideSecond.length,
-    `first=${nationwideFirst.length}, second=${nationwideSecond.length}`
+      firstAggregateLength === nationwideSecond.length &&
+      nationwideThird.length === nationwideSecond.length,
+    `first-before-pop=${firstAggregateLength}, second=${nationwideSecond.length}, third=${nationwideThird.length}`
   );
 
   const sampleHood: EvaluatedNeighborhood = {
