@@ -99,6 +99,15 @@ export function getValidatedCityConfig(cityId: unknown): CityConfig {
     return MULTI_CITY_CONFIGS.tehran;
   }
 }
+
+/**
+ * Returns only the expansion records belonging to one city.
+ * This keeps initial hydration and city-scoped refreshes from traversing every hub.
+ */
+export function getCityExpansionSeeds(cityId: CityId): Neighborhood[] {
+  const cityNeighborhoods = getValidatedCityConfig(cityId).neighborhoods;
+  return cityNeighborhoods.filter((hood) => hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599));
+}
 /**
  * Aggregates and validates all 996 neighborhoods and county cities across all 31 Iranian provinces.
  * @returns Array of all valid `Neighborhood` objects across the 5 regional hubs.
