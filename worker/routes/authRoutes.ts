@@ -1,0 +1,351 @@
+/**
+ * Cloudflare-native authentication endpoints: Google OIDC, Twilio Verify SMS, D1 identities and sessions.
+ * No Firebase SDK, Firebase ID token, Firestore, or App Check dependency is used here.
+ */
+import { authenticateWorkerSession, buildClearedSessionCookie, buildSessionCookie, sha256Hex } from '../auth/sessionAuth';
+import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
+import { requireUserDb } from '../db/bindingResolver';
+import type { D1Database, WorkerRequestContext } from '../types';
+
+const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+const GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const PHONE_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+
+function randomToken(bytes = 32): string {
+  const data = crypto.getRandomValues(new Uint8Array(bytes));
+  let binary = '';
+  for (const byte of data) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function decodeBase64UrlJson<T>(segment: string): T {
+  const normalized = segment.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+  return JSON.parse(atob(padded)) as T;
+}
+
+function safeReturnPath(raw: string | null): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\r\n]/.test(raw)) return '/';
+  return raw.slice(0, 512);
+}
+
+function validMutationOrigin(ctx: WorkerRequestContext): boolean {
+  const origin = ctx.request.headers.get('origin');
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(ctx.env.APP_URL || 'https://radartehran.ir').origin;
+  } catch {
+    return false;
+  }
+}
+
+function normalizePhone(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const compact = raw.trim().replace(/[\s()-]/g, '');
+  const normalized = /^09\d{9}$/.test(compact)
+    ? `+98${compact.slice(1)}`
+    : /^989\d{9}$/.test(compact)
+      ? `+${compact}`
+      : compact;
+  return /^\+[1-9]\d{7,14}$/.test(normalized) ? normalized : null;
+}
+
+async function createOrResolveIdentity(
+  db: D1Database,
+  provider: 'google' | 'phone',
+  subject: string,
+  profile: { email?: string | null; emailVerified?: boolean; phone?: string | null; displayName?: string | null },
+  linkUid?: string,
+): Promise<{ uid: string; linked: boolean }> {
+  const existing = await db.prepare(
+    'SELECT uid FROM auth_identities WHERE provider = ?1 AND provider_subject = ?2 LIMIT 1',
+  ).bind(provider, subject).first<{ uid: string }>();
+
+  if (existing) {
+    if (linkUid && existing.uid !== linkUid) throw new Error('IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT');
+    await db.prepare(
+      'UPDATE auth_identities SET email = ?1, email_verified = ?2, phone_e164 = ?3, last_authenticated_at_iso = ?4 WHERE provider = ?5 AND provider_subject = ?6',
+    ).bind(profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, new Date().toISOString(), provider, subject).run();
+    return { uid: existing.uid, linked: false };
+  }
+
+  const uid = linkUid || `usr_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  if (!linkUid) {
+    await db.prepare(
+      `INSERT INTO user_profiles (
+        uid, display_name, preferred_city, preferred_language, area_unit, intl_currency,
+        role, account_status, created_at_iso, updated_at_iso
+      ) VALUES (?1, ?2, 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?3, ?3)`,
+    ).bind(uid, String(profile.displayName || '').trim().slice(0, 80), now).run();
+  } else {
+    const owner = await db.prepare('SELECT uid FROM user_profiles WHERE uid = ?1 AND account_status = \'ACTIVE\'').bind(uid).first<{ uid: string }>();
+    if (!owner) throw new Error('ACCOUNT_NOT_ACTIVE');
+  }
+
+  await db.prepare(
+    `INSERT INTO auth_identities (
+      provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
+  ).bind(provider, subject, uid, profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, now).run();
+  return { uid, linked: Boolean(linkUid) };
+}
+
+async function issueSession(
+  db: D1Database,
+  request: Request,
+  uid: string,
+  provider: 'google' | 'phone',
+): Promise<{ token: string; expiresAtIso: string }> {
+  const token = randomToken(48);
+  const tokenHash = await sha256Hex(token);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + SESSION_TTL_SECONDS * 1000);
+  const userAgent = (request.headers.get('user-agent') || '').replace(/[\r\n]/g, '').slice(0, 180);
+  const ip = request.headers.get('cf-connecting-ip') || '';
+  const ipPrefix = ip.includes(':') ? ip.split(':').slice(0, 4).join(':') : ip.split('.').slice(0, 3).join('.');
+  await db.prepare(
+    `INSERT INTO user_sessions (
+      session_id, uid, device_label, user_agent_summary, ip_prefix, status,
+      created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider
+    ) VALUES (?1, ?2, 'web', ?3, ?4, 'ACTIVE', ?5, ?5, ?6, ?7, ?8)`,
+  ).bind(crypto.randomUUID(), uid, userAgent, ipPrefix.slice(0, 64), now.toISOString(), tokenHash, expiresAt.toISOString(), provider).run();
+  return { token, expiresAtIso: expiresAt.toISOString() };
+}
+
+async function verifyGoogleIdToken(idToken: string, expectedAudience: string, expectedNonce: string): Promise<{
+  sub: string; email: string; name?: string; email_verified: boolean;
+}> {
+  if (idToken.length > 12_000) throw new Error('GOOGLE_ID_TOKEN_TOO_LARGE');
+  const parts = idToken.split('.');
+  if (parts.length !== 3) throw new Error('GOOGLE_ID_TOKEN_MALFORMED');
+  const header = decodeBase64UrlJson<{ alg?: string; kid?: string }>(parts[0]);
+  const claims = decodeBase64UrlJson<{
+    iss?: string; aud?: string | string[]; sub?: string; email?: string; email_verified?: boolean;
+    exp?: number; iat?: number; nonce?: string; name?: string;
+  }>(parts[1]);
+  if (header.alg !== 'RS256' || !header.kid) throw new Error('GOOGLE_ID_TOKEN_HEADER_INVALID');
+
+  const response = await fetch(GOOGLE_JWKS_URL, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(6000) });
+  if (!response.ok) throw new Error('GOOGLE_JWKS_UNAVAILABLE');
+  const jwks = await response.json() as { keys?: JsonWebKey[] };
+  const jwk = (jwks.keys || []).find((key) => (key as JsonWebKey & { kid?: string }).kid === header.kid);
+  if (!jwk) throw new Error('GOOGLE_SIGNING_KEY_NOT_FOUND');
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const signaturePart = parts[2].replace(/-/g, '+').replace(/_/g, '/');
+  const signature = Uint8Array.from(atob(signaturePart + '='.repeat((4 - signaturePart.length % 4) % 4)), (c) => c.charCodeAt(0));
+  const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+  if (!await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signingInput)) throw new Error('GOOGLE_ID_TOKEN_SIGNATURE_INVALID');
+
+  const now = Math.floor(Date.now() / 1000);
+  const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+  if (!['accounts.google.com', 'https://accounts.google.com'].includes(String(claims.iss))) throw new Error('GOOGLE_ID_TOKEN_ISSUER_INVALID');
+  if (!audiences.includes(expectedAudience)) throw new Error('GOOGLE_ID_TOKEN_AUDIENCE_INVALID');
+  if (!claims.sub || claims.sub.length > 255 || !claims.email || claims.email_verified !== true) throw new Error('GOOGLE_ACCOUNT_NOT_VERIFIED');
+  if (!Number.isFinite(claims.exp) || Number(claims.exp) <= now - 30) throw new Error('GOOGLE_ID_TOKEN_EXPIRED');
+  if (!Number.isFinite(claims.iat) || Number(claims.iat) > now + 30) throw new Error('GOOGLE_ID_TOKEN_IAT_INVALID');
+  if (claims.nonce !== expectedNonce) throw new Error('GOOGLE_ID_TOKEN_NONCE_MISMATCH');
+  return { sub: claims.sub, email: claims.email.toLowerCase(), name: claims.name, email_verified: true };
+}
+
+async function twilioRequest(ctx: WorkerRequestContext, path: string, fields: Record<string, string>): Promise<Record<string, unknown>> {
+  const sid = String(ctx.env.TWILIO_ACCOUNT_SID || '').trim();
+  const token = String(ctx.env.TWILIO_AUTH_TOKEN || '').trim();
+  if (!sid || !token || !ctx.env.TWILIO_VERIFY_SERVICE_SID) throw new Error('SMS_PROVIDER_NOT_CONFIGURED');
+  const body = new URLSearchParams(fields);
+  const response = await fetch(`https://verify.twilio.com/v2/Services/${encodeURIComponent(ctx.env.TWILIO_VERIFY_SERVICE_SID)}${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body,
+    signal: AbortSignal.timeout(8000),
+  });
+  const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
+  if (!response.ok) throw new Error(response.status === 429 ? 'SMS_PROVIDER_RATE_LIMITED' : 'SMS_PROVIDER_REQUEST_FAILED');
+  return payload;
+}
+
+function errorRedirect(ctx: WorkerRequestContext, code: string): Response {
+  const base = String(ctx.env.APP_URL || 'https://radartehran.ir');
+  const url = new URL('/', base);
+  url.searchParams.set('auth_error', code);
+  return new Response(null, { status: 303, headers: { Location: url.toString(), 'Cache-Control': 'no-store' } });
+}
+
+export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<Response | null> {
+  const { method, pathname, request, env } = ctx;
+  if (!pathname.startsWith('/api/auth/')) return null;
+  const dbRes = requireUserDb(env);
+  if (!dbRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: dbRes.code });
+  const db = dbRes.db;
+
+  if (method === 'GET' && pathname === '/api/auth/google/start') {
+    const clientId = String(env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
+    const redirectUri = String(env.GOOGLE_OAUTH_REDIRECT_URI || '').trim() || `${String(env.APP_URL || 'https://radartehran.ir').replace(/\/$/, '')}/api/auth/google/callback`;
+    if (!clientId) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'GOOGLE_OAUTH_NOT_CONFIGURED' });
+    const state = randomToken(32);
+    const nonce = randomToken(32);
+    const codeVerifier = randomToken(48);
+    const challenge = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+    const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(challenge))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    const stateHash = await sha256Hex(state);
+    const now = Date.now();
+    const returnPath = safeReturnPath(new URL(request.url).searchParams.get('returnTo'));
+    await db.prepare(
+      'INSERT INTO auth_oauth_states (state_hash, nonce, code_verifier, return_path, expires_at_ms, created_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
+    ).bind(stateHash, nonce, codeVerifier, returnPath, now + OAUTH_STATE_TTL_MS, now).run();
+    const url = new URL(GOOGLE_AUTHORIZE_URL);
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid email profile');
+    url.searchParams.set('state', state);
+    url.searchParams.set('nonce', nonce);
+    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+    url.searchParams.set('prompt', 'select_account');
+    return new Response(null, { status: 302, headers: { Location: url.toString(), 'Cache-Control': 'no-store' } });
+  }
+
+  if (method === 'GET' && pathname === '/api/auth/google/callback') {
+    const url = new URL(request.url);
+    const state = url.searchParams.get('state') || '';
+    const code = url.searchParams.get('code') || '';
+    if (!state || !code || url.searchParams.has('error')) return errorRedirect(ctx, 'GOOGLE_OAUTH_DENIED');
+    const stateHash = await sha256Hex(state);
+    const stateRow = await db.prepare(
+      'SELECT nonce, code_verifier, return_path, expires_at_ms FROM auth_oauth_states WHERE state_hash = ?1 LIMIT 1',
+    ).bind(stateHash).first<{ nonce: string; code_verifier: string; return_path: string; expires_at_ms: number }>();
+    await db.prepare('DELETE FROM auth_oauth_states WHERE state_hash = ?1').bind(stateHash).run();
+    if (!stateRow || Number(stateRow.expires_at_ms) <= Date.now()) return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_INVALID');
+
+    const clientId = String(env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
+    const clientSecret = String(env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim();
+    const redirectUri = String(env.GOOGLE_OAUTH_REDIRECT_URI || '').trim() || `${String(env.APP_URL || 'https://radartehran.ir').replace(/\/$/, '')}/api/auth/google/callback`;
+    if (!clientId || !clientSecret) return errorRedirect(ctx, 'GOOGLE_OAUTH_NOT_CONFIGURED');
+
+    const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code', code_verifier: stateRow.code_verifier }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!tokenResponse.ok) return errorRedirect(ctx, 'GOOGLE_OAUTH_EXCHANGE_FAILED');
+    const tokenPayload = await tokenResponse.json() as { id_token?: string };
+    if (!tokenPayload.id_token) return errorRedirect(ctx, 'GOOGLE_ID_TOKEN_MISSING');
+
+    try {
+      const google = await verifyGoogleIdToken(tokenPayload.id_token, clientId, stateRow.nonce);
+      const identity = await createOrResolveIdentity(db, 'google', google.sub, {
+        email: google.email, emailVerified: google.email_verified, displayName: google.name,
+      });
+      const session = await issueSession(db, request, identity.uid, 'google');
+      const response = new Response(null, {
+        status: 303,
+        headers: {
+          Location: new URL(safeReturnPath(stateRow.return_path), String(env.APP_URL || 'https://radartehran.ir')).toString(),
+          'Cache-Control': 'no-store',
+          'Set-Cookie': buildSessionCookie(session.token, SESSION_TTL_SECONDS),
+        },
+      });
+      return response;
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'GOOGLE_AUTH_FAILED';
+      return errorRedirect(ctx, /^[A-Z0-9_]{1,80}$/.test(code) ? code : 'GOOGLE_AUTH_FAILED');
+    }
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/phone/start') {
+    if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
+    const parsed = await readValidatedJsonBody(request, 4 * 1024);
+    if (!parsed.ok) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
+    const phone = normalizePhone(parsed.body.phone);
+    if (!phone) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PHONE_NUMBER' });
+    const phoneHash = await sha256Hex(phone);
+    const now = Date.now();
+    const recent = await db.prepare(
+      'SELECT COUNT(*) AS count FROM auth_phone_challenges WHERE phone_hash = ?1 AND created_at_ms > ?2',
+    ).bind(phoneHash, now - 10 * 60 * 1000).first<{ count: number }>();
+    if (Number(recent?.count || 0) >= 3) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'PHONE_OTP_RATE_LIMITED' });
+
+    try {
+      const sent = await twilioRequest(ctx, '/Verifications', { To: phone, Channel: 'sms' });
+      const challengeId = crypto.randomUUID();
+      await db.prepare(
+        'INSERT INTO auth_phone_challenges (challenge_id, phone_e164, phone_hash, provider_reference, status, attempts, expires_at_ms, created_at_ms) VALUES (?1, ?2, ?3, ?4, \'PENDING\', 0, ?5, ?6)',
+      ).bind(challengeId, phone, phoneHash, typeof sent.sid === 'string' ? sent.sid : null, now + PHONE_CHALLENGE_TTL_MS, now).run();
+      return jsonWorkerResponse(ctx, 202, { status: 'ok', challengeId, expiresInSeconds: PHONE_CHALLENGE_TTL_MS / 1000 });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'SMS_SEND_FAILED';
+      return jsonWorkerResponse(ctx, code === 'SMS_PROVIDER_NOT_CONFIGURED' ? 503 : code === 'SMS_PROVIDER_RATE_LIMITED' ? 429 : 502, { status: 'error', code });
+    }
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/phone/verify') {
+    if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
+    const parsed = await readValidatedJsonBody(request, 4 * 1024);
+    if (!parsed.ok) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
+    const challengeId = typeof parsed.body.challengeId === 'string' ? parsed.body.challengeId.trim() : '';
+    const code = typeof parsed.body.code === 'string' ? parsed.body.code.trim() : '';
+    if (!/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{4,10}$/.test(code)) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_OTP_INPUT' });
+    const challenge = await db.prepare(
+      'SELECT phone_e164, phone_hash, status, attempts, expires_at_ms FROM auth_phone_challenges WHERE challenge_id = ?1 LIMIT 1',
+    ).bind(challengeId).first<{ phone_e164: string; phone_hash: string; status: string; attempts: number; expires_at_ms: number }>();
+    if (!challenge || challenge.status !== 'PENDING' || Number(challenge.expires_at_ms) <= Date.now()) {
+      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'OTP_CHALLENGE_EXPIRED' });
+    }
+    if (Number(challenge.attempts) >= 5) {
+      await db.prepare('UPDATE auth_phone_challenges SET status = \'LOCKED\' WHERE challenge_id = ?1').bind(challengeId).run();
+      return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_ATTEMPTS_EXCEEDED' });
+    }
+    await db.prepare('UPDATE auth_phone_challenges SET attempts = attempts + 1 WHERE challenge_id = ?1 AND status = \'PENDING\'').bind(challengeId).run();
+
+    try {
+      const checked = await twilioRequest(ctx, '/VerificationChecks', { To: challenge.phone_e164, Code: code });
+      if (checked.status !== 'approved') return jsonWorkerResponse(ctx, 401, { status: 'error', code: 'OTP_INVALID' });
+      await db.prepare('UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2').bind(Date.now(), challengeId).run();
+
+      const current = await authenticateWorkerSession(ctx);
+      const identity = await createOrResolveIdentity(db, 'phone', challenge.phone_e164, {
+        phone: challenge.phone_e164, emailVerified: false,
+      }, current.authenticated ? current.uid || undefined : undefined);
+      const session = await issueSession(db, request, identity.uid, 'phone');
+      const headers = new Headers({ 'Cache-Control': 'no-store', 'Set-Cookie': buildSessionCookie(session.token, SESSION_TTL_SECONDS) });
+      return jsonWorkerResponse(ctx, 200, { status: 'ok', linked: identity.linked, uid: identity.uid }, { extraHeaders: { 'Set-Cookie': headers.get('Set-Cookie') || '' } });
+    } catch (error) {
+      const codeName = error instanceof Error ? error.message : 'PHONE_AUTH_FAILED';
+      const status = codeName === 'IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT' ? 409 : 503;
+      return jsonWorkerResponse(ctx, status, { status: 'error', code: codeName });
+    }
+  }
+
+  if (method === 'GET' && pathname === '/api/auth/session') {
+    const auth = await authenticateWorkerSession(ctx);
+    if (!auth.authenticated) return jsonWorkerResponse(ctx, auth.statusCode === 503 ? 503 : 200, { status: 'ok', authenticated: false });
+    return jsonWorkerResponse(ctx, 200, { status: 'ok', authenticated: true, user: { uid: auth.uid, email: auth.email, emailVerified: auth.emailVerified, isAdmin: auth.isAdmin, authProvider: auth.authProvider } });
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/logout') {
+    if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
+    const auth = await authenticateWorkerSession(ctx);
+    const tokenCookie = request.headers.get('cookie') || '';
+    const raw = tokenCookie.split(';').map((part) => part.trim()).find((part) => part.startsWith('__Host-radar_session='))?.slice('__Host-radar_session='.length);
+    if (auth.authenticated && raw) {
+      const tokenHash = await sha256Hex(raw);
+      await db.prepare('UPDATE user_sessions SET status = \'REVOKED\', revoked_at_iso = ?1, revoked_by_uid = ?2 WHERE token_hash = ?3 AND status = \'ACTIVE\'')
+        .bind(new Date().toISOString(), auth.uid, tokenHash).run();
+    }
+    return new Response(JSON.stringify({ status: 'ok' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Set-Cookie': buildClearedSessionCookie() },
+    });
+  }
+
+  return null;
+}
