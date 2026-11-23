@@ -68,7 +68,11 @@ export async function handleStorageAndAdminWorkerRoute(
       dependencyMatrix: WORKER_DEPENDENCY_COMPATIBILITY_MATRIX,
       triadDomains,
       operationalVisibility: {
-        workerHealth: diag.allCanonicalMigrationsApplied || !userDb ? 'healthy' : 'degraded_pending_migrations',
+        workerHealth: !userDb
+          ? 'unbound'
+          : diag.allCanonicalMigrationsApplied
+            ? 'healthy'
+            : 'degraded_pending_migrations',
         d1Status: userDb ? 'bound' : 'unbound',
         userDbStatus: triadDomains.userDbBound ? 'bound' : 'unbound',
         researchDbStatus: triadDomains.researchDbBound ? 'bound' : 'unbound',
