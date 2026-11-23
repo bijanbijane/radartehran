@@ -12,7 +12,6 @@ export type ServiceWorkerCachingStrategy =
   | 'NetworkFirstShell'
   | 'NetworkFirstMarketData'
   | 'NetworkOnlyMapTile'
-  | 'NetworkOnlyMapTile'
   | 'StaleWhileRevalidateUiAsset'
   | 'NetworkOnlyOther';
 
@@ -192,7 +191,7 @@ export function classifyServiceWorkerRequestStrategy(input: {
   }
 
   if (pathname.startsWith('/api/osm-tile/')) {
-    return parsed.origin === appOrigin ? 'NetworkOnlyMapTile' : 'NetworkOnlyMapTile';
+    return 'NetworkOnlyMapTile';
   }
 
   const isExternalMapTileHost =
