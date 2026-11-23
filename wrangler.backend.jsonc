@@ -8,6 +8,7 @@
   "observability": { "enabled": true },
   "vars": {
     "APP_ENV": "production",
+    "DB_WRITES_PAUSED_UNTIL_UTC": "2026-11-24T00:00:00Z",
     "WORKER_ENV": "production",
     "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev",
     "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
