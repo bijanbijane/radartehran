@@ -4,11 +4,14 @@ import worker from '../worker/index';
 import type { RadarQueueEnvelope } from '../worker/queues/queueAndCronProcessor';
 import type { MessageBatch, WorkerEnv } from '../worker/types';
 
+const executionCtx = { waitUntil() {}, passThroughOnException() {} } as never;
+
 test('future DB write pause blocks mutations while preserving reads and privacy/security exceptions', async () => {
   const env = { DB_WRITES_PAUSED_UNTIL_UTC: '2099-01-01T00:00:00Z' } as WorkerEnv;
   const blocked = await worker.fetch(
     new Request('https://radar.test/api/account/profile', { method: 'PATCH' }),
     env,
+    executionCtx,
   );
   assert.equal(blocked.status, 503);
   const blockedBody = await blocked.json() as { code: string; pausedUntilUtc: string };
@@ -31,6 +34,7 @@ test('invalid DB write-pause timestamp fails closed for mutations', async () => 
   const response = await worker.fetch(
     new Request('https://radar.test/api/account/favorites', { method: 'PUT' }),
     { DB_WRITES_PAUSED_UNTIL_UTC: 'tomorrow' } as WorkerEnv,
+    executionCtx,
   );
   assert.equal(response.status, 503);
   const body = await response.json() as { code: string };
@@ -41,6 +45,7 @@ test('expired DB write pause no longer blocks mutation dispatch', async () => {
   const response = await worker.fetch(
     new Request('https://radar.test/api/account/profile', { method: 'PATCH' }),
     { DB_WRITES_PAUSED_UNTIL_UTC: '2020-01-01T00:00:00Z' } as WorkerEnv,
+    executionCtx,
   );
   const body = await response.json() as { code?: string };
   assert.notEqual(body.code, 'DB_WRITES_PAUSED');
@@ -57,7 +62,7 @@ test('queue batches are delayed until the pause expires instead of being process
     },
   } as unknown as MessageBatch<RadarQueueEnvelope>;
 
-  await worker.queue(batch, { DB_WRITES_PAUSED_UNTIL_UTC: '2099-01-01T00:00:00Z' } as WorkerEnv);
+  await worker.queue(batch, { DB_WRITES_PAUSED_UNTIL_UTC: '2099-01-01T00:00:00Z' } as WorkerEnv, executionCtx);
   assert.equal(retryDelay, 43_200, 'queue retry delay uses a bounded 12-hour recheck interval');
 });
 
@@ -68,6 +73,6 @@ test('scheduled jobs are not enqueued while the DB write pause is active', async
     RADAR_QUEUE: { async send() { sent += 1; } },
   } as unknown as WorkerEnv;
 
-  await worker.scheduled({ scheduledTime: Date.now(), cron: '0 * * * *' }, env);
+  await worker.scheduled({ scheduledTime: Date.now(), cron: '0 * * * *' }, env, executionCtx);
   assert.equal(sent, 0);
 });
