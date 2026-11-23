@@ -228,6 +228,53 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     assert.equal(afterReplay?.attempt_count, 1);
   });
 
+  it('bounds expired upload-session cleanup to the configured batch size', async () => {
+    const { db, env } = await setupMigratedEnv();
+    const nowMs = Date.now();
+    for (const id of ['upl-bounded-1', 'upl-bounded-2', 'upl-bounded-3']) {
+      await db
+        .prepare(
+          `INSERT INTO upload_sessions (session_id, owner_uid, city_id, hood_id, media_type, mime_type, file_name, total_chunks, max_bytes, received_bytes, completed, created_at_ms)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+        )
+        .bind(id, 'u-bounded', 'tehran', 1, 'image', 'image/webp', `${id}.webp`, 1, 1024, 1, 0, nowMs - 60_000)
+        .run();
+      await db
+        .prepare('INSERT INTO upload_session_chunks (session_id, chunk_index, chunk_base64, byte_length) VALUES (?1, ?2, ?3, ?4)')
+        .bind(id, 0, 'AQID', 3)
+        .run();
+    }
+
+    const envelope: RadarQueueEnvelope = {
+      schemaVersion: '1.0',
+      messageId: 'msg-bounded-cleanup',
+      jobType: 'expired_chunk_upload_session_cleanup',
+      idempotencyKey: 'idem-bounded-cleanup',
+      correlationId: 'corr-bounded-cleanup',
+      createdAtIso: new Date(nowMs).toISOString(),
+      payload: { nowMs, ttlMs: 1_000, maxSessions: 2 },
+    };
+    const wrapped = makeQueueMessage(envelope);
+    await workerEntrypoint.queue(
+      { queue: 'radartehran-jobs', messages: [wrapped.msg], ackAll() {}, retryAll() {} },
+      env,
+    );
+
+    assert.equal(wrapped.getState().acked, true);
+    const remaining = await db
+      .prepare('SELECT session_id FROM upload_sessions ORDER BY session_id')
+      .all<{ session_id: string }>();
+    assert.deepEqual((remaining.results ?? []).map((row) => row.session_id), ['upl-bounded-3']);
+    const remainingChunks = await db
+      .prepare('SELECT COUNT(*) AS count FROM upload_session_chunks')
+      .first<{ count: number }>();
+    assert.equal(Number(remainingChunks?.count ?? 0), 1);
+    const watermark = await db
+      .prepare("SELECT watermark_value FROM sync_watermarks WHERE watermark_key = 'expired_chunk_upload_session_cleanup:last_run'")
+      .first<{ watermark_value: string }>();
+    assert.equal(watermark?.watermark_value, '2');
+  });
+
   it('does not rerun committed work when the legacy idempotency mirror write fails', async () => {
     const { db, env, setFailOnSqlContains } = await setupMigratedEnv();
     const envelope: RadarQueueEnvelope = {
