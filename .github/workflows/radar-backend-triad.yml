@@ -2,7 +2,7 @@ name: Radar Backend Triad & Frontend Service Binding
 
 on:
   push:
-    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001, migration/rt-cloudflare-native-auth-triad-001]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -12,11 +12,14 @@ on:
       - 'migrations/research-d1/**'
       - 'migrations/neighborhood-d1/**'
       - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'tests/cloudflare-native-auth.test.ts'
+      - 'tests/cloudflare-worker-storage-routes.test.ts'
+      - 'tests/frontend-api-service-binding.test.ts'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/radar-backend-triad.yml'
   pull_request:
-    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -66,13 +69,13 @@ jobs:
         run: |
           npx tsx tests/d1-triad-binding-isolation.test.ts
           npx tsx --test tests/frontend-api-service-binding.test.ts
-          npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
+          npx tsx --test tests/cloudflare-native-auth.test.ts tests/cloudflare-worker-storage-routes.test.ts
 
       - name: Verify temporary D1 write-pause deadline behavior
         run: npx tsx --test worker/db/writePause.test.ts
 
-      - name: Verify Firebase identity and Worker authentication contracts
-        run: npm run test:auth
+      - name: Verify Cloudflare-native D1 session authentication contracts
+        run: npm run test:cloudflare-native-auth
 
       - name: Verify account lifecycle and ownership isolation
         run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
@@ -138,16 +141,6 @@ jobs:
 
       - name: Dry-run package the Frontend Worker with RADAR_API Service Binding
         run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env production --dry-run --outdir /tmp/radartehran-frontend-dryrun
-
-      - name: Verify production App Check client key is present
-        run: |
-          if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
-            echo "ERROR: production frontend bundle has no reCAPTCHA Enterprise site key."
-            echo "Set the public VITE_FIREBASE_APP_CHECK_SITE_KEY build variable for radartehran-frontend."
-            echo "Do not disable backend App Check enforcement to bypass this missing credential."
-            exit 1
-          fi
-          echo "Production App Check site key is present in the deployed frontend bundle."
 
       - name: Confirm the required service binding is present in committed config
         run: |

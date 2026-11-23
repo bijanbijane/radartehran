@@ -1,61 +1,21 @@
 /**
  * @file tests/cloudflare-worker-storage-routes.test.ts
  * @description Package 1 E2E Worker verification for all 9 canonical `/api/object-storage/*`
- * routes using real `node:sqlite` D1, R2 simulator, and real RS256 Firebase JWTs.
+ * routes using real `node:sqlite` D1, R2 simulator, and opaque D1-backed session cookies.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { afterEach, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 import workerEntrypoint from '../worker/index';
-import {
-  clearTestJwksForEdgeAuth,
-  registerTestJwkForEdgeAuth,
-} from '../worker/auth/firebaseEdgeAuth';
-import {
-  D1_MIGRATIONS,
-  runD1MigrationsIdempotently,
-} from '../worker/db/d1SchemaAndMigrations';
+import { sha256Hex } from '../worker/auth/sessionAuth';
 import {
   createLocalR2BucketSimulator,
   storeValidatedMediaWithD1Saga,
 } from '../worker/storage/r2StorageAdapter';
 import { createCanonicalObjectSignedUrl } from '../worker/storage/signedUrlSecurity';
 import type { D1Database, D1PreparedStatement, WorkerEnv } from '../worker/types';
-
-function b64url(input: Uint8Array | string): string {
-  const buf = typeof input === 'string' ? Buffer.from(input, 'utf8') : Buffer.from(input);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function generateTestKeyAndJwt(payloadOverrides: Record<string, unknown> = {}) {
-  const kp = await crypto.subtle.generateKey(
-    { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
-    true,
-    ['sign', 'verify'],
-  );
-  const kid = `kid-${Math.random().toString(36).slice(2, 8)}`;
-  registerTestJwkForEdgeAuth(kid, kp.publicKey);
-  const now = Math.floor(Date.now() / 1000);
-  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const payload = b64url(JSON.stringify({
-    iss: 'https://securetoken.google.com/radartehran-test',
-    aud: 'radartehran-test',
-    sub: 'user-owner-1',
-    user_id: 'user-owner-1',
-    email: 'owner@example.com',
-    email_verified: true,
-    iat: now - 30,
-    auth_time: now - 30,
-    exp: now + 3600,
-    ...payloadOverrides,
-  }));
-  const sig = new Uint8Array(
-    await crypto.subtle.sign('RSASSA-PKCS1-v1_5', kp.privateKey, new TextEncoder().encode(`${header}.${payload}`)),
-  );
-  return `${header}.${payload}.${b64url(sig)}`;
-}
 
 function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync } {
   const sqlite = new DatabaseSync(':memory:');
@@ -93,6 +53,15 @@ function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync } {
   };
 }
 
+async function seedUserSession(db: D1Database, uid: string, phone: string): Promise<string> {
+  const token = `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+  const now = new Date().toISOString();
+  await db.prepare("INSERT INTO user_profiles (uid, display_name, preferred_city, preferred_language, area_unit, intl_currency, role, account_status, created_at_iso, updated_at_iso) VALUES (?1, 'Test User', 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?2, ?2)").bind(uid, now).run();
+  await db.prepare("INSERT INTO auth_identities (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso) VALUES ('phone', ?1, ?2, NULL, 0, ?1, ?3, ?3)").bind(phone, uid, now).run();
+  await db.prepare("INSERT INTO user_sessions (session_id, uid, device_label, user_agent_summary, ip_prefix, status, created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider) VALUES (?1, ?2, 'test', 'test', '127.0.0', 'ACTIVE', ?3, ?3, ?4, ?5, 'phone')").bind(`sess_${uid}`, uid, now, await sha256Hex(token), new Date(Date.now() + 3600000).toISOString()).run();
+  return token;
+}
+
 const VALID_WEBP = new Uint8Array([
   0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00,
   0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20,
@@ -105,15 +74,13 @@ const VALID_WEBP = new Uint8Array([
 async function buildEnv() {
   const { db, sqlite } = createRealSqliteD1();
   const r2 = createLocalR2BucketSimulator();
-  const sqlDir = path.resolve(process.cwd(), 'migrations/d1');
-  for (const mig of D1_MIGRATIONS) {
-    sqlite.exec(fs.readFileSync(path.join(sqlDir, mig.fileName), 'utf8'));
+  const sqlDir = path.resolve(process.cwd(), 'migrations/user-d1');
+  for (const file of fs.readdirSync(sqlDir).filter((name) => name.endsWith('.sql')).sort()) {
+    sqlite.exec(fs.readFileSync(path.join(sqlDir, file), 'utf8'));
   }
-  await runD1MigrationsIdempotently(db);
   const env: WorkerEnv = {
-    ENVIRONMENT: 'staging',
-    FIREBASE_PROJECT_ID: 'radartehran-test',
-    FIREBASE_APP_CHECK_MODE: 'disabled',
+    APP_ENV: 'staging',
+    APP_URL: 'https://radartehran.ir',
     R2_MEDIA_BUCKET_NAME: 'radartehran-staging-media',
     R2_SIGNING_SECRET: 'test-signing-secret-0123456789abcdef',
     DB: db,
@@ -121,10 +88,6 @@ async function buildEnv() {
   };
   return { db, sqlite, r2, env };
 }
-
-afterEach(() => {
-  clearTestJwksForEdgeAuth();
-});
 
 describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', () => {
   it('1. GET /api/object-storage/status returns sanitized R2 capabilities without secrets', async () => {
@@ -140,8 +103,8 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
 
   it('2. executes full multi-chunk upload-init -> upload-chunk (with idempotent replay & conflict) -> upload-complete -> GET 200/206/416 & signed URL', async () => {
     const { env } = await buildEnv();
-    const ownerJwt = await generateTestKeyAndJwt({ sub: 'owner-1', user_id: 'owner-1' });
-    const otherJwt = await generateTestKeyAndJwt({ sub: 'other-2', user_id: 'other-2' });
+    const ownerSessionToken = await seedUserSession(env.USER_DB as D1Database, 'owner-1', '+989120000001');
+    const otherSessionToken = await seedUserSession(env.USER_DB as D1Database, 'other-2', '+989120000002');
 
     const part0 = VALID_WEBP.slice(0, 20);
     const part1 = VALID_WEBP.slice(20);
@@ -149,7 +112,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const initRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-init', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, Origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mediaType: 'image',
           mimeType: 'image/webp',
@@ -168,7 +131,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const c0 = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-chunk', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, chunkIndex: 0, base64Data: Buffer.from(part0).toString('base64') }),
       }),
       env,
@@ -178,7 +141,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const c0Replay = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-chunk', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, chunkIndex: 0, base64Data: Buffer.from(part0).toString('base64') }),
       }),
       env,
@@ -189,7 +152,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const c0Conflict = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-chunk', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, chunkIndex: 0, base64Data: Buffer.from([9, 9, 9]).toString('base64') }),
       }),
       env,
@@ -200,7 +163,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const c1Foreign = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-chunk', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${otherJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${otherSessionToken}`, Origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, chunkIndex: 1, base64Data: Buffer.from(part1).toString('base64') }),
       }),
       env,
@@ -211,7 +174,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const c1 = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-chunk', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, chunkIndex: 1, base64Data: Buffer.from(part1).toString('base64') }),
       }),
       env,
@@ -221,7 +184,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const completeRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload-complete', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       }),
       env,
@@ -240,7 +203,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     // GET by owner returns 200 with full bytes
     const ownerGet = await workerEntrypoint.fetch(
       new Request(`https://radartehran.ir/api/object-storage/file/${mediaObject.id}`, {
-        headers: { Authorization: `Bearer ${ownerJwt}` },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}` },
       }),
       env,
     );
@@ -251,7 +214,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     // GET with valid Range returns 206 Partial Content
     const rangeGet = await workerEntrypoint.fetch(
       new Request(`https://radartehran.ir/api/object-storage/file/${mediaObject.id}`, {
-        headers: { Authorization: `Bearer ${ownerJwt}`, Range: 'bytes=0-11' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, Range: 'bytes=0-11' },
       }),
       env,
     );
@@ -262,7 +225,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     // GET with unsatisfiable Range returns 416
     const badRange = await workerEntrypoint.fetch(
       new Request(`https://radartehran.ir/api/object-storage/file/${mediaObject.id}`, {
-        headers: { Authorization: `Bearer ${ownerJwt}`, Range: 'bytes=5000-6000' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, Range: 'bytes=5000-6000' },
       }),
       env,
     );
@@ -286,14 +249,14 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
 
   it('3. enforces Legal Hold (423), owner mismatch (403), attach-to-bargain & cleanup-bargain, and R2+D1 Saga compensation', async () => {
     const { db, r2, env } = await buildEnv();
-    const ownerJwt = await generateTestKeyAndJwt({ sub: 'owner-1', user_id: 'owner-1' });
-    const otherJwt = await generateTestKeyAndJwt({ sub: 'other-2', user_id: 'other-2' });
+    const ownerSessionToken = await seedUserSession(env.USER_DB as D1Database, 'owner-1', '+989120000001');
+    const otherSessionToken = await seedUserSession(env.USER_DB as D1Database, 'other-2', '+989120000002');
 
     // Direct upload image
     const uploadRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/upload', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mediaType: 'image',
           mimeType: 'image/webp',
@@ -311,7 +274,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const attachRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/attach-to-bargain', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}`, 'Content-Type': 'application/json' },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ bargainId: 'bargain-42', mediaIds: [mediaObject.id] }),
       }),
       env,
@@ -322,7 +285,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const foreignDel = await workerEntrypoint.fetch(
       new Request(`https://radartehran.ir/api/object-storage/file/${mediaObject.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${otherJwt}` },
+        headers: { Cookie: `__Host-radar_session=${otherSessionToken}` },
       }),
       env,
     );
@@ -337,7 +300,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const heldDel = await workerEntrypoint.fetch(
       new Request(`https://radartehran.ir/api/object-storage/file/${mediaObject.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${ownerJwt}` },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}` },
       }),
       env,
     );
@@ -346,7 +309,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const cleanupHeld = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/cleanup-bargain/bargain-42', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}` },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}` },
       }),
       env,
     );
@@ -360,7 +323,7 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
     const cleanupDone = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/object-storage/cleanup-bargain/bargain-42', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${ownerJwt}` },
+        headers: { Cookie: `__Host-radar_session=${ownerSessionToken}` },
       }),
       env,
     );

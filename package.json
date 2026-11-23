@@ -66,7 +66,8 @@
     "cf:config:check": "wrangler deploy --dry-run",
     "cf:staging:preflight": "wrangler deploy --env staging --dry-run",
     "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights",
-    "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check"
+    "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check",
+    "test:cloudflare-native-auth": "tsx --test tests/cloudflare-native-auth.test.ts tests/cloudflare-worker-storage-routes.test.ts tests/frontend-api-service-binding.test.ts"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.67.0",

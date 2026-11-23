@@ -73,7 +73,7 @@ export function createWorkerLifecycleOrchestrator(env: WorkerEnv): AccountDeleti
     store,
     domainAdapters: createWorkerDomainAdapters(d1),
     mediaAdapter: createWorkerMediaDeletionAdapter({ db: d1, mediaBucket: env.MEDIA_BUCKET, bucketName }),
-    authAdapter: createWorkerFailClosedAuthAdapter(),
+    authAdapter: createWorkerFailClosedAuthAdapter(d1),
     batchReceiptRecorder: recorder,
     telemetryErasureAdapter: createWorkerTelemetryAdapter(d1),
   });
