@@ -90,6 +90,13 @@ Configure these values in the Cloudflare Worker environment:
 
 Do not place secret values in Git, Wrangler vars, logs, or this checkpoint.
 
+## Additional cutover safety controls
+
+- Google OIDC, SMS OTP, account-management, account-deletion, and D1 marketplace endpoints are now explicitly registered in the migration control register.
+- Those routes are marked `BLOCKED` and the Worker router returns a fail-closed 501 until the corresponding USER_DB migrations and provider configuration are ready. This prevents partially migrated routes from being treated as production-ready.
+- Public marketplace projections no longer expose other users' raw owner UIDs. Sponsor phone numbers are masked for non-admin callers, and public sponsor JSON is reduced to an allowlist.
+- The account workspace now exposes Google sign-in and SMS OTP sign-in through the Cloudflare AuthClient. Persian and Arabic numerals are normalized for Iranian phone numbers and OTP entry.
+
 ## Remaining retirement work
 
 - Frontend and legacy server still contain Firebase imports and Firestore adapters. `src/firebase.ts`, Firebase App Check helpers, Firestore-based UI hooks, Firestore stores in legacy server modules, Firebase rules/configuration files, and Firebase dependencies in package manifests have not all been removed.
