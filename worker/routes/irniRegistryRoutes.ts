@@ -355,7 +355,15 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         id_algorithm_version: string; schema_version: string; expected_entities: number;
         expected_relationships: number; expected_source_mappings: number; artifact_checksums_json: string; status: string;
       }>();
-    if (!batch || batch.status !== 'RECEIVING') {
+    if (!batch) {
+      return jsonResponse(ctx, 404, { status: 'error', code: 'IRNI_PUBLISH_BATCH_NOT_FOUND' });
+    }
+    if (batch.status === 'PUBLISHED') {
+      const publishedHead = await db.prepare('SELECT registry_revision, registry_checksum, canonical_entity_count, relationship_count, source_mapping_count FROM geo_registry_head WHERE singleton_id = ?')
+        .bind('current').first<Record<string, unknown>>();
+      return jsonResponse(ctx, 200, { status: 'ok', published: true, idempotentReplay: true, head: publishedHead });
+    }
+    if (batch.status !== 'RECEIVING') {
       return jsonResponse(ctx, 409, { status: 'error', code: 'IRNI_PUBLISH_BATCH_NOT_RECEIVING' });
     }
     const [entityCount, relationshipCount, mappingCount] = await Promise.all([
