@@ -60,8 +60,11 @@ export async function enforceWorkerMutationWriteBlock(
     const code = err && typeof err === 'object' && 'code' in err
       ? String((err as { code: string }).code)
       : 'WRITE_ADMISSION_UNAVAILABLE';
-    const status = hasHttpStatus
+    const candidateStatus = hasHttpStatus
       ? Number((err as { httpStatus: number }).httpStatus)
+      : 503;
+    const status = Number.isInteger(candidateStatus) && candidateStatus >= 400 && candidateStatus <= 599
+      ? candidateStatus
       : 503;
     return jsonWorkerResponse(ctx, status, {
       status: 'error',
