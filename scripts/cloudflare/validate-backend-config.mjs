@@ -227,6 +227,12 @@ export function validateBackendWranglerConfig(
 
   // 4. Staging isolation checks
   const staging = config?.env?.staging;
+  if (config.cache?.enabled !== true) {
+    errors.push('PRODUCTION_WORKER_CACHE_MUST_BE_ENABLED');
+  }
+  if (staging?.cache?.enabled !== false) {
+    errors.push('STAGING_WORKER_CACHE_MUST_REMAIN_DISABLED_UNTIL_VALIDATED');
+  }
   if (!staging || staging.name !== EXPECTED_PRODUCTION_BACKEND_TARGETS.stagingWorkerName) {
     errors.push(`INVALID_STAGING_WORKER_NAME:expected=${EXPECTED_PRODUCTION_BACKEND_TARGETS.stagingWorkerName}:got=${staging?.name}`);
   }
