@@ -4,6 +4,7 @@ import type { D1Database } from '../types.ts';
 import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import {
   assertUserDbDeletionWriteBlock,
+  assertNoActiveUserDbLegalHold,
   ensureUserDbDeletionWriteBlock,
 } from './d1UserLifecycleWriteBarrier.ts';
 
@@ -98,3 +99,50 @@ test('Stage D fails closed when USER_DB barrier verification cannot be read', as
     /synthetic USER_DB read failure/,
   );
 });
+
+function fakeLegalHoldDb(params: {
+  row?: { resource_id: string; reason: string } | null;
+  failRead?: boolean;
+}): D1Database {
+  return {
+    prepare(sql: string) {
+      let values: unknown[] = [];
+      const statement = {
+        bind(...next: unknown[]) { values = next; return statement; },
+        async first() {
+          if (params.failRead) throw new Error('synthetic legal-hold lookup failure');
+          assert.match(sql, /FROM legal_holds/);
+          assert.deepEqual(values, ['user:uid_1', 'uid_1']);
+          return params.row ?? null;
+        },
+      };
+      return statement;
+    },
+  } as unknown as D1Database;
+}
+
+test('Stage D permits deletion only after both USER_DB legal-hold keys are clear', async () => {
+  await assertNoActiveUserDbLegalHold({ userDb: fakeLegalHoldDb({ row: null }), uid: 'uid_1' });
+});
+
+test('Stage D refuses deletion when either USER_DB legal-hold key is active', async () => {
+  await assert.rejects(
+    () => assertNoActiveUserDbLegalHold({
+      userDb: fakeLegalHoldDb({ row: { resource_id: 'user:uid_1', reason: 'court order' } }),
+      uid: 'uid_1',
+    }),
+    (error: unknown) => error instanceof AccountLifecycleStoreError &&
+      error.code === 'LEGAL_HOLD_ACTIVE' &&
+      error.httpStatus === 409,
+  );
+});
+
+test('Stage D refuses deletion when USER_DB legal-hold status cannot be verified', async () => {
+  await assert.rejects(
+    () => assertNoActiveUserDbLegalHold({ userDb: fakeLegalHoldDb({ failRead: true }), uid: 'uid_1' }),
+    (error: unknown) => error instanceof AccountLifecycleStoreError &&
+      error.code === 'STORE_UNAVAILABLE' &&
+      error.httpStatus === 503,
+  );
+});
+
