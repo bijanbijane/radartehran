@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle2, Cpu, Globe, KeyRound, RefreshCw, Send, ShieldCheck, Zap } from 'lucide-react';
-import { auth } from '../../firebase';
+import { getAuthClient } from '../../platform/auth';
 import { toPersianNum } from '../../data/neighborhoods';
 export interface CasperHubEpistemicTelemetry { readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean; readonly sequenceGapCount: number; readonly syncCursorLag: number; readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number; readonly criticalNotesCount: number; readonly activeBlockersCount: number; }
 export interface CasperHubWhoAmIData { readonly authenticated: boolean; readonly agent_id?: string; readonly database?: string; readonly permissions?: string[]; readonly active_roadmaps_count?: number; readonly open_tasks_count?: number; }
@@ -30,10 +30,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
 
   const getAdminHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
+    // Worker authenticates the HttpOnly Cloudflare session cookie.
     return headers;
   };
 
@@ -42,7 +39,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
     setLoading(true); setErrorMsg(null);
     try {
       const headers = await getAdminHeaders();
-      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers }), fetch('/api/casper-hub/bootstrap', { headers })]);
+      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers, credentials: 'same-origin' }), fetch('/api/casper-hub/bootstrap', { headers, credentials: 'same-origin' })]);
       if (!isMountedRef.current) return;
       if (whoRes.ok) {
         const whoJson = await whoRes.json();
