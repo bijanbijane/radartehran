@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, Building2, Cpu, Database, HardDriveDownload, Layers, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
-import { auth } from '../../firebase';
+import { getAuthClient } from '../../platform/auth';
 import { toPersianNum } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
@@ -51,20 +51,17 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
 
   const getHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
+    // Worker authenticates the HttpOnly Cloudflare session cookie.
     return headers;
   };
 
   const refreshControlPlane = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!getAuthClient().getUser()) return;
     setLoading(true);
     try {
       const headers = await getHeaders();
       const [modRes, cacheRes, secRes, recRes, anaRes, rdyRes] = await Promise.all([
-        fetch('/api/admin/platform/modules?limit=50', { headers }),
+        fetch('/api/admin/platform/modules?limit=50', { headers, credentials: 'same-origin' }),
         fetch('/api/admin/cache/health', { headers }),
         fetch('/api/admin/security/secrets', { headers }),
         fetch('/api/admin/recovery/resources', { headers }),
