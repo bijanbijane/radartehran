@@ -1,4 +1,4 @@
-import React from 'react'; import { collection, deleteDoc, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore'; import { auth, db, OperationType, handleFirestoreError } from '../firebase'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
+import React from 'react'; import { collection, deleteDoc, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore'; import { db, OperationType, handleFirestoreError } from '../firebase'; import { getAuthClient } from '../platform/auth'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
 export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any): Promise<void> => {
   const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? sanitizeSponsorForOverrideDoc(rawSponsorVal) : undefined;
   await setDoc(doc(db, 'neighborhoodOverrides', String(overrideHoodId)), {
@@ -77,12 +77,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
         batch.delete(doc(db, 'bargains', docId));
         batch.delete(doc(db, 'bargainOwners', docId));
         await batch.commit();
-        const signedInUser = auth.currentUser;
+        const signedInUser = getAuthClient().getUser();
         if (signedInUser) {
           try {
-            const idToken = await signedInUser.getIdToken();
+            
             const response = await fetch(`/api/object-storage/cleanup-bargain/${encodeURIComponent(docId)}`, {
-              method: 'POST', headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store',
+              method: 'POST', headers: { Accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store',
             });
             const result: unknown = await response.json();
             if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
@@ -120,11 +120,11 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       if (String(bargainId).startsWith('cloud-')) {
         await updateDoc(doc(db, 'bargains', cleanDocId), { status: 'approved', updatedAt: serverTimestamp() });
       }
-      const signedInUser = auth.currentUser;
-      const idToken = signedInUser ? await signedInUser.getIdToken() : '';
+      const signedInUser = getAuthClient().getUser();
+      
       const approveRes = await fetch('/api/admin/bargains/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
+        headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
         body: JSON.stringify({ bargainId: cleanDocId, fromStatus: 'pending', status: 'approved' }),
       });
       if (!approveRes.ok) {
