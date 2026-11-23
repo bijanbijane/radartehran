@@ -27,14 +27,15 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'Idempotency-Key': window.crypto.randomUUID() },
         body: JSON.stringify({
           cityId: p.activeCity,
           hoodId,
+          hoodName: p.targetBargainHood.name,
           title: cleanTitle,
-          listingType: p.bargainType,
+          type: p.bargainType,
           sqm,
-          priceMillions: Number(p.bargainProposedPrice),
+          priceMillions: p.bargainType === 'خرید' ? Number(p.bargainProposedPrice) * sqm : Number(p.bargainProposedPrice),
           priceText: formattedPriceText,
           discountPercent,
           buyerProfitText: formattedProfitText,
@@ -46,9 +47,9 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         status?: string;
         durable?: boolean;
         message?: string;
-        bargain?: { id?: string; status?: string };
+        bargainId?: string; listingStatus?: string;
       } | null;
-      if (!response.ok || result?.status !== 'ok' || result.durable !== true || !result.bargain?.id) {
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true || !result.bargainId) {
         throw new Error(result?.message || 'ثبت پایدار آگهی در Cloudflare D1 تأیید نشد.');
       }
       p.setBargainSubmitMsg({
@@ -65,16 +66,182 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     p.setSelectedHoodId(hoodId); p.setActiveTab('bargains'); if (p.isVerifiedAdmin) p.setShowGoldPins(true); if (p.mapInstanceRef.current) p.mapInstanceRef.current.flyTo([p.targetBargainHood.lat, p.targetBargainHood.lng], 13, { duration: 0.7 }); p.setBargainTitle(''); p.setBargainStreet(''); p.setBargainUploadedMedia([]);
   }; const handleReserveSponsor = async (e: React.FormEvent) => {
     e.preventDefault();
-    p.setSponsorSubmitMsg('ثبت درخواست اسپانسر تا تکمیل مخزن D1 و رمزنگاری شماره تماس در Cloudflare موقتاً غیرفعال است. اطلاعات شما در مخزن قدیمی ذخیره نخواهد شد.');
+    const cleanAgency = sanitizeInput(p.sponsorAgencyName, 120);
+    const cleanPhone = sanitizeInput(p.sponsorPhone, 30);
+    if (cleanAgency.length < 2 || !cleanPhone) {
+      p.setSponsorSubmitMsg('نام دفتر املاک و شماره تماس معتبر را وارد کنید.');
+      return;
+    }
+    if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) {
+      p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب تأییدشده است.');
+      return;
+    }
+    const targetHood = p.evaluatedNeighborhoods.find((n) => n.id === p.sponsorHoodId)
+      || p.neighborhoods.find((n) => n.id === p.sponsorHoodId)
+      || p.evaluatedNeighborhoods[0];
+    const cleanSpec = sanitizeInput(p.sponsorSpecialty, 120);
+    const experienceYears = Math.min(80, Math.max(0, Number(p.sponsorExpYears) || 0));
+    const monthlyTariffMillion = getHoodMonthlySponsorTariff(targetHood);
+    const planMonths: 1 | 3 = p.featureFlags.enableSponsorBilling && p.sponsorPlanMonths === 3 ? 3 : 1;
+    const totalPayableMillion = planMonths === 3
+      ? Math.round(monthlyTariffMillion * 3 * 0.8 * 10) / 10
+      : monthlyTariffMillion;
+    const expiresAtIso = new Date(Date.now() + (planMonths === 3 ? 90 : 30) * 86400000).toISOString();
+    const trackingCode = sanitizeInput(p.sponsorTrackingCode, 60) || `TR-${Date.now().toString().slice(-6)}`;
+    try {
+      const response = await fetch('/api/v1/market/sponsor-requests', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Idempotency-Key': window.crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          cityId: p.activeCity,
+          hoodId: targetHood.id,
+          hoodName: targetHood.name,
+          agencyName: cleanAgency,
+          phone: cleanPhone,
+          specialty: cleanSpec,
+          experienceYears,
+          monthlyTariffMillion,
+          planMonths,
+          totalPayableMillion,
+          trackingCode,
+          expiresAtIso: p.isVerifiedAdmin ? expiresAtIso : undefined,
+        }),
+      });
+      const result = await response.json().catch(() => null) as {
+        status?: string; durable?: boolean; requestId?: string; requestStatus?: string;
+        trackingCode?: string; monthlyTariffMillion?: number; totalPayableMillion?: number; message?: string; code?: string;
+      } | null;
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true || !result.requestId) {
+        throw new Error(result?.code === 'MARKET_PII_ENCRYPTION_UNAVAILABLE'
+          ? 'رمزهای رمزنگاری اطلاعات تماس در Cloudflare تنظیم نشده‌اند؛ شماره تماس ذخیره نشد.'
+          : result?.message || 'ثبت درخواست اسپانسر در Cloudflare D1 تأیید نشد.');
+      }
+      const approved = result.requestStatus === 'approved';
+      const newItem: SponsorCrmRequestItem = {
+        id: `cloud-${result.requestId}`,
+        hoodId: targetHood.id,
+        hoodName: targetHood.name,
+        agencyName: cleanAgency,
+        phone: cleanPhone,
+        specialty: cleanSpec,
+        experienceYears,
+        monthlyTariffMillion: Number(result.monthlyTariffMillion ?? monthlyTariffMillion),
+        planMonths,
+        totalPayableMillion: Number(result.totalPayableMillion ?? totalPayableMillion),
+        trackingCode: result.trackingCode || trackingCode,
+        ...(approved ? { expiresAtIso } : {}),
+        status: approved ? 'approved' : 'pending',
+        createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
+      };
+      p.setSponsorRequests((previous) => [newItem, ...(previous || [])]);
+      if (approved) {
+        const planType = p.featureFlags.enableSponsorBilling ? (planMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free';
+        const sponsor = {
+          name: cleanAgency,
+          phone: cleanPhone,
+          specialty: cleanSpec,
+          experienceYears,
+          expiresAtIso,
+          planType: planType as 'free' | 'paid_1m' | 'paid_3m',
+        };
+        p.setNeighborhoods((previous) => previous.map((hood) => hood.id === targetHood.id ? { ...hood, sponsor } : hood));
+      }
+      p.setSelectedHoodId(targetHood.id);
+      p.setSponsorSubmitMsg(approved
+        ? `درخواست اسپانسر برای محله ${targetHood.name} در Cloudflare D1 تأیید و ثبت شد. کد پیگیری: ${newItem.trackingCode}`
+        : `درخواست اسپانسر برای محله ${targetHood.name} در Cloudflare D1 ثبت شد و پس از تأیید مدیریت فعال می‌شود.`);
+      p.setSponsorTrackingCode('');
+    } catch (error) {
+      p.setSponsorSubmitMsg(error instanceof Error ? error.message : 'ارتباط با Cloudflare برقرار نشد؛ درخواست ثبت نشد.');
+    }
   };
   const handleRegisterBuyerAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSavingBuyerAlert) return;
     if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) {
-      p.setAlertSubmitMsg('ثبت درخواست خریدار نیازمند ورود با حساب کاربری است.');
+      p.setAlertSubmitMsg('ثبت درخواست خریدار نیازمند ورود با حساب تأییدشده است.');
       return;
     }
-    p.setAlertSubmitMsg('ثبت درخواست خریدار تا تکمیل رمزنگاری شماره تماس و API پایدار Cloudflare D1 موقتاً غیرفعال است. اطلاعات شما در مخزن قدیمی ذخیره نخواهد شد.');
+    const cleanName = sanitizeInput(p.alertFullName, 100);
+    const cleanPhone = sanitizeInput(p.alertPhone, 30);
+    if (cleanName.length < 2 || !cleanPhone) {
+      p.setAlertSubmitMsg('نام و شماره موبایل معتبر را وارد کنید.');
+      return;
+    }
+    const cleanBudget = sanitizeInput(p.alertMaxBudget, 120);
+    const asciiBudget = cleanBudget
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    const budgetMatch = asciiBudget.match(/[0-9]+(?:\\.[0-9]+)?/);
+    const parsedBudget = budgetMatch ? Number(budgetMatch[0]) : NaN;
+    const maxBudgetMillion = /میلیارد/.test(cleanBudget) ? parsedBudget * 1000 : parsedBudget;
+    if (!Number.isFinite(maxBudgetMillion) || maxBudgetMillion <= 0) {
+      p.setAlertSubmitMsg('حداکثر بودجه را به‌صورت عددی و با واحد میلیون یا میلیارد تومان وارد کنید.');
+      return;
+    }
+    const targetHood = p.evaluatedNeighborhoods.find((n) => n.id === p.alertHoodId)
+      || p.neighborhoods.find((n) => n.id === p.alertHoodId)
+      || p.evaluatedNeighborhoods[0];
+    setIsSavingBuyerAlert(true);
+    p.setAlertSubmitMsg('در حال ثبت امن درخواست...');
+    try {
+      const response = await fetch('/api/v1/market/buyer-alerts', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Idempotency-Key': window.crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          cityId: p.activeCity,
+          hoodId: targetHood.id,
+          fullName: cleanName,
+          phone: cleanPhone,
+          dealType: p.alertDealType,
+          maxBudgetMillion,
+          consentVersion: 'buyer-alert-2026-10-v1',
+        }),
+      });
+      const result = await response.json().catch(() => null) as {
+        status?: string; durable?: boolean; alertId?: string; expiresAtIso?: string; message?: string; code?: string;
+      } | null;
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true || !result.alertId) {
+        throw new Error(result?.code === 'MARKET_PII_ENCRYPTION_UNAVAILABLE'
+          ? 'رمزهای رمزنگاری اطلاعات تماس در Cloudflare تنظیم نشده‌اند؛ شماره تماس ذخیره نشد.'
+          : result?.message || 'ثبت درخواست خریدار در Cloudflare D1 تأیید نشد.');
+      }
+      if (p.isVerifiedAdmin) {
+        p.setBuyerLeads((previous) => [{
+          id: `cloud-${result.alertId}`,
+          hoodId: targetHood.id,
+          hoodName: targetHood.name,
+          fullName: cleanName,
+          phone: cleanPhone,
+          dealType: p.alertDealType,
+          maxBudgetText: cleanBudget,
+          createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
+          createdAtIso: new Date().toISOString(),
+          expiresAtIso: result.expiresAtIso || '',
+          consentVersion: 'buyer-alert-2026-10-v1',
+          submittedByUid: p.currentUser!.uid,
+        }, ...(previous || [])]);
+      }
+      p.setAlertSubmitMsg(result.message || `درخواست خریدار برای محله ${targetHood.name} در Cloudflare D1 ثبت شد.`);
+      p.setAlertFullName('');
+      p.setAlertPhone('');
+    } catch (error) {
+      p.setAlertSubmitMsg(error instanceof Error ? error.message : 'ارتباط با Cloudflare برقرار نشد؛ درخواست ثبت نشد.');
+    } finally {
+      setIsSavingBuyerAlert(false);
+    }
   };
   const submitVoteData = async (locationVerified: boolean, statusMsg: string) => {
     const voteCooldownKey = `${p.currentUser?.uid || 'guest'}_${p.selectedHood.id}`;
