@@ -140,9 +140,8 @@ export interface WorkerEnv {
   readonly GOOGLE_OAUTH_CLIENT_ID?: string;
   readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
   readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
-  readonly TWILIO_ACCOUNT_SID?: string;
-  readonly TWILIO_AUTH_TOKEN?: string;
-  readonly TWILIO_VERIFY_SERVICE_SID?: string;
+  readonly KAVENEGAR_API_KEY?: string;
+  readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
   readonly AUTH_PII_HMAC_SECRET?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
