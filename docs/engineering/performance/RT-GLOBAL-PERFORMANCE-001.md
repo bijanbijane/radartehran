@@ -56,7 +56,7 @@ The following items were confirmed by reading files on the recorded `main` commi
 | Initial data | PR #19 memoizes the validated nationwide aggregate; PR #22 changes initial storage hydration and market-pulse seed lookup to the active city, loading another city's expansion records only on first visit | Initial localStorage traversal and in-memory hydration are now city-scoped. Static city dataset modules are still imported in the initial bundle; code splitting remains a separate measured migration. |
 | PWA | `public/sw.js` has shell/assets/data caches, offline shell, and network-first market pulse; map tiles are being moved to network-only Service Worker handling | Verify cache headers, eviction behavior, update lifecycle, offline semantics, and provider-specific permission before caching external tiles. |
 | Map tiles | Service Worker previously cached OSM, CARTO, ArcGIS and `/api/osm-tile/*` tiles; PR #16 changes all recognized map tiles to network-only and purges old Cache API tile entries | Opaque responses do not expose response cache directives to this code. Review provider contracts and change behavior to an explicit, provider-compliant allowlist; default-deny opaque external tile caching. |
-| Worker cache | `worker/cache/kvCacheManager.ts` implements KV TTL envelopes, stale-while-revalidate, negative caching, and an in-flight Promise map | The in-flight map is instance/isolate-local, not a global cross-isolate or cross-PoP lock. Do not claim global single-flight or a universal one-origin-request guarantee. Measure and document scope. |
+| Worker cache | `worker/cache/kvCacheManager.ts` implements KV TTL envelopes and instance-local revalidation, but search confirms it is only referenced by its test suite | The live API Worker has no `RADAR_KV` binding and this manager is not wired into production. PR #44 proposes built-in Workers Cache instead; it is zoneless, works on `workers.dev`, and uses response Cache-Control. Do not claim cache hits until post-deploy verification. |
 | Cache classification | `worker/cache/cachePolicies.ts` classifies public static, public changing, private, authorization, transactional, coordination, and analytical data | Audit every real route's use of the policy and cache key; ensure cache key includes all response-varying dimensions and invalidation follows writes. |
 | RUM | `BrowserPerformanceCollector.ts` supports LCP/INP/CLS and consent checks; the current `RtFePerformance013Subpanel` exposes a local diagnostic snapshot | No production field-RUM ingestion path or route-wide automatic collection was verified. Do not call RUM active until consented collection, sampling, ingestion, retention, and dashboard/alerts are connected. Add p99 and map/API-specific metrics only with valid sample semantics and privacy review. |
 | Per-record market/traffic precomputation | PR #22 now memoizes `precomputeNeighborhoodStaticReports` by immutable neighborhood record and cloud snapshot identities | Unchanged records reuse computed market and traffic reports when another record changes; replacement of the base record, cloud-bargain array, or sponsor snapshot invalidates that record. |
@@ -66,7 +66,7 @@ The following items were confirmed by reading files on the recorded `main` commi
 
 ## 4. Live Cloudflare edge baseline (2026-11-23)
 
-The connected Cloudflare account currently has no DNS zone or custom Worker domain for `tehranradar.ir`. The production frontend and API are reachable through `workers.dev`, and the frontend uses a Worker service binding to the API. The Cloudflare edge is active, but zone-level settings for a custom domain (HTTP/3 controls, Cache Rules, Early Hints, Tiered Cache, and custom DNS) cannot be tuned in this account until the domain is onboarded or the correct account is connected.
+The connected Cloudflare account currently has no DNS zone or custom Worker domain for `tehranradar.ir`. The production frontend and API are reachable through `workers.dev`, and the frontend uses a Worker service binding to the API. The Cloudflare edge is active, but zone-level settings for a custom domain (DNS, zone Cache Rules, Early Hints, and custom-domain HTTP controls) cannot be tuned in this account until the domain is onboarded or the correct account is connected. Built-in Workers Cache is separate from zone configuration and can operate on `workers.dev`; it is proposed for the API Worker in PR #44.
 
 ### Observed Worker telemetry
 
@@ -87,7 +87,17 @@ No HTTP/3 fetch events appeared in this sample. The event sample is dominated by
 
 The live staging Worker had an hourly Cron Trigger while its D1 binding referenced a deleted database. That schedule was removed from the live staging Worker and verified empty. PR #9 also adds an explicit empty staging `triggers.crons` list and a regression assertion. The staging D1 binding itself remains unprovisioned; staging lifecycle processing must stay disabled until dedicated staging D1 databases and migrations exist.
 
-Live Worker environment values and bindings do not fully match the current `wrangler.backend.jsonc`. Do not deploy that configuration blindly; reconcile the intended custom domain, Worker variables, bindings, and staging resources first.
+Live Worker environment values and bindings do not fully match the repository configuration. The live API Worker has no `RADAR_KV` binding and no Workers Cache setting; the frontend has an `ASSETS` binding and a service binding to the API. Do not deploy Wrangler configuration blindly; reconcile APP_URL, compatibility date, Worker variables, bindings, and staging resources first.
+
+### Workers Cache deployment state
+
+- Current production API Worker settings show no built-in Workers Cache configuration.
+- `CloudflareKVCacheManager` is not connected to a production route; creating a KV namespace is unnecessary for the first cache layer.
+- PR #44 enables built-in Workers Cache only for the production API Worker and explicitly disables it in staging.
+- JSON responses default to `no-store`; explicitly public catalog/MCP/telemetry/metadata responses have bounded TTLs; R2 object responses are `private`.
+- Static error responses now force `no-store`, preventing a missing hashed asset from inheriting the one-year immutable asset policy.
+- JSON responses always vary by `Origin`, including no-Origin and disallowed-Origin requests, preventing a cached CORS variant from crossing origins.
+- No live cache setting has been changed. After merge/deploy, run `scripts/cloudflare/verify-workers-cache.mjs` against the public frontend Worker origin and confirm HIT on public catalog, no HIT on health, and correct CORS variants.
 
 ## 4. Important correctness findings
 
@@ -99,18 +109,27 @@ At baseline, `public/sw.js` treated requests to `tile.openstreetmap.org`, `basem
 
 ### 4.2 Single-flight scope
 
-`CloudflareKVCacheManager` keeps `inFlightRevalidations` in a JavaScript `Map` on the manager instance. This can coalesce work within that instance, but does not coordinate independent Worker isolates or PoPs. KV itself is not a distributed mutex.
+`CloudflareKVCacheManager` keeps `inFlightRevalidations` in a JavaScript `Map` on the manager instance and is currently test-only. It does not coordinate independent Worker isolates or PoPs. KV itself is not a distributed mutex.
 
-**Required action:** narrow documentation and tests to the actual scope. If cross-isolate stampede control is later required, design a bounded, failure-safe coordination mechanism and account for its latency/cost; do not pretend a KV lease is strongly consistent.
+**Required action:** do not use this unbound manager as evidence of production caching. Use Workers Cache for public HTTP responses first; add cross-isolate coordination only if measured stampedes justify its latency/cost.
 
 ### 4.3 Initial hydration and repeated listing parsing
 
 - PR #19 memoizes the validated nationwide aggregate; PR #22 scopes initial storage hydration and market-pulse seed matching to the URL-selected city, then hydrates another city's expansion records on its first visit.
 - PR #22 does **not** yet split static city data modules into deferred JavaScript chunks. The initial bundle still imports the multi-city data graph; measure bundle composition before a separate dynamic-import migration.
-- PR #32 adds a WeakMap cache for parsed live listing samples, keyed by immutable bargains-array identity and separated by sale/rent. It returns defensive array copies and relies on immutable array replacement.
-- PR #22 memoizes static market/traffic reports per immutable neighborhood record and cloud snapshot identity, avoiding repeated precomputation when another record changes.\n- PR #27 memoizes the selected-neighborhood deal summary so unrelated component rerenders do not repeat listing parsing and aggregation.
+- PR #35 adds a WeakMap cache for parsed live listing samples, keyed by immutable bargains-array identity and separated by sale/rent. It returns defensive copies of both the array and sample objects.
+- PR #22 memoizes static market/traffic reports per immutable neighborhood record and cloud snapshot identity, avoiding repeated precomputation when another record changes.
+- PR #38 memoizes the selected-neighborhood deal summary so unrelated component rerenders do not repeat listing parsing and aggregation.
+- Duplicate PRs #27 and #32 were closed; their code ownership is consolidated into #38 and #35 respectively.
 
 These are separate optimization layers: startup hydration, canonical sample parsing, and selected-view aggregation. Keep their regression tests and performance evidence distinct; do not infer a measured speedup from code shape alone.
+
+### 4.4 HTTP cache and CORS variant safety
+
+- A cacheable JSON response must include `Vary: Origin` even when the current request has no Origin or a disallowed Origin.
+- Private/authenticated/transactional and error responses must explicitly bypass shared cache.
+- A hashed filename is not proof that the asset exists; 4xx/5xx asset responses must be `no-store`.
+- Workers Cache must be enabled only after route-level Cache-Control auditing and must remain disabled in staging until isolated validation.
 
 ## 5. Implementation sequence
 
@@ -143,7 +162,8 @@ These are separate optimization layers: startup hydration, canonical sample pars
 
 ### Gate E — Edge and HTTP
 - Verify deployed HTTP/2 and HTTP/3 negotiation, TLS, DNS, compression, cache headers, and cache hit behavior from multiple regions.
-- Configure immutable caching only for content-hashed assets; revalidate HTML; define explicit public-data cache policies; bypass shared cache for private or transactional responses.
+- Configure immutable caching only for existing content-hashed assets; revalidate HTML; define explicit public-data cache policies; bypass shared cache for private, transactional, and error responses.
+- Enable built-in Workers Cache only after auditing every response path; enforce `Vary: Origin` on JSON, and keep staging cache disabled until end-to-end validation.
 - Evaluate Cloudflare Tiered Cache and regional routing only where account/product support and measurements justify them.
 
 ### Gate F — API and data reads
@@ -158,6 +178,7 @@ These are separate optimization layers: startup hydration, canonical sample pars
 
 ### Gate H — Load/failure tests and rollout
 - Run controlled load profiles, cold/warm cache tests, regional checks, and dependency failure tests.
+- Run the Workers Cache post-deploy smoke test and verify public HIT, private/error BYPASS, and CORS variant isolation.
 - Use canary/feature flags and documented rollback.
 - Publish before/after evidence and unresolved limitations.
 
@@ -174,4 +195,15 @@ A tranche is done only when:
 
 ## 7. Current status
 
-This commit records the engineering standard and baseline audit. Runtime/performance work is tracked in PRs #16, #17, #19, #20, #22 (including per-record report caching), #26, #27, and #32; the Firebase boundary and staging Cron correction are consolidated into PR #9; stacked-PR CI support is in PR #21. These remain separate open PRs and are not considered complete until their required CI and browser tests pass. The Playwright trace on PR #9 currently exposes a browser bootstrap crash (`Service firestore is not available` from `src/firebase.ts`), so E2E results are blocked pending a coordinated Firebase/Vite diagnosis. The only live Cloudflare mutation so far is removal of the broken staging-only Cron Trigger; no production Worker binding, D1 resource, DNS zone, secret, or deployment was changed. Implementation remains open under issue #13.
+This commit records the engineering standard and current baseline. Performance work remains open under issue #13:
+- PR #9 is the shared backend integration base; it is still open and non-mergeable against the stale main SHA `e2940da...`.
+- PR #44 proposes production API Workers Cache on top of the latest PR #9 head, with staging disabled, static-error no-store, CORS `Vary: Origin`, config validation, and a post-deploy smoke test.
+- PR #43 adds a Vite initial-bundle budget analyzer; its workflow has failed without retrievable step logs, so no bundle report or size improvement is claimed.
+- PR #35 covers parsed listing-sample caching; its focused regression workflow passed, while full CI is blocked by the mainline TypeScript Gate A baseline.
+- PR #38 covers selected-neighborhood deal-summary memoization; full CI is blocked by the same mainline TypeScript baseline.
+- PR #22 scopes initial localStorage hydration to the active city and hydrates other cities on first visit; static city dataset modules are still eagerly imported.
+- PR #26 improves RUM percentile/INP semantics and rejects incomplete Core Web Vitals samples; latest Actions attempts have no retrievable step logs.
+- PR #16 keeps external map tiles network-only and tests exact provider hostnames; PR #10/#20 remain the map LOD/provider workstream.
+- Duplicate PRs #27 and #32 are closed in favor of #38 and #35.
+
+The current main HEAD is `8d3e595d25f508525849506e1441a68c0e2ae6fc`; it is newer than the base of PR #9 and the mainline performance PRs #35/#38. Multiple CI attempts currently fail without accessible job logs; do not label any unvalidated tranche complete. The only live Cloudflare mutation so far is removal of the broken staging-only Cron Trigger. No production cache setting, Worker deployment, D1 resource, DNS zone, or secret was changed.
