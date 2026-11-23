@@ -482,13 +482,27 @@ export function createLocalR2BucketSimulator(): R2Bucket {
         store.delete(k);
       }
     },
-    async list(options?: { prefix?: string; limit?: number }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean }> {
+    async list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean; cursor?: string }> {
       const prefix = options?.prefix || '';
-      const objects = Array.from(store.values())
+      const limit = Math.max(1, Math.min(1000, Math.trunc(options?.limit ?? 100)));
+      const all = Array.from(store.values())
         .filter((e) => e.meta.key.startsWith(prefix))
         .map((e) => e.meta)
-        .slice(0, options?.limit ?? 100);
-      return { objects, truncated: false };
+        .sort((a, b) => a.key.localeCompare(b.key));
+      // The local simulator uses the last key as an opaque cursor stand-in. It remains
+      // stable when the current page is deleted, matching R2's forward-only pagination.
+      const start = options?.cursor
+        ? all.findIndex((item) => item.key > String(options.cursor))
+        : 0;
+      const safeStart = start < 0 ? all.length : start;
+      const objects = all.slice(safeStart, safeStart + limit);
+      const nextIndex = safeStart + objects.length;
+      const truncated = nextIndex < all.length;
+      return {
+        objects,
+        truncated,
+        ...(truncated && objects.length > 0 ? { cursor: objects[objects.length - 1].key } : {}),
+      };
     },
   };
 }
