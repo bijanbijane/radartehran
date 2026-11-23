@@ -25,7 +25,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
     );
     const unsubMonetization = onSnapshot(doc(db, 'appConfig', 'monetization'), (snap) => { if (!isMountedRef.current || !snap.exists()) return; const disc = snap.data()?.campaignDiscountPercent; if (typeof disc === 'number' && !Number.isNaN(disc) && disc >= 0 && disc <= 100) { const clamped = Math.round(disc); try { if (typeof window !== 'undefined') { localStorage.setItem('tehran_radar_campaign_discount_v1', String(clamped)); window.dispatchEvent(new CustomEvent('radar:monetization-discount', { detail: clamped })); } } catch { /* ignore */ } } }, () => { /* non-fatal */ }); return () => { isMountedRef.current = false; unsubAuth(); unsubFlags(); unsubMonetization(); }; }, [hasUrlBudgetParams, reconnectGeneration]);
   useEffect(() => {
-    if (!authReady || !currentUser || !currentUser.emailVerified) { setCloudVotes([]); markCloudListenerInactive('votes'); return; } markCloudListenerActive('votes');
+    if (!authReady || !currentUser || (!currentUser.emailVerified && !currentUser.phoneNumber)) { setCloudVotes([]); markCloudListenerInactive('votes'); return; } markCloudListenerActive('votes');
     const isVerifiedAdmin = isAuthorizedAdminUser(currentUser, isDelegatedAdmin);
     const votesQuery = isVerifiedAdmin
       ? query(collection(db, 'votes'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), orderBy('hoodId'), limit(CLOUD_COLLECTION_LISTENER_LIMIT))
@@ -124,7 +124,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
     if (!authReady) { markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return; }
     let isCancelled = false, unsubSponsors: (() => void) | null = null, unsubAlerts: (() => void) | null = null;
     const verifyAndSubscribeAdminCollections = async () => {
-      if (!currentUser || !currentUser.emailVerified) {
+      if (!currentUser || (!currentUser.emailVerified && !currentUser.phoneNumber)) {
         setBuyerLeads([]); setSponsorRequests([]); markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return;
       }
       let isVerifiedAdmin = isAuthorizedAdminUser(currentUser, isDelegatedAdmin);
