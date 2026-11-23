@@ -180,6 +180,14 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
       () => makeAssertion(principal({ authProvider: 'unknown' })),
       /AUTH_SESSION_BRIDGE_PRINCIPAL_INVALID/,
     );
+    await assert.rejects(
+      () => makeAssertion(principal({ isAdmin: true, isPrimaryAdmin: false, isDelegatedAdmin: false })),
+      /AUTH_SESSION_BRIDGE_PRINCIPAL_INVALID/,
+    );
+    await assert.rejects(
+      () => makeAssertion(principal({ isAdmin: false, isPrimaryAdmin: true, isDelegatedAdmin: false })),
+      /AUTH_SESSION_BRIDGE_PRINCIPAL_INVALID/,
+    );
   });
 
   it('rejects signature tampering and a different shared secret', async () => {
