@@ -1240,16 +1240,22 @@ async function runAllRemediationTests(): Promise<void> {
   validPngBuf[1] = 0x50;
   validPngBuf[2] = 0x4e;
   validPngBuf[3] = 0x47;
+  let capturedTileRequestHeaders: Record<string, string> | undefined;
   const validPngTileRes = await fetchTileFromMirror(
     'https://tile.openstreetmap.org/12/2632/1610.png',
     1000,
-    (async () => ({
-      ok: true,
-      headers: new Map([['content-type', 'image/png'], ['content-length', '128']]),
-      arrayBuffer: async () => validPngBuf.buffer.slice(validPngBuf.byteOffset, validPngBuf.byteOffset + validPngBuf.byteLength),
-    })) as any,
+    (async (_input: unknown, init?: { headers?: Record<string, string> }) => {
+      capturedTileRequestHeaders = init?.headers;
+      return {
+        ok: true,
+        headers: new Map([['content-type', 'image/png'], ['content-length', '128']]),
+        arrayBuffer: async () => validPngBuf.buffer.slice(validPngBuf.byteOffset, validPngBuf.byteOffset + validPngBuf.byteLength),
+      };
+    }) as any,
   );
   assert.ok(validPngTileRes !== null && validPngTileRes.contentType === 'image/png', 'fetchTileFromMirror must accept valid PNG raster tiles');
+  assert.equal(capturedTileRequestHeaders?.Referer, 'https://tehranradar.ir/', 'OSM proxy must forward an accurate, query-free site Referer');
+  assert.ok(capturedTileRequestHeaders?.['User-Agent']?.includes('TehranHousingRadar/2.0'), 'OSM proxy must identify the application with a stable User-Agent');
 
   // SEC-FINDING-009: Runtime Env Config rejects SSRF/non-HTTPS storage endpoints and FIREBASE_PROJECT_ID hijacking
   const { updateRuntimeEnvConfig, getRuntimeEnvConfig } = await import('../src/utils/serverRuntimeEnvStore');
