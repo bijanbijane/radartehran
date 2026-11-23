@@ -363,10 +363,10 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
       let outcome: Awaited<ReturnType<typeof verifyAdminApiAuthorization>> | undefined;
       const done = new Promise<void>((resolve, reject) => {
         createCloudflareSessionBridgeMiddleware(
-          { AUTH_INTERNAL_HMAC_SECRET: SECRET, ADMIN_EMAIL: 'primary@example.com' },
+          { AUTH_INTERNAL_HMAC_SECRET: SECRET },
           () => NOW,
         )(req, res, () => {
-          void verifyAdminApiAuthorization({}, { ADMIN_EMAIL: 'primary@example.com' }).then(value => {
+          void verifyAdminApiAuthorization({}, {}).then(value => {
             outcome = value;
             resolve();
           }).catch(reject);
@@ -378,6 +378,53 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
       assert.equal(outcome?.uid, adminPrincipal.uid);
       assert.match(outcome?.reason || '', /^AUTHORIZED_/);
     }
+  });
+
+  it('does not grant Cloudflare Admin access from ADMIN_EMAIL without D1 role claims or Firebase config', async () => {
+    const ordinaryPrincipal = principal({
+      uid: 'google:ordinary-user',
+      email: 'primary@example.com',
+      isAdmin: false,
+      isPrimaryAdmin: false,
+      isDelegatedAdmin: false,
+    });
+    const assertion = await makeAssertion(
+      ordinaryPrincipal,
+      new Request('https://radartehran.ir/api/admin/example', { method: 'POST' }),
+    );
+    const req = {
+      headers: {
+        'x-correlation-id': CORRELATION_ID,
+        'x-radar-worker-hop': '1',
+        'x-radar-session-assertion': assertion,
+      },
+      method: 'POST',
+      originalUrl: '/api/admin/example',
+      url: '/api/admin/example',
+    } as unknown as Request;
+    const res = {
+      setHeader() { return this; },
+      status() { return this; },
+      json() { return this; },
+    } as unknown as Response;
+
+    let outcome: Awaited<ReturnType<typeof verifyAdminApiAuthorization>> | undefined;
+    const done = new Promise<void>((resolve, reject) => {
+      createCloudflareSessionBridgeMiddleware(
+        { AUTH_INTERNAL_HMAC_SECRET: SECRET },
+        () => NOW,
+      )(req, res, () => {
+        void verifyAdminApiAuthorization({}, { ADMIN_EMAIL: 'primary@example.com' }).then(value => {
+          outcome = value;
+          resolve();
+        }).catch(reject);
+      });
+    });
+    await done;
+
+    assert.equal(outcome?.authorized, false);
+    assert.equal(outcome?.statusCode, 403);
+    assert.equal(outcome?.reason, 'NOT_ADMIN_USER');
   });
 
   it('does not let a delegated D1 admin perform a primary-admin-only operation', async () => {
