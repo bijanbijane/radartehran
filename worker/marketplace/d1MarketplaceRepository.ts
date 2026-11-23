@@ -135,7 +135,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     createdAtIso: String(row.created_at_iso || ''),
     updatedAtIso: String(row.updated_at_iso || ''),
     ownerUserId: ownerUidVisible(row.owner_uid, query),
-  })));
+  }));
 
   const sponsors = await Promise.all((sponsorRows.results ?? []).map(async (row) => ({
     id: `cloud-${String(row.request_id)}`,
