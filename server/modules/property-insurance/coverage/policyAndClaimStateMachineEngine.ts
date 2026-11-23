@@ -20,7 +20,6 @@ const POLICY_TRANSITIONS: Record<InsurancePolicyLifecycleStatus, readonly Insura
   DISPUTED: ['ACTIVE', 'SUSPENDED', 'EXPIRED', 'CANCELLED'],
   UNKNOWN: ['SUBMITTED', 'PENDING_VERIFICATION', 'CANCELLED'],
 };
-
 const CLAIM_TRANSITIONS: Record<InsuranceClaimLifecycleStatus, readonly InsuranceClaimLifecycleStatus[]> = {
   DRAFT: ['REPORTED', 'SUBMITTED', 'WITHDRAWN'],
   REPORTED: ['SUBMITTED', 'ACKNOWLEDGED', 'UNDER_REVIEW', 'WITHDRAWN'],
@@ -42,7 +41,6 @@ const CLAIM_TRANSITIONS: Record<InsuranceClaimLifecycleStatus, readonly Insuranc
 function validationError(code: string, detail: string): never {
   throw new CoreApiError('VALIDATION_FAILED', 400, `${code}: ${detail}`);
 }
-
 export function assertValidPolicyStateTransition(
   current: InsurancePolicyLifecycleStatus,
   next: InsurancePolicyLifecycleStatus,
@@ -51,7 +49,6 @@ export function assertValidPolicyStateTransition(
     validationError('INVALID_POLICY_STATE_TRANSITION', `${current} -> ${next}`);
   }
 }
-
 export function assertValidClaimStateTransition(
   current: InsuranceClaimLifecycleStatus,
   next: InsuranceClaimLifecycleStatus,
@@ -60,7 +57,6 @@ export function assertValidClaimStateTransition(
     validationError('INVALID_CLAIM_STATE_TRANSITION', `${current} -> ${next}`);
   }
 }
-
 export function transitionPolicyState(
   current: InsurancePolicyLifecycleStatus,
   next: InsurancePolicyLifecycleStatus,
@@ -68,7 +64,6 @@ export function transitionPolicyState(
   assertValidPolicyStateTransition(current, next);
   return next;
 }
-
 export function adjudicatePropertyClaim(
   current: InsuranceClaimLifecycleStatus,
   next: InsuranceClaimLifecycleStatus,
@@ -85,13 +80,11 @@ export interface SettlementCalculationInput {
   applicableCoverageLimit: number | null;
   contractualMinimumDeductible?: number;
 }
-
 export interface SettlementCalculationResult {
   partiallyApprovedFlag: boolean;
   eligibleAfterDeductibleAmount: number;
   decidedAmount: number;
 }
-
 export function validateSettlementCalculations(input: SettlementCalculationInput): SettlementCalculationResult {
   const {
     verifiedEligibleLossAmount: eligible,
@@ -101,7 +94,6 @@ export function validateSettlementCalculations(input: SettlementCalculationInput
     applicableCoverageLimit: limit,
     contractualMinimumDeductible: minimumDeductible,
   } = input;
-
   const values = [eligible, deductible, approved, rejected];
   if (
     values.some((value) => !Number.isFinite(value) || value < 0) ||
@@ -113,7 +105,6 @@ export function validateSettlementCalculations(input: SettlementCalculationInput
   if (minimumDeductible !== undefined && deductible < minimumDeductible) {
     validationError('DEDUCTIBLE_BELOW_CONTRACTUAL_MINIMUM', 'The applied deductible is below the contractual minimum.');
   }
-
   const eligibleAfterDeductibleAmount = Math.max(0, eligible - deductible);
   if (approved > eligibleAfterDeductibleAmount || approved + rejected > eligibleAfterDeductibleAmount) {
     validationError('SETTLEMENT_EXCEEDS_ELIGIBLE_AFTER_DEDUCTIBLE', 'The decision exceeds the verified eligible loss after deductible.');
@@ -131,14 +122,12 @@ export function validateSettlementCalculations(input: SettlementCalculationInput
     decidedAmount: approved + rejected,
   };
 }
-
 export type CoverageApplicabilityConclusion =
   | 'POLICY_NOT_VERIFIED_ACTIVE'
   | 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM'
   | 'WITHIN_WAITING_PERIOD'
   | 'EXCLUDED_BY_EXPLICIT_LIMITATION'
   | 'ELIGIBLE_SUBJECT_TO_ADJUSTMENT';
-
 export interface PolicyCoverageEvaluationReport {
   policyId: string;
   evaluatedAtIso: string;
@@ -155,7 +144,6 @@ export interface PolicyCoverageEvaluationReport {
     explanation: string;
   };
 }
-
 export interface PolicyCoverageEvaluationInput {
   policy: Partial<InsurancePolicyRecord>;
   coverages: PolicyCoverageRecord[];
@@ -165,18 +153,15 @@ export interface PolicyCoverageEvaluationInput {
   queryAssetCanonicalId?: string;
   incidentDateIso?: string | null;
 }
-
 function parseIso(value: unknown): number | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
-
 function matchesCoveredAsset(assetIds: readonly string[] | undefined, assetId?: string): boolean {
   if (!assetId) return true;
   return Boolean(assetIds?.includes(assetId));
 }
-
 function matchesLimitedAsset(assetIds: readonly string[] | undefined, assetId?: string): boolean {
   if (!assetId || !assetIds || assetIds.length === 0) return true;
   return assetIds.includes(assetId);
@@ -196,7 +181,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
     policyStartMs <= asOfMs && asOfMs <= policyEndMs;
   const independentlyVerifiedActiveCoverage =
     policy.status === 'ACTIVE' && confirmedByProviderAuthoritative && currentlyWithinStatedEffectivePeriod;
-
   const verificationLimitations: string[] = [];
   if (!confirmedByProviderAuthoritative) verificationLimitations.push('PROVIDER_ACTIVE_STATUS_NOT_AUTHORITATIVELY_CONFIRMED');
   if (policy.status !== 'ACTIVE') verificationLimitations.push('POLICY_STATUS_NOT_ACTIVE');
@@ -212,7 +196,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
   if (Number.isFinite(outstandingPremium) && outstandingPremium > 0) {
     verificationLimitations.push('OUTSTANDING_PREMIUM_REQUIRES_PROVIDER_REVIEW');
   }
-
   let applicabilityConclusion: CoverageApplicabilityConclusion = 'POLICY_NOT_VERIFIED_ACTIVE';
   let matchingCoverageId: string | null = null;
   const appliedLimitationIds: string[] = [];
@@ -221,8 +204,7 @@ export function evaluatePolicyCoverageStatusWithLimitations(
   const incidentWithinPolicyPeriod =
     incidentMs !== null && policyStartMs !== null && policyEndMs !== null &&
     policyStartMs <= incidentMs && incidentMs <= policyEndMs;
-
-  if (independentlyVerifiedActiveCoverage && incidentWithinPolicyPeriod) {
+  if (independentlyVerifiedActiveCoverage && incidentWithinPolicyPeriod && incidentMs !== null) {
     if (!queryRiskCategory) {
       applicabilityConclusion = 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM';
       explanation = 'A specific risk category is required to identify an explicit coverage item.';
@@ -241,7 +223,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
         if (end !== null && incidentMs > end) return false;
         return true;
       });
-
       if (!matchingCoverage) {
         applicabilityConclusion = 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM';
         explanation = 'No explicit coverage item matches the queried risk and insured asset.';
@@ -252,7 +233,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
           limitation.excludedRiskCategories.includes(queryRiskCategory) &&
           matchesLimitedAsset(limitation.affectedAssetCanonicalIds, queryAssetCanonicalId),
         );
-
         for (const limitation of applicableLimitations) {
           const isWaitingPeriod =
             (limitation.limitationCategory === 'WAITING_PERIOD' || limitation.limitationCategory === 'WAITING_PERIOD_LIMITATION') &&
@@ -264,8 +244,7 @@ export function evaluatePolicyCoverageStatusWithLimitations(
               appliedLimitationIds.push(limitation.limitationId);
               const hasVerbatimAssetClause =
                 Boolean(limitation.originalSourceWordingVerbatim?.trim()) &&
-                Boolean(queryAssetCanonicalId) &&
-                limitation.affectedAssetCanonicalIds.includes(queryAssetCanonicalId);
+                Boolean(queryAssetCanonicalId && limitation.affectedAssetCanonicalIds.includes(queryAssetCanonicalId));
               applicabilityConclusion = hasVerbatimAssetClause
                 ? 'WITHIN_WAITING_PERIOD'
                 : 'EXCLUDED_BY_EXPLICIT_LIMITATION';
@@ -281,7 +260,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
           explanation = 'An explicit policy limitation excludes the queried risk or insured asset.';
           break;
         }
-
         if (appliedLimitationIds.length === 0) {
           applicabilityConclusion = 'ELIGIBLE_SUBJECT_TO_ADJUSTMENT';
           explanation = 'An explicit coverage item applies; final settlement remains subject to deductibles, limits, evidence, and provider adjudication.';
@@ -291,7 +269,6 @@ export function evaluatePolicyCoverageStatusWithLimitations(
   } else if (independentlyVerifiedActiveCoverage && !incidentWithinPolicyPeriod) {
     explanation = 'The incident date is invalid or falls outside the policy effective period.';
   }
-
   return {
     policyId: String(policy.policyId || ''),
     evaluatedAtIso: new Date(asOfMs ?? Date.now()).toISOString(),
