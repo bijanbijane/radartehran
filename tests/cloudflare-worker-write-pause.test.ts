@@ -19,12 +19,13 @@ test('future DB write pause blocks mutations while preserving reads and privacy/
   assert.equal(blockedBody.pausedUntilUtc, '2099-01-01T00:00:00.000Z');
   assert.ok(Number(blocked.headers.get('retry-after')) > 0);
 
-  const read = await worker.fetch(new Request('https://radar.test/'), env);
+  const read = await worker.fetch(new Request('https://radar.test/'), env, executionCtx);
   assert.equal(read.status, 200, 'GET navigation remains available during the write pause');
 
   const privacyRequest = await worker.fetch(
     new Request('https://radar.test/api/account/deletion-requests', { method: 'POST' }),
     env,
+    executionCtx,
   );
   const privacyBody = await privacyRequest.json() as { code?: string };
   assert.notEqual(privacyBody.code, 'DB_WRITES_PAUSED', 'account deletion remains reachable for user-rights handling');
