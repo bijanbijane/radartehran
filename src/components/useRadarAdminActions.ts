@@ -174,7 +174,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     const hoodId = Number(p.adminEditHoodId);
     const targetSeed =
       INITIAL_NEIGHBORHOODS.find((hood) => hood.id === hoodId) ||
-      getAllMultiCityNeighborhoods().find((hood) => hood.id === hoodId) ||
+      getAllMultiCityNeighborhoods().find((hood) => hood.id === hoodId && hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599)) ||
       p.neighborhoods.find((hood) => hood.id === hoodId);
     if (!targetSeed || hoodId < 1 || hoodId > 999) {
       p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹ پشتیبانی می‌شوند).');
