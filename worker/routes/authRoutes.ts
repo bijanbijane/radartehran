@@ -378,7 +378,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
   if (method === 'GET' && pathname === '/api/auth/session') {
     const auth = await authenticateWorkerSession(ctx);
     if (!auth.authenticated) return jsonWorkerResponse(ctx, auth.statusCode === 503 ? 503 : 200, { status: 'ok', authenticated: false });
-    return jsonWorkerResponse(ctx, 200, { status: 'ok', authenticated: true, user: { uid: auth.uid, email: auth.email, emailVerified: auth.emailVerified, isAdmin: auth.isAdmin, authProvider: auth.authProvider } });
+    return jsonWorkerResponse(ctx, 200, { status: 'ok', authenticated: true, user: { uid: auth.uid, email: auth.email, emailVerified: auth.emailVerified, phoneNumber: auth.phoneNumber, displayName: auth.displayName, isAdmin: auth.isAdmin, authProvider: auth.authProvider } });
   }
 
   if (method === 'POST' && pathname === '/api/auth/logout') {
