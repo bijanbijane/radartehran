@@ -42,6 +42,8 @@ const head: ActiveGeographicPublishHead = {
   batch_id: 'irni-r19-' + 'c'.repeat(64),
   registry_revision: 19,
   registry_checksum: hashA,
+  head_registry_revision: 19,
+  head_registry_checksum: hashA,
   contract_version: 'IRNI-GEO-1.0.0',
   id_algorithm_version: 'IRGEO-IDENTITY-1.0.0',
   schema_version: 'IR-GEO-1.0.0',
@@ -128,9 +130,48 @@ test('allows a new revision when the active head is older', () => {
   assert.deepEqual(result, { action: 'continue' });
 });
 
+test('rejects an active pointer whose revision disagrees with the stored head', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: { ...head, head_registry_revision: 18 },
+    expected: { ...expected, registryRevision: 20 },
+    batchId: 'irni-r20-' + 'd'.repeat(64),
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_ACTIVE_HEAD_INVALID',
+    currentRevision: 19,
+  });
+});
+
+test('rejects an active pointer whose checksum disagrees with the stored head', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: { ...head, head_registry_checksum: hashB },
+    expected: { ...expected, registryRevision: 20 },
+    batchId: 'irni-r20-' + 'd'.repeat(64),
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_ACTIVE_HEAD_INVALID',
+    currentRevision: 19,
+  });
+});
+
+test('rejects an unverified active head even when the requested revision is newer', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: { ...head, integrity_verified: 0 },
+    expected: { ...expected, registryRevision: 20 },
+    batchId: 'irni-r20-' + 'd'.repeat(64),
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_ACTIVE_HEAD_INVALID',
+    currentRevision: 19,
+  });
+});
+
 test('blocks a stale receiving batch when a newer revision is already active', () => {
   const result = assessReceivingGeographicPublishHead({
-    activeHead: { ...head, registry_revision: 20 },
+    activeHead: { ...head, registry_revision: 20, head_registry_revision: 20 },
     expected,
     batchId: head.batch_id,
   });
