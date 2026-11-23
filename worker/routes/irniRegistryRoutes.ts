@@ -41,11 +41,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isPositiveInteger(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) > 0;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) >= 0;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
 function isHexSha256(value: unknown): value is string {
@@ -108,7 +108,14 @@ async function authenticatePublisher(
     ).bind(nonce, timestamp, Date.now() + 600_000).run();
     await db.prepare('DELETE FROM geo_publish_nonces WHERE expires_at_ms < ?').bind(Date.now()).run();
   } catch {
-    return { ok: false, status: 409, code: 'IRNI_PUBLISH_NONCE_REPLAYED' };
+    try {
+      const replay = await db.prepare('SELECT nonce FROM geo_publish_nonces WHERE nonce = ?')
+        .bind(nonce).first<{ nonce: string }>();
+      if (replay) return { ok: false, status: 409, code: 'IRNI_PUBLISH_NONCE_REPLAYED' };
+    } catch {
+      // Preserve fail-closed behavior if the nonce store is unavailable.
+    }
+    return { ok: false, status: 503, code: 'IRNI_PUBLISH_NONCE_STORE_UNAVAILABLE' };
   }
   return { ok: true };
 }
