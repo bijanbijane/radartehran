@@ -137,6 +137,7 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
   readonly GOOGLE_OAUTH_CLIENT_ID?: string;
   readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
   readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
