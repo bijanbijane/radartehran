@@ -21,6 +21,23 @@ export function sanitizePayload<T>(payload: T, depth = 0): T { try { if (depth >
       return cleaned as T; }
     throw new Error('PAYLOAD_UNSUPPORTED_VALUE_TYPE'); } catch (error) { recordDiagnosticEvent('Security', 'sanitizePayload rejected a payload', 'blocked'); throw new Error('PAYLOAD_SANITIZATION_FAILED', { cause: error });
   } }
+export function prepareFirestorePayload<T extends Record<string, unknown>>(data: T): T {
+  try {
+    const sanitized = sanitizePayload(data);
+    if (sanitized === null || typeof sanitized !== 'object' || Array.isArray(sanitized)) {
+      throw new Error('INVALID_SANITIZED_PAYLOAD');
+    }
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(sanitized)) {
+      if (value !== undefined) cleaned[key] = value;
+    }
+    return cleaned as T;
+  } catch {
+    recordDiagnosticEvent('Firestore', 'Payload rejected before write', 'blocked');
+    throw new Error('FIRESTORE_PAYLOAD_SANITIZATION_FAILED');
+  }
+}
+
 export function isValidIranianMobile(phone: unknown): boolean {
   if (typeof phone !== 'string' && typeof phone !== 'number') return false;
   const normalized = normalizeDigitsToEnglish(phone).replace(/[\s\-()]/g, '');
