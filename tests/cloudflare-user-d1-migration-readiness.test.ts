@@ -48,14 +48,14 @@ function makeDb(applied: readonly string[]): D1Database {
 describe('USER_DB migration readiness catalog', () => {
   it('reports identity and SMS migrations as pending until actually applied', async () => {
     const result = await inspectD1OperationalDiagnostics(makeDb(USER_MIGRATIONS.slice(0, 6)), 'user');
-    assert.equal(result.expectedCount, 9);
+    assert.equal(result.expectedCount, 10);
     assert.equal(result.allCanonicalMigrationsApplied, false);
     assert.deepEqual(result.pendingMigrations, [...USER_MIGRATIONS.slice(6)]);
   });
 
-  it('reports USER_DB ready only when all nine user migrations are recorded', async () => {
+  it('reports USER_DB ready only when all ten user migrations are recorded', async () => {
     const result = await inspectD1OperationalDiagnostics(makeDb(USER_MIGRATIONS), 'user');
-    assert.equal(result.expectedCount, 9);
+    assert.equal(result.expectedCount, 10);
     assert.equal(result.allCanonicalMigrationsApplied, true);
     assert.deepEqual(result.pendingMigrations, []);
   });
