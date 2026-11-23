@@ -405,7 +405,7 @@ async function publishStart(
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_ID_CONFLICT' });
   }
   return jsonWorkerResponse(ctx, 202, {
-    status: 'ok', batchId, registryRevision: revision, registryChecksum: checksum,
+    status: 'ok', batchId, registryRevision: revision, registryChecksum: normalizedChecksum,
     expectedCounts: counts, currentRevision: head?.registry_revision ?? null,
   });
 }
