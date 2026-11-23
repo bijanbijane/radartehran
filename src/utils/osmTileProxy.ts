@@ -1,7 +1,7 @@
 /**
  * @file src/utils/osmTileProxy.ts
  * @description Keyless Free OpenStreetMap Tile Proxy & Multi-Mirror Failover for `server.ts`.
- * Respects upstream HTTP caching headers (defaulting to >= 7 days per OSM Tile Usage Policy)
+ * Respects provider HTTP caching headers (using the OSM seven-day fallback only when metadata is absent)
  * and returns a genuine HTTP 502 error when all upstream mirrors fail so Leaflet `tileerror`
  * handlers can accurately detect tile failures instead of receiving synthetic 200 SVGs.
  */
@@ -14,6 +14,8 @@ export interface UpstreamTileResult {
   contentType: string;
   cacheControl: string;
   cacheable: boolean;
+  revalidated?: boolean;
+  sourceUrl: string;
   etag?: string;
   lastModified?: string;
   expiresAt: number;
@@ -135,20 +137,58 @@ export function resolveUpstreamTileCachePolicy(
 export async function fetchTileFromMirror(
   url: string,
   timeoutMs: number,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  cached?: UpstreamTileResult,
 ): Promise<UpstreamTileResult | null> {
   let timer: ReturnType<typeof setTimeout> | null = null;
   try {
     const controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
+    const requestHeaders: Record<string, string> = {
+      'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; Free OpenStreetMap Client)',
+      Referer: resolveTileProxyReferer(),
+      Accept: 'image/png,image/webp,image/*;q=0.8',
+    };
+    if (cached?.etag) requestHeaders['If-None-Match'] = cached.etag;
+    if (cached?.lastModified) requestHeaders['If-Modified-Since'] = cached.lastModified;
     const resp = await fetchImpl(url, {
-      headers: {
-        'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; Free OpenStreetMap Client)',
-        Referer: resolveTileProxyReferer(),
-        Accept: 'image/png,image/webp,image/*;q=0.8',
-      },
+      headers: requestHeaders,
       signal: controller.signal,
     });
+    const upstreamHost = new URL(url).hostname.toLowerCase();
+    const osmStandardFallbackTtl = upstreamHost === 'tile.openstreetmap.org' ? MIN_SEVEN_DAYS_SECONDS : 0;
+    if (resp.status === 304) {
+      if (!cached) return null;
+      const revalidatedHeaders = {
+        get(name: string): string | null {
+          const responseValue = resp.headers.get(name);
+          if (responseValue !== null) return responseValue;
+          const normalizedName = name.toLowerCase();
+          if (normalizedName === 'cache-control') return cached.cacheControl;
+          if (normalizedName === 'etag') return cached.etag ?? null;
+          if (normalizedName === 'last-modified') return cached.lastModified ?? null;
+          return null;
+        },
+      };
+      const cachePolicy = resolveUpstreamTileCachePolicy(
+        revalidatedHeaders,
+        Date.now(),
+        'sqm',
+        'USD',
+        10000,
+        osmStandardFallbackTtl,
+      );
+      return {
+        ...cached,
+        cacheControl: cachePolicy.cacheControl,
+        cacheable: cachePolicy.cacheable,
+        revalidated: true,
+        sourceUrl: url,
+        etag: cachePolicy.etag ?? cached.etag,
+        lastModified: cachePolicy.lastModified ?? cached.lastModified,
+        expiresAt: cachePolicy.expiresAt,
+      };
+    }
     if (!resp.ok) return null;
     const contentType = (resp.headers.get('content-type') || 'image/png').split(';')[0].trim().toLowerCase();
     if (!ALLOWED_RASTER_TILE_MIMES.has(contentType)) return null;
@@ -159,8 +199,6 @@ export async function fetchTileFromMirror(
     const buffer = Buffer.from(arrayBuf);
     if (!hasValidRasterTileMagicBytes(buffer)) return null;
 
-    const upstreamHost = new URL(url).hostname.toLowerCase();
-    const osmStandardFallbackTtl = upstreamHost === 'tile.openstreetmap.org' ? MIN_SEVEN_DAYS_SECONDS : 0;
     const cachePolicy = resolveUpstreamTileCachePolicy(
       resp.headers,
       Date.now(),
@@ -174,6 +212,8 @@ export async function fetchTileFromMirror(
       contentType,
       cacheControl: cachePolicy.cacheControl,
       cacheable: cachePolicy.cacheable,
+      revalidated: false,
+      sourceUrl: url,
       etag: cachePolicy.etag,
       lastModified: cachePolicy.lastModified,
       expiresAt: cachePolicy.expiresAt,
@@ -223,7 +263,7 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
         return;
       }
 
-      if (cached) tileMemoryCache.delete(cacheKey);
+      const staleCached = cached && cached.expiresAt <= now ? cached : undefined;
 
       let pending = tileInflightRequests.get(cacheKey);
       if (!pending) {
@@ -233,7 +273,9 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
         }
         pending = (async () => {
           for (const buildUrl of FREE_OSM_UPSTREAM_MIRRORS) {
-            const result = await fetchTileFromMirror(buildUrl(z, x, y), 3200, fetchImpl);
+            const tileUrl = buildUrl(z, x, y);
+            const conditionalCache = staleCached?.sourceUrl === tileUrl ? staleCached : undefined;
+            const result = await fetchTileFromMirror(tileUrl, 3200, fetchImpl, conditionalCache);
             if (result) return result;
           }
           return null;
@@ -252,7 +294,8 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
           }
         }
         if (result.cacheable) tileMemoryCache.set(cacheKey, result);
-        res.setHeader('Content-Type', result.contentType); res.setHeader('X-Tile-Cache', result.cacheable ? 'MISS' : 'BYPASS'); res.setHeader('Cache-Control', result.cacheControl);
+        else tileMemoryCache.delete(cacheKey);
+        res.setHeader('Content-Type', result.contentType); res.setHeader('X-Tile-Cache', result.revalidated ? 'REVALIDATED' : result.cacheable ? 'MISS' : 'BYPASS'); res.setHeader('Cache-Control', result.cacheControl);
         if (result.etag) res.setHeader('ETag', result.etag);
         if (result.lastModified) res.setHeader('Last-Modified', result.lastModified);
         res.setHeader('Access-Control-Allow-Origin', '*');
