@@ -51,7 +51,7 @@ function validMutationOrigin(ctx: WorkerRequestContext): boolean {
   }
 }
 
-function normalizePhone(raw: unknown): string | null {
+export function normalizePhone(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const asciiDigits = raw.replace(/[۰-۹٠-٩]/g, (digit) => {
     const code = digit.charCodeAt(0);
