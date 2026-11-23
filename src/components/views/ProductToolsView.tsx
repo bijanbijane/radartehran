@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Calculator, Compass, ChevronRight, ArrowUpRight, FileCheck, Search, Sparkles, X,
 } from 'lucide-react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
 import type { CityId } from '../../data/multiCityData';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
