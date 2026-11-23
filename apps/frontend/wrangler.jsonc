@@ -25,6 +25,13 @@
     "WORKER_ENV": "development",
     "APP_URL": "http://localhost:3000"
   },
+  "previews": {
+    "vars": {
+      "APP_ENV": "preview",
+      "WORKER_ENV": "preview",
+      "APP_URL": "https://preview.invalid"
+    }
+  },
   "env": {
     "preview": {
       "name": "radartehran-frontend-preview",
