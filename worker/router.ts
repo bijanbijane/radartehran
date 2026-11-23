@@ -8,6 +8,8 @@ import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity
 import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
 import { handleAuthWorkerRoute } from './routes/authRoutes';
+import { handleAccountWorkerRoute } from './routes/accountRoutes';
+import { handleMarketplaceWorkerRoute } from './routes/marketplaceRoutes';
 import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
@@ -86,7 +88,19 @@ export async function dispatchWorkerApiOrSeoRequest(
   const conditionallyRoutedAuth =
     registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
     registeredMatch.entry.status === 'IMPLEMENTED';
-  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED' && !conditionallyRoutedAuth) {
+  const conditionallyRoutedAccount =
+    registeredMatch?.entry.workerHandlerModule === 'worker/routes/accountRoutes.ts' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  const conditionallyRoutedMarketplace =
+    registeredMatch?.entry.workerHandlerModule === 'worker/routes/marketplaceRoutes.ts' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  if (
+    registeredMatch &&
+    registeredMatch.entry.status !== 'VERIFIED' &&
+    !conditionallyRoutedAuth &&
+    !conditionallyRoutedAccount &&
+    !conditionallyRoutedMarketplace
+  ) {
     const { entry } = registeredMatch;
     const proxied = await executeSafeStranglerFallback({
       request: ctx.request,
@@ -133,12 +147,30 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  const accountResponse = await handleAccountWorkerRoute(ctx);
+  if (accountResponse) {
+    return {
+      response: accountResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: registeredMatch?.entry.status || 'IMPLEMENTED',
+    };
+  }
+
   const lifecycleResponse = await handleAccountLifecycleRoute(ctx);
   if (lifecycleResponse) {
     return {
       response: lifecycleResponse,
       routePattern: ctx.pathname,
       migrationStatus: 'VERIFIED',
+    };
+  }
+
+  const marketplaceResponse = await handleMarketplaceWorkerRoute(ctx);
+  if (marketplaceResponse) {
+    return {
+      response: marketplaceResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: registeredMatch?.entry.status || 'IMPLEMENTED',
     };
   }
 

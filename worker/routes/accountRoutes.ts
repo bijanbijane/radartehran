@@ -21,20 +21,14 @@ import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
 } from '../account-lifecycle/workerLifecycleRuntime';
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
+import { decryptMarketPhone } from '../marketplace/marketPiiCrypto';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
-  return verifyFirebaseIdTokenOnEdge({
-    authorizationHeader: ctx.request.headers.get('authorization'),
-    appCheckHeader: ctx.request.headers.get('x-firebase-appcheck'),
-    appCheckDebugHeader: ctx.request.headers.get('x-firebase-appcheck-debug'),
-    request: ctx.request,
-    env: ctx.env,
-    sensitiveRoute,
-  });
+  return authenticateWorkerSession(ctx, sensitiveRoute);
 }
 
 function isHandledAccountWorkerRoute(method: string, pathname: string): boolean {
@@ -45,6 +39,7 @@ function isHandledAccountWorkerRoute(method: string, pathname: string): boolean 
   if (pathname === '/api/account/favorites' && (method === 'GET' || method === 'PUT' || method === 'POST' || method === 'DELETE')) {
     return true;
   }
+  if (pathname === '/api/account/export-data' && method === 'GET') return true;
   if (pathname === '/api/account/data-requests' && (method === 'GET' || method === 'POST')) return true;
   if (pathname === '/api/account/deletion-requests' && method === 'POST') return true;
   if (pathname === '/api/account/deletion-requests/reconcile' && method === 'POST') return true;
@@ -66,9 +61,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
   }
   const userDb = userDbRes.db;
 
-  const isSensitive =
-    method !== 'GET' &&
-    (pathname === '/api/account/deletion-requests' || pathname.startsWith('/api/account/sessions/'));
+  const isSensitive = method !== 'GET' && method !== 'HEAD';
   const auth = await authenticateAccountCaller(ctx, isSensitive);
   if (!auth.authenticated || !auth.uid) {
     return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
@@ -211,6 +204,105 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         const res = await removeUserFavoriteInD1(userDb, { uid, cityId, hoodId });
         return jsonWorkerResponse(ctx, 200, { status: 'ok', ...res });
       }
+    }
+
+    // 5. GET /api/account/export-data — D1-only, explicitly partial until all legacy domains migrate.
+    if (pathname === '/api/account/export-data' && method === 'GET') {
+      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult, preferences, bargainsResult, sponsorRecordsResult, buyerAlertsResult, votesResult] = await Promise.all([
+        getUserProfileFromD1(userDb, uid),
+        getUserPrivacyConsentFromD1(userDb, uid),
+        listUserFavoritesFromD1(userDb, uid),
+        listUserDataRequestsFromD1(userDb, uid),
+        userDb.prepare(
+          'SELECT search_id, label, city_id, filters_json, alert_enabled, created_at_iso, updated_at_iso FROM user_saved_searches WHERE uid = ?1 ORDER BY updated_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT channel_id, channel_type, destination_masked, verified, enabled, created_at_iso, updated_at_iso FROM user_notification_channels WHERE uid = ?1 ORDER BY created_at_iso DESC LIMIT 100',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT object_id, media_type, mime_type, size_bytes, target_type, target_id, lifecycle_state, created_at_iso, updated_at_iso FROM media_objects WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT mode, deposit, monthly_rent, buy_total_budget, target_sqm, work_hub_id, updated_at_iso FROM user_preferences WHERE uid = ?1 LIMIT 1',
+        ).bind(uid).first<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT bargain_id, city_id, hood_id, title, listing_type, sqm, price_millions, price_text, discount_percent, buyer_profit_text, street, status, created_at_iso, updated_at_iso, approved_at_iso FROM bargains WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT request_id, city_id, hood_id, hood_name, agency_name, phone_ciphertext, phone_hash, phone_last4, specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million, tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso FROM sponsor_requests WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT alert_id, city_id, hood_id, full_name, phone_ciphertext, phone_hash, phone_last4, deal_type, max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso FROM buyer_alerts WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT vote_id, city_id, hood_id, air_score, power_score, internet_score, metro_score, security_score, flat_score, comment, user_display_name, created_at_iso, updated_at_iso FROM neighborhood_votes WHERE owner_uid = ?1 ORDER BY updated_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+      ]);
+
+      const searches = savedSearches.results ?? [];
+      const channels = notificationChannels.results ?? [];
+      const media = mediaResult.results ?? [];
+      const bargains = bargainsResult.results ?? [];
+      let sponsorRecords: Record<string, unknown>[];
+      let buyerAlerts: Record<string, unknown>[];
+      try {
+        sponsorRecords = await Promise.all((sponsorRecordsResult.results ?? []).map(async (row) => {
+          const { phone_ciphertext, phone_hash, phone_last4, ...safeRecord } = row;
+          return { ...safeRecord, phone: await decryptMarketPhone(String(phone_ciphertext || ''), env) };
+        }));
+        buyerAlerts = await Promise.all((buyerAlertsResult.results ?? []).map(async (row) => {
+          const { phone_ciphertext, phone_hash, phone_last4, ...safeRecord } = row;
+          return { ...safeRecord, phone: await decryptMarketPhone(String(phone_ciphertext || ''), env) };
+        }));
+      } catch {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_PII_DECRYPTION_UNAVAILABLE' });
+      }
+      const neighborhoodVotes = votesResult.results ?? [];
+      const availableSources = [
+        { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
+        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length + (preferences ? 1 : 0) + neighborhoodVotes.length },
+        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: true, available: true, count: buyerAlerts.length },
+        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: true, available: true, count: bargains.length },
+        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: true, available: true, count: sponsorRecords.length },
+        { sourceId: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', included: true, available: true, count: media.length },
+      ];
+      const unavailableSources = availableSources.filter((source) => !source.available).map((source) => source.sourceId);
+      const totalRecordsExported = availableSources.reduce((sum, source) => sum + source.count, 0);
+      const exportData = {
+        schemaVersion: '2.0.0',
+        exportedAtIso: new Date().toISOString(),
+        ownerUid: uid,
+        exportScope: 'server_account',
+        isPartialExport: unavailableSources.length > 0,
+        completenessStatus: unavailableSources.length > 0 ? 'INCOMPLETE_PARTIAL' : 'COMPLETE',
+        totalRecordsExported,
+        omittedPagesCount: 0,
+        unavailableSources,
+        domainSourcesIncluded: availableSources.filter((source) => source.available).map((source) => source.domainSource),
+        sources: availableSources,
+        excludedSources: ['authentication_credentials', 'session_cookie_values', 'server_audit_logs'],
+        profile: {
+          profile,
+          privacy,
+          notificationChannels: channels,
+          savedSearches: searches,
+          preferences,
+          dataRequests,
+          neighborhoodVotes,
+        },
+        favoriteNeighborhoodKeys: favorites.map((favorite) => `${favorite.cityId}_${favorite.hoodId}`),
+        savedAlerts: searches,
+        publishedListings: bargains,
+        calculationSnapshots: [],
+        buyerLeads: [],
+        dataCorrections: [],
+        sponsorRecords,
+        crowdClaims: [],
+        buyerLeads: buyerAlerts,
+        mediaObjects: media,
+      };
+      return jsonWorkerResponse(ctx, 200, { status: 'ok', exportData });
     }
 
     // 5. GET / POST /api/account/data-requests

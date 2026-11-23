@@ -47,6 +47,22 @@ const GROUP_3A_AUTH_PATHS = new Set<string>([
   'POST /api/auth/logout',
 ]);
 
+const GROUP_4_ACCOUNT_PATHS = new Set<string>([
+  'GET /api/account/profile', 'PATCH /api/account/profile',
+  'GET /api/account/privacy', 'PATCH /api/account/privacy',
+  'GET /api/account/sessions', 'POST /api/account/sessions/:id/revoke',
+  'GET /api/account/data-requests', 'POST /api/account/data-requests',
+  'GET /api/account/export-data', 'POST /api/account/deletion-requests',
+  'POST /api/account/deletion-requests/reconcile', 'GET /api/account/favorites',
+  'PUT /api/account/favorites', 'POST /api/account/favorites', 'DELETE /api/account/favorites',
+]);
+
+const GROUP_4_MARKETPLACE_PATHS = new Set<string>([
+  'GET /api/v1/market/state', 'POST /api/v1/market/votes',
+  'PUT /api/v1/market/preferences', 'POST /api/v1/market/bargains',
+  'POST /api/v1/market/sponsor-requests', 'POST /api/v1/market/buyer-alerts',
+]);
+
 const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
   'GET /api/object-storage/status',
   'POST /api/object-storage/upload',
@@ -133,7 +149,50 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     };
   }
 
-  if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
+  if (GROUP_4_ACCOUNT_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
+      workerHandlerModule: 'worker/routes/accountRoutes.ts',
+      status: 'BLOCKED',
+      activeRuntime: 'legacy_express_server',
+      dependencies: [
+        'worker/routes/accountRoutes.ts',
+        'worker/account/d1AccountRepository.ts',
+        'worker/auth/sessionAuth.ts',
+        'migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql',
+        'migrations/user-d1/0008_sms_otp_ip_rate_limit.sql',
+        'migrations/user-d1/0009_sms_otp_code_digest.sql',
+      ],
+      stateStorageTouchpoints: [
+        'Cloudflare D1 USER_DB (user_profiles, user_sessions, user_privacy_consents, user_favorites, account lifecycle tables)',
+      ],
+      externalApiTouchpoints: [],
+      blockerReason: 'D1 account handlers remain blocked until USER_DB migrations 0007-0009 are applied and cookie-session parity is verified.',
+    };
+  }
+
+  if (GROUP_4_MARKETPLACE_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
+      workerHandlerModule: 'worker/routes/marketplaceRoutes.ts',
+      status: 'BLOCKED',
+      activeRuntime: 'legacy_express_server',
+      dependencies: [
+        'worker/routes/marketplaceRoutes.ts',
+        'worker/marketplace/d1MarketplaceRepository.ts',
+        'worker/marketplace/d1MarketplaceMutations.ts',
+        'worker/marketplace/marketPiiCrypto.ts',
+        'migrations/user-d1/0010_marketplace_and_neighborhood_core.sql',
+      ],
+      stateStorageTouchpoints: [
+        'Cloudflare D1 USER_DB (bargains, sponsor_requests, buyer_alerts, neighborhood_votes, neighborhood_overrides, app_config)',
+      ],
+      externalApiTouchpoints: [],
+      blockerReason: 'D1 marketplace handlers remain blocked until USER_DB migration 0010 is applied and MARKET_PII encryption/hash secrets are provisioned.',
+    };
+  }
+
+    if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
     if (GROUP_5_VERIFIED_STORAGE_PATHS.has(key)) {
       return {
         migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',

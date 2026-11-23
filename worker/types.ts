@@ -144,6 +144,8 @@ export interface WorkerEnv {
   readonly KAVENEGAR_API_KEY?: string;
   readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
   readonly AUTH_PII_HMAC_SECRET?: string;
+  readonly MARKET_PII_ENCRYPTION_KEY?: string;
+  readonly MARKET_PII_HASH_SECRET?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_PROJECT_NUMBER?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
