@@ -134,7 +134,7 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
       const idempotencyKey = typeof suppliedKey === 'string' && suppliedKey.trim()
         ? suppliedKey.trim()
         : `account-deletion:${principal.uid}`;
-      if (idempotencyKey.length > 160 || /[\\r\\n\\u0000]/.test(idempotencyKey)) {
+      if (idempotencyKey.length > 160 || /[\r\n\u0000]/.test(idempotencyKey)) {
         return jsonWorkerResponse(ctx, 400, {
           status: 'error',
           code: 'INVALID_IDEMPOTENCY_KEY',
