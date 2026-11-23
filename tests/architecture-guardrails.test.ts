@@ -344,7 +344,7 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
 // 13. AG-01..AG-10 Stage 2 Backend Architecture Guardrail Coverage
 verify('AG-01..AG-10 Full server/modules scan, test exclusion, legacy ratchet, new file <500 ceiling, and backend upward-import ban', () => {
   const scanned = collectSourceFiles(rootDir);
-  // AG-01: Covers all server/modules beyond telemetry & casper-hub
+  // AG-01: Covers all server/modules beyond telemetry
   assert.ok(scanned.includes('server/modules/community/communityRoutes.ts'));
   assert.ok(scanned.includes('server/modules/trust-safety/trustSafetyRoutes.ts'));
   assert.ok(scanned.includes('server/modules/dispute-resolution/disputeRoutes.ts'));
