@@ -140,8 +140,9 @@ export function computeDeclutteredMarkerTiers(
       placedLabelCount++;
       result.set(hood.id, tier); continue;
     }
-    if (placedLabelCount >= labelBudget) { result.set(hood.id, 'dot'); continue; }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13 ? ['compact_chip'] : zoom < 14 ? ['standard_pill', 'compact_chip'] : ['detailed_pill', 'standard_pill', 'compact_chip'];
+    if (zoom < 14 || placedLabelCount >= labelBudget) { result.set(hood.id, 'dot'); continue; }
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> =
+      zoom < 16 && hasSponsor ? ['standard_pill', 'compact_chip'] : ['compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
