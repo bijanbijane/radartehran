@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
+import { getAuthClient } from '../../platform/auth';
 import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle, Lock } from 'lucide-react';
-import { auth } from '../../firebase';
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
@@ -91,8 +91,9 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [votedIds, setVotedIds] = useState<Record<string, 'UP' | 'DOWN'>>({});
-  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
-  const [authReady, setAuthReady] = useState<boolean>(() => Boolean(auth.currentUser));
+  const authClient = getAuthClient();
+  const [currentUser, setCurrentUser] = useState<AuthUserSnapshot | null>(() => authClient.getUser());
+  const [authReady, setAuthReady] = useState<boolean>(() => authClient.getState() !== 'INITIALIZING');
   const [submitting, setSubmitting] = useState(false);
   const [votingClaimId, setVotingClaimId] = useState<string | null>(null);
 
@@ -105,9 +106,9 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = authClient.subscribe((state, user) => {
       setCurrentUser(user);
-      setAuthReady(true);
+      setAuthReady(state !== 'INITIALIZING');
       if (!user) {
         setShowForm(false);
         setSubmitMessage(null);
@@ -115,8 +116,16 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         setVotedIds({});
       }
     });
-    return () => unsubscribe();
-  }, []);
+    if (authClient.getState() === 'INITIALIZING') {
+      void authClient.refreshSession().catch(() => {
+        setAuthReady(true);
+        setCurrentUser(null);
+      });
+    } else {
+      setAuthReady(true);
+    }
+    return unsubscribe;
+  }, [authClient]);
 
   const fetchAbortRef = useRef<AbortController | null>(null);
   const fetchSeqRef = useRef(0);
@@ -140,7 +149,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     const seed = buildSeedClaims(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
     try {
       const res = await fetch(`/api/v1/claims/hood/${hoodId}?cityId=${encodeURIComponent(cityKey)}`, {
-        signal: controller.signal,
+        credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
       });
       if (!isMountedRef.current || seq !== fetchSeqRef.current || controller.signal.aborted) return;
       if (res.ok) {
@@ -215,6 +224,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     try {
       const res = await fetch('/api/v1/claims', {
         method: 'POST',
+        credentials: 'same-origin', cache: 'no-store',
         headers: authHeaders.headers,
         body: JSON.stringify(
           buildCrowdClaimRequestBody({
@@ -273,6 +283,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     try {
       const res = await fetch(`/api/v1/claims/${encodeURIComponent(claimId)}/vote`, {
         method: 'POST',
+        credentials: 'same-origin', cache: 'no-store',
         headers: authHeaders.headers,
         body: JSON.stringify(buildCrowdVoteRequestBody(vote)),
       });
