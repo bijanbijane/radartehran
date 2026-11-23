@@ -226,7 +226,7 @@ function createMemoryKv(): { kv: KVNamespace; keys: () => string[]; store: Map<s
 
 const TEST_HMAC_SECRET_V1 = 'rt_test_hmac_secret_v1_0123456789abcdef0123456789';
 const TEST_HMAC_SECRET_V2 = 'rt_test_hmac_secret_v2_fedcba9876543210fedcba9876';
-const TEST_RPC_SECRET = 'rt_test_internal_rpc_secret_0123456789abcdef012345';
+const TEST_RPC_SECRET = 'fedcba9876543210'.repeat(4);
 
 describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', () => {
   describe('12.1 USER_DB — Isolation, Account CRUD, Atomic Revocation & JSON->D1 Migration', () => {
@@ -738,6 +738,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET_V2,
         RESEARCH_HMAC_KEY_VERSION: 'v2',
         RESEARCH_HMAC_PREVIOUS_SECRETS: JSON.stringify({ v1: TEST_HMAC_SECRET_V1 }),
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
       };
       const ing2 = await ingestResearchEventsBatch({
         env: envV2,
@@ -789,6 +790,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         researchDb: researchSqlite.db,
         jobId: delPartial.jobId,
         nowMs: Date.now() + 600_000,
+        receiptSecret: TEST_RPC_SECRET,
       });
       assert.equal(retryRes.completed, 2);
       assert.equal(retryRes.pending, 0);
