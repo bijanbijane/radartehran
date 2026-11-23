@@ -52,7 +52,7 @@
     "test:worker": "tsx --test tests/cloudflare-phase1-and-phase2-worker.test.ts",
     "test:auth": "tsx --test tests/cloudflare-native-auth.test.ts tests/cloudflare-google-oidc.test.ts",
     "test:r2": "tsx --test tests/cloudflare-phase4-r2-and-storage.test.ts",
-    "test:d1": "tsx --test tests/cloudflare-phase5-d1-and-database.test.ts tests/cloudflare-user-d1-migration-readiness.test.ts",
+    "test:d1": "tsx --test tests/cloudflare-phase5-d1-and-database.test.ts tests/cloudflare-user-d1-migration-readiness.test.ts tests/cloudflare-marketplace-privacy.test.ts",
     "test:queues": "tsx --test tests/cloudflare-phase6-queues-and-cron.test.ts",
     "test:cache": "tsx --test tests/cloudflare-phase7-cache-and-kv.test.ts",
     "test:telemetry": "tsx --test tests/cloudflare-phase8-telemetry-and-privacy.test.ts",
