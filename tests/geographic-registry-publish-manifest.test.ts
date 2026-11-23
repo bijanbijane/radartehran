@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
   GEO_REGISTRY_PUBLISH_ARTIFACTS,
+  assessReceivingGeographicPublishHead,
   compareActiveGeographicPublishManifest,
   computeExpectedGeographicPublishBatchId,
   type ActiveGeographicPublishHead,
@@ -38,6 +39,7 @@ const expected: ExpectedGeographicPublishManifest = {
 };
 
 const head: ActiveGeographicPublishHead = {
+  batch_id: 'irni-r19-' + 'c'.repeat(64),
   registry_revision: 19,
   registry_checksum: hashA,
   contract_version: 'IRNI-GEO-1.0.0',
@@ -115,6 +117,63 @@ test('accepts a complete active six-dataset manifest that exactly matches D1', (
     importedArtifacts: imports,
   });
   assert.deepEqual(result, { matches: true, mismatches: [] });
+});
+
+test('allows a new revision when the active head is older', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: head,
+    expected,
+    batchId: 'irni-r20-' + 'd'.repeat(64),
+  });
+  assert.deepEqual(result, { action: 'continue' });
+});
+
+test('blocks a stale receiving batch when a newer revision is already active', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: { ...head, registry_revision: 20 },
+    expected,
+    batchId: head.batch_id,
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_REVISION_ROLLBACK_BLOCKED',
+    currentRevision: 20,
+  });
+});
+
+test('rejects a different batch attempting to finalize the active revision', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: head,
+    expected,
+    batchId: 'irni-r19-' + 'd'.repeat(64),
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_SAME_REVISION_BATCH_CONFLICT',
+    currentRevision: 19,
+  });
+});
+
+test('requires full active-manifest verification for the exact active batch', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: head,
+    expected,
+    batchId: head.batch_id,
+  });
+  assert.deepEqual(result, { action: 'verify-active' });
+});
+
+test('fails closed when the active revision is invalid', () => {
+  const result = assessReceivingGeographicPublishHead({
+    activeHead: { ...head, registry_revision: 0 },
+    expected,
+    batchId: head.batch_id,
+  });
+  assert.deepEqual(result, {
+    action: 'reject',
+    code: 'PUBLISH_ACTIVE_HEAD_INVALID',
+    currentRevision: null,
+  });
 });
 
 test('rejects a relationship-only change even when the registry revision is unchanged', () => {
