@@ -14,7 +14,7 @@ const MAX_BODY_BYTES = 1_500_000;
 const MAX_ITEMS_PER_CHUNK = 50;
 const MAX_CLOCK_SKEW_SECONDS = 300;
 const NONCE_RETENTION_MS = 10 * 60 * 1000;
-type DatasetKind = 'entities' | 'relationships' | 'sourceMappings';
+type DatasetKind = 'entities' | 'relationships' | 'sourceMappings' | 'identityEntries' | 'anchors' | 'legacyAliases';
 type SignedPayload =
   | { ok: true; payload: Record<string, unknown>; nonce: string }
   | { ok: false; status: number; code: string };
@@ -153,6 +153,9 @@ async function publishStart(
       !isString(checksum, 128) || !counts ||
       !Number.isSafeInteger(counts.entities) || !Number.isSafeInteger(counts.relationships) ||
       !Number.isSafeInteger(counts.sourceMappings) ||
+      !Number.isSafeInteger(counts.identityEntries) ||
+      !Number.isSafeInteger(counts.anchors) ||
+      !Number.isSafeInteger(counts.legacyAliases) ||
       !isString(contractVersion, 80) || !isString(idAlgorithmVersion, 80) ||
       !isString(schemaVersion, 40)) {
     return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_MANIFEST_INVALID' });
@@ -165,7 +168,7 @@ async function publishStart(
       idAlgorithmVersion !== ctx.env.GEO_REGISTRY_EXPECTED_ID_ALGORITHM) {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_ID_ALGORITHM_MISMATCH' });
   }
-  for (const key of ['snapshot','relationships','sourceMappings']) {
+  for (const key of ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases']) {
     if (artifacts && artifacts[key] !== undefined && !/^[a-f0-9]{64}$/i.test(String(artifacts[key]))) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_INVALID' });
     }
@@ -189,13 +192,15 @@ async function publishStart(
   const result = await db.prepare(
     `INSERT INTO geo_registry_publish_sessions
       (batch_id,registry_revision,registry_checksum,contract_version,id_algorithm_version,schema_version,
-       expected_entities,expected_relationships,expected_source_mappings,status,created_at_iso)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,'RECEIVING',?10)
+       expected_entities,expected_relationships,expected_source_mappings,expected_identity_entries,
+       expected_anchors,expected_legacy_aliases,status,created_at_iso)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,'RECEIVING',?13)
      ON CONFLICT(batch_id) DO NOTHING`,
   ).bind(
     String(batchId), Number(revision), String(checksum), String(contractVersion),
     String(idAlgorithmVersion), String(schemaVersion), Number(counts.entities),
-    Number(counts.relationships), Number(counts.sourceMappings), now,
+    Number(counts.relationships), Number(counts.sourceMappings), Number(counts.identityEntries),
+    Number(counts.anchors), Number(counts.legacyAliases), now,
   ).run();
   requireSuccess(result, 'PUBLISH_START');
   const stored = await db.prepare(
@@ -294,6 +299,96 @@ function buildMappingStatement(db: D1Database, batchId: string, value: unknown) 
   );
 }
 
+function buildIdentityEntryStatement(db: D1Database, batchId: string, value: unknown) {
+  const item = asRecord(value);
+  if (!item || !isString(item.geographicEntityId, 80) ||
+      !/^IRGEO1-[a-f0-9]{64}$/i.test(String(item.geographicEntityId)) ||
+      !isString(item.identityAnchor, 500) || !isString(item.anchorType, 80) ||
+      !isString(item.entityType, 80) || !isString(item.classificationSystemId, 120) ||
+      !isString(item.canonicalNameFa, 300) || !isString(item.identityStatus, 60) ||
+      !Number.isSafeInteger(item.issuedAtRegistryRevision) || !Number.isSafeInteger(item.issuedOrderIndex) ||
+      (item.survivingGeographicEntityId !== null && !isString(item.survivingGeographicEntityId, 80)) ||
+      (item.retiredReason !== null && typeof item.retiredReason !== 'string') ||
+      (item.retiredAtRegistryRevision !== null && !Number.isSafeInteger(item.retiredAtRegistryRevision))) {
+    throw new Error('PUBLISH_IDENTITY_ENTRY_INVALID');
+  }
+  return db.prepare(
+    `INSERT INTO geo_registry_identity_entry_stage
+      (batch_id,geographic_entity_id,identity_anchor,anchor_type,entity_type,classification_system_id,
+       canonical_name_fa,identity_status,issued_at_registry_revision,issued_order_index,
+       surviving_geographic_entity_id,retired_reason,retired_at_registry_revision,entry_json)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)
+     ON CONFLICT(batch_id,geographic_entity_id) DO UPDATE SET
+       identity_anchor=excluded.identity_anchor,anchor_type=excluded.anchor_type,entity_type=excluded.entity_type,
+       classification_system_id=excluded.classification_system_id,canonical_name_fa=excluded.canonical_name_fa,
+       identity_status=excluded.identity_status,issued_at_registry_revision=excluded.issued_at_registry_revision,
+       issued_order_index=excluded.issued_order_index,surviving_geographic_entity_id=excluded.surviving_geographic_entity_id,
+       retired_reason=excluded.retired_reason,retired_at_registry_revision=excluded.retired_at_registry_revision,
+       entry_json=excluded.entry_json`,
+  ).bind(
+    batchId,String(item.geographicEntityId),String(item.identityAnchor),String(item.anchorType),
+    String(item.entityType),String(item.classificationSystemId),String(item.canonicalNameFa),
+    String(item.identityStatus),Number(item.issuedAtRegistryRevision),Number(item.issuedOrderIndex),
+    isString(item.survivingGeographicEntityId) ? item.survivingGeographicEntityId : null,
+    typeof item.retiredReason === 'string' ? item.retiredReason : null,
+    Number.isSafeInteger(item.retiredAtRegistryRevision) ? Number(item.retiredAtRegistryRevision) : null,
+    jsonRecord(item),
+  );
+}
+function buildIdentityAnchorStatement(db: D1Database, batchId: string, value: unknown) {
+  const item = asRecord(value);
+  if (!item || !isString(item.identityAnchor, 500) || !isString(item.geographicEntityId, 80) ||
+      !/^IRGEO1-[a-f0-9]{64}$/i.test(String(item.geographicEntityId)) ||
+      !isString(item.anchorType, 80) || !isString(item.entityType, 80) ||
+      !isString(item.classificationSystemId, 120) || !Number.isSafeInteger(item.issuedAtRegistryRevision) ||
+      item.immutable !== true || (item.fallbackToken !== null && !isString(item.fallbackToken, 200))) {
+    throw new Error('PUBLISH_IDENTITY_ANCHOR_INVALID');
+  }
+  return db.prepare(
+    `INSERT INTO geo_registry_identity_anchor_stage
+      (batch_id,identity_anchor,geographic_entity_id,anchor_type,entity_type,classification_system_id,
+       fallback_token,issued_at_registry_revision,immutable,anchor_json)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,1,?9)
+     ON CONFLICT(batch_id,identity_anchor) DO UPDATE SET
+       geographic_entity_id=excluded.geographic_entity_id,anchor_type=excluded.anchor_type,
+       entity_type=excluded.entity_type,classification_system_id=excluded.classification_system_id,
+       fallback_token=excluded.fallback_token,issued_at_registry_revision=excluded.issued_at_registry_revision,
+       anchor_json=excluded.anchor_json`,
+  ).bind(
+    batchId,String(item.identityAnchor),String(item.geographicEntityId),String(item.anchorType),
+    String(item.entityType),String(item.classificationSystemId),
+    isString(item.fallbackToken) ? item.fallbackToken : null,
+    Number(item.issuedAtRegistryRevision),jsonRecord(item),
+  );
+}
+function buildLegacyAliasStatement(db: D1Database, batchId: string, value: unknown) {
+  const item = asRecord(value);
+  const systems = ['TEHRAN_RADAR','LEGACY_IRAN_NEIGHBORHOOD_ID','RETIRED_CANONICAL_ID','OTHER_LEGACY'];
+  const statuses = ['ACTIVE_COMPATIBILITY_ALIAS','RETIRED_DUPLICATE_ALIAS','MERGED_PREDECESSOR_ALIAS'];
+  if (!item || !isString(item.aliasId, 160) || !systems.includes(String(item.legacySystemCode)) ||
+      !isString(item.legacyIdentifierValue, 240) || !isString(item.canonicalGeographicEntityId, 80) ||
+      !/^IRGEO1-[a-f0-9]{64}$/i.test(String(item.canonicalGeographicEntityId)) ||
+      !statuses.includes(String(item.aliasStatus)) || !isString(item.resolutionEvidenceRef, 1000) ||
+      !Number.isSafeInteger(item.recordedAtRegistryRevision)) {
+    throw new Error('PUBLISH_LEGACY_ALIAS_INVALID');
+  }
+  return db.prepare(
+    `INSERT INTO geo_registry_legacy_alias_stage
+      (batch_id,alias_id,legacy_system_code,legacy_identifier_value,canonical_geographic_entity_id,
+       alias_status,resolution_evidence_ref,recorded_at_registry_revision,alias_json)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)
+     ON CONFLICT(batch_id,alias_id) DO UPDATE SET
+       legacy_system_code=excluded.legacy_system_code,legacy_identifier_value=excluded.legacy_identifier_value,
+       canonical_geographic_entity_id=excluded.canonical_geographic_entity_id,alias_status=excluded.alias_status,
+       resolution_evidence_ref=excluded.resolution_evidence_ref,
+       recorded_at_registry_revision=excluded.recorded_at_registry_revision,alias_json=excluded.alias_json`,
+  ).bind(
+    batchId,String(item.aliasId),String(item.legacySystemCode),String(item.legacyIdentifierValue),
+    String(item.canonicalGeographicEntityId),String(item.aliasStatus),String(item.resolutionEvidenceRef),
+    Number(item.recordedAtRegistryRevision),jsonRecord(item),
+  );
+}
+
 async function publishBatch(
   ctx: WorkerRequestContext, db: D1Database, payload: Record<string, unknown>, nonce: string,
 ): Promise<Response> {
@@ -304,7 +399,7 @@ async function publishBatch(
   const kind = payload.datasetKind as DatasetKind;
   const chunkIndex = payload.chunkIndex;
   const items = payload.items;
-  if (!isString(batchId, 80) || !['entities','relationships','sourceMappings'].includes(kind) ||
+  if (!isString(batchId, 80) || !['entities','relationships','sourceMappings','identityEntries','anchors','legacyAliases'].includes(kind) ||
       !Number.isSafeInteger(chunkIndex) || Number(chunkIndex) < 0 ||
       !Array.isArray(items) || items.length < 1 || items.length > MAX_ITEMS_PER_CHUNK) {
     return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_CHUNK_INVALID' });
@@ -336,7 +431,13 @@ async function publishBatch(
       ? buildEntityStatement(db,String(batchId),item)
       : kind === 'relationships'
         ? buildRelationshipStatement(db,String(batchId),item)
-        : buildMappingStatement(db,String(batchId),item)),
+        : kind === 'sourceMappings'
+          ? buildMappingStatement(db,String(batchId),item)
+          : kind === 'identityEntries'
+            ? buildIdentityEntryStatement(db,String(batchId),item)
+            : kind === 'anchors'
+              ? buildIdentityAnchorStatement(db,String(batchId),item)
+              : buildLegacyAliasStatement(db,String(batchId),item)),
   ];
   try {
     const results = await db.batch(statements);
@@ -373,44 +474,51 @@ async function publishFinalize(
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_NOT_OPEN' });
   }
   const batchIdValue = String(batchId);
-  const [entityCount,relationshipCount,mappingCount,identityCount,anchorCount,aliasCount] = await Promise.all([
+  const [entityCount,relationshipCount,mappingCount,identityEntryCount,anchorCount,aliasCount] = await Promise.all([
     db.prepare('SELECT COUNT(*) AS count FROM geo_registry_entity_stage WHERE batch_id = ?1')
       .bind(batchIdValue).first<{count:number}>(),
     db.prepare('SELECT COUNT(*) AS count FROM geo_registry_relationship_stage WHERE batch_id = ?1')
       .bind(batchIdValue).first<{count:number}>(),
     db.prepare('SELECT COUNT(*) AS count FROM geo_registry_source_mapping_stage WHERE batch_id = ?1')
       .bind(batchIdValue).first<{count:number}>(),
-    db.prepare('SELECT COUNT(*) AS count FROM geo_identity_registry_entries').first<{count:number}>(),
-    db.prepare('SELECT COUNT(*) AS count FROM geo_identity_anchors').first<{count:number}>(),
-    db.prepare('SELECT COUNT(*) AS count FROM geo_legacy_aliases').first<{count:number}>(),
+    db.prepare('SELECT COUNT(*) AS count FROM geo_registry_identity_entry_stage WHERE batch_id = ?1')
+      .bind(batchIdValue).first<{count:number}>(),
+    db.prepare('SELECT COUNT(*) AS count FROM geo_registry_identity_anchor_stage WHERE batch_id = ?1')
+      .bind(batchIdValue).first<{count:number}>(),
+    db.prepare('SELECT COUNT(*) AS count FROM geo_registry_legacy_alias_stage WHERE batch_id = ?1')
+      .bind(batchIdValue).first<{count:number}>(),
   ]);
   const actual = {
     entities: Number(entityCount?.count ?? 0),
     relationships: Number(relationshipCount?.count ?? 0),
     sourceMappings: Number(mappingCount?.count ?? 0),
+    identityEntries: Number(identityEntryCount?.count ?? 0),
+    anchors: Number(anchorCount?.count ?? 0),
+    legacyAliases: Number(aliasCount?.count ?? 0),
   };
   const expected = {
     entities: Number(session.expected_entities),
     relationships: Number(session.expected_relationships),
     sourceMappings: Number(session.expected_source_mappings),
+    identityEntries: Number(session.expected_identity_entries),
+    anchors: Number(session.expected_anchors),
+    legacyAliases: Number(session.expected_legacy_aliases),
   };
-  if (actual.entities !== expected.entities || actual.relationships !== expected.relationships ||
-      actual.sourceMappings !== expected.sourceMappings) {
+  if (Object.keys(expected).some((key) => actual[key as keyof typeof actual] !== expected[key as keyof typeof expected])) {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_COUNTS_MISMATCH', expected, actual });
   }
-  if (actual.entities !== Number(identityCount?.count ?? 0) ||
-      actual.entities !== Number(anchorCount?.count ?? 0)) {
+  if (actual.entities !== actual.identityEntries || actual.entities !== actual.anchors) {
     return jsonWorkerResponse(ctx, 409, {
       status: 'error', code: 'CANONICAL_IDENTITY_REGISTRY_COUNT_MISMATCH',
-      stagedEntities: actual.entities, identityEntries: identityCount?.count ?? 0,
-      anchors: anchorCount?.count ?? 0,
+      stagedEntities: actual.entities, identityEntries: actual.identityEntries, anchors: actual.anchors,
     });
   }
   const revision = Number(session.registry_revision);
   const batchIdParam = batchIdValue;
   const missingIdentity = await db.prepare(
     `SELECT COUNT(*) AS count FROM geo_registry_entity_stage e
-      LEFT JOIN geo_identity_registry_entries i ON i.geographic_entity_id=e.geographic_entity_id
+      LEFT JOIN geo_registry_identity_entry_stage i
+        ON i.batch_id=e.batch_id AND i.geographic_entity_id=e.geographic_entity_id
       WHERE e.batch_id=?1 AND i.geographic_entity_id IS NULL`,
   ).bind(batchIdParam).first<{count:number}>();
   if (Number(missingIdentity?.count ?? 0) !== 0) {
@@ -437,6 +545,47 @@ async function publishFinalize(
     return jsonWorkerResponse(ctx, 409, {
       status: 'error', code: 'PUBLISH_REFERENTIAL_INTEGRITY_FAILED',
       orphanRelationships: orphanRelationships?.count ?? 0, orphanMappings: orphanMappings?.count ?? 0,
+    });
+  }
+
+
+  const mismatchedIdentityReferences = await db.prepare(
+    `SELECT COUNT(*) AS count FROM geo_registry_identity_entry_stage i
+      LEFT JOIN geo_registry_entity_stage e
+        ON e.batch_id=i.batch_id AND e.geographic_entity_id=i.geographic_entity_id
+      LEFT JOIN geo_registry_identity_anchor_stage a
+        ON a.batch_id=i.batch_id AND a.identity_anchor=i.identity_anchor
+          AND a.geographic_entity_id=i.geographic_entity_id
+      WHERE i.batch_id=?1 AND (
+        e.geographic_entity_id IS NULL OR a.identity_anchor IS NULL OR
+        i.entity_type<>e.entity_type OR i.classification_system_id<>e.classification_system_id OR
+        i.canonical_name_fa<>e.canonical_name_fa
+      )`,
+  ).bind(batchIdParam).first<{count:number}>();
+  const orphanAliases = await db.prepare(
+    `SELECT COUNT(*) AS count FROM geo_registry_legacy_alias_stage a
+      LEFT JOIN geo_registry_entity_stage e
+        ON e.batch_id=a.batch_id AND e.geographic_entity_id=a.canonical_geographic_entity_id
+      WHERE a.batch_id=?1 AND e.geographic_entity_id IS NULL`,
+  ).bind(batchIdParam).first<{count:number}>();
+  const immutableAnchorConflicts = await db.prepare(
+    `SELECT COUNT(*) AS count FROM geo_registry_identity_anchor_stage s
+      JOIN geo_identity_anchors a ON a.identity_anchor=s.identity_anchor
+      WHERE s.batch_id=?1 AND (
+        a.geographic_entity_id<>s.geographic_entity_id OR a.anchor_type<>s.anchor_type OR
+        a.entity_type<>s.entity_type OR a.classification_system_id<>s.classification_system_id OR
+        COALESCE(a.fallback_token,'')<>COALESCE(s.fallback_token,'') OR
+        a.issued_at_registry_revision<>s.issued_at_registry_revision OR a.immutable<>1
+      )`,
+  ).bind(batchIdParam).first<{count:number}>();
+  if (Number(mismatchedIdentityReferences?.count ?? 0) !== 0 ||
+      Number(orphanAliases?.count ?? 0) !== 0 ||
+      Number(immutableAnchorConflicts?.count ?? 0) !== 0) {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error', code: 'PUBLISH_CANONICAL_IDENTITY_INTEGRITY_FAILED',
+      mismatchedIdentityReferences: mismatchedIdentityReferences?.count ?? 0,
+      orphanAliases: orphanAliases?.count ?? 0,
+      immutableAnchorConflicts: immutableAnchorConflicts?.count ?? 0,
     });
   }
 
@@ -486,6 +635,45 @@ async function publishFinalize(
         source_dataset_id=excluded.source_dataset_id,resolution_outcome=excluded.resolution_outcome,
         committed_at_registry_revision=excluded.committed_at_registry_revision,mapping_json=excluded.mapping_json`,
     ).bind(batchIdParam),
+
+    db.prepare(
+      `INSERT INTO geo_identity_registry_entries
+       (geographic_entity_id,identity_anchor,anchor_type,entity_type,classification_system_id,
+        canonical_name_fa,identity_status,issued_at_registry_revision,issued_order_index,
+        surviving_geographic_entity_id,retired_reason,retired_at_registry_revision,entry_json)
+       SELECT geographic_entity_id,identity_anchor,anchor_type,entity_type,classification_system_id,
+        canonical_name_fa,identity_status,issued_at_registry_revision,issued_order_index,
+        surviving_geographic_entity_id,retired_reason,retired_at_registry_revision,entry_json
+       FROM geo_registry_identity_entry_stage WHERE batch_id=?1
+       ON CONFLICT(geographic_entity_id) DO UPDATE SET identity_anchor=excluded.identity_anchor,
+        anchor_type=excluded.anchor_type,entity_type=excluded.entity_type,
+        classification_system_id=excluded.classification_system_id,canonical_name_fa=excluded.canonical_name_fa,
+        identity_status=excluded.identity_status,issued_at_registry_revision=excluded.issued_at_registry_revision,
+        issued_order_index=excluded.issued_order_index,surviving_geographic_entity_id=excluded.surviving_geographic_entity_id,
+        retired_reason=excluded.retired_reason,retired_at_registry_revision=excluded.retired_at_registry_revision,
+        entry_json=excluded.entry_json`,
+    ).bind(batchIdParam),
+    db.prepare(
+      `INSERT OR IGNORE INTO geo_identity_anchors
+       (identity_anchor,geographic_entity_id,anchor_type,entity_type,classification_system_id,
+        fallback_token,issued_at_registry_revision,immutable,anchor_json)
+       SELECT identity_anchor,geographic_entity_id,anchor_type,entity_type,classification_system_id,
+        fallback_token,issued_at_registry_revision,1,anchor_json
+       FROM geo_registry_identity_anchor_stage WHERE batch_id=?1`,
+    ).bind(batchIdParam),
+    db.prepare(
+      `INSERT INTO geo_legacy_aliases
+       (alias_id,legacy_system_code,legacy_identifier_value,canonical_geographic_entity_id,
+        alias_status,resolution_evidence_ref,recorded_at_registry_revision,alias_json)
+       SELECT alias_id,legacy_system_code,legacy_identifier_value,canonical_geographic_entity_id,
+        alias_status,resolution_evidence_ref,recorded_at_registry_revision,alias_json
+       FROM geo_registry_legacy_alias_stage WHERE batch_id=?1
+       ON CONFLICT(alias_id) DO UPDATE SET legacy_system_code=excluded.legacy_system_code,
+        legacy_identifier_value=excluded.legacy_identifier_value,
+        canonical_geographic_entity_id=excluded.canonical_geographic_entity_id,
+        alias_status=excluded.alias_status,resolution_evidence_ref=excluded.resolution_evidence_ref,
+        recorded_at_registry_revision=excluded.recorded_at_registry_revision,alias_json=excluded.alias_json`,
+    ).bind(batchIdParam),
     db.prepare(
       `INSERT INTO geo_registry_head
        (singleton_id,contract_version,id_algorithm_version,schema_version,registry_revision,
@@ -506,8 +694,8 @@ async function publishFinalize(
               AND excluded.registry_checksum=geo_registry_head.registry_checksum)`,
     ).bind(
       String(session.contract_version),String(session.id_algorithm_version),String(session.schema_version),
-      revision,previousRevision,registryChecksum,Number(identityCount?.count ?? 0),actual.entities,
-      actual.relationships,Number(anchorCount?.count ?? 0),actual.sourceMappings,Number(aliasCount?.count ?? 0),
+      revision,previousRevision,registryChecksum,actual.identityEntries,actual.entities,
+      actual.relationships,actual.anchors,actual.sourceMappings,actual.legacyAliases,
       0,timestamp,
     ),
     db.prepare(
@@ -523,6 +711,9 @@ async function publishFinalize(
       ['public/data/geography/national-registry-snapshot.json','snapshot',actual.entities],
       ['data/geography/normalized/geographic-relationships.json','relationships',actual.relationships],
       ['data/geography/identity/GEOGRAPHIC-SOURCE-ID-MAPPINGS.json','sourceMappings',actual.sourceMappings],
+      ['data/geography/identity/GEOGRAPHIC-CANONICAL-ID-REGISTRY.json','identityEntries',actual.identityEntries],
+      ['data/geography/identity/GEOGRAPHIC-IDENTITY-ANCHOR-REGISTER.json','anchors',actual.anchors],
+      ['data/geography/identity/GEOGRAPHIC-LEGACY-ID-ALIASES.json','legacyAliases',actual.legacyAliases],
     ] as const).map(([artifactPath,key,count]) =>
       db.prepare(
         `INSERT INTO geo_registry_imports(artifact_path,artifact_sha256,record_count,registry_revision,imported_at_iso)
