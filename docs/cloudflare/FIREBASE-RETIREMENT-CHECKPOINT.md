@@ -219,3 +219,39 @@ Implement and test the missing Cloudflare Worker/D1 admin mutation contracts for
 ### Concurrency boundary
 
 The only file shared with PR #9 among the auth changes is `src/platform/auth/core/authClient.ts`; it was not edited. PR #9, dependent PR #28, and validation PR #34 remain untouched. `main` and Production remain unchanged.
+
+
+## 23 November 2026 — live USER_DB identity recovery preflight
+
+**Repository branch:** `migration/cloudflare-native-auth-firebase-retirement`  \
+**PR:** #23, OPEN / DRAFT; base `main`.  \
+**Source HEAD before this checkpoint:** `b4b29e7e1314781dde1502fac4de255b294d9ee5`  \
+**Production database:** `radar-user-db` (`fbb98e6b-5200-4047-b4bc-15a51c06aa84`), binding `USER_DB` in `wrangler.backend.jsonc`.
+
+### Read-only Cloudflare verification
+
+The live D1 API was queried directly. All statements were read-only; every response reported `changed_db=false` / `rows_written=0`.
+
+- `d1_migrations` contains exactly canonical USER_DB migrations `0001`–`0006`; no ledger row exists for `0007`, `0008`, or `0009`.
+- `user_sessions` has the two already-partially-applied columns `token_hash TEXT` and `expires_at_iso TEXT`; `auth_provider` is absent.
+- `auth_identities`, `auth_oauth_states`, and `auth_phone_challenges` do not exist.
+- All eight indexes expected by the recovery script are absent.
+- `user_profiles` and `user_sessions` both currently contain zero rows. No duplicate non-null `token_hash` values were found.
+- Migration `0010` was not included in the recovery plan and remains outside this Google-auth readiness operation.
+- D1 Insights reported 2 rows written for this database from 00:00 UTC to 16:19:26 UTC on 2026-11-23. This usage metric is not proof of remaining quota; the previous daily write-quota incident remains a reason to avoid blind retries.
+
+### Recovery script review
+
+The existing `scripts/cloudflare/recover-user-d1-identity-migrations.mjs` is pinned to the exact Production `USER_DB` binding, defaults to dry-run, requires `--apply` for writes, checks for existing columns/tables/indexes, verifies the resulting schema, and records migration ledger rows only after schema verification. It is limited to migrations `0007`–`0009`; it does not apply `0010`, drop data, or rewrite user rows.
+
+The observed live schema matches the script's intended partial-recovery case: skip `token_hash` and `expires_at_iso`, add `auth_provider`, create the three auth tables and eight indexes, then reconcile ledger rows 7–9. No recovery DDL or ledger write has been executed in this checkpoint.
+
+### Current GitHub coordination
+
+- PR #23 remains OPEN / DRAFT and has no CI run for its current HEAD `b4b29e7e1314781dde1502fac4de255b294d9ee5`; the previous known CI failure is still not superseded by a passing run.
+- PR #9 has advanced to `5724ce60bde741ba0869875e8a23e4502ac2990c`; it remains OPEN / DRAFT. PR #9 and PR #23 still share files, including `src/platform/auth/core/authClient.ts`, `package.json`, `package-lock.json`, and shared Worker/test files. Do not edit those overlapping files without rechecking the current PR diffs.
+- No Worker deployment, OAuth secret read/write, DNS change, Production migration, Firebase deletion, or IRNI resource change was performed.
+
+### Next gated operation
+
+The recovery plan is technically aligned with the observed schema, but Production DDL must remain a separate explicit operation. Before applying it, verify the D1 write quota is available, retain the exact target binding, execute the existing recovery script in `--apply` mode only against `radar-user-db`, and immediately re-read the schema and ledger. Then configure the Google OAuth client ID/secret and callback, validate Worker bindings, and deploy only through a separately reviewed cutover. Keep PR #23 Draft until its complete CI and remaining Firebase retirement work are verified.
