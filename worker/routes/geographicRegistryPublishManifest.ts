@@ -155,6 +155,13 @@ export function compareActiveGeographicPublishManifest(input: {
     }
   }
 
+  if (importedArtifacts.length !== GEO_REGISTRY_PUBLISH_ARTIFACTS.length) {
+    mismatches.push('artifactLedgerCardinality');
+  }
+  const knownPaths = new Set(GEO_REGISTRY_PUBLISH_ARTIFACTS.map((artifact) => artifact.artifactPath));
+  for (const row of importedArtifacts) {
+    if (!knownPaths.has(row.artifact_path)) mismatches.push('unexpectedArtifact:' + row.artifact_path);
+  }
   const rowsByPath = new Map(importedArtifacts.map((row) => [row.artifact_path, row]));
   for (const artifact of GEO_REGISTRY_PUBLISH_ARTIFACTS) {
     const row = rowsByPath.get(artifact.artifactPath);
