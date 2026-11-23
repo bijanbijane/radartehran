@@ -276,7 +276,25 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         areaUnit: 'sqm',
       });
       assert.equal(profile.displayName, 'سارا تهرانی');
+
+      // Migration 0010 adds ON DELETE CASCADE references from marketplace rows to user_profiles.
+      // Profile updates must be UPSERTs, not SQLite REPLACE (DELETE + INSERT), or they erase user data.
+      userSqlite.raw.exec(`
+        PRAGMA foreign_keys = ON;
+        CREATE TABLE profile_cascade_sentinel (
+          child_id TEXT PRIMARY KEY,
+          owner_uid TEXT NOT NULL REFERENCES user_profiles(uid) ON DELETE CASCADE
+        );
+        INSERT INTO profile_cascade_sentinel(child_id, owner_uid) VALUES ('keep-market-data', '${uid}');
+      `);
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'سارا به‌روزشده' });
+      const preservedChild = userSqlite.raw
+        .prepare('SELECT child_id FROM profile_cascade_sentinel WHERE owner_uid = ?')
+        .get(uid) as { child_id: string } | undefined;
+      assert.equal(preservedChild?.child_id, 'keep-market-data');
+
       const fetchedProfile = await getUserProfileFromD1(userSqlite.db, uid);
+      assert.equal(fetchedProfile?.displayName, 'سارا به‌روزشده');
       assert.equal(fetchedProfile?.preferredCity, 'tehran');
 
       const defaultConsent = await getUserPrivacyConsentFromD1(userSqlite.db, uid);
