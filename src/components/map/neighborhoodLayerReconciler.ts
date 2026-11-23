@@ -38,13 +38,12 @@ export function selectVisibleMapNeighborhoods(params: {
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
   const refLat = selectedHood?.lat ?? cityCfg.center[0], refLng = selectedHood?.lng ?? cityCfg.center[1];
   const hasUsableViewport = Boolean(map && typeof map.getBounds === 'function');
-  const isCameraAtTarget = hasUsableViewport && isNeighborhoodInLeafletViewport(map, refLat, refLng, 0.5);
   const visibleHoods = [...renderHoods]
     .sort((a, b) => (a.id === selectedHoodId ? -1 : b.id === selectedHoodId ? 1 : a.id - b.id))
     .filter((hood) => {
       if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
       if (hood.id === selectedHoodId) return true;
-      if (isCameraAtTarget) {
+      if (hasUsableViewport) {
         return isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio));
       }
       return Math.abs(hood.lat - refLat) <= 0.55 && Math.abs(hood.lng - refLng) <= 0.65;
