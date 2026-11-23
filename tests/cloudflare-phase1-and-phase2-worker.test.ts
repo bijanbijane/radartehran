@@ -141,6 +141,16 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
     const readyBody = (await readyRes.json()) as Record<string, unknown>;
     assert.equal(readyBody.ok, true);
     assert.equal(readyBody.probe, 'readiness');
+
+    // Preview may intentionally omit D1; production/staging must never report READY without USER_DB.
+    const productionWithoutDb = await workerEntrypoint.fetch(
+      new Request('https://radartehran.ir/api/health/readiness'),
+      { ENVIRONMENT: 'production', APP_URL: 'https://radartehran.ir' },
+    );
+    assert.equal(productionWithoutDb.status, 503);
+    const productionReadinessBody = (await productionWithoutDb.json()) as Record<string, unknown>;
+    assert.equal(productionReadinessBody.code, 'USER_DB_NOT_BOUND');
+    assert.equal(productionReadinessBody.state, 'DEGRADED');
   });
 
   it('4. serves static assets and SPA fallback with dynamic SSR SEO metadata injection (?hood=, ?compare=, ?city=)', async () => {
