@@ -3,6 +3,7 @@
  * Browser credentials are HttpOnly cookies; no Firebase ID token or client-side bearer token is accepted.
  */
 import { resolveUserDb } from '../db/bindingResolver';
+import { resolveD1WritePauseState } from '../db/writePause';
 import type { WorkerRequestContext } from '../types';
 
 export const RADAR_SESSION_COOKIE = '__Host-radar_session';
@@ -124,8 +125,9 @@ export async function authenticateWorkerSession(
     const isAdmin = isPrimaryAdmin || row.delegated_admin === 1;
     const authTimeSeconds = createdAtSeconds;
 
+    const d1WritesPaused = resolveD1WritePauseState(ctx.env).paused;
     const lastSeenMs = Date.parse(String(row.last_seen_at_iso || ''));
-    if (!Number.isFinite(lastSeenMs) || Date.now() - lastSeenMs > 5 * 60 * 1000) {
+    if (!d1WritesPaused && (!Number.isFinite(lastSeenMs) || Date.now() - lastSeenMs > 5 * 60 * 1000)) {
       await userDb
         .prepare('UPDATE user_sessions SET last_seen_at_iso = ?1 WHERE session_id = ?2 AND status = \'ACTIVE\'')
         .bind(new Date().toISOString(), String(row.session_id))
