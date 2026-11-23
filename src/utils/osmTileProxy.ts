@@ -57,7 +57,7 @@ export const FREE_OSM_UPSTREAM_MIRRORS: readonly ((z: number, x: number, y: numb
   // OSM Standard's exact supported endpoint. Other free mirrors have separate terms
   // and are not eligible for automatic failover without provider approval.
   (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
-]
+];
 
 /**
  * Honors upstream cache directives for the shared server-side tile cache.
