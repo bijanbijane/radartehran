@@ -13,6 +13,7 @@ import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndComm
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
 import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
+import { handleAuthWorkerRoute } from './routes/authRoutes';
 import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
 import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
@@ -74,6 +75,11 @@ export async function dispatchWorkerApiOrSeoRequest(
       routePattern: 'GLOBAL_WRITE_BLOCK',
       migrationStatus: 'VERIFIED',
     };
+  }
+
+  const authResponse = await handleAuthWorkerRoute(ctx);
+  if (authResponse) {
+    return { response: authResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
   }
 
   const registeredMatch = findMigrationRegisterEntry(method, pathname);

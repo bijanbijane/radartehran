@@ -174,7 +174,7 @@ export function buildWorkerJsonHeaders(
     headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     headers.set(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Firebase-AppCheck, X-Correlation-Id, PAYMENT-CONTEXT, PAYMENT-SIGNATURE'
+      'Content-Type, Authorization, X-Correlation-Id, PAYMENT-CONTEXT, PAYMENT-SIGNATURE'
     );
   }
   return headers;

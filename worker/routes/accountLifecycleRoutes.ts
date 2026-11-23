@@ -3,7 +3,7 @@
  */
 
 import { ACCOUNT_LIFECYCLE_API_PREFIX, OFFICIAL_ACCOUNT_LIFECYCLE_ROUTES } from '../../server/modules/account-lifecycle/officialApiContract.ts';
-import { resolveWorkerAuthContext, evaluateWorkerAuthorization } from '../auth/authorizationPolicy.ts';
+import { authenticateWorkerSession } from '../auth/sessionAuth.ts';
 import { jsonWorkerResponse } from '../contextAndSecurity.ts';
 import type { WorkerRequestContext } from '../types.ts';
 import { createD1AccountLifecycleStore } from '../../server/modules/account-lifecycle/storeFactory.ts';
@@ -43,26 +43,22 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
     });
   }
 
-  const auth = await resolveWorkerAuthContext(ctx.request, {
-    expectedProjectId: ctx.env.FIREBASE_PROJECT_ID,
-    adminApiSecret: ctx.env.ADMIN_API_SECRET,
-    adminEmail: ctx.env.ADMIN_EMAIL,
-  });
-  if (!auth.authenticated || !auth.principal) {
-    return jsonWorkerResponse(ctx, auth.failureStatusCode ?? 401, {
+  const auth = await authenticateWorkerSession(ctx, true);
+  if (!auth.authenticated || !auth.uid) {
+    return jsonWorkerResponse(ctx, auth.statusCode, {
       status: 'error',
-      code: auth.failureCode ?? 'UNAUTHENTICATED',
+      code: auth.reasonCode || 'UNAUTHENTICATED',
       correlationId: ctx.correlationId,
-      message: auth.failureReason ?? 'Authentication required.',
+      message: 'Authentication required.',
     });
   }
 
   if (ctx.method === 'POST' && ctx.pathname === `${ACCOUNT_LIFECYCLE_API_PREFIX}/deletion`) {
     const actor = buildLifecycleActorFromPrincipal({
-      uid: auth.principal.uid,
-      email: auth.principal.email,
-      isAdmin: auth.principal.isPrimaryAdmin || auth.principal.isDelegatedAdmin,
-      authTimeSeconds: auth.principal.authTimeSeconds,
+      uid: auth.uid!,
+      email: auth.email ?? undefined,
+      isAdmin: auth.isAdmin,
+      authTimeSeconds: auth.authTimeSeconds ?? undefined,
     });
     if (!actor.freshAuthVerified) {
       return jsonWorkerResponse(ctx, 403, {
@@ -96,9 +92,9 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
     const jobId = matchDeletionJobId(ctx.pathname);
     if (!jobId || ctx.pathname.includes('/continue')) return null;
     const actor = buildLifecycleActorFromPrincipal({
-      uid: auth.principal.uid,
-      email: auth.principal.email,
-      isAdmin: auth.principal.isPrimaryAdmin || auth.principal.isDelegatedAdmin,
+      uid: auth.uid!,
+      email: auth.email ?? undefined,
+      isAdmin: auth.isAdmin,
     });
     try {
       const orchestrator = createWorkerLifecycleOrchestrator(ctx.env);
@@ -119,16 +115,12 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
   );
   if (ctx.method === 'POST' && continueMatch) {
     const jobId = decodeURIComponent(continueMatch[1]);
-    const adminDecision = evaluateWorkerAuthorization(auth, {
-      policy: 'ADMIN',
-      requirePrimaryAdmin: false,
-    });
-    if (!adminDecision.allowed) {
-      return jsonWorkerResponse(ctx, adminDecision.statusCode, {
+    if (!auth.isAdmin) {
+      return jsonWorkerResponse(ctx, 403, {
         status: 'error',
-        code: adminDecision.failureCode ?? 'FORBIDDEN',
+        code: 'ADMIN_FORBIDDEN',
         correlationId: ctx.correlationId,
-        message: adminDecision.reasonEn,
+        message: 'Administrator access is required.',
       });
     }
     const store = createD1AccountLifecycleStore(ctx.env.DB!);
@@ -153,10 +145,10 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
   }
 
   const actorForLifecycle = buildLifecycleActorFromPrincipal({
-    uid: auth.principal.uid,
-    email: auth.principal.email,
-    isAdmin: auth.principal.isPrimaryAdmin || auth.principal.isDelegatedAdmin,
-    authTimeSeconds: auth.principal.authTimeSeconds,
+    uid: auth.uid!,
+    email: auth.email ?? undefined,
+    isAdmin: auth.isAdmin,
+    authTimeSeconds: auth.authTimeSeconds ?? undefined,
   });
 
   if (ctx.pathname.startsWith(`${ACCOUNT_LIFECYCLE_API_PREFIX}/export`)) {
