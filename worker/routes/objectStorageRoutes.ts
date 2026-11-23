@@ -5,7 +5,7 @@
  * (Range 206/416 + signed URL), fail-closed Legal Hold deletions, and bargain media attach/cleanup.
  */
 import { isUserWriteBlockedInD1 } from '../account-lifecycle/d1MutationPermit';
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { buildWorkerJsonHeaders, jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { resolveUserDb } from '../db/bindingResolver';
 import type { D1MediaObjectRecord } from '../db/d1SchemaAndMigrations';
