@@ -1,4 +1,5 @@
-import type { D1Database } from '../types';
+import type { D1Database, WorkerEnv } from '../types';
+import { decryptMarketPhone, maskMarketPhoneLast4 } from './marketPiiCrypto';
 
 export interface MarketStateQuery {
   cityId: string;
@@ -51,7 +52,7 @@ function makeHoodFilter(hoodIds: readonly number[] | undefined, startIndex: numb
   };
 }
 
-export async function getMarketStateFromD1(db: D1Database, query: MarketStateQuery) {
+export async function getMarketStateFromD1(db: D1Database, query: MarketStateQuery, env: WorkerEnv) {
   const cityId = query.cityId;
   const hoodFilter = makeHoodFilter(query.hoodIds, 2);
   const baseValues: unknown[] = [cityId, ...hoodFilter.values];
@@ -65,7 +66,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
        ORDER BY created_at_iso DESC LIMIT 1000`,
     ).bind(...baseValues).all<Record<string, unknown>>(),
     db.prepare(
-      `SELECT request_id, owner_uid, city_id, hood_id, hood_name, agency_name, phone_e164, specialty,
+      `SELECT request_id, owner_uid, city_id, hood_id, hood_name, agency_name, phone_ciphertext, phone_last4, specialty,
               experience_years, monthly_tariff_million, plan_months, total_payable_million,
               tracking_code, status, expires_at_iso, created_at_iso
        FROM sponsor_requests
@@ -98,7 +99,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     ).bind(...baseValues).all<Record<string, unknown>>(),
     query.includeAdminRecords
       ? db.prepare(
-          `SELECT alert_id, owner_uid, city_id, hood_id, full_name, phone_e164, deal_type,
+          `SELECT alert_id, owner_uid, city_id, hood_id, full_name, phone_ciphertext, phone_last4, deal_type,
                   max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso
            FROM buyer_alerts
            WHERE city_id = ?1 AND status = 'active'${hoodFilter.sql}
@@ -134,14 +135,14 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     createdAtIso: String(row.created_at_iso || ''),
     updatedAtIso: String(row.updated_at_iso || ''),
     ownerUserId: ownerUidVisible(row.owner_uid, query),
-  }));
+  })));
 
-  const sponsors = (sponsorRows.results ?? []).map((row) => ({
+  const sponsors = await Promise.all((sponsorRows.results ?? []).map(async (row) => ({
     id: `cloud-${String(row.request_id)}`,
     hoodId: Number(row.hood_id),
     hoodName: String(row.hood_name || ''),
     agencyName: String(row.agency_name || ''),
-    phone: query.includeAdminRecords ? String(row.phone_e164 || '') : maskPhoneForPublic(row.phone_e164),
+    phone: query.includeAdminRecords ? await decryptMarketPhone(String(row.phone_ciphertext || ''), env) : maskMarketPhoneLast4(row.phone_last4),
     specialty: String(row.specialty || ''),
     experienceYears: Number(row.experience_years || 0),
     monthlyTariffMillion: Number(row.monthly_tariff_million || 0),
@@ -180,12 +181,12 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     updatedAtIso: String(row.updated_at_iso || ''),
   }));
 
-  const buyerAlerts = (buyerRows.results ?? []).map((row) => ({
+  const buyerAlerts = await Promise.all((buyerRows.results ?? []).map(async (row) => ({
     id: `cloud-${String(row.alert_id)}`,
     hoodId: Number(row.hood_id),
     hoodName: '',
     fullName: String(row.full_name || ''),
-    phone: String(row.phone_e164 || ''),
+    phone: await decryptMarketPhone(String(row.phone_ciphertext || ''), env),
     dealType: row.deal_type === 'اجاره' ? 'اجاره' : 'خرید',
     maxBudgetText: `${Number(row.max_budget_million || 0)} میلیون تومان`,
     createdAtFa: 'ثبت ابری',
@@ -193,7 +194,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     expiresAtIso: String(row.expires_at_iso || ''),
     consentVersion: String(row.consent_version || ''),
     submittedByUid: String(row.owner_uid || ''),
-  }));
+  })));
 
   return {
     bargains,
