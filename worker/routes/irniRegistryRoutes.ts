@@ -249,9 +249,9 @@ function jsonResponse(ctx: WorkerRequestContext, status: number, payload: unknow
 
 async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Response> {
   const parsed = await readSignedJsonBody(ctx);
-  if (!parsed.ok) return parsed.response;
+  if (parsed.ok === false) return parsed.response;
   const auth = await authenticatePublisher(ctx, parsed.raw);
-  if (!auth.ok) return jsonResponse(ctx, auth.status, { status: 'error', code: auth.code });
+  if (auth.ok === false) return jsonResponse(ctx, auth.status, { status: 'error', code: auth.code });
   const db = ctx.env.NEIGHBORHOOD_DB;
   if (!db) return jsonResponse(ctx, 503, { status: 'error', code: 'IRNI_NEIGHBORHOOD_DATABASE_NOT_BOUND' });
 
