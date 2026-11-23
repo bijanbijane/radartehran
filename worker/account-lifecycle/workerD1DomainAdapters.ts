@@ -151,35 +151,69 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
 function createUserProfileD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
   const sessions = createUploadSessionAdapter(db);
   const requests = createDataRequestsAdapter(db);
+
+  const normalizedBatchSize = (size: number): number =>
+    Math.max(1, Math.min(50, Math.trunc(size)));
+
+  const encodeRequestCursor = (cursor: string | null, hasMore: boolean): string | null =>
+    cursor ? `drq:${cursor}` : hasMore ? 'drq:' : null;
+
   return {
     source: 'USER_PROFILE',
     async fetchOwnedRecordsPage(params) {
-      if (!params.cursor || !params.cursor.startsWith('drq:')) {
-        const page = await sessions.fetchOwnedRecordsPage(params);
-        if (page.hasMore) return page;
-        const reqPage = await requests.fetchOwnedRecordsPage({ ...params, cursor: null });
-        return {
-          items: reqPage.items,
-          nextCursor: reqPage.nextCursor ? `drq:${reqPage.nextCursor}` : reqPage.hasMore ? 'drq:' : null,
-          hasMore: reqPage.hasMore,
-        };
+      const limit = normalizedBatchSize(params.pageSize);
+      if (params.cursor?.startsWith('drq:')) {
+        const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
+        return requests.fetchOwnedRecordsPage({ ...params, cursor: innerCursor, pageSize: limit });
       }
-      const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
-      return requests.fetchOwnedRecordsPage({ ...params, cursor: innerCursor });
+
+      const sessionPage = await sessions.fetchOwnedRecordsPage({ ...params, pageSize: limit });
+      if (sessionPage.hasMore) return sessionPage;
+
+      // Preserve the final short upload-session page and use only the remaining page capacity
+      // for data requests. Returning only the request page would silently omit these sessions.
+      const remaining = limit - sessionPage.items.length;
+      if (remaining <= 0) {
+        return { items: sessionPage.items, nextCursor: 'drq:', hasMore: true };
+      }
+
+      const requestPage = await requests.fetchOwnedRecordsPage({
+        ...params,
+        cursor: null,
+        pageSize: remaining,
+      });
+      return {
+        items: [...sessionPage.items, ...requestPage.items],
+        nextCursor: encodeRequestCursor(requestPage.nextCursor, requestPage.hasMore),
+        hasMore: requestPage.hasMore,
+      };
     },
     async disposeOwnedRecordsBatch(params) {
-      if (!params.cursor || !params.cursor.startsWith('drq:')) {
-        const batch = await sessions.disposeOwnedRecordsBatch(params);
-        if (batch.hasMore) return batch;
-        const reqBatch = await requests.disposeOwnedRecordsBatch({ ...params, cursor: null });
-        return {
-          receipts: [...batch.receipts, ...reqBatch.receipts],
-          nextCursor: reqBatch.nextCursor ? `drq:${reqBatch.nextCursor}` : reqBatch.hasMore ? 'drq:' : null,
-          hasMore: reqBatch.hasMore,
-        };
+      const limit = normalizedBatchSize(params.batchSize);
+      if (params.cursor?.startsWith('drq:')) {
+        const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
+        return requests.disposeOwnedRecordsBatch({ ...params, cursor: innerCursor, batchSize: limit });
       }
-      const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
-      return requests.disposeOwnedRecordsBatch({ ...params, cursor: innerCursor });
+
+      const sessionBatch = await sessions.disposeOwnedRecordsBatch({ ...params, batchSize: limit });
+      if (sessionBatch.hasMore) return sessionBatch;
+
+      // Keep the combined operation bounded by the caller's batchSize across both tables.
+      const remaining = limit - sessionBatch.receipts.length;
+      if (remaining <= 0) {
+        return { ...sessionBatch, nextCursor: 'drq:', hasMore: true };
+      }
+
+      const requestBatch = await requests.disposeOwnedRecordsBatch({
+        ...params,
+        cursor: null,
+        batchSize: remaining,
+      });
+      return {
+        receipts: [...sessionBatch.receipts, ...requestBatch.receipts],
+        nextCursor: encodeRequestCursor(requestBatch.nextCursor, requestBatch.hasMore),
+        hasMore: requestBatch.hasMore,
+      };
     },
   };
 }
