@@ -118,7 +118,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       workerHandlerModule: 'worker/routes/accountRoutes.ts',
       status: 'VERIFIED',
       activeRuntime: 'cloudflare_worker',
-      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/firebaseEdgeAuth.ts'],
+      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/sessionAuth.ts', 'worker/routes/authRoutes.ts'],
       stateStorageTouchpoints: ['Cloudflare D1 USER_DB (user_profiles, user_privacy_consents, user_sessions, user_data_requests)'],
       externalApiTouchpoints: ['Firebase Auth JWKS'],
     };
