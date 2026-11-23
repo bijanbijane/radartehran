@@ -171,6 +171,32 @@ function runDomainRegressionTests(): void {
     else (globalThis as any).localStorage = priorLocalStorage;
   }
 
+  const eagerFirebaseModules = [
+    'src/components/RadarWorkspaceShell.tsx',
+    'src/components/AppModalsPortal.tsx',
+    'src/components/useRadarCloudSync.ts',
+    'src/components/useRadarCrudActions.ts',
+    'src/components/useRadarAdminActions.ts',
+    'src/utils/backupCloudSync.ts',
+  ];
+  const eagerFirebaseImportPattern = /import\\s+(?!type\\b)[^;]*from\\s+['"](?:firebase\\/(?:auth|firestore)|\\.\\.\\/firebase)['"]/;
+  for (const sourcePath of eagerFirebaseModules) {
+    const source = fs.readFileSync(path.resolve(process.cwd(), sourcePath), 'utf8');
+    assert(
+      '0. Initial application modules defer Firebase runtime imports',
+      !eagerFirebaseImportPattern.test(source),
+      sourcePath + ' must not statically import Firebase Auth, Firestore, or firebase.ts',
+    );
+  }
+  const firebaseLoaderSource = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/firebaseLazy.ts'), 'utf8');
+  assert(
+    '0. Deferred Firebase loader uses dynamic imports',
+    firebaseLoaderSource.includes("import('../firebase')") &&
+      firebaseLoaderSource.includes("import('firebase/auth')") &&
+      firebaseLoaderSource.includes("import('firebase/firestore')"),
+    'Firebase modules are loaded only through loadFirebaseClient()',
+  );
+
   const sampleHood: EvaluatedNeighborhood = {
     ...INITIAL_NEIGHBORHOODS[0],
     buyPerSqm: 100,
