@@ -47,6 +47,10 @@ const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/data-requests',
 ]);
 
+const GROUP_4_VERIFIED_MARKETPLACE_PATHS = new Set<string>([
+  'GET /api/v1/market/state',
+]);
+
 const GROUP_5_STORAGE_PATHS = new Set<string>([
   'GET /api/object-storage/status',
   'POST /api/object-storage/upload',
@@ -125,7 +129,19 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
   }
 
   if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
-    if (GROUP_5_STORAGE_PATHS.has(key)) {
+    if (GROUP_4_VERIFIED_MARKETPLACE_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
+      workerHandlerModule: 'worker/routes/marketplaceRoutes.ts',
+      status: 'VERIFIED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: ['worker/marketplace/d1MarketplaceRepository.ts', 'worker/auth/sessionAuth.ts'],
+      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (bargains, sponsor_requests, buyer_alerts, neighborhood_votes, neighborhood_overrides, app_config, user_preferences)'],
+      externalApiTouchpoints: [],
+    };
+  }
+
+  if (GROUP_5_STORAGE_PATHS.has(key)) {
       return {
         migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
         workerHandlerModule: null,
