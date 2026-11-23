@@ -71,7 +71,7 @@ import {
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
-const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+const TEST_RPC_SECRET = '89abcdef01234567'.repeat(4);
 const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
@@ -619,8 +619,11 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
         // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
         const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
-        const unkeyedHash = await hashUidForComplianceReceipt(uid);
-        assert.notEqual(expectedKeyedHash, unkeyedHash);
+        await assert.rejects(
+          hashUidForComplianceReceipt(uid),
+          /INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE/,
+          'Missing receipt key must fail closed instead of producing an unkeyed digest.',
+        );
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
         clearTestJwksForEdgeAuth();
