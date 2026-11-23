@@ -41,8 +41,8 @@ export function selectVisibleMapNeighborhoods(params: {
   const visibleHoods = [...renderHoods]
     .sort((a, b) => (a.id === selectedHoodId ? -1 : b.id === selectedHoodId ? 1 : a.id - b.id))
     .filter((hood) => {
-      if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
       if (hood.id === selectedHoodId) return true;
+      if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
       if (hasUsableViewport) {
         return isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio));
       }
