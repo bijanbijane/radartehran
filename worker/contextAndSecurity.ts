@@ -168,9 +168,20 @@ export function buildWorkerJsonHeaders(
     ctx.env.APP_URL,
     ctx.environment === 'production' ? 'production' : 'development'
   );
+  // Cacheable CORS responses must vary by Origin even when the current request
+  // has no Origin or presents a disallowed Origin. Otherwise a no-Origin cache
+  // entry could be reused for a browser request without the required CORS headers.
+  const existingVary = (headers.get('Vary') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!existingVary.includes('*') && !existingVary.some((value) => value.toLowerCase() === 'origin')) {
+    existingVary.push('Origin');
+    headers.set('Vary', existingVary.join(', '));
+  }
+
   if (allowedOrigin) {
     headers.set('Access-Control-Allow-Origin', allowedOrigin);
-    headers.set('Vary', 'Origin');
     headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     headers.set(
       'Access-Control-Allow-Headers',
