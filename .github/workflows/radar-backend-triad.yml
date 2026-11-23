@@ -83,18 +83,33 @@ jobs:
           curl --fail --silent --show-error "$RADAR_FRONTEND_URL/" -o /tmp/radar-frontend.html
           grep -q 'id="root"' /tmp/radar-frontend.html
           : > /tmp/radar-frontend-bundles.js
-          while IFS= read -r asset; do
+          mapfile -t frontend_assets < <(
+            {
+              grep -oE 'src="[^"]+\\.js[^"]*"' /tmp/radar-frontend.html || true
+              grep -oE "src='[^']+\\.js[^']*'" /tmp/radar-frontend.html || true
+            } | sed -E "s/^src=['\\"]//; s/['\\"]$//"
+          )
+          echo "Frontend JavaScript asset references: ${#frontend_assets[@]}"
+          if [[ ${#frontend_assets[@]} -eq 0 ]]; then
+            echo "ERROR: no JavaScript asset references found in deployed frontend HTML."
+            sed -n '1,20p' /tmp/radar-frontend.html
+            exit 1
+          fi
+          printf 'Frontend asset: %s\\n' "${frontend_assets[@]}"
+          for asset in "${frontend_assets[@]}"; do
             case "$asset" in
               http*) asset_url="$asset" ;;
               /*) asset_url="$RADAR_FRONTEND_URL$asset" ;;
               *) asset_url="$RADAR_FRONTEND_URL/$asset" ;;
             esac
             curl --fail --silent --show-error "$asset_url" >> /tmp/radar-frontend-bundles.js
-          done < <(grep -oE 'src="[^"]+\.js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
+          done
+          echo "Downloaded frontend bundle bytes: $(wc -c < /tmp/radar-frontend-bundles.js)"
           if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
             echo "ERROR: no reCAPTCHA Enterprise site key found in deployed frontend bundle; API App Check mode is enforced."
             exit 1
           fi
+          echo "App Check site key detected in deployed frontend bundle."
           curl --fail --silent --show-error "$RADAR_API_URL/api/health/database-triad" -o /tmp/radar-d1-health.json
           node --input-type=module -e '
             import fs from "node:fs";
