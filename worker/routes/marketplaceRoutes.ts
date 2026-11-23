@@ -352,10 +352,10 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
             specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million,
             tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso
           )
-          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?17
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?18
           WHERE EXISTS (
             SELECT 1 FROM market_mutation_idempotency
-            WHERE uid = ?2 AND operation_name = 'sponsor.create' AND idempotency_key = ?18 AND request_hash = ?19
+            WHERE uid = ?2 AND operation_name = 'sponsor.create' AND idempotency_key = ?19 AND request_hash = ?20
           )
           ON CONFLICT(request_id) DO NOTHING`,
         ).bind(resourceId, auth.uid, cityId, hoodId, hoodName, agencyName, phoneCiphertext, phoneHash, phoneLast4, specialty, experienceYears, monthlyTariff, planMonths, totalPayable, trackingCode, status, expiresAtIso, now, key, requestHash),
@@ -416,10 +416,10 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
             alert_id, owner_uid, city_id, hood_id, full_name, phone_ciphertext, phone_hash, phone_last4, deal_type,
             max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso
           )
-          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 'active', ?12, ?12
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 'active', ?12, ?12
           WHERE EXISTS (
             SELECT 1 FROM market_mutation_idempotency
-            WHERE uid = ?2 AND operation_name = 'buyer_alert.create' AND idempotency_key = ?13 AND request_hash = ?14
+            WHERE uid = ?2 AND operation_name = 'buyer_alert.create' AND idempotency_key = ?14 AND request_hash = ?15
           )
           ON CONFLICT(alert_id) DO NOTHING`,
         ).bind(resourceId, auth.uid, cityId, hoodId, fullName, phoneCiphertext, phoneHash, phoneLast4, dealType, maxBudgetMillion, consentVersion, nowIso, expiresAtIso, key, requestHash),
