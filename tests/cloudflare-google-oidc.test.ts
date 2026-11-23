@@ -125,4 +125,33 @@ describe('Cloudflare auth schema readiness', () => {
     } as unknown as D1Database;
     assert.equal(await isAuthSchemaReady(db), true);
   });
+
+  it('accepts Google sign-in when the Google/session schema is ready without requiring SMS-only migrations', async () => {
+    let calls = 0;
+    const db = {
+      prepare: () => {
+        calls += 1;
+        return { first: async () => null };
+      },
+    } as unknown as D1Database;
+    assert.equal(await isAuthSchemaReady(db), true);
+    assert.equal(calls, 1);
+  });
+
+  it('fails closed for phone OTP when the SMS-specific schema is incomplete', async () => {
+    let calls = 0;
+    const db = {
+      prepare: () => {
+        calls += 1;
+        return {
+          first: async () => {
+            if (calls === 2) throw new Error('no such column: code_hash');
+            return null;
+          },
+        };
+      },
+    } as unknown as D1Database;
+    assert.equal(await isAuthSchemaReady(db, true), false);
+    assert.equal(calls, 2);
+  });
 });
