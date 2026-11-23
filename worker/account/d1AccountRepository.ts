@@ -142,7 +142,7 @@ export async function upsertUserProfileInD1(
     updatedAtIso: nowIso,
   };
 
-  await userDb
+  const upsertResult = await userDb
     .prepare(
       `INSERT INTO user_profiles (
         uid, display_name, preferred_city, preferred_language, area_unit,
@@ -172,6 +172,7 @@ export async function upsertUserProfileInD1(
     )
     .run();
 
+  if (upsertResult.success !== true) throw new Error('USER_PROFILE_WRITE_FAILED');
   return next;
 }
 
