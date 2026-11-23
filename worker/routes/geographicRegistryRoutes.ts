@@ -2,7 +2,7 @@
  * IRNI geographic registry read API and signed, versioned publisher ingress.
  *
  * IRNI remains the canonical identity authority. Radar holds a revisioned D1 replica.
- * Public routes are read-only; only a short-lived HMAC-authenticated publisher can stage
+ * Public routes are read-only; only the pinned IRNI GitHub Actions OIDC identity can stage
  * a complete snapshot. The pointer is advanced only after all datasets and identity
  * references pass verification in one D1 transaction.
  */
@@ -12,7 +12,6 @@ import { jsonWorkerResponse } from '../contextAndSecurity';
 
 const MAX_BODY_BYTES = 1_500_000;
 const MAX_ITEMS_PER_CHUNK = 50;
-const MAX_CLOCK_SKEW_SECONDS = 300;
 const NONCE_RETENTION_MS = 10 * 60 * 1000;
 type DatasetKind = 'entities' | 'relationships' | 'sourceMappings' | 'identityEntries' | 'anchors' | 'legacyAliases';
 type SignedPayload =
@@ -48,48 +47,121 @@ function isString(value: unknown, max = 512): value is string {
 function toHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
-function constantTimeHexEqual(left: string, right: string): boolean {
-  if (!/^[a-f0-9]{64}$/i.test(left) || !/^[a-f0-9]{64}$/i.test(right)) return false;
-  let mismatch = 0;
-  for (let index = 0; index < 64; index++) mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
-  return mismatch === 0;
+const GITHUB_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
+const GITHUB_OIDC_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
+const GITHUB_OIDC_AUDIENCE = 'radartehran-irni-geographic-publisher';
+const GITHUB_OIDC_REPOSITORY = 'bijanbijane/Iran-Neighborhood-Intelligence';
+const GITHUB_OIDC_REF = 'refs/heads/main';
+const GITHUB_OIDC_ENVIRONMENT = 'radar-publisher';
+const GITHUB_OIDC_WORKFLOW_REF =
+  'bijanbijane/Iran-Neighborhood-Intelligence/.github/workflows/publish-geography-to-radar.yml@refs/heads/main';
+let githubJwksCache: { expiresAtMs: number; keys: JsonWebKey[] } | null = null;
+
+function decodeBase64Url(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
-async function verifySignedPayload(request: Request, secret: string): Promise<SignedPayload> {
+function parseJwtPart(value: string): Record<string, unknown> | null {
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(decodeBase64Url(value)));
+    return asRecord(parsed);
+  } catch {
+    return null;
+  }
+}
+async function getGitHubSigningKeys(): Promise<JsonWebKey[]> {
+  if (githubJwksCache && githubJwksCache.expiresAtMs > Date.now()) return githubJwksCache.keys;
+  const response = await fetch(GITHUB_OIDC_JWKS_URL, {
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error('GITHUB_OIDC_JWKS_UNAVAILABLE');
+  const body: unknown = await response.json();
+  const record = asRecord(body);
+  const keys = record?.keys;
+  if (!Array.isArray(keys) || keys.length === 0) throw new Error('GITHUB_OIDC_JWKS_INVALID');
+  githubJwksCache = {
+    keys: keys.filter((key): key is JsonWebKey => Boolean(asRecord(key))),
+    expiresAtMs: Date.now() + 5 * 60 * 1000,
+  };
+  return githubJwksCache.keys;
+}
+async function verifyGitHubActionsIdentity(token: string): Promise<boolean> {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  const header = parseJwtPart(parts[0]);
+  const claims = parseJwtPart(parts[1]);
+  if (!header || !claims || header.alg !== 'RS256' || !isString(header.kid, 256)) return false;
+
+  const now = Math.floor(Date.now() / 1000);
+  const exp = Number(claims.exp);
+  const nbf = Number(claims.nbf ?? 0);
+  const iat = Number(claims.iat ?? 0);
+  const audience = claims.aud;
+  const audienceMatches = audience === GITHUB_OIDC_AUDIENCE ||
+    (Array.isArray(audience) && audience.includes(GITHUB_OIDC_AUDIENCE));
+  if (claims.iss !== GITHUB_OIDC_ISSUER || !audienceMatches ||
+      !Number.isSafeInteger(exp) || exp <= now ||
+      (Number.isFinite(nbf) && nbf > now + 30) ||
+      (Number.isFinite(iat) && iat > now + 30) ||
+      claims.repository !== GITHUB_OIDC_REPOSITORY ||
+      claims.ref !== GITHUB_OIDC_REF ||
+      claims.environment !== GITHUB_OIDC_ENVIRONMENT ||
+      claims.workflow_ref !== GITHUB_OIDC_WORKFLOW_REF ||
+      claims.sub !== 'repo:bijanbijane/Iran-Neighborhood-Intelligence:environment:radar-publisher') {
+    return false;
+  }
+
+  const keys = await getGitHubSigningKeys();
+  const jwk = keys.find((candidate) => candidate.kid === header.kid);
+  if (!jwk) {
+    githubJwksCache = null;
+    const refreshed = await getGitHubSigningKeys();
+    const refreshedKey = refreshed.find((candidate) => candidate.kid === header.kid);
+    if (!refreshedKey) return false;
+    return verifyJwtSignature(parts, refreshedKey);
+  }
+  return verifyJwtSignature(parts, jwk);
+}
+async function verifyJwtSignature(parts: string[], jwk: JsonWebKey): Promise<boolean> {
+  try {
+    const publicKey = await crypto.subtle.importKey(
+      'jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'],
+    );
+    return await crypto.subtle.verify(
+      'RSASSA-PKCS1-v1_5',
+      publicKey,
+      decodeBase64Url(parts[2]),
+      new TextEncoder().encode(parts[0] + '.' + parts[1]),
+    );
+  } catch {
+    return false;
+  }
+}
+async function verifySignedPayload(request: Request): Promise<SignedPayload> {
+  const authorization = request.headers.get('authorization') || '';
+  const match = authorization.match(/^Bearer ([A-Za-z0-9._-]+)$/);
+  if (!match || !await verifyGitHubActionsIdentity(match[1])) {
+    return { ok: false, status: 401, code: 'PUBLISH_GITHUB_OIDC_IDENTITY_INVALID' };
+  }
+  const nonce = request.headers.get('x-irni-nonce') || '';
+  if (!/^[A-Za-z0-9._-]{16,128}$/.test(nonce)) {
+    return { ok: false, status: 401, code: 'PUBLISH_NONCE_INVALID' };
+  }
   const raw = await request.text();
   if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
     return { ok: false, status: 413, code: 'PUBLISH_BODY_TOO_LARGE' };
   }
-  const timestamp = request.headers.get('x-irni-timestamp') || '';
-  const nonce = request.headers.get('x-irni-nonce') || '';
-  const signature = request.headers.get('x-irni-signature') || '';
-  const seconds = Number(timestamp);
-  if (!Number.isSafeInteger(seconds) ||
-      Math.abs(Math.floor(Date.now() / 1000) - seconds) > MAX_CLOCK_SKEW_SECONDS) {
-    return { ok: false, status: 401, code: 'PUBLISH_SIGNATURE_EXPIRED' };
-  }
-  if (!/^[A-Za-z0-9._-]{16,128}$/.test(nonce)) {
-    return { ok: false, status: 401, code: 'PUBLISH_NONCE_INVALID' };
-  }
-  let payload: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(raw);
     const record = asRecord(parsed);
     if (!record) return { ok: false, status: 400, code: 'PUBLISH_JSON_INVALID' };
-    payload = record;
+    return { ok: true, payload: record, nonce };
   } catch {
     return { ok: false, status: 400, code: 'PUBLISH_JSON_INVALID' };
   }
-  const bodyHash = toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)));
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const expected = toHex(await crypto.subtle.sign(
-    'HMAC', key, new TextEncoder().encode(`${timestamp}\n${nonce}\n${bodyHash}`),
-  ));
-  if (!constantTimeHexEqual(signature, expected)) {
-    return { ok: false, status: 401, code: 'PUBLISH_SIGNATURE_INVALID' };
-  }
-  return { ok: true, payload, nonce };
 }
 function requireSuccess(result: { success: boolean }, operation: string): void {
   if (!result.success) throw new Error(`D1_${operation}_FAILED`);
@@ -749,11 +821,7 @@ async function handlePublisherRoute(ctx: WorkerRequestContext, db: D1Database): 
     '/api/internal/geography/publish/finalize',
   ].includes(path)) return null;
   if (ctx.method !== 'POST') return jsonWorkerResponse(ctx, 405, { status: 'error', code: 'METHOD_NOT_ALLOWED' });
-  const secret = String(ctx.env.IRNI_PUBLISH_HMAC_SECRET || '');
-  if (secret.length < 32) {
-    return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'IRNI_PUBLISH_SECRET_NOT_CONFIGURED' });
-  }
-  const signed = await verifySignedPayload(ctx.request, secret);
+  const signed = await verifySignedPayload(ctx.request);
   if (signed.ok === false) return jsonWorkerResponse(ctx, signed.status, { status: 'error', code: signed.code });
   if (path.endsWith('/start')) return publishStart(ctx, db, signed.payload, signed.nonce);
   if (path.endsWith('/batch')) return publishBatch(ctx, db, signed.payload, signed.nonce);
