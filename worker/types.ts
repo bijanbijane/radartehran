@@ -144,6 +144,8 @@ export interface WorkerEnv {
   readonly KAVENEGAR_API_KEY?: string;
   readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
   readonly AUTH_PII_HMAC_SECRET?: string;
+  /** Shared HMAC secret for short-lived Worker -> Express session assertions. */
+  readonly AUTH_INTERNAL_HMAC_SECRET?: string;
   readonly MARKET_PII_ENCRYPTION_KEY?: string;
   readonly MARKET_PII_HASH_SECRET?: string;
   readonly FIREBASE_PROJECT_ID?: string;
