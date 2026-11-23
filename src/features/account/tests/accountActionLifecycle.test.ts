@@ -9,6 +9,7 @@ import {
 import {
   isValidServerAccountExportResponse,
   requestAccountServerExport,
+  executeAccountDeletionFlow,
   stripSecretsFromExportValue,
   SUPPORTED_EXPORT_SCHEMA_VERSION,
 } from '../services/accountActionService';
@@ -280,4 +281,81 @@ test('Stage 184: recordDataRequest updates stable request lifecycle honestly (re
   assert.equal(list[0].id, failId);
   assert.equal(list[0].status, 'failed');
   assert.equal(list[0].errorCode, 'RECENT_LOGIN_REQUIRED');
+});
+
+
+test('Cloudflare D1 account deletion uses the HttpOnly session and keeps pending research erasure retryable', async () => {
+  let calledUrl = '';
+  let calledInit: RequestInit | undefined;
+  const pendingPayload = {
+    ok: false,
+    status: 'PENDING_RESEARCH_ERASURE',
+    statusCode: 202,
+    jobId: 'job_d1_pending_1',
+    idempotentReplay: false,
+    userDbDeletedRecords: 4,
+    outboxItemsQueued: 2,
+    outboxItemsCompleted: 0,
+    researchEventsErased: 0,
+    receiptHash: null,
+    code: 'ACCOUNT_DELETION_PENDING_RESEARCH_ERASURE',
+  };
+  const result = await executeAccountDeletionFlow({
+    currentUser: { uid: 'u1' },
+    idempotencyKey: 'del_test_1',
+    fetchFn: (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calledUrl = String(input);
+      calledInit = init;
+      return new Response(JSON.stringify(pendingPayload), {
+        status: 202,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof fetch,
+  });
+
+  assert.equal(calledUrl, '/api/account/deletion-requests');
+  assert.equal(calledInit?.credentials, 'same-origin');
+  assert.equal(new Headers(calledInit?.headers).get('Idempotency-Key'), 'del_test_1');
+  assert.equal(new Headers(calledInit?.headers).has('Authorization'), false);
+  assert.equal(result.ok, false);
+  if (result.ok === false && result.data) {
+    assert.equal(result.data.lifecycleState, 'PURGING_DEPENDENT_RECORDS');
+    assert.equal(result.data.authDeletion, 'completed');
+    assert.equal(result.data.localCleanup, 'skipped_server_incomplete');
+    assert.equal(result.data.requiresSignOut, true);
+  } else {
+    assert.fail('Expected a structured pending-deletion state');
+  }
+});
+
+test('Cloudflare D1 account deletion does not sign out before permit draining completes', async () => {
+  const pendingPayload = {
+    ok: false,
+    status: 'PENDING_PERMIT_DRAIN',
+    statusCode: 409,
+    jobId: 'job_d1_pending_2',
+    idempotentReplay: false,
+    userDbDeletedRecords: 0,
+    outboxItemsQueued: 0,
+    outboxItemsCompleted: 0,
+    researchEventsErased: 0,
+    receiptHash: null,
+    code: 'ACCOUNT_DELETION_PENDING_PERMIT_DRAIN',
+  };
+  const result = await executeAccountDeletionFlow({
+    currentUser: { uid: 'u1' },
+    idempotencyKey: 'del_test_2',
+    fetchFn: (async () => new Response(JSON.stringify(pendingPayload), {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    })) as typeof fetch,
+  });
+  assert.equal(result.ok, false);
+  if (result.ok === false && result.data) {
+    assert.equal(result.data.authDeletion, 'not_required');
+    assert.equal(result.data.requiresSignOut, false);
+    assert.equal(result.data.lifecycleState, 'INITIATED_WRITE_BLOCKED');
+  } else {
+    assert.fail('Expected a structured permit-drain state');
+  }
 });
