@@ -4,7 +4,7 @@
  */
 import { authenticateWorkerSession, buildClearedSessionCookie, buildSessionCookie, sha256Hex } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
-import { requireUserDb } from '../db/bindingResolver';
+import { requireOperationalDb } from '../db/bindingResolver';
 import { resolveD1WritePauseState } from '../db/writePause';
 import { readSessionCookie } from '../auth/sessionAuth';
 import type { D1Database, WorkerRequestContext } from '../types';
@@ -243,7 +243,7 @@ function errorRedirect(ctx: WorkerRequestContext, code: string): Response {
 export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<Response | null> {
   const { method, pathname, request, env } = ctx;
   if (!pathname.startsWith('/api/auth/')) return null;
-  const dbRes = requireUserDb(env);
+  const dbRes = requireOperationalDb(env);
   if (!dbRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: dbRes.code });
   const db = dbRes.db;
 

@@ -39,7 +39,7 @@ function makeContext(db: D1Database | undefined, token = 'A'.repeat(64), options
     url: new URL(request.url),
     requestId: 'test-request',
     correlationId: 'test-correlation',
-    method: 'GET',
+    method: options.method || 'GET',
     pathname: '/api/auth/session',
     clientIp: '192.0.2.10',
     trustedEdgeIp: true,
@@ -89,7 +89,7 @@ describe('Cloudflare-native session authentication', () => {
     const createdAtMs = Date.now() - 2_000;
     const createdAtSeconds = Math.floor(createdAtMs / 1000);
     const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
-      created_at_iso: new Date(createdAtMs + 850).toISOString(),
+      created_at_iso: new Date(createdAtSeconds * 1000 + 999).toISOString(),
       revocation_watermark: String(createdAtSeconds),
     }))));
     assert.equal(result.authenticated, false);
@@ -112,10 +112,10 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.statusCode, 401);
   });
 
-  it('returns 503 when the canonical USER_DB binding is unavailable', async () => {
+  it('returns 503 when the operational DB binding is unavailable', async () => {
     const result = await authenticateWorkerSession(makeContext(undefined));
     assert.equal(result.authenticated, false);
-    assert.equal(result.reasonCode, 'USER_DB_UNAVAILABLE');
+    assert.equal(result.reasonCode, 'DB_UNAVAILABLE');
     assert.equal(result.statusCode, 503);
   });
 });

@@ -13,6 +13,8 @@ import type { D1Database, WorkerEnv } from '../types';
 
 export type UserDbBindingSource = 'USER_DB' | 'DB' | 'NONE';
 export interface ResolvedUserDbResult { readonly ok: true; readonly db: D1Database; readonly bindingUsed: 'USER_DB' | 'DB'; }
+export interface ResolvedOperationalDbResult { readonly ok: true; readonly db: D1Database; readonly bindingUsed: 'DB'; }
+export interface MissingOperationalDbResult { readonly ok: false; readonly statusCode: 503; readonly code: 'DB_NOT_BOUND'; readonly messageFa: string; }
 export interface MissingDbResult {
   readonly ok: false; readonly statusCode: 503;
   readonly code: 'USER_DB_NOT_BOUND' | 'RESEARCH_DB_NOT_BOUND' | 'NEIGHBORHOOD_DB_NOT_BOUND' | 'DOMAIN_BINDING_ISOLATION_VIOLATION';
@@ -84,4 +86,19 @@ export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBin
     isolationViolation,
     irniDirectDbBindingPresent: false,
   };
+}
+
+
+/**
+ * Security/session data is pinned to the operational DB binding. It must never
+ * silently move to USER_DB or any research/geography database.
+ */
+export function resolveOperationalDb(env: WorkerEnv): D1Database | undefined {
+  return env.DB;
+}
+export function requireOperationalDb(env: WorkerEnv): ResolvedOperationalDbResult | MissingOperationalDbResult {
+  const db = resolveOperationalDb(env);
+  return db
+    ? { ok: true, db, bindingUsed: 'DB' }
+    : { ok: false, statusCode: 503, code: 'DB_NOT_BOUND', messageFa: 'پایگاه داده عملیاتی DB متصل نیست.' };
 }

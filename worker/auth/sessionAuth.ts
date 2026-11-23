@@ -2,7 +2,7 @@
  * Cloudflare-native opaque session authentication.
  * Browser credentials are HttpOnly cookies; no Firebase ID token or client-side bearer token is accepted.
  */
-import { resolveUserDb } from '../db/bindingResolver';
+import { resolveOperationalDb } from '../db/bindingResolver';
 import { resolveD1WritePauseState } from '../db/writePause';
 import type { WorkerRequestContext } from '../types';
 
@@ -64,8 +64,8 @@ export async function authenticateWorkerSession(
     }
   }
 
-  const userDb = resolveUserDb(ctx.env);
-  if (!userDb) return unauthenticated('USER_DB_UNAVAILABLE', 503);
+  const userDb = resolveOperationalDb(ctx.env);
+  if (!userDb) return unauthenticated('DB_UNAVAILABLE', 503);
 
   const rawToken = readSessionCookie(ctx.request);
   if (!rawToken) return unauthenticated();

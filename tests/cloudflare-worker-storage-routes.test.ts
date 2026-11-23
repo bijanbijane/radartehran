@@ -103,8 +103,8 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
 
   it('2. executes full multi-chunk upload-init -> upload-chunk (with idempotent replay & conflict) -> upload-complete -> GET 200/206/416 & signed URL', async () => {
     const { env } = await buildEnv();
-    const ownerSessionToken = await seedUserSession(env.USER_DB as D1Database, 'owner-1', '+989120000001');
-    const otherSessionToken = await seedUserSession(env.USER_DB as D1Database, 'other-2', '+989120000002');
+    const ownerSessionToken = await seedUserSession(env.DB as D1Database, 'owner-1', '+989120000001');
+    const otherSessionToken = await seedUserSession(env.DB as D1Database, 'other-2', '+989120000002');
 
     const part0 = VALID_WEBP.slice(0, 20);
     const part1 = VALID_WEBP.slice(20);
@@ -249,8 +249,8 @@ describe('Package 1 E2E: Cloudflare Worker Object Storage Routes & R2+D1 Saga', 
 
   it('3. enforces Legal Hold (423), owner mismatch (403), attach-to-bargain & cleanup-bargain, and R2+D1 Saga compensation', async () => {
     const { db, r2, env } = await buildEnv();
-    const ownerSessionToken = await seedUserSession(env.USER_DB as D1Database, 'owner-1', '+989120000001');
-    const otherSessionToken = await seedUserSession(env.USER_DB as D1Database, 'other-2', '+989120000002');
+    const ownerSessionToken = await seedUserSession(env.DB as D1Database, 'owner-1', '+989120000001');
+    const otherSessionToken = await seedUserSession(env.DB as D1Database, 'other-2', '+989120000002');
 
     // Direct upload image
     const uploadRes = await workerEntrypoint.fetch(
