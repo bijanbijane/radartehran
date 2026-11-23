@@ -41,7 +41,10 @@ export const db: Firestore = (() => { const endTimer = createExecutionTimer('Fir
         const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
         recordDiagnosticEvent(
           'Firebase',
-          `getFirestore fallback also failed: ${fallbackMessage.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[redacted-api-key]').slice(0, 200)}`,
+          `getFirestore fallback also failed: ${fallbackMessage
+            .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[redacted-api-key]')
+            .replace(/https?:\/\/[^\s)]+/g, '[redacted-url]')
+            .slice(0, 200)}`,
           'blocked',
         );
         throw fallbackError;
