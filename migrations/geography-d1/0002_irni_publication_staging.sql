@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS geo_publish_batches (
   expected_entities INTEGER NOT NULL,
   expected_relationships INTEGER NOT NULL,
   expected_source_mappings INTEGER NOT NULL,
+  expected_identity_registry_entries INTEGER NOT NULL,
+  expected_identity_anchors INTEGER NOT NULL,
+  expected_legacy_aliases INTEGER NOT NULL,
   artifact_checksums_json TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('RECEIVING', 'PUBLISHED', 'FAILED')),
   created_at_iso TEXT NOT NULL,
@@ -33,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_geo_publish_nonces_expiry
 
 CREATE TABLE IF NOT EXISTS geo_publish_chunks (
   batch_id TEXT NOT NULL,
-  dataset_kind TEXT NOT NULL CHECK (dataset_kind IN ('entities', 'relationships', 'sourceMappings')),
+  dataset_kind TEXT NOT NULL CHECK (dataset_kind IN ('entities', 'relationships', 'sourceMappings', 'identityRegistryEntries', 'identityAnchors', 'legacyAliases')),
   chunk_index INTEGER NOT NULL,
   payload_sha256 TEXT NOT NULL,
   record_count INTEGER NOT NULL,
