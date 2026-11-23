@@ -198,8 +198,8 @@ Implement and test the missing Cloudflare Worker/D1 admin mutation contracts for
 
 **Branch:** `migration/cloudflare-native-auth-firebase-retirement`  
 **PR:** #23, OPEN / DRAFT; base `main`.  
-**New HEAD:** `436a479b6d1ac0ae4490d00156bb8248801c1171`  
-**Implementation commits:** `db7b6964449781b0ac3927b3d5a4b66c185eb997`, `436a479b6d1ac0ae4490d00156bb8248801c1171`.
+**Implementation HEAD before this checkpoint refresh:** `62a534e34a10fd9ceb008f6d769cefcee0384e7c`  
+**Implementation commits:** `db7b6964449781b0ac3927b3d5a4b66c185eb997`, `436a479b6d1ac0ae4490d00156bb8248801c1171`, `62a534e34a10fd9ceb008f6d769cefcee0384e7c`.
 
 ### Implemented in source
 
