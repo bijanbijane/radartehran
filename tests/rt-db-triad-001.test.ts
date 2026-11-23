@@ -274,6 +274,24 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(forbiddenDiag.irniDirectDbBindingPresent, true);
     });
 
+    it('fails readiness when an out-of-band IRNI D1 binding is present', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const response = await workerEntrypoint.fetch(
+        new Request('https://api.example.test/api/health/readiness'),
+        {
+          ENVIRONMENT: 'production',
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: createRealSqliteD1().db,
+          NEIGHBORHOOD_DB: userSqlite.db,
+        },
+      );
+      assert.equal(response.status, 503);
+      const body = await response.json() as { code?: string; state?: string };
+      assert.equal(body.code, 'DATA_DOMAIN_ISOLATION_VIOLATION');
+      assert.equal(body.state, 'DEGRADED');
+    });
+
     it('persists profile, privacy consent + audit, sessions, favorites, data requests, and enforces write blocks', async () => {
       const userSqlite = createRealSqliteD1();
       applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
