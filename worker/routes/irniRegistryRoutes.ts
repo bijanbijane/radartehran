@@ -560,6 +560,41 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
       item: { entity: JSON.parse(row.entity_json), identityRegistryEntry: JSON.parse(row.entry_json), identityAnchor: JSON.parse(row.anchor_json) },
     });
   }
+  if (pathname === prefix + '/relationships') {
+    const sourceId = url.searchParams.get('sourceGeographicEntityId');
+    const targetId = url.searchParams.get('targetGeographicEntityId');
+    const relationshipType = url.searchParams.get('relationshipType');
+    const limitRaw = Number(url.searchParams.get('limit') || 50);
+    const offsetRaw = Number(url.searchParams.get('offset') || 0);
+    if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > 100 ||
+      !Number.isInteger(offsetRaw) || offsetRaw < 0 || offsetRaw > 1_000_000) {
+      return jsonResponse(ctx, 400, { status: 'error', code: 'INVALID_GEOGRAPHY_PAGINATION' });
+    }
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    if (sourceId) {
+      if (!CANONICAL_ID_RE.test(sourceId)) return jsonResponse(ctx, 400, { status: 'error', code: 'INVALID_SOURCE_GEOGRAPHIC_ID' });
+      clauses.push('source_geographic_entity_id = ?'); params.push(sourceId);
+    }
+    if (targetId) {
+      if (!CANONICAL_ID_RE.test(targetId)) return jsonResponse(ctx, 400, { status: 'error', code: 'INVALID_TARGET_GEOGRAPHIC_ID' });
+      clauses.push('target_geographic_entity_id = ?'); params.push(targetId);
+    }
+    if (relationshipType) { clauses.push('relationship_type = ?'); params.push(relationshipType); }
+    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+    const [rows, count] = await Promise.all([
+      db.prepare('SELECT relationship_json FROM geo_relationships ' + where + ' ORDER BY relationship_id LIMIT ? OFFSET ?')
+        .bind(...params, limitRaw, offsetRaw).all<{ relationship_json: string }>(),
+      db.prepare('SELECT COUNT(*) AS count FROM geo_relationships ' + where)
+        .bind(...params).first<{ count: number }>(),
+    ]);
+    const items = (rows.results || []).map((row) => JSON.parse(row.relationship_json));
+    const totalItems = Number(count?.count || 0);
+    return jsonResponse(ctx, 200, {
+      status: 'ok', registry: head, items,
+      pagination: { offset: offsetRaw, limit: limitRaw, totalItems, nextOffset: offsetRaw + items.length < totalItems ? offsetRaw + items.length : null },
+    });
+  }
   if (pathname === prefix + '/entities') {
     const entityType = url.searchParams.get('entityType');
     const parentId = url.searchParams.get('parentGeographicEntityId');
