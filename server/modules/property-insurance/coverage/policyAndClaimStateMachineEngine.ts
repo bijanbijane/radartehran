@@ -229,7 +229,7 @@ export function evaluatePolicyCoverageStatusWithLimitations(
     } else {
       const matchingCoverage = coverages.find((coverage) => {
         if (coverage.coverageCategory !== queryRiskCategory) return false;
-        if (coverage.policyId !== policy.policyId) return false;
+        if (coverage.policyId && policy.policyId && coverage.policyId !== policy.policyId) return false;
         if (!matchesCoveredAsset(coverage.insuredAssetCanonicalIds, queryAssetCanonicalId)) return false;
         const startRaw = coverage.effectiveStartIso;
         const endRaw = coverage.effectiveEndIso;
