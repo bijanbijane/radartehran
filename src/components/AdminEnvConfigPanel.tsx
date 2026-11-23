@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react'; import { CheckCircle2, Cloud, Lock, RefreshCw, Save, Send, Server, ShieldCheck, Sparkles, } from 'lucide-react'; import { auth } from '../firebase'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, IntlCurrencyCode } from '../utils/areaUnit'; import type { ObjectStorageProviderId } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput'; export interface AdminEnvConfigPanelProps { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; } interface PublicRuntimeEnvReport { status: 'ok'; lastUpdatedIso: string | null; mutableSafeKeys?: string[]; protectedStartupKeys?: string[]; gemini: { configured: boolean; model: string;
+import React, { useEffect, useState } from 'react'; import { CheckCircle2, Cloud, Lock, RefreshCw, Save, Send, Server, ShieldCheck, Sparkles, } from 'lucide-react'; import { getAuthClient } from '../platform/auth'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, IntlCurrencyCode } from '../utils/areaUnit'; import type { ObjectStorageProviderId } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput'; export interface AdminEnvConfigPanelProps { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; } interface PublicRuntimeEnvReport { status: 'ok'; lastUpdatedIso: string | null; mutableSafeKeys?: string[]; protectedStartupKeys?: string[]; gemini: { configured: boolean; model: string;
     deploymentManaged?: boolean; }; telegram: { botTokenConfigured: boolean; channelId: string; deploymentManagedToken?: boolean; }; firebase: { projectId: string; firestoreDatabaseId: string; adminEmail: string; adminSecretConfigured: boolean; deploymentManaged?: boolean; };
   objectStorage: { provider: ObjectStorageProviderId; endpoint: string; bucket: string; region: string; accessKeyConfigured: boolean; secretKeyConfigured: boolean; publicBaseUrl: string; maxImageMb: number; maxVideoMb: number; deploymentManagedCredentials?: boolean; }; }
 export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: propIntlCurrency }: AdminEnvConfigPanelProps = {}): React.ReactElement { const [hookAreaUnit] = useAreaUnit(); const [hookIntlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const areaUnit = propAreaUnit ?? hookAreaUnit; const intlCurrency = propIntlCurrency ?? hookIntlCurrency; const sampleUnitPrice = convertPricePerSqmToUnit(120, areaUnit); const sample85mTotalMillions = 120 * 85; const sampleMonthlyRentMillions = 45; const [report, setReport] = useState<PublicRuntimeEnvReport | null>(null); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null); const [errorMsg, setErrorMsg] = useState<string | null>(null); const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash'); const [telegramChannelId, setTelegramChannelId] = useState('');
   const [storageProvider, setStorageProvider] = useState<ObjectStorageProviderId>('arvancloud'); const [storageRegion, setStorageRegion] = useState('ir-thr-at1'); const [storagePublicUrl, setStoragePublicUrl] = useState(''); const [maxImageMb, setMaxImageMb] = useState(5);
   const [maxVideoMb, setMaxVideoMb] = useState(50); const fetchEnvStatus = async () => {
-    const currentUser = auth.currentUser; if (!currentUser) { setLoading(false); return; }
+    if (!getAuthClient().getUser()) { setLoading(false); return; }
     setLoading(true); setErrorMsg(null);
     try {
-      const idToken = await currentUser.getIdToken();
-      const res = await fetch('/api/admin/env-config', { headers: idToken ? { Authorization: `Bearer ${idToken}` } : {} });
+      const res = await fetch('/api/admin/env-config', { credentials: 'same-origin' });
       if (!res.ok) throw new Error('عدم دسترسی به وضعیت متغیرهای محیطی سرور');
       const data = (await res.json()) as PublicRuntimeEnvReport & { values?: Record<string, any> };
       if (data && data.status === 'ok') {
@@ -19,18 +18,26 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
       }
     } catch (err: any) { setErrorMsg(err?.message || 'خطا در دریافت وضعیت متغیرهای محیطی'); } finally { setLoading(false); }
   };
-  useEffect(() => { void fetchEnvStatus(); const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u) void fetchEnvStatus(); }) : undefined; return () => { if (typeof unsub === 'function') unsub(); }; }, []);
+  useEffect(() => {
+    const authClient = getAuthClient();
+    const unsubscribe = authClient.subscribe((_state, user) => {
+      if (user) void fetchEnvStatus();
+      else { setReport(null); setLoading(false); }
+    });
+    if (authClient.getUser()) void fetchEnvStatus();
+    return unsubscribe;
+  }, []);
   const handleSaveEnv = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setStatusMsg(null); setErrorMsg(null);
     try {
-      const currentUser = auth.currentUser; const idToken = currentUser ? await currentUser.getIdToken() : '';
+      if (!getAuthClient().getUser()) throw new Error('برای ذخیره تنظیمات، ابتدا وارد حساب مدیر شوید.');
       const updates: Record<string, string | number> = {
         GEMINI_MODEL: geminiModel.trim(), TELEGRAM_CHANNEL_ID: telegramChannelId.trim(), OBJECT_STORAGE_PROVIDER: storageProvider,
         OBJECT_STORAGE_REGION: storageRegion.trim(), OBJECT_STORAGE_PUBLIC_BASE_URL: storagePublicUrl.trim(),
         OBJECT_STORAGE_MAX_IMAGE_MB: Number(maxImageMb) || 5, OBJECT_STORAGE_MAX_VIDEO_MB: Number(maxVideoMb) || 50,
       };
       const res = await fetch('/api/admin/env-config', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) }, body: JSON.stringify({ updates }),
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ updates }),
       });
       const data = await res.json();
       if (!res.ok || data?.status !== 'ok') throw new Error(data?.message || 'خطا در ذخیره متغیرهای عملیاتی سرور');
