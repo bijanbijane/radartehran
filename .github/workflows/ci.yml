@@ -126,3 +126,44 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+
+  lockfile-reconciliation:
+    if: github.event_name == 'pull_request'
+    name: Temporary package-lock consistency diagnostic
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Reconcile lockfile from package.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit reconciled lockfile to the PR branch
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): reconcile npm lockfile with package manifest"
+            git push origin "HEAD:${BRANCH}"
+          else
+            echo "package-lock.json is already synchronized"
+          fi
+      - name: Upload reconciled lockfile for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: rt-map-lockfile-reconciliation
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 2
