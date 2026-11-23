@@ -42,9 +42,7 @@
         "APP_ENV": "staging",
         "WORKER_ENV": "staging",
         "APP_URL": "https://staging.radartehran.ir",
-        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-        "ADMIN_EMAIL": "radio837isf@gmail.com",
-        "FIREBASE_APP_CHECK_MODE": "monitor",
+            "ADMIN_EMAIL": "radio837isf@gmail.com",
         "R2_MEDIA_BUCKET_NAME": "radartehran-staging-media"
       },
       "triggers": {
@@ -103,7 +101,6 @@
         "APP_ENV": "production",
         "WORKER_ENV": "production",
         "APP_URL": "https://radartehran.ir",
-        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
         "ADMIN_EMAIL": "radio837isf@gmail.com",
       }
       // Production D1, R2, KV, Queue, and R2_MEDIA_BUCKET_NAME bindings are intentionally
