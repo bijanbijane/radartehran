@@ -54,7 +54,14 @@ const GROUP_4_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/sessions',
   'POST /api/account/sessions/:id/revoke',
   'GET /api/account/data-requests',
+  'POST /api/account/data-requests',
   'GET /api/account/export-data',
+  'POST /api/account/deletion-requests',
+  'POST /api/account/deletion-requests/reconcile',
+  'GET /api/account/favorites',
+  'PUT /api/account/favorites',
+  'POST /api/account/favorites',
+  'DELETE /api/account/favorites',
 ]);
 
 const GROUP_4_MARKETPLACE_PATHS = new Set<string>([
