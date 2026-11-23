@@ -134,7 +134,7 @@ async function issueSession(
   return { token, expiresAtIso: expiresAt.toISOString() };
 }
 
-async function verifyGoogleIdToken(idToken: string, expectedAudience: string, expectedNonce: string): Promise<{
+export async function verifyGoogleIdToken(idToken: string, expectedAudience: string, expectedNonce: string): Promise<{
   sub: string; email: string; name?: string; email_verified: boolean;
 }> {
   if (idToken.length > 12_000) throw new Error('GOOGLE_ID_TOKEN_TOO_LARGE');
