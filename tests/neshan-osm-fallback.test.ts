@@ -305,6 +305,13 @@ async function runSuite(): Promise<void> {
     }
   });
 
+  await check('early map connection hint matches the default Neshan provider, not the fallback', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const preconnects = [...html.matchAll(/<link\\s+rel=["']preconnect["']\\s+href=["']([^"']+)["']/g)].map((match) => match[1]);
+    assert.deepEqual(preconnects, ['https://tile1.neshan.org'], 'Only the default primary provider should receive an early TCP/TLS preconnect');
+    assert.match(html, /<link\\s+rel=["']dns-prefetch["']\\s+href=["']https:\\/\\/tile\\.openstreetmap\\.org["']/);
+  });
+
   await check('patchLeafletGridLayerNullSafety intercepts Leaflet zoom and setView when _map is null', () => {
     const fakeProto: any = {
       _animateZoom() {
