@@ -5,6 +5,7 @@
  * authoritative dispatch gate before executing Worker route handlers.
  */
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
+import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
 import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
@@ -28,6 +29,24 @@ export async function dispatchWorkerApiOrSeoRequest(
   ctx: WorkerRequestContext,
 ): Promise<WorkerRouteDispatchResult | null> {
   const { method, pathname } = ctx;
+
+  // Temporary global D1 write freeze. Keep read-only GETs and CORS preflight available.
+  const d1WritePause = resolveD1WritePauseState(ctx.env);
+  if (pathname.startsWith('/api/') &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) &&
+      d1WritePause.paused) {
+    return {
+      response: jsonWorkerResponse(ctx, 503, {
+        status: 'error',
+        code: 'D1_WRITES_TEMPORARILY_PAUSED',
+        pauseUntilUtc: d1WritePause.pauseUntilUtc,
+        retryAfterSeconds: d1WritePause.retryAfterSeconds,
+        message: 'نوشتن در پایگاه داده موقتاً متوقف شده است؛ پس از پایان مهلت دوباره تلاش کنید.',
+      }),
+      routePattern: 'GLOBAL_D1_WRITE_PAUSE',
+      migrationStatus: 'VERIFIED',
+    };
+  }
 
   // Handle CORS preflight for /api/* routes
   if (method === 'OPTIONS' && pathname.startsWith('/api/')) {
