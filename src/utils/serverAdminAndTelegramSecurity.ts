@@ -136,11 +136,93 @@ export async function verifyAdminApiAuthorization(
   env: Record<string, string | undefined> = process.env,
   options: AdminAuthOptions = {},
 ): Promise<AdminAuthVerificationResult> {
-  const config = getValidatedServerConfig(env);
   const adminTokenHeaderResult = extractSingleSecurityHeader(headers, 'x-admin-token');
   if (!adminTokenHeaderResult.ok) return { authorized: false, statusCode: 400, reason: adminTokenHeaderResult.reason };
   const authHeaderResult = extractSingleSecurityHeader(headers, 'authorization');
   if (!authHeaderResult.ok) return { authorized: false, statusCode: 400, reason: authHeaderResult.reason };
+
+  // A verified Cloudflare context is already rooted in a Worker-validated D1 session.
+  // Keep this path independent of Firebase configuration and Firestore role lookups.
+  if (getCloudflareSessionContext()) {
+    const userAuth = await verifyAuthenticatedUserHeader(headers, env, options.verifyIdTokenFn);
+    if (!userAuth.authenticated || !userAuth.uid || !userAuth.email || userAuth.authSource !== 'cloudflare_session') {
+      return {
+        authorized: false,
+        statusCode: userAuth.statusCode,
+        reason: userAuth.reason || 'CLOUDFLARE_SESSION_AUTH_REQUIRED',
+        uid: userAuth.uid,
+        actorUid: userAuth.uid,
+      };
+    }
+
+    if (typeof options.maxAuthAgeSeconds === 'number' && options.maxAuthAgeSeconds > 0) {
+      const nowSec = options.nowSeconds ?? Math.floor(Date.now() / 1000);
+      const sessionAuthSec = userAuth.authTimeSeconds ?? 0;
+      if (!sessionAuthSec || nowSec - sessionAuthSec > options.maxAuthAgeSeconds) {
+        return {
+          authorized: false,
+          statusCode: 403,
+          reason: 'RECENT_AUTHENTICATION_REQUIRED',
+          uid: userAuth.uid,
+          email: userAuth.email,
+          actorUid: userAuth.uid,
+          actorEmail: userAuth.email,
+        };
+      }
+    }
+
+    const isPrimaryAdmin = userAuth.isPrimaryAdmin === true;
+    const isDelegatedAdmin = userAuth.isDelegatedAdmin === true;
+    const roleClaimsConsistent = userAuth.isAdmin === (isPrimaryAdmin || isDelegatedAdmin);
+    if (!roleClaimsConsistent) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'CLOUDFLARE_ADMIN_ROLE_CLAIMS_INCONSISTENT',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+
+    if (!userAuth.isAdmin || (!isPrimaryAdmin && !isDelegatedAdmin)) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'NOT_ADMIN_USER',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+
+    if (options.requirePrimaryBootstrapAdmin && !isPrimaryAdmin) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+
+    return {
+      authorized: true,
+      statusCode: 200,
+      reason: isPrimaryAdmin ? 'AUTHORIZED_BOOTSTRAP_ADMIN' : 'AUTHORIZED_DELEGATED_ADMIN',
+      uid: userAuth.uid,
+      email: userAuth.email,
+      actorUid: userAuth.uid,
+      actorEmail: userAuth.email,
+      authTimeSeconds: userAuth.authTimeSeconds,
+    };
+  }
+
+  const config = getValidatedServerConfig(env);
   const rawAdminSecretHeader = adminTokenHeaderResult.value || '';
   if (rawAdminSecretHeader.length > 0 && !authHeaderResult.value) {
     if (options.requirePrimaryBootstrapAdmin || options.disallowStaticToken) {
@@ -157,6 +239,7 @@ export async function verifyAdminApiAuthorization(
   if (rawAdminSecretHeader.length > 0 && config.adminApiSecret && !constantTimeSecretMatch(rawAdminSecretHeader, config.adminApiSecret)) {
     return { authorized: false, statusCode: 403, reason: 'INVALID_ADMIN_SECRET' };
   }
+
   const userAuth = await verifyAuthenticatedUserHeader(headers, env, options.verifyIdTokenFn);
   if (!userAuth.authenticated || !userAuth.uid || !userAuth.email) {
     return { authorized: false, statusCode: userAuth.statusCode, reason: userAuth.reason, uid: userAuth.uid, actorUid: userAuth.uid };
@@ -170,45 +253,6 @@ export async function verifyAdminApiAuthorization(
         uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email,
       };
     }
-  }
-  if (userAuth.authSource === 'cloudflare_session') {
-    const isPrimaryAdmin = userAuth.isPrimaryAdmin === true
-      || isBootstrapAdminEmail(userAuth.email)
-      || userAuth.email === config.adminEmail;
-    const isDelegatedAdmin = userAuth.isDelegatedAdmin === true;
-
-    if (options.requirePrimaryBootstrapAdmin && !isPrimaryAdmin) {
-      return {
-        authorized: false,
-        statusCode: 403,
-        reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
-        uid: userAuth.uid,
-        email: userAuth.email,
-        actorUid: userAuth.uid,
-        actorEmail: userAuth.email,
-      };
-    }
-    if (!isPrimaryAdmin && !isDelegatedAdmin) {
-      return {
-        authorized: false,
-        statusCode: 403,
-        reason: 'NOT_ADMIN_USER',
-        uid: userAuth.uid,
-        email: userAuth.email,
-        actorUid: userAuth.uid,
-        actorEmail: userAuth.email,
-      };
-    }
-    return {
-      authorized: true,
-      statusCode: 200,
-      reason: isPrimaryAdmin ? 'AUTHORIZED_BOOTSTRAP_ADMIN' : 'AUTHORIZED_DELEGATED_ADMIN',
-      uid: userAuth.uid,
-      email: userAuth.email,
-      actorUid: userAuth.uid,
-      actorEmail: userAuth.email,
-      authTimeSeconds: userAuth.authTimeSeconds,
-    };
   }
 
   if (isBootstrapAdminEmail(userAuth.email) || userAuth.email === config.adminEmail) {
@@ -242,6 +286,7 @@ export async function verifyAdminApiAuthorization(
   }
   return { authorized: false, statusCode: 403, reason: 'NOT_ADMIN_USER', uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email };
 }
+
 export type AppCheckEnforcementMode = 'disabled' | 'monitor' | 'enforced';
 export interface AppCheckVerificationResult { allowed: boolean; mode: AppCheckEnforcementMode; statusCode: 200 | 401 | 403; reason: string; }
 export async function verifyFirebaseAppCheckHeader(
