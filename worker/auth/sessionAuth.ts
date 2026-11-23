@@ -16,22 +16,34 @@ export interface WorkerSessionPrincipal {
   phoneNumber: string | null;
   displayName: string | null;
   isAdmin: boolean;
+  isPrimaryAdmin: boolean;
+  isDelegatedAdmin: boolean;
   authProvider: 'google' | 'phone' | 'unknown' | null;
   authTimeSeconds: number | null;
   statusCode: 200 | 401 | 403 | 503;
   reasonCode: string;
 }
 
+function matchingCookieParts(request: Request, name: string): string[] {
+  return (request.headers.get('cookie') || '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => {
+      const separator = part.indexOf('=');
+      return separator > 0 && part.slice(0, separator).trim() === name;
+    });
+}
+
 function readCookie(request: Request, name: string): string | null {
-  const raw = request.headers.get('cookie') || '';
-  for (const part of raw.split(';')) {
-    const separator = part.indexOf('=');
-    if (separator < 0) continue;
-    if (part.slice(0, separator).trim() !== name) continue;
-    const value = part.slice(separator + 1).trim();
-    return /^[A-Za-z0-9_-]{40,128}$/.test(value) ? value : null;
-  }
-  return null;
+  const matches = matchingCookieParts(request, name);
+  if (matches.length !== 1) return null;
+  const separator = matches[0].indexOf('=');
+  const value = matches[0].slice(separator + 1).trim();
+  return /^[A-Za-z0-9_-]{40,128}$/.test(value) ? value : null;
+}
+
+export function hasRadarSessionCookie(request: Request): boolean {
+  return matchingCookieParts(request, RADAR_SESSION_COOKIE).length > 0;
 }
 
 export async function sha256Hex(value: string): Promise<string> {
@@ -51,6 +63,8 @@ export async function authenticateWorkerSession(
     phoneNumber: null,
     displayName: null,
     isAdmin: false,
+    isPrimaryAdmin: false,
+    isDelegatedAdmin: false,
     authProvider: null,
     authTimeSeconds: null,
     statusCode,
@@ -60,7 +74,7 @@ export async function authenticateWorkerSession(
   if (_sensitiveRoute && !['GET', 'HEAD', 'OPTIONS'].includes(ctx.method)) {
     const origin = ctx.request.headers.get('origin');
     try {
-      if (!origin || new URL(origin).origin !== new URL(ctx.env.APP_URL || 'https://radartehran.ir').origin) {
+      if (!origin || new URL(origin).origin !== new URL(ctx.env.APP_URL || ctx.url.origin).origin) {
         return unauthenticated('CSRF_ORIGIN_REJECTED', 403);
       }
     } catch {
@@ -122,7 +136,8 @@ export async function authenticateWorkerSession(
     const email = typeof row.email === 'string' ? row.email.toLowerCase() : null;
     const configuredAdminEmail = String(ctx.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isPrimaryAdmin = Boolean(email && configuredAdminEmail && email === configuredAdminEmail && row.email_verified === 1);
-    const isAdmin = isPrimaryAdmin || row.delegated_admin === 1;
+    const isDelegatedAdmin = row.delegated_admin === 1;
+    const isAdmin = isPrimaryAdmin || isDelegatedAdmin;
     const authTimeSeconds = createdAtSeconds;
 
     const d1WritesPaused = resolveD1WritePauseState(ctx.env).paused;
@@ -142,6 +157,8 @@ export async function authenticateWorkerSession(
       phoneNumber: typeof row.phone_number === 'string' ? row.phone_number : null,
       displayName: typeof row.display_name === 'string' ? row.display_name : null,
       isAdmin,
+      isPrimaryAdmin,
+      isDelegatedAdmin,
       authProvider: row.auth_provider === 'google' || row.auth_provider === 'phone' ? row.auth_provider : 'unknown',
       authTimeSeconds,
       statusCode: 200,
