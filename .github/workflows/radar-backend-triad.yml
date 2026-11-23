@@ -90,7 +90,7 @@ jobs:
               *) asset_url="$RADAR_FRONTEND_URL/$asset" ;;
             esac
             curl --fail --silent --show-error "$asset_url" >> /tmp/radar-frontend-bundles.js
-          done < <(grep -oE 'src="[^"]+\\.js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
+          done < <(grep -oE 'src="[^"]+\.js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
           if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
             echo "ERROR: no reCAPTCHA Enterprise site key found in deployed frontend bundle; API App Check mode is enforced."
             exit 1
