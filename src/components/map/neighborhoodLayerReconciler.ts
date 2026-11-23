@@ -44,7 +44,7 @@ export function selectVisibleMapNeighborhoods(params: {
       if (hood.id === selectedHoodId) return true;
       if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
       if (hasUsableViewport) {
-        return isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio));
+        return isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, lazyPolicy.viewportPadRatio);
       }
       return Math.abs(hood.lat - refLat) <= 0.55 && Math.abs(hood.lng - refLng) <= 0.65;
     });
