@@ -87,6 +87,35 @@ assert.equal(
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
+    url: 'https://tile.openstreetmap.org/13/5264/3226.png',
+  }),
+  'NetworkOnlyExternalMapTile',
+  'Direct OpenStreetMap tiles must not be stored by the Radar Service Worker'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://a.basemaps.cartocdn.com/light_all/13/5264/3226.png',
+  }),
+  'NetworkOnlyExternalMapTile',
+  'Direct CARTO tiles must remain network-only unless a provider-specific cache policy is implemented'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/13/1/2/3',
+  }),
+  'NetworkOnlyExternalMapTile',
+  'Direct ArcGIS tiles must remain network-only unless a provider-specific cache policy is implemented'
+);
+assert.ok(
+  swSource.includes('isExternalMapTileRequest(url)'),
+  'Service Worker must bypass its tile cache for external tile providers'
+);
+assert.ok(
+  swSource.includes('if (isExternalMapTileRequest(cachedUrl))'),
+  'Service Worker activation must purge previously cached external tile responses'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
     url: 'https://tehranradar.ir/api/admin/env-config',
   }),
   'BypassPrivateOrMutation'
