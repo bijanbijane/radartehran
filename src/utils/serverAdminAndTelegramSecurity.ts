@@ -1,11 +1,12 @@
-import crypto from 'node:crypto'; import { getApps, initializeApp, type App as FirebaseAdminApp } from 'firebase-admin/app'; import { getAuth, type DecodedIdToken } from 'firebase-admin/auth'; import { getAppCheck } from 'firebase-admin/app-check'; import { getFirestore, type Firestore as AdminFirestore } from 'firebase-admin/firestore'; import type { CityId } from '../types/models'; import { sanitizeInput, isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from './security'; import { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID, } from './serverConfigValidator'; import { runLocalLegalRuleEngine as runCanonicalLegalRuleEngine } from './serverLegalRuleEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID }; export const SUPPORTED_CITY_IDS: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const; export const TELEGRAM_MAX_MESSAGE_LENGTH = 900; export function isValidCityId(value: unknown): value is CityId { return typeof value === 'string' && (SUPPORTED_CITY_IDS as readonly string[]).includes(value); }
+import crypto from 'node:crypto';
+import { getCloudflareSessionContext } from './serverCloudflareSessionBridge'; import { getApps, initializeApp, type App as FirebaseAdminApp } from 'firebase-admin/app'; import { getAuth, type DecodedIdToken } from 'firebase-admin/auth'; import { getAppCheck } from 'firebase-admin/app-check'; import { getFirestore, type Firestore as AdminFirestore } from 'firebase-admin/firestore'; import type { CityId } from '../types/models'; import { sanitizeInput, isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from './security'; import { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID, } from './serverConfigValidator'; import { runLocalLegalRuleEngine as runCanonicalLegalRuleEngine } from './serverLegalRuleEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID }; export const SUPPORTED_CITY_IDS: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const; export const TELEGRAM_MAX_MESSAGE_LENGTH = 900; export function isValidCityId(value: unknown): value is CityId { return typeof value === 'string' && (SUPPORTED_CITY_IDS as readonly string[]).includes(value); }
 export function constantTimeSecretMatch(provided: string, expected: string): boolean { if (!provided || !expected) return false; const hashA = crypto.createHash('sha256').update(provided, 'utf8').digest(); const hashB = crypto.createHash('sha256').update(expected, 'utf8').digest(); return crypto.timingSafeEqual(hashA, hashB) && provided.length === expected.length; } export function redactFirebaseCredentialError(err: unknown): string { const raw = err instanceof Error ? err.message : String(err || 'FIREBASE_ADMIN_ERROR'); return raw
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[^\r\n"]*/g, '[REDACTED_PRIVATE_KEY]')
     .replace(/"?private_key"?\s*:\s*"[^"]+"/gi, '"private_key":"[REDACTED]"')
     .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED_API_KEY]')
     .slice(0, 240); } export interface AdminAuthVerificationResult { authorized: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; actorUid?: string; actorEmail?: string; authTimeSeconds?: number; }
-export interface VerifiedUserAuthResult { authorized: boolean; authenticated: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; authTimeSeconds?: number; }
+export interface VerifiedUserAuthResult { authorized: boolean; authenticated: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; authTimeSeconds?: number; authSource?: 'cloudflare_session' | 'firebase_id_token'; isAdmin?: boolean; isPrimaryAdmin?: boolean; isDelegatedAdmin?: boolean; }
 export interface AdminAuthOptions { verifyIdTokenFn?: (idToken: string) => Promise<DecodedIdToken>; checkDelegatedAdminFn?: (uid: string, email: string) => Promise<boolean>; requirePrimaryBootstrapAdmin?: boolean; disallowStaticToken?: boolean; maxAuthAgeSeconds?: number; nowSeconds?: number; } const ADMIN_APP_NAME_PREFIX = 'radar-user-auth'; export function getFirebaseAdminApp(projectId: string, env: Record<string, string | undefined> = process.env): FirebaseAdminApp { if (env.PREVENT_PROD_FIREBASE_IN_TEST === 'true' && projectId === EXPECTED_FIREBASE_PROJECT_ID && !env.FIRESTORE_EMULATOR_HOST) { throw new Error('TEST_ISOLATION_GUARD: Production Firebase project access is blocked when PREVENT_PROD_FIREBASE_IN_TEST=true without emulator.'); }
   const appName = `${ADMIN_APP_NAME_PREFIX}-${projectId}`;
   return getApps().find((app) => app.name === appName) || initializeApp({ projectId }, appName); }
@@ -54,6 +55,37 @@ export async function verifyAuthenticatedUserHeader(
   env: Record<string, string | undefined> = process.env,
   customVerifyIdToken?: (idToken: string) => Promise<DecodedIdToken>,
 ): Promise<VerifiedUserAuthResult> {
+  const cloudflareSession = getCloudflareSessionContext();
+  if (cloudflareSession) {
+    const verifiedGoogleIdentity = cloudflareSession.authProvider === 'google'
+      && cloudflareSession.emailVerified
+      && Boolean(cloudflareSession.email);
+    const verifiedPhoneIdentity = cloudflareSession.authProvider === 'phone'
+      && Boolean(cloudflareSession.phoneNumber);
+    if (!verifiedGoogleIdentity && !verifiedPhoneIdentity) {
+      return {
+        authorized: false,
+        authenticated: false,
+        statusCode: 403,
+        reason: 'CLOUDFLARE_SESSION_IDENTITY_UNVERIFIED',
+        uid: cloudflareSession.uid,
+      };
+    }
+    return {
+      authorized: true,
+      authenticated: true,
+      statusCode: 200,
+      reason: 'VERIFIED_CLOUDFLARE_SESSION',
+      uid: cloudflareSession.uid,
+      email: cloudflareSession.email || undefined,
+      authTimeSeconds: cloudflareSession.authTimeSeconds || undefined,
+      authSource: 'cloudflare_session',
+      isAdmin: cloudflareSession.isAdmin,
+      isPrimaryAdmin: cloudflareSession.isPrimaryAdmin,
+      isDelegatedAdmin: cloudflareSession.isDelegatedAdmin,
+    };
+  }
+
   const config = getValidatedServerConfig(env);
   const authHeaderResult = extractSingleSecurityHeader(headers, 'authorization');
   if (!authHeaderResult.ok) return { authorized: false, authenticated: false, statusCode: 400, reason: authHeaderResult.reason };
@@ -96,7 +128,7 @@ export async function verifyAuthenticatedUserHeader(
     : typeof decoded.iat === 'number' && Number.isFinite(decoded.iat)
       ? decoded.iat
       : undefined;
-  return { authorized: true, authenticated: true, statusCode: 200, reason: 'VERIFIED_USER', uid, email, authTimeSeconds };
+  return { authorized: true, authenticated: true, statusCode: 200, reason: 'VERIFIED_USER', uid, email, authTimeSeconds, authSource: 'firebase_id_token' };
 }
 export const verifyFirebaseUserAuthorization = verifyAuthenticatedUserHeader;
 export async function verifyAdminApiAuthorization(
@@ -139,6 +171,46 @@ export async function verifyAdminApiAuthorization(
       };
     }
   }
+  if (userAuth.authSource === 'cloudflare_session') {
+    const isPrimaryAdmin = userAuth.isPrimaryAdmin === true
+      || isBootstrapAdminEmail(userAuth.email)
+      || userAuth.email === config.adminEmail;
+    const isDelegatedAdmin = userAuth.isDelegatedAdmin === true;
+
+    if (options.requirePrimaryBootstrapAdmin && !isPrimaryAdmin) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+    if (!isPrimaryAdmin && !isDelegatedAdmin) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'NOT_ADMIN_USER',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+    return {
+      authorized: true,
+      statusCode: 200,
+      reason: isPrimaryAdmin ? 'AUTHORIZED_BOOTSTRAP_ADMIN' : 'AUTHORIZED_DELEGATED_ADMIN',
+      uid: userAuth.uid,
+      email: userAuth.email,
+      actorUid: userAuth.uid,
+      actorEmail: userAuth.email,
+      authTimeSeconds: userAuth.authTimeSeconds,
+    };
+  }
+
   if (isBootstrapAdminEmail(userAuth.email) || userAuth.email === config.adminEmail) {
     return {
       authorized: true, statusCode: 200, reason: 'AUTHORIZED_BOOTSTRAP_ADMIN',
