@@ -332,6 +332,21 @@ export function evaluateWorkerAuthorization(
 
   const p = authCtx.principal;
 
+  if (req.maxAuthAgeSeconds !== undefined) {
+    const maxAge = req.maxAuthAgeSeconds;
+    const authTime = p.authTimeSeconds;
+    const ageSeconds = typeof authTime === 'number' ? Math.floor(Date.now() / 1000) - authTime : Number.POSITIVE_INFINITY;
+    if (!Number.isSafeInteger(maxAge) || maxAge < 0 || !Number.isFinite(ageSeconds) || ageSeconds < 0 || ageSeconds > maxAge) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        failureCode: 'RECENT_AUTHENTICATION_REQUIRED',
+        reasonFa: 'برای این عملیات احراز هویت مجدد لازم است.',
+        reasonEn: 'Recent authentication is required for this operation.',
+      };
+    }
+  }
+
   if (policy === 'VERIFIED_USER') {
     return {
       allowed: true,
