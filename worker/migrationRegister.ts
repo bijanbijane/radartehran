@@ -126,27 +126,42 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     };
   }
 
-  if (GROUP_4_VERIFIED_ACCOUNT_PATHS.has(key)) {
+  if (GROUP_3A_AUTH_PATHS.has(key)) {
     return {
-      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
-      workerHandlerModule: 'worker/routes/accountRoutes.ts',
-      status: 'VERIFIED',
-      activeRuntime: 'cloudflare_worker',
-      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/sessionAuth.ts', 'worker/routes/authRoutes.ts'],
-      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (user_profiles, user_privacy_consents, user_sessions, user_data_requests)'],
-      externalApiTouchpoints: ['Google OpenID Connect JWKS', 'Kavenegar SMS Verify API'],
+      migrationGroup: 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH',
+      workerHandlerModule: null,
+      status: 'BLOCKED',
+      activeRuntime: 'legacy_express_server',
+      dependencies: ['worker/routes/authRoutes.ts', 'worker/auth/sessionAuth.ts', 'migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql', 'migrations/user-d1/0008_sms_otp_ip_rate_limit.sql', 'migrations/user-d1/0009_sms_otp_code_digest.sql'],
+      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (auth_identities, auth_oauth_states, auth_phone_challenges, user_sessions)'],
+      externalApiTouchpoints: ['Google OpenID Connect', 'Kavenegar SMS Verify API'],
+      blockerReason: 'Auth D1 migrations are pending and the production Worker lacks the required Google OAuth and Kavenegar credentials. Keep all login endpoints blocked until both schema and credentials are ready.',
     };
   }
 
-  if (GROUP_4_VERIFIED_MARKETPLACE_PATHS.has(key)) {
+  if (GROUP_4_ACCOUNT_PATHS.has(key)) {
     return {
       migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
-      workerHandlerModule: 'worker/routes/marketplaceRoutes.ts',
-      status: 'VERIFIED',
-      activeRuntime: 'cloudflare_worker',
-      dependencies: ['worker/marketplace/d1MarketplaceRepository.ts', 'worker/auth/sessionAuth.ts'],
-      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (bargains, sponsor_requests, buyer_alerts, neighborhood_votes, neighborhood_overrides, app_config, user_preferences)'],
+      workerHandlerModule: null,
+      status: 'BLOCKED',
+      activeRuntime: 'legacy_express_server',
+      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/sessionAuth.ts', 'worker/routes/authRoutes.ts'],
+      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (account and session tables)'],
       externalApiTouchpoints: [],
+      blockerReason: 'USER_DB migrations 0007-0009 are not applied; Cloudflare-native sessions cannot be enabled until the auth schema is complete.',
+    };
+  }
+
+  if (GROUP_4_MARKETPLACE_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
+      workerHandlerModule: null,
+      status: 'BLOCKED',
+      activeRuntime: 'legacy_express_server',
+      dependencies: ['worker/marketplace/d1MarketplaceRepository.ts', 'migrations/user-d1/0010_marketplace_and_neighborhood_core.sql'],
+      stateStorageTouchpoints: ['Cloudflare D1 USER_DB marketplace and neighborhood tables'],
+      externalApiTouchpoints: [],
+      blockerReason: 'USER_DB migration 0010 is not applied; D1 marketplace reads remain fail-closed until the schema is present.',
     };
   }
 
