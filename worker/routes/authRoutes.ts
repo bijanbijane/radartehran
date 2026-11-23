@@ -32,7 +32,15 @@ function safeReturnPath(raw: string | null): string {
   return raw.slice(0, 512);
 }
 
-function readRequestCookie(request: Request, name: string): string | null {\n  const raw = request.headers.get('cookie') || '';\n  for (const part of raw.split(';')) {\n    const [key, ...rest] = part.trim().split('=');\n    if (key === name) return rest.join('=') || null;\n  }\n  return null;\n}\n\nfunction validMutationOrigin(ctx: WorkerRequestContext): boolean {
+function readRequestCookie(request: Request, name: string): string | null {
+  const raw = request.headers.get('cookie') || '';
+  for (const part of raw.split(';')) {
+    const separator = part.indexOf('=');
+    if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
+    return part.slice(separator + 1).trim() || null;
+  }
+  return null;
+}
   const origin = ctx.request.headers.get('origin');
   if (!origin) return false;
   try {
@@ -218,6 +226,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const state = url.searchParams.get('state') || '';
     const code = url.searchParams.get('code') || '';
     if (!state || !code || url.searchParams.has('error')) return errorRedirect(ctx, 'GOOGLE_OAUTH_DENIED');
+    if (readRequestCookie(request, '__Host-radar_oauth_state') !== state) return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_COOKIE_MISMATCH');
     const stateHash = await sha256Hex(state);
     const stateRow = await db.prepare(
       'SELECT nonce, code_verifier, return_path, expires_at_ms FROM auth_oauth_states WHERE state_hash = ?1 LIMIT 1',
@@ -246,14 +255,13 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
         email: google.email, emailVerified: google.email_verified, displayName: google.name,
       });
       const session = await issueSession(db, request, identity.uid, 'google');
-      const response = new Response(null, {
-        status: 303,
-        headers: {
-          Location: new URL(safeReturnPath(stateRow.return_path), String(env.APP_URL || 'https://radartehran.ir')).toString(),
-          'Cache-Control': 'no-store',
-          'Set-Cookie': buildSessionCookie(session.token, SESSION_TTL_SECONDS),
-        },
+      const headers = new Headers({
+        Location: new URL(safeReturnPath(stateRow.return_path), String(env.APP_URL || 'https://radartehran.ir')).toString(),
+        'Cache-Control': 'no-store',
       });
+      headers.append('Set-Cookie', buildSessionCookie(session.token, SESSION_TTL_SECONDS));
+      headers.append('Set-Cookie', '__Host-radar_oauth_state=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+      const response = new Response(null, { status: 303, headers });
       return response;
     } catch (error) {
       const code = error instanceof Error ? error.message : 'GOOGLE_AUTH_FAILED';
