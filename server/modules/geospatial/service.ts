@@ -145,7 +145,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   }
 
   function findNearbyPointsOfInterest(
-    params: Parameters<typeof executeFindNearbyPointsOfInterest>[0],
+    params: Omit<Parameters<typeof executeFindNearbyPointsOfInterest>[0], 'poiStore'>,
   ): ReturnType<typeof executeFindNearbyPointsOfInterest> {
     return executeFindNearbyPointsOfInterest({ ...params, poiStore });
   }
