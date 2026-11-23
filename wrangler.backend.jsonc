@@ -63,7 +63,7 @@
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
   //   - INTERNAL_LIFECYCLE_RPC_SECRET
-  //   - IRNI_API_TOKEN (blocked until external IRNI contract is delivered)
+  //   - IRNI_PUBLISH_HMAC_SECRET (shared only with the protected IRNI GitHub Actions environment)
   "vars": {
     "APP_ENV": "production",
     "APP_URL": "https://radartehran.ir",
