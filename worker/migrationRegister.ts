@@ -128,8 +128,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     };
   }
 
-  if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
-    if (GROUP_4_VERIFIED_MARKETPLACE_PATHS.has(key)) {
+  if (GROUP_4_VERIFIED_MARKETPLACE_PATHS.has(key)) {
     return {
       migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
       workerHandlerModule: 'worker/routes/marketplaceRoutes.ts',
@@ -141,6 +140,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     };
   }
 
+  if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
   if (GROUP_5_STORAGE_PATHS.has(key)) {
       return {
         migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
