@@ -1,8 +1,8 @@
 /** @file src/components/views/ProductAdminMonitoringView.tsx — Independent Admin Shell with 6-Section RTL Sidebar (< 220 lines) */
 import React, { useEffect, useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { getAuthClient } from '../../platform/auth';
 import { Database, FileText, LayoutDashboard, LogOut, Menu, Shield, Users, Wrench, X } from 'lucide-react';
-import { auth, googleProvider } from '../../firebase';
+
 import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId, CityId } from '../../data/neighborhoods';
 import type { FeatureFlags, SystemHealthData } from '../../types/models';
 import { AdminModal } from '../AdminModal';
@@ -62,9 +62,11 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     }
     ui.setLoadingSystemHealth(true);
     try {
-      const idToken = await p.currentUser.getIdToken();
-      if (!idToken) { ui.setSystemHealth(null); return; }
-      const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' });
+      const res = await fetch('/api/system-health', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      });
       if (!res.ok) { ui.setSystemHealth(null); return; }
       const payload: unknown = await res.json();
       if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') {
@@ -259,15 +261,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             backupStatusMsg={ui.backupStatusMsg} isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
             onGoogleSignIn={() => {
               ui.setAdminPassError('');
-              signInWithPopup(auth, googleProvider).catch((err) =>
-                ui.setAdminPassError(
-                  err?.code === 'auth/popup-blocked'
-                    ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.'
-                    : err?.code === 'auth/popup-closed-by-user'
-                      ? 'پنجره ورود گوگل بسته شد.'
-                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.',
-                ),
-              );
+              getAuthClient().startGoogleLogin(`${window.location.pathname}${window.location.search}`);
             }}
             onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
             mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}

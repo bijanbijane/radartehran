@@ -4,7 +4,7 @@
  * Object Storage routes have been converged into `worker/routes/objectStorageRoutes.ts`
  * as the single canonical implementation (RT-TEAMWORK-CRITICAL-002).
  */
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerRouteCompat } from '../auth/routeAuthCompat';
 import { jsonWorkerResponse } from '../contextAndSecurity';
 import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
 import { inspectD1OperationalDiagnostics } from '../db/d1SchemaAndMigrations';
@@ -44,14 +44,7 @@ export async function handleStorageAndAdminWorkerRoute(
   const { method, pathname, env, request } = ctx;
 
   if (method === 'GET' && pathname === '/api/admin/worker-diagnostics') {
-    const auth = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: request.headers.get('authorization'),
-      appCheckHeader: request.headers.get('x-firebase-appcheck'),
-      appCheckDebugHeader: request.headers.get('x-firebase-appcheck-debug'),
-      request,
-      env,
-      sensitiveRoute: true,
-    });
+    const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: true });
     if (!auth.authenticated || !auth.isAdmin) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 403 : auth.statusCode, {
         status: 'error',

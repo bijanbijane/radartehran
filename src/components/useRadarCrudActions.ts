@@ -8,7 +8,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     if (!p.liveBargainCheck.isEligible) {
       p.setBargainSubmitMsg({ type: 'error', text: `فقط فایل‌های حداقل ۱۰٪ زیر میانگین محله در رادار طلایی ثبت می‌شوند! (حداکثر قیمت مجاز در ${p.targetBargainHood.name}: ${toPersianNum(p.liveBargainCheck.maxAllowedFor10Percent)} میلیون تومان)` }); return;
     }
-    const hoodId = Number(p.bargainHoodId); const sqm = Math.round(Number(p.bargainSqm)); const discountPercent = Math.round(Number(p.liveBargainCheck.discountPercent)); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999 || !Number.isFinite(sqm) || sqm < 25 || sqm > 1000 || !Number.isFinite(discountPercent) || discountPercent < 10 || discountPercent > 60) { p.setBargainSubmitMsg({ type: 'error', text: 'مقادیر متراژ، محله یا درصد تخفیف خارج از محدودهٔ مجاز است.' }); return; }
+    const hoodId = Number(p.bargainHoodId); const sqm = Math.round(Number(p.bargainSqm)); const discountPercent = Math.round(Number(p.liveBargainCheck.discountPercent)); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999 || !Number.isFinite(sqm) || sqm < 25 || sqm > 1000 || !Number.isFinite(discountPercent) || discountPercent < 10 || discountPercent > 60) { p.setBargainSubmitMsg({ type: 'error', text: 'مقادیر متراژ، محله یا درصد تخفیف خارج از محدودهٔ مجاز است.' }); return; }
     const cleanTitle = (sanitizeInput(p.bargainTitle, 160) || `واحد ${toPersianNum(sqm)} متری خوش‌نقشه در ${p.targetBargainHood.name}، فروشنده واقعی`).slice(0, 160);
     const cleanStreet = (sanitizeInput(p.bargainStreet, 120) || `فرعی دنج ${p.targetBargainHood.name}`).slice(0, 120);
     const formattedPriceText = (p.bargainType === 'خرید'
@@ -363,7 +363,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
           buyTotalBudget: Math.min(1000000, Math.max(500, Number(p.buyTotalBudget) || 500)),
           targetSqm: Math.min(1000, Math.max(20, Number(p.targetSqm) || 80)),
           workHubId: (p.workHubId || 'none').slice(0, 40),
-          favoriteHoodIds: p.favoriteHoodIds.filter((id) => Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 25),
+          favoriteHoodIds: p.favoriteHoodIds.filter((id) => Number.isInteger(id) && id >= 1 && id <= 9999).slice(0, 25),
         }),
       });
       const result = await response.json().catch(() => null) as { status?: string; durable?: boolean; message?: string } | null;

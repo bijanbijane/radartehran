@@ -2,7 +2,7 @@ name: Tehran Radar Path-Filtered Checks
 
 on:
   pull_request:
-    branches: [main, master]
+    branches: [main, master, migration/firebase-retirement-mainline-2026-11-24]
   workflow_dispatch:
 
 permissions:

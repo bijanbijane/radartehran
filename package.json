@@ -74,7 +74,7 @@
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend",
-    "test:marketplace": "tsx --test tests/cloudflare-marketplace-write-routes.test.ts tests/cloudflare-marketplace-privacy.test.ts"
+    "test:marketplace": "tsx --test tests/cloudflare-marketplace-write-routes.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
