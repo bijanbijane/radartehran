@@ -159,6 +159,8 @@ export interface WorkerEnv {
   readonly DB?: D1Database;
   /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
   readonly RESEARCH_DB?: D1Database;
+  /** Explicit opt-in for the dual-database Stage D account lifecycle runtime. */
+  readonly STAGE_D_LIFECYCLE_ENABLED?: string;
   /** Explicitly verified Cloudflare D1 resource IDs for Stage D lifecycle and authoritative user data. */
   readonly STAGE_D_LIFECYCLE_DATABASE_ID?: string;
   readonly STAGE_D_USER_DATABASE_ID?: string;
