@@ -37,7 +37,19 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: [
+        'react',
+        'react-dom',
+        // Firebase packages must share one @firebase/app component registry in Vite dev/E2E.
+        // Different nested @firebase/app copies can register Firestore on a different provider
+        // container, causing `Service firestore is not available` during application bootstrap.
+        'firebase',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/firestore',
+        '@firebase/component',
+        '@firebase/util',
+      ],
     },
     optimizeDeps: {
       include: [
