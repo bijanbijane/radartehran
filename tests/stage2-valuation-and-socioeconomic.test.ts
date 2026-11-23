@@ -25,6 +25,8 @@ import {
   evaluateCasperNeighborhoodDecision,
 } from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
 
+process.env.VALUATION_SEAL_SECRET = 'test-only-valuation-seal-secret-2026-11';
+
 console.log('📊 Running Stage 2.2 — MAD Valuation & Socioeconomic Rollup Tests...\n');
 
 async function runTests(): Promise<void> {
