@@ -1,8 +1,8 @@
 /** @file src/components/views/ProductAdminMonitoringView.tsx — Independent Admin Shell with 6-Section RTL Sidebar (< 220 lines) */
 import React, { useEffect, useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { getAuthClient } from '../../platform/auth';
 import { Database, FileText, LayoutDashboard, LogOut, Menu, Shield, Users, Wrench, X } from 'lucide-react';
-import { auth, googleProvider } from '../../firebase';
+
 import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId, CityId } from '../../data/neighborhoods';
 import type { FeatureFlags, SystemHealthData } from '../../types/models';
 import { AdminModal } from '../AdminModal';
