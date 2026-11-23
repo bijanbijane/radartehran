@@ -1,5 +1,5 @@
 import { AppShellLayoutKind } from '../application-shell';
-import { AppRole, PermissionKey } from '../../platform/auth';
+import type { AppRole, PermissionKey } from '../../platform/auth';
 
 export interface RouteRegistration {
   id: string;
