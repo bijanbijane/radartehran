@@ -142,6 +142,9 @@ function runDomainRegressionTests(): void {
   const karajCustomId = Array.from({ length: 100 }, (_, index) => 600 + index).find((id) => !karajExpansionSeeds.some((hood) => hood.id === id));
   const shirazCustomId = Array.from({ length: 99 }, (_, index) => 900 + index).find((id) => !shirazExpansionSeeds.some((hood) => hood.id === id));
   assert('0. City hydration test IDs are available', karajCustomId !== undefined && shirazCustomId !== undefined && karajExpansionSeeds[0] !== undefined, 'Karaj and Shiraz custom IDs selected');
+  if (karajCustomId === undefined || shirazCustomId === undefined || !karajExpansionSeeds[0]) {
+    throw new Error('Unable to construct city-scoped hydration test fixtures');
+  }
   const priorWindow = (globalThis as any).window;
   const priorLocalStorage = (globalThis as any).localStorage;
   const savedCityExpansion = [
