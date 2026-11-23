@@ -153,7 +153,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     status: row.status === 'approved' ? 'approved' : 'pending',
     createdAtFa: 'ثبت ابری',
     ownerUserId: ownerUidVisible(row.owner_uid, query),
-  }));
+  })));
 
   const votes = (voteRows.results ?? []).map((row) => ({
     id: String(row.vote_id),
