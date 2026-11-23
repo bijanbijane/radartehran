@@ -21,6 +21,11 @@
     "enabled": true,
     "head_sampling_rate": 0.2
   },
+  // Workers Cache is enabled only after all public/private response cache headers are audited.
+  // API JSON defaults to no-store; only explicitly public responses are eligible for edge caching.
+  "cache": {
+    "enabled": true
+  },
 
   // Production D1 bindings (default top-level environment: radartehran-api)
   // USER_DB and legacy compatibility alias DB point to the exact same physical radar-user-db UUID.
@@ -94,6 +99,10 @@
     "staging": {
       "name": "radartehran-api-staging",
       "workers_dev": true,
+      // Keep staging uncached until isolated storage and end-to-end cache tests are available.
+      "cache": {
+        "enabled": false
+      },
       // Staging Cron Triggers stay disabled until dedicated staging D1 databases are provisioned.
       // Never inherit production lifecycle schedules while staging storage is unavailable.
       "triggers": {
