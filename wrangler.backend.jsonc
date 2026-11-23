@@ -94,6 +94,11 @@
     "staging": {
       "name": "radartehran-api-staging",
       "workers_dev": true,
+      // Staging Cron Triggers stay disabled until dedicated staging D1 databases are provisioned.
+      // Never inherit production lifecycle schedules while staging storage is unavailable.
+      "triggers": {
+        "crons": []
+      },
       "vars": {
         "APP_ENV": "staging",
         "APP_URL": "https://radartehran-api-staging.workers.dev",
