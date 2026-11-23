@@ -37,7 +37,23 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: [
+        'react',
+        'react-dom',
+        // Keep the remaining Firestore client and shared Firebase provider packages on one module graph.
+        // Multiple nested @firebase/app copies can register Firestore on a different app container.
+        'firebase',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore',
+        'firebase/app-check',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/firestore',
+        '@firebase/component',
+        '@firebase/util',
+        '@firebase/app-check',
+      ],
     },
     optimizeDeps: {
       include: [
