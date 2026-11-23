@@ -143,10 +143,6 @@ export interface WorkerEnv {
   readonly TWILIO_ACCOUNT_SID?: string;
   readonly TWILIO_AUTH_TOKEN?: string;
   readonly TWILIO_VERIFY_SERVICE_SID?: string;
-  readonly FIREBASE_PROJECT_ID?: string;
-  readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
-  readonly FIREBASE_APP_CHECK_APP_ID?: string;
-  readonly FIREBASE_APP_CHECK_DEBUG_ALLOWLIST?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
