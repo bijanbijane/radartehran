@@ -314,3 +314,17 @@ export function createWorkerD1DomainAdapters(_lifecycleDb: D1DatabaseBinding): U
 export function workerD1AdapterSources(): readonly UserOwnedDomainSource[] {
   return DEPENDENT_PURGE_SOURCES;
 }
+
+/**
+ * The current Worker runtime intentionally wires fail-closed adapters for every
+ * user-owned source. Contract-test adapters are partial and are not production-ready.
+ */
+export function getWorkerD1DomainAdapterReadiness(): {
+  ready: false;
+  unavailableSources: readonly UserOwnedDomainSource[];
+} {
+  return {
+    ready: false,
+    unavailableSources: ALL_USER_OWNED_DOMAIN_SOURCES,
+  };
+}
