@@ -40,7 +40,7 @@ export async function authenticateWorkerSession(
   ctx: WorkerRequestContext,
   _sensitiveRoute = false,
 ): Promise<WorkerSessionPrincipal> {
-  const unauthenticated = (reasonCode = 'UNAUTHENTICATED', statusCode: 401 | 503 = 401): WorkerSessionPrincipal => ({
+  const unauthenticated = (reasonCode = 'UNAUTHENTICATED', statusCode: 401 | 403 | 503 = 401): WorkerSessionPrincipal => ({
     authenticated: false,
     uid: null,
     email: null,
