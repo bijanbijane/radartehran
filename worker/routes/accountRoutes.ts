@@ -38,6 +38,7 @@ function isHandledAccountWorkerRoute(method: string, pathname: string): boolean 
   if (pathname === '/api/account/favorites' && (method === 'GET' || method === 'PUT' || method === 'POST' || method === 'DELETE')) {
     return true;
   }
+  if (pathname === '/api/account/export-data' && method === 'GET') return true;
   if (pathname === '/api/account/data-requests' && (method === 'GET' || method === 'POST')) return true;
   if (pathname === '/api/account/deletion-requests' && method === 'POST') return true;
   if (pathname === '/api/account/deletion-requests/reconcile' && method === 'POST') return true;
@@ -202,6 +203,71 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         const res = await removeUserFavoriteInD1(userDb, { uid, cityId, hoodId });
         return jsonWorkerResponse(ctx, 200, { status: 'ok', ...res });
       }
+    }
+
+    // 5. GET /api/account/export-data — D1-only, explicitly partial until all legacy domains migrate.
+    if (pathname === '/api/account/export-data' && method === 'GET') {
+      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult] = await Promise.all([
+        getUserProfileFromD1(userDb, uid),
+        getUserPrivacyConsentFromD1(userDb, uid),
+        listUserFavoritesFromD1(userDb, uid),
+        listUserDataRequestsFromD1(userDb, uid),
+        userDb.prepare(
+          'SELECT search_id, label, city_id, filters_json, alert_enabled, created_at_iso, updated_at_iso FROM user_saved_searches WHERE uid = ?1 ORDER BY updated_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT channel_id, channel_type, destination_masked, verified, enabled, created_at_iso, updated_at_iso FROM user_notification_channels WHERE uid = ?1 ORDER BY created_at_iso DESC LIMIT 100',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT object_id, media_type, mime_type, size_bytes, target_type, target_id, lifecycle_state, created_at_iso, updated_at_iso FROM media_objects WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+      ]);
+
+      const searches = savedSearches.results ?? [];
+      const channels = notificationChannels.results ?? [];
+      const media = mediaResult.results ?? [];
+      const availableSources = [
+        { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
+        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length },
+        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'جدول projection فعلی مالکیت آگهی را نگهداری نمی‌کند؛ داده مالکیت از منبع قدیمی قابل انتساب امن نیست.' },
+        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', included: true, available: true, count: media.length },
+      ];
+      const unavailableSources = availableSources.filter((source) => !source.available).map((source) => source.sourceId);
+      const totalRecordsExported = availableSources.reduce((sum, source) => sum + source.count, 0);
+      const exportData = {
+        schemaVersion: '2.0.0',
+        exportedAtIso: new Date().toISOString(),
+        ownerUid: uid,
+        exportScope: 'server_account',
+        isPartialExport: unavailableSources.length > 0,
+        completenessStatus: unavailableSources.length > 0 ? 'INCOMPLETE_PARTIAL' : 'COMPLETE',
+        totalRecordsExported,
+        omittedPagesCount: 0,
+        unavailableSources,
+        domainSourcesIncluded: availableSources.filter((source) => source.available).map((source) => source.domainSource),
+        sources: availableSources,
+        excludedSources: ['authentication_credentials', 'session_cookie_values', 'server_audit_logs'],
+        profile: {
+          profile,
+          privacy,
+          notificationChannels: channels,
+          savedSearches: searches,
+          dataRequests,
+        },
+        favoriteNeighborhoodKeys: favorites.map((favorite) => `${favorite.cityId}_${favorite.hoodId}`),
+        savedAlerts: [],
+        publishedListings: [],
+        calculationSnapshots: [],
+        buyerLeads: [],
+        dataCorrections: [],
+        sponsorRecords: [],
+        crowdClaims: [],
+        mediaObjects: media,
+      };
+      return jsonWorkerResponse(ctx, 200, { status: 'ok', exportData });
     }
 
     // 5. GET / POST /api/account/data-requests
