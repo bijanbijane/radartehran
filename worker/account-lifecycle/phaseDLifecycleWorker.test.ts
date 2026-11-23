@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { validateLifecycleQueuePayload, buildLifecycleQueueIdempotencyKey } from './lifecycleQueueContract.ts';
 import { validateQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
+import { acquireD1MutationPermit, releaseD1MutationPermit, countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
 import { calculateLifecycleRecoveryOffset } from './stageDLifecycleRuntime.ts';
 
@@ -40,6 +41,54 @@ async function run(): Promise<void> {
   assert.equal(v.valid, true);
 
   const db = new InMemoryAccountLifecycleD1();
+
+  const permitNow = 1_800_000_000_000;
+  const permit = await acquireD1MutationPermit({
+    db,
+    targetUid: 'uid_permit',
+    holderId: 'worker_permit',
+    routeSignature: 'POST /api/test-mutation',
+    ttlMs: 5_000,
+    nowMs: permitNow,
+  });
+  assert.ok(permit.permitId.startsWith('d1permit_'));
+  assert.equal(
+    await countActiveD1MutationPermits({ db, targetUid: 'uid_permit', nowMs: permitNow + 1 }),
+    1,
+  );
+  const released = await releaseD1MutationPermit({
+    db,
+    targetUid: 'uid_permit',
+    permitId: permit.permitId,
+    nowMs: permitNow + 2,
+  });
+  assert.equal(released.released, true);
+  assert.equal(
+    await countActiveD1MutationPermits({ db, targetUid: 'uid_permit', nowMs: permitNow + 3 }),
+    0,
+  );
+
+  const expiringPermit = await acquireD1MutationPermit({
+    db,
+    targetUid: 'uid_expiry',
+    holderId: 'worker_expiry',
+    routeSignature: 'POST /api/test-expiring-mutation',
+    ttlMs: 1_000,
+    nowMs: permitNow + 10_000,
+  });
+  assert.equal(
+    await countActiveD1MutationPermits({ db, targetUid: 'uid_expiry', nowMs: permitNow + 11_000 }),
+    0,
+    'expired permits are durably marked before active-permit count is returned',
+  );
+  const expiryReplay = await releaseD1MutationPermit({
+    db,
+    targetUid: 'uid_expiry',
+    permitId: expiringPermit.permitId,
+    nowMs: permitNow + 11_001,
+  });
+  assert.equal(expiryReplay.released, false);
+
   const dispatch = new D1AccountLifecycleDispatch(db);
   const now = new Date().toISOString();
   const inserted = await dispatch.enqueueDispatchEvent({
