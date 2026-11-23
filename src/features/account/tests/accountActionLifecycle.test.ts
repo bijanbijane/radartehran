@@ -181,7 +181,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
       })) as unknown as typeof fetch;
 
   const r401 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(401, { status: 'error' }),
   });
@@ -189,7 +189,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r401.ok) assert.equal(r401.code, 'AUTH_REQUIRED');
 
   const r403 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(403, { status: 'error' }),
   });
@@ -197,7 +197,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r403.ok) assert.equal(r403.code, 'FORBIDDEN');
 
   const r429 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(429, { status: 'error' }),
   });
@@ -205,7 +205,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r429.ok) assert.equal(r429.code, 'RATE_LIMITED');
 
   const mismatch = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, {
       status: 'ok',
@@ -219,7 +219,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!mismatch.ok) assert.equal(mismatch.code, 'OWNER_MISMATCH');
 
   const badSchema = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, {
       status: 'ok',
@@ -248,7 +248,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   };
   assert.equal(isValidServerAccountExportResponse(validPayload, 'u1'), true);
   const okRes = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, validPayload),
   });
