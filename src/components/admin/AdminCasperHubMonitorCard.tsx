@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle2, Cpu, Globe, KeyRound, RefreshCw, Send, ShieldCheck, Zap } from 'lucide-react';
-import { auth } from '../../firebase';
+import { getAuthClient } from '../../platform/auth';
 import { toPersianNum } from '../../data/neighborhoods';
 export interface CasperHubEpistemicTelemetry { readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean; readonly sequenceGapCount: number; readonly syncCursorLag: number; readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number; readonly criticalNotesCount: number; readonly activeBlockersCount: number; }
 export interface CasperHubWhoAmIData { readonly authenticated: boolean; readonly agent_id?: string; readonly database?: string; readonly permissions?: string[]; readonly active_roadmaps_count?: number; readonly open_tasks_count?: number; }
@@ -28,21 +28,16 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
   const [sendingNote, setSendingNote] = useState<boolean>(false);
   const [noteSuccessMsg, setNoteSuccessMsg] = useState<string | null>(null);
 
-  const getAdminHeaders = async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-  };
+  const getAdminHeaders = async (): Promise<Record<string, string>> => ({
+    'Content-Type': 'application/json',
+  });
 
   const fetchHubState = useCallback(async () => {
     if (!isMountedRef.current) return;
     setLoading(true); setErrorMsg(null);
     try {
       const headers = await getAdminHeaders();
-      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers }), fetch('/api/casper-hub/bootstrap', { headers })]);
+      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers, credentials: 'same-origin' }), fetch('/api/casper-hub/bootstrap', { headers, credentials: 'same-origin' })]);
       if (!isMountedRef.current) return;
       if (whoRes.ok) {
         const whoJson = await whoRes.json();
@@ -72,8 +67,10 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
   useEffect(() => {
     isMountedRef.current = true;
     void fetchHubState();
-    const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u && isMountedRef.current) void fetchHubState(); }) : undefined;
-    return () => { isMountedRef.current = false; if (typeof unsub === 'function') unsub(); };
+    const unsubscribe = getAuthClient().subscribe((_state, user) => {
+      if (user && isMountedRef.current) void fetchHubState();
+    });
+    return () => { isMountedRef.current = false; unsubscribe(); };
   }, [fetchHubState]);
 
   const handlePostNote = async (e: React.FormEvent) => {
@@ -84,7 +81,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
       const headers = await getAdminHeaders();
       const tagsArray = noteTags.split(/[,،]/).map((t) => t.trim()).filter(Boolean);
       const res = await fetch('/api/casper-hub/notes', {
-        method: 'POST', headers,
+        method: 'POST', headers, credentials: 'same-origin',
         body: JSON.stringify({ note_scope: 'global', note_type: noteType, importance: noteImportance, title: noteTitle.trim(), summary: noteSummary.trim(), tags: tagsArray }),
       });
       const data = await res.json();
