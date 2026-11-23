@@ -22,7 +22,7 @@
 
 | جدول | Migration | سرویس مسئول / نویسنده واقعی | مصرف‌کننده واقعی | وضعیت runtime | نگهداری (Retention) | پاک‌سازی در حذف حساب |
 |---|---|---|---|---|---|---|
-| `neighborhood_projections` | `0001` | `worker/db/d1SchemaAndMigrations.ts` (`upsertNeighborhoodProjectionD1` از `jobDispatcher.ts`) | خواندن/کش پروجکشن بازار | **انتقالی (تعارض جزئی با IRNI — نیاز به تفکیک فیلدهای مرجع جغرافیایی `name_fa`/`district` و تغذیه از IRNI API)** | پروجکشن کش‌شده بازار | غیرشخصی |
+| `neighborhood_projections` | `0001` | **فعلاً نویسنده فعال ندارد؛ Adapter ذخیره‌سازی `upsertNeighborhoodProjectionD1` فقط برای منبع معتبر آینده نگه داشته شده است** | خواندن/کش پروجکشن بازار | **BLOCKED: Worker فاقد آداپتر احراز‌شده Firestore REST است؛ Job قدیمی `firestore_d1_projection_sync` تا اتصال منبع واقعی Fail-Closed و از Cron حذف شده است** | پروجکشن کش‌شده بازار | غیرشخصی |
 | `bargain_projections` | `0001` | **فاقد نویسنده runtime در `worker/`** | **فاقد مصرف‌کننده runtime در `worker/`** | **موجود در Schema بدون مصرف‌کننده فعال (ثبت‌شده جهت تصمیم‌گیری آینده؛ حذف نشده)** | تعریف‌شده در Schema | غیرشخصی |
 | `sync_watermarks` | `0001` | `firebaseEdgeAuth.ts`, `jobDispatcher.ts` | ابطال توکن و هماهنگی صف | فعال (اتمی با `batch()`) | کلیدهای `revoked_uid:{uid}` دائمی جهت امنیت | تبدیل به `DISABLED` هنگام حذف حساب |
 | `upload_sessions`, `upload_session_chunks` | `0002` | `objectStorageUploadHandlers.ts`, `jobDispatcher.ts` | بارگذاری تکه‌تکه رسانه | فعال | ۱۵ دقیقه TTL + پاک‌سازی Cron | حذف هر دو جدول (`upload_session_chunks` و `upload_sessions`) بر اساس `owner_uid` |
@@ -101,3 +101,10 @@
 1. **احراز هویت Cloudflare در محیط اجرا (`BLOCKED`):** `wrangler whoami` احراز هویت نشده و هیچ `CLOUDFLARE_API_TOKEN` در محیط موجود نیست؛ بنابراین بررسی زنده Remote D1، اجرای Migration Remote و استقرار Staging/Production در این محیط امکان‌پذیر نیست.
 2. **تامین دیتابیس‌های Staging (`BLOCKED_STAGING_DATABASES_NOT_PROVISIONED`):** Staging به هیچ دیتابیس Production متصل نیست و نیازمند ایجاد `radar-user-db-staging` و `radar-researcher-db-staging` است.
 3. **قرارداد زنده خارجی IRNI (`BLOCKED_EXTERNAL_IRNI_CONTRACT`):** کلاینت IRNI از نظر Unit و Contract تست شده، اما تا زمان تامین `IRNI_API_BASE_URL`، سکرت `IRNI_API_TOKEN` و قرارداد رسمی سرویس زنده IRNI، تست یکپارچگی زنده (`Live External API Integration Tested`) مسدود است.
+
+
+### Firestore projection source integrity guard — 2026-11-23
+
+The former `firestore_d1_projection_sync` handler did not read Firestore. It read static `MULTI_CITY_CONFIGS`, synthesized deal prices with a fixed multiplier, wrote a constant AQI value and a fallback investment score, and stamped the current execution time into `firestore_version_iso`. Those values cannot be represented as Firestore-authoritative projections.
+
+The Worker tree contains no authenticated Firestore REST source adapter; `worker/db/reconciliation.ts` only compares source and destination arrays supplied by its caller. Therefore the projection job is now disabled, removed from the morning Cron envelope, and legacy queued envelopes are permanently dead-lettered without writing `neighborhood_projections`. Re-enable it only after a real authenticated source adapter, source document versioning, and field-level provenance are implemented and tested.
