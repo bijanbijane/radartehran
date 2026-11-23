@@ -13,7 +13,8 @@ import { createExecutionTimer } from '../utils/diagnostics';
 import { profileLayerReconciliation } from './map/mapRenderProfiler';
 import { clearOverlayGroupRef, type MetroLineEntry, type TrafficZoneEntry } from './map/advancedOverlayReconcilers';
 import { mountLeafletMapLifecycle, type MapViewportSettledEvent } from './map/leafletMapLifecycle';
-import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
+import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, getLensPalette, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
+import { buildMacroZoomClusters, renderMacroClustersOnLeaflet } from './mapZoomLodAndDeclutter';
 import { clearWorkRouteAndLandmarkLayers, createEmptyWorkRouteAndLandmarkRefs, reconcileWorkRouteAndLandmarks } from './map/workRouteAndLandmarkLayers';
 import { resolveCityFromCoordinates, type CityResolutionResult } from '../utils/geo/cityGeospatialResolver';
 
@@ -55,6 +56,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const comparisonArcSigRef = useRef<string | null>(null);
   const markersMapRef = useRef<Record<number, { circle: any; marker: any; stroke: string; fill: string; pillBg: string; hasSponsor: boolean }>>({});
   const reconcilerRefs = useRef(createEmptyReconcilerRefs());
+  const macroClusterMarkersRef = useRef<any[]>([]);
   const workLandmarkRefs = useRef(createEmptyWorkRouteAndLandmarkRefs());
   const programmaticMoveRef = useRef<boolean>(false);
   const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -138,6 +140,8 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       resolveHoodById: (hoodId) => neighborhoodsRef.current.find((h) => h.id === hoodId) || (selectedHoodRef.current?.id === hoodId ? selectedHoodRef.current : undefined),
       onTeardownLayers: (map) => {
         clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
+        macroClusterMarkersRef.current.forEach((marker) => { try { map?.removeLayer?.(marker); } catch { /* ignore stale cluster layer */ } });
+        macroClusterMarkersRef.current = [];
         clearWorkRouteAndLandmarkLayers(map, workLandmarkRefs.current);
         markersMapRef.current = {};
         if (heatmapLayerRef.current && map) { map.removeLayer?.(heatmapLayerRef.current); heatmapLayerRef.current = null; }
@@ -241,11 +245,42 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const timer = createExecutionTimer('Map', 'renderMarkersAndLayers');
     const map = mapInstanceRef.current, L = window.L;
     if (!map || !L) { timer('fallback'); return; }
-    if (!isMapIntersectingViewport) { clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current); markersMapRef.current = {}; timer('fallback'); return; }
+    if (!isMapIntersectingViewport) {
+      clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
+      macroClusterMarkersRef.current.forEach((marker) => { try { map.removeLayer?.(marker); } catch { /* ignore stale cluster layer */ } });
+      macroClusterMarkersRef.current = [];
+      markersMapRef.current = {};
+      timer('fallback');
+      return;
+    }
     const { cityScopedHoods, renderHoods, visibleHoods, lazyPolicy, currentZoom, currentSelectedId } = getSlice();
     const pres = presentationRef.current;
     clientGeoJsonLruCache.setMaxEntries(lazyPolicy.maxLruCacheSize);
     const d3PriceScale = buildD3PriceDensityScale(cityScopedHoods.length > 0 ? cityScopedHoods : deferredMapNeighborhoods, pres.mode, pres.rentAgeMultiplier);
+    const clearMacroClusters = () => {
+      macroClusterMarkersRef.current.forEach((marker) => { try { map.removeLayer?.(marker); } catch { /* ignore stale cluster layer */ } });
+      macroClusterMarkersRef.current = [];
+    };
+    if (currentZoom <= 9) {
+      clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
+      clearMacroClusters();
+      markersMapRef.current = {};
+      const clusterSource = (cityScopedHoods.length > 0 ? cityScopedHoods : renderHoods)
+        .filter((hood) => statusFilter === 'all' || hood.status === statusFilter);
+      const clusters = buildMacroZoomClusters(
+        clusterSource,
+        currentSelectedId,
+        currentZoom,
+        (hood) => getLensPalette(hood, pres.mapLens, d3PriceScale)
+      );
+      macroClusterMarkersRef.current = renderMacroClustersOnLeaflet({
+        L, map, clusters, mode: pres.mode, currentZoom,
+        onSelectNeighborhood: (hood) => onSelectNeighborhoodRef.current(hood),
+      });
+      timer('success');
+      return;
+    }
+    clearMacroClusters();
     reconcileNeighborhoodLayers({
       L, map, refs: reconcilerRefs.current, visibleHoods, allCityHoods: renderHoods, selectedHoodId: currentSelectedId,
       currentZoom, activeCity, mode: pres.mode, targetSqm: pres.targetSqm, rentAgeMultiplier: pres.rentAgeMultiplier,
@@ -265,7 +300,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
-    if (!map || !L || !isMapIntersectingViewport) return;
+    if (!map || !L || !isMapIntersectingViewport || mapZoomLevel <= 9) return;
     const cityScoped = deferredMapNeighborhoods.filter((h) => activeCityHoodIds.has(h.id));
     const d3PriceScale = buildD3PriceDensityScale(cityScoped.length > 0 ? cityScoped : deferredMapNeighborhoods, mode, rentAgeMultiplier);
     updateNeighborhoodMarkerPresentation({
@@ -277,7 +312,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
-    if (!map || !L || !isMapIntersectingViewport) return;
+    if (!map || !L || !isMapIntersectingViewport || mapZoomLevel <= 9) return;
     const { visibleHoods, lazyPolicy, currentZoom } = getSlice();
     reconcileGoldPinsLayer({
       L, map, refs: reconcilerRefs.current, visibleHoods, currentZoom, secondaryPinsMinZoom: lazyPolicy.secondaryPinsMinZoom,
@@ -287,6 +322,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
 
   useEffect(() => {
     const timer = createExecutionTimer('Map', 'updateSelectionPills');
+    if (mapZoomLevel <= 9) { timer('success'); return; }
     const { missingSelected } = updateSelectionPillsInPlace({ refs: reconcilerRefs.current, selectedHoodId, mapZoomLevel, isDarkMap });
     if (missingSelected && mapInstanceRef.current && window.L && isMapIntersectingViewport) {
       const pres = presentationRef.current;
