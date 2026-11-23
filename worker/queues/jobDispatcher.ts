@@ -242,38 +242,63 @@ async function handleR2OrphanMediaReconcile(
 
   // 1. Reconcile at most 25 stale D1 media records per invocation. Resolve legal holds
   // with one indexed LEFT JOIN rather than two D1 lookups per object.
-  const [staleObjects, cursorRow] = await Promise.all([
+  const [staleObjects, cursorRow, heldCountRow] = await Promise.all([
     userDb
       .prepare(
-        `SELECT m.object_id, m.storage_key, m.legal_hold, m.retention_until,
-                h.active AS active_legal_hold
+        `SELECT m.object_id, m.storage_key
          FROM media_objects AS m
-         LEFT JOIN legal_holds AS h ON h.resource_id = m.object_id AND h.active = 1
          WHERE m.lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
            AND m.updated_at_iso <= ?1
-         ORDER BY m.updated_at_iso ASC
+           AND COALESCE(m.legal_hold, 0) != 1
+           AND NOT EXISTS (
+             SELECT 1 FROM legal_holds AS h
+             WHERE h.resource_id = m.object_id AND h.active = 1
+           )
+           AND (
+             m.retention_until IS NULL
+             OR TRIM(m.retention_until) = ''
+             OR julianday(m.retention_until) <= julianday(?2)
+           )
+         ORDER BY m.updated_at_iso ASC, m.object_id ASC
          LIMIT 25`,
       )
-      .bind(cutoffIso)
-      .all<{
-        object_id: string;
-        storage_key: string;
-        legal_hold: number;
-        retention_until: string | null;
-        active_legal_hold: number | null;
-      }>(),
+      .bind(cutoffIso, nowIso)
+      .all<{ object_id: string; storage_key: string }>(),
     userDb
       .prepare("SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1")
       .bind('r2_orphan_media_reconcile:r2_cursor')
       .first<{ watermark_value: string }>(),
+    userDb
+      .prepare(
+        `SELECT COUNT(*) AS count FROM (
+           SELECT m.object_id
+           FROM media_objects AS m
+           WHERE m.lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
+             AND m.updated_at_iso <= ?1
+             AND (
+               COALESCE(m.legal_hold, 0) = 1
+               OR EXISTS (
+                 SELECT 1 FROM legal_holds AS h
+                 WHERE h.resource_id = m.object_id AND h.active = 1
+               )
+               OR (
+                 m.retention_until IS NOT NULL
+                 AND TRIM(m.retention_until) != ''
+                 AND (
+                   julianday(m.retention_until) IS NULL
+                   OR julianday(m.retention_until) > julianday(?2)
+                 )
+               )
+             )
+           LIMIT 25
+         )`,
+      )
+      .bind(cutoffIso, nowIso)
+      .first<{ count: number }>(),
   ]);
 
-  const eligibleStaleObjects = (staleObjects.results ?? []).filter((obj) => {
-    const hasRetentionLock = Boolean(obj.retention_until && Date.parse(obj.retention_until) > nowMs);
-    const held = Number(obj.active_legal_hold ?? 0) === 1 || Number(obj.legal_hold) === 1 || hasRetentionLock;
-    if (held) skippedLegalHoldCount += 1;
-    return !held;
-  });
+  skippedLegalHoldCount = Number(heldCountRow?.count ?? 0);
+  const eligibleStaleObjects = staleObjects.results ?? [];
 
   if (eligibleStaleObjects.length > 0) {
     // R2 deletion is idempotent. If the following D1 batch fails, the next delivery

@@ -614,14 +614,15 @@ async function runSuite(): Promise<void> {
     assert.equal(healthJson.runtime, 'cloudflare-workers');
     assert.equal(healthJson.registeredRoutesCount, 88);
 
-    const valuationRequest = () => new Request(
+    const valuationRequestFor = (body: Record<string, unknown>, clientIp = '198.51.100.10') => new Request(
       'https://radartehran-staging.bijanbijane-1.workers.dev/api/v1/valuation/verify-seal',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cityId: 'tehran', hoodId: 1, sqm: 90, buildYear: 1400 }),
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': clientIp },
+        body: JSON.stringify(body),
       },
     );
+    const valuationRequest = () => valuationRequestFor({ cityId: 'tehran', hoodId: 1, sqm: 90, buildYear: 1400 });
     const missingSealSecret = await workerEntrypoint.fetch(valuationRequest(), env, execCtx);
     assert.equal(missingSealSecret.status, 503);
     const missingSealBody = await missingSealSecret.json() as { code?: string };
@@ -635,6 +636,24 @@ async function runSuite(): Promise<void> {
     assert.equal(configuredSeal.status, 200);
     const configuredSealBody = await configuredSeal.json() as { seal?: { sealSignature?: string } };
     assert.equal(configuredSealBody.seal?.sealSignature?.length, 64);
+
+    const invalidValuationInputs: Record<string, unknown>[] = [
+      { cityId: 'unknown-city', hoodId: 1, sqm: 90, buildYear: 1400 },
+      { cityId: 'tehran', hoodId: 9999, sqm: 90, buildYear: 1400 },
+      { cityId: 'tehran', hoodId: 1, sqm: 10, buildYear: 1400 },
+      { cityId: 'tehran', hoodId: 1, sqm: 90, buildYear: 9999 },
+      { cityId: 'tehran', hoodId: 1, sqm: 90, buildYear: 1400, renovationStatus: 'not-a-status' },
+    ];
+    for (const [index, invalidInput] of invalidValuationInputs.entries()) {
+      const invalidResponse = await workerEntrypoint.fetch(
+        valuationRequestFor(invalidInput, `198.51.100.${20 + index}`),
+        { ...env, VALUATION_SEAL_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' },
+        execCtx,
+      );
+      assert.equal(invalidResponse.status, 400, `Invalid valuation input ${index} must be rejected.`);
+      const invalidBody = await invalidResponse.json() as { code?: string };
+      assert.equal(invalidBody.code, 'INVALID_VALUATION_INPUT');
+    }
 
     // Verify D1-backed chunked upload lifecycle on Worker router
     const keyPair = await crypto.subtle.generateKey(
