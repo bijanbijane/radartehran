@@ -29,7 +29,6 @@ const ALLOWED_RASTER_TILE_MIMES: ReadonlySet<string> = new Set([
   'image/webp',
 ]);
 const MIN_SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60; // OSM fallback only when upstream cache metadata is absent.
-const DEFAULT_CACHE_TTL_MS = MIN_SEVEN_DAYS_SECONDS * 1000;
 const tileMemoryCache = new Map<string, UpstreamTileResult>();
 const tileInflightRequests = new Map<string, Promise<UpstreamTileResult | null>>();
 
@@ -44,9 +43,9 @@ function hasValidRasterTileMagicBytes(buf: Buffer): boolean {
 }
 
 export const FREE_OSM_UPSTREAM_MIRRORS: readonly ((z: number, x: number, y: number) => string)[] = [
-  (z, x, y) => \`https://tile.openstreetmap.org/\${z}/\${x}/\${y}.png\`,
-  (z, x, y) => \`https://a.tile.openstreetmap.fr/hot/\${z}/\${x}/\${y}.png\`,
-  (z, x, y) => \`https://b.tile.openstreetmap.fr/osmfr/\${z}/\${x}/\${y}.png\`,
+  (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+  (z, x, y) => `https://a.tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`,
+  (z, x, y) => `https://b.tile.openstreetmap.fr/osmfr/${z}/${x}/${y}.png`,
 ];
 
 /**
@@ -69,7 +68,7 @@ export function resolveUpstreamTileCachePolicy(
   const etag = (headers.get('etag') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim() || undefined;
   const lastModified = (headers.get('last-modified') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim() || undefined;
   const directives = rawCacheControl.split(',').map((entry) => entry.trim().toLowerCase()).filter(Boolean);
-  const hasDirective = (name: string): boolean => directives.some((entry) => entry === name || entry.startsWith(\`${name}=\`));
+  const hasDirective = (name: string): boolean => directives.some((entry) => entry === name || entry.startsWith(`${name}=`));
 
   const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
   const referenceValuationIntlText = formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en');
@@ -105,8 +104,8 @@ export function resolveUpstreamTileCachePolicy(
   const safeTtlSeconds = Math.max(0, Number.isFinite(ttlSeconds) ? ttlSeconds : 0);
   const cacheable = safeTtlSeconds > 0;
   const cacheControl = rawCacheControl || (usedFallback
-    ? \`public, max-age=\${MIN_SEVEN_DAYS_SECONDS}, stale-while-revalidate=\${MIN_SEVEN_DAYS_SECONDS}\`
-    : \`public, max-age=\${safeTtlSeconds}\`);
+    ? `public, max-age=${MIN_SEVEN_DAYS_SECONDS}, stale-while-revalidate=${MIN_SEVEN_DAYS_SECONDS}`
+    : `public, max-age=${safeTtlSeconds}`);
 
   return {
     cacheControl,
@@ -150,6 +149,7 @@ export async function fetchTileFromMirror(
       buffer,
       contentType,
       cacheControl: cachePolicy.cacheControl,
+      cacheable: cachePolicy.cacheable,
       etag: cachePolicy.etag,
       lastModified: cachePolicy.lastModified,
       expiresAt: cachePolicy.expiresAt,
