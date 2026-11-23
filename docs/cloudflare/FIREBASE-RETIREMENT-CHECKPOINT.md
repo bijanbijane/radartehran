@@ -248,7 +248,7 @@ The observed live schema matches the script's intended partial-recovery case: sk
 
 ### Current GitHub coordination
 
-- PR #23 remains OPEN / DRAFT and has no CI run for its current HEAD `b4b29e7e1314781dde1502fac4de255b294d9ee5`; the previous known CI failure is still not superseded by a passing run.
+- PR #23 remains OPEN / DRAFT. The implementation HEAD audited above was `b4b29e7e1314781dde1502fac4de255b294d9ee5`; this checkpoint is now at `3a6f1af2c2e3baa5d13b30790bf09f12f8036a02`. Neither SHA has a passing CI run; the latest checkpoint HEAD has no associated workflow run or commit status.
 - PR #9 has advanced to `5724ce60bde741ba0869875e8a23e4502ac2990c`; it remains OPEN / DRAFT. PR #9 and PR #23 still share files, including `src/platform/auth/core/authClient.ts`, `package.json`, `package-lock.json`, and shared Worker/test files. Do not edit those overlapping files without rechecking the current PR diffs.
 - No Worker deployment, OAuth secret read/write, DNS change, Production migration, Firebase deletion, or IRNI resource change was performed.
 
