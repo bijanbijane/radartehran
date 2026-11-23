@@ -134,10 +134,11 @@ These are separate optimization layers: startup hydration, canonical sample pars
 ## 5. Implementation sequence
 
 ### Gate A — Dependency and CI reconciliation
-- Reconcile open PRs and their base/head ancestry before any overlapping edits.
-- PR #9 currently owns backend diagnostics, queue idempotency, and dependency/lockfile work; do not edit those paths while its CI is active.
-- PR #10 owns map clustering, viewport culling, and label LOD; its current base is `rt-map-validation-base`, not `main`. Resolve its `action_required` workflow state and base dependency before treating the code as validated.
-- PR #7 and PR #12 are stacked integration/auth work; preserve the dependency and fail-closed boundaries.
+- Reconcile open PRs and their exact base/head ancestry before any overlapping edits.
+- PR #9 is the shared backend integration base at head `5724ce60...`, but it still targets stale main SHA `e2940da...`; current main is `8d3e595d...` and GitHub reports PR #9 non-mergeable. Resolve this integration boundary before merging dependent work.
+- PRs #10, #15, #16, #19, #20, #22, #26, and #44 are stacked on PR #9 or descendants. Several were created from older snapshots of the PR #9 branch; do not merge them out of order. PR #44 is based on the latest observed PR #9 head.
+- PR #10 owns map clustering, viewport culling, and label LOD; PR #20 owns map provider/LOD changes; PR #16 owns Service Worker tile policy. Preserve these separate file scopes and do not duplicate map work.
+- PR #7 is merged; PR #12 is closed without merge. PRs #27 and #32 were closed as duplicates/superseded by #38 and #35.
 - Restore a green reproducible CI baseline before using build output as performance evidence.
 
 ### Gate B — Baseline instrumentation
