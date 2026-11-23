@@ -44,6 +44,8 @@
 | 2 | **Zero-Trust Auth & Admin Bypass** | `classifyServiceWorkerRequestStrategy` (`src/utils/pwaOfflineSupport.ts`) | Strictly returns `BypassPrivateOrMutation` for all non-GET mutations, requests with `Authorization` headers, `/api/admin/*`, `/api/system-health`, and `/api/object-storage/*`. | `VERIFIED` (`TEST_EXECUTED`) |
 | 3 | **Provider-Compliant Map Tile Delivery & Asset Caching** | `classifyServiceWorkerRequestStrategy` (`public/sw.js`, `src/utils/pwaOfflineSupport.ts`) | Map tiles (including `/api/osm-tile/*`) use network fetch plus the browser/provider HTTP cache directives; Service Worker Cache API never persists tiles or enables offline map use. Hashed Vite `/assets/*` bundles remain `StaleWhileRevalidate`; `/api/market-pulse` remains `NetworkFirst`. | `IN_PROGRESS` (`PROVIDER_POLICY_ALIGNMENT`) |
 
+
+**Separation of concerns:** this map-rendering PR covers viewport selection, layer reconciliation, clustering, and LOD. It does not claim that map tiles are available offline or that external tile caching is provider-compliant. The Service Worker tile-cache policy is owned by the separate PWA hardening change (PR #16); provider eligibility and credentials are handled by PR #20. Neither this assessment nor the map render optimizations authorize bulk tile prefetching, offline tile storage, or bypassing an upstream `Cache-Control` directive.
 ---
 
 ## 4. Campaign PROD-03 Conclusion
