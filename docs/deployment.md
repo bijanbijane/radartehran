@@ -24,6 +24,7 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `VALUATION_SEAL_SECRET` | Required for valuation seals | Empty | **Secret** | 32-byte hexadecimal HMAC-SHA256 key; set via deployment secret store / `wrangler secret put`, never runtime config. |
 | `INTERNAL_LIFECYCLE_RPC_SECRET` | Required for account erasure receipts and internal RPC | Empty | **Secret** | Separate 32-byte hexadecimal key; must not reuse `RESEARCH_HMAC_SECRET`; configure via deployment secret store / `wrangler secret put`. |
 | `DB_WRITES_PAUSED_UNTIL_UTC` | Optional | Empty | Public | UTC timestamp; while future, Worker blocks non-read HTTP methods except privacy/security requests and allowlisted read-only POST queries, delays queue batches, and skips scheduled jobs. Invalid non-empty values fail closed. |
+| Retired CASPER HUB variables | Forbidden | None | N/A | `CASPER_HUB_URL`, `CASPER_HUB_TOKEN`, and `VITE_CASPER_HUB_TOKEN` are rejected by environment drift validation (`REMOVED_CASPER_HUB_CONFIG_PRESENT`). |
 | `VITE_NESHAN_API_KEY` | Optional | OSM/CARTO Fallback | Public/Server | Optional Neshan raster tile API key used by `/api/neshan-tile/:z/:x/:y`. |
 | `OBJECT_STORAGE_PROVIDER` | Optional | `local` / `r2` | Public | Storage driver: `local` (`.object-storage-bucket/`), `r2` (Cloudflare R2 `auto` region), `arvan`, `liara`, or `s3`. |
 | `OBJECT_STORAGE_BUCKET` | Optional | `radartehran-staging-media` | Public | Bucket name for property photos and videos. |
@@ -37,8 +38,6 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `OBJECT_STORAGE_ALLOWED_HOSTS` | Optional | Default S3/R2/Arvan/Liara | Public | Comma-separated allowlist of HTTPS S3/R2 endpoints to prevent SSRF. |
 | `R2_ACCOUNT_ID` | Optional | Empty | Public | Cloudflare account ID used to construct `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. |
 | `R2_SIGNING_SECRET` | Optional | Empty | **Secret** | Worker HMAC-SHA256 secret for presigned R2 media URLs (`worker/storage/r2StorageAdapter.ts`). |
-| `CASPER_HUB_URL` | Optional | `https://casper-hub-api.bijanbijane-1.workers.dev` | Public | Server-side base URL for the shared CASPER HUB coordination service (`server/modules/casper-hub`). |
-| `CASPER_HUB_TOKEN` | Optional | Empty | **Secret** | Dedicated server-only Bearer credential for authenticating `CASPER-02` with CASPER HUB. Never exposed to the browser or persisted to disk. |
 | `BACKUP_ENCRYPTION_KEY` | Optional | Empty | **Secret** | Symmetric key for encrypted AES-256-GCM admin full-backup exports (`/api/admin/encrypted-backup/*`). |
 | `VITE_FIREBASE_APP_CHECK_SITE_KEY` | Optional | Empty | Public | Browser reCAPTCHA Enterprise site key enabling client-side Firebase App Check initialization (`src/utils/clientAppCheck.ts`). |
 
