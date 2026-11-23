@@ -25,7 +25,7 @@ const expected: ExpectedGeographicPublishManifest = {
     sourceMappings: 10341,
     identityEntries: 9828,
     anchors: 9828,
-    legacyAliases: 10,
+    legacyAliases: 11,
   },
   artifactChecksums: {
     snapshot: hashA,
