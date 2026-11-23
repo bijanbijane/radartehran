@@ -38,6 +38,14 @@ export function prepareFirestorePayload<T extends Record<string, unknown>>(data:
   }
 }
 
+const REPAIRABLE_FIRESTORE_COLLECTIONS = new Set(['neighborhoodOverrides', 'bargains', 'votes', 'sponsorRequests', 'buyerAlerts']);
+
+export function isFirestoreDocumentOperationAllowed(collectionName: string, docId: string): boolean {
+  if (typeof docId !== 'string' || !docId.trim() || docId.includes('/')) return false;
+  if (docId.startsWith('sim_')) return true;
+  return REPAIRABLE_FIRESTORE_COLLECTIONS.has(collectionName);
+}
+
 export function isValidIranianMobile(phone: unknown): boolean {
   if (typeof phone !== 'string' && typeof phone !== 'number') return false;
   const normalized = normalizeDigitsToEnglish(phone).replace(/[\s\-()]/g, '');
