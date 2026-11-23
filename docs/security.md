@@ -30,7 +30,8 @@
   - Deep market sync (`POST /api/sync-real-prices` & `GET /api/market-pulse?refresh=1`): Admin-only + `3` requests per `600,000 ms` (10-minute) window per IP.
   - Buyer leads (`POST /api/buyer-alerts`): `5` requests per `3,600,000 ms` (1-hour) window per IP.
 - **Secret & PII Protection**:
-  - `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_SECRET`, `OBJECT_STORAGE_ACCESS_KEY`, `OBJECT_STORAGE_SECRET_KEY`, and `CASPER_HUB_TOKEN` are never exposed in `/api/admin/runtime-config` responses, encrypted backup envelopes (`scrubSecretsFromBackupObject`), or `.runtime-config.json`.
+   - `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_SECRET`, `OBJECT_STORAGE_ACCESS_KEY`, and `OBJECT_STORAGE_SECRET_KEY` are never exposed in `/api/admin/runtime-config` responses, encrypted backup envelopes (`scrubSecretsFromBackupObject`), or `.runtime-config.json`.
+   - Retired `CASPER_HUB_TOKEN` and `CASPER_HUB_URL` remain in the legacy backup-redaction denylist; environment drift validation rejects their presence.
   - `/api/admin/casper-hub/*` routes enforce admin RBAC (`verifyAdminAuth`), rate limiting (`30 req/min` with `Retry-After: 60`), SHA-256 token-digest identity binding (`CASPER-03`), `redirect: "manual"`, SSRF host validation, and prompt-injection/token-redaction shields.
   - Client API helpers enforce Firebase Bearer ID Token identity (`Authorization: Bearer <idToken>`) with zero client-spoofable `x-verified-user-id` headers.
   - **Stages 5–26 Hardening**:
