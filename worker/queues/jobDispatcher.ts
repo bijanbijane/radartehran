@@ -319,8 +319,9 @@ async function handleR2OrphanMediaReconcile(
         legal_hold: number;
         retention_until: string | null;
       }>();
+    const legalHoldPlaceholders = objectIds.map((_, index) => `?${index + 1}`).join(', ');
     const legalHoldRows = await userDb
-      .prepare(`SELECT resource_id FROM legal_holds WHERE active = 1 AND resource_id IN (${objectPlaceholders})`)
+      .prepare(`SELECT resource_id FROM legal_holds WHERE active = 1 AND resource_id IN (${legalHoldPlaceholders})`)
       .bind(...objectIds)
       .all<{ resource_id: string }>();
 
