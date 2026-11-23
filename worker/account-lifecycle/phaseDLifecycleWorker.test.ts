@@ -7,8 +7,15 @@ import { validateLifecycleQueuePayload, buildLifecycleQueueIdempotencyKey } from
 import { validateQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
+import { calculateLifecycleRecoveryOffset } from './stageDLifecycleRuntime.ts';
 
 async function run(): Promise<void> {
+  assert.equal(calculateLifecycleRecoveryOffset(40, 50, 0), 0);
+  assert.equal(calculateLifecycleRecoveryOffset(120, 50, 0), 0);
+  assert.equal(calculateLifecycleRecoveryOffset(120, 50, 1), 50);
+  assert.equal(calculateLifecycleRecoveryOffset(120, 50, 2), 100);
+  assert.equal(calculateLifecycleRecoveryOffset(120, 50, 3), 30);
+  assert.equal(calculateLifecycleRecoveryOffset(0, 50, 99), 0);
   const ok = validateLifecycleQueuePayload({
     jobId: 'deljob_u1',
     targetUid: 'u1',
