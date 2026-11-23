@@ -42,7 +42,7 @@ function fakeD1(options: FakeOptions = {}): {
           }
           const rowsEntry = Object.entries(options.rowsBySqlIncludes ?? {}).find(([fragment]) => sql.includes(fragment));
           const rows = rowsEntry?.[1] ?? options.rows ?? [];
-          const boundedLimit = /\\bLIMIT\\s+\\?3\\b/i.test(sql) && typeof values[2] === 'number'
+          const boundedLimit = sql.includes('LIMIT ?3') && typeof values[2] === 'number'
             ? values[2] as number
             : undefined;
           return {
