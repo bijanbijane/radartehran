@@ -144,10 +144,19 @@ export async function upsertUserProfileInD1(
 
   await userDb
     .prepare(
-      `INSERT OR REPLACE INTO user_profiles (
+      `INSERT INTO user_profiles (
         uid, display_name, preferred_city, preferred_language, area_unit,
         intl_currency, role, account_status, created_at_iso, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+      ON CONFLICT(uid) DO UPDATE SET
+        display_name = excluded.display_name,
+        preferred_city = excluded.preferred_city,
+        preferred_language = excluded.preferred_language,
+        area_unit = excluded.area_unit,
+        intl_currency = excluded.intl_currency,
+        role = excluded.role,
+        account_status = excluded.account_status,
+        updated_at_iso = excluded.updated_at_iso`,
     )
     .bind(
       next.uid,

@@ -1,5 +1,5 @@
 /** @file src/features/account/services/accountActionService.ts — Explicit Server Contracts, Schema Guards & 3-Layer Account Deletion */
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import {
   cleanupAccountLocalStorageForUid,
   resolveEffectiveUid,
@@ -61,9 +61,9 @@ export function isValidServerAccountExportResponse(
 
 export function isValidServerAccountDeletionResponse(raw: unknown): raw is ServerAccountDeletionPayload {
   if (!isPlainRecord(raw)) return false;
-  if (raw.status !== 'ok' && raw.status !== 'partial') return false;
-  if (!Array.isArray(raw.steps) || typeof raw.requiresClientAuthDeletion !== 'boolean') return false;
-  if (!Array.isArray(raw.clearClientLocalStorageKeys)) return false;
+  if (typeof raw.ok !== 'boolean' || typeof raw.statusCode !== 'number') return false;
+  if (typeof raw.jobId !== 'string' || !raw.jobId.trim() || typeof raw.code !== 'string') return false;
+  if (!['INITIATED', 'BLOCKED_LEGAL_HOLD', 'PENDING_PERMIT_DRAIN', 'PENDING_RESEARCH_ERASURE', 'COMPLETED', 'FAILED'].includes(String(raw.status))) return false;
   return true;
 }
 
@@ -114,27 +114,21 @@ async function fetchJsonWithTimeout(
 }
 
 export async function requestAccountServerExport(params: {
-  getToken: () => Promise<string | null>;
+  currentUser: Pick<AuthUserSnapshot, 'uid'>;
   expectedUid: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
 }): Promise<AccountActionResult<ServerAccountExportEnvelope>> {
   const fetchFn = params.fetchFn ?? fetch;
   const timeoutMs = params.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-  let token: string | null = null;
-  try {
-    token = await params.getToken();
-  } catch {
-    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'دریافت توکن احراز هویت انجام نشد؛ لطفاً دوباره وارد شوید.' };
-  }
-  if (!token || !token.trim()) {
-    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن معتبر احراز هویت در دسترس نیست.' };
+  if (!params.currentUser?.uid || params.currentUser.uid !== params.expectedUid) {
+    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'نشست حساب کاربری معتبر نیست؛ دوباره وارد شوید.' };
   }
 
   try {
     const { res, json } = await fetchJsonWithTimeout(
       '/api/account/export-data',
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } },
+      { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } },
       fetchFn,
       timeoutMs,
     );
@@ -238,8 +232,8 @@ export function buildAccountExportDownloadPayload(params: {
         excludedSources: Array.isArray(params.serverData.excludedSources)
           ? params.serverData.excludedSources
           : params.includeLocalWorkspace
-            ? ['firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized']
-            : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens'],
+            ? ['authentication_credentials_and_session_secrets', 'server_audit_logs_anonymized']
+            : ['local_workspace_browser_storage', 'authentication_credentials_and_session_secrets'],
         data: cleanServer,
       },
       localWorkspaceData: localBundle ? { origin: 'local_workspace', data: localBundle.localWorkspaceData ?? localBundle } : null,
@@ -248,24 +242,20 @@ export function buildAccountExportDownloadPayload(params: {
 }
 
 export async function fetchServerAccountDataRequests(params: {
-  getToken: () => Promise<string | null>;
+  currentUser: Pick<AuthUserSnapshot, 'uid'>;
   expectedUid: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
 }): Promise<AccountActionResult<DataRequestRecord[]>> {
   const fetchFn = params.fetchFn ?? fetch;
   const timeoutMs = params.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
-  let token: string | null = null;
-  try {
-    token = await params.getToken();
-  } catch {
-    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن احراز هویت برای دریافت تاریخچه سرور در دسترس نیست.' };
+  if (!params.currentUser?.uid || params.currentUser.uid !== params.expectedUid) {
+    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'نشست حساب کاربری برای دریافت تاریخچه معتبر نیست.' };
   }
-  if (!token) return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن احراز هویت نامعتبر است.' };
   try {
     const { res, json } = await fetchJsonWithTimeout(
       '/api/account/data-requests',
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } },
+      { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } },
       fetchFn,
       timeoutMs,
     );
@@ -273,18 +263,18 @@ export async function fetchServerAccountDataRequests(params: {
       const mapped = mapHttpErrorCode(res.status);
       return { ok: false, code: mapped.code, httpStatus: res.status, retryable: mapped.retryable, messageFa: mapped.messageFa };
     }
-    const rawItems = isPlainRecord(json) && Array.isArray(json.items) ? json.items : [];
+    const rawItems = isPlainRecord(json) && Array.isArray(json.requests) ? json.requests : isPlainRecord(json) && Array.isArray(json.items) ? json.items : [];
     const items: DataRequestRecord[] = rawItems
-      .filter((r): r is Record<string, unknown> => isPlainRecord(r) && (!r.ownerUserId || r.ownerUserId === params.expectedUid))
+      .filter((r): r is Record<string, unknown> => isPlainRecord(r) && (!r.uid || r.uid === params.expectedUid) && (!r.ownerUserId || r.ownerUserId === params.expectedUid))
       .map((r, idx) => ({
-        id: typeof r.id === 'string' && r.id.trim() ? r.id : `srv-dreq-${idx}`,
+        id: typeof r.id === 'string' && r.id.trim() ? r.id : typeof r.requestId === 'string' ? r.requestId : `srv-dreq-${idx}`,
         ownerUserId: params.expectedUid,
-        kind: r.kind === 'delete' ? 'delete' : 'export',
+        kind: r.kind === 'delete' || r.requestType === 'ERASURE' ? 'delete' : 'export',
         status: r.status === 'completed' || r.status === 'failed' || r.status === 'ready' ? r.status : 'pending_verification',
         origin: 'server',
-        jobId: typeof r.jobId === 'string' ? r.jobId : undefined,
-        retentionNotesFa: typeof r.retentionNotesFa === 'string' ? r.retentionNotesFa : 'ثبت‌شده در تاریخچه معتبر سرور',
-        createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : new Date().toISOString(),
+        jobId: typeof r.jobId === 'string' ? r.jobId : typeof r.requestId === 'string' ? r.requestId : undefined,
+        retentionNotesFa: typeof r.retentionNotesFa === 'string' ? r.retentionNotesFa : undefined,
+        createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : typeof r.requestedAtIso === 'string' ? r.requestedAtIso : new Date().toISOString(),
       }));
     return { ok: true, data: items };
   } catch {
@@ -293,137 +283,94 @@ export async function fetchServerAccountDataRequests(params: {
 }
 
 export async function executeAccountDeletionFlow(params: {
-  currentUser: Pick<FirebaseUser, 'uid' | 'getIdToken'>;
-  deleteFirebaseUserFn?: (user: Pick<FirebaseUser, 'uid'>) => Promise<void>;
+  currentUser: Pick<AuthUserSnapshot, 'uid'>;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
-  ownedBargainIds?: string[];
+  idempotencyKey?: string;
 }): Promise<AccountActionResult<AccountDeleteLayerStatus>> {
   const fetchFn = params.fetchFn ?? fetch;
   const timeoutMs = params.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
   const targetUid = params.currentUser.uid;
-  let token: string | null = null;
-  try {
-    token = await params.currentUser.getIdToken();
-  } catch {
-    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'اعتبارسنجی نشست برای حذف حساب انجام نشد؛ لطفاً دوباره وارد شوید.' };
-  }
-  if (!token) return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن احراز هویت معتبر در دسترس نیست.' };
+  if (!targetUid) return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'نشست حساب کاربری معتبر نیست.' };
 
-  let serverPayload: ServerAccountDeletionPayload;
+  let payload: ServerAccountDeletionPayload;
+  let response: Response;
   try {
-    const { res, json } = await fetchJsonWithTimeout(
-      '/api/account/delete',
+    const result = await fetchJsonWithTimeout(
+      '/api/account/deletion-requests',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ confirmDelete: true, ...(params.ownedBargainIds?.length ? { ownedBargainIds: params.ownedBargainIds } : {}) }),
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': params.idempotencyKey || `del_${crypto.randomUUID()}`,
+        },
+        body: JSON.stringify({ reason: 'USER_REQUESTED_ERASURE' }),
       },
       fetchFn,
       timeoutMs,
     );
-    if (!res.ok) {
-      const mapped = mapHttpErrorCode(res.status);
-      return { ok: false, code: mapped.code, httpStatus: res.status, retryable: mapped.retryable, messageFa: mapped.messageFa };
+    response = result.res;
+    if (!isValidServerAccountDeletionResponse(result.json)) {
+      if (!response.ok) {
+        const mapped = mapHttpErrorCode(response.status);
+        return { ok: false, code: mapped.code, httpStatus: response.status, retryable: mapped.retryable, messageFa: mapped.messageFa };
+      }
+      return { ok: false, code: 'INVALID_RESPONSE', retryable: false, messageFa: 'پاسخ سرویس حذف حساب با قرارداد Cloudflare D1 مطابقت ندارد.' };
     }
-    if (!isValidServerAccountDeletionResponse(json)) {
-      return { ok: false, code: 'INVALID_RESPONSE', retryable: false, messageFa: 'پاسخ سرور برای وضعیت حذف حساب قابل راستی‌آزمایی نیست.' };
-    }
-    serverPayload = json;
+    payload = result.json;
   } catch (err: unknown) {
     const isAbort = Boolean(err && typeof err === 'object' && (err as { name?: string }).name === 'AbortError');
     return {
       ok: false,
       code: isAbort ? 'TIMEOUT' : 'NETWORK_ERROR',
       retryable: true,
-      messageFa: isAbort ? 'مهلت پاسخ سرور برای حذف حساب به پایان رسید.' : 'ارتباط شبکه با سرور برای حذف حساب برقرار نشد.',
+      messageFa: isAbort ? 'مهلت پاسخ سرویس حذف حساب به پایان رسید.' : 'ارتباط با سرویس حذف حساب برقرار نشد.',
     };
   }
 
-  // Stage 19 P0 Guard: Verify ALL dependent server steps and media cleanup succeeded before local storage cleanup or Firebase Auth removal.
-  const allDependentServerStepsCompleted =
-    serverPayload.status === 'ok' &&
-    (serverPayload.failedSteps?.length ?? 0) === 0 &&
-    (serverPayload.failedMediaCount ?? 0) === 0 &&
-    serverPayload.steps.filter((s) => s.category !== 'firebase_auth_identity').every((s) => s.completed === true);
+  const completed = payload.status === 'COMPLETED';
+  const authDisabled = payload.status === 'PENDING_RESEARCH_ERASURE' || completed;
+  const lifecycleState: AccountDeletionLifecycleState =
+    completed ? 'COMPLETED'
+      : payload.status === 'BLOCKED_LEGAL_HOLD' ? 'BLOCKED_MANUAL_REVIEW'
+        : payload.status === 'PENDING_PERMIT_DRAIN' ? 'INITIATED_WRITE_BLOCKED'
+          : payload.status === 'PENDING_RESEARCH_ERASURE' ? 'PURGING_DEPENDENT_RECORDS'
+            : 'PARTIAL_FAILURE_RETRYABLE';
 
-  if (!allDependentServerStepsCompleted) {
-    const partialState: AccountDeletionLifecycleState = serverPayload.lifecycleState || 'PARTIAL_FAILURE_RETRYABLE';
-    const partialLayer: AccountDeleteLayerStatus = {
-      jobId: serverPayload.jobId,
-      lifecycleState: partialState,
-      lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[partialState],
-      serverDeletion: 'partial',
-      localCleanup: 'skipped_server_incomplete',
-      authDeletion: 'blocked_by_incomplete_server_steps',
-      overallStatus: 'partial',
-      requestStatus: 'pending_verification',
-      removedLocalKeysCount: 0,
-      messageFa: 'عملیات حذف در سرور به‌صورت جزئی متوقف شد (PARTIAL_FAILURE_RETRYABLE)؛ برای جلوگیری از ازدست‌رفتن امکان پیگیری، اطلاعات محلی و هویت Firebase حذف نشدند.',
-      requiresSignOut: false,
-    };
-    return {
-      ok: false,
-      code: 'AUTH_DELETION_PRECONDITION_FAILED',
-      retryable: true,
-      messageFa: partialLayer.messageFa,
-      data: partialLayer,
-    };
-  }
-
-  let authDeletionState: AccountDeleteLayerStatus['authDeletion'] = serverPayload.requiresClientAuthDeletion ? 'completed' : 'not_required';
-  let errorCode: AccountActionErrorCode | undefined;
-  let noticeFa = 'حذف داده‌های سرور، پاکسازی فضای کاری این حساب در مرورگر و حذف حساب احراز هویت کامل شد.';
-
-  if (serverPayload.requiresClientAuthDeletion) {
-    if (!params.deleteFirebaseUserFn) {
-      authDeletionState = 'failed';
-      errorCode = 'AUTH_DELETE_FAILED';
-      noticeFa = 'مراحل وابسته سرور تکمیل شد، اما سرویس حذف حساب احراز هویت در مرورگر در دسترس نیست.';
-    } else {
-      try {
-        await params.deleteFirebaseUserFn(params.currentUser);
-      } catch (authErr: unknown) {
-        const errCode = (authErr as { code?: string })?.code || '';
-        if (errCode === 'auth/requires-recent-login') {
-          authDeletionState = 'requires_reauth';
-          errorCode = 'RECENT_LOGIN_REQUIRED';
-          noticeFa = 'مراحل وابسته سرور تکمیل شد، اما برای حذف نهایی هویت Firebase به‌دلیل قدیمی‌بودن نشست، یک‌بار خارج شده و دوباره وارد شوید و عملیات حذف را تکمیل کنید.';
-        } else {
-          authDeletionState = 'failed';
-          errorCode = 'AUTH_DELETE_FAILED';
-          noticeFa = 'مراحل وابسته سرور تکمیل شد، اما حذف نهایی حساب احراز هویت انجام نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.';
-        }
-      }
-    }
-  }
-
-  const allCompleted = authDeletionState === 'completed' || authDeletionState === 'not_required';
-  const cleanupResult = allCompleted
-    ? cleanupAccountLocalStorageForUid(targetUid, serverPayload.clearClientLocalStorageKeys)
+  const cleanupResult = authDisabled
+    ? cleanupAccountLocalStorageForUid(targetUid)
     : { removedKeys: [] as string[] };
-  const finalLifecycleState: AccountDeletionLifecycleState = allCompleted ? 'COMPLETED' : 'DELETING_AUTH_IDENTITY';
   const layerStatus: AccountDeleteLayerStatus = {
-    jobId: serverPayload.jobId,
-    lifecycleState: finalLifecycleState,
-    lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[finalLifecycleState],
-    serverDeletion: 'completed',
-    localCleanup: allCompleted ? 'completed' : 'skipped_server_incomplete',
-    authDeletion: authDeletionState,
-    overallStatus: allCompleted ? 'completed' : 'partial',
-    requestStatus: allCompleted ? 'completed' : 'pending_verification',
+    jobId: payload.jobId,
+    lifecycleState,
+    lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[lifecycleState],
+    serverDeletion: completed ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'partial',
+    localCleanup: authDisabled ? 'completed' : 'skipped_server_incomplete',
+    authDeletion: authDisabled ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'not_required',
+    overallStatus: completed ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'partial',
+    requestStatus: completed ? 'completed' : 'pending_verification',
     removedLocalKeysCount: cleanupResult.removedKeys.length,
-    messageFa: noticeFa,
-    requiresSignOut: allCompleted,
+    messageFa: completed
+      ? 'حذف حساب در Cloudflare D1 تکمیل شد؛ نشست‌ها باطل و داده‌های وابسته و پژوهشی تعیین تکلیف شدند.'
+      : payload.status === 'BLOCKED_LEGAL_HOLD'
+        ? 'حذف حساب به‌دلیل نگهداری قانونی مسدود شد و نیازمند بررسی مجاز است.'
+        : payload.status === 'PENDING_PERMIT_DRAIN'
+          ? 'درخواست حذف ثبت شد؛ عملیات تا پایان تراکنش‌های فعال متوقف مانده است.'
+          : payload.status === 'PENDING_RESEARCH_ERASURE'
+            ? 'حساب غیرفعال و نشست‌ها باطل شدند؛ پاکسازی داده‌های پژوهشی در صف ادامه دارد.'
+            : 'عملیات حذف حساب کامل نشد؛ وضعیت و کد خطا در سابقه سرور ثبت شده است.',
+    requiresSignOut: authDisabled,
   };
 
-  if (allCompleted) return { ok: true, data: layerStatus };
+  if (completed) return { ok: true, data: layerStatus };
   return {
     ok: false,
-    code: errorCode || 'SERVER_ERROR',
-    retryable: true,
-    messageFa: noticeFa,
+    code: payload.status === 'BLOCKED_LEGAL_HOLD' ? 'FORBIDDEN' : 'SERVER_ERROR',
+    httpStatus: response.status,
+    retryable: payload.status !== 'BLOCKED_LEGAL_HOLD' && payload.status !== 'FAILED',
+    messageFa: layerStatus.messageFa,
     data: layerStatus,
   };
 }
-

@@ -36,7 +36,7 @@ function makeD1() {
           statements.push(record);
           if (sql.includes('SELECT s.session_id')) return sessionRow as T;
           if (sql.includes('SELECT counter, window_reset_ms')) return null;
-          if (sql.includes('SELECT vote_id FROM neighborhood_votes')) return { vote_id: 'vote-canonical' } as T;
+          if (sql.includes('INSERT INTO neighborhood_votes') && sql.includes('RETURNING vote_id')) return { vote_id: 'vote-canonical' } as T;
           return null;
         },
         async run() {

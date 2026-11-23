@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import {
   AuthLifecycleState,
   AuthUserSnapshot,
@@ -10,7 +10,6 @@ import {
   resolveRoleAndPermissions,
   GUEST_BASELINE_PERMISSIONS,
 } from '../../platform/auth';
-import { subscribeFirebaseAuthSession } from './authProviderFirebaseSession';
 
 export interface AuthContextValue {
   state: AuthLifecycleState;
@@ -42,36 +41,24 @@ export const AuthProvider: React.FC<{
   const [state, setState] = useState<AuthLifecycleState>(initialUser ? 'READY' : 'INITIALIZING');
   const [user, setUser] = useState<AuthUserSnapshot | null>(initialUser);
   const [workspaceOverride, setWorkspaceOverride] = useState<string | undefined>(undefined);
-  const sessionGenerationRef = useRef(0);
 
   useEffect(() => {
     setState(client.getState());
     setUser(client.getUser());
-    if (!initialUser) {
-      client.transition('INITIALIZING');
-    } else {
-      client.setUser(initialUser);
-      client.transition('READY');
-    }
-
-    const unsubClient = client.subscribe((lifecycle, clientUser) => {
+    const unsubscribe = client.subscribe((lifecycle, clientUser) => {
       setState(lifecycle);
       setUser(clientUser);
     });
 
-    const unsubFirebase = subscribeFirebaseAuthSession({
-      client,
-      getGeneration: () => sessionGenerationRef.current,
-      bumpGeneration: () => {
-        sessionGenerationRef.current += 1;
-        return sessionGenerationRef.current;
-      },
-    });
+    if (initialUser) {
+      client.setUser(initialUser);
+      client.transition('READY');
+    } else {
+      client.transition('INITIALIZING');
+      void client.refreshSession().catch(() => undefined);
+    }
 
-    return () => {
-      unsubClient();
-      unsubFirebase();
-    };
+    return unsubscribe;
   }, [client, initialUser]);
 
   const access = useMemo(() => {
@@ -108,10 +95,12 @@ export const AuthProvider: React.FC<{
   }, []);
 
   const logout = useCallback(() => {
-    sessionGenerationRef.current += 1;
     setUser(null);
     setWorkspaceOverride(undefined);
-    client.logout('provider_logout');
+    void client.logout('provider_logout').catch(() => {
+      // Keep the UI signed out even when the revocation endpoint is temporarily unreachable.
+      client.setUser(null);
+    });
   }, [client]);
 
   const contextValue = useMemo<AuthContextValue>(

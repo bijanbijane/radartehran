@@ -1,4 +1,5 @@
 import { authenticateWorkerSession, sha256Hex } from '../auth/sessionAuth';
+import { normalizePhone } from './authRoutes';
 import { persistIdempotentMutation } from '../marketplace/d1MarketplaceMutations';
 import { encryptMarketPhone, hashMarketPhone } from '../marketplace/marketPiiCrypto';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
@@ -95,15 +96,6 @@ async function enforceMutationLimit(
     code: 'MARKET_MUTATION_RATE_LIMITED',
     retryAfterSeconds: result.retryAfterSeconds,
   });
-}
-
-function normalizeIranianPhone(value: unknown): string {
-  let digits = String(value || '').replace(/\\D/g, '');
-  if (digits.startsWith('0098')) digits = digits.slice(2);
-  if (digits.startsWith('98') && digits.length === 12) return `+${digits}`;
-  if (digits.startsWith('0') && digits.length === 11) digits = `98${digits.slice(1)}`;
-  if (digits.length === 10 && digits.startsWith('9')) digits = `98${digits}`;
-  return digits.startsWith('98') && digits.length === 12 ? `+${digits}` : '';
 }
 
 function readIdempotencyKey(ctx: WorkerRequestContext): string {
@@ -269,7 +261,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
     const hoodName = safeText(body.body.hoodName, 120);
     const agencyName = safeText(body.body.agencyName, 120);
-    const phone = normalizeIranianPhone(body.body.phone);
+    const phone = normalizePhone(body.body.phone);
     const specialty = safeText(body.body.specialty, 120);
     const experienceYears = boundedNumber(body.body.experienceYears, 0, 80);
     const monthlyTariff = boundedNumber(body.body.monthlyTariffMillion, 0, 100000);
@@ -339,7 +331,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
     const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
     const fullName = safeText(body.body.fullName, 100);
-    const phone = normalizeIranianPhone(body.body.phone);
+    const phone = normalizePhone(body.body.phone);
     const dealType = body.body.dealType === 'خرید' ? 'خرید' : body.body.dealType === 'اجاره' ? 'اجاره' : null;
     const maxBudgetMillion = boundedNumber(body.body.maxBudgetMillion, 0.01, 100000000);
     const consentVersion = safeText(body.body.consentVersion, 80);
@@ -434,12 +426,10 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     ).bind(voteId, auth.uid, cityId, hoodId, air, power, internet, metro, security, flat, comment, displayName, now)
       .first<{ vote_id: string }>();
     if (!savedVote?.vote_id) return jsonWorkerResponse(ctx, 500, { status: 'error', code: 'VOTE_PERSISTENCE_FAILED' });
-    const persistedVote = await auth.db!.prepare(
-      'SELECT vote_id FROM neighborhood_votes WHERE owner_uid = ?1 AND city_id = ?2 AND hood_id = ?3 LIMIT 1',
-    ).bind(auth.uid, cityId, hoodId).first<{ vote_id: string }>();
     return jsonWorkerResponse(ctx, 201, {
       status: 'ok', durable: true,
-      vote: { id: String(persistedVote?.vote_id || voteId), cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
+      // RETURNING provides the canonical id, including when ON CONFLICT updates an existing vote.
+      vote: { id: String(savedVote.vote_id), cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
     }, { cacheControl: 'private, no-store' });
   }
 
@@ -457,7 +447,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const workHubId = safeText(body.body.workHubId || 'none', 40);
     const rawFavorites = Array.isArray(body.body.favoriteHoodIds) ? body.body.favoriteHoodIds : [];
     const favorites = Array.from(new Set(rawFavorites.map((value) => Number(value))
-      .filter((value) => Number.isInteger(value) && value >= 1 && value <= 999))).slice(0, 25);
+      .filter((value) => Number.isInteger(value) && value >= 1 && value <= 9999))).slice(0, 25);
     if (!SUPPORTED_CITY_IDS.has(cityId) || !mode || deposit === null || monthlyRent === null
       || buyTotalBudget === null || targetSqm === null || rawFavorites.length > 100) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PREFERENCES_PAYLOAD' });
@@ -478,7 +468,15 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         'INSERT OR IGNORE INTO user_favorites (uid, city_id, hood_id, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
       ).bind(auth.uid, cityId, hoodId, now)),
     ];
-    await auth.db!.batch(statements);
+    try {
+      const results = await auth.db!.batch(statements);
+      if (!Array.isArray(results) || results.length !== statements.length || results.some((result) => result.success !== true)) {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'PREFERENCES_PERSISTENCE_FAILED' });
+      }
+    } catch {
+      // The caller may safely retry this idempotent preference replacement.
+      return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'PREFERENCES_PERSISTENCE_FAILED' });
+    }
     return jsonWorkerResponse(ctx, 200, { status: 'ok', durable: true, updatedAtIso: now }, { cacheControl: 'private, no-store' });
   }
 
