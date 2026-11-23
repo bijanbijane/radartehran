@@ -102,9 +102,14 @@ At baseline, `public/sw.js` treated requests to `tile.openstreetmap.org`, `basem
 
 **Required action:** narrow documentation and tests to the actual scope. If cross-isolate stampede control is later required, design a bounded, failure-safe coordination mechanism and account for its latency/cost; do not pretend a KV lease is strongly consistent.
 
-### 4.3 Nationwide startup hydration
+### 4.3 Initial hydration and repeated listing parsing
 
-`RadarWorkspaceShell.tsx` constructs all multi-city expansion seeds and passes them into initial storage hydration. This is a concrete candidate for profiling and active-city-first loading, but must be changed only with regression coverage for city changes, selected neighborhoods, URL restoration, persisted preferences, and search.
+- PR #19 memoizes the validated nationwide aggregate; PR #22 scopes initial storage hydration and market-pulse seed matching to the URL-selected city, then hydrates another city's expansion records on its first visit.
+- PR #22 does **not** yet split static city data modules into deferred JavaScript chunks. The initial bundle still imports the multi-city data graph; measure bundle composition before a separate dynamic-import migration.
+- PR #32 adds a WeakMap cache for parsed live listing samples, keyed by immutable bargains-array identity and separated by sale/rent. It returns defensive array copies and relies on immutable array replacement.
+- PR #27 memoizes the selected-neighborhood deal summary so unrelated component rerenders do not repeat listing parsing and aggregation.
+
+These are separate optimization layers: startup hydration, canonical sample parsing, and selected-view aggregation. Keep their regression tests and performance evidence distinct; do not infer a measured speedup from code shape alone.
 
 ## 5. Implementation sequence
 
@@ -118,7 +123,7 @@ At baseline, `public/sw.js` treated requests to `tile.openstreetmap.org`, `basem
 ### Gate B — Baseline instrumentation
 - Build repeatable Lighthouse/WebPageTest or equivalent lab profiles and route-level browser measurements.
 - Verify consented RUM wiring, data minimization, ingestion, sampling, and retention.
-- Add map/API/Worker metrics and P99 where technically available.
+- Add map/API/Worker metrics and P99 where technically available; PR #26 adds P99 as a tail diagnostic and corrects long-task availability to reflect observed long tasks rather than observer presence.
 - Record baseline results before optimizing.
 
 ### Gate C — Frontend delivery
@@ -168,4 +173,4 @@ A tranche is done only when:
 
 ## 7. Current status
 
-This commit records the engineering standard and baseline audit. Runtime changes are proposed separately in PRs #16, #17, #19, #20, and #22; the Firebase boundary and staging Cron correction are consolidated into PR #9; stacked-PR CI support is in PR #21. The only live Cloudflare mutation so far is removal of the broken staging-only Cron Trigger; no production Worker binding, D1 resource, DNS zone, secret, or deployment was changed. Implementation remains open under issue #13.
+This commit records the engineering standard and baseline audit. Runtime/performance work is tracked in PRs #16, #17, #19, #20, #22, #26, #27, and #32; the Firebase boundary and staging Cron correction are consolidated into PR #9; stacked-PR CI support is in PR #21. These remain separate open PRs and are not considered complete until their required CI and browser tests pass. The Playwright trace on PR #9 currently exposes a browser bootstrap crash (`Service firestore is not available` from `src/firebase.ts`), so E2E results are blocked pending a coordinated Firebase/Vite diagnosis. The only live Cloudflare mutation so far is removal of the broken staging-only Cron Trigger; no production Worker binding, D1 resource, DNS zone, secret, or deployment was changed. Implementation remains open under issue #13.
