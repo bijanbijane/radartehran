@@ -165,26 +165,35 @@ async function hmacSha256Hex(secret: string, value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function twilioRequest(ctx: WorkerRequestContext, path: string, fields: Record<string, string>): Promise<Record<string, unknown>> {
-  const sid = String(ctx.env.TWILIO_ACCOUNT_SID || '').trim();
-  const token = String(ctx.env.TWILIO_AUTH_TOKEN || '').trim();
-  if (!sid || !token || !ctx.env.TWILIO_VERIFY_SERVICE_SID) throw new Error('SMS_PROVIDER_NOT_CONFIGURED');
-  const body = new URLSearchParams(fields);
-  const response = await fetch(`https://verify.twilio.com/v2/Services/${encodeURIComponent(ctx.env.TWILIO_VERIFY_SERVICE_SID)}${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json',
-    },
-    body,
+async function sendOtpSms(ctx: WorkerRequestContext, phone: string, code: string): Promise<string | null> {
+  const apiKey = String(ctx.env.KAVENEGAR_API_KEY || '').trim();
+  const template = String(ctx.env.KAVENEGAR_VERIFY_TEMPLATE || '').trim();
+  if (!apiKey || !template) throw new Error('SMS_PROVIDER_NOT_CONFIGURED');
+  const receptor = phone.startsWith('+98') ? `0${phone.slice(3)}` : phone;
+  const url = new URL(`https://api.kavenegar.com/v1/${encodeURIComponent(apiKey)}/verify/lookup.json`);
+  url.searchParams.set('receptor', receptor);
+  url.searchParams.set('token', code);
+  url.searchParams.set('template', template);
+  url.searchParams.set('type', 'sms');
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });
-  const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
-  if (!response.ok) throw new Error(response.status === 429 ? 'SMS_PROVIDER_RATE_LIMITED' : 'SMS_PROVIDER_REQUEST_FAILED');
-  return payload;
+  const payload = await response.json().catch(() => ({})) as {
+    return?: { status?: number; message?: string };
+    entries?: { messageid?: number | string; status?: number; statustext?: string };
+  };
+  if (!response.ok || Number(payload.return?.status) !== 200) throw new Error('SMS_GATEWAY_REJECTED');
+  return payload.entries?.messageid === undefined ? null : String(payload.entries.messageid);
 }
 
+function constantTimeStringMatch(left: string, right: string): boolean {
+  if (left.length !== right.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < left.length; i++) mismatch |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  return mismatch === 0;
+}
 function errorRedirect(ctx: WorkerRequestContext, code: string): Response {
   const base = String(ctx.env.APP_URL || 'https://radartehran.ir');
   const url = new URL('/', base);
@@ -290,21 +299,23 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const now = Date.now();
     await db.prepare('DELETE FROM auth_phone_challenges WHERE created_at_ms < ?1').bind(now - 24 * 60 * 60 * 1000).run();
     const challengeId = crypto.randomUUID();
+    const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, '0');
+    const codeHash = await hmacSha256Hex(piiHashSecret, `${challengeId}:${otp}`);
     const reservation = await db.prepare(
       `INSERT INTO auth_phone_challenges (
         challenge_id, phone_e164, phone_hash, provider_reference, status, attempts,
-        expires_at_ms, created_at_ms, ip_hash
+        expires_at_ms, created_at_ms, ip_hash, code_hash
       )
-      SELECT ?1, ?2, ?3, NULL, 'PENDING', 0, ?6, ?7, ?5
+      SELECT ?1, ?2, ?3, NULL, 'PENDING', 0, ?6, ?7, ?5, ?8
       WHERE (SELECT COUNT(*) FROM auth_phone_challenges WHERE phone_hash = ?3 AND created_at_ms > ?4) < 3
         AND (SELECT COUNT(*) FROM auth_phone_challenges WHERE ip_hash = ?5 AND created_at_ms > ?4) < 5`,
-    ).bind(challengeId, phone, phoneHash, now - 10 * 60 * 1000, ipHash, now + PHONE_CHALLENGE_TTL_MS, now).run();
+    ).bind(challengeId, phone, phoneHash, now - 10 * 60 * 1000, ipHash, now + PHONE_CHALLENGE_TTL_MS, now, codeHash).run();
     if (Number(reservation.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'PHONE_OTP_RATE_LIMITED' });
 
     try {
-      const sent = await twilioRequest(ctx, '/Verifications', { To: phone, Channel: 'sms' });
+      const providerReference = await sendOtpSms(ctx, phone, otp);
       await db.prepare('UPDATE auth_phone_challenges SET provider_reference = ?1 WHERE challenge_id = ?2 AND status = \'PENDING\'')
-        .bind(typeof sent.sid === 'string' ? sent.sid : null, challengeId).run();
+        .bind(providerReference, challengeId).run();
       return jsonWorkerResponse(ctx, 202, { status: 'ok', challengeId, expiresInSeconds: PHONE_CHALLENGE_TTL_MS / 1000 });
     } catch (error) {
       await db.prepare('UPDATE auth_phone_challenges SET status = \'EXPIRED\' WHERE challenge_id = ?1').bind(challengeId).run();
@@ -321,8 +332,8 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const code = typeof parsed.body.code === 'string' ? parsed.body.code.trim() : '';
     if (!/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{4,10}$/.test(code)) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_OTP_INPUT' });
     const challenge = await db.prepare(
-      'SELECT phone_e164, phone_hash, status, attempts, expires_at_ms FROM auth_phone_challenges WHERE challenge_id = ?1 LIMIT 1',
-    ).bind(challengeId).first<{ phone_e164: string; phone_hash: string; status: string; attempts: number; expires_at_ms: number }>();
+      'SELECT phone_e164, phone_hash, code_hash, status, attempts, expires_at_ms FROM auth_phone_challenges WHERE challenge_id = ?1 LIMIT 1',
+    ).bind(challengeId).first<{ phone_e164: string; phone_hash: string; code_hash: string | null; status: string; attempts: number; expires_at_ms: number }>();
     if (!challenge || challenge.status !== 'PENDING' || Number(challenge.expires_at_ms) <= Date.now()) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'OTP_CHALLENGE_EXPIRED' });
     }
@@ -334,8 +345,8 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (Number(claim.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_CHALLENGE_ALREADY_USED_OR_LOCKED' });
 
     try {
-      const checked = await twilioRequest(ctx, '/VerificationChecks', { To: challenge.phone_e164, Code: code });
-      if (checked.status !== 'approved') {
+      const expectedCodeHash = await hmacSha256Hex(String(env.AUTH_PII_HMAC_SECRET || ''), `${challengeId}:${code}`);
+      if (!challenge.code_hash || !constantTimeStringMatch(challenge.code_hash, expectedCodeHash)) {
         if (Number(challenge.attempts) + 1 < 5) {
           await db.prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'').bind(challengeId).run();
         }
