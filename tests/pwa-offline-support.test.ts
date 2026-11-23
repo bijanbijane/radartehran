@@ -77,7 +77,7 @@ assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://tehranradar.ir/api/osm-tile/osm/13/5264/3226.png',
   }),
-  'StaleWhileRevalidateMapTile'
+  'NetworkOnlyMapTile'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
@@ -89,30 +89,30 @@ assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://tile.openstreetmap.org/13/5264/3226.png',
   }),
-  'NetworkOnlyExternalMapTile',
+  'NetworkOnlyMapTile',
   'Direct OpenStreetMap tiles must not be stored by the Radar Service Worker'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://a.basemaps.cartocdn.com/light_all/13/5264/3226.png',
   }),
-  'NetworkOnlyExternalMapTile',
+  'NetworkOnlyMapTile',
   'Direct CARTO tiles must remain network-only unless a provider-specific cache policy is implemented'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/13/1/2/3',
   }),
-  'NetworkOnlyExternalMapTile',
+  'NetworkOnlyMapTile',
   'Direct ArcGIS tiles must remain network-only unless a provider-specific cache policy is implemented'
 );
 assert.ok(
-  swSource.includes('isExternalMapTileRequest(url)'),
-  'Service Worker must bypass its tile cache for external tile providers'
+  swSource.includes('event.respondWith(fetch(request))') && swSource.includes('Do not persist OSM-derived tiles in Cache API'),
+  'Map tiles must use the browser HTTP cache rather than persistent Service Worker offline storage'
 );
 assert.ok(
-  swSource.includes('if (isExternalMapTileRequest(cachedUrl))'),
-  'Service Worker activation must purge previously cached external tile responses'
+  swSource.includes('if (isMapTileRequest(cachedUrl))'),
+  'Service Worker activation must purge previously cached map tile entries'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
