@@ -84,6 +84,8 @@ async function runSuite(): Promise<void> {
   await check('Neshan tile options use 256px standard tiles with subdomains', () => {
     assert.equal(NESHAN_TILE_OPTIONS.tileSize, 256);
     assert.equal(NESHAN_TILE_OPTIONS.detectRetina, false);
+    assert.equal(NESHAN_TILE_OPTIONS.keepBuffer, 2, 'Neshan should retain only the default two-tile viewport buffer');
+    assert.equal(OSM_STANDARD_TILE_OPTIONS.keepBuffer, 2, 'OSM fallback should use the same bounded tile buffer');
     assert.equal(NESHAN_TILE_OPTIONS.maxZoom, 19);
     assert.deepEqual([...NESHAN_TILE_OPTIONS.subdomains], ['1', '2', '3', '4']);
   });
