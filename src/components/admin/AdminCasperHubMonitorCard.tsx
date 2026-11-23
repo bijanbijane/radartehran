@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle2, Cpu, Globe, KeyRound, RefreshCw, Send, ShieldCheck, Zap } from 'lucide-react';
 
 import { toPersianNum } from '../../data/neighborhoods';
+import { getAuthClient } from '../../platform/auth';
 export interface CasperHubEpistemicTelemetry { readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean; readonly sequenceGapCount: number; readonly syncCursorLag: number; readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number; readonly criticalNotesCount: number; readonly activeBlockersCount: number; }
 export interface CasperHubWhoAmIData { readonly authenticated: boolean; readonly agent_id?: string; readonly database?: string; readonly permissions?: string[]; readonly active_roadmaps_count?: number; readonly open_tasks_count?: number; }
 export interface CasperHubNoteRecord { readonly id?: string; readonly author_agent?: string; readonly note_type?: string; readonly importance?: number | string; readonly title?: string; readonly summary?: string; }
@@ -69,8 +70,12 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
   useEffect(() => {
     isMountedRef.current = true;
     void fetchHubState();
-    const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u && isMountedRef.current) void fetchHubState(); }) : undefined;
-    return () => { isMountedRef.current = false; if (typeof unsub === 'function') unsub(); };
+    const client = getAuthClient();
+    const unsub = client.subscribe((_status, user) => {
+      if (user && isMountedRef.current) void fetchHubState();
+    });
+    void client.refreshSession().catch(() => undefined);
+    return () => { isMountedRef.current = false; unsub(); };
   }, [fetchHubState]);
 
   const handlePostNote = async (e: React.FormEvent) => {
