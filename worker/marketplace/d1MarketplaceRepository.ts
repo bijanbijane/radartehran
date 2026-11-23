@@ -19,6 +19,26 @@ function parseJsonRecord(value: unknown): Record<string, unknown> | null {
   }
 }
 
+function ownerUidVisible(ownerUid: unknown, query: MarketStateQuery): string {
+  const uid = String(ownerUid || '');
+  return uid && (query.includeAdminRecords || (query.uid && query.uid === uid)) ? uid : '';
+}
+
+function maskPhoneForPublic(value: unknown): string {
+  const raw = String(value || '');
+  const digits = raw.replace(/\\D/g, '');
+  if (digits.length < 7) return '';
+  return `+98***${digits.slice(-4)}`;
+}
+
+function sanitizeSponsorForPublic(value: unknown, includeAdminRecords: boolean): Record<string, unknown> | null {
+  const sponsor = typeof value === 'string' ? parseJsonRecord(value) : value as Record<string, unknown> | null;
+  if (!sponsor || typeof sponsor !== 'object' || Array.isArray(sponsor)) return null;
+  if (includeAdminRecords) return sponsor;
+  const allowedKeys = ['name', 'agencyName', 'specialty', 'experienceYears', 'planType', 'expiresAtIso'];
+  return Object.fromEntries(allowedKeys.filter((key) => sponsor[key] !== undefined).map((key) => [key, sponsor[key]]));
+}
+
 function makeHoodFilter(hoodIds: readonly number[] | undefined, startIndex: number): {
   sql: string;
   values: number[];
@@ -103,7 +123,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     status: String(row.status || 'approved'),
     createdAtIso: String(row.created_at_iso || ''),
     updatedAtIso: String(row.updated_at_iso || ''),
-    ownerUserId: String(row.owner_uid || ''),
+    ownerUserId: ownerUidVisible(row.owner_uid, query),
   }));
 
   const sponsors = (sponsorRows.results ?? []).map((row) => ({
@@ -111,7 +131,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     hoodId: Number(row.hood_id),
     hoodName: String(row.hood_name || ''),
     agencyName: String(row.agency_name || ''),
-    phone: String(row.phone_e164 || ''),
+    phone: query.includeAdminRecords ? String(row.phone_e164 || '') : maskPhoneForPublic(row.phone_e164),
     specialty: String(row.specialty || ''),
     experienceYears: Number(row.experience_years || 0),
     monthlyTariffMillion: Number(row.monthly_tariff_million || 0),
@@ -144,7 +164,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     hoodId: Number(row.hood_id),
     buyPerSqm: row.buy_per_sqm === null ? undefined : Number(row.buy_per_sqm),
     rahn80m: row.rahn_80m === null ? undefined : Number(row.rahn_80m),
-    sponsor: parseJsonRecord(row.sponsor_json),
+    sponsor: sanitizeSponsorForPublic(row.sponsor_json, Boolean(query.includeAdminRecords)),
     overrideSource: String(row.override_source || 'ADMIN_MANUAL'),
     manualLockUntilMs: row.manual_lock_until_ms === null ? undefined : Number(row.manual_lock_until_ms),
     updatedAtIso: String(row.updated_at_iso || ''),
