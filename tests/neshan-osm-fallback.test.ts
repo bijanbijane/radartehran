@@ -26,6 +26,7 @@ import {
 } from '../src/components/mapBaseTileController';
 import { FREE_KEYLESS_TILE_SERVERS } from '../src/data/neighborhoods';
 import { isValidMapTileServerId } from '../src/types/typeGuards';
+import { resolveInitialPreferredTileStyle, TILE_STYLE_PREF_STORAGE_KEY } from '../src/utils/neshanTileConfig';
 
 console.log('🗺️ Running Neshan Primary Provider & Automatic OSM Fallback Test Suite...\n');
 
@@ -269,6 +270,29 @@ async function runSuite(): Promise<void> {
     assert.equal(isValidMapTileServerId('voyager'), true);
     assert.equal(isValidMapTileServerId('mapbox'), false, 'Removed mapbox must not be valid');
     assert.equal(isValidMapTileServerId('invalid_style'), false);
+
+    const priorStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    let storedStyle: string | null = null;
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => key === TILE_STYLE_PREF_STORAGE_KEY ? storedStyle : null,
+        setItem: (key: string, value: string) => { if (key === TILE_STYLE_PREF_STORAGE_KEY) storedStyle = value; },
+      },
+    });
+    try {
+      for (const legacyStyle of ['carto_dark', 'satellite', 'osm_hot', 'mapbox']) {
+        storedStyle = legacyStyle;
+        assert.equal(resolveInitialPreferredTileStyle(), 'neshan', `legacy style ${legacyStyle} must fall back to Neshan`);
+        assert.equal(storedStyle, 'neshan', `legacy style ${legacyStyle} must be migrated out of localStorage`);
+      }
+      storedStyle = 'voyager';
+      assert.equal(resolveInitialPreferredTileStyle(), 'voyager', 'approved same-origin proxy preference must be retained');
+      assert.equal(storedStyle, 'voyager');
+    } finally {
+      if (priorStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', priorStorageDescriptor);
+      else delete (globalThis as any).localStorage;
+    }
   });
 
   await check('patchLeafletGridLayerNullSafety intercepts Leaflet zoom and setView when _map is null', () => {
