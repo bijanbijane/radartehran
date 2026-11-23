@@ -48,7 +48,6 @@ export default defineConfig(({ mode }) => {
         'recharts',
         'd3-scale',
         'firebase/app',
-        'firebase/auth',
         'firebase/firestore',
       ],
     },
