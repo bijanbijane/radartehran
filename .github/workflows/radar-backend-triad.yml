@@ -76,6 +76,9 @@ jobs:
       - name: Verify account lifecycle and ownership isolation
         run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
 
+      - name: Build the split Frontend assets
+        run: npm run build -w radartehran-frontend
+
       - name: Read-only live Worker smoke (no database mutations)
         env:
           RADAR_FRONTEND_URL: https://radartehran-frontend.bijanbijane-1.workers.dev
@@ -102,11 +105,6 @@ jobs:
             curl --fail --silent --show-error "$asset_url" >> /tmp/radar-frontend-bundles.js
           done
           echo "Downloaded frontend bundle bytes: $(wc -c < /tmp/radar-frontend-bundles.js)"
-          if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
-            echo "ERROR: no reCAPTCHA Enterprise site key found in deployed frontend bundle; API App Check mode is enforced."
-            exit 1
-          fi
-          echo "App Check site key detected in deployed frontend bundle."
           curl --fail --silent --show-error "$RADAR_API_URL/api/health/database-triad" -o /tmp/radar-d1-health.json
           curl --fail --silent --show-error -D /tmp/radar-frontend-api-headers.txt "$RADAR_FRONTEND_URL/api/health/database-triad" -o /tmp/radar-frontend-api-health.json
           grep -qi '^x-radar-api-proxy: service-binding' /tmp/radar-frontend-api-headers.txt
@@ -134,14 +132,21 @@ jobs:
             }));
           '
 
-      - name: Build the split Frontend assets
-        run: npm run build -w radartehran-frontend
-
       - name: Dry-run package the dedicated Radar API Worker
         run: npx wrangler deploy --config wrangler.backend.jsonc --dry-run --outdir /tmp/radartehran-api-dryrun
 
       - name: Dry-run package the Frontend Worker with RADAR_API Service Binding
         run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env production --dry-run --outdir /tmp/radartehran-frontend-dryrun
+
+      - name: Verify production App Check client key is present
+        run: |
+          if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
+            echo "ERROR: production frontend bundle has no reCAPTCHA Enterprise site key."
+            echo "Set the public VITE_FIREBASE_APP_CHECK_SITE_KEY build variable for radartehran-frontend."
+            echo "Do not disable backend App Check enforcement to bypass this missing credential."
+            exit 1
+          fi
+          echo "Production App Check site key is present in the deployed frontend bundle."
 
       - name: Confirm the required service binding is present in committed config
         run: |
