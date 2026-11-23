@@ -52,6 +52,17 @@ export async function authenticateWorkerSession(
     reasonCode,
   });
 
+  if (_sensitiveRoute && !['GET', 'HEAD', 'OPTIONS'].includes(ctx.method)) {
+    const origin = ctx.request.headers.get('origin');
+    try {
+      if (!origin || new URL(origin).origin !== new URL(ctx.env.APP_URL || 'https://radartehran.ir').origin) {
+        return unauthenticated('CSRF_ORIGIN_REJECTED', 403);
+      }
+    } catch {
+      return unauthenticated('CSRF_ORIGIN_REJECTED', 403);
+    }
+  }
+
   const userDb = resolveUserDb(ctx.env);
   if (!userDb) return unauthenticated('USER_DB_UNAVAILABLE', 503);
 
@@ -62,7 +73,7 @@ export async function authenticateWorkerSession(
     const tokenHash = await sha256Hex(rawToken);
     const row = await userDb
       .prepare(
-        `SELECT s.session_id, s.uid, s.created_at_iso, s.expires_at_iso, s.auth_provider,
+        `SELECT s.session_id, s.uid, s.created_at_iso, s.last_seen_at_iso, s.expires_at_iso, s.auth_provider,
                 p.account_status,
                 (SELECT i.email FROM auth_identities i
                  WHERE i.uid = s.uid AND i.provider = 'google' AND i.email_verified = 1
