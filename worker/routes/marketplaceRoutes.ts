@@ -24,7 +24,20 @@ function boundedNumber(value: unknown, min: number, max: number): number | null 
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
 }
 
+function validMutationOrigin(ctx: WorkerRequestContext): boolean {
+  const origin = ctx.request.headers.get('origin');
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(ctx.env.APP_URL || 'https://radartehran.ir').origin;
+  } catch {
+    return false;
+  }
+}
+
 async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
+  if (!validMutationOrigin(ctx)) {
+    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'UNTRUSTED_MUTATION_ORIGIN' }), db: null, uid: null };
+  }
   const userDbResult = requireUserDb(ctx.env);
   if (!userDbResult.ok) {
     return {
@@ -133,14 +146,15 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     if (!body.ok) return jsonWorkerResponse(ctx, body.status, { status: 'error', code: body.code, message: body.messageFa });
     const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
     const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
-    const air = boundedNumber(body.body.air, 0, 10);
-    const power = boundedNumber(body.body.powerWater, 0, 10);
-    const internet = boundedNumber(body.body.internet, 0, 10);
-    const metro = boundedNumber(body.body.metro, 0, 10);
-    const security = boundedNumber(body.body.security, 0, 10);
-    const flat = boundedNumber(body.body.flatTerrain, 0, 10);
+    const air = boundedNumber(body.body.air, 1, 10);
+    const power = boundedNumber(body.body.powerWater, 1, 10);
+    const internet = boundedNumber(body.body.internet, 1, 10);
+    const metro = boundedNumber(body.body.metro, 1, 10);
+    const security = boundedNumber(body.body.security, 1, 10);
+    const flat = boundedNumber(body.body.flatTerrain, 1, 10);
     const comment = safeText(body.body.comment, 1000);
-    const displayName = safeText(body.body.userDisplayName, 100) || 'کاربر';
+    const profile = await auth.db!.prepare('SELECT display_name FROM user_profiles WHERE uid = ?1 LIMIT 1').bind(auth.uid).first<{ display_name: string | null }>();
+    const displayName = safeText(profile?.display_name, 100) || 'کاربر';
     if (!SUPPORTED_CITY_IDS.has(cityId) || hoodId === null || air === null || power === null
       || internet === null || metro === null || security === null || flat === null) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_VOTE_PAYLOAD' });
@@ -149,7 +163,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     if (rateLimited) return rateLimited;
     const now = new Date().toISOString();
     const voteId = crypto.randomUUID();
-    await auth.db!.prepare(
+    const savedVote = await auth.db!.prepare(
       `INSERT INTO neighborhood_votes (
         vote_id, owner_uid, city_id, hood_id, air_score, power_score, internet_score,
         metro_score, security_score, flat_score, comment, user_display_name, created_at_iso, updated_at_iso
@@ -159,8 +173,11 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         internet_score = excluded.internet_score, metro_score = excluded.metro_score,
         security_score = excluded.security_score, flat_score = excluded.flat_score,
         comment = excluded.comment, user_display_name = excluded.user_display_name,
-        updated_at_iso = excluded.updated_at_iso`,
-    ).bind(voteId, auth.uid, cityId, hoodId, air, power, internet, metro, security, flat, comment, displayName, now).run();
+        updated_at_iso = excluded.updated_at_iso
+      RETURNING vote_id`,
+    ).bind(voteId, auth.uid, cityId, hoodId, air, power, internet, metro, security, flat, comment, displayName, now)
+      .first<{ vote_id: string }>();
+    if (!savedVote?.vote_id) return jsonWorkerResponse(ctx, 500, { status: 'error', code: 'VOTE_PERSISTENCE_FAILED' });
     const persistedVote = await auth.db!.prepare(
       'SELECT vote_id FROM neighborhood_votes WHERE owner_uid = ?1 AND city_id = ?2 AND hood_id = ?3 LIMIT 1',
     ).bind(auth.uid, cityId, hoodId).first<{ vote_id: string }>();
