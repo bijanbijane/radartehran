@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { authenticateWorkerSession, RADAR_SESSION_COOKIE } from '../worker/auth/sessionAuth';
 import { consumeGoogleOAuthState } from '../worker/routes/authRoutes';
+import { resolveWorkerAuthContext } from '../worker/auth/authorizationPolicy';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
 
 type SessionRow = Record<string, unknown>;
@@ -210,5 +211,67 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.authenticated, false);
     assert.equal(result.reasonCode, 'USER_DB_UNAVAILABLE');
     assert.equal(result.statusCode, 503);
+  });
+
+
+  it('authorizes a valid D1 session cookie through the shared Worker authorization policy', async () => {
+    const context = makeContext(
+      makeD1(sessionRow()),
+      'A'.repeat(64),
+      { ADMIN_EMAIL: 'verified@example.com' },
+    );
+    const result = await resolveWorkerAuthContext(context.request, { env: context.env });
+    assert.equal(result.authenticated, true);
+    assert.equal(result.mode, 'cloudflare_d1_session');
+    assert.equal(result.principal?.uid, 'usr_test_1');
+    assert.equal(result.principal?.authMode, 'cloudflare_d1_session');
+    assert.equal(result.principal?.isPrimaryAdmin, true);
+    assert.equal(result.principal?.role, 'primary_admin');
+  });
+
+  it('fails closed on an invalid session cookie instead of falling back to a bearer token', async () => {
+    const context = makeContext(makeD1(null));
+    const request = new Request(context.request.url, {
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}`,
+        authorization: 'Bearer deliberately-invalid-transition-token',
+      },
+    });
+    const result = await resolveWorkerAuthContext(request, { env: context.env });
+    assert.equal(result.authenticated, false);
+    assert.equal(result.mode, 'cloudflare_d1_session');
+    assert.equal(result.failureCode, 'SESSION_INVALID');
+    assert.equal(result.failureStatusCode, 401);
+  });
+
+  it('rejects cross-origin mutations that present a valid D1 session cookie', async () => {
+    const context = makeContext(makeD1(sessionRow()));
+    const request = new Request('https://radartehran.ir/api/protected/mutation', {
+      method: 'POST',
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}`,
+        origin: 'https://attacker.example',
+      },
+    });
+    const result = await resolveWorkerAuthContext(request, { env: context.env });
+    assert.equal(result.authenticated, false);
+    assert.equal(result.mode, 'cloudflare_d1_session');
+    assert.equal(result.failureCode, 'CSRF_ORIGIN_REJECTED');
+    assert.equal(result.failureStatusCode, 403);
+  });
+
+  it('allows same-origin mutations with a verified D1 session cookie', async () => {
+    const context = makeContext(makeD1(sessionRow()));
+    const request = new Request('https://radartehran.ir/api/protected/mutation', {
+      method: 'POST',
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}`,
+        origin: 'https://radartehran.ir',
+      },
+    });
+    const result = await resolveWorkerAuthContext(request, { env: context.env });
+    assert.equal(result.authenticated, true);
+    assert.equal(result.mode, 'cloudflare_d1_session');
+    assert.equal(result.principal?.uid, 'usr_test_1');
   });
 });
