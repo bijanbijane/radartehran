@@ -58,6 +58,16 @@ import type {
   WorkerEnv,
   WorkerExecutionContext,
 } from '../worker/types';
+import type { D1DatabaseBinding } from '../worker/db/types';
+import {
+  acquireD1MutationPermit,
+  D1MutationPermitError,
+  releaseD1MutationPermit,
+} from '../worker/account-lifecycle/d1WriteAdmissionPermit';
+import {
+  consumeLifecycleRpcNonce,
+  LIFECYCLE_RPC_NONCE_TTL_MS,
+} from '../worker/account-lifecycle/d1WriteAdmissionNonceStore';
 import { getStorageProviderLabelFa } from '../src/utils/objectStorage';
 import {
   buildValidatedS3TargetUrl,
@@ -321,6 +331,79 @@ async function runSuite(): Promise<void> {
     const bmHeader = buildD1SessionBookmarkHeader('bm_0001_tehran_seq');
     assert.equal(bmHeader['X-D1-Consistency-Mode'], 'sequential_bookmark_session');
     console.log('  ✅ 3. Single authoritative d1_migrations ledger, SQL SHA-256 parity, projections, and bookmarks verified');
+  }
+
+  // 3A. Worker D1 mutation permit atomicity and internal RPC nonce replay protection
+  {
+    const sqliteDb = createRealSqliteD1Database();
+    for (const migrationFile of [
+      '0004_account_lifecycle_core.sql',
+      '0008_account_mutation_permits.sql',
+      '0009_lifecycle_internal_rpc_nonces.sql',
+    ]) {
+      await sqliteDb.exec(fs.readFileSync(path.join(process.cwd(), 'migrations/d1', migrationFile), 'utf8'));
+    }
+    const db = sqliteDb as unknown as D1DatabaseBinding;
+    const nowMs = Date.now();
+    const openUid = 'uid_write_gate_open';
+    const permit = await acquireD1MutationPermit({
+      db,
+      targetUid: openUid,
+      holderId: 'wrangler_acceptance',
+      routeSignature: 'POST /api/test-mutation',
+      nowMs,
+    });
+    const activePermit = await db
+      .prepare('SELECT status, target_uid FROM account_mutation_permits WHERE permit_id = ?1')
+      .bind(permit.permitId)
+      .first<{ status: string; target_uid: string }>();
+    assert.equal(activePermit?.status, 'ACTIVE');
+    assert.equal(activePermit?.target_uid, openUid);
+
+    await releaseD1MutationPermit({ db, targetUid: openUid, permitId: permit.permitId, nowMs: nowMs + 1_000 });
+    const releasedPermit = await db
+      .prepare('SELECT status, released_at_iso FROM account_mutation_permits WHERE permit_id = ?1')
+      .bind(permit.permitId)
+      .first<{ status: string; released_at_iso: string | null }>();
+    assert.equal(releasedPermit?.status, 'RELEASED');
+    assert.ok(releasedPermit?.released_at_iso);
+
+    const blockedUid = 'uid_write_gate_blocked';
+    const blockedAt = new Date(nowMs).toISOString();
+    await db
+      .prepare(
+        'INSERT INTO account_write_blocks (target_uid, state, active_deletion_job_id, blocked_at_iso, updated_at_iso, reason, revision) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
+      )
+      .bind(blockedUid, 'DELETION_PENDING', 'deljob_write_gate', blockedAt, blockedAt, 'TEST', 1)
+      .run();
+    await assert.rejects(
+      () =>
+        acquireD1MutationPermit({
+          db,
+          targetUid: blockedUid,
+          holderId: 'wrangler_acceptance',
+          routeSignature: 'POST /api/test-mutation',
+          nowMs,
+        }),
+      (error: unknown) =>
+        error instanceof D1MutationPermitError &&
+        error.code === 'ACCOUNT_WRITE_BLOCKED' &&
+        error.httpStatus === 423,
+    );
+
+    const nonce = `rpc_${'a'.repeat(64)}`;
+    const firstNonce = await consumeLifecycleRpcNonce({ db, nonce, nowMs });
+    const replayNonce = await consumeLifecycleRpcNonce({ db, nonce, nowMs });
+    assert.equal(firstNonce.consumed, true);
+    assert.equal(replayNonce.consumed, false);
+    assert.equal(replayNonce.code, 'RPC_NONCE_REPLAYED');
+    const expiredNonceReuse = await consumeLifecycleRpcNonce({
+      db,
+      nonce,
+      nowMs: nowMs + LIFECYCLE_RPC_NONCE_TTL_MS + 1,
+    });
+    assert.equal(expiredNonceReuse.consumed, true);
+    console.log('  ✅ 3A. Worker D1 write permits fail closed, release correctly, and RPC nonces reject replay');
   }
 
   // 4. R2 upload, magic-byte enforcement, signed URLs, byte-range, and legal hold protection
