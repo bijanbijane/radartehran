@@ -102,25 +102,60 @@ export class D1AccountLifecycleDispatch {
     const nowIso = new Date(params.nowMs).toISOString();
     const expiresMs = params.nowMs + durationMs;
 
-    const existing = await d1FirstRow(this.db, Q.SQL_GET_JOB_LEASE, params.jobId);
+    let existing = await d1FirstRow(this.db, Q.SQL_GET_JOB_LEASE, params.jobId);
     if (!existing) {
-      await this.db
-        .prepare(Q.SQL_INSERT_JOB_LEASE)
-        .bind(
-          params.jobId,
-          params.targetUid,
-          params.leaseToken,
-          1,
-          params.leaseOwner,
-          expiresMs,
-          nowIso,
-          nowIso,
-        )
-        .run();
-      return { acquired: true, fencingRevision: 1 };
+      let inserted: Awaited<ReturnType<ReturnType<D1DatabaseBinding['prepare']>['run']>> | undefined;
+      try {
+        inserted = await this.db
+          .prepare(Q.SQL_INSERT_JOB_LEASE)
+          .bind(
+            params.jobId,
+            params.targetUid,
+            params.leaseToken,
+            1,
+            params.leaseOwner,
+            expiresMs,
+            nowIso,
+            nowIso,
+          )
+          .run();
+      } catch {
+        // A concurrent consumer may have won the unique job_id insert. Re-read
+        // before deciding whether this is a harmless race or a persistence fault.
+      }
+
+      if (inserted?.success && inserted.meta?.changes === 1) {
+        return { acquired: true, fencingRevision: 1 };
+      }
+      if (inserted && !inserted.success) {
+        // Re-read below: if another consumer won the insert race, only its
+        // lease row may be considered. Never infer ownership from a failed write.
+      } else if (inserted && inserted.meta?.changes !== 0) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'D1 did not return a verifiable result for lifecycle lease creation.',
+          503,
+        );
+      }
+
+      existing = await d1FirstRow(this.db, Q.SQL_GET_JOB_LEASE, params.jobId);
+      if (!existing) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'Lifecycle execution lease creation could not be verified in D1.',
+          503,
+        );
+      }
     }
 
     const prevFencing = Number(existing.fencing_revision ?? 0);
+    if (!Number.isSafeInteger(prevFencing) || prevFencing < 1) {
+      throw new AccountLifecycleStoreError(
+        'STORE_UNAVAILABLE',
+        'The persisted lifecycle lease has an invalid fencing revision.',
+        503,
+      );
+    }
     const nextFencing = prevFencing + 1;
     const claim = await this.db
       .prepare(Q.SQL_CLAIM_JOB_LEASE)
@@ -135,7 +170,22 @@ export class D1AccountLifecycleDispatch {
         params.leaseToken,
       )
       .run();
-    const acquired = (claim.meta?.changes ?? 0) === 1;
+    if (!claim.success) {
+      throw new AccountLifecycleStoreError(
+        'STORE_UNAVAILABLE',
+        'D1 could not evaluate the lifecycle lease claim.',
+        503,
+      );
+    }
+    const changes = claim.meta?.changes;
+    if (typeof changes !== 'number' || !Number.isSafeInteger(changes) || (changes !== 0 && changes !== 1)) {
+      throw new AccountLifecycleStoreError(
+        'STORE_UNAVAILABLE',
+        'D1 returned an unverifiable lifecycle lease claim result.',
+        503,
+      );
+    }
+    const acquired = changes === 1;
     return { acquired, fencingRevision: acquired ? nextFencing : prevFencing };
   }
 
