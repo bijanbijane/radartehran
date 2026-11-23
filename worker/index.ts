@@ -197,6 +197,20 @@ export default {
       return staticOrSpaResponse;
     } catch (err) {
       const errorCategory = err instanceof Error ? err.name : 'UNHANDLED_WORKER_EXCEPTION';
+      const safeErrorMessage = err instanceof Error
+        ? err.message
+          .replace(/Bearer\\s+\\S+/gi, 'Bearer [REDACTED]')
+          .replace(/\\beyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\b/g, '[REDACTED_JWT]')
+          .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
+          .slice(0, 240)
+        : 'Non-Error exception';
+      console.error('WORKER_UNHANDLED_EXCEPTION', JSON.stringify({
+        correlationId: reqCtx.correlationId,
+        method: reqCtx.method,
+        pathname: reqCtx.pathname,
+        errorCategory,
+        errorMessage: safeErrorMessage,
+      }));
       buildObservabilityRecord(reqCtx, 500, reqCtx.pathname, 'ERROR', errorCategory);
       return jsonWorkerResponse(reqCtx, 500, {
         status: 'error',
