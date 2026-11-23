@@ -137,7 +137,7 @@ export class SearchWorkspaceFileRepository {
       alertFrequency,
       channels: ['IN_APP'],
       status: 'ACTIVE',
-      persistenceScope: 'ACCOUNT_PERSISTENT',
+      persistenceScope: 'SERVER_SYNCED',
       notificationStatus: alertFrequency === 'OFF' ? 'ALERT_NOT_CONFIGURED' : 'SUBSCRIPTION_REQUIRED',
       matchedCount: searchOut?.totalCount ?? 0,
       unreadChangesCount: 0,
