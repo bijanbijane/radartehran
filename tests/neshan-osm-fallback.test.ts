@@ -293,6 +293,15 @@ async function runSuite(): Promise<void> {
       if (priorStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', priorStorageDescriptor);
       else delete (globalThis as any).localStorage;
     }
+
+    const restoredStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    try {
+      delete (globalThis as any).localStorage;
+      assert.equal(resolveInitialPreferredTileStyle(), 'neshan', 'Missing browser storage must fail safely to the configured primary provider');
+    } finally {
+      if (restoredStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', restoredStorageDescriptor);
+      else delete (globalThis as any).localStorage;
+    }
   });
 
   await check('patchLeafletGridLayerNullSafety intercepts Leaflet zoom and setView when _map is null', () => {
