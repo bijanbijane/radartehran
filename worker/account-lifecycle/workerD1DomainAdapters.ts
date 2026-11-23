@@ -63,7 +63,7 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
       const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.session_id),
@@ -113,7 +113,7 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
       const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.request_id),
@@ -198,7 +198,7 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
       const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.object_id),

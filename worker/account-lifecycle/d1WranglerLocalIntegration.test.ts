@@ -11,7 +11,6 @@ import { AccountLifecycleError } from '../../server/modules/account-lifecycle/ty
 import type { DurableAccountDeletionJob } from '../../server/modules/account-lifecycle/types.ts';
 import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
 import { requireWorkerLifecycleBindings } from './stageDLifecycleRuntime.ts';
-import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import { acquireD1MutationPermit, countActiveD1MutationPermits, releaseD1MutationPermit, D1MutationPermitError } from './d1WriteAdmissionPermit.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
@@ -80,9 +79,17 @@ async function main(): Promise<void> {
     return;
   }
 
-  await requireWorkerLifecycleBindings({ DB: db } as unknown as import('../types.ts').WorkerEnv);
   await assert.rejects(
-    () => requireWorkerLifecycleBindings({ DB: db, USER_DB: db } as unknown as import('../types.ts').WorkerEnv),
+    () => requireWorkerLifecycleBindings({ DB: db } as unknown as import('../types.ts').WorkerEnv),
+    (error: unknown) => error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
+  );
+  const stageDEnv = {
+    DB: db,
+    STAGE_D_LIFECYCLE_ENABLED: 'true',
+  } as unknown as import('../types.ts').WorkerEnv;
+  await requireWorkerLifecycleBindings(stageDEnv);
+  await assert.rejects(
+    () => requireWorkerLifecycleBindings({ DB: db, USER_DB: db, STAGE_D_LIFECYCLE_ENABLED: 'true' } as unknown as import('../types.ts').WorkerEnv),
     (error: unknown) => error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
   );
 

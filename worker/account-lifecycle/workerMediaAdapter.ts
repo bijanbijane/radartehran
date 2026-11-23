@@ -6,6 +6,7 @@ import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 import type { MediaDeletionCoordinationAdapter } from '../../server/modules/account-lifecycle/types.ts';
 import type { AccountLifecycleActorContext } from '../../server/modules/account-lifecycle/types.ts';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import { d1FirstRow } from './d1ResultHelpers.ts';
 
 export function createWorkerMediaDeletionAdapter(params: {
@@ -27,7 +28,13 @@ export function createWorkerMediaDeletionAdapter(params: {
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      if (!res.success) throw new Error(res.error || 'MEDIA_METADATA_QUERY_FAILED');
+      if (!res.success || !Array.isArray(res.results)) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'Owned media could not be listed from D1; deletion cannot advance.',
+          503,
+        );
+      }
       const rows = res.results;
       const items = rows.map((r) => ({
         objectId: String(r.object_id),
@@ -81,7 +88,7 @@ export function createWorkerMediaDeletionAdapter(params: {
         .prepare(
           `UPDATE media_objects SET deletion_state = 'DELETED', lifecycle_state = 'PURGED', updated_at_iso = ?1, deleted_at_iso = ?1 WHERE object_id = ?2 AND owner_uid = ?3`,
         )
-        .bind(nowIso, nowIso, objectId, targetUid)
+        .bind(nowIso, objectId, targetUid)
         .run();
       if (!updated.success || (updated.meta?.changes ?? 0) !== 1) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'D1_MEDIA_METADATA_UPDATE_FAILED' };

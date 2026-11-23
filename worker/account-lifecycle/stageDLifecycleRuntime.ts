@@ -34,7 +34,7 @@ import { countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 
-export const FRESH_AUTH_MAX_AGE_SECONDS = 600;
+export const FRESH_AUTH_MAX_AGE_SECONDS = 300;
 export const DEFAULT_EXECUTION_BATCH_SIZE = 10;
 export const DEFAULT_MAX_BATCHES_PER_INVOCATION = 5;
 export const RETRYABLE_LIFECYCLE_DELAY_MS = 15 * 60 * 1000;
@@ -42,6 +42,20 @@ export const DISPATCH_FAILURE_RETRY_MS = 60 * 1000;
 const RECOVERY_SLOT_MS = 60 * 60 * 1000;
 const MAX_RECOVERY_JOBS = 50;
 const VERIFIED_STAGE_D_DATABASES = new WeakSet<object>();
+
+type StageDLifecycleEnv = WorkerEnv & {
+  readonly STAGE_D_LIFECYCLE_ENABLED?: string;
+};
+
+/**
+ * Stage D is opt-in only after the dedicated migrations/d1 database has been
+ * provisioned and verified. A generic DB binding is never sufficient.
+ */
+export function isStageDLifecycleEnabled(env: WorkerEnv): boolean {
+  const flag = (env as StageDLifecycleEnv).STAGE_D_LIFECYCLE_ENABLED;
+  return flag?.trim().toLowerCase() === 'true' && Boolean(env.DB) && !env.USER_DB;
+}
+
 
 const REQUIRED_STAGE_D_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   account_deletion_jobs: [
@@ -122,6 +136,13 @@ function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
   }
   if (!env.DB) {
     throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Stage D D1 binding is missing.', 503);
+  }
+  if (!isStageDLifecycleEnabled(env)) {
+    throw new AccountLifecycleError(
+      'STORE_UNAVAILABLE',
+      'Stage D lifecycle is disabled until the dedicated migrations/d1 database is provisioned and explicitly enabled.',
+      503,
+    );
   }
   return env.DB as unknown as D1DatabaseBinding;
 }
@@ -394,6 +415,7 @@ export async function initiateWorkerAccountDeletion(params: {
  * be recreated on a later scheduled recovery pass.
  */
 export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25): Promise<number> {
+  if (!isStageDLifecycleEnabled(env)) return 0;
   if (!env.RADAR_QUEUE) {
     throw new AccountLifecycleError('STORE_UNAVAILABLE', 'RADAR_QUEUE binding is unavailable.', 503);
   }
