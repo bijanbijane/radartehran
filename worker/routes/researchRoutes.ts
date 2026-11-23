@@ -3,7 +3,7 @@
  * @description Authenticated Worker HTTP routes for RESEARCH_DB behavioral event ingestion,
  * k-anonymity-enforced aggregation queries, and retention purge execution.
  */
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireResearchDb } from '../db/bindingResolver';
 import { RESEARCH_EVENT_POLICIES, type AllowedResearchEventType } from '../research/researchEventContract';
