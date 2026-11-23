@@ -26,19 +26,24 @@ export async function persistIdempotentMutation(params: {
       : { status: 'conflict' };
   }
 
-  await params.db.batch([
-    params.db.prepare(
-      'INSERT OR IGNORE INTO market_mutation_idempotency (uid, operation_name, idempotency_key, request_hash, resource_id, created_at_iso) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
-    ).bind(
-      params.uid,
-      params.operationName,
-      params.idempotencyKey,
-      params.requestHash,
-      params.resourceId,
-      params.createdAtIso,
-    ),
-    ...params.resourceStatements,
-  ]);
+  try {
+    await params.db.batch([
+      params.db.prepare(
+        'INSERT OR IGNORE INTO market_mutation_idempotency (uid, operation_name, idempotency_key, request_hash, resource_id, created_at_iso) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
+      ).bind(
+        params.uid,
+        params.operationName,
+        params.idempotencyKey,
+        params.requestHash,
+        params.resourceId,
+        params.createdAtIso,
+      ),
+      ...params.resourceStatements,
+    ]);
+  } catch {
+    // D1 batches are atomic; after a transport/statement error, reconcile the
+    // idempotency row before telling the caller whether the mutation committed.
+  }
 
   const persisted = await params.db.prepare(
     'SELECT request_hash, resource_id FROM market_mutation_idempotency WHERE uid = ?1 AND operation_name = ?2 AND idempotency_key = ?3 LIMIT 1',
