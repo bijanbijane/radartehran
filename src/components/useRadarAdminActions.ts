@@ -1,4 +1,4 @@
-import React from 'react'; import { loadFirebaseClient } from '../utils/firebaseLazy'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
+import React from 'react'; import { loadFirebaseClient } from '../utils/firebaseLazy'; import { getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
 export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any): Promise<void> => {
   const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? sanitizeSponsorForOverrideDoc(rawSponsorVal) : undefined;
   const firebase = await loadFirebaseClient();
@@ -8,7 +8,7 @@ export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal:
     ...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {}), updatedAt: firebase.serverTimestamp(),
   });
 };
-export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
+export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
   adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>; adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number;
   setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; }
 const syncApprovedSponsorRequestsExpiry = async (hoodId: number, expiresAtIso: string): Promise<void> => {
@@ -23,7 +23,8 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
   const handleAdminApproveSponsor = async (reqItem: SponsorCrmRequestItem) => {
     if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
     const planMonths: 1 | 3 = reqItem.planMonths === 3 ? 3 : 1; const resolvedExpiry = reqItem.expiresAtIso || computeSponsorExpirationIso(planMonths); const planType = p.featureFlags.enableSponsorBilling ? (planMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free'; const approvedSponsor = { name: reqItem.agencyName, phone: reqItem.phone, specialty: reqItem.specialty, experienceYears: reqItem.experienceYears, expiresAtIso: resolvedExpiry, planType: planType as 'free' | 'paid_1m' | 'paid_3m' };
-    const seedHood = p.evaluatedNeighborhoods.find((n) => n.id === reqItem.hoodId) || p.neighborhoods.find((n) => n.id === reqItem.hoodId) || p.allExpansionSeeds.find((n) => n.id === reqItem.hoodId);
+    const allExpansionSeeds = getAllMultiCityNeighborhoods().filter((hood) => hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599));
+    const seedHood = p.evaluatedNeighborhoods.find((n) => n.id === reqItem.hoodId) || p.neighborhoods.find((n) => n.id === reqItem.hoodId) || allExpansionSeeds.find((n) => n.id === reqItem.hoodId);
     const baseBuy = seedHood ? ((seedHood as EvaluatedNeighborhood).baseBuyPerSqm ?? seedHood.buyPerSqm) : 100; const baseRahn = seedHood ? Math.max(50, seedHood.rahn80m) : 1000;
     if (String(reqItem.id).startsWith('cloud-')) {
       const docId = String(reqItem.id).replace(/^cloud-/, '');
@@ -173,7 +174,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     const hoodId = Number(p.adminEditHoodId);
     const targetSeed =
       INITIAL_NEIGHBORHOODS.find((hood) => hood.id === hoodId) ||
-      p.allExpansionSeeds.find((hood) => hood.id === hoodId) ||
+      getAllMultiCityNeighborhoods().find((hood) => hood.id === hoodId) ||
       p.neighborhoods.find((hood) => hood.id === hoodId);
     if (!targetSeed || hoodId < 1 || hoodId > 999) {
       p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹ پشتیبانی می‌شوند).');
@@ -277,7 +278,8 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       void (async () => {
         try {
           const content = typeof reader.result === 'string' ? reader.result : '';
-          const validated = validateAndBuildRestoredState(content, p.allExpansionSeeds);
+          const allExpansionSeeds = getAllMultiCityNeighborhoods().filter((hood) => hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599));
+          const validated = validateAndBuildRestoredState(content, allExpansionSeeds);
           if (!validated.ok || !validated.restoredNeighborhoods) {
             p.setBackupStatusMsg({ type: 'error', text: validated.errorMessage || 'ساختار فایل JSON معتبر نیست یا کلیدهای اصلی دیتابیس در آن یافت نشد.' });
             return;
@@ -290,7 +292,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
           try {
             const cloudSync = await persistRestoredStateToFirestore({
               restoredNeighborhoods: validated.restoredNeighborhoods,
-              seedNeighborhoods: p.allExpansionSeeds,
+              seedNeighborhoods: allExpansionSeeds,
               featureFlags: validated.featureFlags,
             });
             p.setBackupStatusMsg({ type: 'success', text: `بازیابی کامل (${toPersianNum(validated.restoredNeighborhoods.length)} محله) انجام و ${toPersianNum(cloudSync.syncedOverridesCount)} تغییر محله${cloudSync.syncedFlags ? ' و پرچم‌های ماژول' : ''} در فایراستور ذخیره شد.` });
