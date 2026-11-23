@@ -49,7 +49,7 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     const count = group.length; const palette = getPalette(primary); return {
       clusterId: `cluster-${idx}-${primary.id}`,
       lat: sumLat / count, lng: sumLng / count, count, avgBuyPerSqm: Math.round(sumBuy / count),
-      avgRahn80m: Math.round(sumRahn / count), primaryName: count > 3 && primary.id <= 500 ? 'تهران' : primary.name, containsSelected, dominantStroke: palette.stroke,
+      avgRahn80m: Math.round(sumRahn / count), primaryName: primary.name, containsSelected, dominantStroke: palette.stroke,
       dominantPillBg: palette.pillBg, sampleHood: primary,
     };
   });
