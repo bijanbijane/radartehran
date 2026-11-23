@@ -198,6 +198,8 @@ async function runSuite(): Promise<void> {
     const env: WorkerEnv = {
       WORKER_ENV: 'staging',
       FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
+      FIREBASE_PROJECT_NUMBER: '935427453422',
+      FIREBASE_APP_CHECK_APP_ID: '1:935427453422:web:25817d32df713f2a68deff',
       ADMIN_EMAIL: 'radio837isf@gmail.com',
       DB: db,
     };
@@ -230,7 +232,7 @@ async function runSuite(): Promise<void> {
       env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
       nowSeconds: nowSec,
     });
-    assert.equal(verified.authenticated, true);
+    assert.equal(verified.authenticated, true, verified.reasonCode);
     assert.equal(verified.isAdmin, true);
     assert.equal(verified.appCheckVerified, true);
 
