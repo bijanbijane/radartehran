@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { authenticateWorkerSession, RADAR_SESSION_COOKIE, readSessionCookie } from '../worker/auth/sessionAuth';
 import { consumeGoogleOAuthState } from '../worker/routes/authRoutes';
+import { normalizePhone } from '../worker/routes/authRoutes';
 import { resolveWorkerAuthContext } from '../worker/auth/authorizationPolicy';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
 
@@ -106,6 +107,24 @@ function makeOAuthStateDb(
   };
   return db as unknown as D1Database;
 }
+
+describe('Iranian phone normalization', () => {
+  it('normalizes Persian and Arabic-Indic digits to the canonical E.164 value', () => {
+    assert.equal(normalizePhone('۰۹۱۲ ۱۲۳ ۴۵۶۷'), '+989121234567');
+    assert.equal(normalizePhone('٠٩١٢١٢٣٤٥٦٧'), '+989121234567');
+  });
+
+  it('normalizes 0098, +98, and local mobile formats consistently', () => {
+    assert.equal(normalizePhone('0098 (912) 123-4567'), '+989121234567');
+    assert.equal(normalizePhone('+98 912 123 4567'), '+989121234567');
+    assert.equal(normalizePhone('09121234567'), '+989121234567');
+  });
+
+  it('rejects unsupported phone formats', () => {
+    assert.equal(normalizePhone('02112345678'), null);
+    assert.equal(normalizePhone('not-a-phone'), null);
+  });
+});
 
 describe('Cloudflare-native session authentication', () => {
   it('atomically allows only one concurrent callback to consume an OAuth state', async () => {
