@@ -82,4 +82,4 @@ npx wrangler d1 migrations apply radartehran-staging-db --local --env staging
 npx tsx worker/account-lifecycle/d1WranglerLocalIntegration.test.ts
 ```
 
-The queue worker verifies the durable write block, drains active mutation permits, and uses a fenced per-job lease. Scheduled recovery re-enqueues nonterminal jobs without a live lease. Firestore-authoritative domains and Firebase Auth identity deletion remain fail-closed until their trusted adapters are configured; no successful full-account deletion is claimed by the current Worker adapter set.
+The queue worker verifies the durable write block, drains active mutation permits, and uses a fenced per-job lease. Scheduled recovery re-enqueues nonterminal jobs without a live lease. The telemetry adapter fails closed when queue-partition ownership cannot be verified. Firestore-authoritative domains and Firebase Auth identity deletion also remain fail-closed until their trusted adapters are configured; no successful full-account deletion is claimed by the current Worker adapter set.

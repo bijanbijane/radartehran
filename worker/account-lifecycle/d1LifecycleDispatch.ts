@@ -178,7 +178,8 @@ export class D1AccountLifecycleDispatch {
 
     const current = await this.getJobLease(params.jobId);
     const acquired = (claim.meta?.changes ?? 0) === 1 &&
-      current?.leaseToken === params.leaseToken &&
+      current !== null &&
+      current.leaseToken === params.leaseToken &&
       current.leaseExpiresAtMs > params.nowMs;
     return {
       acquired,

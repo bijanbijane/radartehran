@@ -41,6 +41,7 @@ export const RETRYABLE_LIFECYCLE_DELAY_MS = 15 * 60 * 1000;
 export const DISPATCH_FAILURE_RETRY_MS = 60 * 1000;
 const RECOVERY_SLOT_MS = 60 * 60 * 1000;
 const MAX_RECOVERY_JOBS = 50;
+const VERIFIED_STAGE_D_DATABASES = new WeakSet<object>();
 
 const REQUIRED_STAGE_D_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   account_deletion_jobs: [
@@ -126,6 +127,8 @@ function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
 }
 
 async function assertStageDSchema(db: D1DatabaseBinding): Promise<void> {
+  const identity = db as object;
+  if (VERIFIED_STAGE_D_DATABASES.has(identity)) return;
   for (const [table, requiredColumns] of Object.entries(REQUIRED_STAGE_D_COLUMNS)) {
     let result;
     try {
@@ -154,6 +157,7 @@ async function assertStageDSchema(db: D1DatabaseBinding): Promise<void> {
       );
     }
   }
+  VERIFIED_STAGE_D_DATABASES.add(identity);
 }
 
 export async function requireWorkerLifecycleBindings(env: WorkerEnv): Promise<void> {

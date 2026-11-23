@@ -12,6 +12,7 @@ import type { DurableAccountDeletionJob } from '../../server/modules/account-lif
 import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
 import { requireWorkerLifecycleBindings } from './stageDLifecycleRuntime.ts';
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
+import { acquireD1MutationPermit, countActiveD1MutationPermits, releaseD1MutationPermit, D1MutationPermitError } from './d1WriteAdmissionPermit.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
 import { fileURLToPath } from 'node:url';
@@ -91,8 +92,28 @@ async function main(): Promise<void> {
 
   const uid = `wrangler_d1_${Date.now()}`;
   const jobId = `deljob_${uid}_real`;
+  const activePermit = await acquireD1MutationPermit({
+    db,
+    targetUid: uid,
+    holderId: 'wrangler-lifecycle-test',
+    routeSignature: 'POST /api/test/mutation',
+  });
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 1);
+
   const created = await store.createOrGetActiveJob(sampleJob(uid, jobId));
   assert.equal(created.createdNew, true);
+  await assert.rejects(
+    () => acquireD1MutationPermit({
+      db,
+      targetUid: uid,
+      holderId: 'late-mutation',
+      routeSignature: 'POST /api/test/late-mutation',
+    }),
+    (error: unknown) => error instanceof D1MutationPermitError && error.httpStatus === 423,
+  );
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 1);
+  await releaseD1MutationPermit({ db, targetUid: uid, permitId: activePermit.permitId });
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 0);
 
   const smokeKey = `${jobId}:smoke:${Date.now()}`;
   const smokeInsert = await store.recordBatchReceiptIdempotent({
