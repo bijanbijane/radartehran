@@ -54,7 +54,7 @@ test('bundle report measures raw, gzip and Brotli bytes for initial JS and CSS',
   await mkdir(path.join(root, 'assets'), { recursive: true });
   await mkdir(path.join(root, 'chunks'), { recursive: true });
   await writeFile(path.join(root, 'assets/index.js'), 'console.log("radar");');
-  await writeFile(path.join(root, 'chunks/vendor.js'), 'export const value = 1;');
+  await writeFile(path.join(root, 'assets/vendor.js'), 'export const value = 1;');
   await writeFile(path.join(root, 'assets/index.css'), 'body { margin: 0; }');
   await writeFile(path.join(root, 'assets/market.js'), 'console.log("lazy");');
   await writeFile(path.join(root, 'assets/market.css'), '.lazy { display: block; }');
