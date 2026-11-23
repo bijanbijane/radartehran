@@ -246,9 +246,9 @@ export async function handleHealthAndMetadataRoute(
         code: 'D1_TRIAD_BINDING_NOT_READY',
         bindings,
         missing: {
-          user: user.ok ? null : user.code,
-          research: research.ok ? null : research.code,
-          neighborhood: neighborhood.ok ? null : neighborhood.code,
+          user: user.ok === false ? user.code : null,
+          research: research.ok === false ? research.code : null,
+          neighborhood: neighborhood.ok === false ? neighborhood.code : null,
         },
         timestampIso: new Date().toISOString(),
       });
