@@ -158,7 +158,7 @@ export function scheduleAsyncIndexPersist(): void {
   }, 200);
 }
 const VALID_STORAGE_PROVIDERS = new Set<ObjectStorageProviderId>([
-  'arvancloud', 'liara', 'minio', 's3_compatible', 'r2', 'firebase_storage', 'local_bucket',
+  'arvancloud', 'liara', 'minio', 's3_compatible', 'r2', 'local_bucket',
 ]);
 export const SAFE_OBJECT_ID = /^obj-\d{10,16}-[a-f0-9]{8}$/i;
 const SAFE_LOCAL_FILENAME = /^obj-\d{10,16}-[a-f0-9]{8}\.(?:webp|jpg|jpeg|png|mp4|mov|webm)$/i;
