@@ -1065,12 +1065,18 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
       const valid = validateBackendWranglerConfig(parsed);
       assert.equal(valid.ok, false, 'Production Cron configuration must fail closed without queue and R2 bindings.');
+      assert.ok(!valid.errors.some((e: string) => e.startsWith('UNSUPPORTED_CRON_PATTERN:')));
       assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_PRODUCER'));
       assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_DLQ_PRODUCER'));
       assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_CONSUMER'));
       assert.ok(valid.errors.includes('NIGHTLY_MEDIA_CRON_REQUIRES_MEDIA_BUCKET'));
       assert.equal(valid.summary?.irniDirectBindingPresent, false);
       assert.equal(valid.summary?.stagingProvisioningStatus, 'BLOCKED_STAGING_DATABASES_NOT_PROVISIONED');
+
+      const unsupportedCronConfig = structuredClone(parsed);
+      unsupportedCronConfig.triggers.crons.push('*/5 * * * *');
+      const unsupportedCron = validateBackendWranglerConfig(unsupportedCronConfig);
+      assert.ok(unsupportedCron.errors.includes('UNSUPPORTED_CRON_PATTERN:*/5 * * * *'));
 
       // A complete queue/DLQ/R2 wiring satisfies the production background-processing contract.
       const fullyBound = structuredClone(parsed);
