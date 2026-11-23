@@ -1059,6 +1059,10 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
       const parsed = parseJsonc(raw, 'wrangler.backend.jsonc');
 
+      assert.equal(parsed.vars.FIREBASE_APP_CHECK_MODE, 'enforced');
+      assert.equal(parsed.vars.APP_CHECK_ENFORCEMENT_MODE, undefined);
+      assert.equal(parsed.env.staging.vars.FIREBASE_APP_CHECK_MODE, 'monitor');
+
       const valid = validateBackendWranglerConfig(parsed);
       assert.equal(valid.ok, false, 'Production Cron configuration must fail closed without queue and R2 bindings.');
       assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_PRODUCER'));
