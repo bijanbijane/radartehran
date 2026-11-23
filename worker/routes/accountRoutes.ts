@@ -21,20 +21,13 @@ import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
 } from '../account-lifecycle/workerLifecycleRuntime';
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
-  return verifyFirebaseIdTokenOnEdge({
-    authorizationHeader: ctx.request.headers.get('authorization'),
-    appCheckHeader: ctx.request.headers.get('x-firebase-appcheck'),
-    appCheckDebugHeader: ctx.request.headers.get('x-firebase-appcheck-debug'),
-    request: ctx.request,
-    env: ctx.env,
-    sensitiveRoute,
-  });
+  return authenticateWorkerSession(ctx, sensitiveRoute);
 }
 
 function isHandledAccountWorkerRoute(method: string, pathname: string): boolean {

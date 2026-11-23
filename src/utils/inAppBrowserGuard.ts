@@ -1,6 +1,6 @@
 /**
  * [RULE-18] In-App WebView Detector (Telegram, Instagram, Eitaa, Rubika, Bale)
- * Prevents Firebase signInWithPopup() silent failures inside restricted WebViews.
+ * Prevents external OAuth redirect silent failures inside restricted WebViews.
  */
 
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from './areaUnit';

@@ -85,3 +85,17 @@ export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBin
     irniDirectDbBindingPresent: false,
   };
 }
+
+
+/**
+ * Native auth/session state belongs to the canonical user database. Resolve the
+ * USER_DB binding first and retain the documented DB compatibility fallback.
+ */
+export function resolveOperationalDb(env: WorkerEnv): D1Database | undefined {
+  const resolved = resolveUserDb(env);
+  return resolved.ok ? resolved.db : undefined;
+}
+
+export function requireOperationalDb(env: WorkerEnv): ResolvedUserDbResult | MissingDbResult {
+  return requireUserDb(env);
+}

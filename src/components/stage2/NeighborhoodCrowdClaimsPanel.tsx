@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
+import { getAuthClient } from '../../platform/auth';
 import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle, Lock } from 'lucide-react';
-import { auth } from '../../firebase';
+
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
@@ -91,8 +92,8 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [votedIds, setVotedIds] = useState<Record<string, 'UP' | 'DOWN'>>({});
-  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
-  const [authReady, setAuthReady] = useState<boolean>(() => Boolean(auth.currentUser));
+  const [currentUser, setCurrentUser] = useState<AuthUserSnapshot | null>(() => getAuthClient().getUser());
+  const [authReady, setAuthReady] = useState<boolean>(() => getAuthClient().getState() !== 'INITIALIZING');
   const [submitting, setSubmitting] = useState(false);
   const [votingClaimId, setVotingClaimId] = useState<string | null>(null);
 
@@ -105,9 +106,10 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const client = getAuthClient();
+    const unsubscribe = client.subscribe((status, user) => {
       setCurrentUser(user);
-      setAuthReady(true);
+      if (status === 'READY' || status === 'UNAUTHENTICATED') setAuthReady(true);
       if (!user) {
         setShowForm(false);
         setSubmitMessage(null);
@@ -115,6 +117,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         setVotedIds({});
       }
     });
+    void client.refreshSession().catch(() => setAuthReady(true));
     return () => unsubscribe();
   }, []);
 
@@ -215,7 +218,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     try {
       const res = await fetch('/api/v1/claims', {
         method: 'POST',
-        headers: authHeaders.headers,
+        headers: authHeaders.headers, credentials: 'same-origin',
         body: JSON.stringify(
           buildCrowdClaimRequestBody({
             hoodId,
@@ -361,7 +364,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
             <textarea rows={2} aria-invalid={Boolean(errorMessage) && body.trim().length < 8} value={body} onChange={(e) => { setBody(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
-          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
+          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
         </form>
       )}
       {verifiedRefs.length > 0 && (

@@ -5,7 +5,7 @@
  * (Range 206/416 + signed URL), fail-closed Legal Hold deletions, and bargain media attach/cleanup.
  */
 import { isUserWriteBlockedInD1 } from '../account-lifecycle/d1MutationPermit';
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { buildWorkerJsonHeaders, jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { resolveUserDb } from '../db/bindingResolver';
 import type { D1MediaObjectRecord } from '../db/d1SchemaAndMigrations';
@@ -27,14 +27,7 @@ import {
 import { handleChunkedAndDirectUploadRoutes } from './objectStorageUploadHandlers';
 
 async function authenticateUploadCaller(ctx: WorkerRequestContext) {
-  return verifyFirebaseIdTokenOnEdge({
-    authorizationHeader: ctx.request.headers.get('authorization'),
-    appCheckHeader: ctx.request.headers.get('x-firebase-appcheck'),
-    appCheckDebugHeader: ctx.request.headers.get('x-firebase-appcheck-debug'),
-    request: ctx.request,
-    env: ctx.env,
-    sensitiveRoute: true,
-  });
+  return authenticateWorkerSession(ctx, true);
 }
 
 export async function handleObjectStorageRoute(
@@ -125,13 +118,7 @@ export async function handleObjectStorageRoute(
     } else if (record.target_type === 'bargain' && record.target_id) {
       authorized = true;
     } else {
-      const auth = await verifyFirebaseIdTokenOnEdge({
-        authorizationHeader: request.headers.get('authorization'),
-        appCheckHeader: request.headers.get('x-firebase-appcheck'),
-        request,
-        env,
-        sensitiveRoute: false,
-      });
+      const auth = await authenticateWorkerSession(ctx, false);
       if (auth.authenticated && (auth.uid === record.owner_uid || auth.isAdmin)) {
         authorized = true;
       } else {

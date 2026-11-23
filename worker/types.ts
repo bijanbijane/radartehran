@@ -137,6 +137,15 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  /** Cloudflare-native Google OpenID Connect configuration (stored as Worker secrets). */
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
+  /** Kavenegar SMS verification provider configuration (stored as Worker secrets). */
+  readonly KAVENEGAR_API_KEY?: string;
+  readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
+  /** HMAC key for OTP/IP/phone digests; use at least 32 cryptographically random bytes. */
+  readonly AUTH_PII_HMAC_SECRET?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_PROJECT_NUMBER?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';

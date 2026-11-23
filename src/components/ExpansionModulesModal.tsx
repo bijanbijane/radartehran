@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { Calculator, CheckCircle2, Copy, RefreshCw, Send, X } from 'lucide-react'; import { Neighborhood, toPersianNum } from '../data/neighborhoods'; import { calculateOfficialCommissionAndNotary, CityId } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, recordDiagnosticEvent } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ContractLegalAdvisorView } from './ContractLegalAdvisorView'; import { useDialogFocus } from './useDialogFocus'; import { NumericDraftInput } from './ui/NumericDraftInput'; export type ExpansionModalType = 'commission' | 'contract' | 'telegram' | null; export interface ExpansionModulesModalProps { activeModal: ExpansionModalType; onClose: () => void; selectedHood: Neighborhood; activeCity?: CityId; defaultMode: 'rent' | 'buy'; defaultBuyBudgetMillion: number; defaultDepositMillion: number; defaultMonthlyRentMillion: number; defaultSqm?: number; }
+import React, { useState, useEffect, useMemo } from 'react'; import { Calculator, CheckCircle2, Copy, RefreshCw, Send, X } from 'lucide-react'; import { Neighborhood, toPersianNum } from '../data/neighborhoods'; import { calculateOfficialCommissionAndNotary, CityId } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, recordDiagnosticEvent } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers';  import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ContractLegalAdvisorView } from './ContractLegalAdvisorView'; import { useDialogFocus } from './useDialogFocus'; import { NumericDraftInput } from './ui/NumericDraftInput'; export type ExpansionModalType = 'commission' | 'contract' | 'telegram' | null; export interface ExpansionModulesModalProps { activeModal: ExpansionModalType; onClose: () => void; selectedHood: Neighborhood; activeCity?: CityId; defaultMode: 'rent' | 'buy'; defaultBuyBudgetMillion: number; defaultDepositMillion: number; defaultMonthlyRentMillion: number; defaultSqm?: number; }
 function formatTomanReadable(toman: number): string { const safeToman = Number.isFinite(toman) ? Math.max(0, toman) : 0; const million = Math.round((safeToman / 1_000_000) * 10) / 10; if (million >= 1000) { const billion = Math.round((million / 1000) * 100) / 100; return `${toPersianNum(billion)} میلیارد تومان (${toPersianNum(Math.round(million))} میلیون)`;
   } return `${toPersianNum(million)} میلیون تومان`;
 } export function ExpansionModulesModal({ activeModal, onClose, selectedHood, activeCity = 'tehran', defaultMode, defaultBuyBudgetMillion, defaultDepositMillion, defaultMonthlyRentMillion, defaultSqm = 85, }: ExpansionModulesModalProps) { const [areaUnit] = useAreaUnit(); const [locale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const dialogRef = useDialogFocus(Boolean(activeModal), onClose); const [commDealType, setCommDealType] = useState<'buy' | 'rent'>(defaultMode); const [commSqm, setCommSqm] = useState<number>(defaultSqm || 85); const [commPricePerSqm, setCommPricePerSqm] = useState<number>(selectedHood?.baseBuyPerSqm ?? selectedHood?.buyPerSqm ?? 135); const [commDeposit, setCommDeposit] = useState<number>(defaultDepositMillion || selectedHood?.rahn80m || 1500); const [commMonthlyRent, setCommMonthlyRent] = useState<number>(defaultMonthlyRentMillion || 15); const [copiedCommission, setCopiedCommission] = useState<boolean>(false); useEffect(() => { if (selectedHood) { setCommPricePerSqm(selectedHood?.baseBuyPerSqm ?? selectedHood.buyPerSqm); setCommDeposit(selectedHood.rahn80m); }
@@ -26,11 +26,9 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
     } catch { finishTimer('fallback'); } finally { clearTimeout(timeoutId); setLoadingTelegram(false); } }; useEffect(() => { if (activeModal === 'telegram') {
       fetchTelegramDigest(activeCity); }
   }, [activeModal, activeCity]); const handleSendToTelegramWebhook = async (e: React.FormEvent) => { e.preventDefault(); if (sendingTelegram) return; const tgErr = validateTelegramPostText(telegramText); if (tgErr) { setTgSendStatus({ type: 'error', text: tgErr }); return; } setSendingTelegram(true); setTgSendStatus(null);
-    const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); try { const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (idToken) headers.Authorization = `Bearer ${idToken}`;
+    const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); try { const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const res = await fetch(`/api/send-telegram?city=${encodeURIComponent(activeCity)}`, {
-        method: 'POST', headers,
+        method: 'POST', headers, credentials: 'same-origin',
         body: JSON.stringify({ city: activeCity, text: telegramText }),
         signal: controller.signal,
       });
@@ -59,7 +57,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
                   <Calculator className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
@@ -143,7 +141,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <span className="font-extrabold text-emerald-950 dark:text-emerald-200 text-sm">
                     {commDealType === 'buy' ? 'سهم پرداختی خریدار' : 'سهم پرداختی مستاجر'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-[var(--color-brand-600)] text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
                 </div>
                 <div className="space-y-1.5 text-slate-700 dark:text-slate-300">
                   <div className="flex justify-between">
@@ -203,7 +201,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
             </div>
             <button
               type="button" onClick={handleCopyCommissionSheet}
-              className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
             >
               {copiedCommission ? (
                 <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>برگه محاسبه کمیسیون کپی شد!</span></>
@@ -221,7 +219,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
                   <Send className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
@@ -253,7 +251,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 type="button"
                 onClick={() => {
                   const textToCopy = intlCurrency !== 'IRT' || areaUnit === 'sqft' ? `${telegramText}\n${tgHoodSummary}` : telegramText;
-                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
               >
                 {copiedTelegram ? (
                   <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>پست تلگرام در حافظه کپی شد!</span></>
@@ -263,7 +261,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
             </div>
             <form onSubmit={handleSendToTelegramWebhook} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
               <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
+                <Send className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
                 <span>ارسال مستقیم به کانال رسمی تلگرام (از طریق تنظیمات امن سرور ویژه ادمین)</span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">

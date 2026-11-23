@@ -1,0 +1,41 @@
+name: Cloudflare Native Auth Validation
+
+on:
+  push:
+    branches:
+      - migration/rt-cloudflare-native-auth-triad-001
+      - migration/rt-native-auth-mainline-001
+  pull_request:
+    branches:
+      - main
+      - rt-db-triad-production-connection-001
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run native session, storage, and cookie-forwarding contracts
+        run: npm run test:cloudflare-native-auth
+      - name: Build frontend bundle
+        run: npm run build
+      - name: Dry-run backend Worker bundle
+        run: npx wrangler deploy --dry-run --config wrangler.backend.jsonc --outdir /tmp/radar-native-auth-dry-run

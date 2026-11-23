@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useCallback, useRef } from 'react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../platform/auth';
 import {
   INITIAL_NEIGHBORHOODS,
   LOCAL_STORAGE_KEY,
@@ -66,7 +66,7 @@ function applyPulseSnapshots(
 export interface UseMarketPulseSyncParams {
   ui: AppUiState;
   activeCityRef: React.MutableRefObject<CityId>;
-  currentUser: FirebaseUser | null;
+  currentUser: AuthUserSnapshot | null;
   allExpansionSeeds: Neighborhood[];
   setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>;
 }
@@ -105,12 +105,12 @@ export function useMarketPulseSync({
       try {
         const headers: Record<string, string> = {};
         if (forceRefresh && currentUser) {
-          try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ }
+          try { /* Cloudflare HttpOnly session cookie is sent by the browser. */ } catch { /* ignore */ }
         }
         if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         const res = await fetch(
           `/api/market-pulse?city=${encodeURIComponent(targetCity)}${forceRefresh ? '&refresh=1' : ''}`,
-          { headers, signal: controller.signal }
+          { headers, credentials: 'same-origin', signal: controller.signal }
         );
         if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         if (res.ok && activeCityRef.current === targetCity) {
@@ -163,11 +163,13 @@ export function useMarketPulseSync({
     ui.setLastSyncNotice('در حال استعلام زنده از منابع رایگان وب (AQICN، دیوار و شیپور)...');
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (currentUser) { try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ } }
+      /* Cloudflare HttpOnly session cookie is sent automatically. */
       if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current) return;
       const res = await fetch('/api/market-pulse/deep-sync', {
         method: 'POST',
         headers,
+        credentials: 'same-origin',
+        credentials: 'same-origin',
         body: JSON.stringify({ city: targetCity }),
         signal: controller.signal,
       });

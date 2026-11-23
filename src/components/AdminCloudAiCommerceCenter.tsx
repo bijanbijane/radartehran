@@ -7,7 +7,7 @@
  * - `SIMULATED — NOT A REAL AI RESPONSE`
  * - `SIMULATION — NO REAL PAYMENT OR SETTLEMENT`
  */
-import React, { useState, useEffect, useCallback } from 'react'; import { Bot, Coins, Layers, RotateCcw, Search, ShieldAlert } from 'lucide-react'; import { auth } from '../firebase'; import { toPersianNum } from '../data/neighborhoods';
+import React, { useState, useEffect, useCallback } from 'react'; import { Bot, Coins, Layers, RotateCcw, Search, ShieldAlert } from 'lucide-react'; import { getAuthClient } from '../platform/auth'; import { toPersianNum } from '../data/neighborhoods';
 import { MANDATORY_AI_SIMULATION_BANNER, OFFICIAL_AI_MODEL_REGISTRY, type RadarAiWorkflowId, } from '../utils/aiModelRegistryAndGateway'; import { MANDATORY_PAYMENT_SIMULATION_BANNER,
   RADAR_COMMERCIAL_PRODUCTS, } from '../utils/dataCommerceMcpAndMonetization'; import { AdminMcpAndPortabilitySandboxPanel } from './AdminMcpAndPortabilitySandboxPanel'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
@@ -21,18 +21,15 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
   const [aiRoutingAuditTrail, setAiRoutingAuditTrail] = useState<any[]>([]);
 
   const getAdminHeaders = async (): Promise<Record<string, string>> => { const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
+    // Worker authenticates the HttpOnly Cloudflare session cookie; no bearer token is exposed to JavaScript.
     return headers;
   };
 
   const fetchControlCenterState = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!getAuthClient().getUser()) return;
     try {
       const headers = await getAdminHeaders();
-      const res = await fetch('/api/admin/architecture-and-ai-registry', { headers });
+      const res = await fetch('/api/admin/architecture-and-ai-registry', { headers, credentials: 'same-origin' });
       if (res.ok) {
         const data = await res.json();
         if (data?.aiRouting?.routes) {
@@ -57,14 +54,14 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
     }
   }, []);
 
-  useEffect(() => { void fetchControlCenterState(); const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u) void fetchControlCenterState(); }) : undefined; return () => { if (typeof unsub === 'function') unsub(); }; }, [fetchControlCenterState]);
+  useEffect(() => { const client = getAuthClient(); void client.refreshSession().then((user) => { if (user) void fetchControlCenterState(); }).catch(() => undefined); const unsub = client.subscribe((state, user) => { if ((state === 'READY' || state === 'AUTHENTICATED') && user) void fetchControlCenterState(); }); return unsub; }, [fetchControlCenterState]);
 
   const handleSaveRouting = async () => {
     setStatusMsg(null);
     try {
       const headers = await getAdminHeaders();
       const res = await fetch('/api/admin/ai-routing', {
-        method: 'POST',
+        method: 'POST', credentials: 'same-origin',
         headers,
         body: JSON.stringify({ routes }),
       });
@@ -138,7 +135,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
     <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400" />
+          <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           <div>
             <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
               مرکز هوش مصنوعی (AI Gateway) و تجارت داده و درآمدزایی (Data Commerce & x402)
@@ -166,7 +163,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           <button
             type="button"
             onClick={handleSaveRouting}
-            className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold cursor-pointer"
           >
             ذخیره مسیریابی در سرور
           </button>
@@ -182,7 +179,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
         {/* AI Model Routing */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
+            <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>مسیریابی مدل‌های هوش مصنوعی به تفکیک جریان کاری</span>
           </div>
           {(Object.keys(WORKFLOW_LABELS_FA) as RadarAiWorkflowId[]).map((wf) => (
@@ -204,7 +201,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           {/* Controlled AI Search Test */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
             <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-              <Search className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
+              <Search className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>تست کنترل‌شده تبدیل جست‌وجوی فارسی به کوئری ساختاریافته:</span>
             </div>
             <div className="flex gap-1.5">
@@ -241,7 +238,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
         {/* Commercial Data & x402 Simulator */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            <Coins className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
+            <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>کاتالوگ محصولات داده تجاری، MCP و شبیه‌ساز x402</span>
           </div>
           <div className="space-y-2">
