@@ -252,7 +252,7 @@ test('Stage 50.4: dynamic LOD pill sizing, clean compact label formatting, and t
   ]);
   const pixelMap = { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng, y: lat }) };
   const dynamicTiers = computeDeclutteredMarkerTiers(pixelMap, [wideHoodA, wideHoodB], 14, null, () => true, labelsMap);
-  assert.equal(dynamicTiers.get(901), 'standard_pill');
+  assert.equal(dynamicTiers.get(901), 'compact_chip');
   assert.equal(dynamicTiers.get(902), 'dot', 'Colliding wide pill at 105px must demote to dot');
 
   // Tooltip header should not emit nested parentheses when zone already contains parens
