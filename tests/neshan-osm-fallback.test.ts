@@ -256,8 +256,11 @@ async function runSuite(): Promise<void> {
     controller.destroy();
   });
 
-  await check('FREE_KEYLESS_TILE_SERVERS excludes Mapbox and typeGuards accepts neshan', () => {
+  await check('Only approved Neshan/OSM providers are selectable', () => {
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).mapbox, undefined);
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).satellite, undefined, 'Esri imagery must not be exposed without a commercial license');
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).carto_dark, undefined, 'CARTO basemaps must not be exposed without an API key');
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).osm_hot, undefined, 'OSM France free tiles must not be exposed for a commercial site');
     assert.equal(isValidMapTileServerId('neshan'), true);
     assert.equal(isValidMapTileServerId('osm'), true);
     assert.equal(isValidMapTileServerId('satellite'), false, 'Unlicensed Esri imagery must not be selectable');
