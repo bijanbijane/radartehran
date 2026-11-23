@@ -1,6 +1,6 @@
 /**
  * Real local Cloudflare D1 (Wrangler Miniflare SQLite) integration — account lifecycle CV.
- * Skips with explicit reason when Wrangler cannot run in this environment.
+ * Wrangler, migration, proxy, or schema failures fail this test; they are never silently skipped.
  */
 
 import assert from 'node:assert/strict';
