@@ -24,6 +24,15 @@ test('USER_DB recovery remains dry-run by default and requires explicit --apply 
   assert.match(source, /if \(!apply\)[\s\S]*?Dry-run complete\. No DDL or migration-ledger writes were performed\./);
 });
 
+test('USER_DB recovery cannot bypass an active or unverifiable production write pause', () => {
+  assert.match(source, /function assertD1WritePauseExpired/);
+  assert.match(source, /DB_WRITES_PAUSED_UNTIL_UTC/);
+  assert.match(source, /writePauseUntilUtc/);
+  assert.match(source, /if \(apply\) \{\s*assertD1WritePauseExpired\(target\);/);
+  assert.match(source, /Number\.isSafeInteger\(deadlineMs\)/);
+  assert.ok(source.indexOf('assertD1WritePauseExpired(target)') < source.indexOf('await ensureColumn('));
+});
+
 test('USER_DB recovery only reconciles migrations 0007–0009 and contains no destructive DML/DDL', () => {
   assert.match(source, /0007_cloudflare_native_identity_and_sessions\.sql/);
   assert.match(source, /0008_sms_otp_ip_rate_limit\.sql/);
