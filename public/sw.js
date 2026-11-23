@@ -131,13 +131,7 @@ function isMapTileRequest(url) {
   );
 }
 
-/**
- * Third-party tile providers own their cache directives and usage terms.
- * Only the same-origin Radar tile proxy may use this Service Worker's tile cache.
- */
-function isExternalMapTileRequest(url) {
-  return url.origin !== self.location.origin && isMapTileRequest(url);
-}
+
 
 /**
  * Determines whether a request is for an essential UI asset (JS/CSS bundle, font, icon, Leaflet CDN, Vite module).
@@ -265,7 +259,7 @@ self.addEventListener('activate', (event) => {
           cachedRequests.map(async (cachedRequest) => {
             try {
               const cachedUrl = new URL(cachedRequest.url);
-              if (isExternalMapTileRequest(cachedUrl)) {
+              if (isMapTileRequest(cachedUrl)) {
                 await dataCache.delete(cachedRequest);
               }
             } catch {
@@ -415,45 +409,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Same-origin Radar tile proxy: Stale-While-Revalidate with offline placeholder.
-  // External tile providers are network-only; do not store opaque third-party responses.
+  // 3. Map tiles: use the browser's HTTP cache and provider Cache-Control headers.
+  // Do not persist OSM-derived tiles in Cache API: the OSM standard tile service
+  // prohibits offline-map use. Same-origin proxy tiles follow the same conservative rule.
   if (isMapTileRequest(url)) {
-    if (isExternalMapTileRequest(url)) {
-      event.respondWith(fetch(request));
-      return;
-    }
-    event.respondWith(
-      (async () => {
-        const tileCache = await caches.open(MAP_AND_API_CACHE);
-        const cachedTile = await tileCache.match(request);
-        const networkPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
-              tileCache
-                .put(request, networkResponse.clone())
-                .then(() => trimCache(MAP_AND_API_CACHE, MAX_CACHED_MAP_TILES))
-                .catch(() => {});
-            }
-            return networkResponse;
-          })
-          .catch(() => null);
-
-        if (cachedTile) {
-          return cachedTile;
-        }
-        const liveTile = await networkPromise;
-        if (liveTile) {
-          return liveTile;
-        }
-        return new Response(OFFLINE_MAP_TILE_SVG, {
-          status: 200,
-          headers: {
-            'Content-Type': 'image/svg+xml; charset=utf-8',
-            'Cache-Control': 'no-store',
-          },
-        });
-      })()
-    );
+    event.respondWith(fetch(request));
     return;
   }
 
