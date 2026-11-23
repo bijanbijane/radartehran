@@ -29,7 +29,8 @@ import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, t
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
-const viteAppCheckEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
+const viteAppCheckEnv: Record<string, string | undefined> =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
 initClientAppCheckIfConfigured(app, {
   ...viteAppCheckEnv,
   VITE_FIREBASE_APP_CHECK_SITE_KEY: String(
