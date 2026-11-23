@@ -1,6 +1,7 @@
 import React from 'react';
+import { MULTI_CITY_CONFIGS, type CityId } from '../data/multiCityData';
 import { approveSponsorRequest, batchSaveNeighborhoodOverrides, buildSanitizedSponsorMap, deleteSponsorRequest, saveFeatureFlags, saveNeighborhoodOverride, updateSponsorRequestExpiry, type SaveNeighborhoodOverrideInput } from '../data/neighborhoodRemoteRepository';
-import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; 
+import { BuyerAlertLeadItem, EvaluatedNeighborhood, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; 
 export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any, cityId = 'tehran'): Promise<void> => {
   const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? buildSanitizedSponsorMap(rawSponsorVal) : undefined;
   const payload: SaveNeighborhoodOverrideInput = {
@@ -14,7 +15,7 @@ export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal:
   };
   await saveNeighborhoodOverride(payload);
 };
-export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; activeCity: string; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
+export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; activeCity: CityId; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
   adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>; adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number;
   setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; }
 const syncApprovedSponsorRequestsExpiry = async (hoodId: number, expiresAtIso: string, cityId = 'tehran'): Promise<void> => {
@@ -131,12 +132,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       return;
     }
     const hoodId = Number(p.adminEditHoodId);
+    const citySeeds = MULTI_CITY_CONFIGS[p.activeCity]?.neighborhoods || [];
     const targetSeed =
-      INITIAL_NEIGHBORHOODS.find((hood) => hood.id === hoodId) ||
-      p.allExpansionSeeds.find((hood) => hood.id === hoodId) ||
-      p.neighborhoods.find((hood) => hood.id === hoodId);
+      p.neighborhoods.find((hood) => hood.id === hoodId) ||
+      citySeeds.find((hood) => hood.id === hoodId);
     if (!targetSeed || hoodId < 1 || hoodId > 9999) {
-      p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹ پشتیبانی می‌شوند).');
+      p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹۹ پشتیبانی می‌شوند).');
       return;
     }
     const nextBuy = Math.round(Number(p.adminEditBuySqm));
