@@ -6,22 +6,24 @@ import assert from 'node:assert/strict';
 import { processRadarQueueBatch } from '../queues/queueAndCronProcessor.ts';
 import { createCanonicalQueueJobDispatcher } from '../queues/jobDispatcher.ts';
 import type { RadarQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
+import type { MessageBatch } from '../types.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
 import { buildLifecycleQueueIdempotencyKey } from './lifecycleQueueContract.ts';
 
 interface MockMessage<T> {
   id: string;
+  timestamp: Date;
   attempts: number;
   body: T;
   ack: () => void;
   retry: (opts?: { delaySeconds?: number }) => void;
 }
 
-function createMockBatch(messages: MockMessage<unknown>[]) {
+function createMockBatch(messages: MockMessage<unknown>[]): MessageBatch<unknown> {
   return {
     messages,
     queue: 'RADAR_QUEUE',
-    retryAll: () => undefined,
+    retryAll: (_options?: { delaySeconds?: number }) => undefined,
     ackAll: () => undefined,
   };
 }
@@ -45,6 +47,7 @@ async function run(): Promise<void> {
   const batch = createMockBatch([
     {
       id: 'm1',
+      timestamp: new Date(),
       attempts: 1,
       body: envelope,
       ack() {
@@ -57,7 +60,7 @@ async function run(): Promise<void> {
   ]);
 
   const summary = await processRadarQueueBatch({
-    batch: batch as { messages: typeof batch.messages; queue: string; retryAll: () => void; ackAll: () => void },
+    batch,
     db,
     executeJob: createCanonicalQueueJobDispatcher(env),
     leaseOwner: 'integration_test',
