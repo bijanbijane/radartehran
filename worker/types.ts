@@ -141,6 +141,8 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  /** UTC deadline for the temporary global D1 write pause; expired values are inert. */
+  readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
   readonly FIREBASE_APP_CHECK_APP_ID?: string;
