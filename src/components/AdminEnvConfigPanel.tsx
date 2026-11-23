@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'; import { CheckCircle2, Cloud, Lock, RefreshCw, Save, Send, Server, ShieldCheck, Sparkles, } from 'lucide-react'; import { getAuthClient } from '../platform/auth'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, IntlCurrencyCode } from '../utils/areaUnit'; import type { ObjectStorageProviderId } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput'; export interface AdminEnvConfigPanelProps { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; } interface PublicRuntimeEnvReport { status: 'ok'; lastUpdatedIso: string | null; mutableSafeKeys?: string[]; protectedStartupKeys?: string[]; gemini: { configured: boolean; model: string;
-    deploymentManaged?: boolean; }; telegram: { botTokenConfigured: boolean; channelId: string; deploymentManagedToken?: boolean; }; firebase: { projectId: string; firestoreDatabaseId: string; adminEmail: string; adminSecretConfigured: boolean; deploymentManaged?: boolean; };
+    deploymentManaged?: boolean; }; telegram: { botTokenConfigured: boolean; channelId: string; deploymentManagedToken?: boolean; }; admin: { email: string; secretConfigured: boolean; deploymentManaged?: boolean; };
   objectStorage: { provider: ObjectStorageProviderId; endpoint: string; bucket: string; region: string; accessKeyConfigured: boolean; secretKeyConfigured: boolean; publicBaseUrl: string; maxImageMb: number; maxVideoMb: number; deploymentManagedCredentials?: boolean; }; }
 export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: propIntlCurrency }: AdminEnvConfigPanelProps = {}): React.ReactElement { const [hookAreaUnit] = useAreaUnit(); const [hookIntlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const areaUnit = propAreaUnit ?? hookAreaUnit; const intlCurrency = propIntlCurrency ?? hookIntlCurrency; const sampleUnitPrice = convertPricePerSqmToUnit(120, areaUnit); const sample85mTotalMillions = 120 * 85; const sampleMonthlyRentMillions = 45; const [report, setReport] = useState<PublicRuntimeEnvReport | null>(null); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null); const [errorMsg, setErrorMsg] = useState<string | null>(null); const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash'); const [telegramChannelId, setTelegramChannelId] = useState('');
@@ -78,21 +78,9 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 dark:text-slate-400 font-semibold">FIREBASE_PROJECT_ID (فقط‌خواندنی):</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
-              {report?.firebase?.projectId || 'gen-lang-client-0713157837'}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 dark:text-slate-400 font-semibold">FIRESTORE_DATABASE_ID (فقط‌خواندنی):</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate select-all">
-              {report?.firebase?.firestoreDatabaseId || 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a'}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">ADMIN_EMAIL (ریشه مدیر اصلی):</div>
             <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
-              {report?.firebase?.adminEmail || 'radio837isf@gmail.com'}
+              {report?.admin?.email || 'radio837isf@gmail.com'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
@@ -110,7 +98,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">وضعیت کلیدهای Gemini و Admin Secret:</div>
             <div className="font-bold text-slate-800 dark:text-slate-200">
-              Gemini Key: {report?.gemini?.configured ? 'تنظیم‌شده' : 'خالی'} · Admin Secret: {report?.firebase?.adminSecretConfigured ? 'تنظیم‌شده' : 'خالی'}
+              Gemini Key: {report?.gemini?.configured ? 'تنظیم‌شده' : 'خالی'} · Admin Secret: {report?.admin?.secretConfigured ? 'تنظیم‌شده' : 'خالی'}
             </div>
           </div>
         </div>
@@ -185,7 +173,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
                 <option value="liara">Liara Object Storage (لیارا)</option>
                 <option value="minio">MinIO Self-Hosted S3</option>
                 <option value="s3_compatible">AWS / S3-Compatible</option>
-                <option value="firebase_storage">Firebase Cloud Storage</option>
+                <option value="r2">Firebase Cloud Storage</option>
                 <option value="local_bucket">Persistent Server Object Bucket</option>
               </select>
             </div>
@@ -242,7 +230,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         <div className="flex items-center justify-between gap-3 pt-1">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>ذخیره این فرم نیازمند احراز هویت مدیر اصلی (Primary Bootstrap Admin) از طریق توکن Firebase است.</span>
+            <span>ذخیره این فرم نیازمند احراز هویت مدیر اصلی (Primary Bootstrap Admin) از طریق نشست امن Cloudflare است.</span>
           </div>
           <button
             type="submit"
