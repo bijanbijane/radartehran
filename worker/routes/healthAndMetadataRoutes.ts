@@ -285,6 +285,14 @@ export async function handleHealthAndMetadataRoute(
         },
       });
     }
+    if (ctx.environment !== 'preview') {
+      return jsonWorkerResponse(ctx, 503, {
+        ok: false,
+        code: 'USER_DB_NOT_BOUND',
+        probe: 'readiness',
+        state: 'DEGRADED',
+      });
+    }
     return jsonWorkerResponse(ctx, 200, {
       ok: true,
       probe: 'readiness',
