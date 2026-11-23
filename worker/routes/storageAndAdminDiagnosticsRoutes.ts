@@ -4,7 +4,7 @@
  * Object Storage routes have been converged into `worker/routes/objectStorageRoutes.ts`
  * as the single canonical implementation (RT-TEAMWORK-CRITICAL-002).
  */
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse } from '../contextAndSecurity';
 import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
 import { inspectD1OperationalDiagnostics } from '../db/d1SchemaAndMigrations';
@@ -19,10 +19,10 @@ export const WORKER_DEPENDENCY_COMPATIBILITY_MATRIX: readonly DependencyCompatib
     edgeReplacement: 'worker/router.ts Web Fetch API router',
   },
   {
-    packageName: 'firebase-admin',
-    currentUsage: 'Node-only gRPC Firebase Auth & Firestore SDK',
-    officialStatus: 'NOT_SUPPORTED',
-    edgeReplacement: 'worker/auth/firebaseEdgeAuth.ts WebCrypto RS256 + Firestore REST',
+    packageName: 'Cloudflare D1 sessions',
+    currentUsage: 'Opaque HttpOnly session cookies with D1-backed identity and revocation',
+    officialStatus: 'WORKS_NATIVELY',
+    edgeReplacement: 'worker/auth/sessionAuth.ts + worker/routes/authRoutes.ts',
   },
   {
     packageName: 'sharp',
