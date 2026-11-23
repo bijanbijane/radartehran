@@ -172,6 +172,14 @@ export default {
   ): Promise<Response> {
     const reqCtx = createWorkerRequestContext(request, env);
     try {
+      // The frontend Worker forwards every API request to the isolated backend Worker.
+      // The backend Worker has no RADAR_API binding, so it executes its own router.
+      if (reqCtx.pathname.startsWith('/api/') && env.RADAR_API) {
+        const apiResponse = await env.RADAR_API.fetch(request);
+        buildObservabilityRecord(reqCtx, apiResponse.status, 'RADAR_API_SERVICE_BINDING', 'VERIFIED');
+        return apiResponse;
+      }
+
       const apiOrSeoResult = await dispatchWorkerApiOrSeoRequest(reqCtx);
       if (apiOrSeoResult) {
         buildObservabilityRecord(
