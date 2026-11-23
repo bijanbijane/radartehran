@@ -38,7 +38,8 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
-  // Authoritative Migration Control Register check FIRST — zero route bypasses
+  // Authoritative Migration Control Register check FIRST. Only implemented native-auth routes
+  // may pass this gate, and their handler performs its own fail-closed D1 schema readiness check.
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   const conditionallyRoutedAuth =
     registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
@@ -75,7 +76,7 @@ export async function dispatchWorkerApiOrSeoRequest(
     return {
       response: authResponse,
       routePattern: pathname,
-      migrationStatus: 'VERIFIED',
+      migrationStatus: registeredMatch?.entry.status || 'VERIFIED',
     };
   }
 

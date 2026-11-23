@@ -192,3 +192,30 @@ PR #9 remains open and touches these shared files: `src/firebase.ts`, `src/data/
 ### Next safe implementation unit
 
 Implement and test the missing Cloudflare Worker/D1 admin mutation contracts for the independent admin-action module, including transactional authorization, ownership checks, idempotency where applicable, and explicit fail-closed behavior. Only after those contracts exist should the frontend Firestore calls be replaced. Keep the migration register BLOCKED until USER_DB migration 0010 and required data/authorization parity are verified. Do not delete Firebase project/data, deploy, mutate production D1, or alter IRNI-owned resources as part of source migration.
+
+
+## 23 November 2026 — Google sign-in route activation (source-only)
+
+**Branch:** `migration/cloudflare-native-auth-firebase-retirement`  
+**PR:** #23, OPEN / DRAFT; base `main`.  
+**New HEAD:** `436a479b6d1ac0ae4490d00156bb8248801c1171`  
+**Implementation commits:** `db7b6964449781b0ac3927b3d5a4b66c185eb997`, `436a479b6d1ac0ae4490d00156bb8248801c1171`.
+
+### Implemented in source
+
+- Existing frontend Google sign-in action calls the Cloudflare session client and redirects to `/api/auth/google/start`; it no longer needs a Firebase popup for this flow.
+- The Worker OAuth callback exchanges the authorization code, validates Google ID-token signature/issuer/audience/authorized-party/nonce/time claims, persists the provider identity in USER_DB, and issues an opaque HttpOnly session cookie.
+- The migration register now classifies the native-auth route family as `IMPLEMENTED` on the Cloudflare Worker. The router permits only that explicitly classified group through the migration gate.
+- The auth handler probes the required D1 schema before executing. Missing/partial schema returns `503 AUTH_SCHEMA_NOT_READY`; missing USER_DB returns `503 USER_DB_NOT_BOUND`. Google login requires the base identity/session/OAuth schema (migration 0007); SMS OTP additionally checks the SMS-specific columns from migrations 0008–0009.
+- Regression tests were added for migration-register dispatch, the no-USER_DB fail-closed response, and Google-versus-SMS schema readiness.
+
+### Operational blockers — do not bypass
+
+- No production D1 migration was applied. The USER_DB migration history and the documented partial-application recovery for migrations 0007–0009 still require verification before use.
+- Google OAuth credentials were not provisioned or exposed. Set the real `GOOGLE_OAUTH_CLIENT_ID` variable and `GOOGLE_OAUTH_CLIENT_SECRET` Worker secret, with the exact callback URI registered at Google. Do not put secrets in Git.
+- No Worker deployment, DNS change, production database mutation, Firebase project deletion, or Firestore data deletion was performed.
+- CI was not run for the new HEAD; the last known run for an earlier branch commit failed. Source changes are not yet CI-verified and PR #23 remains Draft.
+
+### Concurrency boundary
+
+The only file shared with PR #9 among the auth changes is `src/platform/auth/core/authClient.ts`; it was not edited. PR #9, dependent PR #28, and validation PR #34 remain untouched. `main` and Production remain unchanged.
