@@ -95,7 +95,8 @@ export interface R2Bucket {
   list(options?: {
     prefix?: string;
     limit?: number;
-  }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean }>;
+    cursor?: string;
+  }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean; cursor?: string }>;
 }
 
 export interface QueueMessage<T = unknown> {
