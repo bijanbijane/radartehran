@@ -158,7 +158,10 @@ export interface WorkerEnv {
   readonly DB?: D1Database;
   /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
   readonly RESEARCH_DB?: D1Database;
-  // ABSOLUTE ARCHITECTURAL INVARIANT: No direct D1 binding for IRNI `radar-neighborhood-db`.
+  /** IRNI-owned canonical geography reference database. Runtime reads are exposed only through the IRNI registry repository; signed IRNI publication is the sole write path. */
+  readonly NEIGHBORHOOD_DB?: D1Database;
+  /** HMAC secret used only to authenticate IRNI's GitHub Actions registry publisher. */
+  readonly IRNI_PUBLISH_HMAC_SECRET?: string;
   readonly RESEARCH_HMAC_SECRET?: string;
   readonly RESEARCH_HMAC_KEY_VERSION?: string;
   readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
