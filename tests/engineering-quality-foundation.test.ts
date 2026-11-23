@@ -967,9 +967,14 @@ async function runSuite(): Promise<void> {
 
     const fallbackTilePolicy = resolveUpstreamTileCachePolicy({
       get: () => null,
-    }, fixedNow);
+    }, fixedNow, 'sqm', 'USD', 10000, 7 * 24 * 60 * 60);
     assert.equal(fallbackTilePolicy.cacheable, true);
-    assert.equal(fallbackTilePolicy.expiresAt, fixedNow + 7 * 24 * 60 * 60 * 1000, 'Seven-day fallback applies only when upstream cache metadata is absent');
+    assert.equal(fallbackTilePolicy.expiresAt, fixedNow + 7 * 24 * 60 * 60 * 1000, 'Seven-day fallback is explicitly supplied only for the OSM Standard tile host');
+
+    const unknownProviderPolicy = resolveUpstreamTileCachePolicy({
+      get: () => null,
+    }, fixedNow);
+    assert.equal(unknownProviderPolicy.cacheable, false, 'Unknown tile providers without cache metadata must not inherit OSMF cache defaults');
 
     const { clampLatLngRing } = await import('../src/utils/serverBoundaryProtocol');
     const sampleRing: [number, number][] = [[35.75, 51.40], [35.76, 51.40], [35.76, 51.41], [35.75, 51.41]];
