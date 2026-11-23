@@ -3,7 +3,8 @@
  *
  * Kept separate from workerLifecycleRuntime.ts, which owns the USER_DB /
  * RESEARCH_DB triad. This runtime is only valid for the dedicated migrations/d1
- * schema and fails closed when the Worker is bound to USER_DB.
+ * schema and fails closed when the Worker is bound to USER_DB. It also requires
+ * an explicit STAGE_D_LIFECYCLE_ENABLED=true opt-in after that dedicated D1 is provisioned.
  */
 import { AccountDeletionOrchestrator } from '../../server/modules/account-lifecycle/deletionOrchestrator.ts';
 import {
@@ -40,6 +41,20 @@ const DEFAULT_MAX_BATCHES_PER_INVOCATION = 5;
 const RETRYABLE_LIFECYCLE_DELAY_MS = 15 * 60 * 1000;
 const DISPATCH_FAILURE_RETRY_MS = 60 * 1000;
 
+type StageDLifecycleEnv = WorkerEnv & {
+  readonly STAGE_D_LIFECYCLE_ENABLED?: string;
+};
+
+/**
+ * Stage D must never infer eligibility from the presence of a generic DB alias.
+ * The operator must explicitly opt in after provisioning and validating the
+ * dedicated migrations/d1 database; USER_DB-bound Workers are never eligible.
+ */
+export function isStageDLifecycleEnabled(env: WorkerEnv): boolean {
+  const explicitOptIn = (env as StageDLifecycleEnv).STAGE_D_LIFECYCLE_ENABLED;
+  return explicitOptIn?.trim().toLowerCase() === 'true' && Boolean(env.DB) && !env.USER_DB;
+}
+
 export function buildLifecycleActorFromPrincipal(params: {
   uid: string;
   email?: string;
@@ -66,9 +81,7 @@ export function buildLifecycleActorFromPrincipal(params: {
 }
 
 export function requireWorkerLifecycleBindings(env: WorkerEnv): void {
-  if (!env.DB && !env.USER_DB) {
-    throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Account lifecycle D1 binding is unavailable.', 503);
-  }
+  requireStageDDatabase(env);
 }
 
 function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
@@ -81,6 +94,13 @@ function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
   }
   if (!env.DB) {
     throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Stage D D1 binding is missing.', 503);
+  }
+  if (!isStageDLifecycleEnabled(env)) {
+    throw new AccountLifecycleError(
+      'STORE_UNAVAILABLE',
+      'Stage D lifecycle is disabled until the dedicated migrations/d1 database is provisioned and explicitly enabled.',
+      503,
+    );
   }
   return env.DB as unknown as D1DatabaseBinding;
 }
@@ -205,6 +225,9 @@ export async function initiateWorkerAccountDeletion(params: {
 
 /** Re-publishes durable outbox rows. Queue delivery is at-least-once; D1 queue idempotency is the duplicate barrier. */
 export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25): Promise<number> {
+  // Cron invokes this bridge on hourly schedules; a missing opt-in must be a
+  // safe no-op, not an attempt against an unrelated or deleted DB binding.
+  if (!isStageDLifecycleEnabled(env)) return 0;
   if (!env.RADAR_QUEUE) {
     throw new AccountLifecycleError('STORE_UNAVAILABLE', 'RADAR_QUEUE binding is unavailable.', 503);
   }
