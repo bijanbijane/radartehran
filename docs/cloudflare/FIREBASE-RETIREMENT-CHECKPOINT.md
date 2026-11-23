@@ -147,3 +147,23 @@ This note supersedes the earlier working-HEAD and partial-schema statements abov
 ### Safety decision
 
 Do not delete the Firebase project, Firestore database/collections, Firebase configuration, or packages yet. The active frontend/admin paths still depend on Firestore, the production Cloudflare replacement schema is incomplete, no Firestore-to-D1 data parity proof exists, and the current branch does not pass typecheck. Complete and verify every replacement path, obtain an authenticated Firestore export/inventory, prove record and authorization parity, and only then schedule a separate decommissioning operation. No production database mutation was made during this audit.
+
+
+## 23 November 2026 — destructive source/config cutout (commit `11a63bec1bb076eb190cf2323d61b1c2a7f7feec`)
+
+At the operator's explicit direction, the Firebase-retirement branch removed 22 legacy Firebase/Firestore repository paths in one commit. The deletion set covered:
+- Firebase project/deployment configuration: `.firebaserc`, `firebase-applet-config.json`, `firebase-blueprint.json`, `firebase.json`.
+- Firestore security/deployment assets: `firestore.rules`, `firestore.indexes.json`, rules test runner and root rules test.
+- Firestore-only server persistence adapters for brokerage operations, community, disputes, legal-regulatory transactions, permits, property rights, viewings, and real-estate transactions.
+- Legacy Firestore auditing/integrity, App Check, connection-state, HTTP helper, and sponsor helper modules.
+
+### Important scope and remaining blockers
+
+- These are deletions on `migration/cloudflare-native-auth-firebase-retirement` / PR #23 only. `main` and production deployments were not changed. Git history still retains prior versions of deleted files.
+- The live Firebase project and Firestore database were **not** deleted or modified. No Firebase/GCP admin API or connector is available in this session to perform or verify that remote destructive operation.
+- Three source paths shared with active PR #9 were deliberately not changed: `src/data/firestoreDataAuditor.ts`, `src/data/firestoreNeighborhoodMappers.ts`, and `src/data/firestoreNeighborhoodRepository.ts`. `src/firebase.ts`, `package.json`, and `package-lock.json` are also shared with PR #9 and remain.
+- The package manifest still contains Firebase SDK/admin and rules-test dependencies. Direct Firestore usage remains in frontend/admin code, including `src/components/useRadarAdminActions.ts` and `src/components/AdminPanel.tsx`; legacy server security/configuration paths also remain. The branch is therefore **not yet Firebase-free** and the application can have missing-module/config build failures as a result of this intentional cutout.
+- CI run `45172596829` was triggered for the cutout commit and was still running at the latest check. Do not claim it passed until a completed run is inspected.
+- The prior read-only audit found zero rows in the listed USER_DB tables but did not query Firestore; this does not establish that the Firebase project or Firestore collections are empty.
+
+No Cloudflare D1 data was deleted, no IRNI-owned resource was modified, and no production deploy was performed.
