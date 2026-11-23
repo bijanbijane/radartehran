@@ -1,5 +1,4 @@
-/**
- * @file worker/account-lifecycle/d1InternalRpcNonceStore.ts
+/** @file worker/account-lifecycle/d1InternalRpcNonceStore.ts
  * @description Replay-protected internal RPC nonce store and Web Crypto HMAC-SHA256
  * signature verification operating strictly on `USER_DB`.
  */
@@ -15,6 +14,54 @@ function timingSafeHexEqual(a: string, b: string): boolean {
     diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return diff === 0;
+}
+
+/**
+ * Atomically records a previously authenticated internal write-admission RPC nonce.
+ * This function does not authenticate the request; callers must verify the HMAC and
+ * timestamp before invoking it. The unique D1 primary key is the replay barrier.
+ */
+export async function consumeLifecycleRpcNonce(params: {
+  db: D1Database;
+  nonce: string;
+  nowMs?: number;
+}): Promise<{ consumed: true } | { consumed: false; code: string }> {
+  const nonce = String(params.nonce || '').trim();
+  if (nonce.length < 12 || nonce.length > 128) {
+    return { consumed: false, code: 'RPC_NONCE_INVALID' };
+  }
+
+  const nowMs = params.nowMs ?? Date.now();
+  const expiresAtMs = nowMs + MAX_RPC_CLOCK_SKEW_MS * 2;
+  try {
+    const insert = await params.db.prepare(
+      'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, issuer, expires_at_ms, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
+    ).bind(
+      nonce,
+      'WRITE_ADMISSION_RPC',
+      expiresAtMs,
+      new Date(nowMs).toISOString(),
+    ).run();
+
+    if (!insert.success) {
+      return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+    }
+    if ((insert.meta?.changes ?? 0) !== 1) {
+      return { consumed: false, code: 'RPC_NONCE_REPLAYED' };
+    }
+
+    // Cleanup is best-effort; a cleanup problem must not undo a successful nonce claim.
+    try {
+      await params.db.prepare(
+        'DELETE FROM lifecycle_internal_rpc_nonces WHERE expires_at_ms <= ?1',
+      ).bind(nowMs).run();
+    } catch {
+      /* expired rows are harmless and will be removed by a later successful request */
+    }
+    return { consumed: true };
+  } catch {
+    return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+  }
 }
 
 export async function signInternalLifecycleRpc(params: {
