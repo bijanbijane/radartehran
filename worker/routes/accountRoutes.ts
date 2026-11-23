@@ -24,6 +24,7 @@ import {
 import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
+import { decryptMarketPhone } from '../marketplace/marketPiiCrypto';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
@@ -228,10 +229,10 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
           'SELECT bargain_id, city_id, hood_id, title, listing_type, sqm, price_millions, price_text, discount_percent, buyer_profit_text, street, status, created_at_iso, updated_at_iso, approved_at_iso FROM bargains WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
         ).bind(uid).all<Record<string, unknown>>(),
         userDb.prepare(
-          'SELECT request_id, city_id, hood_id, hood_name, agency_name, phone_e164, specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million, tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso FROM sponsor_requests WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+          'SELECT request_id, city_id, hood_id, hood_name, agency_name, phone_ciphertext, phone_hash, phone_last4, specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million, tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso FROM sponsor_requests WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
         ).bind(uid).all<Record<string, unknown>>(),
         userDb.prepare(
-          'SELECT alert_id, city_id, hood_id, full_name, phone_e164, deal_type, max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso FROM buyer_alerts WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+          'SELECT alert_id, city_id, hood_id, full_name, phone_ciphertext, phone_hash, phone_last4, deal_type, max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso FROM buyer_alerts WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
         ).bind(uid).all<Record<string, unknown>>(),
         userDb.prepare(
           'SELECT vote_id, city_id, hood_id, air_score, power_score, internet_score, metro_score, security_score, flat_score, comment, user_display_name, created_at_iso, updated_at_iso FROM neighborhood_votes WHERE owner_uid = ?1 ORDER BY updated_at_iso DESC LIMIT 500',
@@ -242,8 +243,20 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       const channels = notificationChannels.results ?? [];
       const media = mediaResult.results ?? [];
       const bargains = bargainsResult.results ?? [];
-      const sponsorRecords = sponsorRecordsResult.results ?? [];
-      const buyerAlerts = buyerAlertsResult.results ?? [];
+      let sponsorRecords: Record<string, unknown>[];
+      let buyerAlerts: Record<string, unknown>[];
+      try {
+        sponsorRecords = await Promise.all((sponsorRecordsResult.results ?? []).map(async (row) => {
+          const { phone_ciphertext, phone_hash, phone_last4, ...safeRecord } = row;
+          return { ...safeRecord, phone: await decryptMarketPhone(String(phone_ciphertext || ''), env) };
+        }));
+        buyerAlerts = await Promise.all((buyerAlertsResult.results ?? []).map(async (row) => {
+          const { phone_ciphertext, phone_hash, phone_last4, ...safeRecord } = row;
+          return { ...safeRecord, phone: await decryptMarketPhone(String(phone_ciphertext || ''), env) };
+        }));
+      } catch {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_PII_DECRYPTION_UNAVAILABLE' });
+      }
       const neighborhoodVotes = votesResult.results ?? [];
       const availableSources = [
         { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
