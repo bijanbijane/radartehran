@@ -104,7 +104,7 @@ export class D1AccountLifecycleDispatch {
 
     let existing = await d1FirstRow(this.db, Q.SQL_GET_JOB_LEASE, params.jobId);
     if (!existing) {
-      let inserted: Awaited<ReturnType<ReturnType<D1DatabaseBinding['prepare']>['run']>> | undefined;
+      let inserted: { success: boolean; meta?: { changes?: number } } | undefined;
       try {
         inserted = await this.db
           .prepare(Q.SQL_INSERT_JOB_LEASE)
