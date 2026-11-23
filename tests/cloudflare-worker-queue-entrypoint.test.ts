@@ -401,7 +401,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
       messageId: 'msg-takeover-1',
       jobType: 'expired_chunk_upload_session_cleanup',
       idempotencyKey: 'idem-stale-lease',
-      correlationId: 'corr-new-1',
+      correlationId: 'corr-old-1',
       createdAtIso: nowIso,
       payload: {},
     });
