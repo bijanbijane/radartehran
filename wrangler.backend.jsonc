@@ -23,7 +23,7 @@
   },
 
   // Production D1 bindings (default top-level environment: radartehran-api)
-  // USER_DB and legacy compatibility alias DB point to the exact same physical radar-user-db UUID.
+  // USER_DB is the sole canonical binding to radar-user-db.
   // RESEARCH_DB points to the physically isolated radar-researcher-db UUID with its own migrations_dir.
   "d1_databases": [
     {
@@ -33,7 +33,6 @@
       "migrations_dir": "migrations/user-d1",
       "migrations_table": "d1_migrations"
     },
-    {
     {
       "binding": "RESEARCH_DB",
       "database_name": "radar-researcher-db",
@@ -45,7 +44,7 @@
 
   // Non-secret runtime configuration ONLY.
   // Required Cloudflare Worker Secrets (provision via `wrangler secret put`, NEVER in vars):
-  //   - ADMIN_API_SECRET
+  //   - GOOGLE_OAUTH_CLIENT_SECRET\n  //   - KAVENEGAR_API_KEY\n  //   - AUTH_PII_HMAC_SECRET\n  //   - ADMIN_API_SECRET
   //   - R2_SIGNING_SECRET
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
@@ -82,7 +81,7 @@
     //   1. wrangler d1 create radar-user-db-staging
     //   2. wrangler d1 create radar-researcher-db-staging
     //   3. wrangler kv namespace create radartehran-api-staging-kv
-    // Then add staging d1_databases (USER_DB, DB, RESEARCH_DB) and kv_namespaces below.
+    // Then add staging d1_databases (USER_DB, RESEARCH_DB) and kv_namespaces below.
     "staging": {
       "name": "radartehran-api-staging",
       "workers_dev": true,
