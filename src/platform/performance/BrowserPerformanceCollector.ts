@@ -35,6 +35,11 @@ export interface PercentileDistribution {
   p50: number | null;
   p75: number | null;
   p95: number | null;
+  /**
+   * Tail-latency diagnostic only. Interpret cautiously for small cohorts;
+   * p99 is not a Core Web Vital budget gate and is unstable with low sample counts.
+   */
+  p99: number | null;
 }
 
 export interface RumPercentileBudgetEvaluation {
@@ -93,6 +98,8 @@ export function buildPercentileDistribution(values: readonly number[]): Percenti
     p50: computeSamplePercentile(valid, 50),
     p75: computeSamplePercentile(valid, 75),
     p95: computeSamplePercentile(valid, 95),
+    // Diagnostic tail percentile; do not use as a release gate for small cohorts.
+    p99: computeSamplePercentile(valid, 99),
   };
 }
 
@@ -277,7 +284,7 @@ export class BrowserRumCollector {
         lcp: this.resolveStatus('largest-contentful-paint', this.lcpMs),
         inp: this.resolveStatus('event', this.inpMs),
         cls: this.resolveStatus('layout-shift', this.clsValue),
-        longtask: this.resolveStatus('longtask', null, this.observers.length > 0),
+        longtask: this.resolveStatus('longtask', null, this.longTaskCount > 0),
       },
     };
   }
