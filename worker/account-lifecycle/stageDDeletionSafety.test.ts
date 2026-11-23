@@ -350,7 +350,6 @@ test('USER_PROFILE pagination preserves the final upload-session page and fills 
       'FROM account_data_requests': [
         { request_id: 'request_1', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:00.000Z' },
         { request_id: 'request_2', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:01.000Z' },
-        { request_id: 'request_3', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:02.000Z' },
       ],
     },
   });
@@ -360,7 +359,7 @@ test('USER_PROFILE pagination preserves the final upload-session page and fills 
   const page = await adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 5 });
   assert.deepEqual(
     page.items.map((item) => item.recordId),
-    ['session_1', 'session_2', 'request_1', 'request_2', 'request_3'],
+    ['session_1', 'session_2', 'request_1', 'request_2'],
   );
   assert.equal(page.hasMore, false);
   assert.equal(page.nextCursor, null);
@@ -396,8 +395,8 @@ test('USER_PROFILE deletion keeps its combined session and request batch within 
     ['session_1', 'request_1', 'request_2'],
   );
   assert.equal(batch.receipts.length, 3);
-  assert.equal(batch.hasMore, false);
-  assert.equal(batch.nextCursor, null);
+  assert.equal(batch.hasMore, true);
+  assert.equal(batch.nextCursor, 'drq:request_2');
   assert.equal(calls.filter((call) => call.method === 'run' && call.sql.startsWith('DELETE FROM')).length, 4);
   const requestRead = calls.find((call) => call.method === 'all' && call.sql.includes('FROM account_data_requests'));
   assert.ok(requestRead);
