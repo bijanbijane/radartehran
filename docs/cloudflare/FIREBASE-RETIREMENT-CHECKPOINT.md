@@ -23,7 +23,7 @@
 
 ## Partial D1 migration incident — recovery required
 
-An attempt to apply USER_DB migrations 0007–0009 through the D1 query endpoint hit Cloudflare's Free-tier daily row-write limit.
+An attempt to apply USER_DB migrations 0007–0010 through the D1 query endpoint hit Cloudflare's Free-tier daily row-write limit.
 
 The first DDL statement succeeded before the limit stopped the next statement:
 
@@ -39,9 +39,9 @@ Do not run `wrangler d1 migrations apply` against this partially modified schema
 Use the Cloudflare D1 **raw** endpoint, not separate `/query` calls. The raw endpoint supports a batch of SQL statements. In one atomic batch:
 
 1. Remove the one partially applied column: `ALTER TABLE user_sessions DROP COLUMN token_hash;`
-2. Execute every statement from USER_DB migrations 0007, 0008, and 0009 in order.
-3. Insert the three exact migration filenames into `d1_migrations` only after all DDL succeeds.
-4. Re-read `PRAGMA table_info(user_sessions)`, the three auth tables, and the migration ledger. Verify all columns/tables exist and ledger entries 0001–0009 are present.
+2. Execute every statement from USER_DB migrations 0007, 0008, 0009, and 0010 in order.
+3. Insert the four exact migration filenames into `d1_migrations` only after all DDL succeeds.
+4. Re-read `PRAGMA table_info(user_sessions)`, the three auth tables, and the migration ledger. Verify all columns/tables exist and ledger entries 0001–0010 are present.
 5. Re-run the USER_DB migration-readiness endpoint/test.
 
 The D1 write-limit error is an account quota constraint, not a SQL error. Do not retry writes before the quota resets or the account limit is upgraded.
@@ -75,6 +75,6 @@ Do not place secret values in Git, Wrangler vars, logs, or this checkpoint.
 - Cloudflare-native Google OIDC + Kavenegar OTP routes and opaque D1 sessions are on the working branch.
 - Google OIDC verifier now checks `azp` whenever there are multiple audiences and rejects a conflicting `azp` even for a single audience.
 - OTP challenge finalization now occurs after identity/session creation; if finalization fails, the newly issued session is revoked and the challenge remains retryable where attempts remain.
-- USER_DB readiness now uses its own 0001–0009 migration catalog instead of incorrectly checking only the legacy D1 catalog.
+- USER_DB readiness now uses its own 0001–0010 migration catalog instead of incorrectly checking only the legacy D1 catalog. Migration 0010 adds D1-owned marketplace and neighborhood state tables; binary media remains excluded.
 - Tests were added for OIDC authorized-party validation and USER_DB migration readiness.
 - R2-dependent media routes are blocked until the operator explicitly approves a provider.
