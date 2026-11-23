@@ -202,8 +202,8 @@ export interface ServerValuationSealOptions {
 
 function resolveValuationSealSecret(explicitSecret?: string): string {
   const secret = String(explicitSecret ?? process.env.VALUATION_SEAL_SECRET ?? '').trim();
-  if (secret.length < 32) {
-    throw new Error('VALUATION_SEAL_SECRET_MISSING_OR_WEAK');
+  if (!/^[0-9a-f]{64}$/i.test(secret)) {
+    throw new Error('VALUATION_SEAL_SECRET_UNAVAILABLE');
   }
   return secret;
 }
