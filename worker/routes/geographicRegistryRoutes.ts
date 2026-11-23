@@ -8,6 +8,7 @@
  */
 import { requireNeighborhoodDb } from '../db/bindingResolver';
 import {
+  assessReceivingGeographicPublishHead,
   compareActiveGeographicPublishManifest,
   computeExpectedGeographicPublishBatchId,
   type ExpectedGeographicPublishManifest,
@@ -763,6 +764,88 @@ async function publishFinalize(
   if (session.status !== 'RECEIVING') {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_NOT_OPEN' });
   }
+
+  // Re-read the active pointer before any canonical-table writes. The trusted
+  // IRNI publisher workflow is serialized; this check also rejects stale
+  // RECEIVING sessions that survived an earlier interrupted publication.
+  let finalizeHead: ActiveRegistryHead | null;
+  try {
+    finalizeHead = await db.prepare(
+      `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
+        h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
+        h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
+       FROM geo_registry_publish_pointer p
+       JOIN geo_registry_head h ON h.singleton_id = 'current'
+       WHERE p.singleton_id = 'current'`,
+    ).first<ActiveRegistryHead>();
+  } catch {
+    return jsonWorkerResponse(ctx, 503, {
+      status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+    });
+  }
+
+  const headAssessment = assessReceivingGeographicPublishHead({
+    activeHead: finalizeHead,
+    expected: finalizeManifest,
+    batchId: String(batchId),
+  });
+  if (headAssessment.action === 'reject') {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error',
+      code: headAssessment.code,
+      currentRevision: headAssessment.currentRevision,
+    });
+  }
+  if (headAssessment.action === 'verify-active') {
+    if (!finalizeHead) {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+      });
+    }
+    let importedArtifacts: {
+      artifact_path: string;
+      artifact_sha256: string;
+      record_count: number;
+      registry_revision: number;
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(finalizeManifest.registryRevision).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+      });
+    }
+    const comparison = compareActiveGeographicPublishManifest({
+      activeHead: finalizeHead,
+      expected: finalizeManifest,
+      importedArtifacts,
+    });
+    if (!comparison.matches) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_RECEIVING_BATCH_ACTIVE_MANIFEST_CONFLICT',
+        mismatches: comparison.mismatches,
+      });
+    }
+    return jsonWorkerResponse(ctx, 200, {
+      status: 'ok', alreadyPublished: true, registry: finalizeHead, verifiedArtifacts: 6,
+    });
+  }
+
   const batchIdValue = String(batchId);
   const [entityCount,relationshipCount,mappingCount,identityEntryCount,anchorCount,aliasCount] = await Promise.all([
     db.prepare('SELECT COUNT(*) AS count FROM geo_registry_entity_stage WHERE batch_id = ?1')
