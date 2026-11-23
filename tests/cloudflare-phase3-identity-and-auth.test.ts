@@ -436,6 +436,33 @@ describe('Phase 3: Identity, Authentication & Authorization Architecture', () =>
     assert.equal(guestOnUserPolicy.statusCode, 401);
     assert.equal(evaluateWorkerAuthorization(userCtx, { policy: 'VERIFIED_USER' }).allowed, true);
 
+    const recentAuthTime = Math.floor(Date.now() / 1000) - 120;
+    const freshUserCtx: WorkerAuthContext = {
+      ...userCtx,
+      principal: { ...userPrincipal, authTimeSeconds: recentAuthTime },
+    };
+    const staleUserCtx: WorkerAuthContext = {
+      ...userCtx,
+      principal: { ...userPrincipal, authTimeSeconds: Math.floor(Date.now() / 1000) - 600 },
+    };
+    assert.equal(
+      evaluateWorkerAuthorization(freshUserCtx, { policy: 'VERIFIED_USER', maxAuthAgeSeconds: 300 }).allowed,
+      true,
+    );
+    const staleAuthDecision = evaluateWorkerAuthorization(staleUserCtx, {
+      policy: 'VERIFIED_USER',
+      maxAuthAgeSeconds: 300,
+    });
+    assert.equal(staleAuthDecision.allowed, false);
+    assert.equal(staleAuthDecision.statusCode, 403);
+    assert.equal(staleAuthDecision.failureCode, 'RECENT_AUTHENTICATION_REQUIRED');
+    const missingAuthTimeDecision = evaluateWorkerAuthorization(userCtx, {
+      policy: 'VERIFIED_USER',
+      maxAuthAgeSeconds: 300,
+    });
+    assert.equal(missingAuthTimeDecision.allowed, false);
+    assert.equal(missingAuthTimeDecision.failureCode, 'RECENT_AUTHENTICATION_REQUIRED');
+
     // RESOURCE_OWNER_OR_ADMIN:
     // - Owner matches -> Allowed (200)
     const ownerDecision = evaluateWorkerAuthorization(userCtx, {
