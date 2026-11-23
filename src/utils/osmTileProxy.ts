@@ -145,7 +145,7 @@ export async function fetchTileFromMirror(
     const controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
     const requestHeaders: Record<string, string> = {
-      'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; Free OpenStreetMap Client)',
+      'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; OSM Standard tile client)',
       Referer: resolveTileProxyReferer(),
       Accept: 'image/png,image/webp,image/*;q=0.8',
     };
