@@ -57,18 +57,18 @@ export interface ActiveGeographicPublishHead {
   readonly registry_revision: number;
   readonly registry_checksum: string;
   /** Revision/checksum on geo_registry_head, separate from the active pointer values. */
-  readonly head_registry_revision: number;
-  readonly head_registry_checksum: string;
-  readonly contract_version: string;
-  readonly id_algorithm_version: string;
-  readonly schema_version: string;
-  readonly canonical_entry_count: number;
-  readonly canonical_entity_count: number;
-  readonly relationship_count: number;
-  readonly anchor_count: number;
-  readonly source_mapping_count: number;
-  readonly legacy_alias_count: number;
-  readonly integrity_verified: number;
+  readonly head_registry_revision: number | null;
+  readonly head_registry_checksum: string | null;
+  readonly contract_version: string | null;
+  readonly id_algorithm_version: string | null;
+  readonly schema_version: string | null;
+  readonly canonical_entry_count: number | null;
+  readonly canonical_entity_count: number | null;
+  readonly relationship_count: number | null;
+  readonly anchor_count: number | null;
+  readonly source_mapping_count: number | null;
+  readonly legacy_alias_count: number | null;
+  readonly integrity_verified: number | null;
 }
 
 export interface ImportedGeographicArtifact {
