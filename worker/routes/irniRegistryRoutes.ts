@@ -11,7 +11,7 @@ import type { WorkerRequestContext, D1Database, D1PreparedStatement } from '../t
 
 const CANONICAL_ID_RE = /^IRGEO1-[0-9a-f]{64}$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
-const DATASET_KINDS = ['entities', 'relationships', 'sourceMappings'] as const;
+const DATASET_KINDS = ['entities', 'relationships', 'sourceMappings', 'legacyAliases'] as const;
 type DatasetKind = (typeof DATASET_KINDS)[number];
 
 interface PublishManifest {
@@ -25,6 +25,7 @@ interface PublishManifest {
     readonly entities: number;
     readonly relationships: number;
     readonly sourceMappings: number;
+    readonly legacyAliases: number;
   };
   readonly artifactChecksums: {
     readonly snapshot: string;
@@ -167,6 +168,7 @@ function getManifest(body: Record<string, unknown>): PublishManifest | null {
     !isPositiveInteger(counts.entities) ||
     !isPositiveInteger(counts.relationships) ||
     !isPositiveInteger(counts.sourceMappings) ||
+    !isNonNegativeInteger(counts.legacyAliases) ||
     !isRecord(checksums) ||
     !isHexSha256(checksums.snapshot) ||
     !isHexSha256(checksums.relationships) ||
@@ -175,7 +177,7 @@ function getManifest(body: Record<string, unknown>): PublishManifest | null {
     !isHexSha256(checksums.identityAnchors) ||
     !isHexSha256(checksums.legacyAliases)
   ) return null;
-  if (counts.entities > 100_000 || counts.relationships > 200_000 || counts.sourceMappings > 250_000) return null;
+  if (counts.entities > 100_000 || counts.relationships > 200_000 || counts.sourceMappings > 250_000 || counts.legacyAliases > 100_000) return null;
   return body as unknown as PublishManifest;
 }
 
@@ -187,6 +189,9 @@ function getRecordKey(kind: DatasetKind, item: Record<string, unknown>): string 
   if (kind === 'relationships') {
     return typeof item.relationshipId === 'string' && item.relationshipId.length > 0
       ? item.relationshipId : null;
+  }
+  if (kind === 'legacyAliases') {
+    return typeof item.aliasId === 'string' && item.aliasId.length > 0 ? item.aliasId : null;
   }
   return typeof item.mappingKey === 'string' && item.mappingKey.length > 0 ? item.mappingKey : null;
 }
@@ -231,6 +236,15 @@ function validateDatasetRecord(kind: DatasetKind, item: Record<string, unknown>)
       typeof item.classificationSystemId === 'string' &&
       typeof item.sourceDatasetId === 'string' &&
       typeof item.verificationStatus === 'string';
+  }
+  if (kind === 'legacyAliases') {
+    return getRecordKey(kind, item) !== null &&
+      ['TEHRAN_RADAR','LEGACY_IRAN_NEIGHBORHOOD_ID','RETIRED_CANONICAL_ID','OTHER_LEGACY'].includes(String(item.legacySystemCode)) &&
+      typeof item.legacyIdentifierValue === 'string' && item.legacyIdentifierValue.length > 0 &&
+      typeof item.canonicalGeographicEntityId === 'string' && CANONICAL_ID_RE.test(item.canonicalGeographicEntityId) &&
+      ['ACTIVE_COMPATIBILITY_ALIAS','RETIRED_DUPLICATE_ALIAS','MERGED_PREDECESSOR_ALIAS'].includes(String(item.aliasStatus)) &&
+      typeof item.resolutionEvidenceRef === 'string' && item.resolutionEvidenceRef.length > 0 &&
+      isPositiveInteger(item.recordedAtRegistryRevision);
   }
   return getRecordKey(kind, item) !== null &&
     typeof item.identifierNamespaceCode === 'string' &&
@@ -277,13 +291,13 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
     await db.prepare(
       `INSERT INTO geo_publish_batches (
         batch_id, registry_revision, registry_checksum, contract_version, id_algorithm_version,
-        schema_version, expected_entities, expected_relationships, expected_source_mappings,
+        schema_version, expected_entities, expected_relationships, expected_source_mappings, expected_legacy_aliases,
         artifact_checksums_json, status, created_at_iso, updated_at_iso
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEIVING', ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEIVING', ?, ?)`,
     ).bind(
       manifest.batchId, manifest.registryRevision, manifest.registryChecksum, manifest.contractVersion,
       manifest.idAlgorithmVersion, manifest.schemaVersion, manifest.expectedCounts.entities,
-      manifest.expectedCounts.relationships, manifest.expectedCounts.sourceMappings,
+      manifest.expectedCounts.relationships, manifest.expectedCounts.sourceMappings, manifest.expectedCounts.legacyAliases,
       JSON.stringify(manifest.artifactChecksums), new Date().toISOString(), new Date().toISOString(),
     ).run();
     return jsonResponse(ctx, 200, { status: 'ok', batchId: manifest.batchId, accepted: true });
@@ -353,7 +367,8 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
       .bind(batchId).first<{
         batch_id: string; registry_revision: number; registry_checksum: string; contract_version: string;
         id_algorithm_version: string; schema_version: string; expected_entities: number;
-        expected_relationships: number; expected_source_mappings: number; artifact_checksums_json: string; status: string;
+        expected_relationships: number; expected_source_mappings: number; expected_legacy_aliases: number;
+        artifact_checksums_json: string; status: string;
       }>();
     if (!batch) {
       return jsonResponse(ctx, 404, { status: 'error', code: 'IRNI_PUBLISH_BATCH_NOT_FOUND' });
@@ -366,18 +381,20 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
     if (batch.status !== 'RECEIVING') {
       return jsonResponse(ctx, 409, { status: 'error', code: 'IRNI_PUBLISH_BATCH_NOT_RECEIVING' });
     }
-    const [entityCount, relationshipCount, mappingCount] = await Promise.all([
+    const [entityCount, relationshipCount, mappingCount, aliasCount] = await Promise.all([
       db.prepare('SELECT COUNT(*) AS count FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = ?').bind(batchId, 'entities').first<{ count: number }>(),
       db.prepare('SELECT COUNT(*) AS count FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = ?').bind(batchId, 'relationships').first<{ count: number }>(),
       db.prepare('SELECT COUNT(*) AS count FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = ?').bind(batchId, 'sourceMappings').first<{ count: number }>(),
+      db.prepare('SELECT COUNT(*) AS count FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = ?').bind(batchId, 'legacyAliases').first<{ count: number }>(),
     ]);
     if (
       Number(entityCount?.count || 0) !== batch.expected_entities ||
       Number(relationshipCount?.count || 0) !== batch.expected_relationships ||
-      Number(mappingCount?.count || 0) !== batch.expected_source_mappings
+      Number(mappingCount?.count || 0) !== batch.expected_source_mappings ||
+      Number(aliasCount?.count || 0) !== batch.expected_legacy_aliases
     ) return jsonResponse(ctx, 409, { status: 'error', code: 'IRNI_PUBLISH_COUNTS_INCOMPLETE' });
 
-    const [badRelationships, badMappings, badParents, syntheticCount, identityMismatch, distinctIdentityOrder] = await Promise.all([
+    const [badRelationships, badMappings, badParents, syntheticCount, identityMismatch, distinctIdentityOrder, badAliases] = await Promise.all([
       db.prepare(`SELECT COUNT(*) AS count FROM geo_publish_staging_records r
         WHERE r.batch_id = ? AND r.dataset_kind = 'relationships' AND (
           NOT EXISTS (SELECT 1 FROM geo_publish_staging_records e WHERE e.batch_id = r.batch_id AND e.dataset_kind = 'entities' AND json_extract(e.record_json, '$.geographicEntityId') = json_extract(r.record_json, '$.sourceGeographicEntityId')) OR
@@ -404,16 +421,23 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         )`).bind(batchId).first<{ count: number }>(),
       db.prepare(`SELECT COUNT(DISTINCT json_extract(record_json, '$.identityRegistryEntry.issuedOrderIndex')) AS count
         FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId).first<{ count: number }>(),
+      db.prepare(`SELECT COUNT(*) AS count FROM geo_publish_staging_records a
+        WHERE a.batch_id = ? AND a.dataset_kind = 'legacyAliases' AND NOT EXISTS (
+          SELECT 1 FROM geo_publish_staging_records e WHERE e.batch_id = a.batch_id AND e.dataset_kind = 'entities'
+          AND json_extract(e.record_json, '$.geographicEntityId') = json_extract(a.record_json, '$.canonicalGeographicEntityId')
+        )`).bind(batchId).first<{ count: number }>(),
     ]);
     if (Number(badRelationships?.count || 0) > 0 || Number(badMappings?.count || 0) > 0 ||
         Number(badParents?.count || 0) > 0 || Number(syntheticCount?.count || 0) > 0 ||
-        Number(identityMismatch?.count || 0) > 0 || Number(distinctIdentityOrder?.count || 0) !== batch.expected_entities) {
+        Number(identityMismatch?.count || 0) > 0 || Number(distinctIdentityOrder?.count || 0) !== batch.expected_entities ||
+        Number(badAliases?.count || 0) > 0) {
       return jsonResponse(ctx, 422, {
         status: 'error', code: 'IRNI_PUBLISH_REFERENTIAL_INTEGRITY_FAILED',
         badRelationships: Number(badRelationships?.count || 0), badMappings: Number(badMappings?.count || 0),
         badParents: Number(badParents?.count || 0), syntheticRecords: Number(syntheticCount?.count || 0),
         identityMismatches: Number(identityMismatch?.count || 0),
         distinctIdentityOrderValues: Number(distinctIdentityOrder?.count || 0),
+        badAliases: Number(badAliases?.count || 0),
       });
     }
 
@@ -459,6 +483,14 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         json_extract(record_json, '$.identityAnchorRecord') FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
       db.prepare('DELETE FROM geo_identity_registry_entries'),
       db.prepare('DELETE FROM geo_legacy_aliases'),
+      db.prepare(`INSERT INTO geo_legacy_aliases (
+        alias_id, legacy_system_code, legacy_identifier_value, canonical_geographic_entity_id,
+        alias_status, resolution_evidence_ref, recorded_at_registry_revision, alias_json
+      ) SELECT json_extract(record_json, '$.aliasId'), json_extract(record_json, '$.legacySystemCode'),
+        json_extract(record_json, '$.legacyIdentifierValue'), json_extract(record_json, '$.canonicalGeographicEntityId'),
+        json_extract(record_json, '$.aliasStatus'), json_extract(record_json, '$.resolutionEvidenceRef'),
+        json_extract(record_json, '$.recordedAtRegistryRevision'), record_json
+      FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'legacyAliases'`).bind(batchId),
       db.prepare(`INSERT INTO geo_identity_registry_entries (
         geographic_entity_id, identity_anchor, anchor_type, entity_type, classification_system_id,
         canonical_name_fa, identity_status, issued_at_registry_revision, issued_order_index,
@@ -501,7 +533,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         batch.contract_version, batch.id_algorithm_version, batch.schema_version, batch.registry_revision,
         oldHead?.registry_revision ?? null, batch.registry_checksum, batch.expected_entities,
         batch.expected_entities, batch.expected_relationships, batch.expected_entities,
-        batch.expected_source_mappings, 0, importedAt,
+        batch.expected_source_mappings, batch.expected_legacy_aliases, importedAt,
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
@@ -525,7 +557,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
-        'data/geography/identity/GEOGRAPHIC-LEGACY-ID-ALIASES.json', artifactChecksums.legacyAliases, 0, batch.registry_revision, importedAt,
+        'data/geography/identity/GEOGRAPHIC-LEGACY-ID-ALIASES.json', artifactChecksums.legacyAliases, batch.expected_legacy_aliases, batch.registry_revision, importedAt,
       ),
       db.prepare(`UPDATE geo_publish_batches SET status = 'PUBLISHED', updated_at_iso = ? WHERE batch_id = ?`).bind(importedAt, batchId),
       db.prepare('DELETE FROM geo_publish_staging_records WHERE batch_id = ?').bind(batchId),
@@ -535,7 +567,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
     if (applied.some((entry) => !entry.success)) {
       return jsonResponse(ctx, 500, { status: 'error', code: 'IRNI_PUBLISH_ATOMIC_ACTIVATION_FAILED' });
     }
-    const head = await db.prepare('SELECT registry_revision, registry_checksum, canonical_entity_count, relationship_count, source_mapping_count FROM geo_registry_head WHERE singleton_id = ?')
+    const head = await db.prepare('SELECT registry_revision, registry_checksum, canonical_entry_count, canonical_entity_count, relationship_count, anchor_count, source_mapping_count, legacy_alias_count, duplicate_conflict_count, integrity_verified FROM geo_registry_head WHERE singleton_id = ?')
       .bind('current').first<Record<string, unknown>>();
     return jsonResponse(ctx, 200, { status: 'ok', published: true, head });
   }
@@ -550,7 +582,7 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
   if (method !== 'GET') return jsonResponse(ctx, 405, { status: 'error', code: 'GEOGRAPHY_REFERENCE_READ_ONLY' });
   const db = env.NEIGHBORHOOD_DB;
   if (!db) return jsonResponse(ctx, 503, { status: 'error', code: 'IRNI_NEIGHBORHOOD_DATABASE_NOT_BOUND' });
-  const head = await db.prepare('SELECT contract_version, id_algorithm_version, schema_version, registry_revision, registry_checksum, canonical_entity_count, relationship_count, source_mapping_count, integrity_verified, imported_at_iso FROM geo_registry_head WHERE singleton_id = ?')
+  const head = await db.prepare('SELECT contract_version, id_algorithm_version, schema_version, registry_revision, registry_checksum, canonical_entry_count, canonical_entity_count, relationship_count, anchor_count, source_mapping_count, legacy_alias_count, duplicate_conflict_count, integrity_verified, imported_at_iso FROM geo_registry_head WHERE singleton_id = ?')
     .bind('current').first<Record<string, unknown>>();
   if (!head || Number(head.integrity_verified) !== 1) {
     return jsonResponse(ctx, 503, { status: 'error', code: 'IRNI_REGISTRY_NOT_VERIFIED' });
@@ -558,6 +590,22 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
   if (pathname === prefix + '/metadata') {
     return jsonResponse(ctx, 200, { status: 'ok', registry: head });
   }
+
+  if (pathname === prefix + '/aliases') {
+    const legacySystemCode = url.searchParams.get('legacySystemCode');
+    const legacyIdentifierValue = url.searchParams.get('legacyIdentifierValue');
+    if (!legacySystemCode || !legacyIdentifierValue) {
+      return jsonResponse(ctx, 400, { status: 'error', code: 'LEGACY_ALIAS_LOOKUP_REQUIRED' });
+    }
+    const rows = await db.prepare(
+      `SELECT alias_json FROM geo_legacy_aliases
+       WHERE legacy_system_code = ? AND legacy_identifier_value = ?
+       ORDER BY alias_id`,
+    ).bind(legacySystemCode, legacyIdentifierValue).all<{ alias_json: string }>();
+    const items = (rows.results || []).map((row) => JSON.parse(row.alias_json));
+    return jsonResponse(ctx, 200, { status: 'ok', registry: head, items });
+  }
+
   const singlePrefix = prefix + '/entities/';
   if (pathname.startsWith(singlePrefix)) {
     const id = decodeURIComponent(pathname.slice(singlePrefix.length));
