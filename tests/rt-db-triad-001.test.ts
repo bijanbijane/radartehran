@@ -817,6 +817,27 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(replayErasure.idempotentReplay, true);
     });
 
+    it('fails closed before account deletion when the dedicated lifecycle receipt key is absent', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const uid = 'uid_missing_lifecycle_receipt_key';
+      const result = await executeAccountDeletionLifecycle({
+        env: {
+          USER_DB: userSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET_V1,
+        },
+        uid,
+        actorUid: uid,
+        idempotencyKey: 'del_missing_lifecycle_receipt_key',
+      });
+      assert.equal(result.statusCode, 503);
+      assert.equal(result.code, 'INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE');
+      assert.equal(result.userDbDeletedRecords, 0);
+      assert.equal(result.jobId, '');
+      const jobs = userSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM account_deletion_jobs').get() as { cnt: number };
+      assert.equal(jobs.cnt, 0, 'No deletion job or destructive mutation may begin without the dedicated receipt key.');
+    });
+
     it('enforces Legal Hold blocking account deletion (423)', async () => {
       const userSqlite = createRealSqliteD1();
       applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
