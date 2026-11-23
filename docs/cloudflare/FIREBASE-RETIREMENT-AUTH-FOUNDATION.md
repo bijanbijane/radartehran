@@ -44,3 +44,18 @@ No Worker deployment, production D1 write, Firestore deletion, Firebase project 
 - The native auth regression suite is wired into `test:auth`, `test:cloudflare`, and the path-filtered Worker gate.
 - The PR's initial GitHub Actions attempt failed before any runner steps were reported (runner id 0 / empty step list). Job logs were not available from GitHub. Rerun was attempted; no successful test result is claimed.
 - Production Worker secrets have not been provisioned, no remote USER_DB migration has been applied, and no Firebase/Firestore resource has been deleted.
+
+## Worker -> Express session trust bridge
+
+Cloudflare-native sessions are verified against D1 at the Worker edge. When a route still falls back to legacy Express, the Worker may forward the verified principal in a short-lived HMAC-SHA256 assertion:
+
+- Header: `x-radar-session-assertion`, minted only by the Worker after D1 session verification.
+- Claims are bound to HTTP method, exact path and query, correlation ID, and Worker-hop marker.
+- Maximum assertion lifetime is 30 seconds. Express verifies the MAC with a constant-time comparison and rejects expired, malformed, mismatched, or unverifiable assertions.
+- Express removes the private assertion header before downstream middleware and exposes the principal only through request-scoped AsyncLocalStorage.
+- A present but invalid D1 session cookie fails closed; it must not downgrade to Firebase bearer credentials within the same request.
+- Cloudflare session Admin authorization uses the primary/delegated role flags already verified from D1. Legacy Firebase bearer requests retain the existing Firebase/Firestore authorization path during the migration window.
+- Firebase App Check is not treated as equivalent to a Cloudflare session. Routes that explicitly enforce App Check remain gated until their App Check contract is migrated separately.
+
+The Worker and Express origin must both receive the same `AUTH_INTERNAL_HMAC_SECRET` as a secret (at least 32 random bytes). The value is intentionally blank in `.env.example`; do not commit or provision it through plaintext Worker vars. Missing bridge configuration returns HTTP 503 for a request carrying a D1 session cookie. No runtime secret has been provisioned and no deployment/cutover is included in this code change.
+
