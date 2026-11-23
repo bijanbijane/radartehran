@@ -1,6 +1,6 @@
 /** @file src/features/community/hooks/useCommunityHubData.ts — Stage 4b Unified Community Hub Data Hook with AbortController, Retry & Cursor Pagination */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import {
   getCommunityCorrections,
   getCommunityDiscussions,
@@ -19,7 +19,7 @@ import type {
   ResearchTopicProposal,
 } from '../types/community.types';
 
-export function useCommunityHubData(params: { currentUser?: User | null; includeSeeds: boolean }) {
+export function useCommunityHubData(params: { currentUser?: AuthUserSnapshot | null; includeSeeds: boolean }) {
   const { currentUser, includeSeeds } = params;
   const [topics, setTopics] = useState<CommunityTopicNode[]>([]);
   const [posts, setPosts] = useState<CommunityDiscussionPost[]>([]);
