@@ -4,12 +4,16 @@ import {
   MUTATION_HTTP_METHODS,
 } from '../../server/modules/account-lifecycle/mutationWriteBlockGuard.ts';
 import { resolveWriteAdmissionFromD1 } from './d1WriteAdmissionResolver.ts';
-import type { WorkerRequestContext } from '../types.ts';
+import { requireUserDb } from '../db/bindingResolver.ts';
+import type { WorkerRequestContext, D1Database } from '../types.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import { jsonWorkerResponse } from '../contextAndSecurity.ts';
-import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1MutationPermit.ts';
+import {
+  acquireMutationPermitInD1,
+  releaseMutationPermitInD1,
+} from './d1MutationPermit.ts';
 
-const ACTIVE_PERMITS = new WeakMap<Request, { permitId: string; targetUid: string }>();
+const ACTIVE_PERMITS = new WeakMap<Request, { permitId: string; userDb: D1Database }>();
 
 export async function enforceWorkerMutationWriteBlock(
   ctx: WorkerRequestContext,
@@ -17,48 +21,64 @@ export async function enforceWorkerMutationWriteBlock(
 ): Promise<Response | null> {
   if (!authenticatedUid) return null;
   if (isLifecycleExemptPath(ctx.pathname, ctx.method)) return null;
-  if (!ctx.env.DB) {
+
+  const userDbResult = requireUserDb(ctx.env);
+  if (userDbResult.ok === false) {
     return jsonWorkerResponse(ctx, 503, {
       status: 'error',
-      code: 'STORE_UNAVAILABLE',
+      code: userDbResult.code,
       correlationId: ctx.correlationId,
       message: 'Cannot verify write-block state; mutation refused.',
     });
   }
+
+  const userDb = userDbResult.db;
   try {
-    const db = ctx.env.DB as unknown as D1DatabaseBinding;
-    const decision = await resolveWriteAdmissionFromD1(db, authenticatedUid);
+    const decision = await resolveWriteAdmissionFromD1(
+      userDb as unknown as D1DatabaseBinding,
+      authenticatedUid,
+    );
     assertWriteAdmissionPermitsMutation(decision);
+
     if (MUTATION_HTTP_METHODS.has(ctx.method.toUpperCase())) {
-      const { permitId } = await acquireD1MutationPermit({
-        db,
-        targetUid: authenticatedUid,
-        holderId: ctx.correlationId,
-        routeSignature: `${ctx.method} ${ctx.pathname}`,
+      const permit = await acquireMutationPermitInD1({
+        userDb,
+        uid: authenticatedUid,
+        operationName: `${ctx.method.toUpperCase()} ${ctx.pathname}`,
       });
-      ACTIVE_PERMITS.set(ctx.request, { permitId, targetUid: authenticatedUid });
+      if (permit.ok === false) {
+        throw Object.assign(new Error(permit.code), {
+          code: permit.code,
+          httpStatus: permit.statusCode,
+        });
+      }
+      ACTIVE_PERMITS.set(ctx.request, { permitId: permit.permitId, userDb });
     }
     return null;
   } catch (err) {
-    const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : 'USER_WRITES_BLOCKED_BY_DELETION';
-    const status = err && typeof err === 'object' && 'httpStatus' in err ? Number((err as { httpStatus: number }).httpStatus) : 423;
+    const hasHttpStatus = Boolean(err && typeof err === 'object' && 'httpStatus' in err);
+    const code = err && typeof err === 'object' && 'code' in err
+      ? String((err as { code: string }).code)
+      : 'WRITE_ADMISSION_UNAVAILABLE';
+    const status = hasHttpStatus
+      ? Number((err as { httpStatus: number }).httpStatus)
+      : 503;
     return jsonWorkerResponse(ctx, status, {
       status: 'error',
       code,
       correlationId: ctx.correlationId,
-      message: 'Account mutation blocked during deletion.',
+      message: 'Account mutation blocked because write admission could not be verified.',
     });
   }
 }
 
 export async function releaseWorkerMutationPermitIfHeld(ctx: WorkerRequestContext): Promise<void> {
   const held = ACTIVE_PERMITS.get(ctx.request);
-  if (!held || !ctx.env.DB) return;
+  if (!held) return;
   ACTIVE_PERMITS.delete(ctx.request);
   try {
-    await releaseD1MutationPermit({
-      db: ctx.env.DB as unknown as D1DatabaseBinding,
-      targetUid: held.targetUid,
+    await releaseMutationPermitInD1({
+      userDb: held.userDb,
       permitId: held.permitId,
     });
   } catch {
