@@ -929,7 +929,10 @@ async function runSuite(): Promise<void> {
     });
     assert.equal(fakeJpegCheck.ok, false, 'validateObjectStoragePayload must reject buffers whose magic bytes do not match declared mimeType');
 
-    const { resolveUpstreamTileCachePolicy } = await import('../src/utils/osmTileProxy');
+    const { resolveUpstreamTileCachePolicy, FREE_OSM_UPSTREAM_MIRRORS } = await import('../src/utils/osmTileProxy');
+    assert.equal(FREE_OSM_UPSTREAM_MIRRORS.length, 1, 'Do not fail over to free tile mirrors without verifying their separate usage terms');
+    assert.equal(FREE_OSM_UPSTREAM_MIRRORS[0](12, 2632, 1610), 'https://tile.openstreetmap.org/12/2632/1610.png', 'Use the exact OSM Standard tile URL');
+
     const fixedNow = Date.parse('2026-11-23T00:00:00.000Z');
     const privateTilePolicy = resolveUpstreamTileCachePolicy({
       get: (name: string) => (name === 'cache-control' ? 'private, max-age=900000' : name === 'etag' ? '"abc\r\ndef"' : null),
