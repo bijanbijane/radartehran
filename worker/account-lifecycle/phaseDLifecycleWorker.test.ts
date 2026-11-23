@@ -9,9 +9,36 @@ import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 import { acquireD1MutationPermit, releaseD1MutationPermit, countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import { SQL_UPSERT_WRITE_BLOCK } from './d1Queries.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
-import { calculateLifecycleRecoveryOffset } from './stageDLifecycleRuntime.ts';
+import { calculateLifecycleRecoveryOffset, isStageDLifecycleEnabled } from './stageDLifecycleRuntime.ts';
+import type { WorkerEnv } from '../types.ts';
 
 async function run(): Promise<void> {
+  const lifecycleBinding = {} as WorkerEnv['DB'];
+  const userBinding = {} as WorkerEnv['USER_DB'];
+  const configuredStageEnv = {
+    DB: lifecycleBinding,
+    USER_DB: userBinding,
+    STAGE_D_LIFECYCLE_ENABLED: 'true',
+    STAGE_D_LIFECYCLE_DATABASE_ID: 'lifecycle-db-id',
+    STAGE_D_USER_DATABASE_ID: 'user-db-id',
+  } as WorkerEnv;
+  assert.equal(isStageDLifecycleEnabled(configuredStageEnv), true);
+  assert.equal(isStageDLifecycleEnabled({
+    ...configuredStageEnv,
+    USER_DB: lifecycleBinding,
+  }), false);
+  assert.equal(isStageDLifecycleEnabled({
+    ...configuredStageEnv,
+    STAGE_D_USER_DATABASE_ID: 'lifecycle-db-id',
+  }), false);
+  assert.equal(isStageDLifecycleEnabled({
+    ...configuredStageEnv,
+    STAGE_D_LIFECYCLE_ENABLED: 'false',
+  }), false);
+  assert.equal(isStageDLifecycleEnabled({
+    ...configuredStageEnv,
+    USER_DB: undefined,
+  }), false);
   assert.equal(calculateLifecycleRecoveryOffset(40, 50, 0), 0);
   assert.equal(calculateLifecycleRecoveryOffset(120, 50, 0), 0);
   assert.equal(calculateLifecycleRecoveryOffset(120, 50, 1), 50);
