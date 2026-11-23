@@ -14,6 +14,39 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const PHONE_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
+interface GoogleOAuthStateRow {
+  nonce: string;
+  code_verifier: string;
+  return_path: string;
+}
+
+function assertSingleD1Write(
+  result: { success: boolean; meta?: { changes?: number } },
+  code: string,
+): void {
+  if (result.success !== true || Number(result.meta?.changes) !== 1) throw new Error(code);
+}
+
+function assertSuccessfulD1Batch(results: Array<{ success: boolean }>, expectedLength: number, code: string): void {
+  if (!Array.isArray(results) || results.length !== expectedLength || results.some((result) => result.success !== true)) {
+    throw new Error(code);
+  }
+}
+
+/** Atomically consumes an unexpired OAuth state; concurrent callbacks cannot reuse it. */
+export async function consumeGoogleOAuthState(
+  db: D1Database,
+  stateHash: string,
+  nowMs = Date.now(),
+): Promise<GoogleOAuthStateRow | null> {
+  if (!/^[a-f0-9]{64}$/i.test(stateHash) || !Number.isSafeInteger(nowMs) || nowMs < 0) return null;
+  return db.prepare(
+    `DELETE FROM auth_oauth_states
+     WHERE state_hash = ?1 AND expires_at_ms > ?2
+     RETURNING nonce, code_verifier, return_path`,
+  ).bind(stateHash, nowMs).first<GoogleOAuthStateRow>();
+}
+
 function randomToken(bytes = 32): string {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
   let binary = '';
@@ -85,9 +118,10 @@ async function createOrResolveIdentity(
   if (existing) {
     if (existing.account_status !== 'ACTIVE') throw new Error('ACCOUNT_NOT_ACTIVE');
     if (linkUid && existing.uid !== linkUid) throw new Error('IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT');
-    await db.prepare(
+    const updated = await db.prepare(
       'UPDATE auth_identities SET email = ?1, email_verified = ?2, phone_e164 = ?3, last_authenticated_at_iso = ?4 WHERE provider = ?5 AND provider_subject = ?6 AND uid = ?7',
     ).bind(profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, new Date().toISOString(), provider, subject, existing.uid).run();
+    assertSingleD1Write(updated, 'AUTH_IDENTITY_WRITE_FAILED');
     return { uid: existing.uid, linked: false };
   }
 
@@ -106,13 +140,15 @@ async function createOrResolveIdentity(
         role, account_status, created_at_iso, updated_at_iso
       ) VALUES (?1, ?2, 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?3, ?3)`,
     ).bind(uid, String(profile.displayName || '').trim().slice(0, 80), now);
-    await db.batch([profileStatement, identityStatement]);
+    const results = await db.batch([profileStatement, identityStatement]);
+    assertSuccessfulD1Batch(results, 2, 'AUTH_IDENTITY_CREATE_FAILED');
   } else {
     const owner = await db.prepare(
       'SELECT uid FROM user_profiles WHERE uid = ?1 AND account_status = \'ACTIVE\'',
     ).bind(uid).first<{ uid: string }>();
     if (!owner) throw new Error('ACCOUNT_NOT_ACTIVE');
-    await identityStatement.run();
+    const inserted = await identityStatement.run();
+    assertSingleD1Write(inserted, 'AUTH_IDENTITY_WRITE_FAILED');
   }
   return { uid, linked: Boolean(linkUid) };
 }
@@ -130,12 +166,13 @@ async function issueSession(
   const userAgent = (request.headers.get('user-agent') || '').replace(/[\r\n]/g, '').slice(0, 180);
   const ip = request.headers.get('cf-connecting-ip') || '';
   const ipPrefix = ip.includes(':') ? ip.split(':').slice(0, 4).join(':') : ip.split('.').slice(0, 3).join('.');
-  await db.prepare(
+  const inserted = await db.prepare(
     `INSERT INTO user_sessions (
       session_id, uid, device_label, user_agent_summary, ip_prefix, status,
       created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider
     ) VALUES (?1, ?2, 'web', ?3, ?4, 'ACTIVE', ?5, ?5, ?6, ?7, ?8)`,
   ).bind(crypto.randomUUID(), uid, userAgent, ipPrefix.slice(0, 64), now.toISOString(), tokenHash, expiresAt.toISOString(), provider).run();
+  assertSingleD1Write(inserted, 'AUTH_SESSION_WRITE_FAILED');
   return { token, expiresAtIso: expiresAt.toISOString() };
 }
 
@@ -292,9 +329,10 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const stateHash = await sha256Hex(state);
     const now = Date.now();
     const returnPath = safeReturnPath(new URL(request.url).searchParams.get('returnTo'));
-    await db.prepare(
+    const stateInsert = await db.prepare(
       'INSERT INTO auth_oauth_states (state_hash, nonce, code_verifier, return_path, expires_at_ms, created_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
     ).bind(stateHash, nonce, codeVerifier, returnPath, now + OAUTH_STATE_TTL_MS, now).run();
+    assertSingleD1Write(stateInsert, 'OAUTH_STATE_STORE_UNAVAILABLE');
     const url = new URL(GOOGLE_AUTHORIZE_URL);
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -315,11 +353,13 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (!state || !code || url.searchParams.has('error')) return errorRedirect(ctx, 'GOOGLE_OAUTH_DENIED');
     if (readRequestCookie(request, '__Host-radar_oauth_state') !== state) return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_COOKIE_MISMATCH');
     const stateHash = await sha256Hex(state);
-    const stateRow = await db.prepare(
-      'SELECT nonce, code_verifier, return_path, expires_at_ms FROM auth_oauth_states WHERE state_hash = ?1 LIMIT 1',
-    ).bind(stateHash).first<{ nonce: string; code_verifier: string; return_path: string; expires_at_ms: number }>();
-    await db.prepare('DELETE FROM auth_oauth_states WHERE state_hash = ?1').bind(stateHash).run();
-    if (!stateRow || Number(stateRow.expires_at_ms) <= Date.now()) return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_INVALID');
+    let stateRow: GoogleOAuthStateRow | null;
+    try {
+      stateRow = await consumeGoogleOAuthState(db, stateHash, Date.now());
+    } catch {
+      return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_STORE_UNAVAILABLE');
+    }
+    if (!stateRow) return errorRedirect(ctx, 'GOOGLE_OAUTH_STATE_INVALID');
 
     const clientId = String(env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
     const clientSecret = String(env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim();
@@ -381,12 +421,14 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
       WHERE (SELECT COUNT(*) FROM auth_phone_challenges WHERE phone_hash = ?3 AND created_at_ms > ?4) < 3
         AND (SELECT COUNT(*) FROM auth_phone_challenges WHERE ip_hash = ?5 AND created_at_ms > ?4) < 5`,
     ).bind(challengeId, phone, phoneHash, now - 10 * 60 * 1000, ipHash, now + PHONE_CHALLENGE_TTL_MS, now, codeHash).run();
+    if (reservation.success !== true) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'PHONE_OTP_STORE_UNAVAILABLE' });
     if (Number(reservation.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'PHONE_OTP_RATE_LIMITED' });
 
     try {
       const providerReference = await sendOtpSms(ctx, phone, otp);
-      await db.prepare('UPDATE auth_phone_challenges SET provider_reference = ?1 WHERE challenge_id = ?2 AND status = \'PENDING\'')
+      const updated = await db.prepare('UPDATE auth_phone_challenges SET provider_reference = ?1 WHERE challenge_id = ?2 AND status = \'PENDING\'')
         .bind(providerReference, challengeId).run();
+      assertSingleD1Write(updated, 'PHONE_OTP_STORE_UNAVAILABLE');
       return jsonWorkerResponse(ctx, 202, { status: 'ok', challengeId, expiresInSeconds: PHONE_CHALLENGE_TTL_MS / 1000 });
     } catch (error) {
       await db.prepare('UPDATE auth_phone_challenges SET status = \'EXPIRED\' WHERE challenge_id = ?1').bind(challengeId).run();
@@ -413,6 +455,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
        SET status = 'LOCKED', attempts = attempts + 1
        WHERE challenge_id = ?1 AND status = 'PENDING' AND attempts < 5 AND expires_at_ms > ?2`,
     ).bind(challengeId, Date.now()).run();
+    if (claim.success !== true) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'OTP_CHALLENGE_STORE_UNAVAILABLE' });
     if (Number(claim.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_CHALLENGE_ALREADY_USED_OR_LOCKED' });
 
     try {
@@ -432,7 +475,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
         const finalized = await db.prepare(
           'UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2 AND status = \'LOCKED\'',
         ).bind(Date.now(), challengeId).run();
-        if (Number(finalized.meta?.changes || 0) !== 1) throw new Error('OTP_CHALLENGE_FINALIZATION_FAILED');
+        assertSingleD1Write(finalized, 'OTP_CHALLENGE_FINALIZATION_FAILED');
       } catch (finalizationError) {
         const tokenHash = await sha256Hex(session.token);
         await db.prepare(
@@ -467,8 +510,9 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const raw = tokenCookie.split(';').map((part) => part.trim()).find((part) => part.startsWith('__Host-radar_session='))?.slice('__Host-radar_session='.length);
     if (auth.authenticated && raw) {
       const tokenHash = await sha256Hex(raw);
-      await db.prepare('UPDATE user_sessions SET status = \'REVOKED\', revoked_at_iso = ?1, revoked_by_uid = ?2 WHERE token_hash = ?3 AND status = \'ACTIVE\'')
+      const revoked = await db.prepare('UPDATE user_sessions SET status = \'REVOKED\', revoked_at_iso = ?1, revoked_by_uid = ?2 WHERE token_hash = ?3 AND status = \'ACTIVE\'')
         .bind(new Date().toISOString(), auth.uid, tokenHash).run();
+      assertSingleD1Write(revoked, 'AUTH_SESSION_REVOKE_FAILED');
     }
     return new Response(JSON.stringify({ status: 'ok' }), {
       status: 200,
