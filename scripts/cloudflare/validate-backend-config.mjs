@@ -226,6 +226,12 @@ export function validateBackendWranglerConfig(
   const prodNames = new Set(prodD1.map((d) => String(d.database_name || '').toLowerCase()).filter(Boolean));
   const stagingD1 = Array.isArray(staging?.d1_databases) ? staging.d1_databases : [];
   scanBindingsForForbiddenIds(stagingD1, 'staging', errors);
+  const irniDirectBindingPresent = [...prodD1, ...stagingD1].some((binding) =>
+    FORBIDDEN_IRNI_IDENTIFIERS.some((identifier) =>
+      [binding?.binding, binding?.database_name, binding?.database_id]
+        .some((value) => String(value || '').trim().toLowerCase() === identifier.toLowerCase()),
+    ),
+  );
 
   let stagingProvisioningStatus = 'PROVISIONED';
   if (stagingD1.length === 0) {
@@ -279,7 +285,7 @@ export function validateBackendWranglerConfig(
       userMigrationsCount: userMigrationFiles.length,
       researchMigrationsCount: researchMigrationFiles.length,
       stagingProvisioningStatus,
-      irniDirectBindingPresent: false,
+      irniDirectBindingPresent,
     },
   };
 }
