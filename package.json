@@ -20,7 +20,7 @@
     "test:contracts": "tsx tests/engineering-quality-foundation.test.ts",
     "test:mutation": "tsx tests/mutation-critical-invariants.test.ts",
     "test:smoke": "tsx tests/browser-smoke.test.ts",
-    "test:cloudflare": "tsx tests/cloudflare-worker-platform.test.ts && tsx tests/cloudflare-ai-commerce-architecture.test.ts && npm run test:queue-entrypoint && npm run test:triad",
+    "test:cloudflare": "npm run test:worker && npm run test:auth && npm run test:r2 && npm run test:d1 && npm run test:queues && npm run test:cache && npm run test:telemetry && tsx tests/cloudflare-worker-platform.test.ts && tsx tests/cloudflare-ai-commerce-architecture.test.ts && npm run test:queue-entrypoint && npm run test:triad",
     "cf:dry-run:staging": "npx wrangler deploy --env staging --dry-run --outdir /tmp/radartehran-staging-dryrun",
     "cf:staging:provision": "node scripts/cloudflare/provision-staging.mjs --mode=bootstrap",
     "cf:staging:bootstrap": "node scripts/cloudflare/provision-staging.mjs --mode=bootstrap",
