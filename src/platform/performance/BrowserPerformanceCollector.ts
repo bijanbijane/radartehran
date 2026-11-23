@@ -113,8 +113,11 @@ export function evaluateRumPercentileBudget(params: {
   const clsDist = buildPercentileDistribution(params.clsSamples);
   const ltDist = buildPercentileDistribution(params.longTaskCounts ?? []);
 
-  const totalSamples = Math.max(lcpDist.sampleCount, inpDist.sampleCount, clsDist.sampleCount);
-  if (totalSamples === 0) {
+  // A GOOD verdict requires observations for all three Core Web Vitals.
+  // The minimum count is a conservative lower bound for a complete metric set;
+  // missing INP or CLS must never be silently interpreted as passing.
+  const completeCoreVitalsSampleCount = Math.min(lcpDist.sampleCount, inpDist.sampleCount, clsDist.sampleCount);
+  if (completeCoreVitalsSampleCount === 0) {
     return {
       measurementSource: params.measurementSource,
       sampleCount: 0,
