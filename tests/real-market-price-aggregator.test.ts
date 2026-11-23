@@ -320,6 +320,28 @@ const punakLiveFixture = {
 };
 const liveSamples = buildNeighborhoodListingSamples(punakLiveFixture);
 assert.ok(liveSamples.length >= 2, 'live-divar prefixed bargains feed the canonical sample builder');
+const liveSamplesAgain = buildNeighborhoodListingSamples(punakLiveFixture);
+assert.notEqual(liveSamplesAgain, liveSamples, 'sample cache never exposes its internal mutable array');
+assert.deepEqual(liveSamplesAgain, liveSamples, 'repeated calls preserve canonical parsed sample values');
+liveSamples.pop();
+assert.ok(buildNeighborhoodListingSamples(punakLiveFixture).length >= 2, 'mutating a returned sample array cannot corrupt the cached result');
+const expandedPunakFixture = {
+  ...punakLiveFixture,
+  bargains: [
+    ...(punakLiveFixture.bargains || []),
+    {
+      id: 'live-divar-pnk-sale-cache-invalidation',
+      title: '۹۰ متری نمونهٔ جدید',
+      type: 'خرید' as const,
+      sqm: 90,
+      priceText: 'متری ۳۳۰ میلیون تومان (کل: ۲۹.۷ میلیارد)',
+    },
+  ],
+};
+assert.ok(
+  buildNeighborhoodListingSamples(expandedPunakFixture).length > buildNeighborhoodListingSamples(punakLiveFixture).length,
+  'replacing the immutable bargains array invalidates the prior cache entry',
+);
 const liveAgg = aggregateNeighborhoodMarketMetrics(punakHood.id, punakHood.name, punakHood.buyPerSqm, liveSamples);
 assert.equal(liveAgg.observedSampleCount, liveSamples.length, 'Live sample path observedSampleCount tracks builder length');
 assert.equal(liveAgg.eligibleObservedCount, liveSamples.length, 'Live sample path eligibleObservedCount tracks builder length');
