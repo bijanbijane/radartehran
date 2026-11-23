@@ -1,7 +1,7 @@
 /**
  * @file tests/rt-fe-stage30-rum-measurement-truth.test.ts
  * @description Comprehensive acceptance test suite for Stage 30 Browser Performance & RUM Measurement Truth
- * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — >= 240 tests verifying real PerformanceObserver collection,
+ * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — 246 tests verifying real PerformanceObserver collection,
  * zero inference of longTaskCount from LCP, P50/P75/P95/P99 distributions, INSUFFICIENT_SAMPLE handling,
  * FIELD_RUM vs LAB vs SYNTHETIC_LOCAL provenance separation, and Stage 26 telemetry consent gating.
  */
@@ -277,6 +277,7 @@ describe('INP interaction aggregation', () => {
           const repeatedEvents = Array.from({ length: 100 }, () => ({ interactionId: 1, duration: 10 }));
           cb([
             ...repeatedEvents,
+            { interactionId: 1, duration: 80 },
             { interactionId: 2, duration: 200 },
             { interactionId: 3, duration: 300 },
           ]);
@@ -287,9 +288,9 @@ describe('INP interaction aggregation', () => {
 
     collector.start();
     const snapshot = collector.getSnapshot();
-    const expectedInp = Math.round(computeSamplePercentile([10, 200, 300], 98) ?? 0);
+    const expectedInp = Math.round(computeSamplePercentile([80, 200, 300], 98) ?? 0);
     assert.equal(snapshot.inpMs, expectedInp);
-    assert.equal(snapshot.inpMs, 296);
+    assert.equal(snapshot.inpMs, 298);
     collector.disconnect();
   });
 });
