@@ -620,7 +620,7 @@ async function runSuite(): Promise<void> {
     const utc0030 = Date.UTC(2026, 10, 8, 0, 30, 0);
     const tehranMorning = convertUtcScheduledTimeToTehranWallClock(utc0030);
     assert.equal(tehranMorning.tehranFormatted, '04:00 Asia/Tehran');
-    assert.equal(tehranMorning.matchedScheduleTask, 'morning_market_and_d1_sync');
+    assert.equal(tehranMorning.matchedScheduleTask, 'morning_cleanup_only');
 
     // UTC 18:30 -> 22:00 Asia/Tehran
     const utc1830 = Date.UTC(2026, 10, 8, 18, 30, 0);
