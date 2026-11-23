@@ -199,6 +199,7 @@ async function getCurrentHead(db: D1Database): Promise<ActiveRegistryHead | null
   try {
     return await db.prepare(
       `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.registry_revision AS head_registry_revision,h.registry_checksum AS head_registry_checksum,
         h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
         h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
         h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
@@ -772,17 +773,37 @@ async function publishFinalize(
   try {
     finalizeHead = await db.prepare(
       `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.registry_revision AS head_registry_revision,h.registry_checksum AS head_registry_checksum,
         h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
         h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
         h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
        FROM geo_registry_publish_pointer p
-       JOIN geo_registry_head h ON h.singleton_id = 'current'
+       LEFT JOIN geo_registry_head h ON h.singleton_id = 'current'
        WHERE p.singleton_id = 'current'`,
     ).first<ActiveRegistryHead>();
   } catch {
     return jsonWorkerResponse(ctx, 503, {
       status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
     });
+  }
+
+  if (!finalizeHead) {
+    // A head without its active pointer is not an empty registry.
+    try {
+      const orphanHead = await db.prepare(
+        "SELECT registry_revision FROM geo_registry_head WHERE singleton_id='current'",
+      ).first<{ registry_revision: number }>();
+      if (orphanHead) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_POINTER_MISSING',
+          currentRevision: orphanHead.registry_revision,
+        });
+      }
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+      });
+    }
   }
 
   const headAssessment = assessReceivingGeographicPublishHead({
