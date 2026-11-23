@@ -88,6 +88,31 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  backend-local-regressions:
+    name: Cloudflare Worker Local SQLite Regression Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Clean repository checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22 with npm lockfile cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Deterministic dependency installation
+        run: npm ci
+
+      # These suites use local node:sqlite-backed D1 simulators. No Cloudflare
+      # credentials, remote D1 bindings, migrations, or production writes are used.
+      - name: Run isolated Cloudflare Worker backend regression suites
+        run: npm run test:cloudflare
+
   e2e-browser:
     name: Real Browser E2E & Accessibility Suite (Playwright)
     runs-on: ubuntu-latest
