@@ -75,7 +75,7 @@ describe('Cloudflare-native session authentication', () => {
   it('rejects a disabled-account watermark even when the profile row is active', async () => {
     const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow({ revocation_watermark: 'DISABLED' }))));
     assert.equal(result.authenticated, false);
-    assert.equal(result.reasonCode, 'USER_ACCOUNT_DISABLED');
+    assert.equal(result.reasonCode, 'ACCOUNT_DISABLED');
     assert.equal(result.statusCode, 401);
   });
 
