@@ -37,7 +37,16 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
-const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
+const GROUP_3A_AUTH_PATHS = new Set<string>([
+  'GET /api/auth/google/start',
+  'GET /api/auth/google/callback',
+  'POST /api/auth/phone/start',
+  'POST /api/auth/phone/verify',
+  'GET /api/auth/session',
+  'POST /api/auth/logout',
+]);
+
+const GROUP_4_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/profile',
   'PATCH /api/account/profile',
   'GET /api/account/privacy',
@@ -48,7 +57,7 @@ const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/export-data',
 ]);
 
-const GROUP_4_VERIFIED_MARKETPLACE_PATHS = new Set<string>([
+const GROUP_4_MARKETPLACE_PATHS = new Set<string>([
   'GET /api/v1/market/state',
 ]);
 
