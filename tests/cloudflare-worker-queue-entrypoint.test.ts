@@ -275,6 +275,55 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     assert.equal(watermark?.watermark_value, '2');
   });
 
+  it('continues bounded R2 orphan scans from a durable cursor after deleting the previous page', async () => {
+    const { db, env, r2 } = await setupMigratedEnv();
+    const nowMs = Date.now() + 10_000;
+    const keys = Array.from({ length: 45 }, (_, index) =>
+      `listings/orphan/${String(index).padStart(3, '0')}.webp`,
+    );
+    for (const key of keys) {
+      await r2.put(key, new Uint8Array([1, 2, 3, 4]), {
+        customMetadata: { objectId: `orphan-${key.slice(-7, -5)}` },
+      });
+    }
+
+    const makeEnvelope = (suffix: string): RadarQueueEnvelope => ({
+      schemaVersion: '1.0',
+      messageId: `msg-r2-cursor-${suffix}`,
+      jobType: 'r2_orphan_media_reconcile',
+      idempotencyKey: `idem-r2-cursor-${suffix}`,
+      correlationId: `corr-r2-cursor-${suffix}`,
+      createdAtIso: new Date(nowMs).toISOString(),
+      payload: { nowMs, staleThresholdMs: 1_000 },
+    });
+
+    const first = makeQueueMessage(makeEnvelope('first'));
+    await workerEntrypoint.queue(
+      { queue: 'radartehran-jobs', messages: [first.msg], ackAll() {}, retryAll() {} },
+      env,
+    );
+    assert.equal(first.getState().acked, true);
+    const cursorAfterFirst = await db
+      .prepare("SELECT watermark_value FROM sync_watermarks WHERE watermark_key = 'r2_orphan_media_reconcile:r2_cursor'")
+      .first<{ watermark_value: string }>();
+    assert.ok(cursorAfterFirst?.watermark_value, 'A truncated R2 page must persist its continuation cursor.');
+    const firstPageRemaining = await Promise.all(keys.slice(0, 40).map((key) => r2.head(key)));
+    assert.ok(firstPageRemaining.every((item) => item === null), 'The first bounded page should be reconciled.');
+
+    const second = makeQueueMessage(makeEnvelope('second'), 1);
+    await workerEntrypoint.queue(
+      { queue: 'radartehran-jobs', messages: [second.msg], ackAll() {}, retryAll() {} },
+      env,
+    );
+    assert.equal(second.getState().acked, true);
+    const allRemaining = await Promise.all(keys.map((key) => r2.head(key)));
+    assert.ok(allRemaining.every((item) => item === null), 'The continuation page must not be skipped after prior-page deletion.');
+    const cursorAfterCompletion = await db
+      .prepare("SELECT watermark_value FROM sync_watermarks WHERE watermark_key = 'r2_orphan_media_reconcile:r2_cursor'")
+      .first<{ watermark_value: string }>();
+    assert.equal(cursorAfterCompletion?.watermark_value, '');
+  });
+
   it('does not rerun committed work when the legacy idempotency mirror write fails', async () => {
     const { db, env, setFailOnSqlContains } = await setupMigratedEnv();
     const envelope: RadarQueueEnvelope = {
