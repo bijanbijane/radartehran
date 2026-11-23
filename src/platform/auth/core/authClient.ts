@@ -1,5 +1,4 @@
 /** @file src/platform/auth/core/authClient.ts — Adapter Over Existing Firebase Auth Singleton (No Second Auth System) */
-import { auth, googleProvider } from '../../../firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
 import {
   type AuthLifecycleStatus,
@@ -109,15 +108,18 @@ export function mapFirebaseUserToIdentity(user: FirebaseUser | null | undefined)
   };
 }
 
-export function getFirebaseAuthInstance() {
+export async function getFirebaseAuthInstance() {
+  const { auth } = await import('../../../firebase');
   return auth;
 }
 
-export function getGoogleOAuthProvider() {
+export async function getGoogleOAuthProvider() {
+  const { googleProvider } = await import('../../../firebase');
   return googleProvider;
 }
 
 export async function getCurrentFirebaseIdToken(forceRefresh = false): Promise<string | null> {
+  const { auth } = await import('../../../firebase');
   const currentUser = auth.currentUser;
   if (!currentUser || typeof currentUser.getIdToken !== 'function') return null;
   return currentUser.getIdToken(forceRefresh);
