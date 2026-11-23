@@ -268,18 +268,30 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     }
     p.setSavingPrefs(true);
     try {
-      await setDoc(doc(db, 'userPreferences', targetUid), {
-        userId: targetUid, mode: p.mode,
-        deposit: Math.min(100000, Math.max(0, Number(p.deposit) || 0)),
-        monthlyRent: Math.min(1000, Math.max(0, Number(p.monthlyRent) || 0)),
-        buyTotalBudget: Math.min(1000000, Math.max(500, Number(p.buyTotalBudget) || 500)),
-        targetSqm: Math.min(1000, Math.max(20, Number(p.targetSqm) || 80)),
-        workHubId: (p.workHubId || 'none').slice(0, 40),
-        favoriteHoodIds: p.favoriteHoodIds.filter((id) => Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 25),
-        updatedAt: serverTimestamp(),
-      }); p.setPrefsMessage('ذخیره شد'); setTimeout(() => p.setPrefsMessage(''), 2500); } catch (err) {
-      try { handleFirestoreError(err, OperationType.WRITE, `userPreferences/${targetUid}`); } catch {
-        p.setPrefsMessage('ذخیره در مرورگر انجام شد'); setTimeout(() => p.setPrefsMessage(''), 2500); } } finally { p.setSavingPrefs(false); } }; const handleTrackSponsorCall = async (hood: Neighborhood, sponsor: { name: string; phone: string }) => { p.setCallingSponsorHoodId(hood.id); p.setRevealedSponsorPhoneHoodId(hood.id); navigator.clipboard?.writeText(sponsor.phone).catch(() => {});
+      const response = await fetch('/api/v1/market/preferences', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          cityId: p.activeCity,
+          mode: p.mode,
+          deposit: Math.min(100000, Math.max(0, Number(p.deposit) || 0)),
+          monthlyRent: Math.min(1000, Math.max(0, Number(p.monthlyRent) || 0)),
+          buyTotalBudget: Math.min(1000000, Math.max(500, Number(p.buyTotalBudget) || 500)),
+          targetSqm: Math.min(1000, Math.max(20, Number(p.targetSqm) || 80)),
+          workHubId: (p.workHubId || 'none').slice(0, 40),
+          favoriteHoodIds: p.favoriteHoodIds.filter((id) => Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 25),
+        }),
+      });
+      const result = await response.json().catch(() => null) as { status?: string; durable?: boolean; message?: string } | null;
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true) {
+        throw new Error(result?.message || 'ذخیره پایدار تنظیمات در Cloudflare D1 تأیید نشد.');
+      }
+      p.setPrefsMessage('ذخیره شد'); setTimeout(() => p.setPrefsMessage(''), 2500);
+    } catch {
+      p.setPrefsMessage('ذخیره تنظیمات در Cloudflare انجام نشد. اتصال حساب و وضعیت سرویس را بررسی کنید.');
+    } finally { p.setSavingPrefs(false); } }; const handleTrackSponsorCall = async (hood: Neighborhood, sponsor: { name: string; phone: string }) => { p.setCallingSponsorHoodId(hood.id); p.setRevealedSponsorPhoneHoodId(hood.id); navigator.clipboard?.writeText(sponsor.phone).catch(() => {});
     p.setLastSyncNotice(`شماره تماس ${sponsor.name} (${sponsor.phone}) کپی و نمایش داده شد`);
     try { await fetch('/api/track-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hoodId: hood.id, hoodName: hood.name, agencyName: sponsor.name, phone: sponsor.phone }) });
     } catch { /* ignore */ } finally { setTimeout(() => p.setCallingSponsorHoodId(null), 1500); }
