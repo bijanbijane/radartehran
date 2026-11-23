@@ -51,13 +51,13 @@
       }
     </script>
 
-    <!-- پیش‌بارگذاری اتصال و DNS سرورهای تایل نقشه برای افزایش چشمگیر سرعت بارگذاری -->
+    <!-- Resolve primary and fallback tile hosts early; preconnect only to the default primary provider. -->
     <link rel="dns-prefetch" href="https://tile.openstreetmap.org">
     <link rel="dns-prefetch" href="https://tile1.neshan.org">
     <link rel="dns-prefetch" href="https://tile2.neshan.org">
     <link rel="dns-prefetch" href="https://tile3.neshan.org">
     <link rel="dns-prefetch" href="https://tile4.neshan.org">
-    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin="anonymous">
+    <link rel="preconnect" href="https://tile1.neshan.org" crossorigin="anonymous">
   </head>
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
