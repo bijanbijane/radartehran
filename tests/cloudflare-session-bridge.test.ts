@@ -341,7 +341,7 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
     ];
 
     for (const adminPrincipal of adminSessions) {
-      const assertion = await makeAssertion(adminPrincipal);
+      const assertion = await makeAssertion(adminPrincipal, new Request('https://radartehran.ir/api/admin/example', { method: 'POST' }));
       const req = {
         headers: {
           'x-correlation-id': CORRELATION_ID,
@@ -383,7 +383,7 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
       email: 'delegate@example.com',
       isAdmin: true,
       isDelegatedAdmin: true,
-    }));
+    }), new Request('https://radartehran.ir/api/admin/primary-only', { method: 'POST' }));
     const req = {
       headers: {
         'x-correlation-id': CORRELATION_ID,
