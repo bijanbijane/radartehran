@@ -198,8 +198,8 @@ function applyMigrations(raw: DatabaseSync, relDir: string): string[] {
   return files;
 }
 
-async function issueTestSession(db: D1Database, uid: string, email?: string): Promise<string> {
-  const sessionId = `sess_${crypto.randomUUID()}`;
+async function issueTestSession(db: D1Database, uid: string, email?: string, fixedSessionId?: string): Promise<string> {
+  const sessionId = fixedSessionId || `sess_${crypto.randomUUID()}`;
   const token = `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
   const now = new Date();
   const nowIso = now.toISOString();
@@ -491,7 +491,500 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
       try {
         await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
-        const sessionToken = await issueTestSession(userSqlite.db, uid);
+        /**
+ * @file tests/rt-db-triad-002-forensic.test.ts
+ * @description Independent Forensic Audit Regression Suite for RT-DB-TRIAD-002.
+ *
+ * Strictly distinguishes Node `node:sqlite` unit/integration tests from real Wrangler local D1 checks.
+ * Covers every confirmed P0 and P1 finding remediated in RT-DB-TRIAD-002:
+ *  - F-01 [P0]: All 10 mandatory `recordUserRevocationInD1` idempotency, concurrency, rollback, and retry cases
+ *  - F-02 [P0]: Atomic `acquireMutationPermitInD1` & concurrent `verifyAndConsumeInternalRpcNonce`
+ *  - F-03 [P0]: Write-block enforcement during Mutation Drain across object-storage & account routes +
+ *               `PENDING_PERMIT_DRAIN` resume + orphan `upload_session_chunks` / `user_data_requests` purge
+ *  - F-04 [P0]: Consent revocation mid-flight race & queued `research_event_ingest` `consent_revision` ordering
+ *  - F-05 [P0]: Non-lowerable `HARD_MIN_K_ANONYMITY = 10`, Query Differencing protections (day-aligned + coarsened),
+ *               and atomic invalidation of `research_aggregation_windows` upon subject erasure
+ *  - F-06 [P0]: Split-brain `USER_DB != DB` & `DB === RESEARCH_DB` binding collisions + migration dir parity
+ *  - F-07 [P1]: Unicode NFKC / zero-width / Persian digits / percent-encoding PII & free-text rejection
+ *  - F-08 [P1]: `/api/account/*` non-hijacking (404 on unknown route) & Express contract parity aliases
+ *  - F-09 [P1]: Keyed HMAC-SHA256 compliance receipt digest (`uid_hash`)
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { describe, it } from 'node:test';
+import { parseJsonc } from '../scripts/cloudflare/jsoncUtils.mjs';
+import { validateBackendWranglerConfig } from '../scripts/cloudflare/validate-backend-config.mjs';
+import {
+  AccountWriteBlockedError,
+  createUserDataRequestInD1,
+  revokeUserSessionInD1,
+  updateUserPrivacyConsentInD1,
+  upsertUserProfileInD1,
+  upsertUserSessionInD1,
+} from '../worker/account/d1AccountRepository';
+import {
+  signInternalLifecycleRpc,
+  verifyAndConsumeInternalRpcNonce,
+} from '../worker/account-lifecycle/d1InternalRpcNonceStore';
+import {
+  acquireMutationPermitInD1,
+  blockUserWritesInD1,
+  releaseMutationPermitInD1,
+} from '../worker/account-lifecycle/d1MutationPermit';
+import { executeAccountDeletionLifecycle } from '../worker/account-lifecycle/workerLifecycleRuntime';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
+import { sha256Hex } from '../worker/auth/sessionAuth';
+import {
+  hasUserResearchBindingCollision,
+  requireResearchDb,
+  requireUserDb,
+} from '../worker/db/bindingResolver';
+import workerEntrypoint from '../worker/index';
+import { createCanonicalQueueJobDispatcher, QueueJobExecutionError } from '../worker/queues/jobDispatcher';
+import type { RadarQueueEnvelope } from '../worker/queues/queueAndCronProcessor';
+import {
+  deriveResearchSubjectKey,
+  hashUidForComplianceReceipt,
+} from '../worker/research/pseudonymizer';
+import { validateAndMinimizeResearchEvent } from '../worker/research/researchEventContract';
+import {
+  AggregationWindowPolicyError,
+  computeKAnonymousResearchAggregation,
+  executeResearchSubjectErasure,
+  HARD_MIN_K_ANONYMITY,
+  ingestResearchEventsBatch,
+  resolveKAnonymityMinCohort,
+} from '../worker/research/researchService';
+import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
+
+const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
+const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+
+interface TestSqliteD1Options {
+  failOnSqlContains?: string | null;
+  yieldBeforeBatch?: boolean;
+  yieldBeforeFirst?: boolean;
+}
+
+function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
+  db: D1Database;
+  raw: DatabaseSync;
+  setFailOnSqlContains: (pattern: string | null) => void;
+  setYieldBeforeBatch: (enabled: boolean) => void;
+} {
+  const raw = new DatabaseSync(':memory:');
+  let failPattern: string | null = options.failOnSqlContains ?? null;
+  let yieldBeforeBatch = Boolean(options.yieldBeforeBatch);
+  const yieldBeforeFirst = Boolean(options.yieldBeforeFirst);
+
+  const prepareExpanded = (sql: string, boundValues: unknown[]) => {
+    if (!/\?\d+/.test(sql)) {
+      return { sql, values: boundValues };
+    }
+    const expandedValues: unknown[] = [];
+    const normalizedSql = sql.replace(/\?(\d+)/g, (_match, idxStr: string) => {
+      const idx = Number(idxStr) - 1;
+      expandedValues.push(boundValues[idx] ?? null);
+      return '?';
+    });
+    return { sql: normalizedSql, values: expandedValues };
+  };
+
+  const makeStmt = (sql: string, boundValues: unknown[] = []): D1PreparedStatement => ({
+    bind(...values: unknown[]) {
+      return makeStmt(sql, values);
+    },
+    async first<T = Record<string, unknown>>(colName?: string): Promise<T | null> {
+      if (yieldBeforeFirst) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      const prepared = prepareExpanded(sql, boundValues);
+      const stmt = raw.prepare(prepared.sql);
+      const row = stmt.get(...(prepared.values as any[])) as Record<string, unknown> | undefined;
+      if (!row) return null;
+      if (colName) return (row[colName] as T) ?? null;
+      return row as T;
+    },
+    async all<T = Record<string, unknown>>() {
+      const prepared = prepareExpanded(sql, boundValues);
+      const stmt = raw.prepare(prepared.sql);
+      const rows = stmt.all(...(prepared.values as any[])) as T[];
+      return { results: rows, success: true };
+    },
+    async run<T = unknown>() {
+      if (failPattern && sql.includes(failPattern)) {
+        throw new Error(`INJECTED_SQL_FAILURE:${failPattern}`);
+      }
+      const prepared = prepareExpanded(sql, boundValues);
+      const stmt = raw.prepare(prepared.sql);
+      const info = stmt.run(...(prepared.values as any[]));
+      return {
+        results: [] as T[],
+        success: true,
+        meta: { changes: Number(info.changes ?? 0) },
+      };
+    },
+  });
+
+  const db: D1Database = {
+    prepare(query: string) {
+      return makeStmt(query);
+    },
+    async batch<T = unknown>(statements: D1PreparedStatement[]) {
+      // Optional async yield lets two concurrent callers both pass their initial SELECT before
+      // entering SQLite BEGIN IMMEDIATE, deterministically reproducing production D1 concurrency!
+      if (yieldBeforeBatch) {
+        await new Promise((r) => setTimeout(r, 15));
+      }
+      const out: Array<{ results?: T[]; success: boolean }> = [];
+      raw.exec('BEGIN IMMEDIATE');
+      try {
+        for (const stmt of statements) {
+          const res = await stmt.run<T>();
+          if (!res.success) {
+            throw new Error('BATCH_STMT_FAILED');
+          }
+          out.push({ results: res.results, success: true });
+        }
+        raw.exec('COMMIT');
+        return out;
+      } catch (err) {
+        raw.exec('ROLLBACK');
+        throw err;
+      }
+    },
+    async exec(query: string) {
+      raw.exec(query);
+      return { count: 1, duration: 1 };
+    },
+  };
+
+  return {
+    db,
+    raw,
+    setFailOnSqlContains: (p) => {
+      failPattern = p;
+    },
+    setYieldBeforeBatch: (v) => {
+      yieldBeforeBatch = v;
+    },
+  };
+}
+
+function applyMigrations(raw: DatabaseSync, relDir: string): string[] {
+  const absDir = path.join(process.cwd(), relDir);
+  const files = fs
+    .readdirSync(absDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  raw.exec(
+    'CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, applied_at TEXT NOT NULL)',
+  );
+  for (const file of files) {
+    const exists = raw.prepare('SELECT 1 FROM d1_migrations WHERE name = ?').get(file);
+    if (exists) continue;
+    raw.exec(fs.readFileSync(path.join(absDir, file), 'utf-8'));
+    raw.prepare('INSERT INTO d1_migrations (name, applied_at) VALUES (?, ?)').run(file, new Date().toISOString());
+  }
+  return files;
+}
+
+async function issueTestSession(db: D1Database, uid: string, email?: string, fixedSessionId?: string): Promise<string> {
+  const sessionId = fixedSessionId || `sess_${crypto.randomUUID()}`;
+  const token = `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const provider = email ? 'google' : 'phone';
+  const subject = email ? `google-sub-${uid}` : `+98912${String(Math.floor(Math.random() * 1_000_000_000)).padStart(9, '0')}`;
+  await upsertUserSessionInD1(db, { sessionId, uid });
+  await db.prepare(
+    "UPDATE user_sessions SET token_hash = ?1, expires_at_iso = ?2, auth_provider = ?3, last_seen_at_iso = ?4 WHERE session_id = ?5",
+  ).bind(await sha256Hex(token), new Date(now.getTime() + 86400000).toISOString(), provider, nowIso, sessionId).run();
+  await db.prepare(
+    "INSERT INTO auth_identities (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+  ).bind(provider, subject, uid, email ?? null, email ? 1 : 0, email ? null : subject, nowIso).run();
+  return token;
+}
+
+function createMinimalR2Bucket(): R2Bucket {
+  return {
+    async head() {
+      return null;
+    },
+    async get() {
+      return null;
+    },
+    async put() {
+      return { key: 'k', size: 0, etag: 'e', uploaded: new Date() };
+    },
+    async delete() {
+      return;
+    },
+    async list() {
+      return { objects: [], truncated: false };
+    },
+  };
+}
+
+describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Suite (Node SQLite)', () => {
+  describe('F-01 [P0]: Complete 10-Case Idempotency & Concurrency Matrix for recordUserRevocationInD1', () => {
+    it('passes all 10 mandatory idempotency, conflict, concurrency, rollback, and retry scenarios', async () => {
+      const sqlite = createForensicSqliteD1({ yieldBeforeBatch: false });
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+
+      // Case 1: First valid request
+      const c1 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_case1',
+        action: 'REVOKE_BEFORE',
+        validSinceSeconds: 1_760_000_000,
+        actorUid: 'admin_a',
+        reason: 'CASE_1',
+        idempotencyKey: 'idem_matrix_1',
+      });
+      assert.equal(c1.applied, true);
+      assert.equal(c1.idempotentReplay, false);
+      assert.equal(c1.statusCode, 200);
+      assert.equal(c1.reason, 'REVOCATION_RECORDED');
+
+      // Case 2: Exact repeat of same request
+      const c2 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_case1',
+        action: 'REVOKE_BEFORE',
+        validSinceSeconds: 1_760_000_000,
+        actorUid: 'admin_a',
+        reason: 'CASE_1',
+        idempotencyKey: 'idem_matrix_1',
+      });
+      assert.equal(c2.applied, true);
+      assert.equal(c2.idempotentReplay, true);
+      assert.equal(c2.statusCode, 200);
+      assert.equal(c2.eventId, c1.eventId);
+
+      // Case 3: Same key with different UID -> 409 conflict
+      const c3 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_OTHER',
+        action: 'REVOKE_BEFORE',
+        validSinceSeconds: 1_760_000_000,
+        actorUid: 'admin_a',
+        reason: 'CASE_3',
+        idempotencyKey: 'idem_matrix_1',
+      });
+      assert.equal(c3.applied, false);
+      assert.equal(c3.statusCode, 409);
+      assert.equal(c3.reason, 'IDEMPOTENCY_KEY_CONFLICT');
+      const otherWm = sqlite.raw
+        .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?')
+        .get('revoked_uid:uid_OTHER');
+      assert.equal(otherWm, undefined, 'Conflicting UID must never write watermark');
+
+      // Case 4: Same key with different Action -> 409 conflict
+      const c4 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_case1',
+        action: 'DISABLE_USER',
+        actorUid: 'admin_a',
+        reason: 'CASE_4',
+        idempotencyKey: 'idem_matrix_1',
+      });
+      assert.equal(c4.applied, false);
+      assert.equal(c4.statusCode, 409);
+      assert.equal(c4.reason, 'IDEMPOTENCY_KEY_CONFLICT');
+      const origWm = sqlite.raw
+        .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?')
+        .get('revoked_uid:uid_case1') as { watermark_value: string };
+      assert.equal(origWm.watermark_value, '1760000000', 'Conflicting action must never overwrite original watermark');
+
+      // Case 5: Concurrent 2 IDENTICAL requests racing past initial SELECT
+      sqlite.setYieldBeforeBatch(true);
+      const [c5a, c5b] = await Promise.all([
+        recordUserRevocationInD1({
+          db: sqlite.db,
+          uid: 'uid_race_same',
+          action: 'REVOKE_BEFORE',
+          validSinceSeconds: 1_760_001_000,
+          actorUid: 'admin_a',
+          reason: 'RACE_SAME',
+          idempotencyKey: 'idem_race_same_001',
+        }),
+        recordUserRevocationInD1({
+          db: sqlite.db,
+          uid: 'uid_race_same',
+          action: 'REVOKE_BEFORE',
+          validSinceSeconds: 1_760_001_000,
+          actorUid: 'admin_a',
+          reason: 'RACE_SAME',
+          idempotencyKey: 'idem_race_same_001',
+        }),
+      ]);
+      assert.equal(c5a.statusCode, 200);
+      assert.equal(c5b.statusCode, 200);
+      assert.equal(c5a.applied, true);
+      assert.equal(c5b.applied, true);
+      assert.equal([c5a.idempotentReplay, c5b.idempotentReplay].filter(Boolean).length, 1);
+      assert.equal(c5a.eventId, c5b.eventId, 'Concurrent identical loser must reconcile to winner eventId');
+
+      // Case 6: Concurrent 2 DIFFERENT requests sharing same idempotencyKey
+      const [c6a, c6b] = await Promise.all([
+        recordUserRevocationInD1({
+          db: sqlite.db,
+          uid: 'uid_race_winner',
+          action: 'DISABLE_USER',
+          actorUid: 'admin_a',
+          reason: 'RACE_DIFF_A',
+          idempotencyKey: 'idem_race_diff_001',
+        }),
+        recordUserRevocationInD1({
+          db: sqlite.db,
+          uid: 'uid_race_loser',
+          action: 'REVOKE_BEFORE',
+          validSinceSeconds: 1_760_002_000,
+          actorUid: 'admin_b',
+          reason: 'RACE_DIFF_B',
+          idempotencyKey: 'idem_race_diff_001',
+        }),
+      ]);
+      sqlite.setYieldBeforeBatch(false);
+      const statuses = [c6a.statusCode, c6b.statusCode].sort();
+      assert.deepEqual(statuses, [200, 409], 'One concurrent conflicting request must commit (200) and the other MUST fail with 409');
+      const winnerUid = c6a.statusCode === 200 ? 'uid_race_winner' : 'uid_race_loser';
+      const loserUid = c6a.statusCode === 200 ? 'uid_race_loser' : 'uid_race_winner';
+      const loserWm = sqlite.raw
+        .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?')
+        .get(`revoked_uid:${loserUid}`);
+      const winnerWm = sqlite.raw
+        .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?')
+        .get(`revoked_uid:${winnerUid}`);
+      assert.ok(winnerWm, 'Winner watermark must exist');
+      assert.equal(loserWm, undefined, 'Loser watermark MUST be rolled back and never applied');
+
+      // Case 7: Failure during INSERT INTO auth_revocation_events -> full rollback
+      sqlite.setFailOnSqlContains('INSERT INTO auth_revocation_events');
+      const c7 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_fail_event',
+        action: 'DISABLE_USER',
+        actorUid: 'admin_a',
+        reason: 'FAIL_EVENT',
+        idempotencyKey: 'idem_fail_event_001',
+      });
+      assert.equal(c7.applied, false);
+      assert.equal(c7.statusCode, 503);
+      assert.equal(
+        sqlite.raw.prepare('SELECT * FROM sync_watermarks WHERE watermark_key = ?').get('revoked_uid:uid_fail_event'),
+        undefined,
+      );
+
+      // Case 8 & 9: Failure during sync_watermarks update -> full rollback of auth_revocation_events
+      sqlite.setFailOnSqlContains('INSERT OR REPLACE INTO sync_watermarks');
+      const c8 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_fail_wm',
+        action: 'DISABLE_USER',
+        actorUid: 'admin_a',
+        reason: 'FAIL_WM',
+        idempotencyKey: 'idem_fail_wm_001',
+      });
+      assert.equal(c8.applied, false);
+      assert.equal(c8.statusCode, 503);
+      assert.equal(
+        sqlite.raw.prepare('SELECT * FROM auth_revocation_events WHERE idempotency_key = ?').get('idem_fail_wm_001'),
+        undefined,
+        'Event row must be rolled back when watermark write fails',
+      );
+
+      // Case 10: Clean retry after transient failure succeeds cleanly
+      sqlite.setFailOnSqlContains(null);
+      const c10 = await recordUserRevocationInD1({
+        db: sqlite.db,
+        uid: 'uid_fail_wm',
+        action: 'DISABLE_USER',
+        actorUid: 'admin_a',
+        reason: 'FAIL_WM',
+        idempotencyKey: 'idem_fail_wm_001',
+      });
+      assert.equal(c10.applied, true);
+      assert.equal(c10.idempotentReplay, false);
+      assert.equal(c10.statusCode, 200);
+      const disabledCheck = await isUserAuthDisabledOrRevoked('uid_fail_wm', 1_760_000_000, sqlite.db);
+      assert.equal(disabledCheck.revoked, true);
+    });
+  });
+
+  describe('F-02 & F-03 [P0]: Atomic Permits/Nonces, Write-Block During Drain, Drain Resume & Orphan Cleanup', () => {
+    it('handles concurrent internal RPC nonce replays atomically without throwing SQLite UNIQUE errors', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const nowMs = Date.now();
+      const payloadJson = JSON.stringify({ action: 'sync' });
+      const nonce = 'nonce_concurrent_replay_987654321';
+      const sig = await signInternalLifecycleRpc({
+        secret: TEST_RPC_SECRET,
+        issuer: 'radartehran-api',
+        nonce,
+        timestampMs: nowMs,
+        payloadJson,
+      });
+
+      const [r1, r2] = await Promise.all([
+        verifyAndConsumeInternalRpcNonce({
+          userDb: sqlite.db,
+          secret: TEST_RPC_SECRET,
+          issuer: 'radartehran-api',
+          nonce,
+          timestampMs: nowMs,
+          signatureHex: sig,
+          payloadJson,
+          nowMs,
+        }),
+        verifyAndConsumeInternalRpcNonce({
+          userDb: sqlite.db,
+          secret: TEST_RPC_SECRET,
+          issuer: 'radartehran-api',
+          nonce,
+          timestampMs: nowMs,
+          signatureHex: sig,
+          payloadJson,
+          nowMs,
+        }),
+      ]);
+
+      const okCount = [r1, r2].filter((r) => r.ok).length;
+      const replayFail = [r1, r2].find((r) => !r.ok);
+      assert.equal(okCount, 1);
+      assert.ok(
+        replayFail &&
+          'statusCode' in replayFail &&
+          replayFail.statusCode === 409 &&
+          'code' in replayFail &&
+          replayFail.code === 'INTERNAL_RPC_NONCE_REPLAYED',
+      );
+    });
+
+    it('blocks object-storage & account mutations during Mutation Drain, resumes PENDING_PERMIT_DRAIN, and purges orphan chunks/requests', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+
+      const uid = 'uid_drain_lifecycle_01';
+      const env: WorkerEnv = {
+        USER_DB: userSqlite.db,
+        DB: userSqlite.db,
+        RESEARCH_DB: researchSqlite.db,
+        MEDIA_BUCKET: createMinimalR2Bucket(),
+        R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
+        RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+      };
+
+      try {
+        await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
+        
         await createUserDataRequestInD1(userSqlite.db, { uid, requestType: 'EXPORT' });
 
         // Seed upload_session + upload_session_chunks to verify orphan cleanup
@@ -532,7 +1025,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           new Request('https://radartehran.ir/api/object-storage/upload-init', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${jwt}`,
+              Cookie: `__Host-radar_session=${sessionToken}`, Origin: 'https://radartehran.ir',
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ fileName: 'pic.jpg', mimeType: 'image/jpeg', totalSizeBytes: 1000 }),
@@ -982,7 +1475,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const patchPrivacy = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/privacy', {
             method: 'PATCH',
-            headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+            headers: { Cookie: `__Host-radar_session=${sessionToken}`, Origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
             body: JSON.stringify({
               researchAnalyticsConsent: true,
               privacySafeTelemetryEnabled: true,
@@ -1002,7 +1495,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         // GET /api/account/sessions & /api/account/data-requests return both canonical and Express `items` keys
         const sessRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/sessions', {
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { Cookie: `__Host-radar_session=${sessionToken}`, Origin: 'https://radartehran.ir' },
           }),
           env,
         );
@@ -1012,7 +1505,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
         const drRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/data-requests', {
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { Cookie: `__Host-radar_session=${sessionToken}`, Origin: 'https://radartehran.ir' },
           }),
           env,
         );
