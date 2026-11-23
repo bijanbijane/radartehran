@@ -59,6 +59,7 @@ import {
   resolveUserDb,
 } from '../worker/db/bindingResolver';
 import workerEntrypoint from '../worker/index';
+import { inspectD1OperationalDiagnostics, USER_D1_MIGRATION_FILES } from '../worker/db/d1SchemaAndMigrations';
 import {
   IRNI_KV_CACHE_PREFIX,
   IrniNeighborhoodReferenceClient,
@@ -234,6 +235,10 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
       assert.equal(applied.length, 6);
+      const migrationDiagnostics = await inspectD1OperationalDiagnostics(userSqlite.db, USER_D1_MIGRATION_FILES);
+      assert.equal(migrationDiagnostics.expectedCount, 6);
+      assert.equal(migrationDiagnostics.allCanonicalMigrationsApplied, true);
+      assert.deepEqual(migrationDiagnostics.pendingMigrations, []);
       // Re-applying migrations must be idempotent
       const reapplied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
       assert.equal(reapplied.length, 6);
