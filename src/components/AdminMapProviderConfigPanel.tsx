@@ -166,9 +166,7 @@ export function AdminMapProviderConfigPanel({
       <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px]">
         <span className="text-slate-500 dark:text-slate-400 font-medium">سایر سبک‌های کاشی:</span>
         {[
-          { id: 'satellite' as const, label: 'ماهواره‌ای' },
-          { id: 'carto_dark' as const, label: 'حالت تاریک' },
-          { id: 'voyager' as const, label: 'پروکسی مستقیم سرور' },
+          { id: 'voyager' as const, label: 'پروکسی OSM' },
         ].map((s) => (
           <button
             key={s.id}
