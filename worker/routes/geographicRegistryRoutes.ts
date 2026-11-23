@@ -51,6 +51,8 @@ const GITHUB_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
 const GITHUB_OIDC_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
 const GITHUB_OIDC_AUDIENCE = 'radartehran-irni-geographic-publisher';
 const GITHUB_OIDC_REPOSITORY = 'bijanbijane/Iran-Neighborhood-Intelligence';
+const GITHUB_OIDC_REPOSITORY_ID = '1466860862';
+const GITHUB_OIDC_OWNER_ID = '338238765';
 const GITHUB_OIDC_REF = 'refs/heads/main';
 const GITHUB_OIDC_ENVIRONMENT = 'radar-publisher';
 const GITHUB_OIDC_WORKFLOW_REF =
@@ -107,10 +109,12 @@ async function verifyGitHubActionsIdentity(token: string): Promise<boolean> {
       (Number.isFinite(nbf) && nbf > now + 30) ||
       (Number.isFinite(iat) && iat > now + 30) ||
       claims.repository !== GITHUB_OIDC_REPOSITORY ||
+      claims.repository_id !== GITHUB_OIDC_REPOSITORY_ID ||
+      claims.repository_owner_id !== GITHUB_OIDC_OWNER_ID ||
       claims.ref !== GITHUB_OIDC_REF ||
       claims.environment !== GITHUB_OIDC_ENVIRONMENT ||
       claims.workflow_ref !== GITHUB_OIDC_WORKFLOW_REF ||
-      claims.sub !== 'repo:bijanbijane/Iran-Neighborhood-Intelligence:environment:radar-publisher') {
+      claims.sub !== 'repo:bijanbijane@338238765/Iran-Neighborhood-Intelligence@1466860862:environment:radar-publisher') {
     return false;
   }
 
