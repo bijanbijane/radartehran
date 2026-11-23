@@ -62,7 +62,7 @@ for (const response of healthResponses) {
   assert.notEqual(response.headers.get('cf-cache-status')?.toUpperCase(), 'HIT', 'health must never be served from shared cache');
 }
 
-const allowedOrigin = 'https://radartehran.ir';
+const allowedOrigin = process.env.RADAR_ALLOWED_ORIGIN?.trim() || baseUrl.origin;
 const disallowedOrigin = 'https://untrusted.example';
 const [allowedCors, disallowedCors] = await Promise.all([
   get(publicPath, allowedOrigin),
