@@ -12,6 +12,7 @@ on:
       - main
       - master
       - cursor/rt-infra-001-gate-b-monorepo
+      - migration/firebase-retirement-mainline-2026-11-24
   workflow_dispatch:
 
 permissions:
