@@ -63,6 +63,70 @@ export function initClientAppCheckIfConfigured(
   }
 }
 
+const fetchInterceptorInstalled = new WeakSet<object>();
+
+/**
+ * Attach a Firebase App Check token to every same-origin /api request.
+ * Firebase ID tokens remain the responsibility of each authenticated caller.
+ * The wrapper never forwards App Check tokens to third-party origins.
+ */
+export function createAppCheckAwareFetch(
+  originalFetch: typeof fetch,
+  appOrigin: string,
+  getTokenValue: () => Promise<string | null>,
+): typeof fetch {
+  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    let request: Request;
+    try {
+      request = new Request(input, init);
+    } catch {
+      return originalFetch(input, init);
+    }
+
+    const requestUrl = new URL(request.url);
+    const isSameOriginApi =
+      requestUrl.origin === appOrigin &&
+      (requestUrl.pathname === '/api' || requestUrl.pathname.startsWith('/api/'));
+    if (!isSameOriginApi || request.headers.has('x-firebase-appcheck')) {
+      return originalFetch(request);
+    }
+
+    let token: string | null = null;
+    try {
+      token = (await getTokenValue())?.trim() || null;
+    } catch {
+      token = null;
+    }
+    if (!token) {
+      // Backend App Check enforcement remains authoritative and fails closed.
+      return originalFetch(request);
+    }
+
+    const headers = new Headers(request.headers);
+    headers.set('X-Firebase-AppCheck', token);
+    return originalFetch(new Request(request, { headers }));
+  };
+}
+
+export function installClientAppCheckFetchInterceptor(app: FirebaseApp): boolean {
+  if (typeof window === 'undefined' || !app || typeof app !== 'object') return false;
+  if (fetchInterceptorInstalled.has(window)) return true;
+  const instance = initializedAppChecks.get(app as unknown as object);
+  if (!instance) return false;
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = createAppCheckAwareFetch(
+    originalFetch,
+    window.location.origin,
+    async () => {
+      const result = await getToken(instance, false);
+      return result?.token || null;
+    },
+  );
+  fetchInterceptorInstalled.add(window);
+  return true;
+}
+
 export async function getOptionalClientAppCheckHeaders(
   app: FirebaseApp,
 ): Promise<Record<string, string>> {
