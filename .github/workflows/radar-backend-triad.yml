@@ -68,6 +68,12 @@ jobs:
       - name: Verify temporary D1 write-pause deadline behavior
         run: npx tsx --test worker/db/writePause.test.ts
 
+      - name: Verify Firebase identity and Worker authentication contracts
+        run: npm run test:auth
+
+      - name: Verify account lifecycle and ownership isolation
+        run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
+
       - name: Build the split Frontend assets
         run: npm run build -w radartehran-frontend
 
