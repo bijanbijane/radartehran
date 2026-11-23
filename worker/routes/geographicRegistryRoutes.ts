@@ -9,6 +9,7 @@
 import { requireNeighborhoodDb } from '../db/bindingResolver';
 import {
   compareActiveGeographicPublishManifest,
+  computeExpectedGeographicPublishBatchId,
   type ExpectedGeographicPublishManifest,
 } from './geographicRegistryPublishManifest';
 import type { D1Database, WorkerRequestContext } from '../types';
@@ -270,8 +271,7 @@ async function publishStart(
     normalizedArtifacts[key] = String(artifacts[key]).toLowerCase();
   }
 
-  const manifestIdentity = {
-    version: 1,
+  const manifestIdentity: ExpectedGeographicPublishManifest = {
     registryRevision: Number(revision),
     registryChecksum: String(checksum).toLowerCase(),
     contractVersion: String(contractVersion),
@@ -287,7 +287,7 @@ async function publishStart(
     },
     artifactChecksums: normalizedArtifacts,
   };
-  const expectedBatchId = 'irni-r' + Number(revision) + '-' + await sha256Json(manifestIdentity);
+  const expectedBatchId = await computeExpectedGeographicPublishBatchId(manifestIdentity);
   if (batchId !== expectedBatchId) {
     return jsonWorkerResponse(ctx, 409, {
       status: 'error', code: 'PUBLISH_BATCH_MANIFEST_ID_MISMATCH',
@@ -333,17 +333,9 @@ async function publishStart(
       });
     }
 
-    const expectedManifest: ExpectedGeographicPublishManifest = {
-      registryRevision: Number(revision),
-      contractVersion: String(contractVersion),
-      idAlgorithmVersion: String(idAlgorithmVersion),
-      schemaVersion: String(schemaVersion),
-      expectedCounts: manifestIdentity.expectedCounts,
-      artifactChecksums: normalizedArtifacts,
-    };
     const comparison = compareActiveGeographicPublishManifest({
       activeHead: head,
-      expected: expectedManifest,
+      expected: manifestIdentity,
       importedArtifacts,
     });
     if (!comparison.matches) {
