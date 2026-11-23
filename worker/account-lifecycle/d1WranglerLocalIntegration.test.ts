@@ -47,37 +47,26 @@ function sampleJob(targetUid: string, jobId: string): DurableAccountDeletionJob 
 }
 
 async function main(): Promise<void> {
-  try {
-    execSync(
-      'npx wrangler d1 migrations apply radartehran-staging-db --local --env staging',
-      { cwd: projectRoot, stdio: 'pipe', encoding: 'utf8' },
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.log('SKIP: Wrangler local D1 migrations unavailable:', msg.slice(0, 240));
-    return;
-  }
+  // Wrangler is an explicit project devDependency and this test runs in CI after npm ci.
+  // Migration or local-proxy failures are test failures, not environmental skips: otherwise
+  // a broken Stage D schema could incorrectly make the suite green.
+  execSync(
+    'npx wrangler d1 migrations apply radartehran-staging-db --local --env staging',
+    { cwd: projectRoot, stdio: 'pipe', encoding: 'utf8' },
+  );
 
-  let dispose: (() => Promise<void>) | undefined;
-  let db: D1DatabaseBinding | undefined;
-  try {
-    const wrangler = await import('wrangler');
-    const proxy = await wrangler.getPlatformProxy<{ DB: D1DatabaseBinding }>({
-      configPath: path.join(projectRoot, 'wrangler.jsonc'),
-      environment: 'staging',
-    });
-    db = proxy.env.DB;
-    dispose = proxy.dispose;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.log('SKIP: getPlatformProxy unavailable:', msg.slice(0, 240));
-    return;
-  }
-
+  const wrangler = await import('wrangler');
+  const proxy = await wrangler.getPlatformProxy<{ DB: D1DatabaseBinding }>({
+    configPath: path.join(projectRoot, 'wrangler.jsonc'),
+    environment: 'staging',
+  });
+  const db = proxy.env.DB;
   if (!db) {
-    console.log('SKIP: DB binding missing from getPlatformProxy');
-    return;
+    await proxy.dispose();
+    throw new Error('Local Wrangler staging proxy did not expose the DB binding.');
   }
+
+  try {
 
   await assert.rejects(
     () => requireWorkerLifecycleBindings({ DB: db } as unknown as import('../types.ts').WorkerEnv),
@@ -194,8 +183,10 @@ async function main(): Promise<void> {
   });
   assert.equal(dup.receiptInserted, false);
 
-  if (dispose) await dispose();
   console.log('Wrangler local D1 account lifecycle integration: PASSED');
+  } finally {
+    await proxy.dispose();
+  }
 }
 
 main().catch((err) => {
