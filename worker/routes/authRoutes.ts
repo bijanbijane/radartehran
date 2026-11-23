@@ -70,36 +70,45 @@ async function createOrResolveIdentity(
   linkUid?: string,
 ): Promise<{ uid: string; linked: boolean }> {
   const existing = await db.prepare(
-    'SELECT uid FROM auth_identities WHERE provider = ?1 AND provider_subject = ?2 LIMIT 1',
-  ).bind(provider, subject).first<{ uid: string }>();
+    `SELECT i.uid, p.account_status
+     FROM auth_identities i
+     LEFT JOIN user_profiles p ON p.uid = i.uid
+     WHERE i.provider = ?1 AND i.provider_subject = ?2
+     LIMIT 1`,
+  ).bind(provider, subject).first<{ uid: string; account_status: string | null }>();
 
   if (existing) {
+    if (existing.account_status !== 'ACTIVE') throw new Error('ACCOUNT_NOT_ACTIVE');
     if (linkUid && existing.uid !== linkUid) throw new Error('IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT');
     await db.prepare(
-      'UPDATE auth_identities SET email = ?1, email_verified = ?2, phone_e164 = ?3, last_authenticated_at_iso = ?4 WHERE provider = ?5 AND provider_subject = ?6',
-    ).bind(profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, new Date().toISOString(), provider, subject).run();
+      'UPDATE auth_identities SET email = ?1, email_verified = ?2, phone_e164 = ?3, last_authenticated_at_iso = ?4 WHERE provider = ?5 AND provider_subject = ?6 AND uid = ?7',
+    ).bind(profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, new Date().toISOString(), provider, subject, existing.uid).run();
     return { uid: existing.uid, linked: false };
   }
 
   const uid = linkUid || `usr_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
+  const identityStatement = db.prepare(
+    `INSERT INTO auth_identities (
+      provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
+  ).bind(provider, subject, uid, profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, now);
+
   if (!linkUid) {
-    await db.prepare(
+    const profileStatement = db.prepare(
       `INSERT INTO user_profiles (
         uid, display_name, preferred_city, preferred_language, area_unit, intl_currency,
         role, account_status, created_at_iso, updated_at_iso
       ) VALUES (?1, ?2, 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?3, ?3)`,
-    ).bind(uid, String(profile.displayName || '').trim().slice(0, 80), now).run();
+    ).bind(uid, String(profile.displayName || '').trim().slice(0, 80), now);
+    await db.batch([profileStatement, identityStatement]);
   } else {
-    const owner = await db.prepare('SELECT uid FROM user_profiles WHERE uid = ?1 AND account_status = \'ACTIVE\'').bind(uid).first<{ uid: string }>();
+    const owner = await db.prepare(
+      'SELECT uid FROM user_profiles WHERE uid = ?1 AND account_status = \'ACTIVE\'',
+    ).bind(uid).first<{ uid: string }>();
     if (!owner) throw new Error('ACCOUNT_NOT_ACTIVE');
+    await identityStatement.run();
   }
-
-  await db.prepare(
-    `INSERT INTO auth_identities (
-      provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)`,
-  ).bind(provider, subject, uid, profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, now).run();
   return { uid, linked: Boolean(linkUid) };
 }
 
