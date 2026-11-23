@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - master
-      - fix/backend-runtime-diagnostics-queue-2026-11-23
   pull_request:
     branches:
       - main
@@ -26,37 +25,7 @@ env:
   APP_URL: "http://127.0.0.1:3000"
 
 jobs:
-  sync-lockfile:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/fix/backend-runtime-diagnostics-queue-2026-11-23' }}
-    name: Synchronize npm lockfile on the trusted repair branch
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repair branch
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          ref: ${{ github.ref_name }}
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Regenerate lockfile from package.json
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Commit synchronized lockfile
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: synchronize npm lockfile with package.json"
-            git push origin "HEAD:refs/heads/fix/backend-runtime-diagnostics-queue-2026-11-23"
-          fi
-
   quality-gates:
-    if: ${{ github.event_name != 'push' || github.ref != 'refs/heads/fix/backend-runtime-diagnostics-queue-2026-11-23' }}
     name: TypeScript, Architecture, Unit, Storage, Stress & Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
