@@ -80,6 +80,9 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
     const backendParsed = JSON.parse(backendStripped) as Record<string, any>;
     const backendStaging = backendParsed.env?.staging as Record<string, any>;
     assert.ok(backendStaging, 'backend staging environment must be explicitly defined');
+    const backendCache = backendParsed.cache as Record<string, unknown> | undefined;
+    assert.equal(backendCache?.enabled, true, 'production API Worker Cache must be enabled');
+    assert.equal(backendStaging.cache?.enabled, false, 'staging Worker Cache must stay disabled until isolated end-to-end validation');
     assert.deepEqual(backendStaging.triggers?.crons, [], 'backend staging cron triggers must stay disabled until isolated staging D1 databases are provisioned');
     assert.ok(!Array.isArray(backendStaging.d1_databases) || backendStaging.d1_databases.length === 0, 'backend staging must not bind production D1 databases');
   });
@@ -180,6 +183,23 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
     );
     assert.equal(jsRes.status, 200);
     assert.match(jsRes.headers.get('cache-control') || '', /immutable/);
+
+    // A missing asset whose name resembles a hashed production bundle must never inherit
+    // the one-year immutable cache policy.
+    const missingHashedAssetRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran.ir/assets/missing-deadbeef.js'),
+      env
+    );
+    assert.equal(missingHashedAssetRes.status, 404);
+    assert.equal(missingHashedAssetRes.headers.get('cache-control'), 'no-store');
+
+    // The no-ASSETS fallback must also opt out of heuristic Worker caching.
+    const missingAssetWithoutBindingRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran.ir/assets/missing-deadbeef.js'),
+      { ENVIRONMENT: 'production', APP_URL: 'https://radartehran.ir' }
+    );
+    assert.equal(missingAssetWithoutBindingRes.status, 404);
+    assert.equal(missingAssetWithoutBindingRes.headers.get('cache-control'), 'no-store');
 
     // SPA navigation with ?hood=1
     const hoodHtmlRes = await workerEntrypoint.fetch(
