@@ -2328,7 +2328,7 @@ async function runSuite(): Promise<void> {
   });
 
   await verify('Vite deduplicates Firebase SDK packages onto one component-provider registry', () => {
-    const viteConfig = readComp('vite.config.ts');
+    const viteConfig = fs.readFileSync(path.join(process.cwd(), 'vite.config.ts'), 'utf8');
     for (const dependency of [
       'firebase',
       '@firebase/app',
