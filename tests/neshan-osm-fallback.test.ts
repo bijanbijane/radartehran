@@ -307,9 +307,13 @@ async function runSuite(): Promise<void> {
 
   await check('early map connection hint matches the default Neshan provider, not the fallback', () => {
     const html = fs.readFileSync('index.html', 'utf8');
-    const preconnects = [...html.matchAll(/<link\\s+rel=["']preconnect["']\\s+href=["']([^"']+)["']/g)].map((match) => match[1]);
+    const preconnects = html
+      .split('\\n')
+      .filter((line) => line.includes('rel="preconnect"'))
+      .map((line) => line.match(/href="([^"]+)"/)?.[1])
+      .filter((href): href is string => Boolean(href));
     assert.deepEqual(preconnects, ['https://tile1.neshan.org'], 'Only the default primary provider should receive an early TCP/TLS preconnect');
-    assert.match(html, /<link\\s+rel=["']dns-prefetch["']\\s+href=["']https:\\/\\/tile\\.openstreetmap\\.org["']/);
+    assert.ok(html.includes('<link rel="dns-prefetch" href="https://tile.openstreetmap.org">'), 'Fallback provider DNS should still be resolved early');
   });
 
   await check('patchLeafletGridLayerNullSafety intercepts Leaflet zoom and setView when _map is null', () => {
