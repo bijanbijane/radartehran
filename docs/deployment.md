@@ -23,6 +23,7 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `ADMIN_API_SECRET` | Optional | Empty | **Secret** | Optional `>= 24`-char server-to-server token for `X-Admin-Token` automation. |
 | `VALUATION_SEAL_SECRET` | Required for valuation seals | Empty | **Secret** | 32-byte hexadecimal HMAC-SHA256 key; set via deployment secret store / `wrangler secret put`, never runtime config. |
 | `INTERNAL_LIFECYCLE_RPC_SECRET` | Required for account erasure receipts and internal RPC | Empty | **Secret** | Separate 32-byte hexadecimal key; must not reuse `RESEARCH_HMAC_SECRET`; configure via deployment secret store / `wrangler secret put`. |
+| `DB_WRITES_PAUSED_UNTIL_UTC` | Optional | Empty | Public | UTC timestamp; while future, Worker blocks mutating HTTP requests except privacy/security exceptions, delays queue batches, and skips scheduled jobs. Invalid non-empty values fail closed. |
 | `VITE_NESHAN_API_KEY` | Optional | OSM/CARTO Fallback | Public/Server | Optional Neshan raster tile API key used by `/api/neshan-tile/:z/:x/:y`. |
 | `OBJECT_STORAGE_PROVIDER` | Optional | `local` / `r2` | Public | Storage driver: `local` (`.object-storage-bucket/`), `r2` (Cloudflare R2 `auto` region), `arvan`, `liara`, or `s3`. |
 | `OBJECT_STORAGE_BUCKET` | Optional | `radartehran-staging-media` | Public | Bucket name for property photos and videos. |
