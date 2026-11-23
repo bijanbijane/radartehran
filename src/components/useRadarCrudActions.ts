@@ -4,7 +4,7 @@ import React from 'react'; import type { AuthUserSnapshot } from '../platform/au
   buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>;
   adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number; setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; voteAir: number; votePower: number; voteInternet: number; voteMetro: number; voteSecurity: number; voteFlat: number; voteComment: string; setVoteComment: React.Dispatch<React.SetStateAction<string>>; setVoteStatus: React.Dispatch<React.SetStateAction<{ type: 'info' | 'success' | 'warning'; text: string } | null>>;
   setVerifyingGeo: React.Dispatch<React.SetStateAction<boolean>>; setSavingPrefs: React.Dispatch<React.SetStateAction<boolean>>; setPrefsMessage: React.Dispatch<React.SetStateAction<string>>; setLastSyncNotice: React.Dispatch<React.SetStateAction<string>>; setCallingSponsorHoodId: React.Dispatch<React.SetStateAction<number | null>>; setRevealedSponsorPhoneHoodId: React.Dispatch<React.SetStateAction<number | null>>; bestIndicator: { label: string; score: number }; marketReport: BubbleReport; setCopiedShare: React.Dispatch<React.SetStateAction<boolean>>; useLoanBooster?: boolean; deductTenantRahnInBuy?: boolean; buildingAgeSegment?: 'new' | 'mid' | 'older'; }
-export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminActions = useRadarAdminActions(p); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [isSavingBuyerAlert, setIsSavingBuyerAlert] = React.useState<boolean>(false); const handleSubmitBargainListing = async (e: React.FormEvent) => { e.preventDefault(); if (!p.currentUser || !p.currentUser.emailVerified) { p.setBargainSubmitMsg({ type: 'error', text: 'برای ثبت عمومی آگهی شکار روی نقشه، ابتدا با حساب کاربری تأییدشده وارد شوید.' }); return; }
+export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminActions = useRadarAdminActions(p); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [isSavingBuyerAlert, setIsSavingBuyerAlert] = React.useState<boolean>(false); const handleSubmitBargainListing = async (e: React.FormEvent) => { e.preventDefault(); if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) { p.setBargainSubmitMsg({ type: 'error', text: 'برای ثبت عمومی آگهی شکار روی نقشه، ابتدا با حساب کاربری تأییدشده وارد شوید.' }); return; }
     if (!p.liveBargainCheck.isEligible) {
       p.setBargainSubmitMsg({ type: 'error', text: `فقط فایل‌های حداقل ۱۰٪ زیر میانگین محله در رادار طلایی ثبت می‌شوند! (حداکثر قیمت مجاز در ${p.targetBargainHood.name}: ${toPersianNum(p.liveBargainCheck.maxAllowedFor10Percent)} میلیون تومان)` }); return;
     }
@@ -28,8 +28,8 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setBargainSubmitMsg({ type: 'error', text: 'ثبت آگهی در پایگاه داده انجام نشد. لطفاً اتصال و سطح دسترسی حساب خود را بررسی کنید.' });
       try { handleFirestoreError(err, OperationType.WRITE, `bargains/${bargainDocId}`); } catch { /* logged */ }
       return; }
-    let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try { const idToken = await p.currentUser.getIdToken(); const response = await fetch('/api/object-storage/attach-to-bargain', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try {  const response = await fetch('/api/object-storage/attach-to-bargain', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
           cache: 'no-store', body: JSON.stringify({ bargainId: bargainDocId, objectIds: objectStorageObjectIds }), }); const result: unknown = await response.json(); if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
           mediaAssociationWarning = ' آگهی ثبت شد، اما اتصال رسانه‌ها برای پاکسازی خودکار تأیید نشد؛ موضوع نیازمند بررسی است.'; }
       } catch { mediaAssociationWarning = ' آگهی ثبت شد، ولی ثبت ارتباط رسانه‌ها با سرور انجام نشد؛ موضوع نیازمند بررسی است.'; } }
@@ -57,12 +57,12 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       totalPayableMillion, trackingCode: cleanTracking, expiresAtIso,
       status: initialSponsorStatus, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
     };
-    if (!p.currentUser || !p.currentUser.emailVerified) { p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.'); return; }
+    if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) { p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.'); return; }
     let reqDocId = `${p.currentUser.uid}_${Date.now()}`; let persistedOnServer = false;
     try {
-      const idToken = await p.currentUser.getIdToken();
+      
       const operationCity = resolveCityIdForNeighborhood(targetHood.id);
-      const apiRes = await fetch('/api/sponsors/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ hoodId: targetHood.id, hoodName: targetHood.name, city: operationCity, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, planMonths: activePlanMonths }), cache: 'no-store' });
+      const apiRes = await fetch('/api/sponsors/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ hoodId: targetHood.id, hoodName: targetHood.name, city: operationCity, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, planMonths: activePlanMonths }), cache: 'no-store' });
       const apiJson = (await apiRes.json().catch(() => null)) as { status?: string; message?: string; request?: { id?: string; monthlyTariffMillion?: number; totalPayableMillion?: number; trackingCode?: string } } | null;
       if (apiRes.status === 400 || apiRes.status === 409) { p.setSponsorSubmitMsg(apiJson?.message || 'اطلاعات درخواست اسپانسر نامعتبر است.'); return; }
       if (apiRes.ok && apiJson?.status === 'ok' && apiJson.request) {
@@ -100,7 +100,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
   const handleRegisterBuyerAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSavingBuyerAlert) return;
-    if (!p.currentUser || !p.currentUser.emailVerified) {
+    if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) {
       p.setAlertSubmitMsg('ثبت شماره خریدار نیازمند ورود به حساب کاربری تأییدشده است.'); return;
     }
     if (!p.alertPhone.trim() || !p.alertFullName.trim()) {
@@ -115,11 +115,11 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     const cleanBudget = (sanitizeInput(p.alertMaxBudget, 120) || 'متناسب با میانگین محله').slice(0, 120);
     setIsSavingBuyerAlert(true); p.setAlertSubmitMsg('در حال ثبت امن درخواست...');
     try {
-      const idToken = await p.currentUser.getIdToken();
+      
       let serverErrorMessage = '';
       try {
         const response = await fetch('/api/buyer-alerts', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
           body: JSON.stringify({
             city: resolveCityIdForNeighborhood(targetHood.id), hoodId: targetHood.id, hoodName: targetHood.name,
             fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget,
@@ -174,7 +174,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setVoteStatus({ type: 'warning', text: 'رأی مهمان در میانگین مشترک محله ثبت نمی‌شود. برای اثرگذاری، با حساب کاربری تأییدشده وارد شوید.' });
       return;
     }
-    if (!p.currentUser.emailVerified) {
+    if (!p.currentUser.emailVerified && !p.currentUser.phoneNumber) {
       p.setVoteStatus({ type: 'warning', text: 'برای ثبت رأی در فضای ابری، ایمیل حساب کاربری شما باید تأیید شده باشد.' });
       return;
     }
