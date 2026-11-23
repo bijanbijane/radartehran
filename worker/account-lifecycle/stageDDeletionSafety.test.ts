@@ -11,7 +11,11 @@ import {
 import { d1FirstRow } from './d1ResultHelpers.ts';
 import { createWorkerMediaDeletionAdapter } from './workerMediaAdapter.ts';
 import { createWorkerD1TelemetryErasureAdapter } from './workerTelemetryErasureAdapter.ts';
-import { createWorkerD1DomainAdapters } from './workerD1DomainAdapters.ts';
+import {
+  createWorkerD1DomainAdapters,
+  createPartialMediaMetadataD1AdapterForContractTests,
+  createPartialUserProfileD1AdapterForContractTests,
+} from './workerD1DomainAdapters.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 
 type FakeOptions = {
@@ -112,9 +116,40 @@ test('Stage D rejects USER_DB even when the opt-in flag is true', async () => {
   await assert.rejects(() => requireWorkerLifecycleBindings(env));
 });
 
+test('production domain adapters never treat the Stage D lifecycle D1 as authoritative user data', async () => {
+  const { db } = fakeD1();
+  const adapters = createWorkerD1DomainAdapters(db);
+  const profile = adapters.find((candidate) => candidate.source === 'USER_PROFILE');
+  const media = adapters.find((candidate) => candidate.source === 'MEDIA_METADATA');
+  assert.ok(profile);
+  assert.ok(media);
+  const isDomainUnavailable = (error: unknown) =>
+    error instanceof Error &&
+    error.message.includes('authoritative USER_DB');
+  await assert.rejects(
+    () => profile.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+    isDomainUnavailable,
+  );
+  await assert.rejects(
+    () => media.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+    isDomainUnavailable,
+  );
+});
+
+test('media coordinator refuses to use lifecycle D1 without an explicit authoritative USER_DB', async () => {
+  const { db } = fakeD1();
+  const adapter = createWorkerMediaDeletionAdapter({ db, bucketName: 'radar-media' });
+  await assert.rejects(
+    () => adapter.listOwnedMediaPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+    (error: unknown) => error instanceof AccountLifecycleStoreError &&
+      error.code === 'DOMAIN_ADAPTER_UNAVAILABLE' &&
+      error.httpStatus === 503,
+  );
+});
+
 test('media adapter refuses to call a failed D1 list an empty page', async () => {
   const { db } = fakeD1({ readFails: true });
-  const adapter = createWorkerMediaDeletionAdapter({ db, bucketName: 'radar-media' });
+  const adapter = createWorkerMediaDeletionAdapter({ db, authoritativeUserDataDb: db, bucketName: 'radar-media' });
   await assert.rejects(
     () => adapter.listOwnedMediaPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
     isStoreUnavailable,
@@ -132,6 +167,7 @@ test('media adapter uses correctly ordered D1 metadata placeholders', async () =
   });
   const adapter = createWorkerMediaDeletionAdapter({
     db,
+    authoritativeUserDataDb: db,
     mediaBucket: { async delete() {} } as unknown as WorkerEnv['MEDIA_BUCKET'],
     bucketName: 'radar-media',
   });
@@ -161,6 +197,7 @@ test('media adapter leaves metadata pending when the D1 transition fails', async
   });
   const adapter = createWorkerMediaDeletionAdapter({
     db,
+    authoritativeUserDataDb: db,
     mediaBucket: { async delete() {} } as unknown as WorkerEnv['MEDIA_BUCKET'],
     bucketName: 'radar-media',
   });
@@ -200,7 +237,7 @@ test('telemetry adapter fails closed when D1 cannot confirm deletion', async () 
 
 test('D1 domain adapters fail closed when an ownership query fails', async () => {
   const { db } = fakeD1({ readFails: true });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'MEDIA_METADATA');
+  const adapter = createPartialMediaMetadataD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
@@ -210,7 +247,7 @@ test('D1 domain adapters fail closed when an ownership query fails', async () =>
 
 test('USER_PROFILE adapter fails closed when upload-session D1 query fails', async () => {
   const { db } = fakeD1({ readFailsFor: ['FROM upload_sessions'] });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
@@ -222,7 +259,7 @@ test('USER_PROFILE adapter fails closed when account data-request D1 query fails
     rowsBySqlIncludes: { 'FROM upload_sessions': [] },
     readFailsFor: ['FROM account_data_requests'],
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
@@ -242,7 +279,7 @@ test('USER_PROFILE pages retain the final upload-session rows and fill only rema
       ],
     },
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
 
   const page = await adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 3 });
@@ -267,7 +304,7 @@ test('USER_PROFILE deletion keeps a combined D1 batch within its requested size'
       ],
     },
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
 
   const batch = await adapter.disposeOwnedRecordsBatch({
@@ -289,7 +326,7 @@ test('upload-session deletion emits no success receipt when D1 deletion fails', 
     },
     writeFailsFor: ['DELETE FROM upload_sessions'],
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
@@ -308,7 +345,7 @@ test('data-request deletion emits no success receipt when D1 deletion fails', as
     },
     writeFailsFor: ['DELETE FROM account_data_requests'],
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
@@ -320,7 +357,7 @@ test('media metadata domain disposition rejects an unconfirmed zero-row update',
     rows: [{ object_id: 'media_1', owner_uid: 'uid_1', created_at_iso: '2026-11-23T00:00:00.000Z' }],
     changesBySqlIncludes: { 'UPDATE media_objects': 0 },
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'MEDIA_METADATA');
+  const adapter = createPartialMediaMetadataD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
@@ -332,7 +369,7 @@ test('D1 media metadata deletion fails closed when its update fails', async () =
     rows: [{ object_id: 'media_1', owner_uid: 'uid_1', created_at_iso: '2026-11-23T00:00:00.000Z' }],
     writeFails: true,
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'MEDIA_METADATA');
+  const adapter = createPartialMediaMetadataD1AdapterForContractTests(db);
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10 }),
@@ -353,7 +390,7 @@ test('USER_PROFILE pagination preserves the final upload-session page and fills 
       ],
     },
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
 
   const page = await adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 5 });
@@ -381,7 +418,7 @@ test('USER_PROFILE deletion keeps its combined session and request batch within 
       ],
     },
   });
-  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  const adapter = createPartialUserProfileD1AdapterForContractTests(db);
   assert.ok(adapter);
 
   const batch = await adapter.disposeOwnedRecordsBatch({
