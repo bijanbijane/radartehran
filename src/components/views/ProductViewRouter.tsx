@@ -55,7 +55,16 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const isEn = radarLocale === 'en';
   const { comparisonArc, showMetroLines, showTrafficZones } = useMapAdvancedOverlayState();
   const hasActiveArc = Boolean(comparisonArc.active && comparisonArc.hoodA && comparisonArc.hoodB && comparisonArc.hoodA.id !== comparisonArc.hoodB.id);
-  const rawDealSqm = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm;
+  // Listing parsing and market aggregation are CPU-heavy; keep them off unrelated UI rerenders.
+  const rawDealSqm = React.useMemo(
+    () => aggregateNeighborhoodMarketMetrics(
+      selectedHood.id,
+      selectedHood.name,
+      selectedHood.buyPerSqm,
+      buildNeighborhoodListingSamples(selectedHood),
+    ).estimatedDealPricePerSqm,
+    [selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, selectedHood.bargains],
+  );
   const activeDealUnit = convertPricePerSqmToUnit(rawDealSqm, areaUnit), activeDealRaw = convertPricePerSqmToUnitRaw(rawDealSqm, areaUnit);
   const axisAreaSuffix = formatAreaUnitLabel(areaUnit);
   const activeDealLabel = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(activeDealRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${axisAreaSuffix}` : `${toPersianNum(activeDealUnit)} میلیون تومان / ${axisAreaSuffix}`;
