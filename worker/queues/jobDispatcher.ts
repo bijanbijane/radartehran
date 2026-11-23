@@ -107,7 +107,7 @@ async function handleFirestoreD1ProjectionSync(
         buy_per_sqm_million: hood.buyPerSqm,
         deal_per_sqm_million: dealPerSqm,
         rahn_80m_million: hood.rahn80m,
-        aqi: hood.air ?? 80,
+        aqi: 80,
         investment_score: hood.opportunityScore ?? 75,
         firestore_version_iso: nowIso,
         projected_at_iso: nowIso,
