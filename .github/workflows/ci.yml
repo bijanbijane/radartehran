@@ -110,6 +110,9 @@ jobs:
 
       # These suites use local node:sqlite-backed D1 simulators. No Cloudflare
       # credentials, remote D1 bindings, migrations, or production writes are used.
+      - name: Run Worker runtime and write-pause regressions
+        run: npm run test:worker
+
       - name: Run queue processor unit regressions
         run: npm run test:queues
 
