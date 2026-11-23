@@ -9,6 +9,7 @@ import type { RadarQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import type { MessageBatch } from '../types.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
 import { buildLifecycleQueueIdempotencyKey } from './lifecycleQueueContract.ts';
+import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 
 interface MockMessage<T> {
   id: string;
@@ -41,6 +42,18 @@ async function run(): Promise<void> {
     correlationId: 'corr_int_1',
     payload: { jobId: 'deljob_missing', targetUid: 'u_test', operation: 'DELETION_STEP' },
   };
+
+  // USER_DB is required in the valid dual-D1 Stage D topology. The dispatcher
+  // must delegate configuration and schema checks to the Stage D runtime.
+  const userDbOnlyEnv = {
+    USER_DB: {} as import('../types.ts').WorkerEnv['USER_DB'],
+    RADAR_QUEUE: { async send() {} },
+  } as import('../types.ts').WorkerEnv;
+  await assert.rejects(
+    () => createCanonicalQueueJobDispatcher(userDbOnlyEnv)(envelope),
+    (error: unknown) =>
+      error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
+  );
 
   let acked = false;
   let retried = false;

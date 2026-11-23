@@ -457,13 +457,6 @@ async function handleAccountLifecycleDeletionStep(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  if (env.USER_DB) {
-    throw new QueueJobExecutionError(
-      'STAGE_D_SCHEMA_NOT_BOUND',
-      'Account lifecycle deletion messages require the dedicated migrations/d1 schema.',
-      false,
-    );
-  }
   const parsed = validateLifecycleQueuePayload(envelope.payload);
   if (!parsed.ok) {
     throw new QueueJobExecutionError(

@@ -104,7 +104,7 @@ test('Stage D is disabled without an explicit flag and recovery touches neither 
   assert.equal(sends, 0);
 });
 
-test('Stage D rejects USER_DB even when the opt-in flag is true', async () => {
+test('Stage D rejects a USER_DB binding that aliases the lifecycle D1', async () => {
   const { db } = fakeD1();
   const env = {
     DB: db,
@@ -114,6 +114,20 @@ test('Stage D rejects USER_DB even when the opt-in flag is true', async () => {
 
   assert.equal(isStageDLifecycleEnabled(env), false);
   await assert.rejects(() => requireWorkerLifecycleBindings(env));
+});
+
+test('Stage D accepts two explicitly identified, distinct D1 bindings', () => {
+  const { db: lifecycleDb } = fakeD1();
+  const { db: userDb } = fakeD1();
+  const env = {
+    DB: lifecycleDb,
+    USER_DB: userDb,
+    STAGE_D_LIFECYCLE_ENABLED: 'true',
+    STAGE_D_LIFECYCLE_DATABASE_ID: 'stage-d-lifecycle-db',
+    STAGE_D_USER_DATABASE_ID: 'radar-user-db',
+  } as unknown as WorkerEnv;
+
+  assert.equal(isStageDLifecycleEnabled(env), true);
 });
 
 test('production domain adapters never treat the Stage D lifecycle D1 as authoritative user data', async () => {
