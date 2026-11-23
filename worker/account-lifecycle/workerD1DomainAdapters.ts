@@ -11,7 +11,25 @@ import type {
   UserOwnedDomainSource,
 } from '../../server/modules/account-lifecycle/types.ts';
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import { ALL_USER_OWNED_DOMAIN_SOURCES, DEPENDENT_PURGE_SOURCES } from '../../server/modules/account-lifecycle/types.ts';
+
+function requireD1Rows<T>(result: { success: boolean; results: T[] }, operation: string): T[] {
+  if (!result.success || !Array.isArray(result.results)) {
+    throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', `${operation} could not be verified in D1.`, 503);
+  }
+  return result.results;
+}
+
+function requireD1Write(
+  result: { success: boolean; meta?: { changes?: number } },
+  operation: string,
+  expectedChanges?: number,
+): void {
+  if (!result.success || (expectedChanges !== undefined && result.meta?.changes !== expectedChanges)) {
+    throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', `${operation} was not confirmed by D1.`, 503);
+  }
+}
 
 const FIRESTORE_AUTHORITATIVE_SOURCES = new Set<UserOwnedDomainSource>([
   'BARGAIN_LISTINGS',
@@ -55,7 +73,7 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      const rows = requireD1Rows(res, 'Upload-session ownership read');
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.session_id),
         ownerUid: String(r.owner_uid),
@@ -75,8 +93,10 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
       const receipts = [];
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(item.recordId).run();
-        await db.prepare('DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2').bind(item.recordId, targetUid).run();
+        const chunkDeletion = await db.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(item.recordId).run();
+        requireD1Write(chunkDeletion, 'Upload-session chunk deletion');
+        const sessionDeletion = await db.prepare('DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2').bind(item.recordId, targetUid).run();
+        requireD1Write(sessionDeletion, 'Upload-session row deletion', 1);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -103,7 +123,7 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      const rows = requireD1Rows(res, 'Account-data-request ownership read');
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.request_id),
         ownerUid: String(r.target_uid),
@@ -122,10 +142,11 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
       const page = await this.fetchOwnedRecordsPage({ targetUid, cursor, pageSize: batchSize ?? 25 });
       const receipts = [];
       for (const item of page.items) {
-        await db
+        const deletion = await db
           .prepare('DELETE FROM account_data_requests WHERE request_id = ?1 AND target_uid = ?2')
           .bind(item.recordId, targetUid)
           .run();
+        requireD1Write(deletion, 'Account data-request deletion', 1);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -189,7 +210,7 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      const rows = requireD1Rows(res, 'Media-metadata ownership read');
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -210,13 +231,14 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
       const nowIso = new Date().toISOString();
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db
+        const update = await db
           .prepare(
             `UPDATE media_objects SET lifecycle_state = 'PURGED', deletion_state = 'DELETED', updated_at_iso = ?1
              WHERE object_id = ?2 AND owner_uid = ?3`,
           )
           .bind(nowIso, item.recordId, targetUid)
           .run();
+        requireD1Write(update, 'Media metadata deletion-state update', 1);
         receipts.push({
           recordId: item.recordId,
           source: 'MEDIA_METADATA',
