@@ -89,6 +89,20 @@ test('computes the same stable batch ID as the IRNI Node publisher', async () =>
   assert.equal(await computeExpectedGeographicPublishBatchId(expected), expectedId);
 });
 
+test('changes the batch ID when any sidecar checksum or expected count changes', async () => {
+  const changedRelationship = {
+    ...expected,
+    artifactChecksums: { ...expected.artifactChecksums, relationships: hashB },
+  };
+  const changedCount = {
+    ...expected,
+    expectedCounts: { ...expected.expectedCounts, relationships: 9828 },
+  };
+  const originalId = await computeExpectedGeographicPublishBatchId(expected);
+  assert.notEqual(await computeExpectedGeographicPublishBatchId(changedRelationship), originalId);
+  assert.notEqual(await computeExpectedGeographicPublishBatchId(changedCount), originalId);
+});
+
 test('accepts a complete active six-dataset manifest that exactly matches D1', () => {
   const result = compareActiveGeographicPublishManifest({
     activeHead: head,
