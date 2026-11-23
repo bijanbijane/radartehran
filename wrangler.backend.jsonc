@@ -48,7 +48,7 @@
   //   - KAVENEGAR_API_KEY
   //   - AUTH_PII_HMAC_SECRET
   //   - ADMIN_API_SECRET
-  //   - R2_SIGNING_SECRET
+  // Media storage is intentionally disabled: R2 is not provisioned or approved yet.
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
   //   - INTERNAL_LIFECYCLE_RPC_SECRET
