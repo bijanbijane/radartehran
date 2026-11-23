@@ -116,8 +116,8 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
         ).bind(query.uid).first<Record<string, unknown>>()
       : Promise.resolve(null),
     query.uid
-      ? db.prepare('SELECT city_id, hood_id FROM user_favorites WHERE uid = ?1 ORDER BY created_at_iso DESC LIMIT 100')
-          .bind(query.uid).all<Record<string, unknown>>()
+      ? db.prepare('SELECT city_id, hood_id FROM user_favorites WHERE uid = ?1 AND city_id = ?2 ORDER BY created_at_iso DESC LIMIT 100')
+          .bind(query.uid, cityId).all<Record<string, unknown>>()
       : Promise.resolve({ results: [] as Record<string, unknown>[] }),
   ]);
 
