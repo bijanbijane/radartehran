@@ -7,7 +7,7 @@
  *  1. Production (`radartehran-api`) declares `USER_DB`, legacy alias `DB`, and `RESEARCH_DB`.
  *  2. `USER_DB.database_id === DB.database_id` (both bound to `radar-user-db`).
  *  3. `RESEARCH_DB.database_id !== USER_DB.database_id` (physically isolated `radar-researcher-db`).
- *  4. ZERO direct D1 binding or reference to IRNI `radar-neighborhood-db` (`f335efe8-37ac-4c7d-a057-bc9f4480f6c6`).
+ *  4. `NEIGHBORHOOD_DB` is bound only to the IRNI-owned canonical registry and its migration stream.
  *  5. ZERO obsolete/missing legacy D1 IDs (`9bcadfaf...`, `2facfc2d...`, `c5ae237a...`) in active bindings.
  *  6. ZERO Staging <-> Production D1 database_id or database_name collision.
  *  7. Distinct, valid, non-destructive `migrations_dir` for `USER_DB` and `RESEARCH_DB` with `d1_migrations` ledger.
@@ -223,6 +223,14 @@ export function validateBackendWranglerConfig(
     }
     if (userDb.migrations_dir && researchDb.migrations_dir && userDb.migrations_dir === researchDb.migrations_dir) {
       errors.push('USER_DB_AND_RESEARCH_DB_SAME_MIGRATIONS_DIR_FORBIDDEN');
+    }
+  }
+
+  if (neighborhoodDb) {
+    for (const other of [userDb, legacyDb, researchDb].filter(Boolean)) {
+      if (neighborhoodDb.database_id === other.database_id) {
+        errors.push('NEIGHBORHOOD_DB_SHARES_PHYSICAL_ID_FORBIDDEN:' + other.binding);
+      }
     }
   }
 
