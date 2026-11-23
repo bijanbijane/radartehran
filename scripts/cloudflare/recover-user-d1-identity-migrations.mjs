@@ -121,7 +121,7 @@ function resolvePinnedTarget() {
  */
 function assertD1WritePauseExpired(target, nowMs = Date.now()) {
   const deadline = String(target.writePauseUntilUtc || '').trim();
-  if (!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(deadline)) {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(deadline)) {
     throw new Error('Production DB_WRITES_PAUSED_UNTIL_UTC must be a valid UTC ISO-8601 timestamp before --apply.');
   }
   const deadlineMs = Date.parse(deadline);
