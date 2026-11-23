@@ -1,0 +1,62 @@
+name: App Check Project Binding Security Gate
+
+on:
+  push:
+    branches:
+      - fix/app-check-project-binding-001
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-check-project-binding-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-app-check:
+    name: Verify strict Firebase App Check project and app binding
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact fix commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: Run cryptographic App Check and fail-closed regression suite
+        run: npx tsx --test tests/cloudflare-worker-auth-failclosed.test.ts
+
+      - name: Run Firebase identity and authentication contract suite
+        run: npm run test:auth
+
+      - name: Verify Worker production App Check pinning
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const config = JSON.parse(fs.readFileSync("firebase-applet-config.json", "utf8"));
+            const wrangler = fs.readFileSync("wrangler.backend.jsonc", "utf8");
+            const required = [
+              "FIREBASE_PROJECT_NUMBER",
+              "FIREBASE_APP_CHECK_APP_ID",
+              "FIREBASE_APP_CHECK_MODE"
+            ];
+            for (const key of required) {
+              if (!wrangler.includes(key)) throw new Error("Missing Worker binding: " + key);
+            }
+            if (!wrangler.includes("935427453422") ||
+                !wrangler.includes(config.appId) ||
+                !/"FIREBASE_APP_CHECK_MODE"\s*:\s*"enforced"/.test(wrangler)) {
+              throw new Error("Worker App Check project/app pinning does not match Firebase Web App configuration.");
+            }
+            console.log("Worker App Check is pinned to the configured Firebase project and Web App.");
+          '

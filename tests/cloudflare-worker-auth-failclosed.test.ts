@@ -10,8 +10,11 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, it } from 'node:test';
 import {
+  resolveWorkerAppCheckMode,
   verifyWorkerAppCheck,
 } from '../worker/auth/appCheckVerifier';
+import { resetJwksCacheForTests } from '../worker/auth/jwksClient';
+import { resolveWorkerAuthContext } from '../worker/auth/authorizationPolicy';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -88,11 +91,12 @@ async function createMigratedRealSqliteD1(): Promise<D1Database> {
 
 afterEach(() => {
   clearTestJwksForEdgeAuth();
+  resetJwksCacheForTests();
 });
 
 describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check', () => {
   it('1. fails closed (503) when D1 is missing or throws during revocation check', async () => {
-    const missing = await isTokenRevokedOrUserDisabled({ db: undefined, uid: 'u1', tokenIatSeconds: 1000 });
+    const missing = await isTokenRevokedOrUserDisabled('u1', 1000, undefined);
     assert.equal(missing.unavailable, true);
 
     const throwingDb = {
@@ -109,7 +113,7 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
       },
     } as unknown as D1Database;
 
-    const errored = await isTokenRevokedOrUserDisabled({ db: throwingDb, uid: 'u1', tokenIatSeconds: 1000 });
+    const errored = await isTokenRevokedOrUserDisabled('u1', 1000, throwingDb);
     assert.equal(errored.unavailable, true);
 
     const kp = await createRsaPair();
@@ -240,6 +244,36 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     assert.equal(auditRows.results.length, 3);
   });
 
+  it('3. never permits monitor/disabled App Check mode on production-sensitive routes', () => {
+    assert.equal(
+      resolveWorkerAppCheckMode(
+        { WORKER_ENV: 'production', FIREBASE_APP_CHECK_MODE: 'disabled' },
+        { sensitiveRoute: true },
+      ),
+      'enforced',
+    );
+    assert.equal(
+      resolveWorkerAppCheckMode(
+        { WORKER_ENV: 'production', FIREBASE_APP_CHECK_MODE: 'monitor' },
+        { sensitiveRoute: true },
+      ),
+      'enforced',
+    );
+    assert.equal(
+      resolveWorkerAppCheckMode(
+        { WORKER_ENV: 'production', FIREBASE_APP_CHECK_MODE: 'disabled' },
+        { sensitiveRoute: false },
+      ),
+      'monitor',
+    );
+    assert.equal(
+      resolveWorkerAppCheckMode(
+        { WORKER_ENV: 'staging', FIREBASE_APP_CHECK_MODE: 'disabled' },
+      ),
+      'disabled',
+    );
+  });
+
   it('3. verifies cryptographic App Check (RS256 valid, forged, wrong app_id, expired, JWKS outage 503, debug blocked in prod, monitor mode)', async () => {
     const kp = await createRsaPair();
     const attackerKp = await createRsaPair();
@@ -255,10 +289,21 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
       mode: 'enforced' as const,
       isProduction: true,
       expectedProjectId: 'radartehran-prod',
+      expectedProjectNumber: '123456789012',
       expectedAppId: '1:123456789012:web:abcdef',
       fetchFn: jwksFetch,
       nowSeconds: now,
     };
+
+    const missingVerifierConfig = await verifyWorkerAppCheck(
+      new Request('https://radartehran.ir/api/object-storage/upload', {
+        headers: { 'X-Firebase-AppCheck': 'syntactically-valid-placeholder-token' },
+      }),
+      { ...baseOpts, expectedProjectNumber: undefined },
+    );
+    assert.equal(missingVerifierConfig.allowed, false);
+    assert.equal(missingVerifierConfig.statusCode, 503);
+    assert.equal(missingVerifierConfig.reason, 'APP_CHECK_VERIFIER_CONFIGURATION_MISSING');
 
     const validToken = await signJwt(kp.privateKey, 'ac-kid-1', {
       iss: 'https://firebaseappcheck.googleapis.com/123456789012',
@@ -275,10 +320,68 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     assert.equal(okRes.allowed, true);
     assert.equal(okRes.statusCode, 200);
 
+    // A valid signature and matching app ID must still be rejected for another project's audience.
+    const wrongProject = await signJwt(kp.privateKey, 'ac-kid-1', {
+      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
+      aud: ['projects/987654321000', 'projects/another-project'],
+      sub: '1:123456789012:web:abcdef',
+      iat: now - 5,
+      exp: now + 1800,
+    });
+    const wrongProjectRes = await verifyWorkerAppCheck(
+      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': wrongProject } }),
+      baseOpts,
+    );
+    assert.equal(wrongProjectRes.allowed, false);
+    assert.equal(wrongProjectRes.reason, 'APP_CHECK_PROJECT_MISMATCH');
+
+    // A valid signature and audience must still be rejected when the issuer belongs to another project.
+    const wrongIssuer = await signJwt(kp.privateKey, 'ac-kid-1', {
+      iss: 'https://firebaseappcheck.googleapis.com/987654321000',
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
+      sub: '1:123456789012:web:abcdef',
+      iat: now - 5,
+      exp: now + 1800,
+    });
+    const wrongIssuerRes = await verifyWorkerAppCheck(
+      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': wrongIssuer } }),
+      baseOpts,
+    );
+    assert.equal(wrongIssuerRes.allowed, false);
+    assert.equal(wrongIssuerRes.reason, 'APP_CHECK_ISSUER_MISMATCH');
+
+    // Missing issuer is never accepted.
+    const missingIssuer = await signJwt(kp.privateKey, 'ac-kid-1', {
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
+      sub: '1:123456789012:web:abcdef',
+      iat: now - 5,
+      exp: now + 1800,
+    });
+    const missingIssuerRes = await verifyWorkerAppCheck(
+      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': missingIssuer } }),
+      baseOpts,
+    );
+    assert.equal(missingIssuerRes.allowed, false);
+    assert.equal(missingIssuerRes.reason, 'APP_CHECK_ISSUER_MISMATCH');
+
+    // Missing issued-at is invalid even when the signature and other claims are valid.
+    const missingIat = await signJwt(kp.privateKey, 'ac-kid-1', {
+      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
+      sub: '1:123456789012:web:abcdef',
+      exp: now + 1800,
+    });
+    const missingIatRes = await verifyWorkerAppCheck(
+      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': missingIat } }),
+      baseOpts,
+    );
+    assert.equal(missingIatRes.allowed, false);
+    assert.equal(missingIatRes.reason, 'APP_CHECK_ISSUED_AT_INVALID');
+
     // Forged signature signed by attacker key -> rejected
     const forgedToken = await signJwt(attackerKp.privateKey, 'ac-kid-1', {
       iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
       sub: '1:123456789012:web:abcdef',
       iat: now - 5,
       exp: now + 1800,
@@ -293,7 +396,7 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     // Wrong app_id -> rejected
     const wrongApp = await signJwt(kp.privateKey, 'ac-kid-1', {
       iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
       sub: '1:123456789012:web:EVILAPP',
       iat: now - 5,
       exp: now + 1800,
@@ -307,7 +410,7 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     // Expired token -> rejected
     const expired = await signJwt(kp.privateKey, 'ac-kid-1', {
       iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
       sub: '1:123456789012:web:abcdef',
       iat: now - 4000,
       exp: now - 200,
@@ -321,11 +424,13 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     // JWKS outage fails closed with 503 in enforced mode
     const outageToken = await signJwt(kp.privateKey, 'ac-kid-uncached', {
       iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
+      aud: ['projects/123456789012', 'projects/radartehran-prod'],
       sub: '1:123456789012:web:abcdef',
       iat: now - 5,
       exp: now + 1800,
     });
+    // Isolate the dependency-outage case from the prior successful JWKS cache and refresh throttle.
+    resetJwksCacheForTests();
     const outageRes = await verifyWorkerAppCheck(
       new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': outageToken } }),
       { ...baseOpts, fetchFn: outageFetch },
@@ -348,6 +453,55 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     );
     assert.equal(monitorRes.allowed, true);
     assert.equal(monitorRes.statusCode, 200);
+  });
+
+  it('4. requires App Check for Firebase-authenticated account lifecycle requests while preserving service-secret auth', async () => {
+    const kp = await createRsaPair();
+    const now = Math.floor(Date.now() / 1000);
+    const idToken = await signJwt(kp.privateKey, 'lifecycle-id-kid', {
+      iss: 'https://securetoken.google.com/radartehran-prod',
+      aud: 'radartehran-prod',
+      sub: 'lifecycle-user-1',
+      user_id: 'lifecycle-user-1',
+      email: 'lifecycle-user@example.com',
+      email_verified: true,
+      iat: now - 10,
+      auth_time: now - 10,
+      exp: now + 3600,
+    });
+    const env: WorkerEnv = {
+      WORKER_ENV: 'production',
+      FIREBASE_PROJECT_ID: 'radartehran-prod',
+      FIREBASE_PROJECT_NUMBER: '123456789012',
+      FIREBASE_APP_CHECK_APP_ID: '1:123456789012:web:abcdef',
+      FIREBASE_APP_CHECK_MODE: 'enforced',
+    };
+    const userRequest = new Request('https://radartehran.ir/api/v1/account/lifecycle/privacy', {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const userAuth = await resolveWorkerAuthContext(userRequest, {
+      expectedProjectId: 'radartehran-prod',
+      env,
+      requireAppCheck: true,
+      tokenVerifyOptions: {
+        nowSeconds: now,
+        customKeyResolver: async (kid) => kid === 'lifecycle-id-kid' ? kp.publicKey : null,
+      },
+    });
+    assert.equal(userAuth.authenticated, false);
+    assert.equal(userAuth.failureStatusCode, 401);
+    assert.equal(userAuth.failureCode, 'MISSING_APP_CHECK_TOKEN');
+
+    const serviceRequest = new Request('https://radartehran.ir/api/v1/account/lifecycle/internal', {
+      headers: { 'X-Admin-Token': 'service-secret-value' },
+    });
+    const serviceAuth = await resolveWorkerAuthContext(serviceRequest, {
+      adminApiSecret: 'service-secret-value',
+      env,
+      requireAppCheck: true,
+    });
+    assert.equal(serviceAuth.authenticated, true);
+    assert.equal(serviceAuth.mode, 'server_secret_token');
   });
 
   it('4. verifies Express auth module has zero fallback to verifyIdToken(..., false)', () => {

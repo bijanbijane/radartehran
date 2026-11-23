@@ -510,6 +510,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     isProduction: isProd,
     expectedAppId: params.env.FIREBASE_APP_CHECK_APP_ID,
     expectedProjectId: projectId,
+    expectedProjectNumber: params.env.FIREBASE_PROJECT_NUMBER,
     debugAllowlist,
     nowSeconds: nowSec,
     fetchFn: params.appCheckFetchFn,
