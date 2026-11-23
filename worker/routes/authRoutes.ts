@@ -41,6 +41,7 @@ function readRequestCookie(request: Request, name: string): string | null {
   }
   return null;
 }
+function validMutationOrigin(ctx: WorkerRequestContext): boolean {
   const origin = ctx.request.headers.get('origin');
   if (!origin) return false;
   try {
