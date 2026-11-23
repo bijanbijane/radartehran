@@ -56,7 +56,7 @@ export function d1WritePauseResponse(ctx: WorkerRequestContext): Response | null
   if (!pause.paused) return null;
   return jsonWorkerResponse(ctx, 503, {
     status: 'error',
-    code: pause.invalidConfiguration ? 'D1_WRITE_PAUSE_CONFIGURATION_INVALID' : 'D1_WRITES_TEMPORARILY_PAUSED',
+    code: pause.reason === 'INVALID_CONFIGURATION' ? 'D1_WRITE_PAUSE_CONFIGURATION_INVALID' : 'D1_WRITES_TEMPORARILY_PAUSED',
     pauseUntilUtc: pause.pauseUntilUtc,
     retryAfterSeconds: pause.retryAfterSeconds,
   }, { extraHeaders: { 'Retry-After': String(pause.retryAfterSeconds) } });
