@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS geo_publish_batches (
   expected_entities INTEGER NOT NULL,
   expected_relationships INTEGER NOT NULL,
   expected_source_mappings INTEGER NOT NULL,
+  expected_legacy_aliases INTEGER NOT NULL,
   artifact_checksums_json TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('RECEIVING', 'PUBLISHED', 'FAILED')),
   created_at_iso TEXT NOT NULL,
@@ -33,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_geo_publish_nonces_expiry
 
 CREATE TABLE IF NOT EXISTS geo_publish_chunks (
   batch_id TEXT NOT NULL,
-  dataset_kind TEXT NOT NULL CHECK (dataset_kind IN ('entities', 'relationships', 'sourceMappings')),
+  dataset_kind TEXT NOT NULL CHECK (dataset_kind IN ('entities', 'relationships', 'sourceMappings', 'legacyAliases')),
   chunk_index INTEGER NOT NULL,
   payload_sha256 TEXT NOT NULL,
   record_count INTEGER NOT NULL,
@@ -53,3 +54,7 @@ CREATE TABLE IF NOT EXISTS geo_publish_staging_records (
 
 CREATE INDEX IF NOT EXISTS idx_geo_publish_staging_batch_kind_order
   ON geo_publish_staging_records(batch_id, dataset_kind, chunk_index, record_index);
+
+-- A legacy identifier is a single compatibility key and must resolve to one canonical ID.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_geo_legacy_alias_unique_key
+  ON geo_legacy_aliases(legacy_system_code, legacy_identifier_value);
