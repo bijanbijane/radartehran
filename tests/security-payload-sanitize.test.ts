@@ -8,7 +8,7 @@ import {
   detectPromptInjection,
   escapeCsvCell,
 } from '../src/utils/security';
-import { prepareFirestorePayload } from '../src/firebase';
+import { prepareFirestorePayload } from '../src/utils/firestorePayload';
 import { verifyMediaMagicBytes, detectMediaFormatByMagicBytes } from '../src/utils/fileSignature';
 import { fileNameForUploadMime } from '../src/utils/objectStorage';
 
