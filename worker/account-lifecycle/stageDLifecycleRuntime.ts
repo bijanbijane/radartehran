@@ -302,7 +302,7 @@ function createRuntime(env: WorkerEnv): {
     domainAdapters: createWorkerDomainAdapters(db),
     mediaAdapter: createWorkerMediaDeletionAdapter({
       db,
-      authoritativeUserDataDb: userDb,
+      authoritativeUserDataDb: userDb as unknown as D1DatabaseBinding,
       mediaBucket: env.MEDIA_BUCKET,
       bucketName: String(env.R2_MEDIA_BUCKET_NAME || '__UNCONFIGURED_MEDIA_BUCKET__').trim(),
     }),
