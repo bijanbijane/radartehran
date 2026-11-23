@@ -59,6 +59,7 @@ async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
       }),
       db: null,
       uid: null,
+      isAdmin: false,
     };
   }
   if (!principal.emailVerified && !principal.phoneNumber) {
