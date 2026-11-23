@@ -63,6 +63,31 @@ The following items were confirmed by reading files on the recorded `main` commi
 | Edge/network | Cloudflare Workers and Wrangler configuration exist | Repository files do not prove live HTTP/3, TLS, Brotli, Anycast path, CDN cache policy, or regional performance. Verify deployed response headers and network paths separately. |
 | Capacity | Queue, rate-limit, and cache modules exist | Audit actual production bindings and call sites; repository configuration alone does not prove remote resources are provisioned or active. |
 
+## 4. Live Cloudflare edge baseline (2026-11-23)
+
+The connected Cloudflare account currently has no DNS zone or custom Worker domain for `tehranradar.ir`. The production frontend and API are reachable through `workers.dev`, and the frontend uses a Worker service binding to the API. The Cloudflare edge is active, but zone-level settings for a custom domain (HTTP/3 controls, Cache Rules, Early Hints, Tiered Cache, and custom DNS) cannot be tuned in this account until the domain is onboarded or the correct account is connected.
+
+### Observed Worker telemetry
+
+A 48-hour Cloudflare Workers telemetry query returned:
+
+| Worker / protocol | Fetch events | P95 wall time | P99 wall time | P95 CPU |
+|---|---:|---:|---:|---:|
+| API / HTTP/1.1 | 2,059 | 330 ms | 391 ms | 7 ms |
+| API / HTTP/2 | 32 | 184 ms | 197 ms | 11 ms |
+| Frontend / HTTP/1.1 | 9 | 616 ms | 616 ms | 1 ms |
+| Frontend / HTTP/2 | 15 | 597 ms | 597 ms | 3 ms |
+
+No HTTP/3 fetch events appeared in this sample. The event sample is dominated by synthetic health checks from Microsoft-hosted automation (including `curl` requests and a smoke-test query parameter), not verified end-user sessions. These values are Worker execution wall times, not browser navigation time, LCP, INP, or user-perceived latency. The frontend sample sizes are too small for reliable percentile conclusions.
+
+**Interpretation:** Worker CPU is low in these probes; the observed wall time is mostly waiting/IO or the health-check route itself. The next measurement must be consented browser RUM and controlled regional synthetic tests, not extrapolation from these probes.
+
+### Staging deployment drift
+
+The live staging Worker had an hourly Cron Trigger while its D1 binding referenced a deleted database. That schedule was removed from the live staging Worker and verified empty. PR #9 also adds an explicit empty staging `triggers.crons` list and a regression assertion. The staging D1 binding itself remains unprovisioned; staging lifecycle processing must stay disabled until dedicated staging D1 databases and migrations exist.
+
+Live Worker environment values and bindings do not fully match the current `wrangler.backend.jsonc`. Do not deploy that configuration blindly; reconcile the intended custom domain, Worker variables, bindings, and staging resources first.
+
 ## 4. Important correctness findings
 
 ### 4.1 Service Worker external tile cache
@@ -143,4 +168,4 @@ A tranche is done only when:
 
 ## 7. Current status
 
-This commit records the engineering standard and baseline audit only. Runtime changes are proposed separately in PRs #16, #17, and #19; the Firebase boundary fix is consolidated into PR #9. No Worker bindings, Cloudflare resources, secrets, D1 migrations, or deployments are changed here. Implementation remains open under issue #13.
+This commit records the engineering standard and baseline audit. Runtime changes are proposed separately in PRs #16, #17, #19, #20, and #22; the Firebase boundary and staging Cron correction are consolidated into PR #9; stacked-PR CI support is in PR #21. The only live Cloudflare mutation so far is removal of the broken staging-only Cron Trigger; no production Worker binding, D1 resource, DNS zone, secret, or deployment was changed. Implementation remains open under issue #13.
