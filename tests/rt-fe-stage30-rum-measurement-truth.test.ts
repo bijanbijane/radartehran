@@ -264,4 +264,33 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(noSample.measurementSource, 'FIELD_RUM');
     });
   }
+
+
+describe('INP interaction aggregation', () => {
+  it('uses one maximum duration per interaction instead of weighting repeated event entries', () => {
+    const collector = new BrowserRumCollector({
+      routePath: '/search',
+      supportedEntryTypes: ['event'],
+      observerFactory: (cb) => ({
+        observe: (options) => {
+          if (options.type !== 'event') return;
+          const repeatedEvents = Array.from({ length: 100 }, () => ({ interactionId: 1, duration: 10 }));
+          cb([
+            ...repeatedEvents,
+            { interactionId: 2, duration: 200 },
+            { interactionId: 3, duration: 300 },
+          ]);
+        },
+        disconnect: () => {},
+      }),
+    });
+
+    collector.start();
+    const snapshot = collector.getSnapshot();
+    const expectedInp = Math.round(computeSamplePercentile([10, 200, 300], 98) ?? 0);
+    assert.equal(snapshot.inpMs, expectedInp);
+    assert.equal(snapshot.inpMs, 298);
+    collector.disconnect();
+  });
+});
 });
