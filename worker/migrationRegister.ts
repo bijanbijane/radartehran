@@ -16,6 +16,7 @@ const GROUP_1A_VERIFIED_PATHS = new Set<string>([
   'GET /api/healthz',
   'GET /api/health/liveness',
   'GET /api/health/readiness',
+  'GET /api/health/database-triad',
   'GET /api/openapi.json',
   'GET /manifest.json',
   'GET /sitemap.xml',
@@ -204,8 +205,29 @@ const WORKER_NATIVE_HEALTH_ROUTE: RouteMigrationControlEntry = {
   rollbackStrategy: 'Bypass Worker route in wrangler.jsonc or route traffic back to Express /api/healthz.',
 };
 
+const WORKER_NATIVE_DATABASE_TRIAD_HEALTH_ROUTE: RouteMigrationControlEntry = {
+  routeId: 'CF-ROUTE-DB-TRIAD-001',
+  method: 'GET',
+  path: '/api/health/database-triad',
+  mountClassification: 'ACTIVE_MOUNTED',
+  expressSourceModule: 'worker/routes/healthAndMetadataRoutes.ts',
+  workerHandlerModule: 'worker/routes/healthAndMetadataRoutes.ts',
+  migrationGroup: 'GROUP_1A_HEALTH_AND_SEO_METADATA',
+  status: 'VERIFIED',
+  activeRuntime: 'cloudflare_worker',
+  authRequirement: 'PUBLIC',
+  rateLimitBucket: 'general',
+  rateLimitPerMinute: 180,
+  usedByFrontend: false,
+  dependencies: ['worker/db/bindingResolver.ts', 'worker/routes/healthAndMetadataRoutes.ts'],
+  stateStorageTouchpoints: ['Cloudflare D1 DB', 'Cloudflare D1 RESEARCH_DB', 'Cloudflare D1 NEIGHBORHOOD_DB'],
+  externalApiTouchpoints: [],
+  rollbackStrategy: 'Remove the health probe route from worker/routes/healthAndMetadataRoutes.ts; it is read-only and does not mutate domain data.',
+};
+
 export const ROUTE_MIGRATION_CONTROL_REGISTER: readonly RouteMigrationControlEntry[] = [
   WORKER_NATIVE_HEALTH_ROUTE,
+  WORKER_NATIVE_DATABASE_TRIAD_HEALTH_ROUTE,
   ...REGISTERED_API_ROUTES.map((route, index): RouteMigrationControlEntry => {
     const key = `${route.method} ${route.path}`;
     const aliasTarget = ALIAS_ROUTES[key];
