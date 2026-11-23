@@ -32,6 +32,65 @@ export async function enforceWorkerMutationWriteBlock(
   if (isLifecycleExemptPath(ctx.pathname, ctx.method)) return null;
 
   try {
+    const stageDRequested = ctx.env.STAGE_D_LIFECYCLE_ENABLED?.trim().toLowerCase() === 'true';
+    if (stageDRequested) {
+      const lifecycleDatabaseId = ctx.env.STAGE_D_LIFECYCLE_DATABASE_ID?.trim();
+      const userDatabaseId = ctx.env.STAGE_D_USER_DATABASE_ID?.trim();
+      if (!ctx.env.DB || !ctx.env.USER_DB || ctx.env.DB === ctx.env.USER_DB ||
+          !lifecycleDatabaseId || !userDatabaseId || lifecycleDatabaseId === userDatabaseId) {
+        return unavailable(ctx, 'STAGE_D_DUAL_DATABASE_BINDINGS_UNVERIFIED');
+      }
+
+      const lifecycleDb = ctx.env.DB as unknown as D1DatabaseBinding;
+      const userDbResult = requireUserDb(ctx.env);
+      if (userDbResult.ok === false) return unavailable(ctx, userDbResult.code);
+      const userDb = userDbResult.db;
+
+      const [userDecision, lifecycleDecision] = await Promise.all([
+        resolveWriteAdmissionFromUserDb(userDb, authenticatedUid),
+        resolveWriteAdmissionFromD1(lifecycleDb, authenticatedUid),
+      ]);
+      assertWriteAdmissionPermitsMutation(userDecision);
+      assertWriteAdmissionPermitsMutation(lifecycleDecision);
+
+      if (MUTATION_HTTP_METHODS.has(ctx.method.toUpperCase())) {
+        const userPermit = await acquireMutationPermitInD1({
+          userDb,
+          uid: authenticatedUid,
+          operationName: ctx.method.toUpperCase() + ' ' + ctx.pathname,
+          ttlMs: 120_000,
+        });
+        if (userPermit.ok === false) {
+          throw Object.assign(new Error(userPermit.code), {
+            code: userPermit.code,
+            httpStatus: userPermit.statusCode,
+          });
+        }
+
+        try {
+          const lifecyclePermit = await acquireD1MutationPermit({
+            db: lifecycleDb,
+            targetUid: authenticatedUid,
+            holderId: ctx.correlationId,
+            routeSignature: ctx.method.toUpperCase() + ' ' + ctx.pathname,
+          });
+          ACTIVE_PERMITS.set(ctx.request, async () => {
+            const released = await Promise.allSettled([
+              releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId }),
+              releaseD1MutationPermit({ db: lifecycleDb, targetUid: authenticatedUid, permitId: lifecyclePermit.permitId }),
+            ]);
+            if (released.some((result) => result.status === 'rejected')) {
+              throw new Error('DUAL_DATABASE_MUTATION_PERMIT_RELEASE_INCOMPLETE');
+            }
+          });
+        } catch (error) {
+          await releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId }).catch(() => undefined);
+          throw error;
+        }
+      }
+      return null;
+    }
+
     if (ctx.env.USER_DB) {
       const userDbResult = requireUserDb(ctx.env);
       if (userDbResult.ok === false) return unavailable(ctx, userDbResult.code);
