@@ -7,6 +7,23 @@ import type { D1DatabaseBinding } from '../db/types.ts';
 export const DEFAULT_D1_MUTATION_PERMIT_TTL_MS = 120_000;
 export const MAX_D1_MUTATION_PERMIT_TTL_MS = 300_000;
 
+export const SQL_ACQUIRE_D1_MUTATION_PERMIT =
+  "INSERT INTO account_mutation_permits (permit_id, target_uid, holder_id, route_signature, acquired_at_iso, expires_at_ms, released_at_iso, status) " +
+  "SELECT ?1, ?2, ?3, ?4, ?5, ?6, NULL, 'ACTIVE' " +
+  "WHERE NOT EXISTS (SELECT 1 FROM account_write_blocks WHERE target_uid = ?2 AND state <> 'ACTIVE_WRITES_ALLOWED')";
+
+export const SQL_RELEASE_D1_MUTATION_PERMIT =
+  "UPDATE account_mutation_permits SET released_at_iso = ?1, status = 'RELEASED' " +
+  "WHERE permit_id = ?2 AND target_uid = ?3 AND status = 'ACTIVE' AND released_at_iso IS NULL";
+
+export const SQL_EXPIRE_STALE_D1_MUTATION_PERMITS =
+  "UPDATE account_mutation_permits SET status = 'EXPIRED', released_at_iso = ?1 " +
+  "WHERE target_uid = ?2 AND status = 'ACTIVE' AND released_at_iso IS NULL AND expires_at_ms <= ?3";
+
+export const SQL_COUNT_ACTIVE_D1_MUTATION_PERMITS =
+  "SELECT COUNT(*) AS active_count FROM account_mutation_permits " +
+  "WHERE target_uid = ?1 AND status = 'ACTIVE' AND released_at_iso IS NULL AND expires_at_ms > ?2";
+
 export class D1MutationPermitError extends Error {
   readonly code: string;
   readonly httpStatus: number;
@@ -47,11 +64,7 @@ export async function acquireD1MutationPermit(params: {
   const expiresAtMs = nowMs + ttlMs;
 
   try {
-    const result = await params.db.prepare(
-      "INSERT INTO account_mutation_permits (permit_id, target_uid, holder_id, route_signature, acquired_at_iso, expires_at_ms, released_at_iso, status) " +
-      "SELECT ?1, ?2, ?3, ?4, ?5, ?6, NULL, 'ACTIVE' " +
-      "WHERE NOT EXISTS (SELECT 1 FROM account_write_blocks WHERE target_uid = ?2 AND state <> 'ACTIVE_WRITES_ALLOWED')",
-    ).bind(permitId, targetUid, holderId, routeSignature, acquiredAtIso, expiresAtMs).run();
+    const result = await params.db.prepare(SQL_ACQUIRE_D1_MUTATION_PERMIT).bind(permitId, targetUid, holderId, routeSignature, acquiredAtIso, expiresAtMs).run();
 
     if (!result.success) {
       throw new D1MutationPermitError('MUTATION_PERMIT_STORE_UNAVAILABLE', 'Mutation permit storage is unavailable.', 503);
@@ -80,10 +93,7 @@ export async function releaseD1MutationPermit(params: {
     throw new D1MutationPermitError('INVALID_MUTATION_PERMIT_INPUT', 'Mutation permit release request is invalid.', 400);
   }
   try {
-    const result = await params.db.prepare(
-      "UPDATE account_mutation_permits SET released_at_iso = ?1, status = 'RELEASED' " +
-      "WHERE permit_id = ?2 AND target_uid = ?3 AND status = 'ACTIVE' AND released_at_iso IS NULL",
-    ).bind(new Date(nowMs).toISOString(), permitId, targetUid).run();
+    const result = await params.db.prepare(SQL_RELEASE_D1_MUTATION_PERMIT).bind(new Date(nowMs).toISOString(), permitId, targetUid).run();
     if (!result.success) {
       throw new D1MutationPermitError('MUTATION_PERMIT_STORE_UNAVAILABLE', 'Mutation permit release failed.', 503);
     }
@@ -105,17 +115,11 @@ export async function countActiveD1MutationPermits(params: {
     throw new D1MutationPermitError('INVALID_MUTATION_PERMIT_INPUT', 'Mutation permit drain query is invalid.', 400);
   }
   try {
-    const expired = await params.db.prepare(
-      "UPDATE account_mutation_permits SET status = 'EXPIRED', released_at_iso = ?1 " +
-      "WHERE target_uid = ?2 AND status = 'ACTIVE' AND released_at_iso IS NULL AND expires_at_ms <= ?3",
-    ).bind(new Date(nowMs).toISOString(), targetUid, nowMs).run();
+    const expired = await params.db.prepare(SQL_EXPIRE_STALE_D1_MUTATION_PERMITS).bind(new Date(nowMs).toISOString(), targetUid, nowMs).run();
     if (!expired.success) {
       throw new D1MutationPermitError('MUTATION_PERMIT_STORE_UNAVAILABLE', 'Mutation permit drain query failed.', 503);
     }
-    const row = await params.db.prepare(
-      "SELECT COUNT(*) AS active_count FROM account_mutation_permits " +
-      "WHERE target_uid = ?1 AND status = 'ACTIVE' AND released_at_iso IS NULL AND expires_at_ms > ?2",
-    ).bind(targetUid, nowMs).first<{ active_count: number }>();
+    const row = await params.db.prepare(SQL_COUNT_ACTIVE_D1_MUTATION_PERMITS).bind(targetUid, nowMs).first<{ active_count: number }>();
     if (!row || !Number.isFinite(Number(row.active_count))) {
       throw new D1MutationPermitError('MUTATION_PERMIT_STORE_UNAVAILABLE', 'Mutation permit count could not be verified.', 503);
     }
