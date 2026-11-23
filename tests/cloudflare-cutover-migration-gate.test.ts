@@ -32,11 +32,17 @@ describe('Cloudflare cutover migration gate', () => {
     }
   });
 
-  it('keeps the D1 marketplace endpoint blocked until migration 0010 is applied', () => {
-    const match = findMigrationRegisterEntry('GET', '/api/v1/market/state');
-    assert.ok(match);
-    assert.equal(match.entry.status, 'BLOCKED');
-    assert.match(match.entry.blockerReason || '', /0010/);
+  it('keeps D1 marketplace reads and writes blocked until migrations 0007-0010 are applied', () => {
+    for (const [method, path] of [
+      ['GET', '/api/v1/market/state'],
+      ['POST', '/api/v1/market/votes'],
+      ['PUT', '/api/v1/market/preferences'],
+    ] as const) {
+      const match = findMigrationRegisterEntry(method, path);
+      assert.ok(match, `expected registered marketplace route: ${method} ${path}`);
+      assert.equal(match.entry.status, 'BLOCKED');
+      assert.match(match.entry.blockerReason || '', /0010/);
+    }
   });
 
   it('keeps media endpoints blocked while R2 remains deferred', () => {
