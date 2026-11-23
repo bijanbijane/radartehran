@@ -13,6 +13,7 @@ const USER_MIGRATIONS = [
   '0007_cloudflare_native_identity_and_sessions.sql',
   '0008_sms_otp_ip_rate_limit.sql',
   '0009_sms_otp_code_digest.sql',
+  '0010_marketplace_and_neighborhood_core.sql',
 ] as const;
 
 function makeDb(applied: readonly string[]): D1Database {
