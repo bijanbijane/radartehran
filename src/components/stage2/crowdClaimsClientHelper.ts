@@ -1,14 +1,12 @@
 /**
  * @file src/components/stage2/crowdClaimsClientHelper.ts
- * @description Pure Firebase-authenticated client request builders and state helpers
+ * @description Cloudflare-session client request builders and state helpers
  * for NeighborhoodCrowdClaimsPanel (no random client-side UIDs).
  */
 import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import type { AuthUserSnapshot } from '../../platform/auth';
 
-export interface CrowdAuthUserLike {
-  uid: string;
-  getIdToken: (forceRefresh?: boolean) => Promise<string>;
-}
+export type CrowdAuthUserLike = Pick<AuthUserSnapshot, 'uid'>;
 
 export interface CrowdClaimSubmitPayloadInput {
   hoodId: number;
@@ -31,27 +29,10 @@ export async function getCrowdAuthorizedHeaders(
       messageFa: 'برای ثبت گزارش یا رأی دادن ابتدا وارد حساب کاربری خود شوید.',
     };
   }
-  try {
-    const token = (await user.getIdToken()).trim();
-    if (!token) {
-      return {
-        ok: false,
-        messageFa: 'توکن احراز هویت دریافت نشد. لطفاً دوباره وارد حساب خود شوید.',
-      };
-    }
-    return {
-      ok: true,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  } catch {
-    return {
-      ok: false,
-      messageFa: 'دریافت توکن احراز هویت ناموفق بود. لطفاً دوباره وارد شوید.',
-    };
-  }
+  return {
+    ok: true,
+    headers: { 'Content-Type': 'application/json' },
+  };
 }
 
 export function buildCrowdClaimRequestBody(input: CrowdClaimSubmitPayloadInput): Record<string, unknown> {
