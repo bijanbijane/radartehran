@@ -318,7 +318,7 @@ export function RadarWorkspaceShell() {
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent} buyTotalBudget={buyTotalBudget} deposit={deposit} monthlyRent={monthlyRent} counts={counts}
             featureFlags={featureFlags} currentUser={currentUser} isVerifiedAdmin={isVerifiedAdmin} activeCity={ui.activeCity} crudActions={crudActions} handleDeepWebSync={handleDeepWebSync}
-            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => signOut(auth)} />
+            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={handleSignOut} />
         </main>
       )}
       {(ui.primaryView === 'map' || ui.mobileSheetOpen) && ui.primaryView !== 'admin' && (
