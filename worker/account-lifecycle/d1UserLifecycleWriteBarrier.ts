@@ -51,6 +51,33 @@ export async function ensureUserDbDeletionWriteBlock(params: {
   await assertUserDbDeletionWriteBlock({ userDb: params.userDb, uid, jobId });
 }
 
+export async function assertNoActiveUserDbLegalHold(params: {
+  userDb: D1Database;
+  uid: string;
+}): Promise<void> {
+  try {
+    const row = await params.userDb.prepare(
+      `SELECT resource_id, reason FROM legal_holds
+       WHERE active = 1 AND resource_id IN (?1, ?2)
+       LIMIT 1`,
+    ).bind('user:' + params.uid, params.uid).first<{ resource_id: string; reason: string }>();
+    if (row) {
+      throw new AccountLifecycleStoreError(
+        'LEGAL_HOLD_ACTIVE',
+        String(row.reason || 'USER_UNDER_LEGAL_HOLD') + ' (' + String(row.resource_id) + ')',
+        409,
+      );
+    }
+  } catch (error) {
+    if (error instanceof AccountLifecycleStoreError) throw error;
+    throw new AccountLifecycleStoreError(
+      'STORE_UNAVAILABLE',
+      'USER_DB legal-hold status could not be verified; deletion is refused.',
+      503,
+    );
+  }
+}
+
 export async function assertUserDbDeletionWriteBlock(params: {
   userDb: D1Database;
   uid: string;
