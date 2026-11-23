@@ -37,7 +37,7 @@ function makeContext(db: D1Database | undefined, token = 'A'.repeat(64)): Worker
     pathname: '/api/auth/session',
     clientIp: '192.0.2.10',
     trustedEdgeIp: true,
-    environment: 'test',
+    environment: 'development',
     startedAtMs: Date.now(),
     routeId: 'test-auth-session',
     implementationId: 'cloudflare-native-auth',

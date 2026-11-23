@@ -31,10 +31,15 @@ export async function dispatchWorkerApiOrSeoRequest(
 ): Promise<WorkerRouteDispatchResult | null> {
   const { method, pathname } = ctx;
 
-  // Temporary global D1 write freeze. Keep read-only GETs and CORS preflight available.
+  // Temporary global D1 write freeze. Google OAuth start/callback are GET endpoints
+  // that also write one-time state/session records, so they must obey the same pause.
   const d1WritePause = resolveD1WritePauseState(ctx.env);
+  const isD1MutatingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  const isD1MutatingAuthGet =
+    method.toUpperCase() === 'GET' &&
+    (pathname === '/api/auth/google/start' || pathname === '/api/auth/google/callback');
   if (pathname.startsWith('/api/') &&
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) &&
+      (isD1MutatingMethod || isD1MutatingAuthGet) &&
       d1WritePause.paused) {
     return {
       response: jsonWorkerResponse(ctx, 503, {
