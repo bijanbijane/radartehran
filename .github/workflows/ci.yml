@@ -6,9 +6,14 @@ on:
       - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
+    # Validate stacked PRs against their actual base branch as well as PRs to main.
+    # This keeps dependent workstreams from bypassing CI merely because they target
+    # another open PR branch.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
