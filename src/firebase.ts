@@ -5,7 +5,7 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
 import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
-import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
+import { initClientAppCheckIfConfigured, installClientAppCheckFetchInterceptor } from './utils/clientAppCheck';
 import { CLIENT_FIRESTORE_FORBIDDEN } from './platform/data/clientDataPolicy';
 import {
   beginConnectionProbeGeneration,
@@ -29,7 +29,21 @@ import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, t
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
-initClientAppCheckIfConfigured(app);
+const viteAppCheckEnv: Record<string, string | undefined> =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+initClientAppCheckIfConfigured(app, {
+  ...viteAppCheckEnv,
+  VITE_FIREBASE_APP_CHECK_SITE_KEY: String(
+    viteAppCheckEnv.VITE_FIREBASE_APP_CHECK_SITE_KEY ||
+    viteAppCheckEnv.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY ||
+    firebaseConfig.recaptchaSiteKey ||
+    '',
+  ),
+});
+installClientAppCheckFetchInterceptor(app, async () => {
+  await auth.authStateReady();
+  return auth.currentUser ? auth.currentUser.getIdToken() : null;
+});
 export const googleProvider: GoogleAuthProvider = (() => {
   const provider = new GoogleAuthProvider();
   try {
@@ -183,7 +197,11 @@ export async function testConnection(timeoutMs: number = 6000): Promise<boolean>
       const res = await fetch('/api/market-pulse?city=tehran', { signal: controller?.signal, cache: 'no-store' });
       if (timer) clearTimeout(timer);
       const ok = res.ok;
-      completeConnectionProbeGeneration(generation, { ok, dataOrigin: ok ? 'server' : 'unknown' });
+      if (ok) {
+        completeConnectionProbeGeneration(generation, { ok: true, dataOrigin: 'server' });
+      } else {
+        completeConnectionProbeGeneration(generation, { ok: false, error: new Error(`REMOTE_API_HTTP_${res.status}`) });
+      }
       endTimer(ok ? 'success' : 'fallback');
       return ok;
     } catch (error) {

@@ -1,6 +1,7 @@
 /** @file src/navigation/primary/megaMenuAndTabsConfig.ts — Mega Menu, Sub-Tabs & Account Sections (RT-UI-NAV-001) */
 import type {
   AccountSubTabId,
+  DiscoverSubTabId,
   MarketSubTabId,
   PropertiesSubTabId,
   RouteDestinationId,
@@ -211,6 +212,11 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
       },
     ],
   },
+];
+
+export const DISCOVER_SECONDARY_TABS: readonly SecondaryTabDefinition<DiscoverSubTabId>[] = [
+  { id: 'results', labelFa: 'محله‌های بازار', labelEn: 'Market Areas', path: '/areas' },
+  { id: 'registry', labelFa: 'رجیستری ملی', labelEn: 'National Registry', path: '/areas/registry' },
 ];
 
 export const MARKET_SECONDARY_TABS: readonly SecondaryTabDefinition<MarketSubTabId>[] = [

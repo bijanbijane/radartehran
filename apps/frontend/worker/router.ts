@@ -29,17 +29,29 @@ export async function dispatchFrontendWorkerEdgeRequest(
   }
 
   if (pathname.startsWith('/api/')) {
-    const response = jsonWorkerResponse(ctx, 404, {
-      status: 'error',
-      code: 'API_ROUTE_NOT_ON_FRONTEND_WORKER',
-      path: pathname,
-      method,
-      correlationId: ctx.correlationId,
-      message:
-        'مسیر API در Worker فرانت‌اند سرو نمی‌شود. از Worker یا سرور radartehran-api استفاده کنید.',
-      hint: 'Configure VITE_API_BASE_URL to the radartehran-api origin in production.',
-    });
-    return { response, routePattern: 'UNMATCHED_API_ROUTE' };
+    const apiService = ctx.env.RADAR_API;
+    if (!apiService || typeof apiService.fetch !== 'function') {
+      return { response: jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'RADAR_API_SERVICE_BINDING_MISSING', path: pathname,
+        correlationId: ctx.correlationId,
+        message: 'اتصال سرویس Backend رادار تهران از فرانت‌اند برقرار نیست.',
+      }), routePattern: 'API_SERVICE_BINDING_MISSING' };
+    }
+    try {
+      const upstream = await apiService.fetch(ctx.request);
+      const headers = new Headers(upstream.headers);
+      headers.set('X-Radar-API-Proxy', 'service-binding');
+      headers.set('X-Correlation-Id', ctx.correlationId);
+      return { response: new Response(upstream.body, {
+        status: upstream.status, statusText: upstream.statusText, headers,
+      }), routePattern: 'API_SERVICE_BINDING' };
+    } catch {
+      return { response: jsonWorkerResponse(ctx, 502, {
+        status: 'error', code: 'RADAR_API_UPSTREAM_UNAVAILABLE',
+        correlationId: ctx.correlationId,
+        message: 'سرویس Backend رادار تهران در دسترس نیست.',
+      }), routePattern: 'API_SERVICE_BINDING_ERROR' };
+    }
   }
 
   return null;

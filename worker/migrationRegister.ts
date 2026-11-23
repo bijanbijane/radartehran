@@ -16,6 +16,7 @@ const GROUP_1A_VERIFIED_PATHS = new Set<string>([
   'GET /api/healthz',
   'GET /api/health/liveness',
   'GET /api/health/readiness',
+  'GET /api/health/database-triad',
   'GET /api/openapi.json',
   'GET /manifest.json',
   'GET /sitemap.xml',
@@ -35,16 +36,6 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'POST /api/mcp/invoke',
   'POST /api/v1/valuation/verify-seal',
   'GET /api/v1/telemetry/policy',
-]);
-
-const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
-  'GET /api/account/profile',
-  'PATCH /api/account/profile',
-  'GET /api/account/privacy',
-  'PATCH /api/account/privacy',
-  'GET /api/account/sessions',
-  'POST /api/account/sessions/:id/revoke',
-  'GET /api/account/data-requests',
 ]);
 
 const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
@@ -109,18 +100,6 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       ],
       stateStorageTouchpoints: ['stateless_or_ephemeral_isolate_ledger'],
       externalApiTouchpoints: [],
-    };
-  }
-
-  if (GROUP_4_VERIFIED_ACCOUNT_PATHS.has(key)) {
-    return {
-      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
-      workerHandlerModule: 'worker/routes/accountRoutes.ts',
-      status: 'VERIFIED',
-      activeRuntime: 'cloudflare_worker',
-      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/firebaseEdgeAuth.ts'],
-      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (user_profiles, user_privacy_consents, user_sessions, user_data_requests)'],
-      externalApiTouchpoints: ['Firebase Auth JWKS'],
     };
   }
 
@@ -226,8 +205,29 @@ const WORKER_NATIVE_HEALTH_ROUTE: RouteMigrationControlEntry = {
   rollbackStrategy: 'Bypass Worker route in wrangler.jsonc or route traffic back to Express /api/healthz.',
 };
 
+const WORKER_NATIVE_DATABASE_TRIAD_HEALTH_ROUTE: RouteMigrationControlEntry = {
+  routeId: 'CF-ROUTE-DB-TRIAD-001',
+  method: 'GET',
+  path: '/api/health/database-triad',
+  mountClassification: 'ACTIVE_MOUNTED',
+  expressSourceModule: 'worker/routes/healthAndMetadataRoutes.ts',
+  workerHandlerModule: 'worker/routes/healthAndMetadataRoutes.ts',
+  migrationGroup: 'GROUP_1A_HEALTH_AND_SEO_METADATA',
+  status: 'VERIFIED',
+  activeRuntime: 'cloudflare_worker',
+  authRequirement: 'PUBLIC',
+  rateLimitBucket: 'general',
+  rateLimitPerMinute: 180,
+  usedByFrontend: false,
+  dependencies: ['worker/db/bindingResolver.ts', 'worker/routes/healthAndMetadataRoutes.ts'],
+  stateStorageTouchpoints: ['Cloudflare D1 DB', 'Cloudflare D1 RESEARCH_DB', 'Cloudflare D1 NEIGHBORHOOD_DB'],
+  externalApiTouchpoints: [],
+  rollbackStrategy: 'Remove the health probe route from worker/routes/healthAndMetadataRoutes.ts; it is read-only and does not mutate domain data.',
+};
+
 export const ROUTE_MIGRATION_CONTROL_REGISTER: readonly RouteMigrationControlEntry[] = [
   WORKER_NATIVE_HEALTH_ROUTE,
+  WORKER_NATIVE_DATABASE_TRIAD_HEALTH_ROUTE,
   ...REGISTERED_API_ROUTES.map((route, index): RouteMigrationControlEntry => {
     const key = `${route.method} ${route.path}`;
     const aliasTarget = ALIAS_ROUTES[key];
@@ -276,8 +276,33 @@ export const UNMOUNTED_ENTERPRISE_DOMAIN_MODULES: ReadonlyArray<{
   { domainId: 'valuation', employeeTask: 'Employee 59', sourceDir: 'server/modules/valuation', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 hedonic valuation & AVM governance migration' },
   { domainId: 'market-intelligence', employeeTask: 'Employee 60', sourceDir: 'server/modules/market-intelligence', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 neighborhood analytics & market trends migration' },
   { domainId: 'geospatial', employeeTask: 'Employee 61', sourceDir: 'server/modules/geospatial', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 GIS & spatial intelligence migration' },
-  { domainId: 'data-governance', employeeTask: 'Employee 62', sourceDir: 'server/modules/data-governance', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 MDM & data quality governance migration' },
   { domainId: 'document-management', employeeTask: 'Employee 63', sourceDir: 'server/modules/document-management', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 + R2 digital records & contract lifecycle migration' },
+];
+
+/** Domains mounted via the global search/governance gateway (not unmounted enterprise modules). */
+export const MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY_MODULES: ReadonlyArray<{
+  domainId: string;
+  employeeTask: string;
+  sourceDir: string;
+  mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY';
+  migrationPlan: string;
+}> = [
+  {
+    domainId: 'analytics-research',
+    employeeTask: 'Employee 60-analytics',
+    sourceDir: 'server/modules/analytics-research',
+    mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY',
+    migrationPlan:
+      'Mounted in Express via registerGlobalSearchGovernanceAndAnalyticsRoutes (server.ts); RT-INFRA-001 corrected UNMOUNTED drift.',
+  },
+  {
+    domainId: 'data-governance',
+    employeeTask: 'Employee 62',
+    sourceDir: 'server/modules/data-governance',
+    mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY',
+    migrationPlan:
+      'Mounted in Express via registerGlobalSearchGovernanceAndAnalyticsRoutes (server.ts); D1 migration tracked separately from mount status (RT-INFRA-001).',
+  },
 ];
 
 /**

@@ -1,0 +1,96 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createFirebaseAuthenticatedApiFetch } from '../src/utils/clientAppCheck';
+
+test('adds Firebase ID and App Check tokens to same-origin API requests', async () => {
+  const captured: Request[] = [];
+  const originalFetch: typeof fetch = async (input) => {
+    const request = input instanceof Request ? input : new Request(input);
+    captured.push(request);
+    return new Response('ok', { status: 200 });
+  };
+  const wrappedFetch = createFirebaseAuthenticatedApiFetch(
+    originalFetch,
+    'https://radar.example',
+    async () => 'firebase-id-token-fixture',
+    async () => 'firebase-app-check-token-fixture',
+  );
+
+  const body = JSON.stringify({ update: true });
+  const request = new Request('https://radar.example/api/account/profile', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+  const response = await wrappedFetch(request);
+  assert.equal(response.status, 200);
+  assert.equal(captured.length, 1);
+  assert.equal(captured[0].headers.get('authorization'), 'Bearer firebase-id-token-fixture');
+  assert.equal(captured[0].headers.get('x-firebase-appcheck'), 'firebase-app-check-token-fixture');
+  assert.equal(await captured[0].text(), body);
+});
+
+test('never forwards Firebase tokens to third-party origins', async () => {
+  const captured: Request[] = [];
+  let tokenCalls = 0;
+  const originalFetch: typeof fetch = async (input) => {
+    const request = input instanceof Request ? input : new Request(input);
+    captured.push(request);
+    return new Response('ok', { status: 200 });
+  };
+  const wrappedFetch = createFirebaseAuthenticatedApiFetch(
+    originalFetch,
+    'https://radar.example',
+    async () => { tokenCalls += 1; return 'id-token'; },
+    async () => { tokenCalls += 1; return 'app-check-token'; },
+  );
+
+  await wrappedFetch('https://api.example.net/v1/resource');
+  assert.equal(captured.length, 1);
+  assert.equal(tokenCalls, 0);
+  assert.equal(captured[0].headers.has('authorization'), false);
+  assert.equal(captured[0].headers.has('x-firebase-appcheck'), false);
+});
+
+test('does not overwrite explicit Firebase tokens supplied by the caller', async () => {
+  const captured: Request[] = [];
+  const originalFetch: typeof fetch = async (input) => {
+    const request = input instanceof Request ? input : new Request(input);
+    captured.push(request);
+    return new Response('ok', { status: 200 });
+  };
+  const wrappedFetch = createFirebaseAuthenticatedApiFetch(
+    originalFetch,
+    'https://radar.example',
+    async () => 'replacement-id-token',
+    async () => 'replacement-app-check-token',
+  );
+
+  await wrappedFetch('https://radar.example/api/admin/worker-diagnostics', {
+    headers: {
+      authorization: 'Bearer caller-id-token',
+      'x-firebase-appcheck': 'caller-app-check-token',
+    },
+  });
+  assert.equal(captured[0].headers.get('authorization'), 'Bearer caller-id-token');
+  assert.equal(captured[0].headers.get('x-firebase-appcheck'), 'caller-app-check-token');
+});
+
+test('preserves the request when token acquisition fails', async () => {
+  const captured: Request[] = [];
+  const originalFetch: typeof fetch = async (input) => {
+    const request = input instanceof Request ? input : new Request(input);
+    captured.push(request);
+    return new Response('ok', { status: 200 });
+  };
+  const wrappedFetch = createFirebaseAuthenticatedApiFetch(
+    originalFetch,
+    'https://radar.example',
+    async () => { throw new Error('FIREBASE_ID_TOKEN_UNAVAILABLE'); },
+    async () => { throw new Error('APP_CHECK_TOKEN_UNAVAILABLE'); },
+  );
+
+  await wrappedFetch('https://radar.example/api/account/profile');
+  assert.equal(captured[0].headers.has('authorization'), false);
+  assert.equal(captured[0].headers.has('x-firebase-appcheck'), false);
+});

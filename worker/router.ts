@@ -5,14 +5,18 @@
  * authoritative dispatch gate before executing Worker route handlers.
  */
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
+import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
-import { handleAccountWorkerRoute } from './routes/accountRoutes';
+import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
-import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
-import { handleResearchWorkerRoute } from './routes/researchRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
+import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
+import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
+import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
+import { handleResearchWorkerRoute } from './routes/researchRoutes';
+import { handleGeographicRegistryRoute } from './routes/geographicRegistryRoutes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -26,6 +30,24 @@ export async function dispatchWorkerApiOrSeoRequest(
 ): Promise<WorkerRouteDispatchResult | null> {
   const { method, pathname } = ctx;
 
+  // Temporary global D1 write freeze. Keep read-only GETs and CORS preflight available.
+  const d1WritePause = resolveD1WritePauseState(ctx.env);
+  if (pathname.startsWith('/api/') &&
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) &&
+      d1WritePause.paused) {
+    return {
+      response: jsonWorkerResponse(ctx, 503, {
+        status: 'error',
+        code: 'D1_WRITES_TEMPORARILY_PAUSED',
+        pauseUntilUtc: d1WritePause.pauseUntilUtc,
+        retryAfterSeconds: d1WritePause.retryAfterSeconds,
+        message: 'نوشتن در پایگاه داده موقتاً متوقف شده است؛ پس از پایان مهلت دوباره تلاش کنید.',
+      }),
+      routePattern: 'GLOBAL_D1_WRITE_PAUSE',
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
   // Handle CORS preflight for /api/* routes
   if (method === 'OPTIONS' && pathname.startsWith('/api/')) {
     const headers = buildWorkerJsonHeaders(ctx, { cacheControl: 'no-store' });
@@ -36,10 +58,39 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
-  // Authoritative Migration Control Register check FIRST — zero route bypasses
+  const internalAdmission = await handleInternalWriteAdmissionRoute(ctx);
+  if (internalAdmission) {
+    return {
+      response: internalAdmission,
+      routePattern: 'POST /api/internal/v1/lifecycle/write-admission',
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  const writeBlockResponse = await guardWorkerApiMutationWriteBlock(ctx);
+  if (writeBlockResponse) {
+    return {
+      response: writeBlockResponse,
+      routePattern: 'GLOBAL_WRITE_BLOCK',
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
     const { entry } = registeredMatch;
+    const proxied = await executeSafeStranglerFallback({
+      request: ctx.request,
+      env: ctx.env,
+      correlationId: ctx.correlationId,
+    });
+    if (proxied.status !== 502 && proxied.status !== 508) {
+      return {
+        response: proxied,
+        routePattern: `${entry.method} ${entry.path}`,
+        migrationStatus: 'STRANGLER_PROXY',
+      };
+    }
     const response = jsonWorkerResponse(ctx, 501, {
       status: 'error',
       code: 'ROUTE_NOT_YET_MIGRATED_TO_WORKER',
@@ -64,7 +115,22 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  const lifecycleResponse = await handleAccountLifecycleRoute(ctx);
+  if (lifecycleResponse) {
+    return {
+      response: lifecycleResponse,
+      routePattern: ctx.pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
   // Group 1A: Health, OpenAPI, PWA manifest, Sitemap, Robots
+  const researchResponse = await handleResearchWorkerRoute(ctx);
+  if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+
+  const geographicResponse = await handleGeographicRegistryRoute(ctx);
+  if (geographicResponse) return { response: geographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
     return {
@@ -83,36 +149,6 @@ export async function dispatchWorkerApiOrSeoRequest(
     return {
       response: group1BResponse,
       routePattern: registeredMatch?.entry.path || pathname,
-      migrationStatus: 'VERIFIED',
-    };
-  }
-
-  // Group 4: Worker-native Account, Privacy, Sessions, Data Requests & Deletion Lifecycle (USER_DB)
-  const group4AccountResponse = await handleAccountWorkerRoute(ctx);
-  if (group4AccountResponse) {
-    return {
-      response: group4AccountResponse,
-      routePattern: registeredMatch?.entry.path || pathname,
-      migrationStatus: 'VERIFIED',
-    };
-  }
-
-  // Group 3/Research: Physically Isolated Behavioral Research Domain (RESEARCH_DB)
-  const researchResponse = await handleResearchWorkerRoute(ctx);
-  if (researchResponse) {
-    return {
-      response: researchResponse,
-      routePattern: registeredMatch?.entry.path || pathname,
-      migrationStatus: 'VERIFIED',
-    };
-  }
-
-  // Reference/IRNI: Strictly Read-Only External IRNI Neighborhood Reference API Client
-  const irniRefResponse = await handleIrniReferenceRoute(ctx);
-  if (irniRefResponse) {
-    return {
-      response: irniRefResponse,
-      routePattern: pathname,
       migrationStatus: 'VERIFIED',
     };
   }

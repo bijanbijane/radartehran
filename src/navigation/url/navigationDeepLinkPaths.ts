@@ -3,6 +3,7 @@
  */
 
 export function isDynamicPublicNavigationPath(normalizedPath: string): boolean {
+  if (normalizedPath === '/areas/registry') return false;
   if (/^\/areas\/[^/]+$/.test(normalizedPath)) return true;
   if (/^\/neighborhoods\/[^/]+$/.test(normalizedPath)) return true;
   const memberPrefix = '/community/members/';

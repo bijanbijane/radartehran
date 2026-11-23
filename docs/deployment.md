@@ -37,7 +37,7 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `CASPER_HUB_URL` | Optional | `https://casper-hub-api.bijanbijane-1.workers.dev` | Public | Server-side base URL for the shared CASPER HUB coordination service (`server/modules/casper-hub`). |
 | `CASPER_HUB_TOKEN` | Optional | Empty | **Secret** | Dedicated server-only Bearer credential for authenticating `CASPER-02` with CASPER HUB. Never exposed to the browser or persisted to disk. |
 | `BACKUP_ENCRYPTION_KEY` | Optional | Empty | **Secret** | Symmetric key for encrypted AES-256-GCM admin full-backup exports (`/api/admin/encrypted-backup/*`). |
-| `VITE_FIREBASE_APP_CHECK_SITE_KEY` | Optional | Empty | Public | Browser reCAPTCHA Enterprise site key enabling client-side Firebase App Check initialization (`src/utils/clientAppCheck.ts`). |
+| `firebase-applet-config.json:recaptchaSiteKey` (preferred) or `VITE_FIREBASE_APP_CHECK_SITE_KEY` | Required for production when Backend App Check is `enforced` | Empty until provisioned | Public | reCAPTCHA Enterprise site key for the exact Firebase Web App ID `1:935427453422:web:25817d32df713f2a68deff`. Create it in the same Firebase/Google Cloud project, restrict allowed domains to the production Frontend hostname(s), then place the public site key in `recaptchaSiteKey` or the Cloudflare Frontend build variable. It is not a secret; never substitute a debug token. |
 
 ---
 

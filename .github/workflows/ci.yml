@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - master
+      - cursor/rt-infra-001-gate-b-monorepo
   pull_request:
     branches:
       - main
       - master
+      - cursor/rt-infra-001-gate-b-monorepo
   workflow_dispatch:
 
 permissions:

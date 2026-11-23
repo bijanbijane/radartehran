@@ -158,6 +158,7 @@ export interface WorkerEnv {
   readonly DB?: D1Database;
   /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
   readonly RESEARCH_DB?: D1Database;
+  readonly NEIGHBORHOOD_DB?: D1Database;
   // ABSOLUTE ARCHITECTURAL INVARIANT: No direct D1 binding for IRNI `radar-neighborhood-db`.
   readonly RESEARCH_HMAC_SECRET?: string;
   readonly RESEARCH_HMAC_KEY_VERSION?: string;
@@ -171,6 +172,9 @@ export interface WorkerEnv {
   readonly IRNI_CACHE_TTL_SECONDS?: string;
   readonly IRNI_STALE_TTL_SECONDS?: string;
   readonly IRNI_API_CONTRACT_STATUS?: string;
+  readonly IRNI_PUBLISH_HMAC_SECRET?: string;
+  readonly GEO_REGISTRY_EXPECTED_CONTRACT?: string;
+  readonly GEO_REGISTRY_EXPECTED_ID_ALGORITHM?: string;
   readonly RADAR_QUEUE?: Queue;
   readonly RADAR_DLQ?: Queue;
   readonly MEDIA_QUEUE?: Queue;

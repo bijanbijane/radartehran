@@ -19,11 +19,13 @@ import {
   createWorkerRequestContext,
   jsonWorkerResponse,
 } from './contextAndSecurity';
-import { resolveUserDb } from './db/bindingResolver';
 import {
   buildCanonicalCronEnvelopes,
   createCanonicalQueueJobDispatcher,
 } from './queues/jobDispatcher';
+import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
+import { resolveUserDb } from './db/bindingResolver';
+import { resolveD1WritePauseState } from './db/writePause';
 import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
@@ -195,6 +197,20 @@ export default {
       return staticOrSpaResponse;
     } catch (err) {
       const errorCategory = err instanceof Error ? err.name : 'UNHANDLED_WORKER_EXCEPTION';
+      const safeErrorMessage = err instanceof Error
+        ? err.message
+          .replace(/Bearer\\s+\\S+/gi, 'Bearer [REDACTED]')
+          .replace(/\\beyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\b/g, '[REDACTED_JWT]')
+          .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
+          .slice(0, 240)
+        : 'Non-Error exception';
+      console.error('WORKER_UNHANDLED_EXCEPTION', JSON.stringify({
+        correlationId: reqCtx.correlationId,
+        method: reqCtx.method,
+        pathname: reqCtx.pathname,
+        errorCategory,
+        errorMessage: safeErrorMessage,
+      }));
       buildObservabilityRecord(reqCtx, 500, reqCtx.pathname, 'ERROR', errorCategory);
       return jsonWorkerResponse(reqCtx, 500, {
         status: 'error',
@@ -202,6 +218,8 @@ export default {
         correlationId: reqCtx.correlationId,
         message: 'خطای داخلی در پردازش درخواست در لبه شبکه رخ داد.',
       });
+    } finally {
+      await releaseWorkerMutationPermitIfHeld(reqCtx);
     }
   },
 
@@ -210,6 +228,11 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    const d1WritePause = resolveD1WritePauseState(env);
+    if (d1WritePause.paused) {
+      batch.retryAll({ delaySeconds: Math.max(60, d1WritePause.retryAfterSeconds) });
+      return;
+    }
     await processRadarQueueBatch({
       batch,
       db: resolveUserDb(env),
@@ -223,6 +246,11 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    if (resolveD1WritePauseState(env).paused) return;
+    if (event.cron === '0 * * * *' && env.DB) {
+      const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/workerLifecycleRuntime.ts');
+      await recoverPendingLifecycleDispatch(env, 25);
+    }
     if (!env.RADAR_QUEUE) {
       throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');
     }

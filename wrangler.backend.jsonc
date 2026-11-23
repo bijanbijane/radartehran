@@ -1,30 +1,35 @@
 {
-  // ============================================================================
-  // Tehran Radar Backend API Worker — RT-DB-TRIAD-001 Canonical Configuration
-  // ============================================================================
-  // Three Data Domains Architecture:
-  //   1. USER_DB (+ legacy alias DB) -> radar-user-db (Owned by Radar Tehran)
-  //   2. RESEARCH_DB                 -> radar-researcher-db (Owned by Radar Tehran, isolated)
-  //   3. IRNI Neighborhood Reference -> External Read-Only API Client ONLY
-  //      ABSOLUTE PROHIBITION: radar-neighborhood-db (f335efe8-37ac-4c7d-a057-bc9f4480f6c6)
-  //      is owned exclusively by the independent IRNI project and MUST NEVER be bound,
-  //      queried, migrated, or written to directly by Tehran Radar.
-  // ============================================================================
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "radartehran-api",
-  "account_id": "5bafb2033937006704e81afcc0b18b38",
   "main": "worker/index.ts",
-  "compatibility_date": "2025-11-01",
+  "compatibility_date": "2026-03-01",
   "compatibility_flags": ["nodejs_compat"],
-  "workers_dev": false,
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 0.2
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_ENV": "production",
+    "DB_WRITES_PAUSED_UNTIL_UTC": "2026-11-24T00:00:00Z",
+    "WORKER_ENV": "production",
+    "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev",
+    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+    "FIREBASE_APP_CHECK_MODE": "enforced",
+    "ADMIN_EMAIL": "radio837isf@gmail.com",
+    "RESEARCH_HMAC_KEY_VERSION": "v1",
+    "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
+    "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
+    "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
   },
-
-  // Production D1 bindings (default top-level environment: radartehran-api)
-  // USER_DB and legacy compatibility alias DB point to the exact same physical radar-user-db UUID.
-  // RESEARCH_DB points to the physically isolated radar-researcher-db UUID with its own migrations_dir.
+  "previews": {
+    "vars": {
+      "APP_ENV": "preview",
+      "WORKER_ENV": "preview",
+      "APP_URL": "https://preview.invalid",
+      "FIREBASE_PROJECT_ID": "preview-disabled",
+      "FIREBASE_APP_CHECK_MODE": "enforced",
+      "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
+      "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
+    }
+  },
   "d1_databases": [
     {
       "binding": "USER_DB",
@@ -46,68 +51,6 @@
       "database_id": "a04f9716-fb95-44da-841c-b54be252db70",
       "migrations_dir": "migrations/research-d1",
       "migrations_table": "d1_migrations"
-    }
-  ],
-
-  // Non-secret runtime configuration ONLY.
-  // Required Cloudflare Worker Secrets (provision via `wrangler secret put`, NEVER in vars):
-  //   - ADMIN_API_SECRET
-  //   - R2_SIGNING_SECRET
-  //   - RESEARCH_HMAC_SECRET
-  //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
-  //   - INTERNAL_LIFECYCLE_RPC_SECRET
-  //   - IRNI_API_TOKEN (blocked until external IRNI contract is delivered)
-  "vars": {
-    "APP_ENV": "production",
-    "APP_URL": "https://radartehran.ir",
-    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-    "RESEARCH_HMAC_KEY_VERSION": "v1",
-    "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
-    "IRNI_API_TIMEOUT_MS": "4000",
-    "IRNI_CACHE_TTL_SECONDS": "900",
-    "IRNI_STALE_TTL_SECONDS": "3600",
-    "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
-    "STRICT_ORIGIN_ENFORCEMENT": "true",
-    "APP_CHECK_ENFORCEMENT_MODE": "enforce"
-  },
-
-  "triggers": {
-    "crons": [
-      "*/5 * * * *",
-      "*/15 * * * *",
-      "*/30 * * * *",
-      "0 3 * * *"
-    ]
-  },
-
-  "env": {
-    // ========================================================================
-    // STAGING ENVIRONMENT — STRICTLY ISOLATED FROM PRODUCTION DATABASES
-    // ========================================================================
-    // STATUS: BLOCKED_STAGING_DATABASES_NOT_PROVISIONED
-    // Staging MUST NEVER bind Production D1 UUIDs (fbb98e6b... or a04f9716...).
-    // Before deploying staging, provision dedicated staging D1 databases:
-    //   1. wrangler d1 create radar-user-db-staging
-    //   2. wrangler d1 create radar-researcher-db-staging
-    //   3. wrangler kv namespace create radartehran-api-staging-kv
-    // Then add staging d1_databases (USER_DB, DB, RESEARCH_DB) and kv_namespaces below.
-    "staging": {
-      "name": "radartehran-api-staging",
-      "workers_dev": true,
-      "vars": {
-        "APP_ENV": "staging",
-        "APP_URL": "https://radartehran-api-staging.workers.dev",
-        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-        "RESEARCH_HMAC_KEY_VERSION": "v1",
-        "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
-        "IRNI_API_TIMEOUT_MS": "4000",
-        "IRNI_CACHE_TTL_SECONDS": "300",
-        "IRNI_STALE_TTL_SECONDS": "1800",
-        "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
-        "STAGING_D1_PROVISIONING_STATUS": "BLOCKED_STAGING_DATABASES_NOT_PROVISIONED",
-        "STRICT_ORIGIN_ENFORCEMENT": "false",
-        "APP_CHECK_ENFORCEMENT_MODE": "monitor"
-      }
-    }
-  }
+    },
+  ]
 }

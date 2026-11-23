@@ -20,6 +20,7 @@ export type RouteDestinationId =
 
 export type NavGroupClassification = 'primary' | 'more' | 'account' | 'administrative';
 
+export type DiscoverSubTabId = 'results' | 'registry';
 export type MarketSubTabId = 'overview' | 'prices' | 'rent' | 'supply' | 'compare' | 'reports';
 export type PropertiesSubTabId = 'all' | 'buy' | 'rent' | 'commercial' | 'office';
 export type ToolsSubTabId = 'all' | 'valuation' | 'compare_props' | 'compare_areas' | 'calculators';
@@ -55,6 +56,7 @@ export type ContributionsSubTabId =
 export type AdminSectionId = 'overview' | 'content' | 'data' | 'users' | 'operations' | 'security';
 
 export type ModuleSubTabId =
+  | DiscoverSubTabId
   | MarketSubTabId
   | PropertiesSubTabId
   | ToolsSubTabId

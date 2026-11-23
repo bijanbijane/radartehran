@@ -1,0 +1,162 @@
+name: Radar Backend Triad & Frontend Service Binding
+
+on:
+  push:
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
+    paths:
+      - 'worker/**'
+      - 'apps/frontend/worker/**'
+      - 'apps/frontend/wrangler.jsonc'
+      - 'wrangler.backend.jsonc'
+      - 'migrations/user-d1/**'
+      - 'migrations/research-d1/**'
+      - 'migrations/neighborhood-d1/**'
+      - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/radar-backend-triad.yml'
+  pull_request:
+    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    paths:
+      - 'worker/**'
+      - 'apps/frontend/worker/**'
+      - 'apps/frontend/wrangler.jsonc'
+      - 'wrangler.backend.jsonc'
+      - 'migrations/user-d1/**'
+      - 'migrations/research-d1/**'
+      - 'migrations/neighborhood-d1/**'
+      - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/radar-backend-triad.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-backend-triad-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: D1 domain isolation, Worker bundle & frontend RPC binding
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: production
+    steps:
+      - name: Checkout exact PR or branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: Run focused D1 triad binding-isolation contract tests
+        run: |
+          npx tsx tests/d1-triad-binding-isolation.test.ts
+          npx tsx --test tests/frontend-api-service-binding.test.ts
+          npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
+
+      - name: Verify temporary D1 write-pause deadline behavior
+        run: npx tsx --test worker/db/writePause.test.ts
+
+      - name: Verify Firebase identity and Worker authentication contracts
+        run: npm run test:auth
+
+      - name: Verify account lifecycle and ownership isolation
+        run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
+
+      - name: Build the split Frontend assets
+        run: npm run build -w radartehran-frontend
+
+      - name: Read-only live Worker smoke (no database mutations)
+        env:
+          RADAR_FRONTEND_URL: https://radartehran-frontend.bijanbijane-1.workers.dev
+          RADAR_API_URL: https://radartehran-api.bijanbijane-1.workers.dev
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" "$RADAR_FRONTEND_URL/?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-frontend.html
+          grep -q 'id="root"' /tmp/radar-frontend.html
+          : > /tmp/radar-frontend-bundles.js
+          mapfile -t frontend_assets < <(grep -oE 'src="[^"]+[.]js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
+          echo "Frontend JavaScript asset references: ${#frontend_assets[@]}"
+          if [[ ${#frontend_assets[@]} -eq 0 ]]; then
+            echo "ERROR: no JavaScript asset references found in deployed frontend HTML."
+            sed -n '1,20p' /tmp/radar-frontend.html
+            exit 1
+          fi
+          printf '%s\n' "${frontend_assets[@]}"
+          for asset in "${frontend_assets[@]}"; do
+            case "$asset" in
+              http*) asset_url="$asset" ;;
+              /*) asset_url="$RADAR_FRONTEND_URL$asset" ;;
+              *) asset_url="$RADAR_FRONTEND_URL/$asset" ;;
+            esac
+            curl --fail --silent --show-error "$asset_url" >> /tmp/radar-frontend-bundles.js
+          done
+          echo "Downloaded frontend bundle bytes: $(wc -c < /tmp/radar-frontend-bundles.js)"
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" "$RADAR_API_URL/api/health/database-triad?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-d1-health.json
+          curl --fail --silent --show-error -H "Cache-Control: no-cache" -D /tmp/radar-frontend-api-headers.txt "$RADAR_FRONTEND_URL/api/health/database-triad?_radar_smoke=$GITHUB_SHA" -o /tmp/radar-frontend-api-health.json
+          grep -qi '^x-radar-api-proxy: service-binding' /tmp/radar-frontend-api-headers.txt
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const health = JSON.parse(fs.readFileSync("/tmp/radar-d1-health.json", "utf8"));
+            const frontendHealth = JSON.parse(fs.readFileSync("/tmp/radar-frontend-api-health.json", "utf8"));
+            if (health.status !== "ok" ||
+                health.bindings?.userDbBound !== true ||
+                health.bindings?.researchDbBound !== true ||
+                health.bindings?.neighborhoodDbBound !== true ||
+                health.bindings?.isolationViolation !== false ||
+                frontendHealth.status !== health.status ||
+                frontendHealth.bindings?.userDbBound !== true ||
+                frontendHealth.bindings?.researchDbBound !== true ||
+                frontendHealth.bindings?.neighborhoodDbBound !== true ||
+                frontendHealth.bindings?.isolationViolation !== false) {
+              throw new Error("Live Radar D1 triad health is not ready: " + JSON.stringify(health));
+            }
+            console.log("Live read-only smoke passed:", JSON.stringify({
+              status: health.status,
+              bindings: health.bindings,
+              registryRevision: health.geographicRegistry?.revision ?? health.registry?.revision ?? null,
+              frontendServiceBinding: "verified"
+            }));
+          '
+
+      - name: Dry-run package the dedicated Radar API Worker
+        run: npx wrangler deploy --config wrangler.backend.jsonc --dry-run --outdir /tmp/radartehran-api-dryrun
+
+      - name: Dry-run package the Frontend Worker with RADAR_API Service Binding
+        run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env production --dry-run --outdir /tmp/radartehran-frontend-dryrun
+
+      - name: Verify production App Check client key is present
+        run: |
+          if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
+            echo "ERROR: production frontend bundle has no reCAPTCHA Enterprise site key."
+            echo "Set the public VITE_FIREBASE_APP_CHECK_SITE_KEY build variable for radartehran-frontend."
+            echo "Do not disable backend App Check enforcement to bypass this missing credential."
+            exit 1
+          fi
+          echo "Production App Check site key is present in the deployed frontend bundle."
+
+      - name: Confirm the required service binding is present in committed config
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const config = fs.readFileSync("apps/frontend/wrangler.jsonc", "utf8");
+            if (!/"binding"\s*:\s*"RADAR_API"/.test(config) ||
+                !/"service"\s*:\s*"radartehran-api"/.test(config)) {
+              throw new Error("RADAR_API must target the dedicated radartehran-api Worker.");
+            }
+            console.log("RADAR_API -> radartehran-api: verified");
+          '

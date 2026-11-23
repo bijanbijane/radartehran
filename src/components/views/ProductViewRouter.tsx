@@ -14,6 +14,7 @@ import { resolveActiveCityDisplayName, resolveEffectiveSubTab, resolveSecondaryT
 import type { AccountSubTabId, ContributionsSubTabId, KnowledgeSubTabId, MarketSubTabId, ModuleSubTabId, PropertiesSubTabId, SavedMapViewItem, ToolsSubTabId } from '../../navigation/registry/route.types';
 
 const ProductHomeView = React.lazy(() => import('./ProductHomeView').then((m) => ({ default: m.ProductHomeView })));
+const GeographicRegistryView = React.lazy(() => import('./GeographicRegistryView').then((m) => ({ default: m.GeographicRegistryView })));
 const ProductDiscoverView = React.lazy(() => import('./ProductDiscoverView').then((m) => ({ default: m.ProductDiscoverView })));
 const ProductIntelligenceView = React.lazy(() => import('./ProductIntelligenceView').then((m) => ({ default: m.ProductIntelligenceView })));
 const ProductPropertiesView = React.lazy(() => import('./ProductPropertiesView').then((m) => ({ default: m.ProductPropertiesView })));
@@ -178,7 +179,9 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
       />
     );
   } else if (primaryView === 'discover') {
-    content = (
+    content = effectiveSubTab === 'registry' ? (
+      <GeographicRegistryView />
+    ) : (
       <ProductDiscoverView
         evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} onSelectNeighborhood={handleSelectNeighborhood}
         favoriteHoodIds={p.favoriteHoodIds} onToggleFavorite={p.toggleFavoriteHood}

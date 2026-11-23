@@ -21,11 +21,25 @@ import { validateCityParam } from '../../src/utils/security';
 import { buildOpenApiSpecification } from '../../src/utils/serverConfigValidator';
 import { resolveCanonicalBaseUrl } from '../../src/utils/serverDeliveryAndAbuseGuard';
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from '../contextAndSecurity';
-import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
 import { getMigrationProgressSummary } from '../migrationRegister';
-import type { WorkerRequestContext } from '../types';
+import { getTriadDomainBindingDiagnostics, requireNeighborhoodDb, requireResearchDb, requireUserDb } from '../db/bindingResolver';
+import type { D1Database, WorkerRequestContext } from '../types';
 
 const workerBootTimestampMs = Date.now();
+
+async function probeD1Database(db: D1Database): Promise<{ ok: boolean; migrationsApplied: number }> {
+  try {
+    const ping = await db.prepare('SELECT 1 AS ok').first<{ ok: number }>();
+    const ledger = await db.prepare('SELECT COUNT(*) AS count FROM d1_migrations').first<{ count: number }>();
+    return {
+      ok: ping?.ok === 1,
+      migrationsApplied: Number(ledger?.count ?? 0),
+    };
+  } catch {
+    return { ok: false, migrationsApplied: 0 };
+  }
+}
+
 
 export function resolveWorkerBaseUrl(ctx: WorkerRequestContext): string {
   return resolveCanonicalBaseUrl(ctx.env.APP_URL, ctx.environment);
@@ -221,6 +235,81 @@ export async function handleHealthAndMetadataRoute(
 
   const uptimeSeconds = Math.max(0, Math.round((Date.now() - workerBootTimestampMs) / 1000));
 
+  if (pathname === '/api/health/database-triad') {
+    const bindings = getTriadDomainBindingDiagnostics(ctx.env);
+    const user = requireUserDb(ctx.env);
+    const research = requireResearchDb(ctx.env);
+    const neighborhood = requireNeighborhoodDb(ctx.env);
+    if (!user.ok || !research.ok || !neighborhood.ok || bindings.isolationViolation) {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'degraded',
+        code: 'D1_TRIAD_BINDING_NOT_READY',
+        bindings,
+        missing: {
+          user: user.ok === false ? user.code : null,
+          research: research.ok === false ? research.code : null,
+          neighborhood: neighborhood.ok === false ? neighborhood.code : null,
+        },
+        timestampIso: new Date().toISOString(),
+      });
+    }
+
+    const [userProbe, researchProbe, neighborhoodProbe, registryHead] = await Promise.all([
+      probeD1Database(user.db),
+      probeD1Database(research.db),
+      probeD1Database(neighborhood.db),
+      neighborhood.db.prepare(
+        `SELECT registry_revision,registry_checksum,canonical_entity_count,relationship_count,
+         anchor_count,source_mapping_count,legacy_alias_count,integrity_verified
+         FROM geo_registry_head WHERE singleton_id='current'`,
+      ).first<Record<string, unknown>>(),
+    ]);
+
+    const registryReady = Boolean(registryHead) &&
+      Number(registryHead?.integrity_verified) === 1 &&
+      Number(registryHead?.canonical_entity_count) > 0;
+    const ready = userProbe.ok && researchProbe.ok && neighborhoodProbe.ok &&
+      userProbe.migrationsApplied >= 6 &&
+      researchProbe.migrationsApplied >= 2 &&
+      neighborhoodProbe.migrationsApplied >= 3 &&
+      registryReady;
+
+    return jsonWorkerResponse(ctx, ready ? 200 : 503, {
+      status: ready ? 'ok' : 'degraded',
+      service: 'radartehran-d1-triad',
+      bindings: {
+        userDbBound: bindings.userDbBound,
+        userDbSource: bindings.userDbSource,
+        researchDbBound: bindings.researchDbBound,
+        neighborhoodDbBound: bindings.neighborhoodDbBound,
+        isolationViolation: bindings.isolationViolation,
+        irniDirectDbBindingPresent: bindings.irniDirectDbBindingPresent,
+      },
+      probes: {
+        userDb: userProbe.ok ? 'ok' : 'failed',
+        researchDb: researchProbe.ok ? 'ok' : 'failed',
+        neighborhoodDb: neighborhoodProbe.ok ? 'ok' : 'failed',
+      },
+      migrationLedgers: {
+        userDb: { applied: userProbe.migrationsApplied, requiredAtLeast: 6 },
+        researchDb: { applied: researchProbe.migrationsApplied, requiredAtLeast: 2 },
+        neighborhoodDb: { applied: neighborhoodProbe.migrationsApplied, requiredAtLeast: 3 },
+      },
+      geographicRegistry: registryHead ? {
+        status: registryReady ? 'ready' : 'degraded',
+        revision: Number(registryHead.registry_revision),
+        checksum: String(registryHead.registry_checksum),
+        canonicalEntityCount: Number(registryHead.canonical_entity_count),
+        relationshipCount: Number(registryHead.relationship_count),
+        identityAnchorCount: Number(registryHead.anchor_count),
+        sourceMappingCount: Number(registryHead.source_mapping_count),
+        legacyAliasCount: Number(registryHead.legacy_alias_count),
+        integrityVerified: Number(registryHead.integrity_verified) === 1,
+      } : { status: 'not_published' },
+      timestampIso: new Date().toISOString(),
+    });
+  }
+
   if (pathname === '/api/health') {
     const migration = getMigrationProgressSummary();
     return jsonWorkerResponse(ctx, 200, {
@@ -231,7 +320,6 @@ export async function handleHealthAndMetadataRoute(
       timestampIso: new Date().toISOString(),
       uptimeSeconds,
       migrationProgress: migration,
-      triadDomains: getTriadDomainBindingDiagnostics(ctx.env),
     });
   }
 
@@ -240,7 +328,7 @@ export async function handleHealthAndMetadataRoute(
       ok: true,
       status: 'ok',
       runtime: 'cloudflare-workers',
-      registeredRoutesCount: 88,
+      registeredRoutesCount: 89,
       uptimeSeconds,
       timestampIso: new Date().toISOString(),
       displayAreaUnitLabel: formatAreaUnitLabel('sqm'),
@@ -258,10 +346,9 @@ export async function handleHealthAndMetadataRoute(
   }
 
   if (pathname === '/api/health/readiness') {
-    const userDb = resolveUserDb(ctx.env);
-    if (userDb) {
+    if (ctx.env.DB) {
       const { inspectD1OperationalDiagnostics } = await import('../db/d1SchemaAndMigrations');
-      const diag = await inspectD1OperationalDiagnostics(userDb);
+      const diag = await inspectD1OperationalDiagnostics(ctx.env.DB);
       if (!diag.allCanonicalMigrationsApplied) {
         return jsonWorkerResponse(ctx, 503, {
           ok: false,
