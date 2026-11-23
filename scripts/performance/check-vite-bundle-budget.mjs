@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
-import { readFile, writeFile, stat } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 function normalizeAssetPath(value) {
-  return value.replaceAll('\\\\', '/').replace(/^\\/+/, '');
+  return value.split(String.fromCharCode(92)).join('/').replace(/^\/+/, '');
 }
 
 export function collectInitialAssetFiles(manifest, entryKeys) {
@@ -22,8 +22,8 @@ export function collectInitialAssetFiles(manifest, entryKeys) {
     visited.add(key);
 
     const file = normalizeAssetPath(chunk.file);
-    if (/\\.m?js$/i.test(file)) js.add(file);
-    if (/\\.css$/i.test(file)) css.add(file);
+    if (file.endsWith('.js') || file.endsWith('.mjs')) js.add(file);
+    if (file.endsWith('.css')) css.add(file);
 
     for (const stylesheet of chunk.css ?? []) {
       if (typeof stylesheet !== 'string') throw new Error(`Invalid CSS asset in manifest entry: ${key}`);
@@ -95,7 +95,7 @@ export async function createBundleReport({ manifestPath, outDir }) {
       },
       css: {
         fileCount: css.length,
-        rawBytes: sum(css, 'rawBytes'),
+        rawBytes: sum(js, 'rawBytes') - sum(js, 'rawBytes') + sum(css, 'rawBytes'),
         gzipBytes: sum(css, 'gzipBytes'),
         brotliBytes: sum(css, 'brotliBytes'),
         files: css,
@@ -131,7 +131,7 @@ async function main() {
   console.log(`Static entry points: ${report.entries.join(', ')}`);
 
   if (args.report) {
-    await writeFile(args.report, `${JSON.stringify(report, null, 2)}\\n`, 'utf8');
+    await writeFile(args.report, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   }
 
   if (Number.isFinite(maxInitialJsGzipKb) && maxInitialJsGzipKb > 0) {
