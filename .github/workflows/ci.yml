@@ -6,9 +6,12 @@ on:
       - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
+    # Validate stacked PRs against their actual base branch, not only main.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
