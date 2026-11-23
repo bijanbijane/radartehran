@@ -6,15 +6,16 @@ import type { WorkerEnv } from '../worker/types';
 
 if (!globalThis.crypto) Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
 
-const TEST_MARKET_ENV = {
-  MARKET_PII_ENCRYPTION_KEY: Buffer.alloc(32, 0x11).toString('base64url'),
-  MARKET_PII_HASH_SECRET: 'market-pii-test-hmac-secret-with-at-least-32-bytes',
-} as WorkerEnv;
 import {
   maskPhoneForPublic,
   ownerUidVisible,
   sanitizeSponsorForPublic,
 } from '../worker/marketplace/d1MarketplaceRepository';
+
+const TEST_MARKET_ENV = {
+  MARKET_PII_ENCRYPTION_KEY: Buffer.alloc(32, 0x11).toString('base64url'),
+  MARKET_PII_HASH_SECRET: 'market-pii-test-hmac-secret-with-at-least-32-bytes',
+} as WorkerEnv;
 
 describe('public marketplace privacy projections', () => {
   it('never exposes another user UID to a public or non-admin caller', () => {
@@ -59,7 +60,7 @@ describe('marketplace contact PII cryptography', () => {
     const phone = '+989121234567';
     const first = await encryptMarketPhone(phone, TEST_MARKET_ENV);
     const second = await encryptMarketPhone(phone, TEST_MARKET_ENV);
-    assert.match(first, /^v1\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/);
+    assert.match(first, /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
     assert.notEqual(first, second);
     assert.equal(first.includes(phone), false);
     assert.equal(await decryptMarketPhone(first, TEST_MARKET_ENV), phone);
