@@ -258,6 +258,7 @@ async function runSuite(): Promise<void> {
   });
 
   await check('Only approved Neshan/OSM providers are selectable', () => {
+    assert.deepEqual(Object.keys(FREE_KEYLESS_TILE_SERVERS).sort(), ['osm', 'voyager'], 'Only explicitly approved free OSM endpoints may appear in the keyless-provider registry');
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).mapbox, undefined);
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).satellite, undefined, 'Esri imagery must not be exposed without a commercial license');
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).carto_dark, undefined, 'CARTO basemaps must not be exposed without an API key');
