@@ -92,7 +92,7 @@ afterEach(() => {
 
 describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check', () => {
   it('1. fails closed (503) when D1 is missing or throws during revocation check', async () => {
-    const missing = await isTokenRevokedOrUserDisabled({ db: undefined, uid: 'u1', tokenIatSeconds: 1000 });
+    const missing = await isTokenRevokedOrUserDisabled('u1', 1000, undefined);
     assert.equal(missing.unavailable, true);
 
     const throwingDb = {
@@ -109,7 +109,7 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
       },
     } as unknown as D1Database;
 
-    const errored = await isTokenRevokedOrUserDisabled({ db: throwingDb, uid: 'u1', tokenIatSeconds: 1000 });
+    const errored = await isTokenRevokedOrUserDisabled('u1', 1000, throwingDb);
     assert.equal(errored.unavailable, true);
 
     const kp = await createRsaPair();
