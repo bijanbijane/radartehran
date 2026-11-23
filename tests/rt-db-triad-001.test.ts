@@ -262,6 +262,11 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(diag.userDbBound, true);
       assert.equal(diag.researchDbBound, true);
       assert.equal(diag.irniDirectDbBindingPresent, false);
+
+      // A forbidden out-of-band binding must be visible to diagnostics, never treated as absent.
+      const forbiddenBindingEnv: WorkerEnv = { ...bothEnv, NEIGHBORHOOD_DB: userSqlite.db };
+      const forbiddenDiag = getTriadDomainBindingDiagnostics(forbiddenBindingEnv);
+      assert.equal(forbiddenDiag.irniDirectDbBindingPresent, true);
     });
 
     it('persists profile, privacy consent + audit, sessions, favorites, data requests, and enforces write blocks', async () => {
