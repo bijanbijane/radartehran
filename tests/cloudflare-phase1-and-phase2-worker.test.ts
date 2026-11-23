@@ -122,6 +122,7 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
       env
     );
     assert.equal(healthRes.status, 200);
+    assert.equal(healthRes.headers.get('cache-control'), 'no-store', 'health responses must bypass shared Worker Cache');
     assert.equal(healthRes.headers.get('x-content-type-options'), 'nosniff');
     assert.ok(healthRes.headers.get('x-correlation-id'));
     const healthBody = (await healthRes.json()) as Record<string, unknown>;
@@ -399,6 +400,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
       env
     );
     assert.equal(catalogRes.status, 200);
+    assert.match(catalogRes.headers.get('cache-control') || '', /public, max-age=300/, 'public catalog has an explicit bounded cache TTL');
     const catalogBody = (await catalogRes.json()) as { status: string; products: unknown[] };
     assert.equal(catalogBody.status, 'ok');
     assert.ok(catalogBody.products.length > 0);
@@ -409,6 +411,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
       env
     );
     assert.equal(forbiddenRes.status, 403);
+    assert.equal(forbiddenRes.headers.get('cache-control'), 'no-store', 'restricted dataset errors must never be cached');
 
     // Commerce Neighborhood Index: simulate=1 -> 200
     const simRes = await workerEntrypoint.fetch(
@@ -416,6 +419,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
       env
     );
     assert.equal(simRes.status, 200);
+    assert.equal(simRes.headers.get('cache-control'), 'no-store', 'simulated dataset responses must not enter shared cache');
     const simBody = (await simRes.json()) as { status: string; sampleRecords: unknown[] };
     assert.equal(simBody.status, 'ok');
     assert.equal(simBody.sampleRecords.length, 3);
@@ -426,6 +430,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
       env
     );
     assert.equal(challengeRes.status, 402);
+    assert.equal(challengeRes.headers.get('cache-control'), 'no-store', 'payment challenges must not be cached');
     assert.ok(challengeRes.headers.get('payment-required'));
 
     // Commerce Neighborhood Dossier: simulate=1 -> 200
@@ -449,6 +454,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
         env
       );
       assert.equal(mcpToolsRes.status, 200);
+      assert.match(mcpToolsRes.headers.get('cache-control') || '', /public, max-age=300/, 'public MCP descriptors have a bounded cache TTL');
       const mcpToolsBody = (await mcpToolsRes.json()) as { zeroPiiEnforced: boolean; tools: unknown[] };
       assert.equal(mcpToolsBody.zeroPiiEnforced, true);
       assert.ok(mcpToolsBody.tools.length > 0);
@@ -510,6 +516,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
       env
     );
     assert.equal(policyRes.status, 200);
+    assert.match(policyRes.headers.get('cache-control') || '', /public, max-age=60/, 'public telemetry policy has a bounded cache TTL');
     const policyBody = (await policyRes.json()) as {
       status: string;
       policy: { policyVersion: number; activeLevel: number };
