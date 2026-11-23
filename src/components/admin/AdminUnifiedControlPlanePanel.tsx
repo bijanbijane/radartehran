@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, Building2, Cpu, Database, HardDriveDownload, Layers, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
-import { auth } from '../../firebase';
+import { getAuthClient } from '../../platform/auth';
 import { toPersianNum } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
@@ -49,22 +49,17 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
     readiness: null,
   });
 
-  const getHeaders = async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-  };
+  const getHeaders = async (): Promise<Record<string, string>> => ({
+    'Content-Type': 'application/json',
+  });
 
   const refreshControlPlane = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!getAuthClient().getUser()) { setLoading(false); return; }
     setLoading(true);
     try {
       const headers = await getHeaders();
       const [modRes, cacheRes, secRes, recRes, anaRes, rdyRes] = await Promise.all([
-        fetch('/api/admin/platform/modules?limit=50', { headers }),
+        fetch('/api/admin/platform/modules?limit=50', { headers, credentials: 'same-origin' }),
         fetch('/api/admin/cache/health', { headers }),
         fetch('/api/admin/security/secrets', { headers }),
         fetch('/api/admin/recovery/resources', { headers }),
@@ -97,7 +92,13 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
   }, []);
 
   useEffect(() => {
-    void refreshControlPlane();
+    const authClient = getAuthClient();
+    const unsubscribe = authClient.subscribe((_state, user) => {
+      if (user) void refreshControlPlane();
+      else setLoading(false);
+    });
+    if (authClient.getUser()) void refreshControlPlane();
+    return unsubscribe;
   }, [refreshControlPlane]);
 
   const executeConfirmedAction = async (actionKey: string) => {
@@ -109,6 +110,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         const res = await fetch('/api/admin/cache/invalidate', {
           method: 'POST',
           headers,
+          credentials: 'same-origin',
           body: JSON.stringify({ scope: 'NAMESPACE', namespaceCode: 'SEARCH_RESULTS', reason: 'Admin UI manual invalidation' }),
         });
         const j = await res.json();
@@ -117,6 +119,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         const res = await fetch('/api/admin/security/secrets/sec_ref_webhook_hmac_primary/rotate', {
           method: 'POST',
           headers,
+          credentials: 'same-origin',
           body: JSON.stringify({ reason: 'Admin UI controlled 12-step secret rotation' }),
         });
         const j = await res.json();
@@ -125,6 +128,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         const res = await fetch('/api/admin/recovery/exercises', {
           method: 'POST',
           headers,
+          credentials: 'same-origin',
           body: JSON.stringify({ scenarioName: 'مانور بازیابی ایزوله دفترکل و قراردادها', resourceId: 'res_firestore_ledger_and_settlements' }),
         });
         const j = await res.json();
