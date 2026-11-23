@@ -41,7 +41,14 @@ function fakeD1(options: FakeOptions = {}): {
             return { success: false, results: [] as T[] };
           }
           const rowsEntry = Object.entries(options.rowsBySqlIncludes ?? {}).find(([fragment]) => sql.includes(fragment));
-          return { success: true, results: (rowsEntry?.[1] ?? options.rows ?? []) as T[] };
+          const rows = rowsEntry?.[1] ?? options.rows ?? [];
+          const boundedLimit = /\\bLIMIT\\s+\\?3\\b/i.test(sql) && typeof values[2] === 'number'
+            ? values[2] as number
+            : undefined;
+          return {
+            success: true,
+            results: (boundedLimit === undefined ? rows : rows.slice(0, boundedLimit)) as T[],
+          };
         },
         async run<T = unknown>() {
           calls.push({ method: 'run', sql, values: [...values] });
@@ -220,6 +227,59 @@ test('USER_PROFILE adapter fails closed when account data-request D1 query fails
   await assert.rejects(
     () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
   );
+});
+
+test('USER_PROFILE pages retain the final upload-session rows and fill only remaining capacity with requests', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [
+        { session_id: 'session_1', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_000 },
+        { session_id: 'session_2', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_001 },
+      ],
+      'FROM account_data_requests': [
+        { request_id: 'request_1', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:00.000Z' },
+        { request_id: 'request_2', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:01.000Z' },
+      ],
+    },
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  const page = await adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 3 });
+  assert.deepEqual(page.items.map((item) => item.recordId), ['session_1', 'session_2', 'request_1']);
+  assert.equal(page.items.length, 3);
+  assert.equal(page.nextCursor, 'drq:request_1');
+  assert.equal(page.hasMore, true);
+});
+
+test('USER_PROFILE deletion keeps a combined D1 batch within its requested size', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [
+        { session_id: 'session_1', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_000 },
+        { session_id: 'session_2', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_001 },
+      ],
+      'FROM account_data_requests': [
+        { request_id: 'request_1', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:00.000Z' },
+        { request_id: 'request_2', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:01.000Z' },
+        { request_id: 'request_3', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:02.000Z' },
+        { request_id: 'request_4', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:03.000Z' },
+      ],
+    },
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  const batch = await adapter.disposeOwnedRecordsBatch({
+    targetUid: 'uid_1',
+    cursor: null,
+    batchSize: 3,
+    jobId: 'job_1',
+  });
+  assert.deepEqual(batch.receipts.map((receipt) => receipt.recordId), ['session_1', 'session_2', 'request_1']);
+  assert.equal(batch.receipts.length, 3);
+  assert.equal(batch.nextCursor, 'drq:request_1');
+  assert.equal(batch.hasMore, true);
 });
 
 test('upload-session deletion emits no success receipt when D1 deletion fails', async () => {
