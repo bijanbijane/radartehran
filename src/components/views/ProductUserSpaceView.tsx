@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
-import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
+import { getAuthClient } from '../../platform/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
 import { type CityId, getAllMultiCityNeighborhoods } from '../../data/multiCityData';
@@ -30,7 +31,7 @@ import { AccountSavedItemsPanel } from '../../features/account/components/Accoun
 import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 export interface ProductUserSpaceViewProps {
-  currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
+  currentUser: AuthUserSnapshot | null; onGoogleSignIn: () => void; onSignOut: () => void;
   favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
   activeCity?: CityId; selectedHood?: EvaluatedNeighborhood; activeSubTab?: AccountSubTabId;
@@ -44,6 +45,11 @@ export interface ProductUserSpaceViewProps {
 export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const [busyAction, setBusyAction] = useState<'export' | 'delete' | null>(null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [phoneChallengeId, setPhoneChallengeId] = useState<string | null>(null);
+  const [phoneAuthBusy, setPhoneAuthBusy] = useState(false);
+  const [phoneAuthMessage, setPhoneAuthMessage] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [privacyNotice, setPrivacyNotice] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
   const [deleteLayers, setDeleteLayers] = useState<AccountDeleteLayerStatus | null>(null);
@@ -97,7 +103,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     const scope = includeLocalWorkspace ? 'combined_account_and_workspace' : 'server_account';
     const requestId = generateStableAccountId('dreq');
     try {
-      const serverRes = await requestAccountServerExport({ getToken: () => p.currentUser!.getIdToken(), expectedUid: p.currentUser.uid });
+      const serverRes = await requestAccountServerExport({ currentUser: p.currentUser, expectedUid: p.currentUser.uid });
       if (serverRes.ok === false) {
         const failRes = serverRes as Extract<typeof serverRes, { ok: false }>;
         recordDataRequest('export', 'failed', { uid: effectiveUid, requestId, scope, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
@@ -128,7 +134,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     setBusyAction('delete'); setPrivacyNotice(null); setDeleteLayers(null);
     const requestId = generateStableAccountId('dreq');
     try {
-      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, deleteFirebaseUserFn: (u) => deleteUser(u as FirebaseUser) });
+      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, idempotencyKey: requestId });
       if (res.ok === false && !res.data) {
         const failRes = res as Extract<typeof res, { ok: false }>;
         recordDataRequest('delete', 'failed', { uid: effectiveUid, requestId, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
@@ -146,18 +152,68 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       if (res.data.requiresSignOut) p.onSignOut();
     } finally { setBusyAction(null); }
   };
+  const handleRequestPhoneCode = async () => {
+    if (phoneAuthBusy) return;
+    setPhoneAuthBusy(true);
+    setPhoneAuthMessage(null);
+    try {
+      const result = await getAuthClient().requestPhoneCode(phoneInput);
+      setPhoneChallengeId(result.challengeId);
+      setPhoneCode('');
+      setPhoneAuthMessage(isEn ? 'Verification code sent by SMS.' : 'کد تأیید پیامکی ارسال شد.');
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'SMS_SEND_FAILED';
+      const messages: Record<string, string> = {
+        INVALID_PHONE_NUMBER: 'شماره موبایل معتبر ایران وارد کنید.',
+        PHONE_OTP_RATE_LIMITED: 'تعداد درخواست کد برای این شماره یا شبکه بیش از حد مجاز است. بعداً دوباره تلاش کنید.',
+        SMS_PROVIDER_NOT_CONFIGURED: 'درگاه پیامک هنوز در Cloudflare پیکربندی نشده است.',
+        SMS_GATEWAY_REJECTED: 'درگاه پیامک درخواست را نپذیرفت. تنظیمات سرویس پیامک باید بررسی شود.',
+      };
+      setPhoneAuthMessage(messages[code] || (isEn ? 'Could not send the verification code.' : 'ارسال کد تأیید انجام نشد.'));
+    } finally {
+      setPhoneAuthBusy(false);
+    }
+  };
+
+  const handleVerifyPhoneCode = async () => {
+    if (!phoneChallengeId || phoneAuthBusy) return;
+    setPhoneAuthBusy(true);
+    setPhoneAuthMessage(null);
+    try {
+      const user = await getAuthClient().verifyPhoneCode(phoneChallengeId, phoneCode);
+      if (!user) throw new Error('PHONE_SESSION_NOT_CREATED');
+      setPhoneChallengeId(null);
+      setPhoneInput('');
+      setPhoneCode('');
+      setPhoneAuthMessage(isEn ? 'You are signed in.' : 'ورود با شماره موبایل انجام شد.');
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'PHONE_AUTH_FAILED';
+      const messages: Record<string, string> = {
+        INVALID_OTP_INPUT: 'کد واردشده معتبر نیست.',
+        OTP_INVALID: 'کد تأیید اشتباه است.',
+        OTP_CHALLENGE_EXPIRED: 'مهلت کد تمام شده است. کد تازه درخواست کنید.',
+        OTP_CHALLENGE_ALREADY_USED_OR_LOCKED: 'این کد دیگر قابل استفاده نیست. کد تازه درخواست کنید.',
+        IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT: 'این شماره به حساب کاربری دیگری متصل است.',
+        PHONE_SESSION_NOT_CREATED: 'نشست کاربری ایجاد نشد. دوباره تلاش کنید.',
+      };
+      setPhoneAuthMessage(messages[code] || (isEn ? 'Phone verification failed.' : 'تأیید شماره موبایل انجام نشد.'));
+    } finally {
+      setPhoneAuthBusy(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-7 animate-fadeIn" data-testid="product-userspace-view">
       <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--color-brand-600)] text-white flex items-center justify-center font-black text-lg shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
               {p.currentUser?.displayName ? p.currentUser.displayName.charAt(0).toUpperCase() : <User className="w-6 h-6 stroke-[2]" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black text-slate-900 dark:text-white">{p.currentUser?.displayName || (isEn ? 'Guest User Account' : 'حساب کاربری مهمان')}</h1>
-                {p.currentUser?.emailVerified && (
+                {(p.currentUser?.emailVerified || p.currentUser?.phoneNumber) && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10.5px] font-bold border border-emerald-200 dark:border-emerald-800">
                     <CheckCircle2 className="w-3 h-3" /><span>{isEn ? 'Verified' : 'تأییدشده'}</span>
                   </span>
@@ -174,7 +230,42 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                 <button type="button" onClick={p.onSignOut} className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><LogOut className="w-3.5 h-3.5" /><span>{isEn ? 'Sign Out' : 'خروج از حساب'}</span></button>
               </>
             ) : (
-              <button type="button" onClick={p.onGoogleSignIn} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
+              <div className="w-full sm:w-[min(100%,420px)] flex flex-col gap-3">
+                <button type="button" onClick={p.onGoogleSignIn} className="w-full px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Continue with Google' : 'ورود با حساب گوگل'}</span></button>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400"><span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /><span>{isEn ? 'OR PHONE NUMBER' : 'یا شماره موبایل'}</span><span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /></div>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phoneInput}
+                    onChange={(event) => setPhoneInput(event.target.value)}
+                    placeholder={isEn ? '+98 912 000 0000' : 'شماره موبایل؛ مثال ۰۹۱۲۱۲۳۴۵۶۷'}
+                    aria-label={isEn ? 'Iranian mobile number' : 'شماره موبایل'}
+                    className="min-w-0 flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    disabled={phoneAuthBusy}
+                  />
+                  <button type="button" onClick={() => void handleRequestPhoneCode()} disabled={phoneAuthBusy || phoneInput.trim().length < 10} className="shrink-0 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-50 cursor-pointer">{phoneAuthBusy ? '...' : isEn ? 'Send code' : 'ارسال کد'}</button>
+                </div>
+                {phoneChallengeId && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={10}
+                      value={phoneCode}
+                      onChange={(event) => setPhoneCode(event.target.value.replace(/[۰-۹٠-٩]/g, (digit) => { const code = digit.charCodeAt(0); return String(code >= 0x06f0 && code <= 0x06f9 ? code - 0x06f0 : code - 0x0660); }).replace(/\D/g, '').slice(0, 10))}
+                      placeholder={isEn ? 'SMS verification code' : 'کد پیامک‌شده'}
+                      aria-label={isEn ? 'SMS verification code' : 'کد پیامک‌شده'}
+                      className="min-w-0 flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      disabled={phoneAuthBusy}
+                    />
+                    <button type="button" onClick={() => void handleVerifyPhoneCode()} disabled={phoneAuthBusy || phoneCode.length < 4} className="shrink-0 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold disabled:opacity-50 cursor-pointer">{isEn ? 'Verify' : 'تأیید'}</button>
+                  </div>
+                )}
+                {phoneAuthMessage && <p role="status" aria-live="polite" className="text-[11px] text-slate-600 dark:text-slate-300">{phoneAuthMessage}</p>}
+              </div>
             )}
           </div>
         </div>
@@ -191,7 +282,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-[11px] font-bold">
             <span>حذف داده‌های سرور: {deleteLayers.serverDeletion === 'completed' ? 'کامل' : 'جزئی'}</span>
             <span>· پاکسازی محلی حساب ({deleteLayers.removedLocalKeysCount} کلید): {deleteLayers.localCleanup === 'completed' ? 'انجام شد' : 'ناموفق'}</span>
-            <span>· هویت Firebase Auth: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
+            <span>· وضعیت هویت و نشست Cloudflare: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
           </div>
         )}
         {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-xs font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
@@ -216,7 +307,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Property Visit Log:' : 'دفترچه بازدیدها:'}</span>
-            <strong className="text-sm font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5 block">{toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'ملک ثبت‌شده'}</strong>
+            <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5 block">{toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'ملک ثبت‌شده'}</strong>
           </div>
           <button type="button" onClick={p.onOpenVisitedModal} aria-label={isEn ? 'Open property visit log' : 'مشاهده دفترچه بازدیدها'} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">{isEn ? 'Open Log' : 'مشاهده'}</button>
         </div>
