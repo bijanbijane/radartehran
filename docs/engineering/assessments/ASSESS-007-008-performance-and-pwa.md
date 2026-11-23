@@ -42,7 +42,7 @@
 |---|---|---|---|---|
 | 1 | **WebAppManifest Compliance** | `public/manifest.json` + `validateManifestOfflineConfig` (`src/utils/pwaOfflineSupport.ts`) | Root `id: "/"`, `start_url: "/"`, `display: "standalone"`, `offline_enabled: true`, separate `any` (192x192, 512x512) and `maskable` icons, and offline exploration shortcuts. | `VERIFIED` (`TEST_EXECUTED`) |
 | 2 | **Zero-Trust Auth & Admin Bypass** | `classifyServiceWorkerRequestStrategy` (`src/utils/pwaOfflineSupport.ts`) | Strictly returns `BypassPrivateOrMutation` for all non-GET mutations, requests with `Authorization` headers, `/api/admin/*`, `/api/system-health`, and `/api/object-storage/*`. | `VERIFIED` (`TEST_EXECUTED`) |
-| 3 | **Stale-While-Revalidate Map Tiles & Assets** | `classifyServiceWorkerRequestStrategy` (`public/sw.js`, `src/utils/pwaOfflineSupport.ts`) | Serves `/api/osm-tile/*`, Carto/OSM basemaps, and hashed Vite `/assets/*` bundles via `StaleWhileRevalidate` while using `NetworkFirst` for `/api/market-pulse`. | `VERIFIED` (`TEST_EXECUTED`) |
+| 3 | **Provider-Compliant Map Tile Delivery & Asset Caching** | `classifyServiceWorkerRequestStrategy` (`public/sw.js`, `src/utils/pwaOfflineSupport.ts`) | Map tiles (including `/api/osm-tile/*`) use network fetch plus the browser/provider HTTP cache directives; Service Worker Cache API never persists tiles or enables offline map use. Hashed Vite `/assets/*` bundles remain `StaleWhileRevalidate`; `/api/market-pulse` remains `NetworkFirst`. | `IN_PROGRESS` (`PROVIDER_POLICY_ALIGNMENT`) |
 
 ---
 
