@@ -66,6 +66,8 @@ const GROUP_4_ACCOUNT_PATHS = new Set<string>([
 
 const GROUP_4_MARKETPLACE_PATHS = new Set<string>([
   'GET /api/v1/market/state',
+  'POST /api/v1/market/votes',
+  'PUT /api/v1/market/preferences',
 ]);
 
 const GROUP_5_STORAGE_PATHS = new Set<string>([
