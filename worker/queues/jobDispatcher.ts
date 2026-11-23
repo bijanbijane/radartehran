@@ -242,25 +242,31 @@ async function handleR2OrphanMediaReconcile(
 
   // 1. Reconcile at most 25 stale D1 media records per invocation. Resolve legal holds
   // with one indexed LEFT JOIN rather than two D1 lookups per object.
-  const staleObjects = await userDb
-    .prepare(
-      `SELECT m.object_id, m.storage_key, m.legal_hold, m.retention_until,
-              h.active AS active_legal_hold
-       FROM media_objects AS m
-       LEFT JOIN legal_holds AS h ON h.resource_id = m.object_id AND h.active = 1
-       WHERE m.lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
-         AND m.updated_at_iso <= ?1
-       ORDER BY m.updated_at_iso ASC
-       LIMIT 25`,
-    )
-    .bind(cutoffIso)
-    .all<{
-      object_id: string;
-      storage_key: string;
-      legal_hold: number;
-      retention_until: string | null;
-      active_legal_hold: number | null;
-    }>();
+  const [staleObjects, cursorRow] = await Promise.all([
+    userDb
+      .prepare(
+        `SELECT m.object_id, m.storage_key, m.legal_hold, m.retention_until,
+                h.active AS active_legal_hold
+         FROM media_objects AS m
+         LEFT JOIN legal_holds AS h ON h.resource_id = m.object_id AND h.active = 1
+         WHERE m.lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
+           AND m.updated_at_iso <= ?1
+         ORDER BY m.updated_at_iso ASC
+         LIMIT 25`,
+      )
+      .bind(cutoffIso)
+      .all<{
+        object_id: string;
+        storage_key: string;
+        legal_hold: number;
+        retention_until: string | null;
+        active_legal_hold: number | null;
+      }>(),
+    userDb
+      .prepare("SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1")
+      .bind('r2_orphan_media_reconcile:r2_cursor')
+      .first<{ watermark_value: string }>(),
+  ]);
 
   const eligibleStaleObjects = (staleObjects.results ?? []).filter((obj) => {
     const hasRetentionLock = Boolean(obj.retention_until && Date.parse(obj.retention_until) > nowMs);
@@ -293,7 +299,19 @@ async function handleR2OrphanMediaReconcile(
 
   // 2. Inspect only the bounded R2 page. The previous full-table scan of every active
   // storage_key plus per-object legal-hold queries scaled D1 reads with total history.
-  const listed = await env.MEDIA_BUCKET.list({ prefix: 'listings/', limit: 40 });
+  const listed = await env.MEDIA_BUCKET.list({
+    prefix: 'listings/',
+    limit: 40,
+    cursor: cursorRow?.watermark_value || undefined,
+  });
+  if (listed.truncated && !listed.cursor) {
+    throw new QueueJobExecutionError(
+      'R2_RECONCILE_CURSOR_MISSING',
+      'R2 returned a truncated listing without a continuation cursor; refusing to mark the scan complete.',
+      true,
+    );
+  }
+  const nextCursor = listed.truncated ? listed.cursor! : '';
   const staleR2Objects = listed.objects.filter((r2Obj) => {
     const uploadedMs = r2Obj.uploaded instanceof Date ? r2Obj.uploaded.getTime() : 0;
     return nowMs - uploadedMs >= staleThresholdMs;
@@ -357,10 +375,21 @@ async function handleR2OrphanMediaReconcile(
     }
   }
 
-  await userDb
-    .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('r2_orphan_media_reconcile:last_run', JSON.stringify({ deletedCount, skippedLegalHoldCount }), nowIso)
-    .run();
+  const watermarkResults = await userDb.batch([
+    userDb
+      .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
+      .bind('r2_orphan_media_reconcile:last_run', JSON.stringify({ deletedCount, skippedLegalHoldCount, pageTruncated: listed.truncated }), nowIso),
+    userDb
+      .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
+      .bind('r2_orphan_media_reconcile:r2_cursor', nextCursor, nowIso),
+  ]);
+  if (watermarkResults.some((result) => result.success === false)) {
+    throw new QueueJobExecutionError(
+      'R2_RECONCILE_WATERMARK_BATCH_FAILED',
+      'D1 did not confirm the R2 reconciliation cursor and completion watermark.',
+      true,
+    );
+  }
 
   return {
     jobType: 'r2_orphan_media_reconcile',
