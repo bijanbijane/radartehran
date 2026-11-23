@@ -178,8 +178,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setVoteStatus({ type: 'warning', text: 'برای ثبت رأی در فضای ابری، ایمیل حساب کاربری شما باید تأیید شده باشد.' });
       return;
     }
-    const voteId = `${p.currentUser.uid}_hood_${p.selectedHood.id}`;
-    const voteRef = doc(db, 'votes', voteId);
+    const cleanComment = (sanitizeInput(p.voteComment, 500) || 'ثبت امتیاز کیفیت زندگی توسط ساکن محله').slice(0, 500);
     const cleanComment = (sanitizeInput(p.voteComment, 500) || 'ثبت امتیاز کیفیت زندگی توسط ساکن محله').slice(0, 500);
     const cleanName = (sanitizeInput(p.currentUser.displayName, 100) || 'کاربر تاییدشده').slice(0, 100);
     const mutablePayload = {
@@ -205,9 +204,36 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       recordLocalVoteCooldown();
       p.setVoteComment('');
       p.setVoteStatus({ type: 'success', text: statusMsg });
-    } catch (err) {
-      p.setVoteStatus({ type: 'warning', text: 'ثبت رأی انجام نشد. هر کاربر در هر ۲۴ ساعت فقط یک بار می‌تواند رأی همان محله را تغییر دهد.' });
-      try { handleFirestoreError(err, OperationType.WRITE, `votes/${voteId}`); } catch { /* local */ }
+    const cleanName = (sanitizeInput(p.currentUser.displayName, 100) || 'کاربر تاییدشده').slice(0, 100);
+    try {
+      const response = await fetch('/api/v1/market/votes', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          cityId: p.activeCity,
+          hoodId: p.selectedHood.id,
+          air: Number(p.voteAir),
+          powerWater: Number(p.votePower),
+          internet: Number(p.voteInternet),
+          metro: Number(p.voteMetro),
+          security: Number(p.voteSecurity),
+          flatTerrain: Number(p.voteFlat),
+          comment: cleanComment,
+          userDisplayName: cleanName,
+          locationVerified: Boolean(locationVerified),
+        }),
+      });
+      const result = await response.json().catch(() => null) as { status?: string; durable?: boolean; message?: string } | null;
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true) {
+        throw new Error(result?.message || 'ذخیره پایدار رأی در Cloudflare D1 تأیید نشد.');
+      }
+      recordLocalVoteCooldown();
+      p.setVoteComment('');
+      p.setVoteStatus({ type: 'success', text: statusMsg });
+    } catch {
+      p.setVoteStatus({ type: 'warning', text: 'ثبت رأی در پایگاه داده Cloudflare انجام نشد. اتصال حساب و وضعیت سرویس را بررسی کنید.' });
     }
   };
   const handleResidentVote = (useGeolocation: boolean) => {
