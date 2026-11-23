@@ -120,7 +120,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       activeRuntime: 'cloudflare_worker',
       dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/sessionAuth.ts', 'worker/routes/authRoutes.ts'],
       stateStorageTouchpoints: ['Cloudflare D1 USER_DB (user_profiles, user_privacy_consents, user_sessions, user_data_requests)'],
-      externalApiTouchpoints: ['Firebase Auth JWKS'],
+      externalApiTouchpoints: ['Google OpenID Connect JWKS', 'Kavenegar SMS Verify API'],
     };
   }
 
@@ -128,12 +128,13 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     if (GROUP_5_VERIFIED_STORAGE_PATHS.has(key)) {
       return {
         migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
-        workerHandlerModule: 'worker/routes/objectStorageRoutes.ts',
-        status: 'VERIFIED',
-        activeRuntime: 'cloudflare_worker',
-        dependencies: ['worker/routes/objectStorageRoutes.ts', 'worker/storage/r2StorageAdapter.ts', 'worker/db/d1SchemaAndMigrations.ts'],
-        stateStorageTouchpoints: ['Cloudflare R2 (MEDIA_BUCKET)', 'Cloudflare D1 (media_objects, upload_sessions, legal_holds)'],
-        externalApiTouchpoints: ['Cloudflare R2'],
+        workerHandlerModule: null,
+        status: 'BLOCKED',
+        activeRuntime: 'legacy_express_server',
+        dependencies: ['worker/routes/objectStorageRoutes.ts'],
+        stateStorageTouchpoints: ['Cloudflare D1 metadata only; binary storage provider unavailable'],
+        externalApiTouchpoints: [],
+        blockerReason: 'R2 is not enabled for this account and the operator explicitly deferred R2. Media endpoints remain fail-closed until an approved storage provider is available.',
       };
     }
     return {
@@ -142,7 +143,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       status: 'BLOCKED',
       activeRuntime: 'legacy_express_server',
       dependencies: ['src/utils/serverObjectStorage.ts', 'src/utils/objectStorageUpload.ts'],
-      stateStorageTouchpoints: ['.object-storage-bucket/', 'Firestore object_storage_metadata'],
+      stateStorageTouchpoints: ['legacy object-storage metadata adapter (not migrated)'],
       externalApiTouchpoints: ['S3/R2 Compatible Object Storage'],
       blockerReason: 'Admin storage audit & reconciliation endpoints remain on legacy Express until operator cutover.',
     };
@@ -188,9 +189,9 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       status: 'BLOCKED',
       activeRuntime: 'legacy_express_server',
       dependencies: [route.sourceFile, 'src/utils/serverAdminAndTelegramSecurity.ts'],
-      stateStorageTouchpoints: ['.runtime-config.json', '.cache-data.json', 'Firestore'],
-      externalApiTouchpoints: ['Gemini API', 'Telegram Bot API', 'Firebase Auth Admin'],
-      blockerReason: 'Requires Phase 3 Web Crypto Firebase JWT verifier and D1/KV runtime config store.',
+      stateStorageTouchpoints: ['legacy runtime-config and cache files (pending D1/KV migration)'],
+      externalApiTouchpoints: ['Gemini API', 'Telegram Bot API', 'Cloudflare Worker session authentication'],
+      blockerReason: 'Requires Cloudflare-native session authorization and a durable D1/KV runtime configuration store.',
     };
   }
 
@@ -200,9 +201,9 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     status: 'BLOCKED',
     activeRuntime: 'legacy_express_server',
     dependencies: [route.sourceFile, 'src/utils/identityLifecycleAndBackendGovernance.ts'],
-    stateStorageTouchpoints: ['Firestore', '.cache-data.json'],
-    externalApiTouchpoints: ['Firebase Auth', 'Gemini API'],
-    blockerReason: 'Requires Phase 3 Worker-native Firebase ID token verification and D1/Firestore REST adapter.',
+    stateStorageTouchpoints: ['legacy Firestore-backed repositories (not migrated)', '.cache-data.json'],
+    externalApiTouchpoints: ['Google OpenID Connect', 'Kavenegar SMS Verify API', 'Gemini API'],
+    blockerReason: 'Requires complete Cloudflare D1 repository migration; legacy Firestore-backed domain adapters remain blocked.',
   };
 }
 
