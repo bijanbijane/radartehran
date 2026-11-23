@@ -200,18 +200,23 @@ export function blobToBase64Chunk(blob: Blob): Promise<string> {
   });
 }
 export async function uploadMediaChunkedToObjectStorage(params: {
-  blob: Blob; fileName: string; mimeType: string; mediaType: 'image' | 'video'; hoodId: number; city: CityId; idToken: string;
+  blob: Blob; fileName: string; mimeType: string; mediaType: 'image' | 'video'; hoodId: number; city: CityId; idToken?: string;
   appCheckHeaders?: Record<string, string>; signal?: AbortSignal; onProgress?: (percent: number, stageFa: string) => void;
 }): Promise<ListingMediaObject> {
-  if (typeof params.idToken !== 'string' || params.idToken.length < 32) throw new Error('برای آپلود رسانه، توکن معتبر حساب کاربری لازم است.');
+  const idToken = typeof params.idToken === 'string' ? params.idToken.trim() : '';
+  if (idToken && idToken.length < 32) throw new Error('توکن Bearer ارسالی معتبر نیست.');
   const allowedMimes = params.mediaType === 'image' ? ALLOWED_IMAGE_MIMES : ALLOWED_VIDEO_MIMES;
   if (!allowedMimes.includes(params.mimeType)) throw new Error('UNSUPPORTED_MEDIA_MIME_TYPE');
   if (!params.blob || params.blob.size === 0) throw new Error('EMPTY_MEDIA_PAYLOAD');
   const safeFileName = fileNameForUploadMime(params.fileName, params.mimeType);
   const totalChunks = Math.max(1, Math.ceil(params.blob.size / CHUNK_UPLOAD_SIZE_BYTES));
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${params.idToken}`, ...(params.appCheckHeaders || {}) };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+    ...(params.appCheckHeaders || {}),
+  };
   params.onProgress?.(10, 'ایجاد نشست بارگذاری امن...');
-  const initRes = await fetch('/api/object-storage/upload-init', { method: 'POST', headers, signal: params.signal, cache: 'no-store',
+  const initRes = await fetch('/api/object-storage/upload-init', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store',
     body: JSON.stringify({ fileName: safeFileName, mimeType: params.mimeType, mediaType: params.mediaType, hoodId: params.hoodId, city: params.city, totalChunks, totalSizeBytes: params.blob.size }),
   });
   const initJson = (await initRes.json().catch(() => null)) as { status?: string; sessionId?: string; message?: string } | null;
@@ -223,7 +228,7 @@ export async function uploadMediaChunkedToObjectStorage(params: {
     const base64Data = await blobToBase64Chunk(slice);
     let uploadedChunk = false; let lastErr = 'خطا در ارسال بخش فایل';
     for (let attempt = 0; attempt < 3 && !uploadedChunk; attempt += 1) {
-      const chunkRes = await fetch('/api/object-storage/upload-chunk', { method: 'POST', headers, signal: params.signal, cache: 'no-store',
+      const chunkRes = await fetch('/api/object-storage/upload-chunk', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store',
         body: JSON.stringify({ sessionId, chunkIndex, base64Data }),
       });
       const chunkJson = (await chunkRes.json().catch(() => null)) as { status?: string; message?: string } | null;
@@ -235,23 +240,29 @@ export async function uploadMediaChunkedToObjectStorage(params: {
     params.onProgress?.(Math.min(92, Math.round(15 + ((chunkIndex + 1) / totalChunks) * 77)), `ارسال بخش ${chunkIndex + 1} از ${totalChunks}...`);
   }
   params.onProgress?.(95, 'تأیید و ثبت نهایی فایل در فضای ذخیره‌سازی...');
-  const compRes = await fetch('/api/object-storage/upload-complete', { method: 'POST', headers, signal: params.signal, cache: 'no-store', body: JSON.stringify({ sessionId }) });
+  const compRes = await fetch('/api/object-storage/upload-complete', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store', body: JSON.stringify({ sessionId }) });
   const compJson = (await compRes.json().catch(() => null)) as { status?: string; mediaObject?: ListingMediaObject; message?: string } | null;
   if (!compRes.ok || compJson?.status !== 'ok' || !compJson.mediaObject) throw new Error(compJson?.message || 'خطا در تکمیل و ثبت نهایی فایل');
   params.onProgress?.(100, 'تکمیل شد');
   return compJson.mediaObject;
 }
 export async function uploadMediaToObjectStorage(params: {
-  fileName: string; mimeType: string; mediaType: 'image' | 'video'; dataBase64: string; hoodId: number; city: CityId; idToken: string; appCheckHeaders?: Record<string, string>;
+  fileName: string; mimeType: string; mediaType: 'image' | 'video'; dataBase64: string; hoodId: number; city: CityId; idToken?: string; appCheckHeaders?: Record<string, string>;
 }): Promise<ListingMediaObject> {
-  if (typeof params.idToken !== 'string' || params.idToken.length < 32) throw new Error('برای آپلود رسانه، توکن معتبر حساب کاربری لازم است.');
+  const idToken = typeof params.idToken === 'string' ? params.idToken.trim() : '';
+  if (idToken && idToken.length < 32) throw new Error('توکن Bearer ارسالی معتبر نیست.');
   const allowedMimes = params.mediaType === 'image' ? ALLOWED_IMAGE_MIMES : ALLOWED_VIDEO_MIMES;
   if (!allowedMimes.includes(params.mimeType)) throw new Error('UNSUPPORTED_MEDIA_MIME_TYPE');
   if (typeof params.dataBase64 !== 'string' || params.dataBase64.length === 0) throw new Error('EMPTY_MEDIA_PAYLOAD');
   const safeFileName = fileNameForUploadMime(params.fileName, params.mimeType);
   const response = await fetch('/api/object-storage/upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${params.idToken}`, ...(params.appCheckHeaders || {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      ...(params.appCheckHeaders || {}),
+    },
+    credentials: 'same-origin',
     body: JSON.stringify({ fileName: safeFileName, mimeType: params.mimeType, mediaType: params.mediaType, dataBase64: params.dataBase64, hoodId: params.hoodId, city: params.city }),
     cache: 'no-store',
   });
