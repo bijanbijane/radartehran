@@ -179,31 +179,6 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       return;
     }
     const cleanComment = (sanitizeInput(p.voteComment, 500) || 'ثبت امتیاز کیفیت زندگی توسط ساکن محله').slice(0, 500);
-    const cleanComment = (sanitizeInput(p.voteComment, 500) || 'ثبت امتیاز کیفیت زندگی توسط ساکن محله').slice(0, 500);
-    const cleanName = (sanitizeInput(p.currentUser.displayName, 100) || 'کاربر تاییدشده').slice(0, 100);
-    const mutablePayload = {
-      hoodId: p.selectedHood.id, hoodName: p.selectedHood.name.slice(0, 80),
-      userId: p.currentUser.uid, userDisplayName: cleanName,
-      air: Number(p.voteAir), powerWater: Number(p.votePower), internet: Number(p.voteInternet),
-      metro: Number(p.voteMetro), security: Number(p.voteSecurity), flatTerrain: Number(p.voteFlat),
-      comment: cleanComment, locationVerified: Boolean(locationVerified),
-    };
-    try {
-      const existingSnap = await getDoc(voteRef);
-      if (existingSnap.exists()) {
-        await updateDoc(voteRef, {
-          hoodName: mutablePayload.hoodName, userDisplayName: mutablePayload.userDisplayName,
-          air: mutablePayload.air, powerWater: mutablePayload.powerWater, internet: mutablePayload.internet,
-          metro: mutablePayload.metro, security: mutablePayload.security, flatTerrain: mutablePayload.flatTerrain,
-          comment: mutablePayload.comment, locationVerified: mutablePayload.locationVerified,
-          lastUpdatedAt: serverTimestamp(),
-        });
-      } else {
-        await setDoc(voteRef, { ...mutablePayload, createdAt: serverTimestamp(), lastUpdatedAt: serverTimestamp() });
-      }
-      recordLocalVoteCooldown();
-      p.setVoteComment('');
-      p.setVoteStatus({ type: 'success', text: statusMsg });
     const cleanName = (sanitizeInput(p.currentUser.displayName, 100) || 'کاربر تاییدشده').slice(0, 100);
     try {
       const response = await fetch('/api/v1/market/votes', {
