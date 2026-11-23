@@ -3,7 +3,7 @@
  * @description Pure DTO mappers, payload sanitization builders, and in-memory write-deduplication
  * cache for the Firestore Neighborhood Repository layer.
  */
-import { prepareFirestorePayload } from '../firebase'; import { clampNumber } from '../utils/security'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; import { BargainListing, BuyerAlertLeadItem, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, SponsorCrmRequestItem, } from './neighborhoods';
+import { clampNumber, sanitizePayload } from '../utils/security'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; import { BargainListing, BuyerAlertLeadItem, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, SponsorCrmRequestItem, } from './neighborhoods';
 export interface NeighborhoodOverrideDto { hoodId: number; buyPerSqm?: number; rahn80m?: number; pros?: string; cons?: string; sponsor?: NeighborhoodSponsor; displayAreaUnitLabel?: string; buyUnitPriceIntlText?: string; }
 export interface SaveNeighborhoodOverrideInput { hoodId: number; buyPerSqm: number; rahn80m: number; pros?: string; cons?: string; sponsor?: Neighborhood['sponsor']; }
 export interface CreateBargainInput { hoodId: number; hoodName?: string; title: string; type: 'خرید' | 'اجاره'; sqm: number; priceText: string; discountPercent: number; buyerProfitText: string; street: string; imageUrl?: string; imageUrls?: string[]; videoUrl?: string; objectStorageBucket?: string; objectStorageKeys?: string[]; objectStorageObjectIds?: string[]; }
@@ -55,7 +55,7 @@ export function buildSanitizedOverridePayload(input: SaveNeighborhoodOverrideInp
   const hoodId = Math.round(Number(input.hoodId));
   if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) throw new Error('INVALID_HOOD_ID');
   const cleanSponsor = buildSanitizedSponsorMap(input.sponsor);
-  return prepareFirestorePayload({
+  return sanitizePayload({
     hoodId,
     buyPerSqm: Math.min(5000, Math.max(10, Math.round(Number(input.buyPerSqm) || 100))),
     rahn80m: Math.min(100000, Math.max(0, Math.round(Number(input.rahn80m) || 0))),
@@ -176,7 +176,7 @@ export function buildSanitizedBargainPayload(input: CreateBargainInput): Record<
   const imageUrls = Array.isArray(input.imageUrls) ? input.imageUrls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).map((u) => u.slice(0, 500)).slice(0, 5) : [];
   const objectStorageKeys = Array.isArray(input.objectStorageKeys) ? input.objectStorageKeys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0).map((k) => k.slice(0, 240)).slice(0, 6) : [];
   const objectStorageObjectIds = Array.isArray(input.objectStorageObjectIds) ? input.objectStorageObjectIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0).map((id) => id.slice(0, 80)).slice(0, 6) : [];
-  return prepareFirestorePayload({
+  return sanitizePayload({
     hoodId: Math.min(999, Math.max(1, Math.round(Number(input.hoodId) || 1))),
     title: input.title.slice(0, 160), type: input.type === 'اجاره' ? 'اجاره' : 'خرید',
     sqm: Math.min(1000, Math.max(25, Math.round(Number(input.sqm) || 75))),
@@ -197,7 +197,7 @@ export function buildSanitizedVotePayload(input: SubmitResidentVoteInput): {
 } {
   const hoodId = Math.min(999, Math.max(1, Math.round(Number(input.hoodId) || 1)));
   const voteId = `${input.userId}_hood_${hoodId}`;
-  const mutableFields = prepareFirestorePayload({
+  const mutableFields = sanitizePayload({
     hoodName: (input.hoodName || 'محله').slice(0, 80),
     userDisplayName: (input.userDisplayName || 'کاربر تاییدشده').slice(0, 100),
     air: clampNumber(input.air, 1, 10, 7), powerWater: clampNumber(input.powerWater, 1, 10, 7),
@@ -205,7 +205,7 @@ export function buildSanitizedVotePayload(input: SubmitResidentVoteInput): {
     security: clampNumber(input.security, 1, 10, 7), flatTerrain: clampNumber(input.flatTerrain, 1, 10, 7),
     comment: (input.comment || '').slice(0, 500), locationVerified: Boolean(input.locationVerified),
   });
-  return { voteId, mutableFields, createFields: prepareFirestorePayload({ hoodId, userId: input.userId, ...mutableFields }) };
+  return { voteId, mutableFields, createFields: sanitizePayload({ hoodId, userId: input.userId, ...mutableFields }) };
 }
 export function mapFirestoreDocToVote(docId: string, d: Record<string, any>): ResidentVoteDoc | null {
   const hoodId = Number(d.hoodId);
