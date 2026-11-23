@@ -930,12 +930,55 @@ async function runSuite(): Promise<void> {
     });
     assert.equal(fakeJpegCheck.ok, false, 'validateObjectStoragePayload must reject buffers whose magic bytes do not match declared mimeType');
 
-    const { resolveUpstreamTileCachePolicy } = await import('../src/utils/osmTileProxy');
+    const { resolveUpstreamTileCachePolicy, FREE_OSM_UPSTREAM_MIRRORS } = await import('../src/utils/osmTileProxy');
+    assert.equal(FREE_OSM_UPSTREAM_MIRRORS.length, 1, 'Do not fail over to free tile mirrors without verifying their separate usage terms');
+    assert.equal(FREE_OSM_UPSTREAM_MIRRORS[0](12, 2632, 1610), 'https://tile.openstreetmap.org/12/2632/1610.png', 'Use the exact OSM Standard tile URL');
+
+    const fixedNow = Date.parse('2026-11-23T00:00:00.000Z');
     const privateTilePolicy = resolveUpstreamTileCachePolicy({
       get: (name: string) => (name === 'cache-control' ? 'private, max-age=900000' : name === 'etag' ? '"abc\r\ndef"' : null),
-    });
-    assert.equal(privateTilePolicy.cacheControl.startsWith('public,'), true, 'resolveUpstreamTileCachePolicy must replace upstream private cache-control with public policy');
+    }, fixedNow);
+    assert.equal(privateTilePolicy.cacheable, false, 'Shared tile cache must never store an upstream private response');
+    assert.equal(privateTilePolicy.cacheControl, 'private, max-age=900000', 'Upstream private cache directives must not be rewritten as public');
     assert.equal(privateTilePolicy.etag, '"abcdef"', 'resolveUpstreamTileCachePolicy must strip CR/LF from ETag');
+
+    const noStoreTilePolicy = resolveUpstreamTileCachePolicy({
+      get: (name: string) => name === 'cache-control' ? 'no-store, max-age=86400' : null,
+    }, fixedNow);
+    assert.equal(noStoreTilePolicy.cacheable, false, 'no-store must disable shared tile storage');
+    assert.equal(noStoreTilePolicy.cacheControl, 'no-store, max-age=86400');
+
+    const noCacheTilePolicy = resolveUpstreamTileCachePolicy({
+      get: (name: string) => name === 'cache-control' ? 'no-cache' : null,
+    }, fixedNow);
+    assert.equal(noCacheTilePolicy.cacheable, false, 'no-cache must not be served from the in-memory shared cache');
+
+    const shortTtlTilePolicy = resolveUpstreamTileCachePolicy({
+      get: (name: string) => name === 'cache-control' ? 'public, max-age=60' : null,
+    }, fixedNow);
+    assert.equal(shortTtlTilePolicy.cacheable, true);
+    assert.equal(shortTtlTilePolicy.expiresAt, fixedNow + 60_000, 'Explicit short upstream max-age must be honored without a 7-day override');
+
+    const zeroTtlTilePolicy = resolveUpstreamTileCachePolicy({
+      get: (name: string) => name === 'cache-control' ? 'public, max-age=0' : null,
+    }, fixedNow);
+    assert.equal(zeroTtlTilePolicy.cacheable, false, 'max-age=0 must not be stored as a fresh tile');
+
+    const sMaxAgeTilePolicy = resolveUpstreamTileCachePolicy({
+      get: (name: string) => name === 'cache-control' ? 'public, max-age=30, s-maxage=120' : null,
+    }, fixedNow);
+    assert.equal(sMaxAgeTilePolicy.expiresAt, fixedNow + 120_000, 'Shared cache must prefer s-maxage over max-age');
+
+    const fallbackTilePolicy = resolveUpstreamTileCachePolicy({
+      get: () => null,
+    }, fixedNow, 'sqm', 'USD', 10000, 7 * 24 * 60 * 60);
+    assert.equal(fallbackTilePolicy.cacheable, true);
+    assert.equal(fallbackTilePolicy.expiresAt, fixedNow + 7 * 24 * 60 * 60 * 1000, 'Seven-day fallback is explicitly supplied only for the OSM Standard tile host');
+
+    const unknownProviderPolicy = resolveUpstreamTileCachePolicy({
+      get: () => null,
+    }, fixedNow);
+    assert.equal(unknownProviderPolicy.cacheable, false, 'Unknown tile providers without cache metadata must not inherit OSMF cache defaults');
 
     const { clampLatLngRing } = await import('../src/utils/serverBoundaryProtocol');
     const sampleRing: [number, number][] = [[35.75, 51.40], [35.76, 51.40], [35.76, 51.41], [35.75, 51.41]];
