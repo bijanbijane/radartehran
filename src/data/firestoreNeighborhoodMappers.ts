@@ -75,7 +75,8 @@ export function mapFirestoreDocToOverride(
   docId: string,
   d: Record<string, any>,
   areaUnit: AreaUnit = getStoredAreaUnit(),
-  referenceCurrency: IntlCurrencyCode = getStoredIntlCurrency()
+  referenceCurrency: IntlCurrencyCode = getStoredIntlCurrency(),
+  cityId = 'tehran',
 ): NeighborhoodOverrideDto | null {
   const suffixMatch = /^(?:hood_)?(\d{1,4})$/.exec(String(docId || '').trim());
   const docSuffixNum = suffixMatch ? Number(suffixMatch[1]) : NaN;
@@ -89,7 +90,7 @@ export function mapFirestoreDocToOverride(
   const cons = typeof d.cons === 'string' && d.cons.trim() ? d.cons.slice(0, 400) : undefined;
   const sponsor = d.sponsor && typeof d.sponsor === 'object' ? buildSanitizedSponsorMap(d.sponsor) : undefined;
   if (buyPerSqm !== undefined && rahn80m !== undefined) {
-    recordOverrideCache(hoodId, buildSanitizedOverridePayload({ hoodId, buyPerSqm, rahn80m, pros, cons, sponsor }));
+    recordOverrideCache(hoodId, buildSanitizedOverridePayload({ hoodId, buyPerSqm, rahn80m, pros, cons, sponsor }), cityId);
   }
   const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
   const buyUnitPriceIntlText = buyPerSqm !== undefined
