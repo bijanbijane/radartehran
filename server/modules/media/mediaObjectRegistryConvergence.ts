@@ -41,7 +41,6 @@ export function projectStoredObjectAsMediaReadModel(stored: StoredObjectRecord):
     projectedFrom: STORED_OBJECT_METADATA_SCHEMA,
     ownerUid: stored.ownerUid ?? 'unknown',
     sizeBytes: stored.sizeBytes ?? 0,
-    sha256: stored.sha256 ?? '',
     mimeType: stored.mimeType ?? 'application/octet-stream',
     mediaType: stored.mimeType?.startsWith('video/') ? 'video' : 'image',
     state: stored.deletionState === 'pending_delete' ? 'PENDING_DELETE' : 'ACTIVE',
