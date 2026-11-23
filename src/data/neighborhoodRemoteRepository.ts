@@ -133,9 +133,10 @@ function subscribeToState<T>(
   select: (state: MarketStateResponse) => T,
   onUpdate: (value: T) => void,
   onError?: (error: unknown) => void,
+  cityId = 'tehran',
 ): Unsubscribe {
   let active = true;
-  void readMarketState().then((state) => {
+  void readMarketState(cityId).then((state) => {
     if (active) onUpdate(select(state));
   }).catch((error) => {
     if (active) onError?.(error);
@@ -168,10 +169,10 @@ export async function checkDelegatedAdminRole(user: { uid: string; email?: strin
     getAuthClient().getUser()?.customClaims?.isAdmin === true);
 }
 
-export async function fetchUserPreferences(uid: string): Promise<ParsedUserPreferences | null> {
+export async function fetchUserPreferences(uid: string, cityId = 'tehran'): Promise<ParsedUserPreferences | null> {
   const currentUid = await currentSessionUid();
   if (!currentUid || currentUid !== uid) return null;
-  const state = await readMarketState();
+  const state = await readMarketState(cityId);
   if (state.status !== 'ok' || !state.preferences) return null;
   return { ...state.preferences, favoriteHoodIds: Array.isArray(state.favoriteHoodIds) ? state.favoriteHoodIds : [] };
 }
@@ -182,7 +183,7 @@ export async function saveUserPreferences(input: SaveUserPreferencesInput): Prom
   await requestJson('/api/v1/market/preferences', {
     method: 'PUT',
     body: JSON.stringify({
-      cityId: 'tehran',
+      cityId: input.cityId || 'tehran',
       mode: input.mode,
       deposit: input.deposit,
       monthlyRent: input.monthlyRent,
@@ -230,17 +231,17 @@ export async function saveMonetizationDiscount(discountPercent: number): Promise
   try { localStorage.setItem('tehran_radar_campaign_discount_v1', String(clamped)); } catch { /* ignore */ }
 }
 
-export function subscribeToNeighborhoodOverrides(onUpdate: (overridesMap: Record<number, NeighborhoodOverrideDto>) => void): Unsubscribe {
+export function subscribeToNeighborhoodOverrides(onUpdate: (overridesMap: Record<number, NeighborhoodOverrideDto>) => void, cityId = 'tehran'): Unsubscribe {
   return subscribeToState((state) => {
     const result: Record<number, NeighborhoodOverrideDto> = {};
     for (const row of state.overrides || []) {
       const hoodId = Number(row.hoodId);
       if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) continue;
-      const mapped = mapFirestoreDocToOverride(String(hoodId), row);
+      const mapped = mapFirestoreDocToOverride(String(hoodId), row, undefined, undefined, cityId);
       if (mapped) result[hoodId] = mapped;
     }
     return result;
-  }, onUpdate);
+  }, onUpdate, undefined, cityId);
 }
 
 export async function saveNeighborhoodOverride(
@@ -248,11 +249,12 @@ export async function saveNeighborhoodOverride(
   options?: { skipIfUnchanged?: boolean },
 ): Promise<boolean> {
   const clean = buildSanitizedOverridePayload(input);
-  if (options?.skipIfUnchanged && shouldSkipRedundantOverrideWrite(input.hoodId, clean)) return false;
+  const cityId = input.cityId || 'tehran';
+  if (options?.skipIfUnchanged && shouldSkipRedundantOverrideWrite(input.hoodId, clean, cityId)) return false;
   await requestJson('/api/v1/admin/market/neighborhood-overrides', {
     method: 'PUT',
     body: JSON.stringify({
-      cityId: 'tehran',
+      cityId,
       hoodId: input.hoodId,
       buyPerSqm: input.buyPerSqm,
       rahn80m: input.rahn80m,
@@ -261,7 +263,7 @@ export async function saveNeighborhoodOverride(
         : {}),
     }),
   });
-  recordOverrideCache(input.hoodId, clean);
+  recordOverrideCache(input.hoodId, clean, cityId);
   return true;
 }
 
@@ -269,11 +271,13 @@ export async function batchSaveNeighborhoodOverrides(
   overrides: SaveNeighborhoodOverrideInput[],
   options?: { skipIfUnchanged?: boolean },
 ): Promise<number> {
+  const cityId = overrides[0]?.cityId || 'tehran';
+  if (overrides.some((item) => (item.cityId || 'tehran') !== cityId)) throw new Error('MIXED_CITY_OVERRIDE_BATCH');
   const unique = new Map<number, SaveNeighborhoodOverrideInput>();
   for (const item of overrides) unique.set(item.hoodId, item);
   const items = Array.from(unique.values()).filter((item) => {
     if (!options?.skipIfUnchanged) return true;
-    return !shouldSkipRedundantOverrideWrite(item.hoodId, buildSanitizedOverridePayload(item));
+    return !shouldSkipRedundantOverrideWrite(item.hoodId, buildSanitizedOverridePayload(item), cityId);
   });
   let synced = 0;
   for (let offset = 0; offset < items.length; offset += 100) {
@@ -286,9 +290,9 @@ export async function batchSaveNeighborhoodOverrides(
     }));
     await requestJson('/api/v1/admin/market/neighborhood-overrides/batch', {
       method: 'PUT',
-      body: JSON.stringify({ cityId: 'tehran', overrides: payload }),
+      body: JSON.stringify({ cityId, overrides: payload }),
     });
-    for (const item of batch) recordOverrideCache(item.hoodId, buildSanitizedOverridePayload(item));
+    for (const item of batch) recordOverrideCache(item.hoodId, buildSanitizedOverridePayload(item), cityId);
     synced += batch.length;
   }
   return synced;
@@ -297,6 +301,7 @@ export async function batchSaveNeighborhoodOverrides(
 export function subscribeToBargains(
   onUpdate: (groupedByHood: Record<number, BargainListing[]>) => void,
   onError?: (err: unknown) => void,
+  cityId = 'tehran',
 ): Unsubscribe {
   return subscribeToState((state) => {
     const grouped: Record<number, BargainListing[]> = {};
@@ -306,7 +311,7 @@ export function subscribeToBargains(
       if (mapped) (grouped[mapped.hoodId] ||= []).push({ ...mapped.listing, status: row.status as BargainListing['status'] });
     }
     return grouped;
-  }, onUpdate, onError);
+  }, onUpdate, onError, cityId);
 }
 
 export async function createBargainWithOwner(
@@ -323,7 +328,7 @@ export async function createBargainWithOwner(
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey('bargain') },
     body: JSON.stringify({
-      cityId: 'tehran',
+      cityId: input.cityId || 'tehran',
       hoodId: input.hoodId,
       hoodName: input.hoodName || '',
       title: input.title,
@@ -361,6 +366,7 @@ export function subscribeToResidentVotes(
   params: { uid: string; isVerifiedAdmin: boolean },
   onUpdate: (votes: ResidentVoteDoc[]) => void,
   onError?: (err: unknown) => void,
+  cityId = 'tehran',
 ): Unsubscribe {
   return subscribeToState((state) => (state.votes || []).map((row) => ({
     id: String(row.id || ''),
@@ -371,7 +377,7 @@ export function subscribeToResidentVotes(
     air: Number(row.air), powerWater: Number(row.powerWater), internet: Number(row.internet),
     metro: Number(row.metro), security: Number(row.security), flatTerrain: Number(row.flatTerrain),
     comment: String(row.comment || ''), locationVerified: Boolean(row.locationVerified),
-  })), onUpdate, onError);
+  })), onUpdate, onError, cityId);
 }
 
 export async function submitResidentVote(input: SubmitResidentVoteInput): Promise<string> {
@@ -379,7 +385,7 @@ export async function submitResidentVote(input: SubmitResidentVoteInput): Promis
   const payload = await requestJson<ApiResponse & { vote?: { id?: string } }>('/api/v1/market/votes', {
     method: 'POST',
     body: JSON.stringify({
-      cityId: 'tehran', hoodId: input.hoodId, air: input.air, powerWater: input.powerWater,
+      cityId: input.cityId || 'tehran', hoodId: input.hoodId, air: input.air, powerWater: input.powerWater,
       internet: input.internet, metro: input.metro, security: input.security, flatTerrain: input.flatTerrain,
       comment: input.comment,
     }),
@@ -390,6 +396,7 @@ export async function submitResidentVote(input: SubmitResidentVoteInput): Promis
 export function subscribeToSponsorRequests(
   onUpdate: (result: { requests: SponsorCrmRequestItem[]; activeSponsorsByHood: Record<number, NeighborhoodSponsor> }) => void,
   onError?: (err: unknown) => void,
+  cityId = 'tehran',
 ): Unsubscribe {
   return subscribeToState((state) => {
     const requests = (state.sponsors || []).map((row) => ({
@@ -416,7 +423,7 @@ export function subscribeToSponsorRequests(
       if (Number.isInteger(hoodId) && hoodId > 0 && sponsor) activeSponsorsByHood[hoodId] = sponsor;
     }
     return { requests, activeSponsorsByHood };
-  }, onUpdate, onError);
+  }, onUpdate, onError, cityId);
 }
 
 export async function createSponsorRequest(reqDocId: string, input: CreateSponsorRequestInput): Promise<void> {
@@ -426,7 +433,7 @@ export async function createSponsorRequest(reqDocId: string, input: CreateSponso
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey('sponsor') },
     body: JSON.stringify({
-      cityId: 'tehran',
+      cityId: input.cityId || 'tehran',
       hoodId: input.hoodId,
       hoodName: input.hoodName,
       agencyName: input.agencyName,
@@ -441,23 +448,23 @@ export async function createSponsorRequest(reqDocId: string, input: CreateSponso
   });
 }
 
-async function findSponsorRequest(docId: string): Promise<Record<string, unknown>> {
-  const state = await readMarketState();
+async function findSponsorRequest(docId: string, cityId = 'tehran'): Promise<Record<string, unknown>> {
+  const state = await readMarketState(cityId);
   const found = (state.sponsors || []).find((row) => String(row.id || '') === docId || String(row.id || '') === `cloud-${docId}`);
   if (!found) throw new Error('SPONSOR_REQUEST_NOT_FOUND');
   return found;
 }
 
-export async function approveSponsorRequest(docId: string, expiresAtIso: string): Promise<void> {
-  const row = await findSponsorRequest(docId);
+export async function approveSponsorRequest(docId: string, expiresAtIso: string, cityId = 'tehran'): Promise<void> {
+  const row = await findSponsorRequest(docId, cityId);
   await requestJson('/api/v1/admin/market/sponsors/approve', {
     method: 'POST',
     body: JSON.stringify({ requestId: docId, hoodId: row.hoodId, expiresAtIso }),
   });
 }
 
-export async function updateSponsorRequestExpiry(docId: string, expiresAtIso: string): Promise<void> {
-  await approveSponsorRequest(docId, expiresAtIso);
+export async function updateSponsorRequestExpiry(docId: string, expiresAtIso: string, cityId = 'tehran'): Promise<void> {
+  await approveSponsorRequest(docId, expiresAtIso, cityId);
 }
 
 export async function deleteSponsorRequest(docId: string): Promise<void> {
@@ -467,6 +474,7 @@ export async function deleteSponsorRequest(docId: string): Promise<void> {
 export function subscribeToBuyerAlerts(
   onUpdate: (leads: BuyerAlertLeadItem[]) => void,
   onError?: (err: unknown) => void,
+  cityId = 'tehran',
 ): Unsubscribe {
   return subscribeToState((state) => (state.buyerAlerts || []).map((row) => ({
     id: String(row.id || ''),
@@ -481,7 +489,7 @@ export function subscribeToBuyerAlerts(
     expiresAtIso: String(row.expiresAtIso || ''),
     consentVersion: String(row.consentVersion || ''),
     submittedByUid: String(row.submittedByUid || ''),
-  })), onUpdate, onError);
+  })), onUpdate, onError, cityId);
 }
 
 export async function upsertBuyerAlertLead(input: UpsertBuyerAlertInput): Promise<string> {
@@ -494,7 +502,7 @@ export async function upsertBuyerAlertLead(input: UpsertBuyerAlertInput): Promis
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey('buyer-alert') },
     body: JSON.stringify({
-      cityId: 'tehran', hoodId: input.hoodId, hoodName: input.hoodName, fullName: input.fullName,
+      cityId: input.cityId || 'tehran', hoodId: input.hoodId, hoodName: input.hoodName, fullName: input.fullName,
       phone: normalizeIranMobilePhone(input.phone), dealType: input.dealType, maxBudgetMillion,
       privacyConsent: true, consentVersion: input.consentVersion || 'buyer-alert-2026-10-v1',
     }),
