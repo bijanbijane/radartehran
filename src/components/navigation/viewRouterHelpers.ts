@@ -3,6 +3,7 @@ import type { PrimaryViewId } from '../../utils/areaUnit';
 import type { ModuleSubTabId, SecondaryTabDefinition } from '../../navigation/registry/route.types';
 import {
   ACCOUNT_NAVIGATION_TABS,
+  DISCOVER_SECONDARY_TABS,
   MARKET_SECONDARY_TABS,
   PROPERTIES_SECONDARY_TABS,
   TOOLS_SECONDARY_TABS,
@@ -10,6 +11,7 @@ import {
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 
 export function resolveSecondaryTabsForView(viewId: PrimaryViewId): readonly SecondaryTabDefinition[] {
+  if (viewId === 'discover') return DISCOVER_SECONDARY_TABS;
   if (viewId === 'intelligence') return MARKET_SECONDARY_TABS;
   if (viewId === 'properties') return PROPERTIES_SECONDARY_TABS;
   if (viewId === 'tools') return TOOLS_SECONDARY_TABS;
