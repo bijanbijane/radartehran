@@ -458,7 +458,7 @@ export async function handleIntelligenceAndCommerceRoute(
         : 'USD';
 
       const sealSecret = String(ctx.env.VALUATION_SEAL_SECRET || '').trim();
-      if (sealSecret.length < 32) {
+      if (!/^[0-9a-f]{64}$/i.test(sealSecret)) {
         return jsonWorkerResponse(ctx, 503, {
           status: 'error',
           code: 'VALUATION_SEAL_SECRET_UNAVAILABLE',
