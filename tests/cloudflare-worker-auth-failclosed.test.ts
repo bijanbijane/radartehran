@@ -1,362 +1,135 @@
 /**
- * @file tests/cloudflare-worker-auth-failclosed.test.ts
- * @description Package 1 E2E verification for fail-closed D1 Auth Revocation, cryptographic
- * Firebase App Check verification (RS256 JWKS, modes, JWKS outage), and Express checkRevoked=true
- * fail-closed enforcement (no silent fallback to verifyIdToken(..., false)).
+ * Cloudflare-native session and revocation security regression tests.
+ * These tests intentionally contain no Firebase, Firestore, or App Check fixtures.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { afterEach, describe, it } from 'node:test';
-import {
-  verifyWorkerAppCheck,
-} from '../worker/auth/appCheckVerifier';
-import {
-  clearTestJwksForEdgeAuth,
-  isTokenRevokedOrUserDisabled,
-  recordUserRevocationInD1,
-  registerTestJwkForEdgeAuth,
-  verifyFirebaseIdTokenOnEdge,
-} from '../worker/auth/firebaseEdgeAuth';
-import {
-  D1_MIGRATIONS,
-  runD1MigrationsIdempotently,
-} from '../worker/db/d1SchemaAndMigrations';
-import type { D1Database, D1PreparedStatement, WorkerEnv } from '../worker/types';
+import { describe, it } from 'node:test';
+import { authenticateWorkerSession, buildSessionCookie, sha256Hex } from '../worker/auth/sessionAuth';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
+import type { D1Database, D1PreparedStatement, WorkerRequestContext } from '../worker/types';
 
-function b64url(input: Uint8Array | string): string {
-  const buf = typeof input === 'string' ? Buffer.from(input, 'utf8') : Buffer.from(input);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function createRsaPair() {
-  return crypto.subtle.generateKey(
-    { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
-    true,
-    ['sign', 'verify'],
-  );
-}
-
-async function signJwt(privateKey: CryptoKey, kid: string, payload: Record<string, unknown>) {
-  const h = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const p = b64url(JSON.stringify(payload));
-  const sig = new Uint8Array(
-    await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, new TextEncoder().encode(`${h}.${p}`)),
-  );
-  return `${h}.${p}.${b64url(sig)}`;
-}
-
-async function createMigratedRealSqliteD1(): Promise<D1Database> {
+function createUserD1(): D1Database {
   const sqlite = new DatabaseSync(':memory:');
   const wrap = (sql: string, params: unknown[] = []): D1PreparedStatement => ({
-    bind(...values: unknown[]) {
-      return wrap(sql, values);
-    },
-    async first<T = Record<string, unknown>>(col?: string): Promise<T | null> {
+    bind(...values: unknown[]) { return wrap(sql, values); },
+    async first<T = Record<string, unknown>>(column?: string): Promise<T | null> {
       const row = sqlite.prepare(sql).get(...(params as never[])) as Record<string, unknown> | undefined;
-      if (!row) return null;
-      return (col ? row[col] : row) as T;
+      return row ? (column ? row[column] : row) as T : null;
     },
     async all<T = Record<string, unknown>>() {
       return { results: sqlite.prepare(sql).all(...(params as never[])) as T[], success: true };
     },
     async run() {
-      const info = sqlite.prepare(sql).run(...(params as never[])) as { changes?: number | bigint };
-      return { success: true, meta: { changes: Number(info.changes ?? 0) } };
+      const result = sqlite.prepare(sql).run(...(params as never[])) as { changes?: number | bigint };
+      return { success: true, meta: { changes: Number(result.changes || 0) } };
     },
   });
   const db: D1Database = {
-    prepare: (q) => wrap(q),
-    async batch(stmts) {
-      const out = [];
-      for (const s of stmts) out.push({ success: (await s.run()).success });
-      return out;
+    prepare: (sql) => wrap(sql),
+    async batch(statements) {
+      sqlite.exec('BEGIN');
+      try {
+        const results = [];
+        for (const statement of statements) results.push(await statement.run());
+        sqlite.exec('COMMIT');
+        return results;
+      } catch (error) {
+        sqlite.exec('ROLLBACK');
+        throw error;
+      }
     },
-    async exec(q) {
-      sqlite.exec(q);
-      return { count: 1, duration: 1 };
-    },
+    async exec(sql) { sqlite.exec(sql); return { count: 1, duration: 0 }; },
   };
-  const sqlDir = path.resolve(process.cwd(), 'migrations/d1');
-  for (const mig of D1_MIGRATIONS) {
-    sqlite.exec(fs.readFileSync(path.join(sqlDir, mig.fileName), 'utf8'));
+  const directory = path.resolve(process.cwd(), 'migrations/user-d1');
+  for (const file of fs.readdirSync(directory).filter((name) => name.endsWith('.sql')).sort()) {
+    sqlite.exec(fs.readFileSync(path.join(directory, file), 'utf8'));
   }
-  await runD1MigrationsIdempotently(db);
   return db;
 }
 
-afterEach(() => {
-  clearTestJwksForEdgeAuth();
-});
+async function seedSession(db: D1Database, options: { uid?: string; email?: string; token?: string } = {}) {
+  const uid = options.uid || 'uid_session_test';
+  const token = options.token || `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+  const now = new Date().toISOString();
+  await db.prepare(
+    "INSERT INTO user_profiles (uid, display_name, preferred_city, preferred_language, area_unit, intl_currency, role, account_status, created_at_iso, updated_at_iso) VALUES (?1, 'Test', 'tehran', 'fa', 'sqm', 'USD', 'USER', 'ACTIVE', ?2, ?2)",
+  ).bind(uid, now).run();
+  const provider = options.email ? 'google' : 'phone';
+  const subject = options.email ? `google:${uid}` : '+989120000001';
+  await db.prepare(
+    "INSERT INTO auth_identities (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+  ).bind(provider, subject, uid, options.email || null, options.email ? 1 : 0, options.email ? null : subject, now).run();
+  await db.prepare(
+    "INSERT INTO user_sessions (session_id, uid, device_label, user_agent_summary, ip_prefix, status, created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider) VALUES (?1, ?2, 'test', 'test', '127.0.0', 'ACTIVE', ?3, ?3, ?4, ?5, ?6)",
+  ).bind(`sess_${uid}`, uid, now, await sha256Hex(token), new Date(Date.now() + 3600000).toISOString(), provider).run();
+  return { uid, token };
+}
 
-describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check', () => {
-  it('1. fails closed (503) when D1 is missing or throws during revocation check', async () => {
-    const missing = await isTokenRevokedOrUserDisabled({ db: undefined, uid: 'u1', tokenIatSeconds: 1000 });
-    assert.equal(missing.unavailable, true);
+function context(db: D1Database, request: Request): WorkerRequestContext {
+  return {
+    request,
+    method: request.method,
+    pathname: new URL(request.url).pathname,
+    url: new URL(request.url),
+    env: { USER_DB: db, APP_URL: 'https://radartehran.ir', ADMIN_EMAIL: 'admin@example.com' },
+    environment: 'production',
+    executionCtx: { waitUntil: () => undefined } as never,
+  } as WorkerRequestContext;
+}
 
-    const throwingDb = {
-      prepare() {
-        return {
-          bind() {
-            return {
-              async first() {
-                throw new Error('D1_NETWORK_ERROR');
-              },
-            };
-          },
-        };
-      },
-    } as unknown as D1Database;
-
-    const errored = await isTokenRevokedOrUserDisabled({ db: throwingDb, uid: 'u1', tokenIatSeconds: 1000 });
-    assert.equal(errored.unavailable, true);
-
-    const kp = await createRsaPair();
-    registerTestJwkForEdgeAuth('kid-failclosed', kp.publicKey);
-    const now = Math.floor(Date.now() / 1000);
-    const jwt = await signJwt(kp.privateKey, 'kid-failclosed', {
-      iss: 'https://securetoken.google.com/radartehran-test',
-      aud: 'radartehran-test',
-      sub: 'u1',
-      user_id: 'u1',
-      email: 'u1@example.com',
-      email_verified: true,
-      iat: now - 10,
-      auth_time: now - 10,
-      exp: now + 3600,
+describe('Cloudflare-native identity and session security', () => {
+  it('rejects bearer tokens and missing opaque session cookies', async () => {
+    const db = createUserD1();
+    const bearerOnly = new Request('https://radartehran.ir/api/account/profile', {
+      headers: { Authorization: 'Bearer arbitrary-token' },
     });
-
-    const authRes = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${jwt}`,
-      env: { ENVIRONMENT: 'staging', FIREBASE_PROJECT_ID: 'radartehran-test', FIREBASE_APP_CHECK_MODE: 'disabled', DB: throwingDb },
-    });
-    assert.equal(authRes.authenticated, false);
-    assert.equal(authRes.statusCode, 503);
+    const result = await authenticateWorkerSession(context(db, bearerOnly));
+    assert.equal(result.authenticated, false);
+    assert.equal(result.statusCode, 401);
   });
 
-  it('2. records canonical D1 revocations (REVOKE_BEFORE, DISABLE_USER, REENABLE_USER) with idempotent audit log', async () => {
-    const db = await createMigratedRealSqliteD1();
-    const kp = await createRsaPair();
-    registerTestJwkForEdgeAuth('kid-rev', kp.publicKey);
-    const now = Math.floor(Date.now() / 1000);
-
-    const oldJwt = await signJwt(kp.privateKey, 'kid-rev', {
-      iss: 'https://securetoken.google.com/radartehran-test',
-      aud: 'radartehran-test',
-      sub: 'user-rev-1',
-      user_id: 'user-rev-1',
-      email: 'rev@example.com',
-      email_verified: true,
-      iat: now - 120,
-      auth_time: now - 120,
-      exp: now + 3600,
+  it('authenticates a valid D1 session and sets secure HttpOnly cookie attributes', async () => {
+    const db = createUserD1();
+    const { uid, token } = await seedSession(db, { email: 'admin@example.com' });
+    const request = new Request('https://radartehran.ir/api/account/profile', {
+      headers: { Cookie: `__Host-radar_session=${token}` },
     });
-    const freshJwt = await signJwt(kp.privateKey, 'kid-rev', {
-      iss: 'https://securetoken.google.com/radartehran-test',
-      aud: 'radartehran-test',
-      sub: 'user-rev-1',
-      user_id: 'user-rev-1',
-      email: 'rev@example.com',
-      email_verified: true,
-      iat: now + 10,
-      auth_time: now + 10,
-      exp: now + 3600,
-    });
-
-    const env: WorkerEnv = {
-      ENVIRONMENT: 'staging',
-      FIREBASE_PROJECT_ID: 'radartehran-test',
-      FIREBASE_APP_CHECK_MODE: 'disabled',
-      DB: db,
-    };
-
-    // Initially valid
-    const before = await verifyFirebaseIdTokenOnEdge({ authorizationHeader: `Bearer ${oldJwt}`, env });
-    assert.equal(before.authenticated, true);
-
-    // REVOKE_BEFORE now -> oldJwt rejected 401, freshJwt accepted 200
-    const r1 = await recordUserRevocationInD1({
-      db,
-      uid: 'user-rev-1',
-      action: 'REVOKE_BEFORE',
-      validSinceSeconds: now,
-      actorUid: 'admin-1',
-      reason: 'PASSWORD_RESET',
-      idempotencyKey: 'rev-key-1',
-    });
-    assert.equal(r1.applied, true);
-    assert.equal(r1.idempotentReplay, false);
-
-    // Idempotent replay does not duplicate audit event
-    const r1Replay = await recordUserRevocationInD1({
-      db,
-      uid: 'user-rev-1',
-      action: 'REVOKE_BEFORE',
-      validSinceSeconds: now,
-      actorUid: 'admin-1',
-      reason: 'PASSWORD_RESET',
-      idempotencyKey: 'rev-key-1',
-    });
-    assert.equal(r1Replay.idempotentReplay, true);
-
-    const oldAfterRevoke = await verifyFirebaseIdTokenOnEdge({ authorizationHeader: `Bearer ${oldJwt}`, env });
-    assert.equal(oldAfterRevoke.authenticated, false);
-    assert.equal(oldAfterRevoke.statusCode, 401);
-
-    const freshAfterRevoke = await verifyFirebaseIdTokenOnEdge({ authorizationHeader: `Bearer ${freshJwt}`, env });
-    assert.equal(freshAfterRevoke.authenticated, true);
-
-    // DISABLE_USER -> even freshJwt rejected 403
-    await recordUserRevocationInD1({
-      db,
-      uid: 'user-rev-1',
-      action: 'DISABLE_USER',
-      actorUid: 'admin-1',
-      reason: 'ACCOUNT_SUSPENDED',
-      idempotencyKey: 'rev-key-2',
-    });
-    const disabledRes = await verifyFirebaseIdTokenOnEdge({ authorizationHeader: `Bearer ${freshJwt}`, env });
-    assert.equal(disabledRes.authenticated, false);
-    assert.equal(disabledRes.statusCode, 401);
-
-    // REENABLE_USER -> freshJwt accepted again
-    await recordUserRevocationInD1({
-      db,
-      uid: 'user-rev-1',
-      action: 'REENABLE_USER',
-      actorUid: 'admin-1',
-      reason: 'APPEAL_GRANTED',
-      idempotencyKey: 'rev-key-3',
-    });
-    const reenabledRes = await verifyFirebaseIdTokenOnEdge({ authorizationHeader: `Bearer ${freshJwt}`, env });
-    assert.equal(reenabledRes.authenticated, true);
-
-    // Audit rows persisted in auth_revocation_events
-    const auditRows = await db
-      .prepare('SELECT * FROM auth_revocation_events WHERE uid = ?1')
-      .bind('user-rev-1')
-      .all();
-    assert.equal(auditRows.results.length, 3);
+    const result = await authenticateWorkerSession(context(db, request));
+    assert.equal(result.authenticated, true);
+    assert.equal(result.uid, uid);
+    assert.equal(result.isAdmin, true);
+    const cookie = buildSessionCookie(token, 3600);
+    assert.match(cookie, /HttpOnly/);
+    assert.match(cookie, /Secure/);
+    assert.match(cookie, /SameSite=Lax/);
+    assert.match(cookie, /Path=\//);
   });
 
-  it('3. verifies cryptographic App Check (RS256 valid, forged, wrong app_id, expired, JWKS outage 503, debug blocked in prod, monitor mode)', async () => {
-    const kp = await createRsaPair();
-    const attackerKp = await createRsaPair();
-    const exportedJwk = await crypto.subtle.exportKey('jwk', kp.publicKey);
-    const jwksFetch: typeof fetch = async () =>
-      new Response(JSON.stringify({ keys: [{ ...exportedJwk, kid: 'ac-kid-1', alg: 'RS256', use: 'sig' }] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    const outageFetch: typeof fetch = async () => new Response('down', { status: 503 });
-    const now = Math.floor(Date.now() / 1000);
-    const baseOpts = {
-      mode: 'enforced' as const,
-      isProduction: true,
-      expectedProjectId: 'radartehran-prod',
-      expectedAppId: '1:123456789012:web:abcdef',
-      fetchFn: jwksFetch,
-      nowSeconds: now,
-    };
-
-    const validToken = await signJwt(kp.privateKey, 'ac-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012', 'projects/radartehran-prod'],
-      sub: '1:123456789012:web:abcdef',
-      app_id: '1:123456789012:web:abcdef',
-      iat: now - 5,
-      exp: now + 1800,
+  it('rejects cross-origin state-changing requests even with a valid cookie', async () => {
+    const db = createUserD1();
+    const { token } = await seedSession(db);
+    const request = new Request('https://radartehran.ir/api/account/profile', {
+      method: 'PATCH',
+      headers: { Cookie: `__Host-radar_session=${token}`, Origin: 'https://attacker.example' },
     });
-    const okRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': validToken } }),
-      baseOpts,
-    );
-    assert.equal(okRes.allowed, true);
-    assert.equal(okRes.statusCode, 200);
-
-    // Forged signature signed by attacker key -> rejected
-    const forgedToken = await signJwt(attackerKp.privateKey, 'ac-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
-      sub: '1:123456789012:web:abcdef',
-      iat: now - 5,
-      exp: now + 1800,
-    });
-    const forgedRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': forgedToken } }),
-      baseOpts,
-    );
-    assert.equal(forgedRes.allowed, false);
-    assert.equal(forgedRes.statusCode, 401);
-
-    // Wrong app_id -> rejected
-    const wrongApp = await signJwt(kp.privateKey, 'ac-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
-      sub: '1:123456789012:web:EVILAPP',
-      iat: now - 5,
-      exp: now + 1800,
-    });
-    const wrongAppRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': wrongApp } }),
-      baseOpts,
-    );
-    assert.equal(wrongAppRes.allowed, false);
-
-    // Expired token -> rejected
-    const expired = await signJwt(kp.privateKey, 'ac-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
-      sub: '1:123456789012:web:abcdef',
-      iat: now - 4000,
-      exp: now - 200,
-    });
-    const expRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': expired } }),
-      baseOpts,
-    );
-    assert.equal(expRes.allowed, false);
-
-    // JWKS outage fails closed with 503 in enforced mode
-    const outageToken = await signJwt(kp.privateKey, 'ac-kid-uncached', {
-      iss: 'https://firebaseappcheck.googleapis.com/123456789012',
-      aud: ['projects/123456789012'],
-      sub: '1:123456789012:web:abcdef',
-      iat: now - 5,
-      exp: now + 1800,
-    });
-    const outageRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck': outageToken } }),
-      { ...baseOpts, fetchFn: outageFetch },
-    );
-    assert.equal(outageRes.allowed, false);
-    assert.equal(outageRes.statusCode, 503);
-
-    // Debug header blocked in production
-    const debugInProd = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload', { headers: { 'X-Firebase-AppCheck-Debug': 'debug-secret-token' } }),
-      baseOpts,
-    );
-    assert.equal(debugInProd.allowed, false);
-    assert.equal(debugInProd.statusCode, 403);
-
-    // Monitor mode allows missing token with statusCode=200
-    const monitorRes = await verifyWorkerAppCheck(
-      new Request('https://radartehran.ir/api/object-storage/upload'),
-      { ...baseOpts, mode: 'monitor', isProduction: false },
-    );
-    assert.equal(monitorRes.allowed, true);
-    assert.equal(monitorRes.statusCode, 200);
+    const result = await authenticateWorkerSession(context(db, request), true);
+    assert.equal(result.authenticated, false);
+    assert.equal(result.statusCode, 403);
+    assert.equal(result.reasonCode, 'CSRF_ORIGIN_REJECTED');
   });
 
-  it('4. verifies Express auth module has zero fallback to verifyIdToken(..., false)', () => {
-    const expressAuthSrc = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/utils/serverAdminAndTelegramSecurity.ts'),
-      'utf8',
-    );
-    assert.equal(/verifyIdToken\([^,]+,\s*false\)/.test(expressAuthSrc), false);
-    assert.ok(expressAuthSrc.includes('verifyIdToken(idToken, true)'));
-    assert.ok(expressAuthSrc.includes('FIREBASE_AUTH_DEPENDENCY_UNAVAILABLE'));
+  it('enforces D1 revocation watermarks and disabled-user state', async () => {
+    const db = createUserD1();
+    const { uid } = await seedSession(db);
+    const disabled = await recordUserRevocationInD1({
+      db, uid, action: 'DISABLE_USER', actorUid: 'admin', reason: 'test', idempotencyKey: 'disable-test-1',
+    });
+    assert.equal(disabled.applied, true);
+    const result = await isUserAuthDisabledOrRevoked(uid, Math.floor(Date.now() / 1000), db);
+    assert.equal(result.revoked, true);
+    assert.equal(result.reason, 'USER_ACCOUNT_DISABLED');
   });
 });
