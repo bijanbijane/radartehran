@@ -119,16 +119,18 @@ function classifyExecutionError(err: unknown): {
 async function routeToDlqFailClosed(params: {
   dlq: Queue | undefined;
   record: Record<string, unknown>;
-  onDurableDeadLetterRecorded?: () => Promise<void>;
+  beforeSend?: () => Promise<void>;
 }): Promise<boolean> {
   if (!params.dlq) {
     return false;
   }
   try {
-    await params.dlq.send(params.record);
-    if (params.onDurableDeadLetterRecorded) {
-      await params.onDurableDeadLetterRecorded();
+    // Persist terminal state before DLQ delivery. If the send fails or its response is lost,
+    // the next delivery sees PERMANENT_FAILURE and retries DLQ only, never the job side effects.
+    if (params.beforeSend) {
+      await params.beforeSend();
     }
+    await params.dlq.send(params.record);
     return true;
   } catch {
     return false;
@@ -360,19 +362,24 @@ export async function processRadarQueueBatch(params: {
             attempts: msg.attempts,
             failedAtIso: errNowIso,
           },
-          onDurableDeadLetterRecorded: async () => {
-            await params.db!
+          beforeSend: async () => {
+            const terminalState = await params.db!
               .prepare(
-                'UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5',
+                "UPDATE queue_job_executions SET status = 'PERMANENT_FAILURE', last_error_code = ?1, last_error_message = ?2, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?3 WHERE idempotency_key = ?4 AND status = 'PROCESSING' AND lease_owner = ?5",
               )
-              .bind('PERMANENT_FAILURE', classified.code, classified.message, errNowIso, envelope.idempotencyKey)
+              .bind(classified.code, classified.message, errNowIso, envelope.idempotencyKey, leaseOwner)
               .run();
+            if ((terminalState.meta?.changes ?? 0) !== 1) {
+              throw new Error('QUEUE_LEASE_LOST_BEFORE_DLQ_STATE_COMMIT');
+            }
+            // Legacy diagnostic mirror is best-effort; the canonical terminal state is authoritative.
             await params.db!
               .prepare(
                 'INSERT OR REPLACE INTO queue_idempotency_keys (idempotency_key, job_type, processed_at_iso, status) VALUES (?1, ?2, ?3, ?4)',
               )
               .bind(envelope.idempotencyKey, envelope.jobType, errNowIso, 'DEAD_LETTERED')
-              .run();
+              .run()
+              .catch(() => {});
           },
         });
 
@@ -383,9 +390,9 @@ export async function processRadarQueueBatch(params: {
           // DLQ missing or failed OR D1 state write failed -> fail closed via retry (NEVER silent ACK)
           await params.db
             .prepare(
-              'UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5',
+              "UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5 AND status = 'PROCESSING' AND lease_owner = ?6",
             )
-            .bind('RETRYABLE_FAILURE', 'DLQ_DELIVERY_FAILED', classified.message, errNowIso, envelope.idempotencyKey)
+            .bind('RETRYABLE_FAILURE', 'DLQ_DELIVERY_FAILED', classified.message, errNowIso, envelope.idempotencyKey, leaseOwner)
             .run()
             .catch(() => {});
           msg.retry({ delaySeconds: computeQueueRetryDelaySeconds(msg.attempts) });
@@ -395,9 +402,9 @@ export async function processRadarQueueBatch(params: {
       } else {
         await params.db
           .prepare(
-            'UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5',
+            "UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5 AND status = 'PROCESSING' AND lease_owner = ?6",
           )
-          .bind('RETRYABLE_FAILURE', classified.code, classified.message, errNowIso, envelope.idempotencyKey)
+          .bind('RETRYABLE_FAILURE', classified.code, classified.message, errNowIso, envelope.idempotencyKey, leaseOwner)
           .run()
           .catch(() => {});
         msg.retry({ delaySeconds: computeQueueRetryDelaySeconds(msg.attempts) });
