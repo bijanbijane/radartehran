@@ -10,7 +10,7 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 
 | Method | Path | Auth |
 |--------|------|------|
-| POST | `/deletion` | Verified user + fresh auth (≤600s) |
+| POST | `/deletion` | Verified user + fresh auth (≤300s) |
 | GET | `/deletion/:jobId` | Owner or admin |
 | POST | `/deletion/:jobId/continue` | Admin |
 | POST | `/export` | Verified user (D1 job + bounded export) |
@@ -43,7 +43,7 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 - Shared policy: `mutationWriteBlockGuard.ts`
 - Worker global: `workerApiWriteBlockGuard.ts` + `writeBlockWorkerGate.ts` (D1 write-block + mutation permits, migration `0008`)
 - Express global: `expressMutationWriteBlockMiddleware.ts` on `/api` (journal store)
-- Drain: `assertD1MutationDrainComplete` before queue deletion steps
+- Drain: `countActiveD1MutationPermits` before queue deletion steps; deletion stops while any unexpired mutation permit remains active
 
 ## Deployment boundaries (hardening)
 
@@ -71,7 +71,7 @@ Worker remains fail-closed (`WORKER_IDENTITY_DELETION_BLOCKED`) pending trusted 
 - `0008` D1 mutation permits and drain barrier.
 - `0009` replay-resistant internal Write Admission RPC nonces.
 
-The runtime verifies required tables and columns before serving Stage D routes. It refuses `USER_DB`-bound deployments because `migrations/user-d1` defines a different account lifecycle schema.
+Stage D is disabled by default. It requires both the explicit `STAGE_D_LIFECYCLE_ENABLED=true` opt-in and a dedicated `migrations/d1` D1 binding; it refuses `USER_DB`-bound deployments because `migrations/user-d1` defines a different account lifecycle schema. The runtime verifies required tables and columns and probes store health before serving Stage D routes.
 
 ## Local tests
 
