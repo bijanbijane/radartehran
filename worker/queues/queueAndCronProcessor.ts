@@ -160,7 +160,7 @@ export async function processRadarQueueBatch(params: {
     const nowIso = new Date(nowMs).toISOString();
     const validation = validateQueueEnvelope(msg.body);
 
-    if (!validation.valid) {
+    if (validation.valid === false) {
       const forwarded = await routeToDlqFailClosed({
         dlq: params.dlq,
         record: {
