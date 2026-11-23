@@ -207,7 +207,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
 
     // 5. GET /api/account/export-data — D1-only, explicitly partial until all legacy domains migrate.
     if (pathname === '/api/account/export-data' && method === 'GET') {
-      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult, preferences] = await Promise.all([
+      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult, preferences, bargainsResult, sponsorRecordsResult, buyerAlertsResult, votesResult] = await Promise.all([
         getUserProfileFromD1(userDb, uid),
         getUserPrivacyConsentFromD1(userDb, uid),
         listUserFavoritesFromD1(userDb, uid),
@@ -224,17 +224,33 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         userDb.prepare(
           'SELECT mode, deposit, monthly_rent, buy_total_budget, target_sqm, work_hub_id, updated_at_iso FROM user_preferences WHERE uid = ?1 LIMIT 1',
         ).bind(uid).first<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT bargain_id, city_id, hood_id, title, listing_type, sqm, price_millions, price_text, discount_percent, buyer_profit_text, street, status, created_at_iso, updated_at_iso, approved_at_iso FROM bargains WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT request_id, city_id, hood_id, hood_name, agency_name, phone_e164, specialty, experience_years, monthly_tariff_million, plan_months, total_payable_million, tracking_code, status, expires_at_iso, created_at_iso, updated_at_iso FROM sponsor_requests WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT alert_id, city_id, hood_id, full_name, phone_e164, deal_type, max_budget_million, consent_version, consent_at_iso, expires_at_iso, status, created_at_iso, updated_at_iso FROM buyer_alerts WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT vote_id, city_id, hood_id, air_score, power_score, internet_score, metro_score, security_score, flat_score, comment, user_display_name, created_at_iso, updated_at_iso FROM neighborhood_votes WHERE owner_uid = ?1 ORDER BY updated_at_iso DESC LIMIT 500',
+        ).bind(uid).all<Record<string, unknown>>(),
       ]);
 
       const searches = savedSearches.results ?? [];
       const channels = notificationChannels.results ?? [];
       const media = mediaResult.results ?? [];
+      const bargains = bargainsResult.results ?? [];
+      const sponsorRecords = sponsorRecordsResult.results ?? [];
+      const buyerAlerts = buyerAlertsResult.results ?? [];
+      const neighborhoodVotes = votesResult.results ?? [];
       const availableSources = [
         { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
-        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length + (preferences ? 1 : 0) },
-        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
-        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'جدول projection فعلی مالکیت آگهی را نگهداری نمی‌کند؛ داده مالکیت از منبع قدیمی قابل انتساب امن نیست.' },
-        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length + (preferences ? 1 : 0) + neighborhoodVotes.length },
+        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: true, available: true, count: buyerAlerts.length },
+        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: true, available: true, count: bargains.length },
+        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: true, available: true, count: sponsorRecords.length },
         { sourceId: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
         { sourceId: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', included: true, available: true, count: media.length },
       ];
@@ -260,15 +276,17 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
           savedSearches: searches,
           preferences,
           dataRequests,
+          neighborhoodVotes,
         },
         favoriteNeighborhoodKeys: favorites.map((favorite) => `${favorite.cityId}_${favorite.hoodId}`),
-        savedAlerts: [],
-        publishedListings: [],
+        savedAlerts: searches,
+        publishedListings: bargains,
         calculationSnapshots: [],
         buyerLeads: [],
         dataCorrections: [],
-        sponsorRecords: [],
+        sponsorRecords,
         crowdClaims: [],
+        buyerLeads: buyerAlerts,
         mediaObjects: media,
       };
       return jsonWorkerResponse(ctx, 200, { status: 'ok', exportData });
