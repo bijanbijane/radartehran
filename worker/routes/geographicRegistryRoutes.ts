@@ -47,6 +47,8 @@ function isString(value: unknown, max = 512): value is string {
 function toHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
+type GitHubSigningJwk = JsonWebKey & { kid?: string };
+
 const GITHUB_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
 const GITHUB_OIDC_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
 const GITHUB_OIDC_AUDIENCE = 'radartehran-irni-geographic-publisher';
@@ -57,7 +59,7 @@ const GITHUB_OIDC_REF = 'refs/heads/main';
 const GITHUB_OIDC_ENVIRONMENT = 'radar-publisher';
 const GITHUB_OIDC_WORKFLOW_REF =
   'bijanbijane/Iran-Neighborhood-Intelligence/.github/workflows/publish-geography-to-radar.yml@refs/heads/main';
-let githubJwksCache: { expiresAtMs: number; keys: JsonWebKey[] } | null = null;
+let githubJwksCache: { expiresAtMs: number; keys: GitHubSigningJwk[] } | null = null;
 
 function decodeBase64Url(value: string): Uint8Array {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -73,7 +75,7 @@ function parseJwtPart(value: string): Record<string, unknown> | null {
     return null;
   }
 }
-async function getGitHubSigningKeys(): Promise<JsonWebKey[]> {
+async function getGitHubSigningKeys(): Promise<GitHubSigningJwk[]> {
   if (githubJwksCache && githubJwksCache.expiresAtMs > Date.now()) return githubJwksCache.keys;
   const response = await fetch(GITHUB_OIDC_JWKS_URL, {
     headers: { accept: 'application/json' },
@@ -85,7 +87,7 @@ async function getGitHubSigningKeys(): Promise<JsonWebKey[]> {
   const keys = record?.keys;
   if (!Array.isArray(keys) || keys.length === 0) throw new Error('GITHUB_OIDC_JWKS_INVALID');
   githubJwksCache = {
-    keys: keys.filter((key): key is JsonWebKey => Boolean(asRecord(key))),
+    keys: keys.filter((key): key is GitHubSigningJwk => Boolean(asRecord(key))),
     expiresAtMs: Date.now() + 5 * 60 * 1000,
   };
   return githubJwksCache.keys;
@@ -117,13 +119,13 @@ async function verifyGitHubActionsIdentity(token: string): Promise<string | null
   if (claims.workflow_ref !== GITHUB_OIDC_WORKFLOW_REF) return 'WORKFLOW_REF';
   if (claims.sub !== 'repo:bijanbijane@338238765/Iran-Neighborhood-Intelligence@1466860862:environment:radar-publisher') return 'SUBJECT';
 
-  let keys: JsonWebKey[];
+  let keys: GitHubSigningJwk[];
   try {
     keys = await getGitHubSigningKeys();
   } catch {
     return 'JWKS_UNAVAILABLE';
   }
-  let jwk = keys.find((candidate) => candidate.kid === header.kid);
+  let jwk: GitHubSigningJwk | undefined = keys.find((candidate) => candidate.kid === header.kid);
   if (!jwk) {
     githubJwksCache = null;
     try {
