@@ -2,7 +2,7 @@
  * Cloudflare-native authentication endpoints: Google OIDC, Kavenegar SMS OTP, D1 identities and sessions.
  * No Firebase SDK, Firebase ID token, Firestore, or App Check dependency is used here.
  */
-import { authenticateWorkerSession, buildClearedSessionCookie, buildSessionCookie, sha256Hex } from '../auth/sessionAuth';
+import { authenticateWorkerSession, buildClearedSessionCookie, buildSessionCookie, readSessionCookie, sha256Hex } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerRequestContext } from '../types';
@@ -67,12 +67,13 @@ function safeReturnPath(raw: string | null): string {
 
 function readRequestCookie(request: Request, name: string): string | null {
   const raw = request.headers.get('cookie') || '';
+  const matches: string[] = [];
   for (const part of raw.split(';')) {
     const separator = part.indexOf('=');
     if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
-    return part.slice(separator + 1).trim() || null;
+    matches.push(part.slice(separator + 1).trim());
   }
-  return null;
+  return matches.length === 1 && matches[0] ? matches[0] : null;
 }
 function validMutationOrigin(ctx: WorkerRequestContext): boolean {
   const origin = ctx.request.headers.get('origin');
@@ -506,8 +507,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
   if (method === 'POST' && pathname === '/api/auth/logout') {
     if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
     const auth = await authenticateWorkerSession(ctx);
-    const tokenCookie = request.headers.get('cookie') || '';
-    const raw = tokenCookie.split(';').map((part) => part.trim()).find((part) => part.startsWith('__Host-radar_session='))?.slice('__Host-radar_session='.length);
+    const raw = readSessionCookie(request);
     if (auth.authenticated && raw) {
       const tokenHash = await sha256Hex(raw);
       const revoked = await db.prepare('UPDATE user_sessions SET status = \'REVOKED\', revoked_at_iso = ?1, revoked_by_uid = ?2 WHERE token_hash = ?3 AND status = \'ACTIVE\'')

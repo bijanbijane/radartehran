@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { authenticateWorkerSession, RADAR_SESSION_COOKIE } from '../worker/auth/sessionAuth';
+import { authenticateWorkerSession, RADAR_SESSION_COOKIE, readSessionCookie } from '../worker/auth/sessionAuth';
 import { consumeGoogleOAuthState } from '../worker/routes/authRoutes';
 import { resolveWorkerAuthContext } from '../worker/auth/authorizationPolicy';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
@@ -170,6 +170,48 @@ describe('Cloudflare-native session authentication', () => {
     ));
     assert.equal(result.authenticated, true);
     assert.equal(updateCalls.count, 1);
+  });
+
+  it('rejects a duplicated session cookie and never selects one credential', async () => {
+    const request = new Request('https://radartehran.ir/api/auth/session', {
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}; ${RADAR_SESSION_COOKIE}=${'B'.repeat(64)}`,
+      },
+    });
+    assert.equal(readSessionCookie(request), null);
+    const context = makeContext(makeD1(sessionRow()));
+    const withDuplicate = new Request(context.request.url, {
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}; ${RADAR_SESSION_COOKIE}=${'B'.repeat(64)}`,
+        authorization: 'Bearer deliberately-invalid-transition-token',
+      },
+    });
+    const result = await resolveWorkerAuthContext(withDuplicate, { env: context.env });
+    assert.equal(result.authenticated, false);
+    assert.equal(result.mode, 'cloudflare_d1_session');
+    assert.equal(result.failureCode, 'UNAUTHENTICATED');
+  });
+
+  it('requires a same-origin Origin header for direct session mutations by default', async () => {
+    const context = makeContext(makeD1(sessionRow()));
+    const request = new Request(context.request.url, {
+      method: 'POST',
+      headers: { cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}` },
+    });
+    const result = await authenticateWorkerSession({ ...context, request, method: 'POST' });
+    assert.equal(result.authenticated, false);
+    assert.equal(result.reasonCode, 'CSRF_ORIGIN_REJECTED');
+    assert.equal(result.statusCode, 403);
+  });
+
+  it('normalizes millisecond revocation watermarks before comparing session issue time', async () => {
+    const createdAtMs = Date.now() - 3_000;
+    const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
+      created_at_iso: new Date(createdAtMs).toISOString(),
+      revocation_watermark: String(createdAtMs + 1_000),
+    }))));
+    assert.equal(result.authenticated, false);
+    assert.equal(result.reasonCode, 'SESSION_REVOKED');
   });
 
   it('rejects a disabled-account watermark even when the profile row is active', async () => {

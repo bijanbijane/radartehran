@@ -46,6 +46,10 @@ export function hasRadarSessionCookie(request: Request): boolean {
   return matchingCookieParts(request, RADAR_SESSION_COOKIE).length > 0;
 }
 
+export function readSessionCookie(request: Request): string | null {
+  return readCookie(request, RADAR_SESSION_COOKIE);
+}
+
 export async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -53,7 +57,7 @@ export async function sha256Hex(value: string): Promise<string> {
 
 export async function authenticateWorkerSession(
   ctx: WorkerRequestContext,
-  _sensitiveRoute = false,
+  sensitiveRoute = true,
 ): Promise<WorkerSessionPrincipal> {
   const unauthenticated = (reasonCode = 'UNAUTHENTICATED', statusCode: 401 | 403 | 503 = 401): WorkerSessionPrincipal => ({
     authenticated: false,
@@ -71,7 +75,7 @@ export async function authenticateWorkerSession(
     reasonCode,
   });
 
-  if (_sensitiveRoute && !['GET', 'HEAD', 'OPTIONS'].includes(ctx.method)) {
+  if (sensitiveRoute && !['GET', 'HEAD', 'OPTIONS'].includes(ctx.method)) {
     const origin = ctx.request.headers.get('origin');
     try {
       if (!origin || new URL(origin).origin !== new URL(ctx.env.APP_URL || ctx.url.origin).origin) {
@@ -85,7 +89,7 @@ export async function authenticateWorkerSession(
   const userDb = resolveUserDb(ctx.env);
   if (!userDb) return unauthenticated('USER_DB_UNAVAILABLE', 503);
 
-  const rawToken = readCookie(ctx.request, RADAR_SESSION_COOKIE);
+  const rawToken = readSessionCookie(ctx.request);
   if (!rawToken) return unauthenticated();
 
   try {
@@ -127,7 +131,10 @@ export async function authenticateWorkerSession(
     const revocationWatermark = row.revocation_watermark;
     if (revocationWatermark === 'DISABLED') return unauthenticated('ACCOUNT_DISABLED');
     if (revocationWatermark !== null && revocationWatermark !== undefined && String(revocationWatermark).trim() !== '') {
-      const revokedBeforeSeconds = Number(revocationWatermark);
+      const parsedWatermark = Number(revocationWatermark);
+      const revokedBeforeSeconds = parsedWatermark >= 1_000_000_000_000
+        ? Math.floor(parsedWatermark / 1000)
+        : parsedWatermark;
       if (!Number.isSafeInteger(revokedBeforeSeconds) || revokedBeforeSeconds < 1 || createdAtSeconds <= revokedBeforeSeconds) {
         return unauthenticated('SESSION_REVOKED');
       }
