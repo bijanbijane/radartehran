@@ -61,7 +61,6 @@ export function isValidServerAccountExportResponse(
 
 export function isValidServerAccountDeletionResponse(raw: unknown): raw is ServerAccountDeletionPayload {
   if (!isPlainRecord(raw)) return false;
-  if (raw.status !== 'ok' && raw.status !== 'partial') return false;
   if (typeof raw.ok !== 'boolean' || typeof raw.statusCode !== 'number') return false;
   if (typeof raw.jobId !== 'string' || !raw.jobId.trim() || typeof raw.code !== 'string') return false;
   if (!['INITIATED', 'BLOCKED_LEGAL_HOLD', 'PENDING_PERMIT_DRAIN', 'PENDING_RESEARCH_ERASURE', 'COMPLETED', 'FAILED'].includes(String(raw.status))) return false;
@@ -340,7 +339,7 @@ export async function executeAccountDeletionFlow(params: {
           : payload.status === 'PENDING_RESEARCH_ERASURE' ? 'PURGING_DEPENDENT_RECORDS'
             : 'PARTIAL_FAILURE_RETRYABLE';
 
-  const cleanupResult = completed
+  const cleanupResult = authDisabled
     ? cleanupAccountLocalStorageForUid(targetUid)
     : { removedKeys: [] as string[] };
   const layerStatus: AccountDeleteLayerStatus = {
@@ -348,7 +347,7 @@ export async function executeAccountDeletionFlow(params: {
     lifecycleState,
     lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[lifecycleState],
     serverDeletion: completed ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'partial',
-    localCleanup: completed ? 'completed' : 'skipped_server_incomplete',
+    localCleanup: authDisabled ? 'completed' : 'skipped_server_incomplete',
     authDeletion: authDisabled ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'not_required',
     overallStatus: completed ? 'completed' : payload.status === 'FAILED' ? 'failed' : 'partial',
     requestStatus: completed ? 'completed' : 'pending_verification',
