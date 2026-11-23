@@ -17,6 +17,10 @@ export interface NeighborhoodTrafficInfo { liveStatus: string; liveSeverity: 'he
   trafficScore: number; // 1 to 10 (10 = smoothest traffic)
 }
 export interface Neighborhood { id: number; name: string; zone: string; lat: number; lng: number; radius: number;
+  /** Canonical IRNI identity; legacy numeric id remains compatibility-only. */
+  geographicEntityId?: string | null;
+  geographicIdentityResolutionStatus?: 'RESOLVED' | 'UNRESOLVED' | 'UNAVAILABLE';
+  geographicRegistryRevision?: number | null;
   buyPerSqm: number; // Million Tomans
   baseBuyPerSqm?: number;
   rahn80m: number; // Million Tomans for 80m full deposit
