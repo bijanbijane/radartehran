@@ -10,6 +10,7 @@ import { handleAccountWorkerRoute } from './routes/accountRoutes';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
 import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
+import { handleIrniRegistryRoute } from './routes/irniRegistryRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
@@ -107,7 +108,17 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
-  // Reference/IRNI: Strictly Read-Only External IRNI Neighborhood Reference API Client
+  // IRNI canonical registry: signed publisher ingress plus canonical D1 read API.
+  const irniRegistryResponse = await handleIrniRegistryRoute(ctx);
+  if (irniRegistryResponse) {
+    return {
+      response: irniRegistryResponse,
+      routePattern: pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Legacy external IRNI reference adapter retained only for backward compatibility.
   const irniRefResponse = await handleIrniReferenceRoute(ctx);
   if (irniRefResponse) {
     return {
