@@ -1,4 +1,4 @@
-/** @file src/platform/api/interceptors/authInterceptor.ts — Auth Token & Correlation Header Interceptor */
+/** @file src/platform/api/interceptors/authInterceptor.ts — Cookie Session & Correlation Header Interceptor */
 import { generateCorrelationId } from '../../../shared/utilities';
 
 export interface AuthTokenSupplier {
@@ -44,10 +44,6 @@ export async function attachAuthAndCorrelationHeaders(
     headers['X-Workspace-Id'] = wsId;
   }
 
-  const token = await activeAuthSupplier.getAccessToken();
-  if (token && !headers.Authorization) {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   return { headers, correlationId };
 }
