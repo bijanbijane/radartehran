@@ -1,7 +1,7 @@
 /**
  * @file src/components/AdminWeeklyDatabaseHealthChart.tsx
  * @description نمودار فشرده Recharts در پنل مدیریت برای نمایش تعداد داکیومنت‌های دارای داده‌های نامعتبر
- * در طول ۷ روز هفته، به همراه بازرس مراجع یتیم (Orphaned hoodId) و پنل اصلاح خودکار اسناد معیوب.
+ * در طول ۷ روز هفته، به همراه بازرس مراجع یتیم (Orphaned hoodId) و پنل پیش‌نمایش اصلاح داده‌ها معیوب.
  */
 
 import React, { useMemo } from 'react'; import { Activity, ShieldCheck, AlertTriangle, Link2Off, Wrench, CheckCircle2 } from 'lucide-react'; import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer,
@@ -35,7 +35,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
                 نمودار هفتگی داکیومنت‌های نامعتبر و سلامت کلی دیتابیس (۷ روز اخیر)
               </div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
-                روند روزانه اسناد نامعتبر در Firestore · واحد ممیزی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(sampleAuditUnitPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleAuditUnitPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(80, areaUnit)}: {toPersianNum(sample80mTotalMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample80mTotalMillions, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleMonthlyRentMillions, intlCurrency, locale)})` : ''}
+                روند روزانه رکوردهای نامعتبر در داده‌های D1 · واحد ممیزی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(sampleAuditUnitPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleAuditUnitPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(80, areaUnit)}: {toPersianNum(sample80mTotalMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample80mTotalMillions, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleMonthlyRentMillions, intlCurrency, locale)})` : ''}
               </div>
             </div>
           </div>
@@ -160,14 +160,14 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
           <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
               <Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-              <span>تعمیر خودکار اسناد معیوب (Auto-Sanitize) ({toPersianNum(sanitizePreviews.length)} سند)</span>
+              <span>پیش‌نمایش اصلاح محلی (بدون نوشتن در پایگاه داده) ({toPersianNum(sanitizePreviews.length)} سند)</span>
             </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">اصلاح اعداد منفی و فیلدهای ناقص</span>
           </div>
           <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
             {sanitizePreviews.length === 0 ? (
               <div className="py-4 px-3 text-center text-slate-400 text-xs">
-                سند معیوبی جهت اعمال اصلاح خودکار در صف قرار ندارد.
+                سند معیوبی جهت اعمال در پیش‌نمایش محلی در صف قرار ندارد.
               </div>
             ) : (
               sanitizePreviews.map((item) => (
@@ -183,7 +183,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
                           onClick={() => onApplyAutoSanitize(item.collection, item.docId, item.sanitizedData)}
                           className="px-2 py-0.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-[10px] cursor-pointer transition"
                         >
-                          اعمال اصلاح خودکار
+                          اعمال در پیش‌نمایش محلی
                         </button>
                       )}
                       {onRemoveSampleDoc && (
@@ -192,7 +192,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
                           onClick={() => onRemoveSampleDoc(item.collection, item.docId)}
                           className="px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-[10px] cursor-pointer transition"
                         >
-                          قرنطینه / حذف
+                          حذف از نمونه‌های ممیزی
                         </button>
                       )}
                     </div>
@@ -208,13 +208,13 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
           </div>
         </div>
       </div>
-      {/* بازرس یکپارچگی رابطه‌ای، نسبت اقتصادی رهن/خرید، اسناد تکراری و قواعد امنیتی Firestore */}
+      {/* بازرس یکپارچگی رابطه‌ای، نسبت اقتصادی رهن/خرید و اسناد تکراری */}
       <div data-testid="admin-relational-integrity-section" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
           <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>
-              بازرس یکپارچگی رابطه‌ای، اسناد تکراری (Shadowed Overrides) و انطباق با firestore.rules ({toPersianNum(integrityIssues.length)} مورد)
+              بازرس یکپارچگی رابطه‌ای، اسناد تکراری (Shadowed Overrides) و اعتبار طرح‌وارهٔ D1 ({toPersianNum(integrityIssues.length)} مورد)
             </span>
           </div>
           <span className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -225,7 +225,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
           {integrityIssues.length === 0 ? (
             <div className="py-3.5 px-3 text-center text-emerald-700 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1.5 text-xs">
               <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-              <span>تمامی اسناد از نظر عدم تکرار کلید، نسبت اقتصادی رهن/خرید، اعتبار زمانی حامیان و قیود firestore.rules سالم هستند.</span>
+              <span>تمامی نمونه‌ها از نظر عدم تکرار کلید، نسبت اقتصادی رهن/خرید و اعتبار زمانی حامیان سالم هستند.</span>
             </div>
           ) : (
             integrityIssues.map((item) => (
