@@ -30,13 +30,13 @@ export const EXPECTED_PRODUCTION_BACKEND_TARGETS = Object.freeze({
   researchDbName: 'radar-researcher-db',
   researchDbId: 'a04f9716-fb95-44da-841c-b54be252db70',
   researchMigrationsDir: 'migrations/research-d1',
+  neighborhoodDbName: 'radar-neighborhood-db',
+  neighborhoodDbId: 'f335efe8-37ac-4c7d-a057-bc9f4480f6c6',
+  neighborhoodMigrationsDir: 'migrations/geography-d1',
   migrationsTable: 'd1_migrations',
 });
 
 export const FORBIDDEN_IRNI_IDENTIFIERS = Object.freeze([
-  'radar-neighborhood-db',
-  'f335efe8-37ac-4c7d-a057-bc9f4480f6c6',
-  'NEIGHBORHOOD_DB',
   'IRNI_DB',
 ]);
 
@@ -145,10 +145,17 @@ export function validateBackendWranglerConfig(
   const userDb = prodD1.find((d) => d.binding === 'USER_DB');
   const legacyDb = prodD1.find((d) => d.binding === 'DB');
   const researchDb = prodD1.find((d) => d.binding === 'RESEARCH_DB');
+  const neighborhoodDb = prodD1.find((d) => d.binding === 'NEIGHBORHOOD_DB');
 
   if (!userDb) errors.push('MISSING_PRODUCTION_BINDING:USER_DB');
   if (!legacyDb) errors.push('MISSING_PRODUCTION_BINDING:DB');
   if (!researchDb) errors.push('MISSING_PRODUCTION_BINDING:RESEARCH_DB');
+  if (!neighborhoodDb) errors.push('MISSING_PRODUCTION_BINDING:NEIGHBORHOOD_DB');
+  for (const bindingName of ['USER_DB', 'DB', 'RESEARCH_DB', 'NEIGHBORHOOD_DB']) {
+    if (prodD1.filter((entry) => entry.binding === bindingName).length > 1) {
+      errors.push('DUPLICATE_PRODUCTION_BINDING:' + bindingName);
+    }
+  }
 
   if (userDb && legacyDb) {
     if (userDb.database_id !== legacyDb.database_id) {
@@ -195,6 +202,21 @@ export function validateBackendWranglerConfig(
     }
   }
 
+  if (neighborhoodDb) {
+    if (neighborhoodDb.database_name !== EXPECTED_PRODUCTION_BACKEND_TARGETS.neighborhoodDbName) {
+      errors.push('UNEXPECTED_NEIGHBORHOOD_DB_NAME:' + neighborhoodDb.database_name);
+    }
+    if (neighborhoodDb.database_id !== EXPECTED_PRODUCTION_BACKEND_TARGETS.neighborhoodDbId) {
+      errors.push('UNEXPECTED_NEIGHBORHOOD_DB_ID:' + neighborhoodDb.database_id);
+    }
+    if (neighborhoodDb.migrations_dir !== EXPECTED_PRODUCTION_BACKEND_TARGETS.neighborhoodMigrationsDir) {
+      errors.push('UNEXPECTED_NEIGHBORHOOD_DB_MIGRATIONS_DIR:' + neighborhoodDb.migrations_dir);
+    }
+    if (neighborhoodDb.migrations_table !== EXPECTED_PRODUCTION_BACKEND_TARGETS.migrationsTable) {
+      errors.push('INVALID_NEIGHBORHOOD_DB_MIGRATIONS_TABLE:' + neighborhoodDb.migrations_table);
+    }
+  }
+
   if (userDb && researchDb) {
     if (userDb.database_id === researchDb.database_id) {
       errors.push('USER_DB_AND_RESEARCH_DB_SAME_PHYSICAL_ID_FORBIDDEN');
@@ -207,12 +229,16 @@ export function validateBackendWranglerConfig(
   // 3. Migration directories verification
   let userMigrationFiles = [];
   let researchMigrationFiles = [];
+  let neighborhoodMigrationFiles = [];
   if (!skipFsChecks) {
     if (userDb) {
       userMigrationFiles = checkMigrationDirectory(rootDir, userDb.migrations_dir, 'USER_DB', errors);
     }
     if (researchDb) {
       researchMigrationFiles = checkMigrationDirectory(rootDir, researchDb.migrations_dir, 'RESEARCH_DB', errors);
+    }
+    if (neighborhoodDb) {
+      neighborhoodMigrationFiles = checkMigrationDirectory(rootDir, neighborhoodDb.migrations_dir, 'NEIGHBORHOOD_DB', errors);
     }
   }
 
@@ -276,10 +302,12 @@ export function validateBackendWranglerConfig(
       stagingWorker: staging?.name ?? null,
       userDbId: userDb?.database_id ?? null,
       researchDbId: researchDb?.database_id ?? null,
+      neighborhoodDbId: neighborhoodDb?.database_id ?? null,
       userMigrationsCount: userMigrationFiles.length,
       researchMigrationsCount: researchMigrationFiles.length,
+      neighborhoodMigrationsCount: neighborhoodMigrationFiles.length,
       stagingProvisioningStatus,
-      irniDirectBindingPresent: false,
+      irniNeighborhoodDbBound: Boolean(neighborhoodDb),
     },
   };
 }
