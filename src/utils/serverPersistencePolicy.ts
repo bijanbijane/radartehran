@@ -133,7 +133,7 @@ export async function validateApiPersistenceOnBootstrap(
     });
   }
   const storageCheck = assertProductionObjectStorageConfigured(cfg, env);
-  if (!storageCheck.ok) {
+  if ('code' in storageCheck) {
     issues.push({ code: storageCheck.code, severity: 'error', message: storageCheck.message });
   }
   if (env.RADAR_STRICT_PERSISTENCE === '1' && isProductionApiRuntime(env)) {
@@ -141,7 +141,7 @@ export async function validateApiPersistenceOnBootstrap(
       '../../server/modules/shared/persistence/resolveObjectStorageMetadataRepository'
     );
     const metadataCheck = await verifyObjectStorageDurableMetadataRepository(env);
-    if (!metadataCheck.ok) {
+    if ('code' in metadataCheck) {
       issues.push({ code: metadataCheck.code, severity: 'error', message: metadataCheck.message });
     }
     if (env.RADAR_OBJECT_METADATA_LOCAL_INDEX === '1') {
@@ -153,7 +153,7 @@ export async function validateApiPersistenceOnBootstrap(
     }
     const { verifyDurableRepositorySnapshotStore } = await import('../../server/modules/shared/repositoryPersistencePolicy');
     const repoStore = await verifyDurableRepositorySnapshotStore(env);
-    if (!repoStore.ok) {
+    if ('code' in repoStore) {
       issues.push({ code: repoStore.code, severity: 'error', message: repoStore.message });
     }
     if (env.RADAR_REPOSITORY_LOCAL_JSON === '1') {
@@ -167,7 +167,7 @@ export async function validateApiPersistenceOnBootstrap(
       '../../server/modules/media/durableMediaMetadataRepository'
     );
     const mediaMeta = await verifyMediaDurableMetadataRepository(env);
-    if (!mediaMeta.ok) {
+    if ('code' in mediaMeta) {
       issues.push({ code: mediaMeta.code, severity: 'error', message: mediaMeta.message });
     }
     if (env.RADAR_MEDIA_METADATA_LOCAL_ONLY === '1') {
