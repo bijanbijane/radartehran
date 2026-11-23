@@ -221,7 +221,40 @@ export async function processRadarQueueBatch(params: {
       const existing = await params.db
         .prepare('SELECT * FROM queue_job_executions WHERE idempotency_key = ?1')
         .bind(envelope.idempotencyKey)
-        .first<{ status: string; lease_owner: string | null; lease_expires_at_ms: number | null }>();
+        .first<{
+          status: string;
+          job_type: string;
+          correlation_id: string;
+          lease_owner: string | null;
+          lease_expires_at_ms: number | null;
+        }>();
+
+      // A global idempotency key cannot be reused for a different job or trace.
+      // Treat collisions as poison messages instead of silently deduplicating unrelated work.
+      if (existing && (existing.job_type !== envelope.jobType || existing.correlation_id !== envelope.correlationId)) {
+        const forwarded = await routeToDlqFailClosed({
+          dlq: params.dlq,
+          record: {
+            deadLetterReason: 'IDEMPOTENCY_KEY_CONFLICT',
+            idempotencyKey: envelope.idempotencyKey,
+            incomingJobType: envelope.jobType,
+            existingJobType: existing.job_type,
+            incomingCorrelationId: envelope.correlationId,
+            existingCorrelationId: existing.correlation_id,
+            messageId: envelope.messageId,
+            failedAtIso: nowIso,
+          },
+        });
+        if (forwarded) {
+          msg.ack();
+          deadLetteredCount += 1;
+        } else {
+          msg.retry({ delaySeconds: computeQueueRetryDelaySeconds(msg.attempts) });
+          retriedCount += 1;
+          failedCount += 1;
+        }
+        continue;
+      }
 
       if (existing?.status === 'COMPLETED') {
         msg.ack();
