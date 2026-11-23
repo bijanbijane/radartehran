@@ -32,7 +32,7 @@ function safeReturnPath(raw: string | null): string {
   return raw.slice(0, 512);
 }
 
-function validMutationOrigin(ctx: WorkerRequestContext): boolean {
+function readRequestCookie(request: Request, name: string): string | null {\n  const raw = request.headers.get('cookie') || '';\n  for (const part of raw.split(';')) {\n    const [key, ...rest] = part.trim().split('=');\n    if (key === name) return rest.join('=') || null;\n  }\n  return null;\n}\n\nfunction validMutationOrigin(ctx: WorkerRequestContext): boolean {
   const origin = ctx.request.headers.get('origin');
   if (!origin) return false;
   try {
@@ -210,7 +210,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     url.searchParams.set('code_challenge', codeChallenge);
     url.searchParams.set('code_challenge_method', 'S256');
     url.searchParams.set('prompt', 'select_account');
-    return new Response(null, { status: 302, headers: { Location: url.toString(), 'Cache-Control': 'no-store' } });
+    return new Response(null, { status: 302, headers: { Location: url.toString(), 'Cache-Control': 'no-store', 'Set-Cookie': `__Host-radar_oauth_state=${state}; Path=/; Max-Age=600; HttpOnly; Secure; SameSite=Lax` } });
   }
 
   if (method === 'GET' && pathname === '/api/auth/google/callback') {
