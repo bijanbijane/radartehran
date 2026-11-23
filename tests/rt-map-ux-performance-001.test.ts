@@ -8,6 +8,7 @@ import {
 } from '../src/data/neighborhoods';
 import { selectVisibleMapNeighborhoods } from '../src/components/map/neighborhoodLayerReconciler';
 import {
+  buildMacroZoomClusters,
   computeDeclutteredMarkerTiers,
   getMapLabelBudget,
   getNeighborhoodMapLabel,
@@ -96,4 +97,22 @@ test('RT-MAP-UX-004: compact map labels stay short without changing the canonica
   assert.ok(mapLabel.length <= 14);
   assert.notEqual(mapLabel, canonicalName);
   assert.ok(canonicalName.includes('عنوان رسمی'));
+});
+
+test('RT-MAP-UX-005: spatial macro clustering retains every neighborhood and selected membership', () => {
+  const seed = evaluateSeeds()[0];
+  const hoods = Array.from({ length: 300 }, (_, index) => ({
+    ...seed,
+    id: 920000 + index,
+    lat: seed.lat + index * 0.00001,
+    lng: seed.lng + index * 0.00001,
+  }));
+  const clusters = buildMacroZoomClusters(hoods, hoods[111].id, 7, () => ({
+    stroke: '#0f766e',
+    fill: '#14b8a6',
+    pillBg: '#0d9488',
+  }));
+  assert.equal(clusters.reduce((sum, cluster) => sum + cluster.count, 0), hoods.length);
+  assert.ok(clusters.some((cluster) => cluster.containsSelected));
+  assert.equal(clusters.length, 1, 'nearby Tehran neighborhoods should collapse into one macro cluster at zoom 7');
 });
