@@ -7,7 +7,7 @@
  * - `SIMULATED — NOT A REAL AI RESPONSE`
  * - `SIMULATION — NO REAL PAYMENT OR SETTLEMENT`
  */
-import React, { useState, useEffect, useCallback } from 'react'; import { Bot, Coins, Layers, RotateCcw, Search, ShieldAlert } from 'lucide-react'; import { auth } from '../firebase'; import { toPersianNum } from '../data/neighborhoods';
+import React, { useState, useEffect, useCallback } from 'react'; import { Bot, Coins, Layers, RotateCcw, Search, ShieldAlert } from 'lucide-react'; import { getAuthClient } from '../platform/auth'; import { toPersianNum } from '../data/neighborhoods';
 import { MANDATORY_AI_SIMULATION_BANNER, OFFICIAL_AI_MODEL_REGISTRY, type RadarAiWorkflowId, } from '../utils/aiModelRegistryAndGateway'; import { MANDATORY_PAYMENT_SIMULATION_BANNER,
   RADAR_COMMERCIAL_PRODUCTS, } from '../utils/dataCommerceMcpAndMonetization'; import { AdminMcpAndPortabilitySandboxPanel } from './AdminMcpAndPortabilitySandboxPanel'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
@@ -20,19 +20,15 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
   const [paymentSimResult, setPaymentSimResult] = useState<any | null>(null); const [rmepSummary, setRmepSummary] = useState<any | null>(null); const [cloudflareAndPortability, setCloudflareAndPortability] = useState<any | null>(null); const [monetizationSummary, setMonetizationSummary] = useState<any | null>(null);
   const [aiRoutingAuditTrail, setAiRoutingAuditTrail] = useState<any[]>([]);
 
-  const getAdminHeaders = async (): Promise<Record<string, string>> => { const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-  };
+  const getAdminHeaders = async (): Promise<Record<string, string>> => ({
+    'Content-Type': 'application/json',
+  });
 
   const fetchControlCenterState = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!getAuthClient().getUser()) return;
     try {
       const headers = await getAdminHeaders();
-      const res = await fetch('/api/admin/architecture-and-ai-registry', { headers });
+      const res = await fetch('/api/admin/architecture-and-ai-registry', { headers, credentials: 'same-origin' });
       if (res.ok) {
         const data = await res.json();
         if (data?.aiRouting?.routes) {
@@ -57,7 +53,14 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
     }
   }, []);
 
-  useEffect(() => { void fetchControlCenterState(); const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u) void fetchControlCenterState(); }) : undefined; return () => { if (typeof unsub === 'function') unsub(); }; }, [fetchControlCenterState]);
+  useEffect(() => {
+    const authClient = getAuthClient();
+    const unsubscribe = authClient.subscribe((_state, user) => {
+      if (user) void fetchControlCenterState();
+    });
+    if (authClient.getUser()) void fetchControlCenterState();
+    return unsubscribe;
+  }, [fetchControlCenterState]);
 
   const handleSaveRouting = async () => {
     setStatusMsg(null);
@@ -66,6 +69,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
       const res = await fetch('/api/admin/ai-routing', {
         method: 'POST',
         headers,
+        credentials: 'same-origin',
         body: JSON.stringify({ routes }),
       });
       const data = await res.json();
@@ -90,6 +94,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
       const res = await fetch('/api/admin/ai-routing/rollback', {
         method: 'POST',
         headers,
+        credentials: 'same-origin',
       });
       const data = await res.json();
       if (res.ok && data?.aiRouting) {
