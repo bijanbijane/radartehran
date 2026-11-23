@@ -36,9 +36,11 @@ function encodeBase64Url(bytes: Uint8Array): string {
 function isVerifiedSessionPrincipal(principal: WorkerSessionPrincipal): boolean {
   const hasVerifiedEmail = principal.emailVerified && Boolean(principal.email);
   const hasVerifiedPhone = principal.authProvider === 'phone' && Boolean(principal.phoneNumber);
+  const hasConsistentAdminRoles = principal.isAdmin === (principal.isPrimaryAdmin || principal.isDelegatedAdmin);
   return principal.authenticated
     && Boolean(principal.uid)
     && (hasVerifiedEmail || hasVerifiedPhone)
+    && hasConsistentAdminRoles
     && (principal.authProvider === 'google' || principal.authProvider === 'phone');
 }
 
