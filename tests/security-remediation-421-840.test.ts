@@ -1254,7 +1254,15 @@ async function runAllRemediationTests(): Promise<void> {
     }) as any,
   );
   assert.ok(validPngTileRes !== null && validPngTileRes.contentType === 'image/png', 'fetchTileFromMirror must accept valid PNG raster tiles');
-  assert.equal(capturedTileRequestHeaders?.Referer, 'https://tehranradar.ir/', 'OSM proxy must forward an accurate, query-free site Referer');
+  const configuredTileAppUrl = process.env.APP_URL || 'https://tehranradar.ir';
+  let expectedTileReferer = 'https://tehranradar.ir/';
+  try {
+    const parsedTileAppUrl = new URL(configuredTileAppUrl);
+    if (parsedTileAppUrl.protocol === 'https:') expectedTileReferer = parsedTileAppUrl.origin + '/';
+  } catch {
+    // Match the production-origin fallback used by the proxy.
+  }
+  assert.equal(capturedTileRequestHeaders?.Referer, expectedTileReferer, 'OSM proxy must forward an accurate, query-free site Referer');
   assert.ok(capturedTileRequestHeaders?.['User-Agent']?.includes('TehranHousingRadar/2.0'), 'OSM proxy must identify the application with a stable User-Agent');
 
   if (!validPngTileRes) throw new Error('Expected valid PNG tile before conditional revalidation test');
