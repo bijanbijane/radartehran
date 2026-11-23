@@ -278,9 +278,20 @@ export function writePersistedFallbackCircuit(active: boolean, reason?: string):
   } catch {
   }
 }
+const APPROVED_MAP_TILE_STYLES: ReadonlySet<string> = new Set(['neshan', 'osm', 'voyager']);
+
 export function resolveInitialPreferredTileStyle(): MapTileServerId {
   try {
     if (typeof localStorage === 'undefined') return 'neshan';
     const stored = localStorage.getItem(TILE_STYLE_PREF_STORAGE_KEY);
-    if (stored === 'neshan' || stored === 'osm' || stored === 'voyager') { return stored as MapTileServerId; }
-    if (stored === 'mapbox') { localStorage.setItem(TILE_STYLE_PREF_STORAGE_KEY, 'neshan'); return 'neshan'; } return 'neshan'; } catch { return 'neshan'; } }
+    if (stored && APPROVED_MAP_TILE_STYLES.has(stored)) return stored as MapTileServerId;
+    if (stored !== null) {
+      // Remove legacy/unlicensed styles from persistent preferences rather than
+      // falling back repeatedly on every reload.
+      localStorage.setItem(TILE_STYLE_PREF_STORAGE_KEY, 'neshan');
+    }
+    return 'neshan';
+  } catch {
+    return 'neshan';
+  }
+}
