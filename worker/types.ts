@@ -137,6 +137,12 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
+  readonly KAVENEGAR_API_KEY?: string;
+  readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
+  readonly AUTH_PII_HMAC_SECRET?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_PROJECT_NUMBER?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
@@ -237,6 +243,7 @@ export type RouteMigrationGroup =
   | 'GROUP_1B_STATELESS_INTELLIGENCE_AND_COMMERCE'
   | 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS'
   | 'GROUP_3_TELEMETRY_AND_EDGE_INGESTION'
+  | 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH'
   | 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS'
   | 'GROUP_5_OBJECT_STORAGE_AND_MEDIA'
   | 'GROUP_6_ADMIN_GOVERNANCE_AND_SYNC';

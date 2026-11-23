@@ -7,6 +7,7 @@
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
+import { handleAuthWorkerRoute } from './routes/authRoutes';
 import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
@@ -77,7 +78,10 @@ export async function dispatchWorkerApiOrSeoRequest(
   }
 
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
-  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
+  const conditionallyRoutedAuth =
+    registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED' && !conditionallyRoutedAuth) {
     const { entry } = registeredMatch;
     const proxied = await executeSafeStranglerFallback({
       request: ctx.request,
@@ -112,6 +116,15 @@ export async function dispatchWorkerApiOrSeoRequest(
       response,
       routePattern: `${entry.method} ${entry.path}`,
       migrationStatus: entry.status,
+    };
+  }
+
+  const authResponse = await handleAuthWorkerRoute(ctx);
+  if (authResponse) {
+    return {
+      response: authResponse,
+      routePattern: pathname,
+      migrationStatus: registeredMatch?.entry.status || 'VERIFIED',
     };
   }
 

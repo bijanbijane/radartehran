@@ -38,6 +38,15 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
+const GROUP_3A_AUTH_PATHS = new Set<string>([
+  'GET /api/auth/google/start',
+  'GET /api/auth/google/callback',
+  'POST /api/auth/phone/start',
+  'POST /api/auth/phone/verify',
+  'GET /api/auth/session',
+  'POST /api/auth/logout',
+]);
+
 const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
   'GET /api/object-storage/status',
   'POST /api/object-storage/upload',
@@ -100,6 +109,27 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       ],
       stateStorageTouchpoints: ['stateless_or_ephemeral_isolate_ledger'],
       externalApiTouchpoints: [],
+    };
+  }
+
+  if (GROUP_3A_AUTH_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH',
+      workerHandlerModule: 'worker/routes/authRoutes.ts',
+      status: 'IMPLEMENTED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: [
+        'worker/routes/authRoutes.ts',
+        'worker/auth/sessionAuth.ts',
+        'migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql',
+        'migrations/user-d1/0008_sms_otp_ip_rate_limit.sql',
+        'migrations/user-d1/0009_sms_otp_code_digest.sql',
+      ],
+      stateStorageTouchpoints: [
+        'Cloudflare D1 USER_DB (auth_identities, auth_oauth_states, auth_phone_challenges, user_sessions)',
+      ],
+      externalApiTouchpoints: ['Google OpenID Connect', 'Kavenegar SMS Verify API'],
+      blockerReason: 'Native authentication uses D1-backed opaque sessions; required Google OAuth and Kavenegar secrets must be provisioned before enabling sign-in.',
     };
   }
 
