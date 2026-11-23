@@ -1,19 +1,21 @@
-import React from 'react'; import { collection, deleteDoc, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore'; import { auth, db, OperationType, handleFirestoreError } from '../firebase'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
+import React from 'react'; import { loadFirebaseClient } from '../utils/firebaseLazy'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
 export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any): Promise<void> => {
   const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? sanitizeSponsorForOverrideDoc(rawSponsorVal) : undefined;
-  await setDoc(doc(db, 'neighborhoodOverrides', String(overrideHoodId)), {
+  const firebase = await loadFirebaseClient();
+  await firebase.setDoc(firebase.doc(firebase.db, 'neighborhoodOverrides', String(overrideHoodId)), {
     hoodId: overrideHoodId, buyPerSqm: buyVal, rahn80m: rahnVal,
     overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    ...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {}), updatedAt: serverTimestamp(),
+    ...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {}), updatedAt: firebase.serverTimestamp(),
   });
 };
 export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
   adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>; adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number;
   setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; }
 const syncApprovedSponsorRequestsExpiry = async (hoodId: number, expiresAtIso: string): Promise<void> => {
-  const snap = await getDocs(query(collection(db, 'sponsorRequests'), where('hoodId', '==', hoodId), where('status', '==', 'approved')));
+  const firebase = await loadFirebaseClient();
+  const snap = await firebase.getDocs(firebase.query(firebase.collection(firebase.db, 'sponsorRequests'), firebase.where('hoodId', '==', hoodId), firebase.where('status', '==', 'approved')));
   if (snap.empty) return;
-  const batch = writeBatch(db);
+  const batch = firebase.writeBatch(firebase.db);
   snap.forEach((d) => batch.update(d.ref, { expiresAtIso }));
   await batch.commit();
 };
@@ -25,8 +27,9 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     const baseBuy = seedHood ? ((seedHood as EvaluatedNeighborhood).baseBuyPerSqm ?? seedHood.buyPerSqm) : 100; const baseRahn = seedHood ? Math.max(50, seedHood.rahn80m) : 1000;
     if (String(reqItem.id).startsWith('cloud-')) {
       const docId = String(reqItem.id).replace(/^cloud-/, '');
-      try { const batch = writeBatch(db); batch.update(doc(db, 'sponsorRequests', docId), { status: 'approved', expiresAtIso: resolvedExpiry }); batch.set(doc(db, 'neighborhoodOverrides', String(reqItem.hoodId)), { hoodId: reqItem.hoodId, buyPerSqm: baseBuy, rahn80m: baseRahn, sponsor: approvedSponsor, overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 86400000, updatedAt: serverTimestamp() }); await batch.commit(); } catch (err) {
-        p.setAdminPriceSavedMsg('خطای دسترسی در تایید اسپانسر ابری (نیاز به سطح دسترسی ادمین).'); try { handleFirestoreError(err, OperationType.UPDATE, `sponsorRequests/${docId}`); } catch { return; }
+      const firebase = await loadFirebaseClient();
+      try { const batch = firebase.writeBatch(firebase.db); batch.update(firebase.doc(firebase.db, 'sponsorRequests', docId), { status: 'approved', expiresAtIso: resolvedExpiry }); batch.set(firebase.doc(firebase.db, 'neighborhoodOverrides', String(reqItem.hoodId)), { hoodId: reqItem.hoodId, buyPerSqm: baseBuy, rahn80m: baseRahn, sponsor: approvedSponsor, overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 86400000, updatedAt: firebase.serverTimestamp() }); await batch.commit(); } catch (err) {
+        p.setAdminPriceSavedMsg('خطای دسترسی در تایید اسپانسر ابری (نیاز به سطح دسترسی ادمین).'); try { firebase.handleFirestoreError(err, firebase.OperationType.UPDATE, `sponsorRequests/${docId}`); } catch { return; }
       }
     }
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.id === reqItem.id ? { ...r, status: 'approved', expiresAtIso: resolvedExpiry } : r)));
@@ -38,14 +41,14 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     if (!target?.sponsor) return;
     const nextExpiry = computeExtendedSponsorExpirationIso(target.sponsor.expiresAtIso, 30); const nextSponsor = sanitizeSponsorForOverrideDoc({ ...target.sponsor, expiresAtIso: nextExpiry })!;
     const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; const baseRahn = Math.max(50, target.rahn80m);
-    void persistHoodOverrideToCloud(hoodId, baseBuy, baseRahn, nextSponsor).then(() => syncApprovedSponsorRequestsExpiry(hoodId, nextExpiry)).catch((err) => { p.setAdminPriceSavedMsg('خطا در ثبت تمدید اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} });
+    void persistHoodOverrideToCloud(hoodId, baseBuy, baseRahn, nextSponsor).then(() => syncApprovedSponsorRequestsExpiry(hoodId, nextExpiry)).catch(async (err) => { p.setAdminPriceSavedMsg('خطا در ثبت تمدید اسپانسر در فایراستور.'); try { const firebase = await loadFirebaseClient(); firebase.handleFirestoreError(err, firebase.OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} });
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.hoodId === hoodId && r.status === 'approved' ? { ...r, expiresAtIso: nextExpiry } : r)));
     p.setNeighborhoods((prev) => prev.some((n) => n.id === hoodId) ? prev.map((n) => (n.id !== hoodId ? n : { ...n, sponsor: nextSponsor })) : [...prev, { ...target, buyPerSqm: baseBuy, sponsor: nextSponsor }]);
   };
   const handleReleaseHoodSponsor = (hoodId: number) => {
     if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: آزادسازی اسپانسر نیازمند احراز هویت ادمین است.'); return; }
     const pastIso = new Date(Date.now() - 86400000).toISOString(); const target = p.evaluatedNeighborhoods.find((n) => n.id === hoodId) || p.neighborhoods.find((n) => n.id === hoodId);
-    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void persistHoodOverrideToCloud(hoodId, baseBuy, Math.max(50, target.rahn80m), null).then(() => syncApprovedSponsorRequestsExpiry(hoodId, pastIso)).catch((err) => { p.setAdminPriceSavedMsg('خطا در آزادسازی اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} }); }
+    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void persistHoodOverrideToCloud(hoodId, baseBuy, Math.max(50, target.rahn80m), null).then(() => syncApprovedSponsorRequestsExpiry(hoodId, pastIso)).catch(async (err) => { p.setAdminPriceSavedMsg('خطا در آزادسازی اسپانسر در فایراستور.'); try { const firebase = await loadFirebaseClient(); firebase.handleFirestoreError(err, firebase.OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} }); }
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.hoodId === hoodId && r.status === 'approved' ? { ...r, expiresAtIso: pastIso } : r)));
     p.setNeighborhoods((prev) => prev.map((n) => (n.id !== hoodId ? n : { ...n, sponsor: undefined })));
   };
@@ -56,11 +59,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     }
     if (String(reqId).startsWith('cloud-')) {
       const docId = String(reqId).replace(/^cloud-/, '');
+      const firebase = await loadFirebaseClient();
       try {
-        await deleteDoc(doc(db, 'sponsorRequests', docId));
+        await firebase.deleteDoc(firebase.doc(firebase.db, 'sponsorRequests', docId));
       } catch (err) {
         p.setAdminPriceSavedMsg('خطای دسترسی در حذف اسپانسر ابری (نیاز به سطح دسترسی ادمین).');
-        try { handleFirestoreError(err, OperationType.DELETE, `sponsorRequests/${docId}`); } catch { return; }
+        try { firebase.handleFirestoreError(err, firebase.OperationType.DELETE, `sponsorRequests/${docId}`); } catch { return; }
       }
     }
     p.setSponsorRequests((prev) => (prev || []).filter((r) => r.id !== reqId));
@@ -72,12 +76,13 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     }
     if (String(bargainId).startsWith('cloud-')) {
       const docId = String(bargainId).replace(/^cloud-/, '');
+      const firebase = await loadFirebaseClient();
       try {
-        const batch = writeBatch(db);
-        batch.delete(doc(db, 'bargains', docId));
-        batch.delete(doc(db, 'bargainOwners', docId));
+        const batch = firebase.writeBatch(firebase.db);
+        batch.delete(firebase.doc(firebase.db, 'bargains', docId));
+        batch.delete(firebase.doc(firebase.db, 'bargainOwners', docId));
         await batch.commit();
-        const signedInUser = auth.currentUser;
+        const signedInUser = firebase.auth.currentUser;
         if (signedInUser) {
           try {
             const idToken = await signedInUser.getIdToken();
@@ -96,7 +101,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
         }
       } catch (err) {
         p.setAdminPriceSavedMsg('خطای دسترسی در حذف آگهی ابری (نیاز به سطح دسترسی ادمین یا مالک).');
-        try { handleFirestoreError(err, OperationType.DELETE, `bargains/${docId}`); } catch { return; }
+        try { firebase.handleFirestoreError(err, firebase.OperationType.DELETE, `bargains/${docId}`); } catch { return; }
         return;
       }
     }
@@ -116,11 +121,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       return;
     }
     const cleanDocId = String(bargainId).replace(/^cloud-/, '');
+    const firebase = await loadFirebaseClient();
     try {
       if (String(bargainId).startsWith('cloud-')) {
-        await updateDoc(doc(db, 'bargains', cleanDocId), { status: 'approved', updatedAt: serverTimestamp() });
+        await firebase.updateDoc(firebase.doc(firebase.db, 'bargains', cleanDocId), { status: 'approved', updatedAt: firebase.serverTimestamp() });
       }
-      const signedInUser = auth.currentUser;
+      const signedInUser = firebase.auth.currentUser;
       const idToken = signedInUser ? await signedInUser.getIdToken() : '';
       const approveRes = await fetch('/api/admin/bargains/approve', {
         method: 'POST',
@@ -136,7 +142,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       }
     } catch (err) {
       p.setAdminPriceSavedMsg('خطا در تأیید آگهی شکار؛ لطفاً مجدداً تلاش کنید.');
-      try { handleFirestoreError(err, OperationType.UPDATE, `bargains/${cleanDocId}`); } catch { return; }
+      try { firebase.handleFirestoreError(err, firebase.OperationType.UPDATE, `bargains/${cleanDocId}`); } catch { return; }
     }
     p.setNeighborhoods((prev) =>
       prev.map((n) =>
@@ -195,7 +201,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       p.setAdminPriceSavedMsg(`قیمت محله ${targetSeed.name} با موفقیت به هر ${unitLabel} ${toPersianNum(unitBuy)} میلیون${intlSuffix} و رهن ${toPersianNum(nextRahn)} میلیون در فایراستور ذخیره شد.`);
     } catch (error) {
       p.setAdminPriceSavedMsg('خطا در ذخیرهٔ قیمت در فایراستور؛ تغییر در پایگاه داده ثبت نشد.');
-      try { handleFirestoreError(error, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {}
+      try { const firebase = await loadFirebaseClient(); firebase.handleFirestoreError(error, firebase.OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {}
     }
   };
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -227,9 +233,10 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     const nextFlags: FeatureFlags = { ...p.featureFlags, [key]: !p.featureFlags[key] };
     p.setFeatureFlags(nextFlags);
     try {
-      await setDoc(doc(db, 'appConfig', 'featureFlags'), { ...nextFlags, updatedAt: serverTimestamp() });
+      const firebase = await loadFirebaseClient();
+      await firebase.setDoc(firebase.doc(firebase.db, 'appConfig', 'featureFlags'), { ...nextFlags, updatedAt: firebase.serverTimestamp() });
     } catch (err) {
-      try { handleFirestoreError(err, OperationType.WRITE, 'appConfig/featureFlags'); } catch { /* local */ }
+      try { const firebase = await loadFirebaseClient(); firebase.handleFirestoreError(err, firebase.OperationType.WRITE, 'appConfig/featureFlags'); } catch { /* local */ }
     }
   };
   const handleDownloadFullBackupJson = () => {
