@@ -28,10 +28,10 @@ function evaluateSeeds(): EvaluatedNeighborhood[] {
 
 test('RT-MAP-UX-001: Tehran neighborhoods are viewport-culled while selected hood is retained', () => {
   const hoods = evaluateSeeds();
-  const selected = hoods[0];
+  const selected = { ...hoods[0], status: 'red' as const };
   const viewportHood = hoods[5];
-  const farHood = { ...selected, id: 900001, name: 'محله دوردست آزمایشی', lat: selected.lat + 2, lng: selected.lng + 2 };
-  const all = [...hoods, farHood];
+  const farHood = { ...selected, id: 900001, status: 'green' as const, name: 'محله دوردست آزمایشی', lat: selected.lat + 2, lng: selected.lng + 2 };
+  const all = [selected, ...hoods.slice(1), farHood];
   const map = {
     getBounds: () => ({
       pad: (ratio: number) => ({
@@ -50,7 +50,7 @@ test('RT-MAP-UX-001: Tehran neighborhoods are viewport-culled while selected hoo
     selectedHoodId: selected.id,
     selectedHood: selected,
     currentZoom: 13,
-    statusFilter: 'all',
+    statusFilter: 'green',
     lowBandwidthMode: false,
   });
 
