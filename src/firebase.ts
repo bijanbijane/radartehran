@@ -3,7 +3,7 @@
  */
 import { initializeApp, FirebaseApp } from 'firebase/app'; import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth'; import { getFirestore, initializeFirestore, setLogLevel, doc, getDocFromServer,
   Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent } from './utils/security'; import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
-export { prepareFirestorePayload } from './utils/firestorePayload';
+export { prepareFirestorePayload } from './utils/security';
 // Suppress noisy internal WebChannel 10s timeout logs on high-latency/proxy networks
 try { setLogLevel('silent'); } catch {
   // Ignore if setLogLevel is unavailable in test environments
