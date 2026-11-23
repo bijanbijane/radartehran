@@ -65,6 +65,7 @@ export default defineConfig(({ mode }) => {
         'd3-scale',
         'firebase/app',
         'firebase/firestore',
+        'firebase/app-check',
       ],
     },
     build: {
@@ -77,11 +78,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('@firebase/firestore') || id.includes('firebase/firestore')) {
-                return 'vendor-firebase-firestore';
-              }
+              // Keep Firebase App, Firestore, Auth, and App Check in one chunk so
+              // Rollup cannot split the shared component-provider registry across chunks.
               if (id.includes('firebase')) {
-                return 'vendor-firebase-auth';
+                return 'vendor-firebase';
               }
               if (id.includes('d3-')) {
                 return 'vendor-d3';
