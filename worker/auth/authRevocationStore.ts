@@ -195,3 +195,34 @@ export async function recordUserRevocationInD1(params: {
   }
 }
 
+
+export interface UserAuthRevocationCheck {
+  revoked: boolean;
+  unavailable?: boolean;
+  reason?: string;
+}
+
+export async function isUserAuthDisabledOrRevoked(
+  uid: string,
+  issuedAtSeconds: number,
+  db?: D1Database,
+): Promise<UserAuthRevocationCheck> {
+  if (!db) return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_STORE_UNAVAILABLE' };
+  try {
+    const row = await db.prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1')
+      .bind(`revoked_uid:${uid}`)
+      .first<{ watermark_value: string }>();
+    if (!row?.watermark_value) return { revoked: false };
+    const value = String(row.watermark_value).trim();
+    if (value === 'DISABLED') return { revoked: true, reason: 'USER_ACCOUNT_DISABLED' };
+    const since = Number(value);
+    if (!Number.isFinite(since) || since <= 0) return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_WATERMARK_CORRUPTED' };
+    const normalizedSince = since > 1_000_000_000_000 ? Math.floor(since / 1000) : Math.floor(since);
+    const normalizedIssued = issuedAtSeconds > 1_000_000_000_000 ? Math.floor(issuedAtSeconds / 1000) : Math.floor(issuedAtSeconds);
+    return normalizedIssued < normalizedSince
+      ? { revoked: true, reason: 'SESSION_REVOKED' }
+      : { revoked: false };
+  } catch {
+    return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_CHECK_FAILED' };
+  }
+}
