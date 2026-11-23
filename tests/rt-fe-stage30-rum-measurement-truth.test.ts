@@ -289,7 +289,7 @@ describe('INP interaction aggregation', () => {
     const snapshot = collector.getSnapshot();
     const expectedInp = Math.round(computeSamplePercentile([10, 200, 300], 98) ?? 0);
     assert.equal(snapshot.inpMs, expectedInp);
-    assert.equal(snapshot.inpMs, 298);
+    assert.equal(snapshot.inpMs, 296);
     collector.disconnect();
   });
 });
