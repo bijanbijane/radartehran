@@ -365,11 +365,6 @@ function main() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }
-);
-  if (!utcIso.test(value) || !Number.isFinite(Date.parse(value))) {
-    errors.push(`INVALID_DB_WRITES_PAUSE_TIMESTAMP:${envLabel}`);
-  }
-}
 
 function scanBindingsForForbiddenIds(d1List, envLabel, errors) {
   if (!Array.isArray(d1List)) return;
