@@ -29,17 +29,20 @@ interface ActiveRegistryHead {
   readonly registry_revision: number;
   readonly registry_checksum: string;
   readonly activated_at_iso: string;
-  readonly contract_version: string;
-  readonly id_algorithm_version: string;
-  readonly schema_version: string;
-  readonly canonical_entry_count: number;
-  readonly canonical_entity_count: number;
-  readonly relationship_count: number;
-  readonly anchor_count: number;
-  readonly source_mapping_count: number;
-  readonly legacy_alias_count: number;
-  readonly duplicate_conflict_count: number;
-  readonly integrity_verified: number;
+  // Nullable because publishFinalize uses LEFT JOIN to detect pointer/head divergence.
+  readonly head_registry_revision: number | null;
+  readonly head_registry_checksum: string | null;
+  readonly contract_version: string | null;
+  readonly id_algorithm_version: string | null;
+  readonly schema_version: string | null;
+  readonly canonical_entry_count: number | null;
+  readonly canonical_entity_count: number | null;
+  readonly relationship_count: number | null;
+  readonly anchor_count: number | null;
+  readonly source_mapping_count: number | null;
+  readonly legacy_alias_count: number | null;
+  readonly duplicate_conflict_count: number | null;
+  readonly integrity_verified: number | null;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
