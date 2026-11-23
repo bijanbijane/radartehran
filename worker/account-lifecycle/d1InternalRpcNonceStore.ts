@@ -39,7 +39,7 @@ export async function verifyAndConsumeInternalRpcNonce(params: {
   nowMs?: number;
 }): Promise<{ ok: true } | { ok: false; statusCode: 401 | 409 | 503; code: string }> {
   const secret = String(params.secret || '').trim();
-  if (secret.length < 32) {
+  if (!/^[0-9a-f]{64}$/i.test(secret)) {
     return { ok: false, statusCode: 503, code: 'INTERNAL_LIFECYCLE_RPC_SECRET_MISSING' };
   }
   const nowMs = params.nowMs ?? Date.now();
