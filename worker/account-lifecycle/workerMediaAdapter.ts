@@ -6,6 +6,7 @@ import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 import type { MediaDeletionCoordinationAdapter } from '../../server/modules/account-lifecycle/types.ts';
 import type { AccountLifecycleActorContext } from '../../server/modules/account-lifecycle/types.ts';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import { d1FirstRow } from './d1ResultHelpers.ts';
 
 export function createWorkerMediaDeletionAdapter(params: {
@@ -27,7 +28,14 @@ export function createWorkerMediaDeletionAdapter(params: {
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'Owned media could not be listed from D1; deletion cannot advance.',
+          503,
+        );
+      }
+      const rows = res.results;
       const items = rows.map((r) => ({
         objectId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -76,12 +84,19 @@ export function createWorkerMediaDeletionAdapter(params: {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
       }
       const nowIso = new Date().toISOString();
-      await db
+      const update = await db
         .prepare(
           `UPDATE media_objects SET deletion_state = 'DELETED', lifecycle_state = 'PURGED', updated_at_iso = ?1, deleted_at_iso = ?1 WHERE object_id = ?2 AND owner_uid = ?3`,
         )
-        .bind(nowIso, nowIso, objectId, targetUid)
+        .bind(nowIso, objectId, targetUid)
         .run();
+      if (!update.success || update.meta?.changes !== 1) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'R2 deletion completed but D1 did not confirm the media metadata transition; retry is required.',
+          503,
+        );
+      }
       return { objectId, status: 'DELETED' };
     },
   };

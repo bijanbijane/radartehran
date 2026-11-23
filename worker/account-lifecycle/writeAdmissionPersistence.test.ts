@@ -1,10 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { D1Database } from '../types';
+import type { D1DatabaseBinding } from '../db/types.ts';
+import type { WorkerEnv } from '../types';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import {
   acquireMutationPermitInD1,
   releaseMutationPermitInD1,
 } from './d1MutationPermit';
+import {
+  createWorkerMediaDeletionAdapter,
+} from './workerMediaAdapter.ts';
+import {
+  createWorkerD1TelemetryErasureAdapter,
+} from './workerTelemetryErasureAdapter.ts';
+import { d1FirstRow } from './d1ResultHelpers.ts';
 import { consumeLifecycleRpcNonce } from './d1InternalRpcNonceStore';
 
 interface RecordedCall {
@@ -224,4 +234,207 @@ test('releases only the specified active mutation permit', async () => {
   });
 
   assert.equal(fake.permits.get(permit.permitId)?.releasedAtMs, 81_000);
+});
+
+// Adapter fault-injection harness. It deliberately exposes D1 result failures
+// so deletion code cannot confuse an unavailable store with an empty page.
+function createAdapterD1(options?: {
+  failAll?: boolean;
+  failRun?: boolean;
+  runChanges?: number;
+  selectedRows?: Record<string, unknown>[];
+}): { db: D1DatabaseBinding; calls: Array<{ method: string; sql: string }> } {
+  const calls: Array<{ method: string; sql: string }> = [];
+  const db = {
+    prepare(sql: string) {
+      const statement = {
+        bind(..._values: unknown[]) {
+          return statement;
+        },
+        async all<T = Record<string, unknown>>() {
+          calls.push({ method: 'all', sql });
+          if (options?.failAll) {
+            return { results: [] as T[], success: false };
+          }
+          return { results: (options?.selectedRows ?? []) as T[], success: true };
+        },
+        async first<T = unknown>() {
+          calls.push({ method: 'first', sql });
+          return null as T | null;
+        },
+        async run<T = unknown>() {
+          calls.push({ method: 'run', sql });
+          if (options?.failRun) {
+            return { results: [] as T[], success: false, meta: { duration: 0, changes: 0 } };
+          }
+          return {
+            results: [] as T[],
+            success: true,
+            meta: { duration: 0, changes: options?.runChanges ?? 1 },
+          };
+        },
+      };
+      return statement;
+    },
+    async batch() { return []; },
+    async exec() { return { count: 0, duration: 0 }; },
+    async dump() { return new ArrayBuffer(0); },
+  } as unknown as D1DatabaseBinding;
+  return { db, calls };
+}
+
+function isStoreUnavailable(error: unknown): boolean {
+  return error instanceof AccountLifecycleStoreError &&
+    error.code === 'STORE_UNAVAILABLE' &&
+    error.httpStatus === 503;
+}
+
+test('d1FirstRow distinguishes an unavailable D1 read from a missing row', async () => {
+  const fake = createAdapterD1({ failAll: true });
+  await assert.rejects(
+    () => d1FirstRow(fake.db, 'SELECT value FROM example WHERE id = ?1', 'x'),
+    isStoreUnavailable,
+  );
+});
+
+test('media listing refuses to treat a failed D1 query as an empty media page', async () => {
+  const fake = createAdapterD1({ failAll: true });
+  const adapter = createWorkerMediaDeletionAdapter({
+    db: fake.db,
+    bucketName: 'radar-media',
+  });
+
+  await assert.rejects(
+    () => adapter.listOwnedMediaPage({ targetUid: 'uid_123', cursor: null, pageSize: 20 }),
+    isStoreUnavailable,
+  );
+});
+
+test('media deletion refuses to treat a failed D1 ownership lookup as already deleted', async () => {
+  const fake = createAdapterD1({ failAll: true });
+  const adapter = createWorkerMediaDeletionAdapter({
+    db: fake.db,
+    mediaBucket: { async delete() {} } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+
+  await assert.rejects(
+    () => adapter.deleteOwnedMediaObject({
+      actor: { uid: 'uid_123', isAdmin: true, freshAuthVerified: true },
+      targetUid: 'uid_123',
+      objectId: 'media_123',
+      jobId: 'job_123',
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('media deletion refuses to claim success when the D1 metadata update fails', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      object_id: 'media_123',
+      owner_uid: 'uid_123',
+      storage_key: 'objects/media_123',
+      bucket_name: 'radar-media',
+    }],
+    failRun: true,
+  });
+  let bucketDeleteCount = 0;
+  const adapter = createWorkerMediaDeletionAdapter({
+    db: fake.db,
+    mediaBucket: {
+      async delete() { bucketDeleteCount += 1; },
+    } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+
+  await assert.rejects(
+    () => adapter.deleteOwnedMediaObject({
+      actor: { uid: 'uid_123', isAdmin: true, freshAuthVerified: true },
+      targetUid: 'uid_123',
+      objectId: 'media_123',
+      jobId: 'job_123',
+    }),
+    isStoreUnavailable,
+  );
+  assert.equal(bucketDeleteCount, 1);
+});
+
+test('media deletion refuses an unconfirmed zero-row D1 metadata update', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{
+      object_id: 'media_123',
+      owner_uid: 'uid_123',
+      storage_key: 'objects/media_123',
+      bucket_name: 'radar-media',
+    }],
+    runChanges: 0,
+  });
+  const adapter = createWorkerMediaDeletionAdapter({
+    db: fake.db,
+    mediaBucket: { async delete() {} } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+
+  await assert.rejects(
+    () => adapter.deleteOwnedMediaObject({
+      actor: { uid: 'uid_123', isAdmin: true, freshAuthVerified: true },
+      targetUid: 'uid_123',
+      objectId: 'media_123',
+      jobId: 'job_123',
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('telemetry erasure refuses to treat a failed D1 query as an empty page', async () => {
+  const fake = createAdapterD1({ failAll: true });
+  const adapter = createWorkerD1TelemetryErasureAdapter(fake.db);
+
+  await assert.rejects(
+    () => adapter.purgeAttributableTelemetryBatch({
+      targetUid: 'uid_123',
+      jobId: 'job_123',
+      dataClass: 'PSEUDONYMOUS_ATTRIBUTABLE',
+      cursor: null,
+      batchSize: 20,
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('telemetry erasure stops when a D1 delete is not confirmed', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{ audit_id: 'audit_001', recorded_at_iso: '2026-11-23T00:00:00.000Z' }],
+    failRun: true,
+  });
+  const adapter = createWorkerD1TelemetryErasureAdapter(fake.db);
+
+  await assert.rejects(
+    () => adapter.purgeAttributableTelemetryBatch({
+      targetUid: 'uid_123',
+      jobId: 'job_123',
+      dataClass: 'PSEUDONYMOUS_ATTRIBUTABLE',
+      cursor: null,
+      batchSize: 20,
+    }),
+    isStoreUnavailable,
+  );
+});
+
+test('telemetry receipt counts only rows actually deleted by D1', async () => {
+  const fake = createAdapterD1({
+    selectedRows: [{ audit_id: 'audit_001', recorded_at_iso: '2026-11-23T00:00:00.000Z' }],
+    runChanges: 0,
+  });
+  const adapter = createWorkerD1TelemetryErasureAdapter(fake.db);
+  const result = await adapter.purgeAttributableTelemetryBatch({
+    targetUid: 'uid_123',
+    jobId: 'job_123',
+    dataClass: 'PSEUDONYMOUS_ATTRIBUTABLE',
+    cursor: null,
+    batchSize: 20,
+  });
+
+  assert.equal(result.receipts[0]?.recordsErased, 0);
 });

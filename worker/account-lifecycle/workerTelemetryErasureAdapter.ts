@@ -3,6 +3,7 @@
  */
 
 import type { D1DatabaseBinding } from '../db/types.ts';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import type { AccountTelemetryErasureAdapter } from '../../server/modules/account-lifecycle/telemetryErasureContract.ts';
 
 export function createWorkerD1TelemetryErasureAdapter(db: D1DatabaseBinding): AccountTelemetryErasureAdapter {
@@ -18,15 +19,38 @@ export function createWorkerD1TelemetryErasureAdapter(db: D1DatabaseBinding): Ac
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'Attributable telemetry could not be read from D1; erasure cannot advance.',
+          503,
+        );
+      }
+      const rows = res.results;
       const nowIso = new Date().toISOString();
       let erased = 0;
       for (const row of rows) {
-        await db
+        const deletion = await db
           .prepare('DELETE FROM account_lifecycle_audit WHERE audit_id = ?1 AND target_uid = ?2')
           .bind(String(row.audit_id), targetUid)
           .run();
-        erased += 1;
+        if (!deletion.success) {
+          throw new AccountLifecycleStoreError(
+            'STORE_UNAVAILABLE',
+            'Attributable telemetry deletion was not confirmed by D1; erasure cannot advance.',
+            503,
+          );
+        }
+        const changes = deletion.meta?.changes;
+        if (typeof changes !== 'number' || !Number.isSafeInteger(changes) || changes < 0) {
+          throw new AccountLifecycleStoreError(
+            'STORE_UNAVAILABLE',
+            'D1 did not return a verifiable telemetry deletion count.',
+            503,
+          );
+        }
+        // A zero count is valid only as an idempotent concurrent deletion after the page read.
+        erased += changes;
       }
       const lastId = rows.length > 0 ? String(rows[rows.length - 1].audit_id) : null;
       return {
