@@ -6,9 +6,12 @@ on:
       - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
+    # Validate stacked PRs against their actual base branch, not only main.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
@@ -87,6 +90,37 @@ jobs:
             architecture-baseline.json
           if-no-files-found: ignore
           retention-days: 7
+
+  backend-local-regressions:
+    name: Cloudflare Worker Local SQLite Regression Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Clean repository checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22 with npm lockfile cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Deterministic dependency installation
+        run: npm ci
+
+      # These suites use local node:sqlite-backed D1 simulators. No Cloudflare
+      # credentials, remote D1 bindings, migrations, or production writes are used.
+      - name: Run Worker runtime and write-pause regressions
+        run: npm run test:worker
+
+      - name: Run queue processor unit regressions
+        run: npm run test:queues
+
+      - name: Run queue entrypoint, bounded cleanup, and R2 cursor regressions
+        run: npm run test:queue-entrypoint
 
   e2e-browser:
     name: Real Browser E2E & Accessibility Suite (Playwright)
