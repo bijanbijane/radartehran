@@ -260,20 +260,22 @@ async function publishStart(
       idAlgorithmVersion !== ctx.env.GEO_REGISTRY_EXPECTED_ID_ALGORITHM) {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_ID_ALGORITHM_MISMATCH' });
   }
+  const normalizedChecksum = String(checksum).toLowerCase();
   const artifactKeys = ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases'] as const;
   const normalizedArtifacts = {} as Record<(typeof artifactKeys)[number], string>;
   for (const key of artifactKeys) {
-    if (!isString(artifacts[key], 64) || !/^[a-f0-9]{64}$/i.test(artifacts[key])) {
+    const artifactSha = artifacts[key];
+    if (!isString(artifactSha, 64) || !/^[a-f0-9]{64}$/i.test(artifactSha)) {
       return jsonWorkerResponse(ctx, 400, {
         status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_REQUIRED_OR_INVALID', artifact: key,
       });
     }
-    normalizedArtifacts[key] = String(artifacts[key]).toLowerCase();
+    normalizedArtifacts[key] = artifactSha.toLowerCase();
   }
 
   const manifestIdentity: ExpectedGeographicPublishManifest = {
     registryRevision: Number(revision),
-    registryChecksum: String(checksum).toLowerCase(),
+    registryChecksum: normalizedChecksum,
     contractVersion: String(contractVersion),
     idAlgorithmVersion: String(idAlgorithmVersion),
     schemaVersion: String(schemaVersion),
@@ -302,7 +304,7 @@ async function publishStart(
     });
   }
   if (head && Number(revision) === Number(head.registry_revision)) {
-    if (checksum !== head.registry_checksum) {
+    if (normalizedChecksum !== String(head.registry_checksum).toLowerCase()) {
       return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'SAME_REVISION_CHECKSUM_CONFLICT' });
     }
 
@@ -349,7 +351,7 @@ async function publishStart(
       status: 'ok',
       alreadyPublished: true,
       registryRevision: revision,
-      registryChecksum: checksum,
+      registryChecksum: normalizedChecksum,
       verifiedArtifacts: 6,
     });
   }
@@ -362,7 +364,7 @@ async function publishStart(
      VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,'RECEIVING',?13)
      ON CONFLICT(batch_id) DO NOTHING`,
   ).bind(
-    String(batchId), Number(revision), String(checksum), String(contractVersion),
+    String(batchId), Number(revision), normalizedChecksum, String(contractVersion),
     String(idAlgorithmVersion), String(schemaVersion), Number(counts.entities),
     Number(counts.relationships), Number(counts.sourceMappings), Number(counts.identityEntries),
     Number(counts.anchors), Number(counts.legacyAliases), now,
@@ -389,7 +391,7 @@ async function publishStart(
   }>();
   const storedManifestMatches = stored &&
     Number(stored.registry_revision) === Number(revision) &&
-    stored.registry_checksum === checksum &&
+    String(stored.registry_checksum).toLowerCase() === normalizedChecksum &&
     stored.contract_version === contractVersion &&
     stored.id_algorithm_version === idAlgorithmVersion &&
     stored.schema_version === schemaVersion &&
@@ -878,7 +880,7 @@ async function publishFinalize(
   }
 
   const timestamp = new Date().toISOString();
-  const registryChecksum = String(session.registry_checksum);
+  const registryChecksum = String(session.registry_checksum).toLowerCase();
   const previousHead = await db.prepare("SELECT registry_revision FROM geo_registry_head WHERE singleton_id='current'")
     .first<{registry_revision:number}>();
   const previousRevision = previousHead ? Number(previousHead.registry_revision) : null;
