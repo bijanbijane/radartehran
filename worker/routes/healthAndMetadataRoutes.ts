@@ -223,15 +223,17 @@ export async function handleHealthAndMetadataRoute(
 
   if (pathname === '/api/health') {
     const migration = getMigrationProgressSummary();
-    return jsonWorkerResponse(ctx, 200, {
-      status: 'ok',
+    const triadDomains = getTriadDomainBindingDiagnostics(ctx.env);
+    const isolationDegraded = triadDomains.isolationViolation || triadDomains.irniDirectDbBindingPresent;
+    return jsonWorkerResponse(ctx, isolationDegraded ? 503 : 200, {
+      status: isolationDegraded ? 'degraded' : 'ok',
       service: 'radartehran-cloudflare-worker',
       runtime: 'cloudflare_workers',
       environment: ctx.environment,
       timestampIso: new Date().toISOString(),
       uptimeSeconds,
       migrationProgress: migration,
-      triadDomains: getTriadDomainBindingDiagnostics(ctx.env),
+      triadDomains,
     });
   }
 
@@ -258,6 +260,16 @@ export async function handleHealthAndMetadataRoute(
   }
 
   if (pathname === '/api/health/readiness') {
+    const triadDomains = getTriadDomainBindingDiagnostics(ctx.env);
+    if (triadDomains.isolationViolation || triadDomains.irniDirectDbBindingPresent) {
+      return jsonWorkerResponse(ctx, 503, {
+        ok: false,
+        code: 'DATA_DOMAIN_ISOLATION_VIOLATION',
+        probe: 'readiness',
+        state: 'DEGRADED',
+        triadDomains,
+      });
+    }
     const userDb = resolveUserDb(ctx.env);
     if (userDb) {
       const { inspectD1OperationalDiagnostics, USER_D1_MIGRATION_FILES } = await import('../db/d1SchemaAndMigrations');
