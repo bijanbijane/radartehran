@@ -168,6 +168,21 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(goodEval.withinBudget, true);
       assert.equal(goodEval.verdict, 'GOOD');
       assert.ok((goodEval.distributions.lcpMs.p75 ?? 0) <= 2500);
+      assert.equal(goodEval.distributions.lcpMs.p50, 1650);
+      assert.equal(goodEval.distributions.lcpMs.p95, 2055);
+      assert.equal(goodEval.distributions.lcpMs.p99, 2091, 'P99 is calculated as an interpolated tail diagnostic');
+      assert.equal(buildPercentileDistribution([]).p99, null, 'empty cohorts do not fabricate P99');
+
+      const tailOnlyEval = evaluateRumPercentileBudget({
+        measurementSource: 'FIELD_RUM',
+        lcpSamplesMs: [1000, 1100, 1200, 1300, 30000],
+        inpSamplesMs: [20, 30, 40, 50, 60],
+        clsSamples: [0.01, 0.02, 0.03, 0.04, 0.05],
+        longTaskCounts: [0, 0, 0, 0, 0],
+      });
+      assert.equal(tailOnlyEval.withinBudget, true, 'P99 must not become a Core Web Vitals release gate');
+      assert.ok((tailOnlyEval.distributions.lcpMs.p99 ?? 0) > 2500, 'the P99 tail remains visible as a diagnostic');
+      assert.ok(!tailOnlyEval.failingMetrics.some((metric) => metric.endsWith('_P99')), 'only established P75 metrics gate the verdict');
 
       const violationEval = evaluateRumPercentileBudget({
         measurementSource: 'SYNTHETIC_LOCAL',
