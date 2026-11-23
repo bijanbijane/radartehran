@@ -201,8 +201,6 @@ export interface WorkerRequestContext {
   readonly startedAtMs: number;
   routeId: string;
   implementationId: string;
-  auth?: import('./auth/types').WorkerAuthContext;
-  appCheck?: import('./auth/types').WorkerAppCheckContext;
 }
 
 export interface WorkerObservabilityRecord {
