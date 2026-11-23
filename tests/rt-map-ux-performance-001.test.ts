@@ -1,0 +1,97 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  INITIAL_NEIGHBORHOODS,
+  getNeighborhoodMarketReport,
+  getNeighborhoodTrafficInfo,
+  type EvaluatedNeighborhood,
+} from '../src/data/neighborhoods';
+import { selectVisibleMapNeighborhoods } from '../src/components/map/neighborhoodLayerReconciler';
+import {
+  computeDeclutteredMarkerTiers,
+  getMapLabelBudget,
+  getNeighborhoodMapLabel,
+} from '../src/components/mapZoomLodAndDeclutter';
+
+function evaluateSeeds(): EvaluatedNeighborhood[] {
+  return INITIAL_NEIGHBORHOODS.slice(0, 8).map((hood) => ({
+    ...hood,
+    status: 'green' as const,
+    distKm: 4.2,
+    overallScore: 8.5,
+    diffPercent: 10,
+    marketReport: getNeighborhoodMarketReport(hood),
+    trafficInfo: getNeighborhoodTrafficInfo(hood),
+  }));
+}
+
+test('RT-MAP-UX-001: Tehran neighborhoods are viewport-culled while selected hood is retained', () => {
+  const hoods = evaluateSeeds();
+  const selected = hoods[0];
+  const farHood = { ...selected, id: 900001, name: 'محله دوردست آزمایشی', lat: selected.lat + 2, lng: selected.lng + 2 };
+  const all = [...hoods, farHood];
+  const map = {
+    getBounds: () => ({
+      pad: (ratio: number) => ({
+        contains: ([lat, lng]: [number, number]) =>
+          Math.abs(lat - selected.lat) <= ratio * 0.02 &&
+          Math.abs(lng - selected.lng) <= ratio * 0.02,
+      }),
+    }),
+  };
+
+  const result = selectVisibleMapNeighborhoods({
+    map,
+    allNeighborhoods: all,
+    activeCity: 'tehran',
+    activeCityHoodIds: new Set(all.map((hood) => hood.id)),
+    selectedHoodId: selected.id,
+    selectedHood: selected,
+    currentZoom: 13,
+    statusFilter: 'all',
+    lowBandwidthMode: false,
+  });
+
+  assert.equal(result.renderHoods.length, all.length);
+  assert.ok(result.visibleHoods.some((hood) => hood.id === selected.id), 'selected neighborhood must never be culled');
+  assert.ok(!result.visibleHoods.some((hood) => hood.id === farHood.id), 'off-screen Tehran neighborhood must be culled');
+  assert.ok(result.visibleHoods.length < result.renderHoods.length);
+});
+
+test('RT-MAP-UX-002: text-label budget scales with map dimensions and has hard limits', () => {
+  const mobileBudget = getMapLabelBudget({ getSize: () => ({ x: 390, y: 844 }) });
+  const desktopBudget = getMapLabelBudget({ getSize: () => ({ x: 1440, y: 900 }) });
+  assert.equal(mobileBudget, 18);
+  assert.equal(desktopBudget, 40);
+  assert.ok(getMapLabelBudget({ getSize: () => ({ x: 100, y: 100 }) }) >= 12);
+});
+
+test('RT-MAP-UX-003: decluttering never exceeds the label budget and preserves selected label', () => {
+  const seed = evaluateSeeds()[0];
+  const hoods = Array.from({ length: 60 }, (_, index) => ({
+    ...seed,
+    id: 910000 + index,
+    name: `محله آزمایشی شماره ${index}`,
+    lat: seed.lat + index * 0.001,
+    lng: seed.lng + index * 0.05,
+    overallScore: 9 - index / 100,
+  }));
+  const selectedId = hoods[0].id;
+  const map = {
+    getSize: () => ({ x: 390, y: 844 }),
+    latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng * 10000, y: lat * 10000 }),
+  };
+
+  const tiers = computeDeclutteredMarkerTiers(map, hoods, 14, selectedId, () => false);
+  const labelCount = Array.from(tiers.values()).filter((tier) => tier !== 'dot').length;
+  assert.ok(labelCount <= getMapLabelBudget(map), `expected at most ${getMapLabelBudget(map)} labels, received ${labelCount}`);
+  assert.equal(tiers.get(selectedId), 'detailed_pill');
+});
+
+test('RT-MAP-UX-004: compact map labels stay short without changing the canonical source name', () => {
+  const canonicalName = 'شهرک بسیار طولانی و پیچیده با عنوان رسمی';
+  const mapLabel = getNeighborhoodMapLabel(canonicalName);
+  assert.ok(mapLabel.length <= 14);
+  assert.notEqual(mapLabel, canonicalName);
+  assert.ok(canonicalName.includes('عنوان رسمی'));
+});
