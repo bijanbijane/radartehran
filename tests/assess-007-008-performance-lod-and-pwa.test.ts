@@ -302,7 +302,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/api/osm-tile/12/2632/1611' }),
-    'StaleWhileRevalidateMapTile',
+    'NetworkOnlyMapTile',
     'OSM tile proxy requests must use StaleWhileRevalidateMapTile'
   );
   assert.equal(
