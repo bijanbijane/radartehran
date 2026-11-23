@@ -18,28 +18,50 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       : `${toPersianNum(p.liveBargainCheck.buyerProfitMillion)} میلیون تومان کمتر از میانگین رهن ${p.targetBargainHood.name}`).slice(0, 160);
     const isDuplicate = (p.targetBargainHood.bargains || []).some((b) => classifyPropertyDuplicateCandidate({ hoodId, type: p.bargainType, sqm, street: cleanStreet, title: cleanTitle, priceText: formattedPriceText }, { ...b, hoodId }).classification === 'confirmed_duplicate'
     ); if (isDuplicate) { p.setBargainSubmitMsg({ type: 'error', text: 'این آگهی با همین مشخصات و آدرس پیش‌تر در این محله ثبت شده است.' }); return; }
-    const attachedMedia = p.bargainUploadedMedia.slice(0, 6); const imageUrls = attachedMedia.filter((m) => m.mediaType === 'image').map((m) => m.url).slice(0, 5); const videoObj = attachedMedia.find((m) => m.mediaType === 'video'); const objectStorageBucket = attachedMedia[0]?.bucket;
-    const objectStorageKeys = attachedMedia.map((m) => m.objectKey).filter((k): k is string => typeof k === 'string' && k.length > 0); const objectStorageObjectIds = p.bargainUploadedMedia.map((m) => m.id).filter((id) => typeof id === 'string' && /^obj-\d{10,16}-[a-f0-9]{8}$/i.test(id)).slice(0, 6);
-    const bargainRef = doc(collection(db, 'bargains')); const bargainDocId = bargainRef.id; const ownerRef = doc(db, 'bargainOwners', bargainDocId); const mediaPayload = { ...(imageUrls.length > 0 ? { imageUrl: imageUrls[0], imageUrls } : {}), ...(videoObj?.url ? { videoUrl: videoObj.url } : {}),
-      ...(objectStorageBucket ? { objectStorageBucket } : {}), ...(objectStorageKeys.length > 0 ? { objectStorageKeys } : {}), ...(objectStorageObjectIds.length > 0 ? { objectStorageObjectIds } : {}), }; const newBargain: BargainListing = {
-      id: `cloud-${bargainDocId}`, title: cleanTitle, type: p.bargainType, sqm, priceText: formattedPriceText,
-      discountPercent, buyerProfitText: formattedProfitText, street: cleanStreet, ...mediaPayload, }; try { const batch = writeBatch(db); batch.set(bargainRef, { hoodId, title: newBargain.title, type: newBargain.type, sqm: newBargain.sqm, priceText: newBargain.priceText,
-        discountPercent: newBargain.discountPercent, buyerProfitText: newBargain.buyerProfitText, street: newBargain.street, ...mediaPayload, status: p.isVerifiedAdmin ? 'approved' : 'pending', createdAt: serverTimestamp(), }); batch.set(ownerRef, { bargainId: bargainDocId, userId: p.currentUser.uid, createdAt: serverTimestamp() }); await batch.commit(); } catch (err) {
-      p.setBargainSubmitMsg({ type: 'error', text: 'ثبت آگهی در پایگاه داده انجام نشد. لطفاً اتصال و سطح دسترسی حساب خود را بررسی کنید.' });
-      try { handleFirestoreError(err, OperationType.WRITE, `bargains/${bargainDocId}`); } catch { /* logged */ }
-      return; }
-    let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try {  const response = await fetch('/api/object-storage/attach-to-bargain', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-          cache: 'no-store', body: JSON.stringify({ bargainId: bargainDocId, objectIds: objectStorageObjectIds }), }); const result: unknown = await response.json(); if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
-          mediaAssociationWarning = ' آگهی ثبت شد، اما اتصال رسانه‌ها برای پاکسازی خودکار تأیید نشد؛ موضوع نیازمند بررسی است.'; }
-      } catch { mediaAssociationWarning = ' آگهی ثبت شد، ولی ثبت ارتباط رسانه‌ها با سرور انجام نشد؛ موضوع نیازمند بررسی است.'; } }
-    if (p.isVerifiedAdmin) { p.setNeighborhoods((prev) => !prev.some((n) => n.id === hoodId)
-      ? [...prev, { ...p.targetBargainHood, buyPerSqm: (p.targetBargainHood as EvaluatedNeighborhood).baseBuyPerSqm ?? p.targetBargainHood.buyPerSqm, bargains: [{ ...newBargain, status: 'approved' }, ...(p.targetBargainHood.bargains || [])] }]
-      : prev.map((n) => (n.id !== hoodId ? n : { ...n, bargains: [{ ...newBargain, status: 'approved' }, ...(n.bargains || []).filter((b) => b.id !== newBargain.id)] }))); }
-    const mediaNotice = p.bargainUploadedMedia.length > 0 ? ` (به همراه ${toPersianNum(imageUrls.length)} عکس و ${toPersianNum(videoObj ? 1 : 0)} ویدیو روی آبجکت استوریج)` : '';
-    p.setBargainSubmitMsg({ type: 'success', text: (p.isVerifiedAdmin
-      ? `آگهی شکار شما با ${toPersianNum(newBargain.discountPercent)}٪ زیر میانگین محله ${p.targetBargainHood.name}${mediaNotice} تأیید شد و روی نقشه قرار گرفت.`
-      : `آگهی شکار شما برای محله ${p.targetBargainHood.name}${mediaNotice} ثبت شد و تا تأیید مدیریت روی نقشهٔ عمومی نمایش داده نمی‌شود.`) + mediaAssociationWarning });
+    if (p.bargainUploadedMedia.length > 0) {
+      p.setBargainSubmitMsg({ type: 'error', text: 'ذخیره‌سازی رسانه هنوز فعال نیست؛ تا زمان تأمین ارائه‌دهنده ذخیره‌سازی، آگهی را بدون عکس و ویدیو ثبت کنید.' });
+      return;
+    }
+    try {
+      const response = await fetch('/api/v1/market/bargains', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          cityId: p.activeCity,
+          hoodId,
+          title: cleanTitle,
+          listingType: p.bargainType,
+          sqm,
+          priceMillions: Number(p.bargainProposedPrice),
+          priceText: formattedPriceText,
+          discountPercent,
+          buyerProfitText: formattedProfitText,
+          street: cleanStreet,
+          mediaObjectIds: [],
+        }),
+      });
+      const result = await response.json().catch(() => null) as {
+        status?: string;
+        durable?: boolean;
+        message?: string;
+        bargain?: { id?: string; status?: string };
+      } | null;
+      if (!response.ok || result?.status !== 'ok' || result.durable !== true || !result.bargain?.id) {
+        throw new Error(result?.message || 'ثبت پایدار آگهی در Cloudflare D1 تأیید نشد.');
+      }
+      p.setBargainSubmitMsg({
+        type: 'success',
+        text: `آگهی شکار برای محله ${p.targetBargainHood.name} ثبت شد و تا تأیید مدیریت در نقشه عمومی نمایش داده نمی‌شود.`,
+      });
+    } catch (error) {
+      p.setBargainSubmitMsg({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'ثبت آگهی در Cloudflare D1 انجام نشد.',
+      });
+      return;
+    }
     p.setSelectedHoodId(hoodId); p.setActiveTab('bargains'); if (p.isVerifiedAdmin) p.setShowGoldPins(true); if (p.mapInstanceRef.current) p.mapInstanceRef.current.flyTo([p.targetBargainHood.lat, p.targetBargainHood.lng], 13, { duration: 0.7 }); p.setBargainTitle(''); p.setBargainStreet(''); p.setBargainUploadedMedia([]);
   }; const handleReserveSponsor = async (e: React.FormEvent) => { e.preventDefault(); const cleanAgency = sanitizeInput(p.sponsorAgencyName, 120); if (cleanAgency.length < 2 || !p.sponsorPhone.trim()) { p.setSponsorSubmitMsg('لطفاً نام معتبر دفتر املاک (حداقل ۲ کاراکتر) و شماره تماس را وارد نمایید.');
       return; }
