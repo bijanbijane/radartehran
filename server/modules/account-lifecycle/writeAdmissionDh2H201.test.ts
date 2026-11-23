@@ -124,6 +124,11 @@ async function runInternalRouteTests(): Promise<void> {
     correlationId: 'test',
     requestId: 'test',
     environment: 'development',
+    clientIp: '127.0.0.1',
+    trustedEdgeIp: false,
+    startedAtMs: Date.now(),
+    routeId: 'internal-write-admission',
+    implementationId: 'worker-test',
     env: { DB: db, LIFECYCLE_WRITE_ADMISSION_RPC_SECRET: TEST_SECRET },
   } as import('../../../worker/types.ts').WorkerRequestContext);
   assert.ok(res);
@@ -141,6 +146,11 @@ async function runInternalRouteTests(): Promise<void> {
     correlationId: 'test2',
     requestId: 'test2',
     environment: 'development',
+    clientIp: '127.0.0.1',
+    trustedEdgeIp: false,
+    startedAtMs: Date.now(),
+    routeId: 'internal-write-admission',
+    implementationId: 'worker-test',
     env: { DB: db, LIFECYCLE_WRITE_ADMISSION_RPC_SECRET: TEST_SECRET },
   } as import('../../../worker/types.ts').WorkerRequestContext);
   assert.ok(replay);
