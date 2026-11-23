@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   INITIAL_NEIGHBORHOODS,
   getNeighborhoodMarketReport,
@@ -164,4 +166,11 @@ test('RT-MAP-UX-007: single-neighborhood cluster delegates flyTo to the selectio
 
   assert.equal(selectedId, hood.id);
   assert.equal(flyToCalls.length, 0, 'selection owner is responsible for the single neighborhood flyTo');
+});
+
+test('RT-MAP-UX-008: production Leaflet hook is wired to macro clustering', () => {
+  const hookSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/useLeafletRadarMap.ts'), 'utf8');
+  assert.ok(hookSource.includes('if (currentZoom <= 9)'), 'low zoom must enter the macro-cluster rendering path');
+  assert.ok(hookSource.includes('renderMacroClustersOnLeaflet({'), 'macro clusters must be mounted by the production map hook');
+  assert.ok(hookSource.includes('clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current)'), 'ordinary neighborhood layers must be cleared while clusters are rendered');
 });
