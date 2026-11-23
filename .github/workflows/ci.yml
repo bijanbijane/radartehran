@@ -49,43 +49,61 @@ jobs:
         run: npm ci
 
       - name: Gate A — TypeScript Lint & Typecheck
+        shell: bash
         run: |
-          npm run lint
-          npm run typecheck
+          set -o pipefail
+          npm run lint 2>&1 | tee ci-gate-a-lint.log
+          npm run typecheck 2>&1 | tee ci-gate-a-typecheck.log
 
       - name: Gate B — Architecture & Module Boundary Guardrails
-        run: npm run arch:check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run arch:check 2>&1 | tee ci-gate-b-architecture.log
 
       - name: Gate C — Automated Unit, Security, Rules, Contract, Mutation, Roadmap & Insights Suite
+        shell: bash
         run: |
-          npm test
-          npm run test:roadmap
-          npm run test:contracts
-          npm run test:mutation
+          set -o pipefail
+          npm test 2>&1 | tee ci-gate-c-unit.log
+          npm run test:roadmap 2>&1 | tee ci-gate-c-roadmap.log
+          npm run test:contracts 2>&1 | tee ci-gate-c-contracts.log
+          npm run test:mutation 2>&1 | tee ci-gate-c-mutation.log
 
       - name: Gate D — 50-Cycle Stress & Fuzzing Suite
-        run: npx tsx tests/stress-50-cycles.test.ts
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/stress-50-cycles.test.ts 2>&1 | tee ci-gate-d-stress.log
 
       - name: Gate E — Object Storage Auth, Security & Byte-Range Suites
+        shell: bash
         run: |
-          npx tsx tests/object-storage-upload-auth.test.ts
-          npx tsx tests/object-storage-security.test.ts
-          npx tsx tests/object-storage-range.test.ts
+          set -o pipefail
+          npx tsx tests/object-storage-upload-auth.test.ts 2>&1 | tee ci-gate-e-upload-auth.log
+          npx tsx tests/object-storage-security.test.ts 2>&1 | tee ci-gate-e-security.log
+          npx tsx tests/object-storage-range.test.ts 2>&1 | tee ci-gate-e-range.log
 
       - name: Gate F — Production Bundle Build
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee ci-gate-f-build.log
 
       - name: Gate G — Cloudflare Worker Platform & Staging Bundle Dry-Run
+        shell: bash
         run: |
-          npm run test:cloudflare
-          npx wrangler deploy --env staging --dry-run --outdir /tmp/radartehran-staging-dryrun
+          set -o pipefail
+          npm run test:cloudflare 2>&1 | tee ci-gate-g-cloudflare-tests.log
+          npx wrangler deploy --env staging --dry-run --outdir /tmp/radartehran-staging-dryrun 2>&1 | tee ci-gate-g-wrangler-dry-run.log
 
-      - name: Retain production build summary on failure
-        if: failure()
+      - name: Retain CI diagnostics and architecture baseline
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-gates-diagnostics
+          name: quality-gates-diagnostics-${{ github.run_attempt }}
           path: |
+            ci-gate-*.log
             architecture-baseline.json
           if-no-files-found: ignore
           retention-days: 7
