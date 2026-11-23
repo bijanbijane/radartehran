@@ -69,7 +69,21 @@ test('RT-MAP-UX-002: text-label budget scales with map dimensions and has hard l
   assert.ok(getMapLabelBudget({ getSize: () => ({ x: 100, y: 100 }) }) >= 12);
 });
 
-test('RT-MAP-UX-003: decluttering never exceeds the label budget and preserves selected label', () => {
+test('RT-MAP-UX-003: zoom 12–13 exposes only the selected neighborhood label', () => {
+  const hoods = evaluateSeeds();
+  const selectedId = hoods[0].id;
+  const tiers = computeDeclutteredMarkerTiers(
+    { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng * 10000, y: lat * 10000 }) },
+    hoods,
+    13,
+    selectedId,
+    () => false,
+  );
+  assert.equal(tiers.get(selectedId), 'standard_pill');
+  assert.ok(hoods.slice(1).every((hood) => tiers.get(hood.id) === 'dot'));
+});
+
+test('RT-MAP-UX-004: decluttering never exceeds the label budget and preserves selected label', () => {
   const seed = evaluateSeeds()[0];
   const hoods = Array.from({ length: 60 }, (_, index) => ({
     ...seed,
@@ -91,7 +105,7 @@ test('RT-MAP-UX-003: decluttering never exceeds the label budget and preserves s
   assert.equal(tiers.get(selectedId), 'detailed_pill');
 });
 
-test('RT-MAP-UX-004: compact map labels stay short without changing the canonical source name', () => {
+test('RT-MAP-UX-005: compact map labels stay short without changing the canonical source name', () => {
   const canonicalName = 'شهرک بسیار طولانی و پیچیده با عنوان رسمی';
   const mapLabel = getNeighborhoodMapLabel(canonicalName);
   assert.ok(mapLabel.length <= 14);
@@ -99,7 +113,7 @@ test('RT-MAP-UX-004: compact map labels stay short without changing the canonica
   assert.ok(canonicalName.includes('عنوان رسمی'));
 });
 
-test('RT-MAP-UX-005: spatial macro clustering retains every neighborhood and selected membership', () => {
+test('RT-MAP-UX-006: spatial macro clustering retains every neighborhood and selected membership', () => {
   const seed = evaluateSeeds()[0];
   const hoods = Array.from({ length: 300 }, (_, index) => ({
     ...seed,
