@@ -18,10 +18,10 @@ if (!rawBaseUrl) {
 
 const baseUrl = new URL(rawBaseUrl);
 assert.ok(['https:', 'http:'].includes(baseUrl.protocol), 'RADAR_API_BASE_URL must be HTTP(S)');
-baseUrl.pathname = baseUrl.pathname.replace(/\/$/, '');
+assert.ok(baseUrl.pathname === '/' && !baseUrl.search && !baseUrl.hash, 'RADAR_API_BASE_URL must be an origin without a path, query, or fragment');
 
 function endpoint(path) {
-  return new URL(path.replace(/^\//, ''), baseUrl.toString().replace(/\/$/, '') + '/');
+  return new URL(path, baseUrl);
 }
 
 async function get(path, origin) {
