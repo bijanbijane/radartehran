@@ -11,6 +11,7 @@ import {
   createCloudflareSessionAssertion,
   CLOUDFLARE_SESSION_ASSERTION_TTL_MS,
 } from '../worker/auth/sessionAssertion';
+import { executeSafeStranglerFallback } from '../worker/stranglerFallback';
 import type { WorkerSessionPrincipal } from '../worker/auth/sessionAuth';
 import {
   verifyAuthenticatedUserHeader,
@@ -184,7 +185,8 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
   it('rejects signature tampering and a different shared secret', async () => {
     const assertion = await makeAssertion();
     const [payload, signature] = assertion.split('.');
-    const tampered = `${payload.slice(0, -1)}A.${signature}`;
+    const changedSignature = `${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`;
+    const tampered = `${payload}.${changedSignature}`;
 
     const invalidSignature = verifyCloudflareSessionAssertion(tampered, bind(), SECRET, NOW);
     const wrongSecret = verifyCloudflareSessionAssertion(assertion, bind(), 'another-secret-that-is-also-over-32-bytes', NOW);
@@ -419,6 +421,47 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
     assert.equal(outcome?.authorized, false);
     assert.equal(outcome?.statusCode, 403);
     assert.equal(outcome?.reason, 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION');
+  });
+
+  it('strips spoofed client assertions and forwards only a Worker-minted assertion', async () => {
+    const request = new Request('https://radartehran.ir/api/legacy/profile?view=compact', {
+      method: 'GET',
+      headers: { 'x-radar-session-assertion': 'client-forgery' },
+    });
+    const correlationId = 'cf_legacy-12345678';
+    const signed = await createCloudflareSessionAssertion({
+      request,
+      principal: principal(),
+      secret: SECRET,
+      correlationId,
+      nowMs: NOW,
+    });
+
+    const originalFetch = globalThis.fetch;
+    let forwardedHeaders: Headers | null = null;
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      forwardedHeaders = new Headers(init?.headers);
+      return new Response('ok', { status: 200 });
+    }) as typeof fetch;
+
+    try {
+      const response = await executeSafeStranglerFallback({
+        request,
+        env: {
+          STRANGLER_FALLBACK_ENABLED: 'true',
+          STRANGLER_ORIGIN_URL: 'https://origin.radartehran.test',
+        },
+        correlationId,
+        sessionAssertion: signed,
+      });
+      assert.equal(response.status, 200);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    assert.equal(forwardedHeaders?.get('x-radar-session-assertion'), signed);
+    assert.equal(forwardedHeaders?.get('x-radar-worker-hop'), '1');
+    assert.equal(forwardedHeaders?.get('x-correlation-id'), correlationId);
   });
 
   it('rejects internally inconsistent admin-role claims', async () => {
