@@ -53,6 +53,7 @@ export interface ExpectedGeographicPublishManifest {
 }
 
 export interface ActiveGeographicPublishHead {
+  readonly batch_id: string;
   readonly registry_revision: number;
   readonly registry_checksum: string;
   readonly contract_version: string;
@@ -78,6 +79,15 @@ export interface GeographicPublishManifestComparison {
   readonly matches: boolean;
   readonly mismatches: readonly string[];
 }
+
+export type GeographicFinalizeHeadAssessment =
+  | { readonly action: 'continue' }
+  | { readonly action: 'verify-active' }
+  | {
+      readonly action: 'reject';
+      readonly code: 'PUBLISH_ACTIVE_HEAD_INVALID' | 'PUBLISH_REVISION_ROLLBACK_BLOCKED' | 'PUBLISH_SAME_REVISION_BATCH_CONFLICT';
+      readonly currentRevision: number | null;
+    };
 
 /**
  * Compute the exact stable batch ID used by IRNI's Node publisher.
@@ -186,4 +196,36 @@ export function compareActiveGeographicPublishManifest(input: {
   }
 
   return { matches: mismatches.length === 0, mismatches };
+}
+
+
+/**
+ * Prevent a staged RECEIVING session from mutating canonical tables after a
+ * newer revision has become active. An exact same-revision batch is sent
+ * through the full six-artifact ledger comparison before it can be treated
+ * as already published.
+ */
+export function assessReceivingGeographicPublishHead(input: {
+  readonly activeHead: ActiveGeographicPublishHead | null;
+  readonly expected: ExpectedGeographicPublishManifest;
+  readonly batchId: string;
+}): GeographicFinalizeHeadAssessment {
+  const { activeHead, expected, batchId } = input;
+  if (!activeHead) return { action: 'continue' };
+
+  const currentRevision = Number(activeHead.registry_revision);
+  if (!Number.isSafeInteger(currentRevision) || currentRevision < 1) {
+    return { action: 'reject', code: 'PUBLISH_ACTIVE_HEAD_INVALID', currentRevision: null };
+  }
+  if (currentRevision > expected.registryRevision) {
+    return { action: 'reject', code: 'PUBLISH_REVISION_ROLLBACK_BLOCKED', currentRevision };
+  }
+  if (currentRevision === expected.registryRevision) {
+    if (activeHead.batch_id !== batchId ||
+        String(activeHead.registry_checksum).toLowerCase() !== expected.registryChecksum.toLowerCase()) {
+      return { action: 'reject', code: 'PUBLISH_SAME_REVISION_BATCH_CONFLICT', currentRevision };
+    }
+    return { action: 'verify-active' };
+  }
+  return { action: 'continue' };
 }
