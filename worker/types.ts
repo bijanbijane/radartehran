@@ -158,6 +158,11 @@ export interface WorkerEnv {
   readonly DB?: D1Database;
   /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
   readonly RESEARCH_DB?: D1Database;
+  /**
+   * Forbidden legacy/out-of-band binding surfaced only for diagnostics.
+   * Never use this handle for queries, migrations, or writes; IRNI is API-only.
+   */
+  readonly NEIGHBORHOOD_DB?: unknown;
   // ABSOLUTE ARCHITECTURAL INVARIANT: No direct D1 binding for IRNI `radar-neighborhood-db`.
   readonly RESEARCH_HMAC_SECRET?: string;
   readonly RESEARCH_HMAC_KEY_VERSION?: string;
