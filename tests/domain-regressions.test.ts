@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../src/data/multiCityData';
+import { getAllMultiCityNeighborhoods, getCityExpansionSeeds, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../src/data/multiCityData';
 import {
   calculateDetailedValuation,
   calculateLandShare,
@@ -30,6 +30,7 @@ import {
 } from '../src/data/neighborhoodInsights';
 import {
   INITIAL_NEIGHBORHOODS,
+  hydrateNeighborhoodsFromStorage,
   getNeighborhoodMarketReport,
   getNeighborhoodTrafficInfo,
   EvaluatedNeighborhood,
@@ -129,6 +130,42 @@ function runDomainRegressionTests(): void {
       nationwideThird.length === nationwideSecond.length,
     `first-before-pop=${firstAggregateLength}, second=${nationwideSecond.length}, third=${nationwideThird.length}`
   );
+
+  const karajExpansionSeeds = getCityExpansionSeeds('karaj');
+  const shirazExpansionSeeds = getCityExpansionSeeds('shiraz');
+  assert(
+    '0. City expansion seed lookup is scoped to the requested city',
+    karajExpansionSeeds.length > 0 &&
+      karajExpansionSeeds.every((hood) => hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599) && resolveCityIdForNeighborhood(hood.id) === 'karaj'),
+    'karaj-seeds=' + karajExpansionSeeds.length
+  );
+  const karajCustomId = Array.from({ length: 100 }, (_, index) => 600 + index).find((id) => !karajExpansionSeeds.some((hood) => hood.id === id));
+  const shirazCustomId = Array.from({ length: 99 }, (_, index) => 900 + index).find((id) => !shirazExpansionSeeds.some((hood) => hood.id === id));
+  assert('0. City hydration test IDs are available', karajCustomId !== undefined && shirazCustomId !== undefined && karajExpansionSeeds[0] !== undefined, 'Karaj and Shiraz custom IDs selected');
+  const priorWindow = (globalThis as any).window;
+  const priorLocalStorage = (globalThis as any).localStorage;
+  const savedCityExpansion = [
+    { ...karajExpansionSeeds[0], id: karajCustomId, name: 'Saved Karaj custom' },
+    { ...karajExpansionSeeds[0], id: shirazCustomId, name: 'Saved Shiraz custom' },
+  ];
+  (globalThis as any).window = {};
+  (globalThis as any).localStorage = { getItem: () => JSON.stringify(savedCityExpansion) };
+  try {
+    const hydratedKaraj = hydrateNeighborhoodsFromStorage(
+      karajExpansionSeeds,
+      (id) => resolveCityIdForNeighborhood(id) === 'karaj',
+    );
+    assert(
+      '0. City-scoped hydration excludes saved expansion records from other cities',
+      hydratedKaraj.some((hood) => hood.id === karajCustomId) && !hydratedKaraj.some((hood) => hood.id === shirazCustomId),
+      'Karaj record loaded; Shiraz record excluded'
+    );
+  } finally {
+    if (priorWindow === undefined) delete (globalThis as any).window;
+    else (globalThis as any).window = priorWindow;
+    if (priorLocalStorage === undefined) delete (globalThis as any).localStorage;
+    else (globalThis as any).localStorage = priorLocalStorage;
+  }
 
   const sampleHood: EvaluatedNeighborhood = {
     ...INITIAL_NEIGHBORHOODS[0],
