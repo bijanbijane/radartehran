@@ -44,10 +44,9 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           <MapProviderStatusBadge />
           <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-2 space-y-1">
             <div className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300">تامین‌کننده تایل نقشه (Map Provider):</div>
-            <div className="grid grid-cols-4 gap-1 text-[10px]">
+            <div className="grid grid-cols-3 gap-1 text-[10px]">
               {[
-                { id: 'neshan' as const, label: 'نشان' }, { id: 'osm' as const, label: 'OSM' }, { id: 'satellite' as const, label: 'ماهواره' },
-                { id: 'carto_dark' as const, label: 'تاریک' }, ].map((st) => (
+                { id: 'neshan' as const, label: 'نشان' }, { id: 'osm' as const, label: 'OSM' }, { id: 'voyager' as const, label: 'پروکسی OSM' }, ].map((st) => (
                 <button key={st.id} type="button" onClick={() => selectMapProviderStyle(st.id)} className={`py-1 px-1 rounded-lg font-bold border transition cursor-pointer ${providerState.effectiveProvider === st.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {st.label}
                 </button> ))}
