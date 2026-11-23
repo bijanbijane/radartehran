@@ -93,11 +93,13 @@ export function normalizePhone(raw: unknown): string | null {
     return String(value);
   });
   const compact = asciiDigits.trim().replace(/[\s()-]/g, '');
-  const normalized = /^09\d{9}$/.test(compact)
-    ? `+98${compact.slice(1)}`
-    : /^989\d{9}$/.test(compact)
-      ? `+${compact}`
-      : compact;
+  const normalized = /^00989\d{9}$/.test(compact)
+    ? `+98${compact.slice(4)}`
+    : /^09\d{9}$/.test(compact)
+      ? `+98${compact.slice(1)}`
+      : /^989\d{9}$/.test(compact)
+        ? `+${compact}`
+        : compact;
   return /^\+989\d{9}$/.test(normalized) ? normalized : null;
 }
 
