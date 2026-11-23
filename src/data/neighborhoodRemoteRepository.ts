@@ -256,7 +256,9 @@ export async function saveNeighborhoodOverride(
       hoodId: input.hoodId,
       buyPerSqm: input.buyPerSqm,
       rahn80m: input.rahn80m,
-      sponsor: input.sponsor ?? null,
+      ...(Object.prototype.hasOwnProperty.call(input, 'sponsor')
+        ? { sponsor: input.sponsor ?? null }
+        : {}),
     }),
   });
   recordOverrideCache(input.hoodId, clean);
