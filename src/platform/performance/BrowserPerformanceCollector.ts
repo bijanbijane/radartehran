@@ -35,10 +35,7 @@ export interface PercentileDistribution {
   p50: number | null;
   p75: number | null;
   p95: number | null;
-  /**
-   * Tail-latency diagnostic only. Interpret cautiously for small cohorts;
-   * p99 is not a Core Web Vital budget gate and is unstable with low sample counts.
-   */
+  /** Tail diagnostic only; unstable for small cohorts and never a Core Web Vital budget gate. */
   p99: number | null;
 }
 
@@ -98,7 +95,6 @@ export function buildPercentileDistribution(values: readonly number[]): Percenti
     p50: computeSamplePercentile(valid, 50),
     p75: computeSamplePercentile(valid, 75),
     p95: computeSamplePercentile(valid, 95),
-    // Diagnostic tail percentile; do not use as a release gate for small cohorts.
     p99: computeSamplePercentile(valid, 99),
   };
 }
@@ -232,7 +228,6 @@ export class BrowserRumCollector {
       }
     });
   }
-
   private observeType(type: string, handler: (entries: Array<Record<string, unknown>>) => void): void {
     if (!this.supportedTypes.has(type)) return;
     if (this.observerFactory) {
@@ -247,7 +242,6 @@ export class BrowserRumCollector {
       this.observers.push(obs as unknown as ObserverLike);
     } catch { /* ignore */ }
   }
-
   public recordNavigationTiming(responseStart: number, requestStart: number): void {
     if (Number.isFinite(responseStart) && Number.isFinite(requestStart) && responseStart >= requestStart) {
       this.ttfbMs = Math.round(responseStart - requestStart);
