@@ -426,8 +426,6 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
     }
 
     const importedAt = new Date().toISOString();
-    const aliasCount = await db.prepare('SELECT COUNT(*) AS count FROM geo_legacy_aliases')
-      .first<{ count: number }>();
     const statements: D1PreparedStatement[] = [
       db.prepare('DELETE FROM geo_canonical_entities'),
       db.prepare(`INSERT INTO geo_canonical_entities (
@@ -452,6 +450,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         CASE WHEN json_extract(record_json, '$.identityAnchorRecord.immutable') = 1 THEN 1 ELSE 0 END,
         json_extract(record_json, '$.identityAnchorRecord') FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
       db.prepare('DELETE FROM geo_identity_registry_entries'),
+      db.prepare('DELETE FROM geo_legacy_aliases'),
       db.prepare(`INSERT INTO geo_identity_registry_entries (
         geographic_entity_id, identity_anchor, anchor_type, entity_type, classification_system_id,
         canonical_name_fa, identity_status, issued_at_registry_revision, issued_order_index,
@@ -494,7 +493,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         batch.contract_version, batch.id_algorithm_version, batch.schema_version, batch.registry_revision,
         oldHead?.registry_revision ?? null, batch.registry_checksum, batch.expected_entities,
         batch.expected_entities, batch.expected_relationships, batch.expected_entities,
-        batch.expected_source_mappings, Number(aliasCount?.count || 0), importedAt,
+        batch.expected_source_mappings, 0, importedAt,
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
