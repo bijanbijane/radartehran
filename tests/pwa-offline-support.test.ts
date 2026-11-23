@@ -106,6 +106,27 @@ assert.equal(
   'NetworkOnlyMapTile',
   'Direct ArcGIS tiles must remain network-only unless a provider-specific cache policy is implemented'
 );
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://a.tile.openstreetmap.org/13/5264/3226.png',
+  }),
+  'NetworkOnlyMapTile',
+  'Recognized OSM subdomains must follow the same provider-safe network-only policy'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://tile.openstreetmap.org.evil.example/13/5264/3226.png',
+  }),
+  'NetworkOnlyOther',
+  'A hostname that merely contains an OSM provider suffix must not be treated as an OSM host'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://basemaps.cartocdn.com.evil.example/light_all/13/5264/3226.png',
+  }),
+  'NetworkOnlyOther',
+  'A hostname that merely contains a CARTO provider suffix must not be treated as a CARTO host'
+);
 assert.ok(
   swSource.includes('event.respondWith(fetch(request))') && swSource.includes('Do not persist OSM-derived tiles in Cache API'),
   'Map tiles must use the browser HTTP cache rather than persistent Service Worker offline storage'
