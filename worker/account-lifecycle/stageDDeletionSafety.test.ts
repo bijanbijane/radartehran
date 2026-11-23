@@ -15,9 +15,13 @@ import { createWorkerD1DomainAdapters } from './workerD1DomainAdapters.ts';
 
 type FakeOptions = {
   rows?: Record<string, unknown>[];
+  rowsBySqlIncludes?: Record<string, Record<string, unknown>[]>;
   readFails?: boolean;
+  readFailsFor?: string[];
   writeFails?: boolean;
+  writeFailsFor?: string[];
   changes?: number;
+  changesBySqlIncludes?: Record<string, number>;
 };
 
 function fakeD1(options: FakeOptions = {}): {
@@ -32,14 +36,18 @@ function fakeD1(options: FakeOptions = {}): {
         bind(...next: unknown[]) { values = next; return statement; },
         async all<T = Record<string, unknown>>() {
           calls.push({ method: 'all', sql, values: [...values] });
-          if (options.readFails) return { success: false, results: [] as T[] };
-          return { success: true, results: (options.rows ?? []) as T[] };
+          if (options.readFails || options.readFailsFor?.some((fragment) => sql.includes(fragment))) {
+            return { success: false, results: [] as T[] };
+          }
+          const rowsEntry = Object.entries(options.rowsBySqlIncludes ?? {}).find(([fragment]) => sql.includes(fragment));
+          return { success: true, results: (rowsEntry?.[1] ?? options.rows ?? []) as T[] };
         },
         async run<T = unknown>() {
           calls.push({ method: 'run', sql, values: [...values] });
+          const changesEntry = Object.entries(options.changesBySqlIncludes ?? {}).find(([fragment]) => sql.includes(fragment));
           return {
-            success: !options.writeFails,
-            meta: { duration: 0, changes: options.changes ?? 1 },
+            success: !(options.writeFails || options.writeFailsFor?.some((fragment) => sql.includes(fragment))),
+            meta: { duration: 0, changes: changesEntry?.[1] ?? options.changes ?? 1 },
           };
         },
         async first<T = unknown>() { return null as T | null; },
@@ -188,6 +196,73 @@ test('D1 domain adapters fail closed when an ownership query fails', async () =>
   assert.ok(adapter);
   await assert.rejects(
     () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+  );
+});
+
+
+test('USER_PROFILE adapter fails closed when upload-session D1 query fails', async () => {
+  const { db } = fakeD1({ readFailsFor: ['FROM upload_sessions'] });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+  await assert.rejects(
+    () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+  );
+});
+
+test('USER_PROFILE adapter fails closed when account data-request D1 query fails', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: { 'FROM upload_sessions': [] },
+    readFailsFor: ['FROM account_data_requests'],
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+  await assert.rejects(
+    () => adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+  );
+});
+
+test('upload-session deletion emits no success receipt when D1 deletion fails', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [{ session_id: 'session_1', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_000 }],
+    },
+    writeFailsFor: ['DELETE FROM upload_sessions'],
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+  await assert.rejects(
+    () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
+  );
+});
+
+test('data-request deletion emits no success receipt when D1 deletion fails', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [],
+      'FROM account_data_requests': [{
+        request_id: 'request_1',
+        target_uid: 'uid_1',
+        requested_at_iso: '2026-11-23T00:00:00.000Z',
+      }],
+    },
+    writeFailsFor: ['DELETE FROM account_data_requests'],
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+  await assert.rejects(
+    () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
+  );
+});
+
+test('media metadata domain disposition rejects an unconfirmed zero-row update', async () => {
+  const { db } = fakeD1({
+    rows: [{ object_id: 'media_1', owner_uid: 'uid_1', created_at_iso: '2026-11-23T00:00:00.000Z' }],
+    changesBySqlIncludes: { 'UPDATE media_objects': 0 },
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'MEDIA_METADATA');
+  assert.ok(adapter);
+  await assert.rejects(
+    () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
   );
 });
 
