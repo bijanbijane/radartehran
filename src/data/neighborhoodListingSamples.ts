@@ -164,7 +164,7 @@ type ListingTransactionType = 'sale' | 'rent';
  */
 const neighborhoodListingSampleCache = new WeakMap<
   ReadonlyArray<ListingBargainRecord>,
-  Map<ListingTransactionType, readonly NeighborhoodMarketSample[]>
+  Map<ListingTransactionType, readonly Readonly<NeighborhoodMarketSample>[]>
 >();
 
 /**
@@ -187,7 +187,7 @@ export function buildNeighborhoodListingSamples(
   const cached = byTransactionType.get(transactionType);
   if (cached) {
     // Never expose the cached array: callers retain the historical mutable return contract.
-    return cached.slice();
+    return cached.map((sample) => ({ ...sample }));
   }
 
   const live = bargains.filter(
@@ -243,8 +243,9 @@ export function buildNeighborhoodListingSamples(
     }
   }
 
-  byTransactionType.set(transactionType, out);
-  return out.slice();
+  const immutableSamples = Object.freeze(out.map((sample) => Object.freeze({ ...sample })));
+  byTransactionType.set(transactionType, immutableSamples);
+  return immutableSamples.map((sample) => ({ ...sample }));
 }
 
 const PUBLIC_HOODS: ReadonlyArray<readonly [number, string]> = [
