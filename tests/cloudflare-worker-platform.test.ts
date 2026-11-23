@@ -568,8 +568,8 @@ async function runSuite(): Promise<void> {
     const validMsg: RadarQueueEnvelope = {
       schemaVersion: '1.0',
       messageId: 'msg_001',
-      idempotencyKey: 'idem_sync_2026_11_08',
-      jobType: 'firestore_d1_projection_sync',
+      idempotencyKey: 'idem_cleanup_2026_11_08',
+      jobType: 'expired_chunk_upload_session_cleanup',
       createdAtIso: new Date().toISOString(),
       correlationId: 'corr_001',
       payload: { city: 'tehran' },
