@@ -1,4 +1,5 @@
 import { authenticateWorkerSession, sha256Hex } from '../auth/sessionAuth';
+import { normalizePhone } from './authRoutes';
 import { persistIdempotentMutation } from '../marketplace/d1MarketplaceMutations';
 import { encryptMarketPhone, hashMarketPhone } from '../marketplace/marketPiiCrypto';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
@@ -95,15 +96,6 @@ async function enforceMutationLimit(
     code: 'MARKET_MUTATION_RATE_LIMITED',
     retryAfterSeconds: result.retryAfterSeconds,
   });
-}
-
-function normalizeIranianPhone(value: unknown): string {
-  let digits = String(value || '').replace(/\\D/g, '');
-  if (digits.startsWith('0098')) digits = digits.slice(2);
-  if (digits.startsWith('98') && digits.length === 12) return `+${digits}`;
-  if (digits.startsWith('0') && digits.length === 11) digits = `98${digits.slice(1)}`;
-  if (digits.length === 10 && digits.startsWith('9')) digits = `98${digits}`;
-  return digits.startsWith('98') && digits.length === 12 ? `+${digits}` : '';
 }
 
 function readIdempotencyKey(ctx: WorkerRequestContext): string {
@@ -269,7 +261,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
     const hoodName = safeText(body.body.hoodName, 120);
     const agencyName = safeText(body.body.agencyName, 120);
-    const phone = normalizeIranianPhone(body.body.phone);
+    const phone = normalizePhone(body.body.phone);
     const specialty = safeText(body.body.specialty, 120);
     const experienceYears = boundedNumber(body.body.experienceYears, 0, 80);
     const monthlyTariff = boundedNumber(body.body.monthlyTariffMillion, 0, 100000);
@@ -339,7 +331,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
     const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
     const fullName = safeText(body.body.fullName, 100);
-    const phone = normalizeIranianPhone(body.body.phone);
+    const phone = normalizePhone(body.body.phone);
     const dealType = body.body.dealType === 'خرید' ? 'خرید' : body.body.dealType === 'اجاره' ? 'اجاره' : null;
     const maxBudgetMillion = boundedNumber(body.body.maxBudgetMillion, 0.01, 100000000);
     const consentVersion = safeText(body.body.consentVersion, 80);
