@@ -11,7 +11,6 @@ import {
   WRITE_ADMISSION_RPC_TIMESTAMP_HEADER,
   WRITE_ADMISSION_WORKER_BASE_URL_ENV,
   type WriteAdmissionRpcRequestBody,
-  type WriteAdmissionRpcSuccessBody,
 } from './writeAdmissionRpcContract.ts';
 import { generateRpcNonce, signWriteAdmissionRpcRequest } from './writeAdmissionRpcAuth.ts';
 
