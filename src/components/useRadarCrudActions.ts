@@ -63,125 +63,18 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       return;
     }
     p.setSelectedHoodId(hoodId); p.setActiveTab('bargains'); if (p.isVerifiedAdmin) p.setShowGoldPins(true); if (p.mapInstanceRef.current) p.mapInstanceRef.current.flyTo([p.targetBargainHood.lat, p.targetBargainHood.lng], 13, { duration: 0.7 }); p.setBargainTitle(''); p.setBargainStreet(''); p.setBargainUploadedMedia([]);
-  }; const handleReserveSponsor = async (e: React.FormEvent) => { e.preventDefault(); const cleanAgency = sanitizeInput(p.sponsorAgencyName, 120); if (cleanAgency.length < 2 || !p.sponsorPhone.trim()) { p.setSponsorSubmitMsg('لطفاً نام معتبر دفتر املاک (حداقل ۲ کاراکتر) و شماره تماس را وارد نمایید.');
-      return; }
-    const targetHood = p.evaluatedNeighborhoods.find((n) => n.id === p.sponsorHoodId) || p.neighborhoods.find((n) => n.id === p.sponsorHoodId) || p.evaluatedNeighborhoods[0]; const cleanPhone = cleanIranianMobile(p.sponsorPhone) || sanitizeInput(p.sponsorPhone, 30);
-    const cleanSpec = (sanitizeInput(p.sponsorSpecialty, 140) || `کارشناس رسمی خرید و اجاره در ${targetHood.name}`).slice(0, 140);
-    const expYears = Math.min(60, Math.max(1, Number(p.sponsorExpYears) || 10)); const tariff = getHoodMonthlySponsorTariff(targetHood);
-    const activePlanMonths: 1 | 3 = p.featureFlags.enableSponsorBilling ? p.sponsorPlanMonths : 1; const totalPayableMillion = activePlanMonths === 3 ? Math.round(tariff * 3 * 0.8 * 10) / 10 : tariff;
-    const cleanTracking = sanitizeInput(p.sponsorTrackingCode, 60) || `TR-${Date.now().toString().slice(-6)}`;
-    const durationDays = activePlanMonths === 3 ? 90 : 30; const expiresAtIso = new Date(Date.now() + durationDays * 86400000).toISOString();
-    const initialSponsorStatus: 'pending' | 'approved' = p.isVerifiedAdmin ? 'approved' : 'pending';
-    const newCrmItem: SponsorCrmRequestItem = {
-      id: `crm-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
-      agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec,
-      experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths,
-      totalPayableMillion, trackingCode: cleanTracking, expiresAtIso,
-      status: initialSponsorStatus, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
-    };
-    if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) { p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.'); return; }
-    let reqDocId = `${p.currentUser.uid}_${Date.now()}`; let persistedOnServer = false;
-    try {
-      
-      const operationCity = resolveCityIdForNeighborhood(targetHood.id);
-      const apiRes = await fetch('/api/sponsors/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ hoodId: targetHood.id, hoodName: targetHood.name, city: operationCity, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, planMonths: activePlanMonths }), cache: 'no-store' });
-      const apiJson = (await apiRes.json().catch(() => null)) as { status?: string; message?: string; request?: { id?: string; monthlyTariffMillion?: number; totalPayableMillion?: number; trackingCode?: string } } | null;
-      if (apiRes.status === 400 || apiRes.status === 409) { p.setSponsorSubmitMsg(apiJson?.message || 'اطلاعات درخواست اسپانسر نامعتبر است.'); return; }
-      if (apiRes.ok && apiJson?.status === 'ok' && apiJson.request) {
-        persistedOnServer = true; if (apiJson.request.id) reqDocId = apiJson.request.id; if (typeof apiJson.request.monthlyTariffMillion === 'number') newCrmItem.monthlyTariffMillion = apiJson.request.monthlyTariffMillion; if (typeof apiJson.request.totalPayableMillion === 'number') newCrmItem.totalPayableMillion = apiJson.request.totalPayableMillion; if (apiJson.request.trackingCode) newCrmItem.trackingCode = apiJson.request.trackingCode; newCrmItem.id = `cloud-${reqDocId}`;
-        if (p.isVerifiedAdmin) { await updateDoc(doc(db, 'sponsorRequests', reqDocId), { status: 'approved', expiresAtIso }).catch(() => { recordDiagnosticEvent('Sponsor', `Admin auto-approve updateDoc deferred for ${reqDocId}`, 'fallback'); }); }
-      }
-    } catch { /* fallback to Firestore SDK */ }
-    if (!persistedOnServer) {
-      try {
-        await setDoc(doc(db, 'sponsorRequests', reqDocId), { hoodId: targetHood.id, hoodName: targetHood.name.slice(0, 80), agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, ...(p.isVerifiedAdmin ? { expiresAtIso } : {}), status: initialSponsorStatus, createdAt: serverTimestamp() });
-      } catch (err) {
-        p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
-        try { handleFirestoreError(err, OperationType.WRITE, `sponsorRequests/${reqDocId}`); } catch { /* local */ }
-        return;
-      }
-    }
-    p.setSponsorRequests((prev) => [newCrmItem, ...(prev || [])]);
-    if (initialSponsorStatus === 'approved') {
-      const planType = p.featureFlags.enableSponsorBilling ? (activePlanMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free';
-      const newSponsorObj = { name: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, expiresAtIso, planType: planType as 'free' | 'paid_1m' | 'paid_3m' };
-      await persistHoodOverrideToCloud(targetHood.id, (targetHood as EvaluatedNeighborhood).baseBuyPerSqm ?? targetHood.buyPerSqm, Math.max(50, targetHood.rahn80m), newSponsorObj).catch(() => {});
-      p.setNeighborhoods((prev) => !prev.some((n) => n.id === p.sponsorHoodId)
-        ? [...prev, { ...targetHood, buyPerSqm: targetHood.baseBuyPerSqm ?? targetHood.buyPerSqm, sponsor: newSponsorObj }]
-        : prev.map((n) => (n.id !== p.sponsorHoodId ? n : { ...n, sponsor: newSponsorObj })));
-    }
-    p.setSelectedHoodId(p.sponsorHoodId);
-    p.setSponsorSubmitMsg(
-      initialSponsorStatus === 'approved'
-        ? `فاکتور ${toPersianNum(activePlanMonths)} ماهه (${toPersianNum(totalPayableMillion)} میلیون تومان - کد پیگیری: ${cleanTracking}) در پنل CRM ثبت شد و تابلوی انحصاری «حامی رسمی محله ${targetHood.name}» به مدت ${toPersianNum(durationDays)} روز فعال گردید.`
-        : `درخواست اسپانسری ${toPersianNum(activePlanMonths)} ماهه (${toPersianNum(totalPayableMillion)} میلیون تومان - کد پیگیری: ${cleanTracking}) برای محله ${targetHood.name} ثبت شد و پس از تایید مدیریت فعال می‌گردد.`
-    );
-    p.setSponsorTrackingCode('');
-    if (p.mapInstanceRef.current) p.mapInstanceRef.current.flyTo([targetHood.lat, targetHood.lng], 13, { duration: 0.6 });
+  }; const handleReserveSponsor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    p.setSponsorSubmitMsg('ثبت درخواست اسپانسر تا تکمیل مخزن D1 و رمزنگاری شماره تماس در Cloudflare موقتاً غیرفعال است. اطلاعات شما در مخزن قدیمی ذخیره نخواهد شد.');
   };
   const handleRegisterBuyerAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSavingBuyerAlert) return;
     if (!p.currentUser || (!p.currentUser.emailVerified && !p.currentUser.phoneNumber)) {
-      p.setAlertSubmitMsg('ثبت شماره خریدار نیازمند ورود به حساب کاربری تأییدشده است.'); return;
+      p.setAlertSubmitMsg('ثبت درخواست خریدار نیازمند ورود با حساب کاربری است.');
+      return;
     }
-    if (!p.alertPhone.trim() || !p.alertFullName.trim()) {
-      p.setAlertSubmitMsg('لطفاً نام و شماره موبایل معتبر ۱۱ رقمی ایران (شروع با ۰۹) وارد نمایید.'); return;
-    }
-    const targetHood = p.evaluatedNeighborhoods.find((n) => n.id === p.alertHoodId) || p.neighborhoods.find((n) => n.id === p.alertHoodId) || p.evaluatedNeighborhoods[0];
-    const cleanName = sanitizeInput(p.alertFullName, 100);
-    const cleanPhone = normalizeIranianMobileInput(p.alertPhone);
-    if (!isValidNormalizedIranianMobile(cleanPhone) || !isValidIranianMobile(cleanPhone) || cleanName.trim().length < 2) {
-      p.setAlertSubmitMsg('لطفاً نام و شماره موبایل معتبر ۱۱ رقمی ایران (شروع با ۰۹) وارد نمایید.'); return;
-    }
-    const cleanBudget = (sanitizeInput(p.alertMaxBudget, 120) || 'متناسب با میانگین محله').slice(0, 120);
-    setIsSavingBuyerAlert(true); p.setAlertSubmitMsg('در حال ثبت امن درخواست...');
-    try {
-      
-      let serverErrorMessage = '';
-      try {
-        const response = await fetch('/api/buyer-alerts', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-          body: JSON.stringify({
-            city: resolveCityIdForNeighborhood(targetHood.id), hoodId: targetHood.id, hoodName: targetHood.name,
-            fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget,
-            privacyConsent: true, consentVersion: 'buyer-alert-2026-10-v1',
-          }),
-          cache: 'no-store',
-        });
-        const result = (await response.json().catch(() => null)) as { status?: string; message?: string; durable?: boolean } | null;
-        if (response.ok && result?.status === 'ok' && result?.durable === true) {
-          if (p.isVerifiedAdmin) {
-            p.setBuyerLeads((prev) => [{
-              id: `lead-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
-              fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType,
-              maxBudgetText: cleanBudget, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
-            }, ...(prev || [])]);
-          }
-          p.setAlertSubmitMsg(result.message || `درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-          p.setAlertFullName(''); p.setAlertPhone('');
-          return;
-        }
-        if (!response.ok || result?.status !== 'ok' || result?.durable !== true) {
-          serverErrorMessage = result?.message || '';
-        }
-      } catch { /* Network failure: proceed to client-side fallback below */ }
-      const alertDocId = `${p.currentUser.uid}_hood_${targetHood.id}`;
-      try {
-        const alertRef = doc(db, 'buyerAlerts', alertDocId);
-        const existingAlert = await getDoc(alertRef);
-        const mutableAlertFields = { hoodName: targetHood.name.slice(0, 80), fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget };
-        if (existingAlert.exists()) await updateDoc(alertRef, { ...mutableAlertFields, updatedAt: serverTimestamp() });
-        else await setDoc(alertRef, { ...mutableAlertFields, userId: p.currentUser.uid, hoodId: targetHood.id, consentVersion: 'buyer-alert-2026-10-v1', consentAt: serverTimestamp(), expiresAt: Timestamp.fromDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)), createdAt: serverTimestamp() });
-        p.setAlertSubmitMsg(`درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-        p.setAlertFullName(''); p.setAlertPhone('');
-      } catch (err) {
-        try { handleFirestoreError(err, OperationType.WRITE, `buyerAlerts/${alertDocId}`); } catch { /* ignore */ }
-        p.setAlertSubmitMsg(serverErrorMessage || 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.');
-      }
-    } catch {
-      p.setAlertSubmitMsg('ارتباط با سرور برقرار نشد؛ درخواست شما ثبت نشد.');
-    } finally { setIsSavingBuyerAlert(false); }
+    p.setAlertSubmitMsg('ثبت درخواست خریدار تا تکمیل رمزنگاری شماره تماس و API پایدار Cloudflare D1 موقتاً غیرفعال است. اطلاعات شما در مخزن قدیمی ذخیره نخواهد شد.');
   };
   const submitVoteData = async (locationVerified: boolean, statusMsg: string) => {
     const voteCooldownKey = `${p.currentUser?.uid || 'guest'}_${p.selectedHood.id}`;
