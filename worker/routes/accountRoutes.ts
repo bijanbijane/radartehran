@@ -21,7 +21,7 @@ import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
 } from '../account-lifecycle/workerLifecycleRuntime';
-import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
+import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import type { WorkerRequestContext } from '../types';
@@ -66,9 +66,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
   }
   const userDb = userDbRes.db;
 
-  const isSensitive =
-    method !== 'GET' &&
-    (pathname === '/api/account/deletion-requests' || pathname.startsWith('/api/account/sessions/'));
+  const isSensitive = method !== 'GET' && method !== 'HEAD';
   const auth = await authenticateAccountCaller(ctx, isSensitive);
   if (!auth.authenticated || !auth.uid) {
     return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
