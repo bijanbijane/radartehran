@@ -67,11 +67,21 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
     const envCfg = parsed.env as Record<string, Record<string, unknown>>;
     assert.ok(envCfg.preview);
     assert.ok(envCfg.staging);
-    const stagingConfig = envCfg.staging as Record<string, any>;
-    assert.deepEqual(stagingConfig.triggers?.crons, [], 'staging cron triggers must remain disabled until isolated staging D1 databases are provisioned');
-    assert.ok(!Array.isArray(stagingConfig.d1_databases) || stagingConfig.d1_databases.length === 0, 'staging must not inherit or bind production D1 databases');
     assert.ok(envCfg.production);
     assert.ok(!/AIza|sk-|TELEGRAM_BOT_TOKEN/i.test(wranglerRaw));
+  });
+
+  it('1b. keeps backend staging Cron Triggers disabled until isolated D1 is provisioned', () => {
+    const backendRaw = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.backend.jsonc'), 'utf8');
+    const backendStripped = backendRaw
+      .split('\\n')
+      .filter((line) => !line.trim().startsWith('//'))
+      .join('\\n');
+    const backendParsed = JSON.parse(backendStripped) as Record<string, any>;
+    const backendStaging = backendParsed.env?.staging as Record<string, any>;
+    assert.ok(backendStaging, 'backend staging environment must be explicitly defined');
+    assert.deepEqual(backendStaging.triggers?.crons, [], 'backend staging cron triggers must stay disabled until isolated staging D1 databases are provisioned');
+    assert.ok(!Array.isArray(backendStaging.d1_databases) || backendStaging.d1_databases.length === 0, 'backend staging must not bind production D1 databases');
   });
 
   it('2. enforces strict Worker module isolation (no express, firebase-admin, sharp, or disk cache imports)', () => {
