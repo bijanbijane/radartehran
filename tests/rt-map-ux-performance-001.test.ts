@@ -28,14 +28,15 @@ function evaluateSeeds(): EvaluatedNeighborhood[] {
 test('RT-MAP-UX-001: Tehran neighborhoods are viewport-culled while selected hood is retained', () => {
   const hoods = evaluateSeeds();
   const selected = hoods[0];
+  const viewportHood = hoods[5];
   const farHood = { ...selected, id: 900001, name: 'محله دوردست آزمایشی', lat: selected.lat + 2, lng: selected.lng + 2 };
   const all = [...hoods, farHood];
   const map = {
     getBounds: () => ({
       pad: (ratio: number) => ({
         contains: ([lat, lng]: [number, number]) =>
-          Math.abs(lat - selected.lat) <= ratio * 0.02 &&
-          Math.abs(lng - selected.lng) <= ratio * 0.02,
+          Math.abs(lat - viewportHood.lat) <= ratio * 0.02 &&
+          Math.abs(lng - viewportHood.lng) <= ratio * 0.02,
       }),
     }),
   };
@@ -54,6 +55,7 @@ test('RT-MAP-UX-001: Tehran neighborhoods are viewport-culled while selected hoo
 
   assert.equal(result.renderHoods.length, all.length);
   assert.ok(result.visibleHoods.some((hood) => hood.id === selected.id), 'selected neighborhood must never be culled');
+  assert.ok(result.visibleHoods.some((hood) => hood.id === viewportHood.id), 'neighborhoods in the live viewport must render after a manual pan');
   assert.ok(!result.visibleHoods.some((hood) => hood.id === farHood.id), 'off-screen Tehran neighborhood must be culled');
   assert.ok(result.visibleHoods.length < result.renderHoods.length);
 });
