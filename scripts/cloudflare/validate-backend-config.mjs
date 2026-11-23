@@ -272,6 +272,10 @@ export function validateBackendWranglerConfig(
   // 5. Background processing wiring: Cron handlers enqueue work and cannot run without
   // a producer, matching consumer, and durable DLQ. The nightly cron also emits R2 jobs.
   const configuredCrons = Array.isArray(config.triggers?.crons) ? config.triggers.crons : [];
+  const supportedCronPatterns = new Set(['30 0 * * *', '30 18 * * *', '0 * * * *']);
+  for (const cron of configuredCrons) {
+    if (!supportedCronPatterns.has(cron)) errors.push(`UNSUPPORTED_CRON_PATTERN:${cron}`);
+  }
   const queueProducers = Array.isArray(config.queues?.producers) ? config.queues.producers : [];
   const queueConsumers = Array.isArray(config.queues?.consumers) ? config.queues.consumers : [];
   if (configuredCrons.length > 0) {
