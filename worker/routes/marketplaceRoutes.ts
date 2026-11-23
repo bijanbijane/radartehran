@@ -426,12 +426,10 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     ).bind(voteId, auth.uid, cityId, hoodId, air, power, internet, metro, security, flat, comment, displayName, now)
       .first<{ vote_id: string }>();
     if (!savedVote?.vote_id) return jsonWorkerResponse(ctx, 500, { status: 'error', code: 'VOTE_PERSISTENCE_FAILED' });
-    const persistedVote = await auth.db!.prepare(
-      'SELECT vote_id FROM neighborhood_votes WHERE owner_uid = ?1 AND city_id = ?2 AND hood_id = ?3 LIMIT 1',
-    ).bind(auth.uid, cityId, hoodId).first<{ vote_id: string }>();
     return jsonWorkerResponse(ctx, 201, {
       status: 'ok', durable: true,
-      vote: { id: String(persistedVote?.vote_id || voteId), cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
+      // RETURNING provides the canonical id, including when ON CONFLICT updates an existing vote.
+      vote: { id: String(savedVote.vote_id), cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
     }, { cacheControl: 'private, no-store' });
   }
 
@@ -449,7 +447,7 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const workHubId = safeText(body.body.workHubId || 'none', 40);
     const rawFavorites = Array.isArray(body.body.favoriteHoodIds) ? body.body.favoriteHoodIds : [];
     const favorites = Array.from(new Set(rawFavorites.map((value) => Number(value))
-      .filter((value) => Number.isInteger(value) && value >= 1 && value <= 999))).slice(0, 25);
+      .filter((value) => Number.isInteger(value) && value >= 1 && value <= 9999))).slice(0, 25);
     if (!SUPPORTED_CITY_IDS.has(cityId) || !mode || deposit === null || monthlyRent === null
       || buyTotalBudget === null || targetSqm === null || rawFavorites.length > 100) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PREFERENCES_PAYLOAD' });
@@ -470,7 +468,15 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         'INSERT OR IGNORE INTO user_favorites (uid, city_id, hood_id, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
       ).bind(auth.uid, cityId, hoodId, now)),
     ];
-    await auth.db!.batch(statements);
+    try {
+      const results = await auth.db!.batch(statements);
+      if (!Array.isArray(results) || results.length !== statements.length || results.some((result) => result.success !== true)) {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'PREFERENCES_PERSISTENCE_FAILED' });
+      }
+    } catch {
+      // The caller may safely retry this idempotent preference replacement.
+      return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'PREFERENCES_PERSISTENCE_FAILED' });
+    }
     return jsonWorkerResponse(ctx, 200, { status: 'ok', durable: true, updatedAtIso: now }, { cacheControl: 'private, no-store' });
   }
 
