@@ -50,7 +50,7 @@ import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
-import { isTokenRevokedOrUserDisabled, recordUserRevocationInD1 } from '../worker/auth/firebaseEdgeAuth';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
 import {
   getTriadDomainBindingDiagnostics,
   requireResearchDb,
@@ -415,7 +415,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(retryRes.statusCode, 200);
 
       // Verify revocation is actually enforced
-      const revCheck = await isTokenRevokedOrUserDisabled('uid_atomic_test', 1_749_999_999, userSqlite.db);
+      const revCheck = await isUserAuthDisabledOrRevoked('uid_atomic_test', 1_749_999_999, userSqlite.db);
       assert.equal(revCheck.revoked, true);
 
       // 3. Identical replay returns 200 idempotentReplay: true
@@ -746,7 +746,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
       // Verify USER_DB PII was purged & auth disabled
       assert.equal(await getUserProfileFromD1(userSqlite.db, uid), null);
-      const revCheck = await isTokenRevokedOrUserDisabled(uid, Math.floor(Date.now() / 1000), userSqlite.db);
+      const revCheck = await isUserAuthDisabledOrRevoked(uid, Math.floor(Date.now() / 1000), userSqlite.db);
       assert.equal(revCheck.revoked, true);
 
       // Verify research_erasure_outbox contains ZERO raw UID
