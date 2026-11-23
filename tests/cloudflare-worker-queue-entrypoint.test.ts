@@ -21,8 +21,9 @@ import {
 import { createLocalR2BucketSimulator } from '../worker/storage/r2StorageAdapter';
 import type { D1Database, D1PreparedStatement, MessageBatch, QueueMessage, WorkerEnv } from '../worker/types';
 
-function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync } {
+function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync; setFailOnSqlContains: (value: string | null) => void } {
   const sqlite = new DatabaseSync(':memory:');
+  let failOnSqlContains: string | null = null;
   const wrap = (sql: string, params: unknown[] = []): D1PreparedStatement => ({
     bind(...values: unknown[]) {
       return wrap(sql, values);
@@ -39,6 +40,9 @@ function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync } {
       return { results: rows, success: true };
     },
     async run() {
+      if (failOnSqlContains && sql.includes(failOnSqlContains)) {
+        throw new Error(`INJECTED_SQL_FAILURE:${failOnSqlContains}`);
+      }
       const stmt = sqlite.prepare(sql);
       const info = stmt.run(...(params as never[])) as { changes?: number | bigint };
       return { success: true, meta: { changes: Number(info.changes ?? 0) } };
@@ -60,7 +64,7 @@ function createRealSqliteD1(): { db: D1Database; sqlite: DatabaseSync } {
       return { count: 1, duration: 1 };
     },
   };
-  return { db, sqlite };
+  return { db, sqlite, setFailOnSqlContains: (value) => { failOnSqlContains = value; } };
 }
 
 function makeQueueMessage(body: RadarQueueEnvelope, attempts = 1, id = `msg-${Math.random().toString(36).slice(2, 8)}`) {
@@ -84,7 +88,7 @@ function makeQueueMessage(body: RadarQueueEnvelope, attempts = 1, id = `msg-${Ma
 }
 
 async function setupMigratedEnv() {
-  const { db, sqlite } = createRealSqliteD1();
+  const { db, sqlite, setFailOnSqlContains } = createRealSqliteD1();
   const r2 = createLocalR2BucketSimulator();
   const sqlDir = path.resolve(process.cwd(), 'migrations/d1');
   for (const mig of D1_MIGRATIONS) {
@@ -115,7 +119,7 @@ async function setupMigratedEnv() {
       },
     },
   };
-  return { db, sqlite, r2, env, sentToQueue, sentToDlq };
+  return { db, sqlite, r2, env, sentToQueue, sentToDlq, setFailOnSqlContains };
 }
 
 describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
@@ -220,6 +224,48 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
       .bind('idem-mp-1')
       .first<{ attempt_count: number }>();
     assert.equal(afterReplay?.attempt_count, 1);
+  });
+
+  it('does not rerun committed work when the legacy idempotency mirror write fails', async () => {
+    const { db, env, setFailOnSqlContains } = await setupMigratedEnv();
+    const envelope: RadarQueueEnvelope = {
+      schemaVersion: '1.0',
+      messageId: 'msg-mirror-failure-1',
+      jobType: 'expired_chunk_upload_session_cleanup',
+      idempotencyKey: 'idem-mirror-failure-1',
+      correlationId: 'corr-mirror-failure-1',
+      createdAtIso: new Date().toISOString(),
+      payload: {},
+    };
+    let executions = 0;
+    setFailOnSqlContains('INSERT OR REPLACE INTO queue_idempotency_keys');
+
+    const first = makeQueueMessage(envelope);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [first.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: env.RADAR_DLQ,
+      executeJob: async () => { executions += 1; return { ok: true }; },
+    });
+
+    assert.equal(first.getState().acked, true);
+    assert.equal(first.getState().retried, false);
+    const committed = await db.prepare(
+      'SELECT status, attempt_count FROM queue_job_executions WHERE idempotency_key = ?1',
+    ).bind(envelope.idempotencyKey).first<{ status: string; attempt_count: number }>();
+    assert.equal(committed?.status, 'COMPLETED');
+    assert.equal(committed?.attempt_count, 1);
+
+    setFailOnSqlContains(null);
+    const replay = makeQueueMessage(envelope, 2);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [replay.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: env.RADAR_DLQ,
+      executeJob: async () => { executions += 1; return { ok: true }; },
+    });
+    assert.equal(replay.getState().acked, true);
+    assert.equal(executions, 1, 'A completed canonical job must not execute again.');
   });
 
   it('3. handles retryable errors, terminal DLQ routing, poison unknown jobs, stale lease takeover, and missing D1 fail-closed', async () => {
