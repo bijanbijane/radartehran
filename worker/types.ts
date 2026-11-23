@@ -143,6 +143,8 @@ export interface WorkerEnv {
   readonly KAVENEGAR_API_KEY?: string;
   readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
   readonly AUTH_PII_HMAC_SECRET?: string;
+  readonly MARKET_PII_ENCRYPTION_KEY?: string;
+  readonly MARKET_PII_HASH_SECRET?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
