@@ -267,7 +267,8 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       markersMapRef.current = {};
       const clusterSource = [...(cityScopedHoods.length > 0 ? cityScopedHoods : renderHoods)];
       const selectedForCluster = selectedHoodRef.current;
-      if (selectedForCluster && !clusterSource.some((hood) => hood.id === currentSelectedId)) {
+      const selectedIsInActiveCity = activeCityHoodIds.size === 0 || Boolean(selectedForCluster && activeCityHoodIds.has(selectedForCluster.id));
+      if (selectedForCluster && selectedIsInActiveCity && !clusterSource.some((hood) => hood.id === currentSelectedId)) {
         clusterSource.push(selectedForCluster);
       }
       const clusterCandidates = clusterSource.filter((hood) =>
