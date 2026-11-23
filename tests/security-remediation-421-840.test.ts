@@ -1240,16 +1240,74 @@ async function runAllRemediationTests(): Promise<void> {
   validPngBuf[1] = 0x50;
   validPngBuf[2] = 0x4e;
   validPngBuf[3] = 0x47;
+  let capturedTileRequestHeaders: Record<string, string> | undefined;
   const validPngTileRes = await fetchTileFromMirror(
     'https://tile.openstreetmap.org/12/2632/1610.png',
     1000,
-    (async () => ({
-      ok: true,
-      headers: new Map([['content-type', 'image/png'], ['content-length', '128']]),
-      arrayBuffer: async () => validPngBuf.buffer.slice(validPngBuf.byteOffset, validPngBuf.byteOffset + validPngBuf.byteLength),
-    })) as any,
+    (async (_input: unknown, init?: { headers?: Record<string, string> }) => {
+      capturedTileRequestHeaders = init?.headers;
+      return {
+        ok: true,
+        headers: new Map([['content-type', 'image/png'], ['content-length', '128']]),
+        arrayBuffer: async () => validPngBuf.buffer.slice(validPngBuf.byteOffset, validPngBuf.byteOffset + validPngBuf.byteLength),
+      };
+    }) as any,
   );
   assert.ok(validPngTileRes !== null && validPngTileRes.contentType === 'image/png', 'fetchTileFromMirror must accept valid PNG raster tiles');
+  const configuredTileAppUrl = process.env.APP_URL || 'https://tehranradar.ir';
+  let expectedTileReferer = 'https://tehranradar.ir/';
+  try {
+    const parsedTileAppUrl = new URL(configuredTileAppUrl);
+    if (parsedTileAppUrl.protocol === 'https:') expectedTileReferer = parsedTileAppUrl.origin + '/';
+  } catch {
+    // Match the production-origin fallback used by the proxy.
+  }
+  assert.equal(capturedTileRequestHeaders?.Referer, expectedTileReferer, 'OSM proxy must forward an accurate, query-free site Referer');
+  assert.ok(capturedTileRequestHeaders?.['User-Agent']?.includes('TehranHousingRadar/2.0'), 'OSM proxy must identify the application with a stable User-Agent');
+
+  if (!validPngTileRes) throw new Error('Expected valid PNG tile before conditional revalidation test');
+  const expiredCachedTile = {
+    ...validPngTileRes,
+    sourceUrl: 'https://tile.openstreetmap.org/12/2632/1610.png',
+    etag: '"tile-v1"',
+    lastModified: 'Sun, 22 Nov 2026 12:00:00 GMT',
+    expiresAt: Date.now() - 1000,
+  };
+  let capturedConditionalHeaders: Record<string, string> | undefined;
+  const revalidatedTile = await fetchTileFromMirror(
+    expiredCachedTile.sourceUrl,
+    1000,
+    (async (_input: unknown, init?: { headers?: Record<string, string> }) => {
+      capturedConditionalHeaders = init?.headers;
+      return {
+        ok: false,
+        status: 304,
+        headers: new Map([['cache-control', 'public, max-age=60']]),
+        arrayBuffer: async () => new ArrayBuffer(0),
+      };
+    }) as any,
+    expiredCachedTile,
+  );
+  assert.equal(capturedConditionalHeaders?.['If-None-Match'], '"tile-v1"', 'Expired OSM tiles must revalidate with If-None-Match');
+  assert.equal(capturedConditionalHeaders?.['If-Modified-Since'], 'Sun, 22 Nov 2026 12:00:00 GMT', 'Expired OSM tiles must revalidate with If-Modified-Since');
+  assert.ok(revalidatedTile?.revalidated && revalidatedTile.buffer === expiredCachedTile.buffer, '304 must reuse the validated cached tile bytes');
+  assert.ok(revalidatedTile && revalidatedTile.expiresAt > Date.now(), '304 freshness metadata must refresh the cached tile lifetime');
+  const revalidatedWithoutNewHeaders = await fetchTileFromMirror(
+    expiredCachedTile.sourceUrl,
+    1000,
+    (async () => ({
+      ok: false,
+      status: 304,
+      headers: new Map<string, string>(),
+      arrayBuffer: async () => new ArrayBuffer(0),
+    })) as any,
+    expiredCachedTile,
+  );
+  assert.ok(
+    revalidatedWithoutNewHeaders?.revalidated &&
+      revalidatedWithoutNewHeaders.expiresAt > Date.now(),
+    '304 without replacement cache headers must retain the cached provider freshness policy',
+  );
 
   // SEC-FINDING-009: Runtime Env Config rejects SSRF/non-HTTPS storage endpoints and FIREBASE_PROJECT_ID hijacking
   const { updateRuntimeEnvConfig, getRuntimeEnvConfig } = await import('../src/utils/serverRuntimeEnvStore');
