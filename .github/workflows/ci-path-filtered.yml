@@ -86,3 +86,15 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:contracts
+
+  runner-dispatch-probe:
+    name: Hosted runner dispatch probe (ubuntu-slim)
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/rt-worker-lifecycle-write-admission-exports-001'
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    steps:
+      - name: Verify runner assignment without external actions
+        run: |
+          echo "RUNNER_DISPATCH_OK"
+          uname -a
+          date -u
