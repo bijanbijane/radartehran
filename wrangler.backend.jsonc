@@ -112,6 +112,22 @@
         "STAGING_D1_PROVISIONING_STATUS": "BLOCKED_STAGING_DATABASES_NOT_PROVISIONED",
         "FIREBASE_APP_CHECK_MODE": "monitor",
         "DB_WRITES_PAUSED_UNTIL_UTC": ""
+      },
+      "previews": {
+        "vars": {
+          "APP_ENV": "staging",
+          "APP_URL": "https://radartehran-api-staging.workers.dev",
+          "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+          "RESEARCH_HMAC_KEY_VERSION": "v1",
+          "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
+          "IRNI_API_TIMEOUT_MS": "4000",
+          "IRNI_CACHE_TTL_SECONDS": "300",
+          "IRNI_STALE_TTL_SECONDS": "1800",
+          "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
+          "STAGING_D1_PROVISIONING_STATUS": "BLOCKED_STAGING_DATABASES_NOT_PROVISIONED",
+          "FIREBASE_APP_CHECK_MODE": "monitor",
+          "DB_WRITES_PAUSED_UNTIL_UTC": ""
+        }
       }
     }
   }
