@@ -47,7 +47,7 @@ const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/data-requests',
 ]);
 
-const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
+const GROUP_5_STORAGE_PATHS = new Set<string>([
   'GET /api/object-storage/status',
   'POST /api/object-storage/upload',
   'POST /api/object-storage/upload-init',
@@ -125,7 +125,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
   }
 
   if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
-    if (GROUP_5_VERIFIED_STORAGE_PATHS.has(key)) {
+    if (GROUP_5_STORAGE_PATHS.has(key)) {
       return {
         migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
         workerHandlerModule: null,
