@@ -7,6 +7,7 @@
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { findMigrationRegisterEntry } from './migrationRegister';
 import { handleAccountWorkerRoute } from './routes/accountRoutes';
+import { handleAuthWorkerRoute } from './routes/authRoutes';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
 import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
@@ -61,6 +62,16 @@ export async function dispatchWorkerApiOrSeoRequest(
       response,
       routePattern: `${entry.method} ${entry.path}`,
       migrationStatus: entry.status,
+    };
+  }
+
+  // Cloudflare-native authentication endpoints (Google OIDC + SMS OTP + D1 sessions)
+  const authResponse = await handleAuthWorkerRoute(ctx);
+  if (authResponse) {
+    return {
+      response: authResponse,
+      routePattern: pathname,
+      migrationStatus: 'VERIFIED',
     };
   }
 
