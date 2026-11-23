@@ -1033,7 +1033,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
       const valid = validateBackendWranglerConfig(parsed);
       assert.equal(valid.ok, true, `Expected valid wrangler.backend.jsonc, got errors: ${valid.errors.join(', ')}`);
-      assert.equal(valid.summary?.irniDirectBindingPresent, false);
+      assert.equal(valid.summary?.irniNeighborhoodDbBound, true);
       assert.equal(valid.summary?.stagingProvisioningStatus, 'BLOCKED_STAGING_DATABASES_NOT_PROVISIONED');
 
       // Strict gate fails closed until staging DBs are provisioned
@@ -1041,7 +1041,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(strictStaging.ok, false);
       assert.ok(strictStaging.errors.includes('BLOCKED_STAGING_DATABASES_NOT_PROVISIONED'));
 
-      // Rejects direct IRNI D1 binding
+      // Rejects duplicate canonical geography bindings
       const withIrni = structuredClone(parsed);
       withIrni.d1_databases.push({
         binding: 'NEIGHBORHOOD_DB',
@@ -1050,7 +1050,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       });
       const irniCheck = validateBackendWranglerConfig(withIrni, { skipFsChecks: true });
       assert.equal(irniCheck.ok, false);
-      assert.ok(irniCheck.errors.some((e: string) => e.startsWith('IRNI_DIRECT_D1_BINDING_FORBIDDEN')));
+      assert.ok(irniCheck.errors.includes('DUPLICATE_PRODUCTION_BINDING:NEIGHBORHOOD_DB'));
 
       // Rejects Staging using Production D1 UUID
       const stagingProdLeak = structuredClone(parsed);
