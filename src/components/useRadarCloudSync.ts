@@ -11,7 +11,7 @@ import {
   ResidentVoteDoc,
   SponsorCrmRequestItem,
 } from '../data/neighborhoods';
-import { getAllMultiCityNeighborhoods } from '../data/multiCityData';
+import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { formatAreaUnitLabel, convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 import { FeatureFlags, safeJsonParse } from '../utils/security';
 import { sortBargainListingsByCreatedAt } from '../utils/listingTimestampAndMediaQuality';
@@ -76,7 +76,8 @@ function normalizeFeatureFlags(raw: Record<string, unknown> | null | undefined):
 function normalizeBargain(value: unknown): BargainListing | null {
   const row = asRecord(value);
   if (!row || typeof row.id !== 'string' || !row.id || !Number.isInteger(Number(row.hoodId))) return null;
-  const status = row.status === 'pending' || row.status === 'rejected' ? row.status : 'approved';
+  if (row.status !== 'pending' && row.status !== 'approved' && row.status !== 'rejected') return null;
+  const status = row.status;
   return {
     id: row.id,
     title: typeof row.title === 'string' ? row.title.slice(0, 120) : '',
@@ -171,7 +172,7 @@ function normalizeSponsor(value: unknown): NeighborhoodSponsor | null {
     specialty: typeof row.specialty === 'string' ? row.specialty.slice(0, 100) : '',
     experienceYears: finiteNumber(row.experienceYears),
     expiresAtIso: typeof row.expiresAtIso === 'string' ? row.expiresAtIso : undefined,
-    planType: Number(row.planMonths) === 3 ? 'paid_3m' : Number(row.planMonths) === 1 ? 'paid_1m' : 'free',
+    planType: row.planType === 'paid_3m' || Number(row.planMonths) === 3 ? 'paid_3m' : row.planType === 'paid_1m' || Number(row.planMonths) === 1 ? 'paid_1m' : 'free',
   };
 }
 
@@ -206,7 +207,6 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
           setSponsorRequests([]);
           setBuyerLeads([]);
           setHasDelegatedAdminDoc(false);
-          if (!user) setFavoriteHoodIds([]);
         }
         setCurrentUser(user);
         setAuthReady(true);
@@ -232,7 +232,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
         url.searchParams.set('cityId', activeCity);
         const cityHoods = activeCity === 'tehran'
           ? INITIAL_NEIGHBORHOODS
-          : getAllMultiCityNeighborhoods().filter((hood) => String(hood.cityId || '').toLowerCase() === activeCity);
+          : MULTI_CITY_CONFIGS[activeCity as keyof typeof MULTI_CITY_CONFIGS]?.neighborhoods || [];
         if (cityHoods.length) url.searchParams.set('hoodIds', cityHoods.map((hood) => hood.id).join(','));
         const response = await fetch(url.toString(), {
           method: 'GET',
@@ -249,13 +249,12 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
         setHasDelegatedAdminDoc(isAdmin);
         const seedHoods = [...INITIAL_NEIGHBORHOODS, ...getAllMultiCityNeighborhoods()];
         const hoodNames = new Map(seedHoods.map((hood) => [hood.id, hood.name]));
-        const bargains = (Array.isArray(payload.bargains) ? payload.bargains : [])
-          .map(normalizeBargain).filter((item): item is BargainListing => Boolean(item));
         const groupedBargains: Record<number, BargainListing[]> = {};
-        for (const bargain of bargains) {
-          const row = asRecord((payload.bargains || []).find((item) => asRecord(item)?.id === bargain.id));
+        for (const rawBargain of Array.isArray(payload.bargains) ? payload.bargains : []) {
+          const row = asRecord(rawBargain);
+          const bargain = normalizeBargain(rawBargain);
           const hoodId = finiteNumber(row?.hoodId, -1);
-          if (!Number.isInteger(hoodId) || hoodId < 1) continue;
+          if (!bargain || !Number.isInteger(hoodId) || hoodId < 1) continue;
           (groupedBargains[hoodId] ||= []).push(bargain);
         }
         for (const list of Object.values(groupedBargains)) list.sort(sortBargainListingsByCreatedAt);
