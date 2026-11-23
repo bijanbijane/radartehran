@@ -1292,6 +1292,22 @@ async function runAllRemediationTests(): Promise<void> {
   assert.equal(capturedConditionalHeaders?.['If-Modified-Since'], 'Sun, 22 Nov 2026 12:00:00 GMT', 'Expired OSM tiles must revalidate with If-Modified-Since');
   assert.ok(revalidatedTile?.revalidated && revalidatedTile.buffer === expiredCachedTile.buffer, '304 must reuse the validated cached tile bytes');
   assert.ok(revalidatedTile && revalidatedTile.expiresAt > Date.now(), '304 freshness metadata must refresh the cached tile lifetime');
+  const revalidatedWithoutNewHeaders = await fetchTileFromMirror(
+    expiredCachedTile.sourceUrl,
+    1000,
+    (async () => ({
+      ok: false,
+      status: 304,
+      headers: new Map<string, string>(),
+      arrayBuffer: async () => new ArrayBuffer(0),
+    })) as any,
+    expiredCachedTile,
+  );
+  assert.ok(
+    revalidatedWithoutNewHeaders?.revalidated &&
+      revalidatedWithoutNewHeaders.expiresAt > Date.now(),
+    '304 without replacement cache headers must retain the cached provider freshness policy',
+  );
 
   // SEC-FINDING-009: Runtime Env Config rejects SSRF/non-HTTPS storage endpoints and FIREBASE_PROJECT_ID hijacking
   const { updateRuntimeEnvConfig, getRuntimeEnvConfig } = await import('../src/utils/serverRuntimeEnvStore');
