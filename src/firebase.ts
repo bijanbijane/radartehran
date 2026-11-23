@@ -39,7 +39,7 @@ initClientAppCheckIfConfigured(app, {
     '',
   ),
 });
-installClientAppCheckFetchInterceptor(app);
+installClientAppCheckFetchInterceptor(app, async () => auth.currentUser ? auth.currentUser.getIdToken() : null);
 export const googleProvider: GoogleAuthProvider = (() => {
   const provider = new GoogleAuthProvider();
   try {
