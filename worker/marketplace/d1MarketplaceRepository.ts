@@ -26,7 +26,7 @@ function ownerUidVisible(ownerUid: unknown, query: MarketStateQuery): string {
 
 function maskPhoneForPublic(value: unknown): string {
   const raw = String(value || '');
-  const digits = raw.replace(/\\D/g, '');
+  const digits = raw.replace(/\D/g, '');
   if (digits.length < 7) return '';
   return `+98***${digits.slice(-4)}`;
 }
