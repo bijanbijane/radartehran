@@ -74,7 +74,8 @@ export async function authenticateWorkerSession(
     const row = await userDb
       .prepare(
         `SELECT s.session_id, s.uid, s.created_at_iso, s.last_seen_at_iso, s.expires_at_iso, s.auth_provider,
-                p.account_status,\n                (SELECT w.watermark_value FROM sync_watermarks w WHERE w.watermark_key = 'revoked_uid:' || s.uid LIMIT 1) AS revocation_watermark,
+                p.account_status,
+                (SELECT w.watermark_value FROM sync_watermarks w WHERE w.watermark_key = 'revoked_uid:' || s.uid LIMIT 1) AS revocation_watermark,
                 (SELECT i.email FROM auth_identities i
                  WHERE i.uid = s.uid AND i.provider = 'google' AND i.email_verified = 1
                  ORDER BY i.last_authenticated_at_iso DESC LIMIT 1) AS email,
