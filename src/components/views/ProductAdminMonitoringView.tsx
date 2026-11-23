@@ -62,9 +62,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     }
     ui.setLoadingSystemHealth(true);
     try {
-      const idToken = await p.currentUser.getIdToken();
-      if (!idToken) { ui.setSystemHealth(null); return; }
-      const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' });
+      const res = await fetch('/api/system-health', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
       if (!res.ok) { ui.setSystemHealth(null); return; }
       const payload: unknown = await res.json();
       if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') {
