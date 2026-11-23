@@ -60,7 +60,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --include=dev --no-audit --no-fund
 
       - name: Run Cloudflare Worker and D1 isolation contract tests
         run: npm run test:cloudflare
