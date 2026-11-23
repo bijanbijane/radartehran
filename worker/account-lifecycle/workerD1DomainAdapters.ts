@@ -275,10 +275,36 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
   };
 }
 
-export function createWorkerD1DomainAdapters(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter[] {
+function failClosedD1DomainAdapter(source: UserOwnedDomainSource): UserOwnedDomainRepositoryAdapter {
+  const unavailable = () => new AccountLifecycleError(
+    'DOMAIN_ADAPTER_UNAVAILABLE',
+    `Stage D lifecycle D1 is not an authoritative user-data source for "${source}". A separately bound and verified USER_DB adapter is required.`,
+    503,
+  );
+  return {
+    source,
+    async fetchOwnedRecordsPage() { throw unavailable(); },
+    async disposeOwnedRecordsBatch() { throw unavailable(); },
+  };
+}
+
+/**
+ * Contract-test adapters for the limited D1 subset only.
+ * They are deliberately not wired into the Stage D runtime because they do not cover
+ * every USER_PROFILE / MEDIA_METADATA record owned by USER_DB.
+ */
+export function createPartialUserProfileD1AdapterForContractTests(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
+  return createUserProfileD1Adapter(db);
+}
+
+export function createPartialMediaMetadataD1AdapterForContractTests(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
+  return createMediaMetadataD1Adapter(db);
+}
+
+export function createWorkerD1DomainAdapters(_lifecycleDb: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter[] {
   const bySource = new Map<UserOwnedDomainSource, UserOwnedDomainRepositoryAdapter>();
-  bySource.set('USER_PROFILE', createUserProfileD1Adapter(db));
-  bySource.set('MEDIA_METADATA', createMediaMetadataD1Adapter(db));
+  bySource.set('USER_PROFILE', failClosedD1DomainAdapter('USER_PROFILE'));
+  bySource.set('MEDIA_METADATA', failClosedD1DomainAdapter('MEDIA_METADATA'));
   for (const source of FIRESTORE_AUTHORITATIVE_SOURCES) {
     bySource.set(source, failClosedFirestoreAdapter(source));
   }
