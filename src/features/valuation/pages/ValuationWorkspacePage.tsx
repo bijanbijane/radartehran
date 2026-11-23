@@ -1,6 +1,6 @@
 /** @file src/features/valuation/pages/ValuationWorkspacePage.tsx — Stages 89–96 Multi-City Account-Scoped Valuation Workspace */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { Calculator, RefreshCw } from 'lucide-react';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
@@ -26,7 +26,7 @@ export interface ValuationWorkspacePageProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
   activeCity?: CityId;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   initialSqm?: number;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onOpenModalCalculator?: () => void;
