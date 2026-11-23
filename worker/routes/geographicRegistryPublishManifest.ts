@@ -41,6 +41,7 @@ export type GeographicPublishCountKey =
 
 export interface ExpectedGeographicPublishManifest {
   readonly registryRevision: number;
+  readonly registryChecksum: string;
   readonly contractVersion: string;
   readonly idAlgorithmVersion: string;
   readonly schemaVersion: string;
@@ -75,6 +76,47 @@ export interface ImportedGeographicArtifact {
 export interface GeographicPublishManifestComparison {
   readonly matches: boolean;
   readonly mismatches: readonly string[];
+}
+
+/**
+ * Compute the exact stable batch ID used by IRNI's Node publisher.
+ *
+ * Property order and normalized key order are intentionally explicit. Keep
+ * this contract aligned with scripts/registry-publish-batch-id.mjs in IRNI.
+ */
+export async function computeExpectedGeographicPublishBatchId(
+  manifest: ExpectedGeographicPublishManifest,
+): Promise<string> {
+  const canonicalIdentity = {
+    version: 1,
+    registryRevision: manifest.registryRevision,
+    registryChecksum: manifest.registryChecksum.toLowerCase(),
+    contractVersion: manifest.contractVersion,
+    idAlgorithmVersion: manifest.idAlgorithmVersion,
+    schemaVersion: manifest.schemaVersion,
+    expectedCounts: {
+      entities: manifest.expectedCounts.entities,
+      relationships: manifest.expectedCounts.relationships,
+      sourceMappings: manifest.expectedCounts.sourceMappings,
+      identityEntries: manifest.expectedCounts.identityEntries,
+      anchors: manifest.expectedCounts.anchors,
+      legacyAliases: manifest.expectedCounts.legacyAliases,
+    },
+    artifactChecksums: {
+      snapshot: manifest.artifactChecksums.snapshot.toLowerCase(),
+      relationships: manifest.artifactChecksums.relationships.toLowerCase(),
+      sourceMappings: manifest.artifactChecksums.sourceMappings.toLowerCase(),
+      identityEntries: manifest.artifactChecksums.identityEntries.toLowerCase(),
+      anchors: manifest.artifactChecksums.anchors.toLowerCase(),
+      legacyAliases: manifest.artifactChecksums.legacyAliases.toLowerCase(),
+    },
+  };
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(JSON.stringify(canonicalIdentity)),
+  );
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return 'irni-r' + manifest.registryRevision + '-' + hex;
 }
 
 /**
