@@ -56,6 +56,9 @@ export interface ActiveGeographicPublishHead {
   readonly batch_id: string;
   readonly registry_revision: number;
   readonly registry_checksum: string;
+  /** Revision/checksum on geo_registry_head, separate from the active pointer values. */
+  readonly head_registry_revision: number;
+  readonly head_registry_checksum: string;
   readonly contract_version: string;
   readonly id_algorithm_version: string;
   readonly schema_version: string;
@@ -147,7 +150,9 @@ export function compareActiveGeographicPublishManifest(input: {
   const mismatches: string[] = [];
 
   if (Number(activeHead.registry_revision) !== expected.registryRevision) mismatches.push('registryRevision');
+  if (Number(activeHead.head_registry_revision) !== expected.registryRevision) mismatches.push('headRegistryRevision');
   if (String(activeHead.registry_checksum).toLowerCase() !== expected.registryChecksum.toLowerCase()) mismatches.push('registryChecksum');
+  if (String(activeHead.head_registry_checksum).toLowerCase() !== expected.registryChecksum.toLowerCase()) mismatches.push('headRegistryChecksum');
   if (activeHead.contract_version !== expected.contractVersion) mismatches.push('contractVersion');
   if (activeHead.id_algorithm_version !== expected.idAlgorithmVersion) mismatches.push('idAlgorithmVersion');
   if (activeHead.schema_version !== expected.schemaVersion) mismatches.push('schemaVersion');
@@ -214,8 +219,31 @@ export function assessReceivingGeographicPublishHead(input: {
   if (!activeHead) return { action: 'continue' };
 
   const currentRevision = Number(activeHead.registry_revision);
-  if (!Number.isSafeInteger(currentRevision) || currentRevision < 1) {
-    return { action: 'reject', code: 'PUBLISH_ACTIVE_HEAD_INVALID', currentRevision: null };
+  const storedHeadRevision = Number(activeHead.head_registry_revision);
+  const pointerChecksum = String(activeHead.registry_checksum || '').toLowerCase();
+  const storedHeadChecksum = String(activeHead.head_registry_checksum || '').toLowerCase();
+  const activeMetadataIsConsistent =
+    Number.isSafeInteger(currentRevision) &&
+    currentRevision >= 1 &&
+    Number.isSafeInteger(storedHeadRevision) &&
+    storedHeadRevision === currentRevision &&
+    /^[a-f0-9]{64}$/.test(pointerChecksum) &&
+    storedHeadChecksum === pointerChecksum &&
+    typeof activeHead.batch_id === 'string' &&
+    activeHead.batch_id.trim().length > 0 &&
+    typeof activeHead.contract_version === 'string' &&
+    activeHead.contract_version.trim().length > 0 &&
+    typeof activeHead.id_algorithm_version === 'string' &&
+    activeHead.id_algorithm_version.trim().length > 0 &&
+    typeof activeHead.schema_version === 'string' &&
+    activeHead.schema_version.trim().length > 0 &&
+    Number(activeHead.integrity_verified) === 1;
+  if (!activeMetadataIsConsistent) {
+    return {
+      action: 'reject',
+      code: 'PUBLISH_ACTIVE_HEAD_INVALID',
+      currentRevision: Number.isSafeInteger(currentRevision) && currentRevision >= 1 ? currentRevision : null,
+    };
   }
   if (currentRevision > expected.registryRevision) {
     return { action: 'reject', code: 'PUBLISH_REVISION_ROLLBACK_BLOCKED', currentRevision };
