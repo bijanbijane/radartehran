@@ -320,6 +320,9 @@ const punakLiveFixture = {
 };
 const liveSamples = buildNeighborhoodListingSamples(punakLiveFixture);
 assert.ok(liveSamples.length >= 2, 'live-divar prefixed bargains feed the canonical sample builder');
+const noRentSamplesForSaleOnlyFixture = buildNeighborhoodListingSamples(punakLiveFixture, 'rent');
+assert.equal(noRentSamplesForSaleOnlyFixture.length, 0, 'sale and rent cache entries remain isolated');
+assert.ok(buildNeighborhoodListingSamples(punakLiveFixture, 'sale').length >= 2, 'rent cache lookup does not replace the sale cache entry');
 const liveSamplesAgain = buildNeighborhoodListingSamples(punakLiveFixture);
 assert.notEqual(liveSamplesAgain, liveSamples, 'sample cache never exposes its internal mutable array');
 assert.deepEqual(liveSamplesAgain, liveSamples, 'repeated calls preserve canonical parsed sample values');
