@@ -436,6 +436,7 @@ export interface ValuationDataConsumerAdapter {
     transactionType: ValuationTransactionType;
     sqm: number;
     limit: number;
+    evidenceType?: 'confirmed_transaction' | 'asking_listing';
   }): Promise<Array<{
     id: string;
     sqm: number;
@@ -448,6 +449,7 @@ export interface ValuationDataConsumerAdapter {
     approvedAtIso?: string;
     observedAtIso?: string;
     isVerifiedTransaction?: boolean;
+    verificationStatus?: EvidenceVerificationStatus;
   }>>;
 }
 
