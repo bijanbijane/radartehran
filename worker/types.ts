@@ -137,6 +137,12 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
+  readonly TWILIO_ACCOUNT_SID?: string;
+  readonly TWILIO_AUTH_TOKEN?: string;
+  readonly TWILIO_VERIFY_SERVICE_SID?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
   readonly FIREBASE_APP_CHECK_APP_ID?: string;
