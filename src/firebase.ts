@@ -194,7 +194,11 @@ export async function testConnection(timeoutMs: number = 6000): Promise<boolean>
       const res = await fetch('/api/market-pulse?city=tehran', { signal: controller?.signal, cache: 'no-store' });
       if (timer) clearTimeout(timer);
       const ok = res.ok;
-      completeConnectionProbeGeneration(generation, { ok, dataOrigin: ok ? 'server' : 'unknown' });
+      if (ok) {
+        completeConnectionProbeGeneration(generation, { ok: true, dataOrigin: 'server' });
+      } else {
+        completeConnectionProbeGeneration(generation, { ok: false, error: new Error(`REMOTE_API_HTTP_${res.status}`) });
+      }
       endTimer(ok ? 'success' : 'fallback');
       return ok;
     } catch (error) {
