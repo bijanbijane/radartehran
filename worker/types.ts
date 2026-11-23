@@ -9,6 +9,10 @@ export interface WorkerAssetFetcher {
   fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
 }
 
+export interface WorkerServiceBinding {
+  fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
+}
+
 export type DeploymentEnvironmentName = 'development' | 'preview' | 'staging' | 'production';
 export type WorkerEnvironmentName = DeploymentEnvironmentName;
 
@@ -133,6 +137,8 @@ export interface DependencyCompatibilityEntry {
  */
 export interface WorkerEnv {
   readonly ASSETS?: WorkerAssetFetcher;
+  /** Frontend-to-backend service binding; absent on the API Worker itself. */
+  readonly RADAR_API?: WorkerServiceBinding;
   readonly ENVIRONMENT?: DeploymentEnvironmentName;
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
