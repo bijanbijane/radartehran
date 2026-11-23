@@ -1060,9 +1060,28 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const parsed = parseJsonc(raw, 'wrangler.backend.jsonc');
 
       const valid = validateBackendWranglerConfig(parsed);
-      assert.equal(valid.ok, true, `Expected valid wrangler.backend.jsonc, got errors: ${valid.errors.join(', ')}`);
+      assert.equal(valid.ok, false, 'Production Cron configuration must fail closed without queue and R2 bindings.');
+      assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_PRODUCER'));
+      assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_DLQ_PRODUCER'));
+      assert.ok(valid.errors.includes('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_CONSUMER'));
+      assert.ok(valid.errors.includes('NIGHTLY_MEDIA_CRON_REQUIRES_MEDIA_BUCKET'));
       assert.equal(valid.summary?.irniDirectBindingPresent, false);
       assert.equal(valid.summary?.stagingProvisioningStatus, 'BLOCKED_STAGING_DATABASES_NOT_PROVISIONED');
+
+      // A complete queue/DLQ/R2 wiring satisfies the production background-processing contract.
+      const fullyBound = structuredClone(parsed);
+      fullyBound.queues = {
+        producers: [
+          { binding: 'RADAR_QUEUE', queue: 'radartehran-api-jobs' },
+          { binding: 'RADAR_DLQ', queue: 'radartehran-api-dlq' },
+        ],
+        consumers: [
+          { queue: 'radartehran-api-jobs', dead_letter_queue: 'radartehran-api-dlq' },
+        ],
+      };
+      fullyBound.r2_buckets = [{ binding: 'MEDIA_BUCKET', bucket_name: 'radartehran-api-media' }];
+      const completeBackgroundWiring = validateBackendWranglerConfig(fullyBound);
+      assert.equal(completeBackgroundWiring.ok, true, completeBackgroundWiring.errors.join(', '));
 
       // Strict gate fails closed until staging DBs are provisioned
       const strictStaging = validateBackendWranglerConfig(parsed, { requireStagingProvisioned: true });
