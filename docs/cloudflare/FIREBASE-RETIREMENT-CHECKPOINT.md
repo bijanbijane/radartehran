@@ -167,3 +167,28 @@ At the operator's explicit direction, the Firebase-retirement branch removed 22 
 - The prior read-only audit found zero rows in the listed USER_DB tables but did not query Firestore; this does not establish that the Firebase project or Firestore collections are empty.
 
 No Cloudflare D1 data was deleted, no IRNI-owned resource was modified, and no production deploy was performed.
+
+## 23 November 2026 — live GitHub continuation audit (before checkpoint refresh)
+
+**Audited branch HEAD:** `661c8ff718c09d9051adbf572f067250c40aa6f6`  
+**PR:** #23, OPEN / DRAFT, base `main`.  
+**Latest CI for audited HEAD:** run `45172789714`, completed with **failure**. The earlier cutout commit run `45172596829` is cancelled. No passing full CI result exists for this branch.
+
+### Confirmed source-retirement state
+
+- The 22-file Firebase/Firestore source/config cutout remains on this branch only. It did not remove or modify the remote Firebase project or Firestore data.
+- The branch tree still contains 35 Firebase/Firestore-named paths.
+- `src/firebase.ts` still imports the removed `firebase-applet-config.json` and imports `firebase/app` and `firebase/firestore`; it remains a live legacy adapter, not a harmless compatibility shim.
+- Direct Firestore operations remain in `src/components/useRadarAdminActions.ts`: neighborhood override writes, sponsor approval/expiry/deletion, bargain deletion/approval, feature-flag persistence, and restore-to-Firestore.
+- `src/components/AdminPanel.tsx` still exposes live Firestore audit, repair, and quarantine-delete actions through `src/data/firestoreDataAuditor.ts` and `src/data/firestoreNeighborhoodRepository.ts`.
+- `package.json` and `package-lock.json` still declare Firebase SDK/Admin and rules-test dependencies. Removing them now would leave unresolved imports and broken runtime paths.
+- The Worker currently has D1-backed market-state reads and creation endpoints for bargains/sponsor requests/buyer alerts, but does not yet expose the complete admin mutation contract used by the legacy admin actions. The migration register classifies marketplace routes as BLOCKED pending USER_DB migration 0010.
+- Production USER_DB has not been proven to contain migration 0010 or a Firestore-to-D1 data/authorization parity export. Firestore inventory and document counts remain unknown.
+
+### Concurrency boundary
+
+PR #9 remains open and touches these shared files: `src/firebase.ts`, `src/data/firestoreDataAuditor.ts`, `src/data/firestoreNeighborhoodMappers.ts`, `src/data/firestoreNeighborhoodRepository.ts`, `package.json`, and `package-lock.json`. Do not edit these paths in parallel with PR #9. PR #28 is dependent on PR #9. PR #34 is a child validation PR of PR #9 and must not merge independently.
+
+### Next safe implementation unit
+
+Implement and test the missing Cloudflare Worker/D1 admin mutation contracts for the independent admin-action module, including transactional authorization, ownership checks, idempotency where applicable, and explicit fail-closed behavior. Only after those contracts exist should the frontend Firestore calls be replaced. Keep the migration register BLOCKED until USER_DB migration 0010 and required data/authorization parity are verified. Do not delete Firebase project/data, deploy, mutate production D1, or alter IRNI-owned resources as part of source migration.
