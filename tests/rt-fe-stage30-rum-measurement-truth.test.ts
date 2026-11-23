@@ -266,6 +266,25 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
   }
 
 
+describe('Core Web Vitals sample completeness', () => {
+  it('does not return GOOD when one of LCP, INP, or CLS has no observations', () => {
+    const partial = evaluateRumPercentileBudget({
+      measurementSource: 'FIELD_RUM',
+      lcpSamplesMs: [1200, 1500],
+      inpSamplesMs: [],
+      clsSamples: [0.02, 0.04],
+      longTaskCounts: [0, 0],
+    });
+
+    assert.equal(partial.sampleCount, 0, 'the complete Core Web Vitals sample count is zero');
+    assert.equal(partial.withinBudget, null);
+    assert.equal(partial.verdict, 'INSUFFICIENT_SAMPLE');
+    assert.equal(partial.distributions.lcpMs.sampleCount, 2);
+    assert.equal(partial.distributions.inpMs.sampleCount, 0);
+    assert.equal(partial.distributions.cls.sampleCount, 2);
+  });
+});
+
 describe('INP interaction aggregation', () => {
   it('uses one maximum duration per interaction instead of weighting repeated event entries', () => {
     const collector = new BrowserRumCollector({
