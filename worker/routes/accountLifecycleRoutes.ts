@@ -47,6 +47,8 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
     expectedProjectId: ctx.env.FIREBASE_PROJECT_ID,
     adminApiSecret: ctx.env.ADMIN_API_SECRET,
     adminEmail: ctx.env.ADMIN_EMAIL,
+    requireAppCheck: true,
+    env: ctx.env,
   });
   if (!auth.authenticated || !auth.principal) {
     return jsonWorkerResponse(ctx, auth.failureStatusCode ?? 401, {

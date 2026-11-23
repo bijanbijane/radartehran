@@ -9,7 +9,6 @@ import type { WorkerEnv } from '../types';
 import type { AppCheckMode, WorkerAppCheckContext } from './types';
 
 const APP_CHECK_CLOCK_SKEW_SECONDS = 60;
-const APP_CHECK_ISSUER_PREFIX = 'https://firebaseappcheck.googleapis.com/';
 
 function decodeBase64UrlToUint8Array(base64Url: string): Uint8Array {
   const normalized = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -57,15 +56,19 @@ export function resolveWorkerAppCheckMode(
   options?: { sensitiveRoute?: boolean },
 ): AppCheckMode {
   const explicit = String(env.FIREBASE_APP_CHECK_MODE || '').trim().toLowerCase();
-  if (explicit === 'enforced') return 'enforced';
-  if (explicit === 'monitor') return 'monitor';
-  if (explicit === 'disabled') return 'disabled';
   const runtimeEnv = String(env.WORKER_ENV || env.ENVIRONMENT || env.APP_ENV || 'development')
     .trim()
     .toLowerCase();
+
+  // Production-sensitive routes can never be downgraded to monitor/disabled by a dashboard variable.
   if (runtimeEnv === 'production') {
+    if (explicit === 'enforced') return 'enforced';
     return options?.sensitiveRoute === false ? 'monitor' : 'enforced';
   }
+
+  if (explicit === 'enforced') return 'enforced';
+  if (explicit === 'monitor') return 'monitor';
+  if (explicit === 'disabled') return 'disabled';
   if (runtimeEnv === 'staging') return 'monitor';
   return 'disabled';
 }
@@ -82,6 +85,7 @@ export interface VerifyAppCheckOptions {
   readonly isProduction?: boolean;
   readonly expectedAppId?: string;
   readonly expectedProjectId?: string;
+  readonly expectedProjectNumber?: string;
   readonly debugAllowlist?: readonly string[];
   readonly nowSeconds?: number;
   readonly fetchFn?: typeof fetch;
@@ -110,22 +114,16 @@ function isJwksDependencyError(err: unknown): boolean {
   );
 }
 
-function matchesExpectedAppId(payload: AppCheckJwtPayload, expectedAppId: string): boolean {
-  const trimmed = expectedAppId.trim();
-  if (!trimmed) return true;
-  const candidateAppId = (payload.app_id || payload.sub || '').trim();
-  return candidateAppId === trimmed;
-}
-
-function matchesExpectedProjectAudience(payload: AppCheckJwtPayload, expectedProjectId: string): boolean {
-  const trimmed = expectedProjectId.trim();
-  if (!trimmed) return true;
-  if (payload.aud === undefined) return true;
-  const audList = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  return audList.some(
-    (entry) =>
-      typeof entry === 'string' &&
-      (entry === `projects/${trimmed}` || entry === trimmed || entry.startsWith('projects/')),
+function matchesExpectedProjectAudience(
+  payload: AppCheckJwtPayload,
+  expectedProjectId: string,
+  expectedProjectNumber: string,
+): boolean {
+  if (!Array.isArray(payload.aud)) return false;
+  const audiences = new Set(payload.aud.filter((entry): entry is string => typeof entry === 'string'));
+  return (
+    audiences.has(`projects/${expectedProjectId.trim()}`) &&
+    audiences.has(`projects/${expectedProjectNumber.trim()}`)
   );
 }
 
@@ -217,6 +215,23 @@ export async function verifyWorkerAppCheck(
       };
     }
 
+    if (!options?.expectedAppId || !options.expectedProjectId || !options.expectedProjectNumber) {
+      if (mode === 'monitor') {
+        return {
+          allowed: true,
+          mode: 'monitor',
+          statusCode: 200,
+          reason: 'APP_CHECK_MONITOR_VERIFIER_CONFIGURATION_MISSING',
+        };
+      }
+      return {
+        allowed: false,
+        mode: 'enforced',
+        statusCode: 503,
+        reason: 'APP_CHECK_VERIFIER_CONFIGURATION_MISSING',
+      };
+    }
+
     const segments = token.split('.');
     if (segments.length !== 3 || segments.some((segment) => segment.length === 0)) {
       throw new Error('MALFORMED_APP_CHECK_JWT');
@@ -224,11 +239,19 @@ export async function verifyWorkerAppCheck(
 
     const header = decodeBase64UrlJson<{ alg?: string; kid?: string; typ?: string }>(segments[0]);
     const payload = decodeBase64UrlJson<AppCheckJwtPayload>(segments[1]);
-    if (!header || !payload || header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid.trim()) {
+    if (
+      !header ||
+      !payload ||
+      header.alg !== 'RS256' ||
+      header.typ !== 'JWT' ||
+      typeof header.kid !== 'string' ||
+      !header.kid.trim()
+    ) {
       throw new Error('INVALID_APP_CHECK_HEADER');
     }
 
-    if (payload.iss !== undefined && (typeof payload.iss !== 'string' || !payload.iss.startsWith(APP_CHECK_ISSUER_PREFIX))) {
+    const expectedIssuer = `https://firebaseappcheck.googleapis.com/${options.expectedProjectNumber.trim()}`;
+    if (typeof payload.iss !== 'string' || payload.iss !== expectedIssuer) {
       throw new Error('APP_CHECK_ISSUER_MISMATCH');
     }
 
@@ -236,18 +259,23 @@ export async function verifyWorkerAppCheck(
     if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= nowSec - APP_CHECK_CLOCK_SKEW_SECONDS) {
       throw new Error('APP_CHECK_TOKEN_EXPIRED');
     }
-    if (payload.iat !== undefined && (!Number.isFinite(payload.iat) || payload.iat > nowSec + APP_CHECK_CLOCK_SKEW_SECONDS)) {
-      throw new Error('APP_CHECK_ISSUED_IN_FUTURE');
+    if (
+      typeof payload.iat !== 'number' ||
+      !Number.isFinite(payload.iat) ||
+      payload.iat > nowSec + APP_CHECK_CLOCK_SKEW_SECONDS ||
+      payload.iat >= payload.exp
+    ) {
+      throw new Error('APP_CHECK_ISSUED_AT_INVALID');
     }
 
-    const resolvedAppId = (payload.app_id || payload.sub || '').trim();
+    const resolvedAppId = String(payload.sub || '').trim();
     if (!resolvedAppId) {
       throw new Error('APP_CHECK_MISSING_APP_ID');
     }
-    if (options?.expectedAppId && !matchesExpectedAppId(payload, options.expectedAppId)) {
+    if (resolvedAppId !== options.expectedAppId) {
       throw new Error('APP_CHECK_APP_ID_MISMATCH');
     }
-    if (options?.expectedProjectId && !matchesExpectedProjectAudience(payload, options.expectedProjectId)) {
+    if (!matchesExpectedProjectAudience(payload, options.expectedProjectId, options.expectedProjectNumber)) {
       throw new Error('APP_CHECK_PROJECT_MISMATCH');
     }
 

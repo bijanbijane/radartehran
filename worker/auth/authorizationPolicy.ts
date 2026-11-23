@@ -8,6 +8,12 @@ import { PRIMARY_BOOTSTRAP_ADMIN_EMAIL } from '../../src/utils/domainSecurityVal
 import { EXPECTED_FIREBASE_PROJECT_ID } from '../../src/utils/serverConfigValidator';
 import { isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from '../../src/utils/security';
 import { verifyFirebaseIdToken, type VerifyFirebaseIdTokenOptions } from './firebaseTokenVerifier';
+import {
+  isWorkerProductionEnvironment,
+  resolveWorkerAppCheckMode,
+  verifyWorkerAppCheck,
+} from './appCheckVerifier';
+import type { WorkerEnv } from '../types';
 import type {
   AuthenticatedWorkerPrincipal,
   AuthorizationPolicyRequirement,
@@ -64,6 +70,9 @@ export interface ResolveWorkerAuthOptions {
   readonly adminEmail?: string;
   readonly delegatedAdminChecker?: (uid: string, email: string) => Promise<boolean>;
   readonly tokenVerifyOptions?: Partial<VerifyFirebaseIdTokenOptions>;
+  /** When true, Firebase-authenticated requests must also pass App Check. */
+  readonly requireAppCheck?: boolean;
+  readonly env?: WorkerEnv;
 }
 
 export async function resolveWorkerAuthContext(
@@ -192,6 +201,48 @@ export async function resolveWorkerAuthContext(
       failureStatusCode: verifyResult.status === 200 ? 401 : verifyResult.status,
       failureReason: verifyResult.reason,
     };
+  }
+
+  if (options.requireAppCheck) {
+    if (!options.env) {
+      return {
+        authenticated: false,
+        mode: 'firebase_id_token',
+        principal: null,
+        verifiedAtMs: nowMs,
+        correlationId,
+        environment,
+        failureCode: 'APP_CHECK_VERIFIER_CONFIGURATION_MISSING',
+        failureStatusCode: 503,
+        failureReason: 'App Check verification configuration is unavailable.',
+      };
+    }
+    const appCheckMode = resolveWorkerAppCheckMode(options.env, { sensitiveRoute: true });
+    const debugAllowlist = String(options.env.FIREBASE_APP_CHECK_DEBUG_ALLOWLIST || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    const appCheckResult = await verifyWorkerAppCheck(request, {
+      mode: appCheckMode,
+      isProduction: isWorkerProductionEnvironment(options.env),
+      expectedAppId: options.env.FIREBASE_APP_CHECK_APP_ID,
+      expectedProjectId: projectId,
+      expectedProjectNumber: options.env.FIREBASE_PROJECT_NUMBER,
+      debugAllowlist,
+    });
+    if (!appCheckResult.allowed) {
+      return {
+        authenticated: false,
+        mode: 'firebase_id_token',
+        principal: null,
+        verifiedAtMs: nowMs,
+        correlationId,
+        environment,
+        failureCode: appCheckResult.reason,
+        failureStatusCode: appCheckResult.statusCode === 503 ? 503 : appCheckResult.statusCode === 403 ? 403 : 401,
+        failureReason: 'Firebase App Check verification failed.',
+      };
+    }
   }
 
   const claims = verifyResult.claims;

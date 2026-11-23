@@ -3,7 +3,6 @@
  * @description Canonical Edge Firebase ID Token verifier with fail-closed D1 revocation
  * enforcement, canonical D1 revocation write path + audit log, and cryptographic App Check verification.
  */
-import { resolveUserDb } from '../db/bindingResolver';
 import type { D1Database, KVNamespace, WorkerEnv } from '../types';
 import {
   isWorkerProductionEnvironment,
@@ -51,7 +50,7 @@ export interface RecordUserRevocationResult {
   watermarkKey: string;
   watermarkValue: string | null;
   eventId: string;
-  statusCode: 200 | 400 | 409 | 503;
+  statusCode: 200 | 400 | 503;
   reason: string;
 }
 
@@ -280,57 +279,26 @@ export async function recordUserRevocationInD1(params: {
         : null;
   const eventId = `rev_${nowMs}_${Math.random().toString(36).slice(2, 10)}`;
 
-  const resolveExistingRecord = (
-    existing: { event_id: string; uid: string; action: string; valid_since_seconds: number | null },
-  ): RecordUserRevocationResult => {
-    const existingValidSince =
-      existing.valid_since_seconds === null || existing.valid_since_seconds === undefined
-        ? null
-        : Number(existing.valid_since_seconds);
-    const sameOperation =
-      existing.uid === uid &&
-      existing.action === params.action &&
-      existingValidSince === validSinceSeconds;
-    if (!sameOperation) {
+  try {
+    const existing = await params.db
+      .prepare('SELECT event_id FROM auth_revocation_events WHERE idempotency_key = ?1')
+      .bind(idempotencyKey)
+      .first<{ event_id: string }>();
+    if (existing?.event_id) {
       return {
-        applied: false,
-        idempotentReplay: false,
+        applied: true,
+        idempotentReplay: true,
         watermarkKey,
-        watermarkValue: null,
+        watermarkValue,
         eventId: existing.event_id,
-        statusCode: 409,
-        reason: 'IDEMPOTENCY_KEY_CONFLICT',
+        statusCode: 200,
+        reason: 'REVOCATION_IDEMPOTENT_REPLAY',
       };
     }
-    return {
-      applied: true,
-      idempotentReplay: true,
-      watermarkKey,
-      watermarkValue,
-      eventId: existing.event_id,
-      statusCode: 200,
-      reason: 'REVOCATION_IDEMPOTENT_REPLAY',
-    };
-  };
 
-  const lookupExistingByIdempotencyKey = async () =>
-    params.db!
-      .prepare('SELECT event_id, uid, action, valid_since_seconds FROM auth_revocation_events WHERE idempotency_key = ?1')
-      .bind(idempotencyKey)
-      .first<{ event_id: string; uid: string; action: string; valid_since_seconds: number | null }>();
-
-  try {
-    const existing = await lookupExistingByIdempotencyKey();
-    if (existing?.event_id) {
-      return resolveExistingRecord(existing);
-    }
-
-    // Strict INSERT (not INSERT OR IGNORE) guarantees that on concurrent UNIQUE(idempotency_key)
-    // race, statement 1 fails and D1 atomically rolls back statement 2 (sync_watermarks) so a
-    // losing concurrent request can NEVER overwrite the watermark with conflicting parameters.
-    const insertEventStmt = params.db
+    await params.db
       .prepare(
-        `INSERT INTO auth_revocation_events (
+        `INSERT OR IGNORE INTO auth_revocation_events (
           event_id, uid, action, valid_since_seconds, actor_uid, reason, idempotency_key, created_at_iso
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
       )
@@ -343,34 +311,21 @@ export async function recordUserRevocationInD1(params: {
         String(params.reason || 'ADMIN_REVOCATION').slice(0, 240),
         idempotencyKey,
         nowIso,
-      );
+      )
+      .run();
 
-    const watermarkStmt =
-      params.action === 'REENABLE_USER'
-        ? params.db.prepare('DELETE FROM sync_watermarks WHERE watermark_key = ?1').bind(watermarkKey)
-        : params.db
-            .prepare(
-              'INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)',
-            )
-            .bind(watermarkKey, watermarkValue!, nowIso);
-
-    // Execute event audit insert + watermark mutation atomically inside a single D1 transaction.
-    // If either statement fails, D1 rolls back the entire batch so retries never see a phantom audit row.
-    const batchResults = await params.db.batch([insertEventStmt, watermarkStmt]);
-    if (!Array.isArray(batchResults) || batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
-      const raced = await lookupExistingByIdempotencyKey().catch(() => null);
-      if (raced?.event_id) {
-        return resolveExistingRecord(raced);
-      }
-      return {
-        applied: false,
-        idempotentReplay: false,
-        watermarkKey,
-        watermarkValue: null,
-        eventId: '',
-        statusCode: 503,
-        reason: 'AUTH_REVOCATION_WRITE_FAILED',
-      };
+    if (params.action === 'REENABLE_USER') {
+      await params.db
+        .prepare('DELETE FROM sync_watermarks WHERE watermark_key = ?1')
+        .bind(watermarkKey)
+        .run();
+    } else if (watermarkValue !== null) {
+      await params.db
+        .prepare(
+          'INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)',
+        )
+        .bind(watermarkKey, watermarkValue, nowIso)
+        .run();
     }
 
     return {
@@ -383,17 +338,6 @@ export async function recordUserRevocationInD1(params: {
       reason: 'REVOCATION_RECORDED',
     };
   } catch {
-    // Re-check whether the failure was caused by a concurrent UNIQUE(idempotency_key) commit.
-    // Because D1 rolled back our failed batch, reconciling against the committed row yields
-    // deterministic 200 REVOCATION_IDEMPOTENT_REPLAY or 409 IDEMPOTENCY_KEY_CONFLICT.
-    try {
-      const raced = await lookupExistingByIdempotencyKey();
-      if (raced?.event_id) {
-        return resolveExistingRecord(raced);
-      }
-    } catch {
-      // Fall through to fail-closed 503 if the reconciliation read itself fails.
-    }
     return {
       applied: false,
       idempotentReplay: false,
@@ -518,8 +462,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     return unauthenticated('JWT_SIGNATURE_INVALID', 401);
   }
 
-  const userDb = resolveUserDb(params.env);
-  const revocation = await isTokenRevokedOrUserDisabled(payload.sub, iat, userDb);
+  const revocation = await isTokenRevokedOrUserDisabled(payload.sub, iat, params.env.DB);
   if (revocation.unavailable) {
     return unauthenticated(revocation.reason || 'AUTH_REVOCATION_STORE_UNAVAILABLE', 503);
   }
@@ -567,6 +510,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     isProduction: isProd,
     expectedAppId: params.env.FIREBASE_APP_CHECK_APP_ID,
     expectedProjectId: projectId,
+    expectedProjectNumber: params.env.FIREBASE_PROJECT_NUMBER,
     debugAllowlist,
     nowSeconds: nowSec,
     fetchFn: params.appCheckFetchFn,
