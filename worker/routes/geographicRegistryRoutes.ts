@@ -7,6 +7,10 @@
  * references pass verification in one D1 transaction.
  */
 import { requireNeighborhoodDb } from '../db/bindingResolver';
+import {
+  compareActiveGeographicPublishManifest,
+  type ExpectedGeographicPublishManifest,
+} from './geographicRegistryPublishManifest';
 import type { D1Database, WorkerRequestContext } from '../types';
 import { jsonWorkerResponse } from '../contextAndSecurity';
 
@@ -236,14 +240,15 @@ async function publishStart(
   const idAlgorithmVersion = payload.idAlgorithmVersion;
   const schemaVersion = payload.schemaVersion;
   if (!isString(batchId, 80) || !Number.isSafeInteger(revision) || Number(revision) < 1 ||
-      !isString(checksum, 128) || !counts ||
-      !Number.isSafeInteger(counts.entities) || !Number.isSafeInteger(counts.relationships) ||
-      !Number.isSafeInteger(counts.sourceMappings) ||
-      !Number.isSafeInteger(counts.identityEntries) ||
-      !Number.isSafeInteger(counts.anchors) ||
-      !Number.isSafeInteger(counts.legacyAliases) ||
+      !isString(checksum, 128) || !/^[a-f0-9]{64}$/i.test(checksum) || !counts ||
+      !Number.isSafeInteger(counts.entities) || Number(counts.entities) < 0 ||
+      !Number.isSafeInteger(counts.relationships) || Number(counts.relationships) < 0 ||
+      !Number.isSafeInteger(counts.sourceMappings) || Number(counts.sourceMappings) < 0 ||
+      !Number.isSafeInteger(counts.identityEntries) || Number(counts.identityEntries) < 0 ||
+      !Number.isSafeInteger(counts.anchors) || Number(counts.anchors) < 0 ||
+      !Number.isSafeInteger(counts.legacyAliases) || Number(counts.legacyAliases) < 0 ||
       !isString(contractVersion, 80) || !isString(idAlgorithmVersion, 80) ||
-      !isString(schemaVersion, 40)) {
+      !isString(schemaVersion, 40) || !artifacts) {
     return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_MANIFEST_INVALID' });
   }
   if (ctx.env.GEO_REGISTRY_EXPECTED_CONTRACT &&
@@ -254,11 +259,41 @@ async function publishStart(
       idAlgorithmVersion !== ctx.env.GEO_REGISTRY_EXPECTED_ID_ALGORITHM) {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_ID_ALGORITHM_MISMATCH' });
   }
-  for (const key of ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases']) {
-    if (artifacts && artifacts[key] !== undefined && !/^[a-f0-9]{64}$/i.test(String(artifacts[key]))) {
-      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_INVALID' });
+  const artifactKeys = ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases'] as const;
+  const normalizedArtifacts = {} as Record<(typeof artifactKeys)[number], string>;
+  for (const key of artifactKeys) {
+    if (!isString(artifacts[key], 64) || !/^[a-f0-9]{64}$/i.test(artifacts[key])) {
+      return jsonWorkerResponse(ctx, 400, {
+        status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_REQUIRED_OR_INVALID', artifact: key,
+      });
     }
+    normalizedArtifacts[key] = String(artifacts[key]).toLowerCase();
   }
+
+  const manifestIdentity = {
+    version: 1,
+    registryRevision: Number(revision),
+    registryChecksum: String(checksum).toLowerCase(),
+    contractVersion: String(contractVersion),
+    idAlgorithmVersion: String(idAlgorithmVersion),
+    schemaVersion: String(schemaVersion),
+    expectedCounts: {
+      entities: Number(counts.entities),
+      relationships: Number(counts.relationships),
+      sourceMappings: Number(counts.sourceMappings),
+      identityEntries: Number(counts.identityEntries),
+      anchors: Number(counts.anchors),
+      legacyAliases: Number(counts.legacyAliases),
+    },
+    artifactChecksums: normalizedArtifacts,
+  };
+  const expectedBatchId = 'irni-r' + Number(revision) + '-' + await sha256Json(manifestIdentity);
+  if (batchId !== expectedBatchId) {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error', code: 'PUBLISH_BATCH_MANIFEST_ID_MISMATCH',
+    });
+  }
+
   const head = await getCurrentHead(db);
   if (head && Number(revision) < Number(head.registry_revision)) {
     return jsonWorkerResponse(ctx, 409, {
@@ -270,8 +305,60 @@ async function publishStart(
     if (checksum !== head.registry_checksum) {
       return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'SAME_REVISION_CHECKSUM_CONFLICT' });
     }
+
+    let importedArtifacts: {
+      artifact_path: string;
+      artifact_sha256: string;
+      record_count: number;
+      registry_revision: number;
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(Number(revision)).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+      });
+    }
+
+    const expectedManifest: ExpectedGeographicPublishManifest = {
+      registryRevision: Number(revision),
+      contractVersion: String(contractVersion),
+      idAlgorithmVersion: String(idAlgorithmVersion),
+      schemaVersion: String(schemaVersion),
+      expectedCounts: manifestIdentity.expectedCounts,
+      artifactChecksums: normalizedArtifacts,
+    };
+    const comparison = compareActiveGeographicPublishManifest({
+      activeHead: head,
+      expected: expectedManifest,
+      importedArtifacts,
+    });
+    if (!comparison.matches) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_SAME_REVISION_MANIFEST_CONFLICT',
+        mismatches: comparison.mismatches,
+      });
+    }
     return jsonWorkerResponse(ctx, 200, {
-      status: 'ok', alreadyPublished: true, registryRevision: revision, registryChecksum: checksum,
+      status: 'ok',
+      alreadyPublished: true,
+      registryRevision: revision,
+      registryChecksum: checksum,
+      verifiedArtifacts: 6,
     });
   }
   const now = new Date().toISOString();
@@ -290,10 +377,37 @@ async function publishStart(
   ).run();
   requireSuccess(result, 'PUBLISH_START');
   const stored = await db.prepare(
-    'SELECT registry_revision,registry_checksum,status FROM geo_registry_publish_sessions WHERE batch_id = ?1',
-  ).bind(String(batchId)).first<{registry_revision:number;registry_checksum:string;status:string}>();
-  if (!stored || Number(stored.registry_revision) !== Number(revision) ||
-      stored.registry_checksum !== checksum || stored.status !== 'RECEIVING') {
+    `SELECT registry_revision,registry_checksum,contract_version,id_algorithm_version,schema_version,
+       expected_entities,expected_relationships,expected_source_mappings,expected_identity_entries,
+       expected_anchors,expected_legacy_aliases,status
+     FROM geo_registry_publish_sessions WHERE batch_id = ?1`,
+  ).bind(String(batchId)).first<{
+    registry_revision:number;
+    registry_checksum:string;
+    contract_version:string;
+    id_algorithm_version:string;
+    schema_version:string;
+    expected_entities:number;
+    expected_relationships:number;
+    expected_source_mappings:number;
+    expected_identity_entries:number;
+    expected_anchors:number;
+    expected_legacy_aliases:number;
+    status:string;
+  }>();
+  const storedManifestMatches = stored &&
+    Number(stored.registry_revision) === Number(revision) &&
+    stored.registry_checksum === checksum &&
+    stored.contract_version === contractVersion &&
+    stored.id_algorithm_version === idAlgorithmVersion &&
+    stored.schema_version === schemaVersion &&
+    Number(stored.expected_entities) === Number(counts.entities) &&
+    Number(stored.expected_relationships) === Number(counts.relationships) &&
+    Number(stored.expected_source_mappings) === Number(counts.sourceMappings) &&
+    Number(stored.expected_identity_entries) === Number(counts.identityEntries) &&
+    Number(stored.expected_anchors) === Number(counts.anchors) &&
+    Number(stored.expected_legacy_aliases) === Number(counts.legacyAliases);
+  if (!storedManifestMatches || stored.status !== 'RECEIVING') {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_ID_CONFLICT' });
   }
   return jsonWorkerResponse(ctx, 202, {
