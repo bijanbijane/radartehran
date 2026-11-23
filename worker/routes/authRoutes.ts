@@ -142,7 +142,7 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   if (parts.length !== 3) throw new Error('GOOGLE_ID_TOKEN_MALFORMED');
   const header = decodeBase64UrlJson<{ alg?: string; kid?: string }>(parts[0]);
   const claims = decodeBase64UrlJson<{
-    iss?: string; aud?: string | string[]; sub?: string; email?: string; email_verified?: boolean;
+    iss?: string; aud?: string | string[]; azp?: string; sub?: string; email?: string; email_verified?: boolean;
     exp?: number; iat?: number; nonce?: string; name?: string;
   }>(parts[1]);
   if (header.alg !== 'RS256' || !header.kid) throw new Error('GOOGLE_ID_TOKEN_HEADER_INVALID');
@@ -162,6 +162,9 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!['accounts.google.com', 'https://accounts.google.com'].includes(String(claims.iss))) throw new Error('GOOGLE_ID_TOKEN_ISSUER_INVALID');
   if (!audiences.includes(expectedAudience)) throw new Error('GOOGLE_ID_TOKEN_AUDIENCE_INVALID');
+  if ((audiences.length > 1 || claims.azp !== undefined) && claims.azp !== expectedAudience) {
+    throw new Error('GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID');
+  }
   if (!claims.sub || claims.sub.length > 255 || !claims.email || claims.email_verified !== true) throw new Error('GOOGLE_ACCOUNT_NOT_VERIFIED');
   if (!Number.isFinite(claims.exp) || Number(claims.exp) <= now - 30) throw new Error('GOOGLE_ID_TOKEN_EXPIRED');
   if (!Number.isFinite(claims.iat) || Number(claims.iat) > now + 30) throw new Error('GOOGLE_ID_TOKEN_IAT_INVALID');
@@ -362,14 +365,23 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
         }
         return jsonWorkerResponse(ctx, 401, { status: 'error', code: 'OTP_INVALID' });
       }
-      await db.prepare('UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2 AND status = \'LOCKED\'')
-        .bind(Date.now(), challengeId).run();
-
       const current = await authenticateWorkerSession(ctx);
       const identity = await createOrResolveIdentity(db, 'phone', challenge.phone_e164, {
         phone: challenge.phone_e164, emailVerified: false,
       }, current.authenticated ? current.uid || undefined : undefined);
       const session = await issueSession(db, request, identity.uid, 'phone');
+      try {
+        const finalized = await db.prepare(
+          'UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2 AND status = \'LOCKED\'',
+        ).bind(Date.now(), challengeId).run();
+        if (Number(finalized.meta?.changes || 0) !== 1) throw new Error('OTP_CHALLENGE_FINALIZATION_FAILED');
+      } catch (finalizationError) {
+        const tokenHash = await sha256Hex(session.token);
+        await db.prepare(
+          'UPDATE user_sessions SET status = \'REVOKED\', revoked_at_iso = ?1, revoked_by_uid = ?2 WHERE token_hash = ?3 AND status = \'ACTIVE\'',
+        ).bind(new Date().toISOString(), identity.uid, tokenHash).run().catch(() => undefined);
+        throw finalizationError;
+      }
       const response = jsonWorkerResponse(ctx, 200, { status: 'ok', linked: identity.linked, uid: identity.uid });
       const headers = new Headers(response.headers);
       headers.append('Set-Cookie', buildSessionCookie(session.token, SESSION_TTL_SECONDS));
