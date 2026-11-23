@@ -157,24 +157,27 @@ export class AuthClient {
   }
 
   async logout(reason = 'manual_logout'): Promise<void> {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
-    } finally {
-      this.user = null;
-      this.state = 'UNAUTHENTICATED';
-      this.notify();
-      publishAuthEvent({
-        type: 'USER_SIGNED_OUT',
-        status: 'UNAUTHENTICATED',
-        userId: null,
-        timestampMs: Date.now(),
-        reasonFa: reason,
-      });
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({})) as { code?: string };
+      throw new Error(typeof payload.code === 'string' ? payload.code : `AUTH_LOGOUT_HTTP_${response.status}`);
     }
+
+    this.user = null;
+    this.state = 'UNAUTHENTICATED';
+    this.notify();
+    publishAuthEvent({
+      type: 'USER_SIGNED_OUT',
+      status: 'UNAUTHENTICATED',
+      userId: null,
+      timestampMs: Date.now(),
+      reasonFa: reason,
+    });
   }
 
   emitEvent(eventName: string, payload?: Record<string, unknown>): void {
