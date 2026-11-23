@@ -159,6 +159,12 @@ async function verifyGoogleIdToken(idToken: string, expectedAudience: string, ex
   return { sub: claims.sub, email: claims.email.toLowerCase(), name: claims.name, email_verified: true };
 }
 
+async function hmacSha256Hex(secret: string, value: string): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const digest = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function twilioRequest(ctx: WorkerRequestContext, path: string, fields: Record<string, string>): Promise<Record<string, unknown>> {
   const sid = String(ctx.env.TWILIO_ACCOUNT_SID || '').trim();
   const token = String(ctx.env.TWILIO_AUTH_TOKEN || '').trim();
@@ -197,6 +203,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const clientId = String(env.GOOGLE_OAUTH_CLIENT_ID || '').trim();
     const redirectUri = String(env.GOOGLE_OAUTH_REDIRECT_URI || '').trim() || `${String(env.APP_URL || 'https://radartehran.ir').replace(/\/$/, '')}/api/auth/google/callback`;
     if (!clientId) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'GOOGLE_OAUTH_NOT_CONFIGURED' });
+    await db.prepare('DELETE FROM auth_oauth_states WHERE expires_at_ms <= ?1').bind(Date.now()).run();
     const state = randomToken(32);
     const nonce = randomToken(32);
     const codeVerifier = randomToken(48);
@@ -275,21 +282,32 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (!parsed.ok) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
     const phone = normalizePhone(parsed.body.phone);
     if (!phone) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PHONE_NUMBER' });
-    const phoneHash = await sha256Hex(phone);
+    const piiHashSecret = String(env.AUTH_PII_HMAC_SECRET || '').trim();
+    if (piiHashSecret.length < 32) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'AUTH_PII_HASH_SECRET_NOT_CONFIGURED' });
+    const phoneHash = await hmacSha256Hex(piiHashSecret, phone);
+    const clientIp = request.headers.get('cf-connecting-ip') || 'unknown';
+    const ipHash = await hmacSha256Hex(piiHashSecret, clientIp);
     const now = Date.now();
-    const recent = await db.prepare(
-      'SELECT COUNT(*) AS count FROM auth_phone_challenges WHERE phone_hash = ?1 AND created_at_ms > ?2',
-    ).bind(phoneHash, now - 10 * 60 * 1000).first<{ count: number }>();
-    if (Number(recent?.count || 0) >= 3) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'PHONE_OTP_RATE_LIMITED' });
+    await db.prepare('DELETE FROM auth_phone_challenges WHERE created_at_ms < ?1').bind(now - 24 * 60 * 60 * 1000).run();
+    const challengeId = crypto.randomUUID();
+    const reservation = await db.prepare(
+      `INSERT INTO auth_phone_challenges (
+        challenge_id, phone_e164, phone_hash, provider_reference, status, attempts,
+        expires_at_ms, created_at_ms, ip_hash
+      )
+      SELECT ?1, ?2, ?3, NULL, 'PENDING', 0, ?6, ?7, ?5
+      WHERE (SELECT COUNT(*) FROM auth_phone_challenges WHERE phone_hash = ?3 AND created_at_ms > ?4) < 3
+        AND (SELECT COUNT(*) FROM auth_phone_challenges WHERE ip_hash = ?5 AND created_at_ms > ?4) < 5`,
+    ).bind(challengeId, phone, phoneHash, now - 10 * 60 * 1000, ipHash, now + PHONE_CHALLENGE_TTL_MS, now).run();
+    if (Number(reservation.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'PHONE_OTP_RATE_LIMITED' });
 
     try {
       const sent = await twilioRequest(ctx, '/Verifications', { To: phone, Channel: 'sms' });
-      const challengeId = crypto.randomUUID();
-      await db.prepare(
-        'INSERT INTO auth_phone_challenges (challenge_id, phone_e164, phone_hash, provider_reference, status, attempts, expires_at_ms, created_at_ms) VALUES (?1, ?2, ?3, ?4, \'PENDING\', 0, ?5, ?6)',
-      ).bind(challengeId, phone, phoneHash, typeof sent.sid === 'string' ? sent.sid : null, now + PHONE_CHALLENGE_TTL_MS, now).run();
+      await db.prepare('UPDATE auth_phone_challenges SET provider_reference = ?1 WHERE challenge_id = ?2 AND status = \'PENDING\'')
+        .bind(typeof sent.sid === 'string' ? sent.sid : null, challengeId).run();
       return jsonWorkerResponse(ctx, 202, { status: 'ok', challengeId, expiresInSeconds: PHONE_CHALLENGE_TTL_MS / 1000 });
     } catch (error) {
+      await db.prepare('UPDATE auth_phone_challenges SET status = \'EXPIRED\' WHERE challenge_id = ?1').bind(challengeId).run();
       const code = error instanceof Error ? error.message : 'SMS_SEND_FAILED';
       return jsonWorkerResponse(ctx, code === 'SMS_PROVIDER_NOT_CONFIGURED' ? 503 : code === 'SMS_PROVIDER_RATE_LIMITED' ? 429 : 502, { status: 'error', code });
     }
@@ -308,25 +326,37 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (!challenge || challenge.status !== 'PENDING' || Number(challenge.expires_at_ms) <= Date.now()) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'OTP_CHALLENGE_EXPIRED' });
     }
-    if (Number(challenge.attempts) >= 5) {
-      await db.prepare('UPDATE auth_phone_challenges SET status = \'LOCKED\' WHERE challenge_id = ?1').bind(challengeId).run();
-      return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_ATTEMPTS_EXCEEDED' });
-    }
-    await db.prepare('UPDATE auth_phone_challenges SET attempts = attempts + 1 WHERE challenge_id = ?1 AND status = \'PENDING\'').bind(challengeId).run();
+    const claim = await db.prepare(
+      `UPDATE auth_phone_challenges
+       SET status = 'LOCKED', attempts = attempts + 1
+       WHERE challenge_id = ?1 AND status = 'PENDING' AND attempts < 5 AND expires_at_ms > ?2`,
+    ).bind(challengeId, Date.now()).run();
+    if (Number(claim.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_CHALLENGE_ALREADY_USED_OR_LOCKED' });
 
     try {
       const checked = await twilioRequest(ctx, '/VerificationChecks', { To: challenge.phone_e164, Code: code });
-      if (checked.status !== 'approved') return jsonWorkerResponse(ctx, 401, { status: 'error', code: 'OTP_INVALID' });
-      await db.prepare('UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2').bind(Date.now(), challengeId).run();
+      if (checked.status !== 'approved') {
+        if (Number(challenge.attempts) + 1 < 5) {
+          await db.prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'').bind(challengeId).run();
+        }
+        return jsonWorkerResponse(ctx, 401, { status: 'error', code: 'OTP_INVALID' });
+      }
+      await db.prepare('UPDATE auth_phone_challenges SET status = \'VERIFIED\', verified_at_ms = ?1 WHERE challenge_id = ?2 AND status = \'LOCKED\'')
+        .bind(Date.now(), challengeId).run();
 
       const current = await authenticateWorkerSession(ctx);
       const identity = await createOrResolveIdentity(db, 'phone', challenge.phone_e164, {
         phone: challenge.phone_e164, emailVerified: false,
       }, current.authenticated ? current.uid || undefined : undefined);
       const session = await issueSession(db, request, identity.uid, 'phone');
-      const headers = new Headers({ 'Cache-Control': 'no-store', 'Set-Cookie': buildSessionCookie(session.token, SESSION_TTL_SECONDS) });
-      return jsonWorkerResponse(ctx, 200, { status: 'ok', linked: identity.linked, uid: identity.uid }, { extraHeaders: { 'Set-Cookie': headers.get('Set-Cookie') || '' } });
+      const response = jsonWorkerResponse(ctx, 200, { status: 'ok', linked: identity.linked, uid: identity.uid });
+      const headers = new Headers(response.headers);
+      headers.append('Set-Cookie', buildSessionCookie(session.token, SESSION_TTL_SECONDS));
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
     } catch (error) {
+      if (Number(challenge.attempts) + 1 < 5) {
+        await db.prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'').bind(challengeId).run().catch(() => undefined);
+      }
       const codeName = error instanceof Error ? error.message : 'PHONE_AUTH_FAILED';
       const status = codeName === 'IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT' ? 409 : 503;
       return jsonWorkerResponse(ctx, status, { status: 'error', code: codeName });
