@@ -451,6 +451,7 @@ export async function executeAccountDeletionLifecycle(params: {
     'DELETE FROM upload_session_chunks WHERE session_id IN (SELECT session_id FROM upload_sessions WHERE owner_uid = ?1)',
     'DELETE FROM upload_sessions WHERE owner_uid = ?1',
     'DELETE FROM bargain_projections WHERE owner_uid = ?1',
+    'DELETE FROM market_mutation_idempotency WHERE uid = ?1',
     'DELETE FROM user_profiles WHERE uid = ?1',
     'DELETE FROM user_privacy_consents WHERE uid = ?1',
     'DELETE FROM user_notification_channels WHERE uid = ?1',
