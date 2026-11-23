@@ -1,7 +1,5 @@
 /** @file src/components/RadarWorkspaceShell.tsx — Extracted Spatial GIS & PropTech Workspace Shell (< 275 lines) [RULE-01] */
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getCityExpansionSeeds, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
@@ -27,6 +25,7 @@ import { MapToolRail } from './navigation/MapToolRail';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
 import { setActiveAccountScopeUid } from '../features/account/services/accountStorageScope';
+import { loadFirebaseClient } from '../utils/firebaseLazy';
 import type { SavedMapViewItem } from '../navigation/registry/route.types';
 const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDiscoveryModal').then((m) => ({ default: m.ReverseBudgetDiscoveryModal })));
 
@@ -89,6 +88,7 @@ export function RadarWorkspaceShell() {
     setFavoriteHoodIds, setFeatureFlags, setNeighborhoods, setCloudVotes: ui.setCloudVotes, setSponsorRequests: ui.setSponsorRequests, setBuyerLeads: ui.setBuyerLeads, setHasDelegatedAdminDoc: ui.setHasDelegatedAdminDoc,
   });
   const isVerifiedAdmin = useMemo(() => isAuthorizedAdminUser(currentUser, ui.hasDelegatedAdminDoc), [ui.hasDelegatedAdminDoc, currentUser?.uid, currentUser?.email, currentUser?.emailVerified]);
+  const handleSignOut = async () => { const firebase = await loadFirebaseClient(); await firebase.signOut(firebase.auth); };
   useEffect(() => { setActiveAccountScopeUid(currentUser?.uid ?? null); }, [currentUser?.uid]);
   const { fetchMarketPulse, handleDeepWebSync } = useMarketPulseSync({ ui, activeCityRef, currentUser, setNeighborhoods });
   const activeCityWorkHubs = useMemo(() => (ui.activeCity === 'tehran' ? WORK_HUBS : (MULTI_CITY_CONFIGS[ui.activeCity]?.workHubs || WORK_HUBS)), [ui.activeCity]);
@@ -312,7 +312,7 @@ export function RadarWorkspaceShell() {
         setBargainHoodId={ui.setBargainHoodId} setSponsorHoodId={ui.setSponsorHoodId} setShowAgencyModal={ui.setShowAgencyModal} totalLiveBargainsCount={totalLiveBargainsCount}
         setShowVisitedModal={ui.setShowVisitedModal} visitedHomesCount={ui.visitedHomes.length} setTradeUpCurrentHoodId={ui.setTradeUpCurrentHoodId} setShowTradeUpModal={ui.setShowTradeUpModal}
         setAlertHoodId={ui.setAlertHoodId} setAlertSubmitMsg={ui.setAlertSubmitMsg} setShowBuyerAlertModal={ui.setShowBuyerAlertModal} setShowPulseModal={ui.setShowPulseModal} marketPulse={ui.marketPulse}
-        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => signOut(auth)} onGoogleSignIn={crudActions.handleSaveUserPreferences}
+        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={handleSignOut} onGoogleSignIn={crudActions.handleSaveUserPreferences}
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
