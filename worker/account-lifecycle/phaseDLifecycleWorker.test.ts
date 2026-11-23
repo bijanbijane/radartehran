@@ -7,6 +7,7 @@ import { validateLifecycleQueuePayload, buildLifecycleQueueIdempotencyKey } from
 import { validateQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 import { acquireD1MutationPermit, releaseD1MutationPermit, countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
+import { SQL_UPSERT_WRITE_BLOCK } from './d1Queries.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
 import { calculateLifecycleRecoveryOffset } from './stageDLifecycleRuntime.ts';
 
@@ -88,6 +89,30 @@ async function run(): Promise<void> {
     nowMs: permitNow + 11_001,
   });
   assert.equal(expiryReplay.released, false);
+
+  const blockTime = new Date(permitNow + 20_000).toISOString();
+  await db.prepare(SQL_UPSERT_WRITE_BLOCK).bind(
+    'uid_blocked',
+    'DELETION_IN_PROGRESS',
+    'deljob_blocked',
+    blockTime,
+    blockTime,
+    'ACCOUNT_DELETION_ACTIVE',
+    1,
+  ).run();
+  await assert.rejects(
+    () => acquireD1MutationPermit({
+      db,
+      targetUid: 'uid_blocked',
+      holderId: 'worker_blocked',
+      routeSignature: 'POST /api/blocked-mutation',
+      nowMs: permitNow + 20_001,
+    }),
+    (error: unknown) =>
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ACCOUNT_WRITE_BLOCKED',
+  );
 
   const dispatch = new D1AccountLifecycleDispatch(db);
   const now = new Date().toISOString();
