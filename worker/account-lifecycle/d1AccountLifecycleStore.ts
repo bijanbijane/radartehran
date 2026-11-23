@@ -389,6 +389,20 @@ export class D1AccountLifecycleStore implements DurableAccountLifecycleStoreV2 {
     return res.results.map((row) => parseJobJson(String(row.job_json), String(row.job_id)));
   }
 
+  public async countContinuableDeletionJobs(): Promise<number> {
+    assertStoreHealthy(await this.probeHealth());
+    const row = await d1FirstRow(this.d1(), Q.SQL_COUNT_RETRYABLE_JOBS);
+    const count = Number(row?.job_count);
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new AccountLifecycleStoreError(
+        'STORE_UNAVAILABLE',
+        'Unable to read the continuable account deletion job count.',
+        503,
+      );
+    }
+    return count;
+  }
+
   public async getBatchReceiptByIdempotencyKey(idempotencyKey: string): Promise<PersistedBatchReceiptRow | null> {
     assertStoreHealthy(await this.probeHealth());
     const row = await d1FirstRow(this.d1(), Q.SQL_GET_BATCH_RECEIPT_BY_IDEM, idempotencyKey);
