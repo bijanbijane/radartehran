@@ -74,6 +74,32 @@ jobs:
       - name: Verify account lifecycle and ownership isolation
         run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
 
+      - name: Read-only live Worker smoke (no database mutations)
+        env:
+          RADAR_FRONTEND_URL: https://radartehran-frontend.bijanbijane-1.workers.dev
+          RADAR_API_URL: https://radartehran-api.bijanbijane-1.workers.dev
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "$RADAR_FRONTEND_URL/" -o /tmp/radar-frontend.html
+          grep -q 'id="root"' /tmp/radar-frontend.html
+          curl --fail --silent --show-error "$RADAR_API_URL/api/health/database-triad" -o /tmp/radar-d1-health.json
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const health = JSON.parse(fs.readFileSync("/tmp/radar-d1-health.json", "utf8"));
+            if (health.status !== "ok" ||
+                health.bindings?.userDbBound !== true ||
+                health.bindings?.researchDbBound !== true ||
+                health.bindings?.neighborhoodDbBound !== true ||
+                health.bindings?.isolationViolation !== false) {
+              throw new Error("Live Radar D1 triad health is not ready: " + JSON.stringify(health));
+            }
+            console.log("Live read-only smoke passed:", JSON.stringify({
+              status: health.status,
+              bindings: health.bindings,
+              registryRevision: health.geographicRegistry?.revision ?? health.registry?.revision ?? null
+            }));
+          '
+
       - name: Build the split Frontend assets
         run: npm run build -w radartehran-frontend
 
