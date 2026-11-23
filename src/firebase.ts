@@ -29,7 +29,9 @@ import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, t
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
-initClientAppCheckIfConfigured(app);
+initClientAppCheckIfConfigured(app, {
+  VITE_FIREBASE_APP_CHECK_SITE_KEY: String(firebaseConfig.recaptchaSiteKey || ''),
+});
 export const googleProvider: GoogleAuthProvider = (() => {
   const provider = new GoogleAuthProvider();
   try {
