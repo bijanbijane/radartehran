@@ -45,6 +45,22 @@ test('future DB write pause blocks mutations while preserving reads and privacy/
   const researchBody = await researchWrite.json() as { code: string };
   assert.equal(researchBody.code, 'DB_WRITES_PAUSED', 'research event ingestion remains blocked');
 
+  const publisherWrite = await worker.fetch(
+    new Request('https://radar.test/api/internal/geography/publish/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId: 'quota-guard-test' }),
+    }),
+    env,
+    executionCtx,
+  );
+  const publisherBody = await publisherWrite.json() as { code: string };
+  assert.equal(
+    publisherBody.code,
+    'DB_WRITES_PAUSED',
+    'the internal IRNI registry publisher must not bypass the global D1 write pause',
+  );
+
   const privacyRequest = await worker.fetch(
     new Request('https://radar.test/api/account/deletion-requests', { method: 'POST' }),
     env,
