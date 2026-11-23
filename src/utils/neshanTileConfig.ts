@@ -282,5 +282,5 @@ export function resolveInitialPreferredTileStyle(): MapTileServerId {
   try {
     if (typeof localStorage === 'undefined') return 'neshan';
     const stored = localStorage.getItem(TILE_STYLE_PREF_STORAGE_KEY);
-    if (stored === 'neshan' || stored === 'osm' || stored === 'satellite' || stored === 'carto_dark' || stored === 'osm_hot' || stored === 'voyager') { return stored as MapTileServerId; }
+    if (stored === 'neshan' || stored === 'osm' || stored === 'voyager') { return stored as MapTileServerId; }
     if (stored === 'mapbox') { localStorage.setItem(TILE_STYLE_PREF_STORAGE_KEY, 'neshan'); return 'neshan'; } return 'neshan'; } catch { return 'neshan'; } }
