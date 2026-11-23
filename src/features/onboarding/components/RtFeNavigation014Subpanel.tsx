@@ -30,7 +30,7 @@ export const RtFeNavigation014Subpanel: React.FC = () => {
       resolveDeepLinkDestination({
         rawUrl: deepLinkInput,
         isAuthenticated: visibilityCtx.isAuthenticated,
-        userPermissions: visibilityCtx.userPermissions,
+        userPermissions: [...visibilityCtx.userPermissions],
       }),
     [deepLinkInput, visibilityCtx],
   );
