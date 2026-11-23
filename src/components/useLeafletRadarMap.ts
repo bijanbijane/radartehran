@@ -265,10 +265,16 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
       clearMacroClusters();
       markersMapRef.current = {};
-      const clusterSource = (cityScopedHoods.length > 0 ? cityScopedHoods : renderHoods)
-        .filter((hood) => statusFilter === 'all' || hood.status === statusFilter);
+      const clusterSource = [...(cityScopedHoods.length > 0 ? cityScopedHoods : renderHoods)];
+      const selectedForCluster = selectedHoodRef.current;
+      if (selectedForCluster && !clusterSource.some((hood) => hood.id === currentSelectedId)) {
+        clusterSource.push(selectedForCluster);
+      }
+      const clusterCandidates = clusterSource.filter((hood) =>
+        hood.id === currentSelectedId || statusFilter === 'all' || hood.status === statusFilter
+      );
       const clusters = buildMacroZoomClusters(
-        clusterSource,
+        clusterCandidates,
         currentSelectedId,
         currentZoom,
         (hood) => getLensPalette(hood, pres.mapLens, d3PriceScale)
@@ -296,7 +302,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     });
     markersMapRef.current = nextMarkersMap;
     timer('success');
-  }, [deferredMapNeighborhoods, mapZoomLevel, selectedHoodId, viewportEpoch, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded]);
+  }, [deferredMapNeighborhoods, mapZoomLevel, selectedHoodId, viewportEpoch, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded, mode, rentAgeMultiplier, mapLens, areaUnit, intlCurrency, locale, isDarkTheme]);
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
