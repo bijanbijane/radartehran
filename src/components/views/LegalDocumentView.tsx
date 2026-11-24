@@ -69,7 +69,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
           </nav>
         </div>
 
-        <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
+        <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
           {isPrivacy
             ? (isEn ? 'Privacy Policy & Data Protection' : 'سیاست حریم خصوصی و حفاظت از داده‌ها')
             : (isEn ? 'Terms of Use & Analytical Disclaimer' : 'قوانین استفاده و سلب مسئولیت تحلیلی')}
@@ -89,7 +89,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
         {isPrivacy ? (
           <>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '1. Local Browser Preferences' : '۱. ذخیره‌سازی محلی در مرورگر'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -99,7 +99,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '2. Account Sign-In & Control' : '۲. حساب کاربری و کنترل داده‌ها'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -109,7 +109,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '3. Sanitized URLs & Sharing' : '۳. پاک‌سازی پارامترهای حساس در لینک‌ها'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -119,7 +119,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '4. Community Contributions' : '۴. مشارکت‌های عمومی و گزارش داده'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -132,7 +132,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
         ) : (
           <>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '1. Analytical Estimates Only' : '۱. ماهیت تحلیلی برآوردها'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -142,7 +142,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '2. Independent Verification' : '۲. ضرورت راستی‌آزمایی حضوری و ثبتی'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -152,7 +152,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '3. Acceptable Community Conduct' : '۳. اصول مشارکت در جامعه کاربران'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
@@ -162,7 +162,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               </p>
             </section>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
-              <h2 className="text-base font-extrabold text-[var(--color-text-primary)]">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isEn ? '4. Methodology Transparency' : '۴. شفافیت منابع و روش‌شناسی'}
               </h2>
               <p className="text-sm leading-7 text-[var(--color-text-secondary)]">

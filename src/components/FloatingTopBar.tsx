@@ -28,11 +28,11 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
   const qTrim = searchQuery.trim();
   const searchMatches = qTrim ? evaluatedNeighborhoods.filter((n) => matchesPersianSearch(n.name, qTrim) || matchesPersianSearch(n.zone, qTrim)) : evaluatedNeighborhoods; const allNationwideHoods = React.useMemo(() => getAllMultiCityNeighborhoods(), []); const crossCityMatches = React.useMemo(() => (qTrim ? allNationwideHoods.filter((h) => !searchMatches.some((m) => m.id === h.id) && (matchesPersianSearch(h.name, qTrim) || matchesPersianSearch(h.zone, qTrim))) : []), [qTrim, searchMatches, allNationwideHoods]);
   const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (onlyOutsideTrafficZone ? 1 : 0) + (onlyHighMetro ? 1 : 0);
-  if (primaryView === 'admin') return <></>; return ( <> <div className={`radar-floating-top-bar fixed top-[64px] lg:top-[72px] right-3 sm:right-4 ${primaryView === 'map' ? 'lg:right-[384px]' : ''} left-3 sm:left-4 ${hasOpenTopBarOverlay ? 'z-[44]' : 'z-30'} flex flex-col items-stretch gap-2 pointer-events-none`}>
+  if (primaryView === 'admin') return <></>; return ( <> <div className={`radar-floating-top-bar fixed top-[calc(var(--header-height)+8px)] right-3 sm:right-4 ${primaryView === 'map' ? 'lg:right-[384px]' : ''} left-3 sm:left-4 ${hasOpenTopBarOverlay ? 'z-[44]' : 'z-30'} flex flex-col items-stretch gap-2 pointer-events-none`}>
         {(primaryView === 'map' || showSearchDropdown || showToolsPopover) && <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full">
           {(primaryView === 'map' || showSearchDropdown) ? <div className="flex flex-nowrap items-center gap-1.5 apple-vibrancy-bar px-2 sm:px-2.5 py-1.5 rounded-[12px] pointer-events-auto min-w-0 flex-1 lg:flex-initial">
           <NetworkStatusBadge status={connectionStatus} isEn={isEn} />
-          <div className="relative flex-1 min-w-[110px] sm:w-48 lg:w-52"> <Search className="w-4 h-4 stroke-[1.75] text-[var(--color-text-muted)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <div className="relative flex-1 min-w-[110px] sm:w-52 lg:w-64"> <Search className="w-4 h-4 stroke-[1.75] text-[var(--color-text-muted)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input type="text" aria-label="جست‌وجوی محله" value={searchQuery} onFocus={() => { clearSearchBlurTimer(); onBeforeOpenFloatingPanel?.('search'); setShowSearchDropdown(true); }} onBlur={() => { clearSearchBlurTimer(); searchBlurTimerRef.current = window.setTimeout(() => { searchBlurTimerRef.current = null; setShowSearchDropdown(false); }, 200); }} onKeyDown={(e) => { if (e.key === 'Enter' && searchMatches.length > 0) { e.preventDefault(); clearSearchBlurTimer(); recordRecentSearch(searchMatches[0].name); onSelectNeighborhood(searchMatches[0]);
                   setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false); } }}
               onChange={(e) => { clearSearchBlurTimer(); onBeforeOpenFloatingPanel?.('search'); setSearchQuery(e.target.value); setShowSearchDropdown(true); }}
@@ -50,8 +50,8 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
           </div>
           {primaryView === 'map' && (
             <div role="group" aria-label="حالت خرید یا اجاره" className="hidden sm:inline-flex items-center p-0.5 rounded-[8px] apple-segmented shrink-0 text-xs font-bold">
-              <button type="button" data-testid="quick-mode-buy" aria-pressed={mode === 'buy'} onClick={() => setMode('buy')} className={`px-2.5 py-1 rounded-[6px] whitespace-nowrap transition cursor-pointer ${mode === 'buy' ? 'apple-segmented-pill-active text-[var(--color-brand-600)] font-extrabold' : 'text-[var(--color-text-secondary)]'}`}>{isEn ? 'Buy' : 'خرید'}</button>
-              <button type="button" data-testid="quick-mode-rent" aria-pressed={mode === 'rent'} onClick={() => setMode('rent')} className={`px-2.5 py-1 rounded-[6px] whitespace-nowrap transition cursor-pointer ${mode === 'rent' ? 'apple-segmented-pill-active text-[var(--color-brand-600)] font-extrabold' : 'text-[var(--color-text-secondary)]'}`}>{isEn ? 'Rent' : 'رهن و اجاره'}</button>
+              <button type="button" data-testid="quick-mode-buy" aria-pressed={mode === 'buy'} onClick={() => setMode('buy')} className={`px-2.5 py-1 rounded-[6px] whitespace-nowrap transition cursor-pointer ${mode === 'buy' ? 'apple-segmented-pill-active text-[var(--color-brand-600)] font-bold' : 'text-[var(--color-text-secondary)]'}`}>{isEn ? 'Buy' : 'خرید'}</button>
+              <button type="button" data-testid="quick-mode-rent" aria-pressed={mode === 'rent'} onClick={() => setMode('rent')} className={`px-2.5 py-1 rounded-[6px] whitespace-nowrap transition cursor-pointer ${mode === 'rent' ? 'apple-segmented-pill-active text-[var(--color-brand-600)] font-bold' : 'text-[var(--color-text-secondary)]'}`}>{isEn ? 'Rent' : 'رهن و اجاره'}</button>
             </div>
           )}
           {primaryView === 'map' && (
@@ -61,11 +61,15 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
               ))}
             </select>
           )}
-          <button type="button" aria-label="فیلتر بودجه و وام" aria-expanded={mobileFilterOpen} onClick={() => { const next = !mobileFilterOpen; if (next) onBeforeOpenFloatingPanel?.('filter'); setMobileFilterOpen(next); setShowToolsPopover(false); }} className={`min-h-[44px] lg:min-h-[34px] px-2.5 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition shrink-0 cursor-pointer border whitespace-nowrap ${mobileFilterOpen ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-[var(--color-bg-subtle)] hover:bg-slate-200/70 dark:hover:bg-slate-800 text-[var(--color-text-primary)] border-[var(--color-border-subtle)]'}`}>
+          <button type="button" aria-label={isEn ? `Budget & mortgage filter (${counts.green + counts.yellow} matching)` : `فیلتر بودجه و وام (${toPersianNum(counts.green + counts.yellow)} محله همخوان)`} aria-expanded={mobileFilterOpen} onClick={() => { const next = !mobileFilterOpen; if (next) onBeforeOpenFloatingPanel?.('filter'); setMobileFilterOpen(next); setShowToolsPopover(false); }} className={`min-h-[44px] lg:min-h-[34px] px-2.5 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition shrink-0 cursor-pointer border whitespace-nowrap ${mobileFilterOpen ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-[var(--color-bg-subtle)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] border-[var(--color-border-subtle)]'}`}>
             <SlidersHorizontal className="w-4 h-4 stroke-[1.75]" aria-hidden="true" />
             <span className="sm:hidden">{isEn ? 'Filter' : 'فیلتر'}</span>
             <span className="hidden sm:inline">{topCopy.filterBtnLabel}</span>
-            <span className={`px-1.5 py-0.5 rounded-[6px] text-xs font-extrabold tabular-nums ${mobileFilterOpen ? 'bg-white/20 text-white' : 'bg-white/80 dark:bg-slate-700 text-[var(--color-text-primary)]'}`}>{toPersianNum(activeFilterCount > 0 ? activeFilterCount : counts.green + counts.yellow)}</span>
+            {activeFilterCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-[6px] text-xs font-bold tabular-nums ${mobileFilterOpen ? 'bg-white/20 text-white' : 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]'}`}>
+                {toPersianNum(activeFilterCount)}
+              </span>
+            )}
           </button>
         </div> : <span />}
         {(primaryView === 'map' || showToolsPopover) && <div className="shrink-0 flex items-center gap-1.5 pointer-events-auto relative">
@@ -108,7 +112,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                   if (onNavigateView) onNavigateView('tools');
                   else { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); }
                 }}
-                className="w-full min-h-[44px] px-3 py-2.5 rounded-[8px] bg-[var(--color-brand-soft)] hover:opacity-90 border border-[var(--color-brand-200)] text-[var(--color-brand-700)] dark:text-[#86d8cb] font-extrabold flex items-center justify-between gap-2 transition cursor-pointer"
+                className="w-full min-h-[44px] px-3 py-2.5 rounded-[8px] bg-[var(--color-brand-soft)] hover:opacity-90 border border-[var(--color-brand-200)] text-[var(--color-brand-700)] dark:text-[#86d8cb] font-bold flex items-center justify-between gap-2 transition cursor-pointer"
               >
                 <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] shrink-0" /><span>همه ابزارها و محاسبه‌گرها</span></span>
                 <span className="text-xs bg-[var(--color-brand-600)] text-white px-2 py-0.5 rounded-[6px] font-bold tabular-nums shrink-0">{toPersianNum(superSummary.toolCount)}</span>
@@ -144,9 +148,9 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         )}
         {lastSyncNotice && !mobileFilterOpen && ( <div role="status" className="self-start apple-vibrancy-bar px-3 py-1.5 rounded-[10px] text-xs font-bold text-[var(--color-brand-600)] pointer-events-auto max-w-md truncate">{lastSyncNotice}</div> )}
         {/* Floating Budget & Loan Filter Popover Card */}
-        {mobileFilterOpen && ( <div role="dialog" aria-label="تنظیم بودجه، وام مسکن و محل کار" className="self-start w-full sm:w-[410px] apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-[16px] p-4 space-y-3.5 text-xs pointer-events-auto max-h-[82vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
-              <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
+        {mobileFilterOpen && ( <div role="dialog" aria-label="تنظیم بودجه، وام مسکن و محل کار" className="self-start w-full sm:w-[410px] apple-inspector-panel bg-[var(--color-bg-surface)]/95 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] rounded-[16px] p-4 space-y-3.5 text-xs pointer-events-auto max-h-[82vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-2.5">
+              <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)]"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
               <div className="flex items-center gap-1.5">
                 {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} title={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} aria-label={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer whitespace-nowrap">یافتن محله با بودجه من</button>}
                 <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>راهنما</span></button>
@@ -212,7 +216,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
               {mode === 'buy' && ( <label className="flex items-start gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 cursor-pointer">
                   <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند" className="mt-0.5 rounded text-[var(--color-brand-600)] focus:ring-emerald-500 cursor-pointer" />
                   <div className="text-xs leading-snug">
-                    <span className="font-extrabold text-slate-900 dark:text-white">کسر خودکار رهن مستأجر + ۱۰٪ تنفس سند</span>
+                    <span className="font-bold text-slate-900 dark:text-white">کسر خودکار رهن مستأجر + ۱۰٪ تنفس سند</span>
                     <p className="text-xs text-[var(--color-text-muted)] mt-0.5">رهن مستأجر و ۱۰٪ تحویل سند از نقدینگی موردنیاز کسر می‌گردد.</p>
                   </div>
                 </label> )}
@@ -221,7 +225,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button type="button" onClick={() => setUseLoanBooster((prev) => !prev)} className={`min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${useLoanBooster ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-800 dark:text-emerald-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <span>افزودن وام مسکن</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)]/10 text-emerald-700 dark:text-emerald-400 text-xs font-extrabold tabular-nums">+{toPersianNum(extraGreenWithLoan)} محله</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)]/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold tabular-nums">+{toPersianNum(extraGreenWithLoan)} محله</span>
               </button>
               <select value={workHubId} onChange={(e) => setWorkHubId(e.target.value)} aria-label="منطقه محل کار" className="min-h-[44px] md:min-h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-xl px-2.5 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-600 cursor-pointer">
                 {activeCityWorkHubs.map((hub) => <option key={hub.id} value={hub.id}>محل کار: {hub.name}</option>)}
@@ -238,7 +242,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                 { id: 'yellow' as const, label: `مرزی (${toPersianNum(counts.yellow)})` },
                 { id: 'red' as const, label: `فراتر (${toPersianNum(counts.red)})` },
               ].map((st) => (
-                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
+                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
               ))}
             </div>
             <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex flex-col gap-2">

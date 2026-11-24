@@ -57,7 +57,7 @@ export const ModuleSecondaryNav: React.FC<ModuleSecondaryNavProps> = ({
           {node.isCurrent || node.ellipsis ? (
             <span
               aria-current={node.isCurrent ? 'page' : undefined}
-              className={`truncate whitespace-nowrap ${node.isCurrent ? 'font-extrabold text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)] px-0.5'}`}
+              className={`truncate whitespace-nowrap ${node.isCurrent ? 'font-bold text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)] px-0.5'}`}
             >
               {node.label}
             </span>

@@ -98,7 +98,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
         className="w-full sm:max-w-xl bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl border border-[var(--color-border-subtle)] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
       >
         <div className="px-4 py-3.5 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فیلترهای دقیق جست‌وجوی ملک</h2>
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">فیلترهای دقیق جست‌وجوی ملک</h2>
           <button
             type="button"
             onClick={onClose}

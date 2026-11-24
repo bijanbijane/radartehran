@@ -94,7 +94,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
     <div className="space-y-4 text-xs" data-testid="community-questions-tab">
       <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <HelpCircle className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>طرح پرسش تخصصی (حقوقی، شهرسازی، قیمت‌گذاری و محله {selectedHood.name})</span>
           </h2>
@@ -176,7 +176,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                 <span>محله {q.neighborhoodNameFa} · {q.createdAtFa}</span>
                 <span className="font-bold text-[var(--color-brand-fg)]">{Q_STATUS_FA[q.status]}</span>
               </div>
-              <h3 className="font-black text-sm text-[var(--color-text-primary)]">{q.titleFa}</h3>
+              <h3 className="font-bold text-sm text-[var(--color-text-primary)]">{q.titleFa}</h3>
               <p className="text-[var(--color-text-secondary)] leading-relaxed">{q.bodyFa}</p>
               <CommunityAuthorBadges profile={q.authorProfile} onSelectUsername={onSelectAuthor} />
 

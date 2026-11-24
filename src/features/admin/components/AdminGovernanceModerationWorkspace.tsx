@@ -105,7 +105,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
     return (
       <div data-testid="admin-content-moderation-workspace" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <FileWarning className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>صف ممیزی آگهی‌های ثبت‌شده و گزارش‌های کاربران</span>
           </strong>
@@ -188,7 +188,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
 
         {reports.length > 0 && (
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <strong className="font-black text-slate-800 dark:text-slate-100 block">گزارش‌های خطا و تخطی کاربران ({toPersianNum(reports.length)})</strong>
+            <strong className="font-bold text-slate-800 dark:text-slate-100 block">گزارش‌های خطا و تخطی کاربران ({toPersianNum(reports.length)})</strong>
             {reports.slice(0, 5).map((r) => (
               <div key={r.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
                 <span>شناسه فایل {r.listingId} · علت: <strong>{r.reason}</strong></span>
@@ -199,7 +199,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
         )}
 
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2" data-testid="admin-knowledge-publications-queue">
-          <strong className="font-black text-slate-800 dark:text-slate-100 block">
+          <strong className="font-bold text-slate-800 dark:text-slate-100 block">
             گردش‌کار تحریریه و وضعیت انتشار سرور پایگاه دانش ({toPersianNum(KNOWLEDGE_PUBLICATIONS.length)})
           </strong>
           {KNOWLEDGE_PUBLICATIONS.slice(0, 6).map((pub) => {
@@ -269,7 +269,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
   return (
     <div data-testid="admin-complaints-disputes-queue" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
       <div className="flex items-center justify-between gap-2">
-        <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+        <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <MessageSquareWarning className="w-4 h-4 text-amber-600" />
           <span>رسیدگی به شکایات و اختلافات خصوصی خدمات ({toPersianNum(complaints.length)})</span>
         </strong>

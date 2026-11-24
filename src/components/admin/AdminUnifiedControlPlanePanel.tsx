@@ -144,7 +144,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <div>
-            <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               صفحه کنترل یکپارچه بک‌اند سازمانی (Unified Administrative Control Plane · Employees 74–80)
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -162,7 +162,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         {SECTIONS.map((sec) => {
           const active = activeSection === sec.id;
           return (
-            <button key={sec.id} type="button" onClick={() => setActiveSection(sec.id)} className={`p-2 rounded-xl text-right border transition cursor-pointer ${active ? 'bg-indigo-600 text-white border-indigo-600 font-extrabold shadow-xs' : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}>
+            <button key={sec.id} type="button" onClick={() => setActiveSection(sec.id)} className={`p-2 rounded-xl text-right border transition cursor-pointer ${active ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}>
               <div className="truncate">{sec.labelFa}</div>
               <div className={`text-[10px] font-mono mt-0.5 ${active ? 'text-indigo-100' : 'text-slate-400'}`}>{sec.empLabel}</div>
             </button>
@@ -176,7 +176,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 flex flex-wrap items-center justify-between gap-2">
           <span className="font-bold text-amber-900 dark:text-amber-200">آیا از اجرای این عملیات حساس مدیریتی (ثبت در Audit Trail تغییرناپذیر) اطمینان دارید؟</span>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => void executeConfirmedAction(confirmAction)} className="px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-extrabold cursor-pointer">تایید و اجرا</button>
+            <button type="button" onClick={() => void executeConfirmedAction(confirmAction)} className="px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">تایید و اجرا</button>
             <button type="button" onClick={() => setConfirmAction(null)} className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold cursor-pointer">انصراف</button>
           </div>
         </div>

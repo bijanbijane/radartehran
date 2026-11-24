@@ -16,12 +16,7 @@ import type { CityId } from '../../types/models';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { resolveGovernanceEntityId } from '../../features/data-governance/services/placeIdentityMappers';
 import { getPriceBracketOptions } from '../../features/neighborhoods/services/neighborhoodPricePresentation';
-import {
-  compareDiscoverNeighborhoods,
-  matchesDiscoverPriceBracket,
-  type DiscoverPriceBracketId,
-  type DiscoverSortMode,
-} from '../../features/discovery/services/discoverPricingEngine';
+import { compareDiscoverNeighborhoods, matchesDiscoverPriceBracket, type DiscoverPriceBracketId, type DiscoverSortMode } from '../../features/discovery/services/discoverPricingEngine';
 import { getDiscoverLocaleCopy } from '../../features/discovery/i18n/discoverLocaleCopy';
 import { DiscoverNeighborhoodResults } from '../discover/DiscoverNeighborhoodResults';
 
@@ -74,12 +69,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
     if (zoneFilter !== 'all' && !zones.includes(zoneFilter)) setZoneFilter('all');
   }, [zoneFilter, zones]);
 
-  const inViewportHoods = useMemo(() => {
-    if (!viewportBounds) return [];
-    return p.evaluatedNeighborhoods.filter(
-      (h) => Number.isFinite(h.lat) && Number.isFinite(h.lng) && isCoordInsideStoredViewport(h.lat, h.lng, viewportBounds),
-    );
-  }, [p.evaluatedNeighborhoods, viewportBounds]);
+  const inViewportHoods = useMemo(() => (viewportBounds ? p.evaluatedNeighborhoods.filter((h) => Number.isFinite(h.lat) && Number.isFinite(h.lng) && isCoordInsideStoredViewport(h.lat, h.lng, viewportBounds)) : []), [p.evaluatedNeighborhoods, viewportBounds]);
 
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
   const selectedProvenanceStats = useMemo(() => {
@@ -150,30 +140,17 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
         <div>
           <span className="text-xs font-bold tracking-wide text-[var(--color-brand-600)] dark:text-emerald-400 block mb-1">{copy.eyebrow}</span>
-          <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)] dark:text-white tracking-tight">{copy.heading}</h1>
+          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)] tracking-tight">{copy.heading}</h1>
           <p className="text-xs text-[var(--color-text-muted)] mt-1">{copy.subtitle(filtered.length, p.mode)}{fxRefLabel}</p>
           <DiscoverSelectedHoodEpistemicBanner hood={p.selectedHood} cityId={activeCity} allNeighborhoods={p.evaluatedNeighborhoods} />
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           {p.onToggleSplitMap && (
-            <button
-              type="button"
-              data-testid="discover-split-map-toggle"
-              aria-pressed={Boolean(p.splitMapMode)}
-              onClick={p.onToggleSplitMap}
-              className={`hidden lg:inline-flex min-h-[36px] items-center px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap cursor-pointer ${p.splitMapMode ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] dark:border-slate-700 bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'}`}
-            >
+            <button type="button" data-testid="discover-split-map-toggle" aria-pressed={Boolean(p.splitMapMode)} onClick={p.onToggleSplitMap} className={`hidden lg:inline-flex min-h-[36px] items-center px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap cursor-pointer ${p.splitMapMode ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'}`}>
               {p.splitMapMode ? (isEn ? 'Full Width' : 'نمای تمام‌عرض') : (isEn ? 'Show Beside Map' : 'نمایش کنار نقشه')}
             </button>
           )}
-          <button
-            type="button"
-            disabled={!viewportBounds}
-            aria-pressed={filterRankingByViewport}
-            onClick={() => { setCurrentPage(1); updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport }); }}
-            className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap ${!viewportBounds ? 'opacity-60 cursor-not-allowed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]' : filterRankingByViewport ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 cursor-pointer' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer'}`}
-            title={!viewportBounds ? (isEn ? copy.viewportToggleUnavailableTitle : 'محدوده نقشه هنوز آماده نیست') : copy.viewportToggleActiveTitle}
-          >
+          <button type="button" disabled={!viewportBounds} aria-pressed={filterRankingByViewport} onClick={() => { setCurrentPage(1); updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport }); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap ${!viewportBounds ? 'opacity-60 cursor-not-allowed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]' : filterRankingByViewport ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 cursor-pointer' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer'}`} title={!viewportBounds ? (isEn ? copy.viewportToggleUnavailableTitle : 'محدوده نقشه هنوز آماده نیست') : copy.viewportToggleActiveTitle}>
             {copy.viewportToggleLabel(inViewportHoods.length)}
           </button>
           <div className="flex items-center border border-[var(--color-border-subtle)] rounded-lg p-0.5 bg-[var(--color-bg-muted)]">
@@ -232,13 +209,13 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
       {filterRankingByViewport && viewportBounds && inViewportHoods.length === 0 ? (
         <div data-testid="empty-viewport-state" className="p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-3">
-          <div className="text-base font-black text-[var(--color-text-primary)]">{isEn ? copy.emptyViewportTitle : 'محله‌ای در محدوده فعلی نقشه قرار ندارد.'}</div>
+          <div className="text-base font-bold text-[var(--color-text-primary)]">{isEn ? copy.emptyViewportTitle : 'محله‌ای در محدوده فعلی نقشه قرار ندارد.'}</div>
           <p className="text-xs text-[var(--color-text-muted)] max-w-md mx-auto">{copy.emptyViewportDesc}</p>
           <button type="button" onClick={() => { updateMapAdvancedOverlayState({ filterRankingByViewport: false }); setCurrentPage(1); }} className="min-h-[44px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition cursor-pointer">{isEn ? copy.showAllNeighborhoodsBtn : 'نمایش تمام محله‌ها'}</button>
         </div>
       ) : filtered.length === 0 ? (
         <div data-testid="relax-filter-assistant" className="p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-4">
-          <div className="text-base font-black text-[var(--color-text-primary)]">{copy.noMatchesTitle}</div>
+          <div className="text-base font-bold text-[var(--color-text-primary)]">{copy.noMatchesTitle}</div>
           <p className="text-xs text-[var(--color-text-muted)] max-w-lg mx-auto">{copy.noMatchesDesc}</p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
             <button type="button" onClick={() => { setPriceBracket('all'); setCurrentPage(1); }} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer">{copy.relaxPriceBtn}</button>
@@ -274,8 +251,8 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         />
       )}
 
-      <details className="rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-xs">
-        <summary className="cursor-pointer font-bold text-[var(--color-text-secondary)] dark:text-slate-300 select-none">
+      <details className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-3 text-xs">
+        <summary className="cursor-pointer font-bold text-[var(--color-text-secondary)] select-none">
           شفافیت داده و پوشش نمونه محله {p.selectedHood.name} ⓘ
         </summary>
         <div className="mt-3">

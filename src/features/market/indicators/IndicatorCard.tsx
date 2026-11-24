@@ -51,7 +51,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({
       </div>
 
       <div className="tabular-nums space-y-0.5">
-        <div className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight">
+        <div className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
           {indicator.formattedValueFa}
         </div>
         {indicator.intlText && (

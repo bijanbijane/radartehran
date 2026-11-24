@@ -36,7 +36,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
       {/* Visit Log Card */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-slate-900 dark:text-white">دفترچه بازدیدهای میدانی</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">دفترچه بازدیدهای میدانی</h2>
           <p className="text-slate-500 mt-1 tabular-nums">تاکنون {toPersianNum(visitedHomesCount)} بازدید ملکی ثبت کرده‌اید.</p>
         </div>
         <button type="button" onClick={onOpenVisitedModal} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
@@ -47,7 +47,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
       {/* Saved Valuation Reports History */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Calculator className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>تاریخچه گزارش‌های ارزش‌گذاری ملک ({toPersianNum(savedValuations.length)})</span>
           </h2>
@@ -64,14 +64,14 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
               <div key={rep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="font-black text-slate-900 dark:text-white">
+                    <div className="font-bold text-slate-900 dark:text-white">
                       محله {rep.hoodName} · {toPersianNum(rep.input.sqm)} متر
                     </div>
                     <div className="text-[10.5px] text-slate-500 tabular-nums">
                       {rep.modelVersion} · {rep.input.purpose === 'rent' ? 'اجاره/رهن' : 'فروش'}
                     </div>
                   </div>
-                  <strong className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
+                  <strong className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                     {toPersianNum((rep.hedonicTotalMillion / 1000).toFixed(2))} م.ت (میلیارد)
                   </strong>
                 </div>
@@ -96,7 +96,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
 
       {/* Unified Activity Stream */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-        <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <History className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>خط زمانی فعالیت‌های حساب</span>
         </h2>

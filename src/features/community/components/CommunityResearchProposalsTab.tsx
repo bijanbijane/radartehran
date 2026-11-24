@@ -61,7 +61,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
     <div className="space-y-4 text-xs" data-testid="community-research-proposals-tab">
       <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <BookOpenCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>پیوند با پایگاه دانش و پژوهش‌های رادار تهران</span>
           </strong>
@@ -73,7 +73,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
-        <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <Lightbulb className="w-4 h-4 text-amber-600" />
           <span>پیشنهاد موضوع پژوهش جدید</span>
         </h2>
@@ -102,7 +102,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
                   <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">{prop.neighborhoodNameFa}</span>
                   <span className="text-[var(--color-text-muted)]">{prop.status === 'queued_for_research' ? 'در صف پژوهش تحریریه' : 'پیشنهاد باز جمعی'}</span>
                 </div>
-                <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{prop.titleFa}</h3>
+                <h3 className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">{prop.titleFa}</h3>
                 <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{prop.questionFa}</p>
                 <CommunityAuthorBadges profile={prop.authorProfile} />
               </div>
@@ -110,7 +110,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
                 type="button"
                 data-testid={`vote-research-${prop.id}`}
                 onClick={() => onVoteProposal(prop.id)}
-                className={`px-3 py-2 rounded-[9px] font-black inline-flex items-center gap-1.5 cursor-pointer border tabular-nums shrink-0 ${
+                className={`px-3 py-2 rounded-[9px] font-bold inline-flex items-center gap-1.5 cursor-pointer border tabular-nums shrink-0 ${
                   voted ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'bg-white dark:bg-slate-800 border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white'
                 }`}
               >

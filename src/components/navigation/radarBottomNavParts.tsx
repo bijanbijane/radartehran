@@ -25,7 +25,7 @@ export function NavTabButton(props: {
       data-testid={testId}
       aria-current={isActive ? 'page' : undefined}
       onNavigate={onSelect}
-      className={`relative min-h-14 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-xs font-bold transition active:scale-95 cursor-pointer touch-manipulation ${isActive ? tabActive : tabIdle}`}
+      className={`relative w-full h-full min-h-14 min-w-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-xs font-bold transition active:scale-95 cursor-pointer touch-manipulation ${isActive ? tabActive : tabIdle}`}
     >
       {isActive && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--color-brand-600)] dark:bg-emerald-400" aria-hidden="true" />}
       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
@@ -51,7 +51,7 @@ export function MapCenterButton(props: { item: ProductNavigationItem; isActive: 
         }`}
       >
         <Icon className={`shrink-0 ${isActive ? 'h-5 w-5' : 'h-[18px] w-[18px]'}`} aria-hidden="true" />
-        <span className="text-xs font-extrabold leading-none">{item.label}</span>
+        <span className="text-xs font-bold leading-none">{item.label}</span>
       </RadarLink>
     </div>
   );

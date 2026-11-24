@@ -78,7 +78,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <FileCheck2 className="w-4 h-4 text-[var(--color-brand-600)]" />
-          <strong className="text-sm font-black text-slate-900 dark:text-white">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white">
             کارت شفافیت منشأ داده، کیفیت نمونه و روش‌شناسی ({resolvedNameFa})
           </strong>
         </div>
@@ -108,25 +108,25 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
           <div className="text-xs text-[var(--color-text-muted)]">دوره مرجع داده (Valid Time)</div>
-          <strong className="font-black text-slate-900 dark:text-white block mt-0.5">
+          <strong className="font-bold text-slate-900 dark:text-white block mt-0.5">
             {contract.referencePeriod.labelFa}
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
           <div className="text-xs text-[var(--color-text-muted)]">تعداد نمونه / ملک یکتا</div>
-          <strong className="font-black text-slate-900 dark:text-white block mt-0.5 tabular-nums">
+          <strong className="font-bold text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {sampleText}
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
           <div className="text-xs text-[var(--color-text-muted)]">تعداد منابع و شواهد مستقل</div>
-          <strong className="font-black text-slate-900 dark:text-white block mt-0.5 tabular-nums">
+          <strong className="font-bold text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {toPersianNum(contract.provenance.sourceCount)} منبع ثبت‌شده · {toPersianNum(contract.provenance.independentEvidenceCount)} شاهد مستقل
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
           <div className="text-xs text-[var(--color-text-muted)]">تفکیک تایید روش و واقعیت بیرونی</div>
-          <strong className="font-black text-amber-800 dark:text-amber-300 block mt-0.5">
+          <strong className="font-bold text-amber-800 dark:text-amber-300 block mt-0.5">
             تایید روش محاسبه ≠ قیمت قطعی ثبتی
           </strong>
         </div>
@@ -169,7 +169,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
 
       {expandedTab === 'LINEAGE' && (
         <div data-testid="provenance-lineage-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
-          <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1">
+          <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
             <Database className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>زنجیره منشأ داده (Data Lineage) و منابع قابل انتشار:</span>
           </strong>
@@ -196,7 +196,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
 
       {expandedTab === 'VERSIONS' && (
         <div data-testid="provenance-versions-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
-          <strong className="font-black text-slate-900 dark:text-white block">
+          <strong className="font-bold text-slate-900 dark:text-white block">
             مقایسه نسخه‌های تاریخی شاخص (تفکیک Data Version و Methodology Version):
           </strong>
           {diff ? (

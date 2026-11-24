@@ -22,7 +22,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <div>
-              <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                 مانیتورینگ زنده سلامت سرور، Rate Limiter و لاگ‌های امنیتی
               </div>
               <div className="text-slate-500 dark:text-slate-400 text-[11px]">
@@ -66,7 +66,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         {auditReport && (
           <div className="bg-emerald-950/5 dark:bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-4 space-y-3 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
-              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-black text-sm">
+              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
                 <CheckCircle2 className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>نتایج دیباگ {toPersianNum(auditReport.totalSteps)} مرحله‌ای: {toPersianNum(auditReport.totalPassed)} از {toPersianNum(auditReport.totalSteps)} آزمون موفق (۰ خطا)</span>
               </div>
@@ -79,7 +79,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                 <div key={s.step} className="py-2 flex items-center justify-between gap-2 text-xs hover:bg-emerald-500/5 px-2 rounded-lg transition">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0">#{toPersianNum(s.step)}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 shrink-0">{s.domain}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 shrink-0">{s.domain}</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{s.name}</span>
                   </div>
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] truncate shrink-0 max-w-xs">{s.details}</span>
@@ -94,7 +94,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <span>آپ‌تایم سرور (Uptime)</span>
               <Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-base font-black text-slate-900 dark:text-slate-100 tabular-nums">
+            <div className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.uptimeMinutes)} دقیقه (${toPersianNum(systemHealth.uptimeHours)} ساعت)` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
             </div>
             <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">پایداری هسته Express: فعال (OK)</div>
@@ -104,7 +104,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <span>مصرف حافظه رم (RSS)</span>
               <Cpu className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-base font-black text-slate-900 dark:text-slate-100 tabular-nums">
+            <div className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.memoryRssMb)} مگابایت` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -116,7 +116,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <span>سپر ضدحمله (Rate Limiter)</span>
               <ShieldCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-sm font-black text-slate-900 dark:text-slate-100">
+            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
               {systemHealth?.securityMetrics?.generalRateLimit || '180 req / min'} · {systemHealth?.securityMetrics?.heavySyncRateLimit || '3 req / 10 min'}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -152,7 +152,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           </div>
         )}
         <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-          <div className="bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between font-extrabold text-slate-800 dark:text-slate-100">
+          <div className="bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
             <div className="flex items-center gap-1.5">
               <Activity className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۲۰ لاگ اخیر رویدادها و همگام‌سازی سرور (Audit Ring Buffer)</span>
@@ -166,7 +166,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               systemHealth.recentLogs.map((log) => (
                 <div key={log.id} className="px-3.5 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${log.level === 'SYNC' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : log.level === 'WARN' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.level === 'SYNC' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : log.level === 'WARN' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
                       {log.level}
                     </span>
                     <span className="text-slate-800 dark:text-slate-200 font-medium">{log.event}</span>
@@ -186,7 +186,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-            <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>موتور مدیریت ماژول‌های سال اول (Feature Flags)</span>
             </div>
@@ -203,7 +203,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                   </div>
                   <button
                     type="button" onClick={() => onToggleFeatureFlag(item.key)}
-                    className={`px-3 py-1.5 rounded-xl font-extrabold text-[11px] shrink-0 transition cursor-pointer border ${
+                    className={`px-3 py-1.5 rounded-xl font-bold text-[11px] shrink-0 transition cursor-pointer border ${
                       active ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -216,14 +216,14 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         </div>
         <div className="space-y-4">
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-            <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Database className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>پشتیبان‌گیری کامل و بازیابی ۱-کلیکی دیتابیس</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
               شامل تمامی محله‌ها، قیمت‌های ویرایش‌شده، حامیان املاک (CRM)، آگهی‌های شکار طلایی، شماره‌های خریداران و تنظیمات ماژول‌ها در قالب یک فایل استاندارد JSON.
             </p>
-            <button type="button" onClick={onDownloadFullBackupJson} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs">
+            <button type="button" onClick={onDownloadFullBackupJson} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs">
               <Download className="w-4 h-4 stroke-[1.75]" />
               <span>دانلود فایل پشتیبان کامل دیتابیس (Full JSON Backup)</span>
             </button>
@@ -243,7 +243,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
             )}
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
-            <div className="font-extrabold text-slate-900 dark:text-slate-100">خلاصه موجودیت‌های فعلی آماده پشتیبان‌گیری ({formatAreaShort(80, areaUnit)}):</div>
+            <div className="font-bold text-slate-900 dark:text-slate-100">خلاصه موجودیت‌های فعلی آماده پشتیبان‌گیری ({formatAreaShort(80, areaUnit)}):</div>
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
                 کل محله‌ها: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum(neighborhoods.length)} محله</strong> ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(avgUnitBuy)} م · معیار {formatAreaShort(80, areaUnit)} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)}` : ''})
@@ -256,7 +256,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           {featureFlags.enableTelegramFeed && (
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                   <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>خروجی زنده کانال تلگرام و ربات Webhook</span>
                 </div>
@@ -265,7 +265,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                 </button>
               </div>
               <textarea rows={6} aria-label="متن خروجی کانال تلگرام" value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed" />
-              <button type="button" onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); if (tgCopyTimerRef.current !== null) window.clearTimeout(tgCopyTimerRef.current); tgCopyTimerRef.current = window.setTimeout(() => { tgCopyTimerRef.current = null; setAdminTgCopied(false); }, 2000); }} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer">
+              <button type="button" onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); if (tgCopyTimerRef.current !== null) window.clearTimeout(tgCopyTimerRef.current); tgCopyTimerRef.current = window.setTimeout(() => { tgCopyTimerRef.current = null; setAdminTgCopied(false); }, 2000); }} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer">
                 <Copy className="w-4 h-4 stroke-[1.75]" />
                 <span>{adminTgCopied ? 'پست آماده تلگرام کپی شد!' : 'کپی پست آماده کانال تلگرام'}</span>
               </button>

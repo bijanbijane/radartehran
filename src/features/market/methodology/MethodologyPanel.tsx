@@ -27,7 +27,7 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
     <div className="space-y-5 text-xs text-[var(--color-text-secondary)] dark:text-slate-300">
       <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
         <div>
-          <h3 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>روش‌شناسی شاخص‌ها، شفافیت منابع و کیفیت داده</span>
           </h3>

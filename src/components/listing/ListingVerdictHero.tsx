@@ -86,7 +86,7 @@ export function ListingVerdictHero({
           <ShieldAlert className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">حکم آگهی — مقایسه با فایل‌های مشابه</h2>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">حکم آگهی — مقایسه با فایل‌های مشابه</h2>
           <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">متن یا لینک آگهی را بگذارید. خروجی قابل‌چک است؛ آگهی ≠ معاملهٔ ثبت‌شده.</p>
         </div>
       </div>

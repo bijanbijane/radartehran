@@ -176,6 +176,7 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
 
 export const DISCOVER_SECONDARY_TABS: readonly SecondaryTabDefinition<DiscoverSubTabId>[] = [
   { id: 'results', labelFa: 'محله‌های بازار', labelEn: 'Market Areas', path: '/areas' },
+  { id: 'registry', labelFa: 'شاخص جغرافیایی استان‌ها', labelEn: 'Geographic Registry', path: '/areas/registry' },
 ];
 
 export const COMMUNITY_SECONDARY_TABS: readonly SecondaryTabDefinition<string>[] = [
@@ -200,8 +201,8 @@ export const PROPERTIES_SECONDARY_TABS: readonly SecondaryTabDefinition<Properti
   { id: 'all', labelFa: 'همه املاک', labelEn: 'All', path: '/properties' },
   { id: 'buy', labelFa: 'خرید و فروش', labelEn: 'Buy', path: '/properties/buy' },
   { id: 'rent', labelFa: 'رهن و اجاره', labelEn: 'Rent', path: '/properties/rent' },
-  { id: 'commercial', labelFa: 'تجاری', labelEn: 'Commercial', path: '/properties/commercial', status: 'beta' },
-  { id: 'office', labelFa: 'اداری', labelEn: 'Office', path: '/properties/office', status: 'beta' },
+  { id: 'commercial', labelFa: 'تجاری', labelEn: 'Commercial', path: '/properties/commercial' },
+  { id: 'office', labelFa: 'اداری', labelEn: 'Office', path: '/properties/office' },
 ];
 
 export const TOOLS_SECONDARY_TABS: readonly SecondaryTabDefinition<ToolsSubTabId>[] = [

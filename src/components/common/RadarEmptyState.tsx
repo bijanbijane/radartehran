@@ -20,7 +20,7 @@ export const RadarEmptyState: React.FC<RadarEmptyStateProps> = ({
 }) => (
   <div className="flex flex-col items-center justify-center text-center gap-3 py-10 px-4">
     {icon ? <div className="opacity-80" aria-hidden="true">{icon}</div> : null}
-    <h3 className={`text-sm font-black ${textPrimary}`}>{titleFa}</h3>
+    <h3 className={`text-sm font-bold ${textPrimary}`}>{titleFa}</h3>
     {descriptionFa ? <p className={`text-xs max-w-md ${textMuted}`}>{descriptionFa}</p> : null}
     {actionLabel && onAction ? (
       <RadarButton variant="secondary" size="sm" onClick={onAction}>

@@ -109,7 +109,7 @@ export function AdminMonetizationCard({
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <div className="font-extrabold text-sm flex items-center gap-1.5">
+            <div className="font-bold text-sm flex items-center gap-1.5">
               {enableSponsorBilling ? (
                 <>
                   <CreditCard className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
@@ -132,7 +132,7 @@ export function AdminMonetizationCard({
           <button
             type="button"
             onClick={onToggleSponsorBilling}
-            className={`px-3.5 py-2 rounded-xl font-extrabold text-xs transition cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5 ${
               enableSponsorBilling
                 ? 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600'
                 : 'bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white'
@@ -174,7 +174,7 @@ export function AdminMonetizationCard({
               onChange={(e) => handleDiscountChange(Number(e.target.value))}
               className="flex-1 accent-emerald-600 cursor-pointer"
             />
-            <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-10 text-left tabular-nums">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-10 text-left tabular-nums">
               {toPersianNum(campaignDiscountPercent)}٪
             </span>
           </div>
@@ -184,7 +184,7 @@ export function AdminMonetizationCard({
       {/* Active Neighborhood Sponsors Lifecycle Management (Extend 30d / Release) */}
       {(onExtendSponsor30Days || onReleaseHoodSponsor) && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2">
-          <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center justify-between">
+          <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center justify-between">
             <span>مدیریت تابلوهای فعال محلات (تمدید ۳۰ روزه / آزادسازی تابلو)</span>
             <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-normal">
               {toPersianNum(neighborhoods.length)} محله در شهر فعال

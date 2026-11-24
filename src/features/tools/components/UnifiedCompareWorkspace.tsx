@@ -2,31 +2,36 @@
 import React, { useMemo, useState } from 'react';
 import { GitCompare, Building2, Compass } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import type { CityId } from '../../../data/multiCityData';
+import { buildPropertyListingRecords } from '../../properties/services/propertyDataAdapter';
 import { useRadarLocale } from '../../../components/AreaUnitToggle';
 
 export interface UnifiedCompareWorkspaceProps {
   mode: 'areas' | 'properties';
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
+  activeCity?: CityId;
   onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
 }
 
-interface SampleUnit {
+interface RealUnitOption {
   id: string;
   title: string;
   hoodName: string;
   sqm: number;
   priceBillion: number;
+  sqmPriceMillion: number;
   rooms: number;
-  year: number;
-  parking: boolean;
-  elevator: boolean;
+  yearFa: string;
+  parking: string;
+  elevator: string;
 }
 
 export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = ({
   mode,
   evaluatedNeighborhoods,
   selectedHood,
+  activeCity = 'tehran',
 }) => {
   const [locale] = useRadarLocale();
   const isEn = locale === 'en';
@@ -37,43 +42,45 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
   const hoodA = useMemo(() => hoods.find((h) => h.id === idA) || selectedHood, [hoods, idA, selectedHood]);
   const hoodB = useMemo(() => hoods.find((h) => h.id === idB) || hoods[1] || selectedHood, [hoods, idB, selectedHood]);
 
-  const sampleUnits = useMemo<SampleUnit[]>(() => {
-    const base = hoods.slice(0, 8);
-    return base.map((h, idx) => {
-      const sqm = 78 + (idx % 4) * 18;
-      const priceBillion = Number(((h.buyPerSqm * sqm) / 1000).toFixed(1));
+  const realUnits = useMemo<RealUnitOption[]>(() => {
+    const records = buildPropertyListingRecords(hoods, [], activeCity);
+    const saleRecords = records.filter((r) => (r.listing.price.saleTotalMillion ?? 0) > 0 || (r.listing.price.pricePerSqmMillion ?? 0) > 0);
+    const source = saleRecords.length >= 2 ? saleRecords : records;
+    return source.slice(0, 24).map((r) => {
+      const sqm = r.property.areaSqm || 85;
+      const totalM = r.listing.price.saleTotalMillion ?? Math.round((r.listing.price.pricePerSqmMillion ?? r.listing.marketContext.hoodBaseBuyPerSqm) * sqm);
+      const sqmM = r.listing.price.pricePerSqmMillion ?? Math.round(totalM / Math.max(1, sqm));
       return {
-        id: `unit-${h.id}`,
-        title: `آپارتمان ${toPersianNum(sqm)} متری در ${h.name}`,
-        hoodName: h.name,
+        id: r.listing.listingId,
+        title: `${r.listing.title} (${r.property.hoodName})`,
+        hoodName: r.property.hoodName,
         sqm,
-        priceBillion,
-        rooms: sqm >= 110 ? 3 : 2,
-        year: 1403 - (idx % 6),
-        parking: true,
-        elevator: idx % 3 !== 2,
+        priceBillion: Number((totalM / 1000).toFixed(1)),
+        sqmPriceMillion: sqmM,
+        rooms: r.property.roomsCount ?? 2,
+        yearFa: r.property.buildYearJalali ? toPersianNum(r.property.buildYearJalali) : 'نامشخص',
+        parking: r.property.unitFeatures.parking === 'has' ? 'دارد' : r.property.unitFeatures.parking === 'lacks' ? 'ندارد' : 'نامشخص',
+        elevator: r.property.unitFeatures.elevator === 'has' ? 'دارد' : r.property.unitFeatures.elevator === 'lacks' ? 'ندارد' : 'نامشخص',
       };
     });
-  }, [hoods]);
+  }, [hoods, activeCity]);
 
-  const [unitAId, setUnitAId] = useState<string>(() => sampleUnits[0]?.id || '');
-  const [unitBId, setUnitBId] = useState<string>(() => sampleUnits[1]?.id || sampleUnits[0]?.id || '');
-  const unitA = sampleUnits.find((u) => u.id === unitAId) || sampleUnits[0];
-  const unitB = sampleUnits.find((u) => u.id === unitBId) || sampleUnits[1] || sampleUnits[0];
+  const [unitAId, setUnitAId] = useState<string>('');
+  const [unitBId, setUnitBId] = useState<string>('');
+  const unitA = realUnits.find((u) => u.id === unitAId) || realUnits[0];
+  const unitB = realUnits.find((u) => u.id === unitBId) || realUnits[1] || realUnits[0];
 
-  const fmt = (n: number) => (isEn ? n.toLocaleString('en-US') : toPersianNum(n.toLocaleString('en-US')));
+  const fmt = (n: number) => (isEn ? n.toLocaleString('en-US') : toPersianNum(n.toLocaleString('en-US')).replace(/\./g, '٫'));
 
   if (mode === 'properties' && unitA && unitB) {
-    const sqmPriceA = Math.round((unitA.priceBillion * 1000) / Math.max(1, unitA.sqm));
-    const sqmPriceB = Math.round((unitB.priceBillion * 1000) / Math.max(1, unitB.sqm));
     const rows = [
       { label: isEn ? 'Neighborhood' : 'محله', a: unitA.hoodName, b: unitB.hoodName },
       { label: isEn ? 'Total Price' : 'قیمت کل برآوردی', a: `${fmt(unitA.priceBillion)} میلیارد تومان`, b: `${fmt(unitB.priceBillion)} میلیارد تومان` },
-      { label: isEn ? 'Price / m²' : 'قیمت هر متر مربع', a: `${fmt(sqmPriceA)} میلیون تومان`, b: `${fmt(sqmPriceB)} میلیون تومان` },
+      { label: isEn ? 'Price / m²' : 'قیمت هر متر مربع', a: `${fmt(unitA.sqmPriceMillion)} میلیون تومان`, b: `${fmt(unitB.sqmPriceMillion)} میلیون تومان` },
       { label: isEn ? 'Area' : 'متراژ', a: `${fmt(unitA.sqm)} متر`, b: `${fmt(unitB.sqm)} متر` },
       { label: isEn ? 'Bedrooms' : 'تعداد خواب', a: `${fmt(unitA.rooms)} خواب`, b: `${fmt(unitB.rooms)} خواب` },
-      { label: isEn ? 'Build Year' : 'سال ساخت', a: fmt(unitA.year), b: fmt(unitB.year) },
-      { label: isEn ? 'Parking / Elevator' : 'پارکینگ و آسانسور', a: `${unitA.parking ? 'پارکینگ' : '—'} · ${unitA.elevator ? 'آسانسور' : 'بدون آسانسور'}`, b: `${unitB.parking ? 'پارکینگ' : '—'} · ${unitB.elevator ? 'آسانسور' : 'بدون آسانسور'}` },
+      { label: isEn ? 'Build Year' : 'سال ساخت', a: unitA.yearFa, b: unitB.yearFa },
+      { label: isEn ? 'Parking / Elevator' : 'پارکینگ / آسانسور', a: `پارکینگ: ${unitA.parking} · آسانسور: ${unitA.elevator}`, b: `پارکینگ: ${unitB.parking} · آسانسور: ${unitB.elevator}` },
     ];
 
     return (
@@ -85,7 +92,7 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
       >
         <div className="flex items-center gap-2">
           <Building2 className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
-          <h2 className="text-base font-black text-[var(--color-text-primary)]">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)]">
             {isEn ? 'Side-by-Side Property Comparison' : 'مقایسه کنار هم دو ملک'}
           </h2>
         </div>
@@ -99,7 +106,7 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
               onChange={(e) => setUnitAId(e.target.value)}
               className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
             >
-              {sampleUnits.map((u) => (
+              {realUnits.map((u) => (
                 <option key={u.id} value={u.id}>{u.title}</option>
               ))}
             </select>
@@ -112,7 +119,7 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
               onChange={(e) => setUnitBId(e.target.value)}
               className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
             >
-              {sampleUnits.map((u) => (
+              {realUnits.map((u) => (
                 <option key={u.id} value={u.id}>{u.title}</option>
               ))}
             </select>
@@ -124,8 +131,8 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
             <thead>
               <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
                 <th className="py-2.5 px-3 text-start font-bold">{isEn ? 'Metric' : 'شاخص'}</th>
-                <th className="py-2.5 px-3 text-start font-extrabold text-[var(--color-text-primary)]">{unitA.title}</th>
-                <th className="py-2.5 px-3 text-start font-extrabold text-[var(--color-text-primary)]">{unitB.title}</th>
+                <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitA.title}</th>
+                <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitB.title}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-subtle)] tabular-nums">
@@ -148,10 +155,10 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
     { label: isEn ? 'Asking Median / m²' : 'نرخ اعلامی هر متر', a: `${fmt(hoodA.buyPerSqm)} میلیون`, b: `${fmt(hoodB.buyPerSqm)} میلیون` },
     { label: isEn ? 'Negotiation Scenario / m²' : 'سناریو مذاکره (۶٪ تعدیل)', a: `${fmt(Math.round(hoodA.buyPerSqm * 0.94))} میلیون`, b: `${fmt(Math.round(hoodB.buyPerSqm * 0.94))} میلیون` },
     { label: isEn ? '80m² Full Deposit (Rahn)' : 'رهن کامل ۸۰ متری', a: `${fmt(hoodA.rahn80m)} میلیون`, b: `${fmt(hoodB.rahn80m)} میلیون` },
-    { label: isEn ? 'Overall Score' : 'امتیاز کل زیست‌پذیری', a: `${fmt(Number(hoodA.overallScore.toFixed(1)))} / ۱۰`, b: `${fmt(Number(hoodB.overallScore.toFixed(1)))} / ۱۰` },
-    { label: isEn ? 'Metro & Transit' : 'دسترسی مترو', a: `${fmt(Number(hoodA.metro.toFixed(1)))} / ۱۰`, b: `${fmt(Number(hoodB.metro.toFixed(1)))} / ۱۰` },
-    { label: isEn ? 'Air Quality' : 'کیفیت هوا', a: `${fmt(Number(hoodA.air.toFixed(1)))} / ۱۰`, b: `${fmt(Number(hoodB.air.toFixed(1)))} / ۱۰` },
-    { label: isEn ? 'Traffic Calmness' : 'روانی ترافیک', a: `${fmt(Number((hoodA.trafficInfo?.trafficScore ?? hoodA.flatTerrain).toFixed(1)))} / ۱۰`, b: `${fmt(Number((hoodB.trafficInfo?.trafficScore ?? hoodB.flatTerrain).toFixed(1)))} / ۱۰` },
+    { label: isEn ? 'Overall Score' : 'امتیاز کل زیست‌پذیری', a: `${fmt(Number(hoodA.overallScore.toFixed(1)))} از ۱۰`, b: `${fmt(Number(hoodB.overallScore.toFixed(1)))} از ۱۰` },
+    { label: isEn ? 'Metro & Transit' : 'دسترسی مترو', a: `${fmt(Number(hoodA.metro.toFixed(1)))} از ۱۰`, b: `${fmt(Number(hoodB.metro.toFixed(1)))} از ۱۰` },
+    { label: isEn ? 'Air Quality' : 'کیفیت هوا', a: `${fmt(Number(hoodA.air.toFixed(1)))} از ۱۰`, b: `${fmt(Number(hoodB.air.toFixed(1)))} از ۱۰` },
+    { label: isEn ? 'Traffic Calmness' : 'روانی ترافیک', a: `${fmt(Number((hoodA.trafficInfo?.trafficScore ?? hoodA.flatTerrain).toFixed(1)))} از ۱۰`, b: `${fmt(Number((hoodB.trafficInfo?.trafficScore ?? hoodB.flatTerrain).toFixed(1)))} از ۱۰` },
   ];
 
   const priceDeltaPct = hoodA.buyPerSqm > 0
@@ -168,7 +175,7 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <GitCompare className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
-          <h2 className="text-base font-black text-[var(--color-text-primary)]">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)]">
             {isEn ? 'Side-by-Side Neighborhood Comparison' : 'مقایسه تحلیلی دو محله کنار هم'}
           </h2>
         </div>
@@ -216,8 +223,8 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
           <thead>
             <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
               <th className="py-2.5 px-3 text-start font-bold">{isEn ? 'Indicator' : 'شاخص مقایسه'}</th>
-              <th className="py-2.5 px-3 text-start font-extrabold text-[var(--color-text-primary)]">{hoodA.name}</th>
-              <th className="py-2.5 px-3 text-start font-extrabold text-[var(--color-text-primary)]">{hoodB.name}</th>
+              <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodA.name}</th>
+              <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodB.name}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-subtle)] tabular-nums">

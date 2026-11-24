@@ -47,10 +47,10 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   if (p.viewKind === 'not_found') {
     return (
       <div data-testid="product-not-found-view" className="w-full max-w-3xl mx-auto px-4 py-12 text-center space-y-5 animate-fadeIn">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-black text-xl">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-bold text-xl">
           ۴۰۴
         </div>
-        <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">مسیر یا صفحه درخواستی یافت نشد</h1>
+        <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">مسیر یا صفحه درخواستی یافت نشد</h1>
         <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] max-w-md mx-auto leading-relaxed">
           نشانی واردشده در ساختار فعلی رادار {cityNameFa} تعریف نشده یا جابه‌جا شده است. می‌توانید به نقشه تعاملی، صفحه نخست یا لیست محله‌ها بازگردید.
         </p>

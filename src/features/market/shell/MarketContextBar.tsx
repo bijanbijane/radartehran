@@ -55,15 +55,15 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
     )?.labelFa || 'ملک';
 
   return (
-    <header className="space-y-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
+    <header className="space-y-3 border-b border-[var(--color-border-subtle)] pb-3">
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
         <div className="space-y-0.5">
-          <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
+          <div className="text-xs font-bold text-[var(--color-brand-fg)]">
             {isEn
               ? 'Contextual Market Analysis · Map-Synced'
               : 'مرکز تحلیل بازار املاک · تفکیک قیمت پیشنهادی، برآوردی و معامله'}
           </div>
-          <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)] dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)] tracking-tight">
             {isEn ? 'Analyze the Real Estate Market with Data' : 'بازار املاک را با داده بررسی کنید'}
           </h1>
           <p className="text-xs text-[var(--color-text-muted)]">
@@ -80,7 +80,7 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
             data-testid="market-open-saved-btn"
             className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer transition"
           >
-            <Bookmark className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
+            <Bookmark className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
             <span>{isEn ? 'Saved Views' : 'ذخیره‌شده‌ها'}</span>
           </button>
           <button
@@ -89,7 +89,7 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
             data-testid="market-open-methodology-btn"
             className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer transition"
           >
-            <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
+            <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
             <span>{isEn ? 'Methodology' : 'روش‌شناسی'}</span>
           </button>
           <button
@@ -168,7 +168,13 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
           data-testid="market-active-context-summary"
           className="text-xs text-[var(--color-text-secondary)] font-medium tabular-nums flex flex-wrap items-center gap-x-2 gap-y-1"
         >
-          <span className="font-bold text-[var(--color-text-primary)]">{geoText}</span>
+          <span className="font-bold text-[var(--color-text-primary)]">{isEn ? `Scope: ${geoText}` : `دامنه تحلیل: ${geoText}`}</span>
+          {appliedFilters.geoLevel !== 'neighborhood' && (
+            <>
+              <span className="text-[var(--color-text-muted)]" aria-hidden="true">·</span>
+              <span>{isEn ? `Active focus: ${selectedHood.name}` : `محله کانونی: ${selectedHood.name}`}</span>
+            </>
+          )}
           <span className="text-[var(--color-text-muted)]" aria-hidden="true">·</span>
           <span>{MARKET_LABELS.find((x) => x.id === appliedFilters.marketType)?.fa} ({subTypeLabel})</span>
           <span className="text-[var(--color-text-muted)]" aria-hidden="true">·</span>

@@ -311,6 +311,8 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
             totalResults={filteredRecords.length}
             selectedHoodName={p.selectedHood.name}
             viewMode={viewMode}
+            activeSubTab={p.activeSubTab}
+            splitMapMode={p.splitMapMode}
             onChangeViewMode={handleChangeViewMode}
             onUpdateDraft={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
             onApply={commitFilters}

@@ -68,7 +68,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               شفافیت قیمت محله و ریسک آگهی‌های طعمه یا قیمت‌سازی‌شده (مدل آکرلوف)
             </h4>
           </div>
@@ -84,19 +84,19 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="grid grid-cols-3 gap-2 pt-1 text-center tabular-nums">
           <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پراکندگی بین‌چارکی (IQR)</span>
-            <strong className="text-xs font-black text-slate-800 dark:text-slate-100">
+            <strong className="text-xs font-bold text-slate-800 dark:text-slate-100">
               {toPersianNum(akerlofLemon.priceDispersionRatioPct)}٪
             </strong>
           </div>
           <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block">نرخ آگهی طعمه/ردشده</span>
-            <strong className="text-xs font-black text-rose-600 dark:text-rose-400">
+            <strong className="text-xs font-bold text-rose-600 dark:text-rose-400">
               {toPersianNum(akerlofLemon.baitRejectionRatePct)}٪
             </strong>
           </div>
           <div className="p-2 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800">
             <span className="text-[10px] text-indigo-700 dark:text-indigo-300 block">تخفیف جبرانی عدم تقارن</span>
-            <strong className="text-xs font-black text-indigo-800 dark:text-indigo-200">
+            <strong className="text-xs font-bold text-indigo-800 dark:text-indigo-200">
               -{toPersianNum(akerlofLemon.requiredInformationDiscountPct)}٪
             </strong>
           </div>
@@ -120,7 +120,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Network className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               شبکه سرایت فضایی قیمت و قطب‌های پیش‌ران / جاذب سرریز (Spatial Econometrics)
             </h4>
           </div>
@@ -142,7 +142,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
                   <div>
                     <div className="flex items-center gap-1.5">
                       <GitBranch className={`w-3.5 h-3.5 ${isDriver ? 'text-amber-500' : 'text-emerald-500'}`} />
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
                         محله {node.hoodName}
                       </span>
                       <span className="text-[10px] text-slate-400">({node.zone})</span>
@@ -194,7 +194,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <BrainCircuit className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               نظریه چشم‌انداز کانمن-تورسکی (Prospect Theory) و مهندسی مذاکره ضد زیان‌گریزی
             </h4>
           </div>

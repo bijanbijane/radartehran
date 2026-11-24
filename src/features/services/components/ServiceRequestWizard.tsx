@@ -202,7 +202,7 @@ export const ServiceRequestWizard: React.FC<ServiceRequestWizardProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
         <div>
-          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white">ثبت درخواست تخصصی ۷ مرحله‌ای</h2>
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white">ثبت درخواست تخصصی ۷ مرحله‌ای</h2>
           <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">اطلاعات تماس شما تا پیش از انتخاب یا تأیید حریم خصوصی در اختیار عموم قرار نمی‌گیرد.</p>
         </div>
         <button

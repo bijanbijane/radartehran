@@ -96,7 +96,7 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
           type="button"
           variant="secondary"
           size="sm"
-          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-black"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-bold"
           aria-label={isEn ? 'Zoom in' : 'بزرگ‌نمایی'}
           onClick={() => zoomBy(1)}
         >
@@ -109,7 +109,7 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
           type="button"
           variant="secondary"
           size="sm"
-          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-black"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-bold"
           aria-label={isEn ? 'Zoom out' : 'کوچک‌نمایی'}
           onClick={() => zoomBy(-1)}
         >

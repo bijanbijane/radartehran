@@ -118,7 +118,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
           className="fixed sm:absolute top-[60px] sm:top-10 inset-x-2 sm:inset-x-auto sm:end-0 w-auto sm:w-[360px] max-w-[calc(100vw-16px)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 overflow-hidden text-xs"
         >
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-            <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               <span>اعلان‌های اخیر ({toPersianNum(unreadCount)} جدید)</span>
             </div>
@@ -193,7 +193,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
                           <span>·</span>
                           <span>{n.status === 'UNREAD' ? 'خوانده‌نشده' : 'خوانده‌شده'}</span>
                         </div>
-                        <div className="font-black text-slate-900 dark:text-white mt-0.5 leading-snug">{n.titleFa}</div>
+                        <div className="font-bold text-slate-900 dark:text-white mt-0.5 leading-snug">{n.titleFa}</div>
                         <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{n.shortPreviewFa}</p>
                       </div>
                     </div>
@@ -234,7 +234,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
                 setOpen(false);
                 onNavigateView('userspace', 'notifications');
               }}
-              className="w-full py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-center cursor-pointer"
+              className="w-full py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-center cursor-pointer"
             >
               مشاهده همه اعلان‌ها و پیام‌ها
             </button>

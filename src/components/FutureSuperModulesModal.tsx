@@ -115,10 +115,10 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                   جعبه ابزار جامع ۵۲گانه پراپ‌تک مسکن (رادارتهران | {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'})
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
                   نسخه جامع سازمانی
                 </span>
               </div>
@@ -165,7 +165,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
               <button
                 key={tab.id} role="tab" aria-selected={isSelected} type="button" onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                  isSelected ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  isSelected ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
                 <TabIcon className="w-3.5 h-3.5 stroke-[1.75]" />

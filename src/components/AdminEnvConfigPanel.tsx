@@ -42,7 +42,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
     <div className="space-y-4 text-xs">
       <div className="bg-slate-900 text-white rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <div className="font-extrabold text-sm flex items-center gap-2">
+          <div className="font-bold text-sm flex items-center gap-2">
             <Server className="w-4 h-4 text-emerald-400" />
             <span>مدیریت تنظیمات عملیاتی و مشاهدهٔ ریشه‌های امنیتی مستقر (Deployment-Managed)</span>
           </div>
@@ -69,7 +69,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
       {/* بخش ۱: ریشه‌های امنیتی و هویتی فقط‌خواندنی (Deployment-Managed Trust Roots) */}
       <div className="bg-slate-100 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700 rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300" />
             <span>ریشه‌های امنیتی و اعتبارنامه‌های مستقر (فقط‌خواندنی · غیرقابل ویرایش در زمان اجرا)</span>
           </div>
@@ -121,7 +121,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-              <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>۱. تنظیمات مدل هوش مصنوعی (GEMINI_MODEL)</span>
               </div>
@@ -143,7 +143,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-              <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                 <Send className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 <span>۲. شناسه کانال عمومی تلگرام (TELEGRAM_CHANNEL_ID)</span>
               </div>
@@ -166,7 +166,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         </div>
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-            <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Cloud className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۳. پارامترهای غیرمحرمانه آبجکت استوریج (سقف حجم و CDN)</span>
             </div>
@@ -247,7 +247,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           </div>
           <button
             type="submit"
-            disabled={saving} className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
+            disabled={saving} className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'در حال ذخیره...' : 'ذخیره تنظیمات عملیاتی مجاز'}</span>

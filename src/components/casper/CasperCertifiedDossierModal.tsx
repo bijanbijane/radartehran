@@ -108,7 +108,7 @@ export function CasperCertifiedDossierModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-black text-slate-900 dark:text-white">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   کارنامه رسمی کارشناسی قیمت و تحلیل ریسک رادار تهران
                 </h2>
                 <span className="text-[10px] bg-[var(--color-brand-600)] text-white font-bold px-2 py-0.5 rounded-full">
@@ -159,7 +159,7 @@ export function CasperCertifiedDossierModal({
               ۱. ارزش ذاتی تسویه منصفانه
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-slate-900 dark:text-white">{toPersianNum(totalFairBillion)}</span>
+              <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(totalFairBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
@@ -172,7 +172,7 @@ export function CasperCertifiedDossierModal({
               ۲. قیمت اعلامی متداول در آگهی‌ها
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-slate-700 dark:text-slate-300">{toPersianNum(totalAskingBillion)}</span>
+              <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{toPersianNum(totalAskingBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
             <span className="text-[11px] text-slate-400 block">
@@ -185,7 +185,7 @@ export function CasperCertifiedDossierModal({
               ۳. قیمت فروش فوری نقدی (زیر ۲۰ روز)
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-slate-900 dark:text-white">{toPersianNum(totalFireSaleBillion)}</span>
+              <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(totalFireSaleBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block">

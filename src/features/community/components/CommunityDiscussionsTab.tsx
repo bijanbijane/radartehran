@@ -113,7 +113,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
 
       <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">آغاز گفت‌وگوی جدید در محله {selectedHood.name}</h2>
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">آغاز گفت‌وگوی جدید در محله {selectedHood.name}</h2>
           <select aria-label="موضوع گفت‌وگو" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
             <option value="topic-neighborhoods">محله‌ها و زیست‌پذیری</option>
             <option value="topic-tehran-market">بازار مسکن تهران</option>
@@ -200,7 +200,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                 </div>
               ) : (
                 <>
-                  <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{post.titleFa}</h3>
+                  <h3 className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">{post.titleFa}</h3>
                   <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{post.bodyFa}</p>
                 </>
               )}

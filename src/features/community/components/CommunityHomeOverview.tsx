@@ -61,7 +61,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
       <section className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white">شروع مشارکت هدفمند در جامعه رادار تهران</h2>
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white">شروع مشارکت هدفمند در جامعه رادار تهران</h2>
             <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
               به‌جای ارسال پیام عمومی، مسیر دقیق فعالیت خود را میان گفت‌وگو، پرسش تخصصی، اصلاح داده یا پیشنهاد پژوهش انتخاب کنید.
             </p>
@@ -86,7 +86,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
               className="p-3.5 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/70 border border-[var(--color-border-subtle)] dark:border-slate-700 hover:border-[var(--color-brand-600)] text-start space-y-1.5 transition cursor-pointer"
             >
               <div className="flex items-center justify-between">
-                <span className="font-black text-slate-900 dark:text-white">{path.titleFa}</span>
+                <span className="font-bold text-slate-900 dark:text-white">{path.titleFa}</span>
                 {path.icon}
               </div>
               <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 leading-relaxed">{path.descFa}</p>
@@ -98,7 +98,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <section className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گفت‌وگوهای برگزیده (رتبه‌بندی چندعاملی مرتبط با {selectedHood.name})</span>
             </h3>
@@ -119,7 +119,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => onSwitchTab('discussions')}
-                  className="text-start font-black text-sm text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 cursor-pointer block"
+                  className="text-start font-bold text-sm text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 cursor-pointer block"
                 >
                   {post.titleFa}
                 </button>
@@ -133,7 +133,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
         <aside className="lg:col-span-5 space-y-4">
           <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">پرسش‌های نیازمند پاسخ تخصصی</h3>
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">پرسش‌های نیازمند پاسخ تخصصی</h3>
               <button type="button" onClick={() => onSwitchTab('questions')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                 مشاهده پرسش‌ها
               </button>
@@ -154,7 +154,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
 
           <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">اصلاحات داده در صف ممیزی</h3>
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">اصلاحات داده در صف ممیزی</h3>
               <button type="button" onClick={() => onSwitchTab('data_contribution')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                 ثبت اصلاح داده
               </button>
@@ -175,7 +175,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
 
           <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">موضوعات تخصصی فعال</h3>
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">موضوعات تخصصی فعال</h3>
               <button type="button" onClick={() => onSwitchTab('topics')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer tabular-nums">
                 همه {toPersianNum(topics.length)} موضوع
               </button>

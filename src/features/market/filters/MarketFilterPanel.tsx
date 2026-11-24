@@ -249,7 +249,7 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
               className="w-full max-h-[82dvh] overflow-y-auto rounded-t-2xl bg-white dark:bg-slate-900 border-t border-[var(--color-border-subtle)] dark:border-slate-700 p-4 pb-[calc(1.5rem+var(--safe-bottom))] space-y-4 shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
-                <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فیلترهای تحلیل بازار</strong>
+                <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">فیلترهای تحلیل بازار</strong>
                 <button
                   type="button"
                   aria-label="بستن پنل فیلتر"

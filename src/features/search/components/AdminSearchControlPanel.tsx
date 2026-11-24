@@ -64,7 +64,7 @@ export const AdminSearchControlPanel: React.FC = () => {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Search className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>پنل مدیریت جست‌وجوی سراسری، واژه‌نامه مترادف‌ها و سلامت نمایه (/admin/search)</span>
           </strong>
@@ -90,25 +90,25 @@ export const AdminSearchControlPanel: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
           <div className="text-[11px] text-slate-500">اسناد فعال در نمایه</div>
-          <strong className="text-base font-black block mt-0.5 tabular-nums">{toPersianNum(diag.totalIndexedDocuments)} سند</strong>
+          <strong className="text-base font-bold block mt-0.5 tabular-nums">{toPersianNum(diag.totalIndexedDocuments)} سند</strong>
         </div>
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
           <div className="text-[11px] text-slate-500">Tombstone</div>
-          <strong className="text-base font-black block mt-0.5 tabular-nums">{toPersianNum(diag.tombstoneCount)}</strong>
+          <strong className="text-base font-bold block mt-0.5 tabular-nums">{toPersianNum(diag.tombstoneCount)}</strong>
         </div>
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
           <div className="text-[11px] text-slate-500">مترادف‌ها</div>
-          <strong className="text-base font-black block mt-0.5 tabular-nums">{toPersianNum(diag.synonyms.length)}</strong>
+          <strong className="text-base font-bold block mt-0.5 tabular-nums">{toPersianNum(diag.synonyms.length)}</strong>
         </div>
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
           <div className="text-[11px] text-slate-500">آخرین Job</div>
-          <strong className="text-base font-black block mt-0.5">{diag.recentIndexJobs[0]?.status ?? '—'}</strong>
+          <strong className="text-base font-bold block mt-0.5">{diag.recentIndexJobs[0]?.status ?? '—'}</strong>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <strong className="font-black flex items-center gap-1">
+          <strong className="font-bold flex items-center gap-1">
             <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             واژه‌نامه (فقط خواندنی از API)
           </strong>
@@ -119,7 +119,7 @@ export const AdminSearchControlPanel: React.FC = () => {
           ))}
         </div>
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <strong className="font-black flex items-center gap-1">
+          <strong className="font-bold flex items-center gap-1">
             <Sliders className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             سیاست‌های رتبه‌بندی
           </strong>

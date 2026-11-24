@@ -133,8 +133,8 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
               <MessageSquarePlus className="w-4 h-4 shrink-0" />
               <span>جامعه کاربران، پرسش‌وپاسخ تخصصی و مشارکت مکانی</span>
             </span>
-            <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
-              جامعه تخصصی رادار {cityNameFa} · محله {selectedHood.name}
+            <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
+              جامعه تخصصی رادار {cityNameFa}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -218,7 +218,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
       )}
 
       {loading && posts.length === 0 && (
-        <div className="p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-xs text-[var(--color-text-muted)] text-center font-bold">
+        <div className="p-6 rounded-[14px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] text-center font-bold">
           در حال دریافت داده‌های جامعه از سرور...
         </div>
       )}

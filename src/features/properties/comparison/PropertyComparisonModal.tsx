@@ -49,7 +49,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
       >
         <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white">مقایسه فایل‌های انتخاب‌شده ({toPersianNum(items.length)})</h2>
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white">مقایسه فایل‌های انتخاب‌شده ({toPersianNum(items.length)})</h2>
             <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">مقادیر نامشخص با «نامشخص» نمایش داده می‌شوند و با صفر/ندارد یکی گرفته نمی‌شوند.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="بستن مقایسه" className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-slate-800 flex items-center justify-center cursor-pointer">
@@ -79,7 +79,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                           <button
                             type="button"
                             onClick={() => { onClose(); onOpenDetail(it.listing.listingId); }}
-                            className="text-start font-black text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer line-clamp-2"
+                            className="text-start font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer line-clamp-2"
                           >
                             {it.listing.title}
                           </button>
@@ -116,7 +116,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                   <tr>
                     <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">مبلغ اعلامی</td>
                     {items.map((it) => (
-                      <td key={it.listing.listingId} className="py-2.5 px-3 font-black text-[var(--color-text-primary)] dark:text-white">
+                      <td key={it.listing.listingId} className="py-2.5 px-3 font-bold text-[var(--color-text-primary)] dark:text-white">
                         {it.listing.price.priceType === 'undisclosed'
                           ? 'توافقی / نامشخص'
                           : it.listing.price.saleTotalMillion

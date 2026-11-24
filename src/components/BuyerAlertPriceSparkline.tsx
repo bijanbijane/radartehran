@@ -213,7 +213,7 @@ export function BuyerAlertPriceSparkline({
             <strong className="text-slate-900 dark:text-slate-100">{fmtVal(series.endMillion)} {unitSuffix}</strong>
             {fmtFx(series.endMillion)}{dealType === 'خرید' ? ` (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}
           </span>
-          <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">
+          <span className="text-emerald-700 dark:text-emerald-400 font-bold">
             ({series.growth6mPercent >= 0 ? `+${toPersianNum(series.growth6mPercent)}` : toPersianNum(series.growth6mPercent)}٪ · {series.endMillion >= series.startMillion ? '+' : '-'}{fmtVal(Math.abs(series.endMillion - series.startMillion))} {unitSuffix}{fmtFx(Math.abs(series.endMillion - series.startMillion))})
           </span>
         </div>

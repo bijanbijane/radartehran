@@ -274,7 +274,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <strong className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Search className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>درگاه جست‌وجوی سراسری، کشف اطلاعات و پیشنهادهای هوشمند ({cityNameFa})</span>
           </strong>

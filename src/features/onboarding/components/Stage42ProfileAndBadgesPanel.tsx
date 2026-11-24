@@ -63,7 +63,7 @@ export const Stage42ProfileAndBadgesPanel: React.FC<Props> = ({
       <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="text-sm font-black text-white">{profile.displayNameFa}</div>
+            <div className="text-sm font-bold text-white">{profile.displayNameFa}</div>
             <div className="text-[11px] text-slate-400">
               {profile.specialtyFa} {profile.parentCompanyNameFa ? `· مجموعه مادر: ${profile.parentCompanyNameFa}` : ''}
             </div>

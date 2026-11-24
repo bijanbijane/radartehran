@@ -161,7 +161,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             <Camera className="w-4 h-4 stroke-[1.75]" />
           </div>
           <div>
-            <div className="text-xs font-black text-slate-900 dark:text-white">
+            <div className="text-xs font-bold text-slate-900 dark:text-white">
               {isEn ? 'Neighborhood Photos & Landmarks' : 'گالری تصاویر و نمادهای محله'}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -169,7 +169,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             </div>
           </div>
         </div>
-        <span className="px-2 py-0.5 rounded-[7px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10.5px] font-extrabold tabular-nums">
+        <span className="px-2 py-0.5 rounded-[7px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10.5px] font-bold tabular-nums">
           {toPersianNum(galleryItems.length)} {isEn ? 'Photos' : 'تصویر'}
         </span>
       </div>
@@ -178,7 +178,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
         <div className="relative rounded-[14px] overflow-hidden bg-slate-900 group aspect-[16/9] flex items-center justify-center">
           <img src={activeItem.svgDataUri} alt={activeItem.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102" />
           <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
-            <span className="px-2 py-0.5 rounded-[6px] bg-black/60 backdrop-blur-md text-white text-[10px] font-extrabold flex items-center gap-1 pointer-events-auto">
+            <span className="px-2 py-0.5 rounded-[6px] bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 pointer-events-auto">
               {activeItem.icon}
               <span>{activeItem.category}</span>
             </span>
@@ -197,7 +197,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             </>
           )}
           <div className="absolute bottom-0 inset-x-0 p-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white text-right">
-            <div className="font-black text-xs truncate">{activeItem.title}</div>
+            <div className="font-bold text-xs truncate">{activeItem.title}</div>
             <div className="text-[10px] text-slate-300 line-clamp-1 mt-0.5">{activeItem.desc}</div>
           </div>
         </div>
@@ -218,7 +218,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
                 <Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2] shrink-0" />
                 <span className="truncate">{isEn ? 'Focus on map' : 'تمرکز و مسیریابی روی نقشه'}</span>
               </span>
-              <span className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 text-[10px] font-black text-emerald-900 dark:text-emerald-300 tabular-nums shrink-0">
+              <span className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 text-[10px] font-bold text-emerald-900 dark:text-emerald-300 tabular-nums shrink-0">
                 ~{toPersianNum(distKm)} km ({toPersianNum(walkMin)} {isEn ? 'min walk' : 'دقیقه پیاده'})
               </span>
             </button>
@@ -245,7 +245,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-emerald-400" />
-                <span className="font-black text-sm">{activeItem.title}</span>
+                <span className="font-bold text-sm">{activeItem.title}</span>
               </div>
               <button type="button" aria-label={isEn ? 'Close fullscreen image' : 'بستن تصویر تمام‌صفحه'} onClick={() => setShowLightbox(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer">
                 <X className="w-4 h-4 stroke-[2]" />

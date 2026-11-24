@@ -56,7 +56,7 @@ export function AdminMapProviderConfigPanel({
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-            <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+            <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
               تنظیم موتور و ارائه‌دهنده نقشه پایه (مدیریت)
             </span>
           </div>
@@ -90,7 +90,7 @@ export function AdminMapProviderConfigPanel({
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
+                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
                   نقشه تفصیلی نشان (Neshan)
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-600)] text-white">
@@ -133,7 +133,7 @@ export function AdminMapProviderConfigPanel({
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
+                <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
                   نقشه رایگان OpenStreetMap (OSM)
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">

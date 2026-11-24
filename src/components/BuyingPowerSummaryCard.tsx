@@ -67,7 +67,7 @@ export function BuyingPowerSummaryCard({
 
   return (
     <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/70 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-800 dark:text-slate-200">
-      <div className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+      <div className="font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
         <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
         <span>فرمول قدرت خرید واقعی شما ({formatAreaValue(safeSqm, areaUnit)}):</span>
       </div>
@@ -109,10 +109,10 @@ export function BuyingPowerSummaryCard({
       </div>
 
       <div className="pt-1.5 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[11px] tabular-nums">
-        <span className="font-extrabold text-emerald-950 dark:text-emerald-200">
+        <span className="font-bold text-emerald-950 dark:text-emerald-200">
           = کل قدرت خرید واقعی ({formatAreaShort(safeSqm, areaUnit)}):
         </span>
-        <strong className="font-black text-emerald-800 dark:text-emerald-300">
+        <strong className="font-bold text-emerald-800 dark:text-emerald-300">
           {toPersianNum((effectivePurchasingPowerMillion / 1000).toFixed(2))} میلیارد
           {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(effectivePurchasingPowerMillion, intlCurrency, radarLocale)})` : ''}{' '}
           ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
@@ -125,7 +125,7 @@ export function BuyingPowerSummaryCard({
           متراژ قابل خرید در {selectedHood?.name || 'این محله'} ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
           {toPersianNum(hoodUnitRate)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum((hoodTotal80mMillions / 1000).toFixed(1))} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(hoodUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
-        <strong className="font-black text-emerald-700 dark:text-emerald-400">{formatAreaValue(affordableSqmInHood, areaUnit)}</strong>
+        <strong className="font-bold text-emerald-700 dark:text-emerald-400">{formatAreaValue(affordableSqmInHood, areaUnit)}</strong>
       </div>
 
       <div className="pt-1 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-[10.5px] text-teal-900 dark:text-teal-200 tabular-nums">
@@ -133,7 +133,7 @@ export function BuyingPowerSummaryCard({
           با سناریوی فرضی مذاکره (غیرثبتی) ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
           {toPersianNum(dealUnitRate)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(dealUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
-        <strong className="font-black text-teal-700 dark:text-teal-400">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>
+        <strong className="font-bold text-teal-700 dark:text-teal-400">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>
       </div>
 
       {(useLoanBooster || deductTenantRahnInBuy) && (

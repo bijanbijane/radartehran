@@ -120,7 +120,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
             </span>
             <span className="font-bold text-[#34433E] dark:text-slate-300">وضعیت کفایت: {sufficiency.status}</span>
           </div>
-          <div className="text-xl font-black text-[#182522] dark:text-white tabular-nums">
+          <div className="text-xl font-bold text-[#182522] dark:text-white tabular-nums">
             {dist.p50Median !== null ? `${toPersianNum(dist.p50Median)} ${primaryMetric.unitFa}` : 'داده ناموجود'}
           </div>
           <div className="text-[11px] text-[#586760] tabular-nums">
@@ -137,7 +137,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
         </div>
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توزیع صدک‌ها و نمودار جعبه‌ای (Box Plot & IQR)</span>
           </h3>
@@ -153,7 +153,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
             ].map((cell) => (
               <div key={cell.label} className="p-2 rounded bg-[#F6F8F6] dark:bg-slate-800">
                 <div className="text-[10px] text-[#586760] font-bold">{cell.label}</div>
-                <div className="font-black text-[#182522] dark:text-white">{cell.val !== null ? toPersianNum(cell.val) : '—'}</div>
+                <div className="font-bold text-[#182522] dark:text-white">{cell.val !== null ? toPersianNum(cell.val) : '—'}</div>
               </div>
             ))}
           </div>
@@ -166,7 +166,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
       {/* Section 9, 10, 30.3 & 35: Chart Selector + Missing Data Time Series Table + Homogeneity Guard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Database className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سری زمانی با حفظ گسست داده مفقود (عدم تبدیل Null به صفر)</span>
           </h3>
@@ -192,7 +192,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
         </div>
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <GitCompare className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>انتخابگر نمودار (ONS) و نگهبان هم‌جنس بودن مقایسه (بند ۳۰.۳)</span>
           </h3>

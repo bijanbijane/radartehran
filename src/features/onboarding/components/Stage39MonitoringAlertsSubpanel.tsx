@@ -165,19 +165,19 @@ export const Stage39MonitoringAlertsSubpanel: React.FC = () => {
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 text-xs" data-testid="stage39-overview-stats">
             <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
               <div className="text-[11px] text-slate-400">پایش‌های فعال</div>
-              <div className="mt-1 text-lg font-black text-emerald-300">{activeCount}</div>
+              <div className="mt-1 text-lg font-bold text-emerald-300">{activeCount}</div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
               <div className="text-[11px] text-slate-400">قواعد هشدار</div>
-              <div className="mt-1 text-lg font-black text-white">{rulesCount}</div>
+              <div className="mt-1 text-lg font-bold text-white">{rulesCount}</div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
               <div className="text-[11px] text-slate-400">اعلان‌های خوانده‌نشده</div>
-              <div className="mt-1 text-lg font-black text-cyan-300">{unreadCount}</div>
+              <div className="mt-1 text-lg font-bold text-cyan-300">{unreadCount}</div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
               <div className="text-[11px] text-slate-400">پایش‌های متوقف‌شده</div>
-              <div className="mt-1 text-lg font-black text-amber-300">{pausedCount}</div>
+              <div className="mt-1 text-lg font-bold text-amber-300">{pausedCount}</div>
             </div>
           </div>
         )}

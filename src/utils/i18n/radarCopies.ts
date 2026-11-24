@@ -61,13 +61,13 @@ export interface RadarCompareCopy {
 
 const TOP_BAR_COPY: Record<SupportedRadarLocale, RadarTopBarCopy> = {
   fa: {
-    searchPlaceholder: 'جست‌وجوی شهر، استان یا محله...',
-    filterBtnLabel: 'فیلتر بودجه و وام',
+    searchPlaceholder: 'جست‌وجوی محله یا شهر...',
+    filterBtnLabel: 'فیلتر بودجه',
     toolsBtnLabel: 'ابزارها',
   },
   en: {
-    searchPlaceholder: 'Search city, province or neighborhood...',
-    filterBtnLabel: 'Budget & Mortgage',
+    searchPlaceholder: 'Search neighborhood or city...',
+    filterBtnLabel: 'Budget Filter',
     toolsBtnLabel: 'Tools',
   },
 };

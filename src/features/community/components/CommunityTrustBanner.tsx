@@ -55,7 +55,7 @@ export const CommunityTrustBanner: React.FC = () => (
     data-testid="community-trust-separation-banner"
     className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-xs space-y-1"
   >
-    <div className="font-black text-[var(--color-brand-700)] dark:text-emerald-200 flex items-center gap-1.5">
+    <div className="font-bold text-[var(--color-brand-700)] dark:text-emerald-200 flex items-center gap-1.5">
       <ShieldCheck className="w-4 h-4 shrink-0" />
       <span>اصل تفکیک اعتماد و شفافیت در جامعه رادار تهران</span>
     </div>

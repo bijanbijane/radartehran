@@ -94,7 +94,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Eye className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مسیر جایگزین نقشه و انتخاب مکانی بدون نیاز به Drag (WCAG 2.5.7)</span>
           </h3>
@@ -143,7 +143,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
         </div>
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <HelpCircle className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>کنتراست تاییدشده، زبان ساده آماری و مدیریت فوکوس پس از حذف (بند ۳۷.۱)</span>
           </h3>

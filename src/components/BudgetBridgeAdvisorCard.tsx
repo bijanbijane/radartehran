@@ -116,11 +116,11 @@ export function BudgetBridgeAdvisorCard({
   return (
     <div className="apple-grouped-card bg-amber-50/75 dark:bg-amber-950/20 border-amber-200/90 dark:border-amber-900/50 p-3.5 space-y-2.5 text-xs">
       <div className="flex items-center justify-between border-b border-amber-200/70 dark:border-amber-900/40 pb-2">
-        <div className="flex items-center gap-1.5 font-extrabold text-amber-950 dark:text-amber-200">
+        <div className="flex items-center gap-1.5 font-bold text-amber-950 dark:text-amber-200">
           <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>مشاور پل بودجه: راهکارهای عملی برای ورود به محله {selectedHood.name}</span>
         </div>
-        <span className="px-2 py-0.5 rounded-md bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-200 text-[10px] font-black tabular-nums">
+        <span className="px-2 py-0.5 rounded-md bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-200 text-[10px] font-bold tabular-nums">
           کمبود بودجه ({formatAreaShort(targetSqm, areaUnit)}): {toPersianNum(selectedHood.diffPercent)}٪{budgetGapMillion > 0 ? ` (~${toPersianNum(budgetGapMillion)} م${fxTag(budgetGapMillion)})` : ''} · اجاره ۸۰م: {toPersianNum(monthlyRent80mMillions)}م
         </span>
       </div>
@@ -129,13 +129,13 @@ export function BudgetBridgeAdvisorCard({
         {/* Option 1: Adjust Area */}
         <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
-            <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
               <Maximize2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۱. تعدیل متراژ متناسب با بودجه فعلی</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
               {rawAffordableSqm >= 35 ? (
-                <>با بودجه فعلی می‌توانید در {selectedHood.name} واحد <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAreaShort(affordableSqm, areaUnit)}</strong>{mode === 'buy' ? <> (با سناریوی فرضی مذاکره (غیرثبتی): <strong className="text-teal-700 font-black">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>)</> : null} تهیه کنید.</>
+                <>با بودجه فعلی می‌توانید در {selectedHood.name} واحد <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatAreaShort(affordableSqm, areaUnit)}</strong>{mode === 'buy' ? <> (با سناریوی فرضی مذاکره (غیرثبتی): <strong className="text-teal-700 font-bold">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>)</> : null} تهیه کنید.</>
               ) : (
                 <>بودجه فعلی برای حداقل متراژ مسکونی استاندارد ({formatAreaShort(35, areaUnit)}) در این محله کافی نیست؛ از اهرم‌های زیر کمک بگیرید.</>
               )}
@@ -145,7 +145,7 @@ export function BudgetBridgeAdvisorCard({
             <button
               type="button"
               onClick={() => onChangeTargetSqm(affordableSqm)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-extrabold cursor-pointer transition shrink-0"
+              className="px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-bold cursor-pointer transition shrink-0"
             >
               تغییر متراژ به {formatAreaShort(affordableSqm, areaUnit)}
             </button>
@@ -156,7 +156,7 @@ export function BudgetBridgeAdvisorCard({
         {buildingAgeSegment === 'new' && (
           <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="space-y-0.5">
-              <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
+              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                 <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>۲. انتخاب واحدهای چندساله خوش‌نقشه ({formatAreaShort(targetSqm, areaUnit)})</span>
               </div>
@@ -175,7 +175,7 @@ export function BudgetBridgeAdvisorCard({
         {(!useLoanBooster || (mode === 'buy' && !deductTenantRahnInBuy)) && (
           <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="space-y-0.5">
-              <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
+              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                 <Percent className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 <span>۳. فعال‌سازی اهرم‌های وام و رهن مستأجر</span>
               </div>
@@ -201,7 +201,7 @@ export function BudgetBridgeAdvisorCard({
         {/* Option 4: Spatial Affordable Neighbor Alternatives */}
         {nearbyAffordableNeighbors.length > 0 && (
           <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 space-y-1.5">
-            <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
               <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>۴. نزدیک‌ترین محلات همسایه با قیمت مناسب‌تر:</span>
             </div>

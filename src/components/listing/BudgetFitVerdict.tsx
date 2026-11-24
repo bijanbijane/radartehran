@@ -102,7 +102,7 @@ export function BudgetFitVerdict(p: BudgetFitVerdictProps): React.ReactElement {
   return (
     <section data-testid="budget-fit-verdict" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-xs space-y-3">
       <div>
-        <h2 className="text-base font-black text-slate-950 dark:text-white">با این بودجه، کجا جا می‌شود؟</h2>
+        <h2 className="text-base font-bold text-slate-950 dark:text-white">با این بودجه، کجا جا می‌شود؟</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{isTehran ? 'سه محله از بیست محلهٔ تاریخ‌دار تهران' : `سه محلهٔ نمونه در ${placeFa}`}، برای حدود {formatAreaShort(Math.round(p.targetSqm || 80), areaUnit)}.</p>
       </div>
       <ul className="space-y-2">
@@ -125,7 +125,7 @@ export function BudgetFitVerdict(p: BudgetFitVerdictProps): React.ReactElement {
       </ul>
       {lines.length > 0 && lines.every((l) => l.fit === 'over') && (
         <div data-testid="budget-fit-affordability-bridge" className="rounded-xl border border-amber-200/90 bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-100 space-y-1">
-          <div className="font-extrabold">پل تأمین بودجه و گزینه‌های جایگزین</div>
+          <div className="font-bold">پل تأمین بودجه و گزینه‌های جایگزین</div>
           <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
             {isTehran ? (
               <>با بودجهٔ نقدی فعلی در ۲۰ محلهٔ مرکزی تاریخ‌دار تهران گزینه‌ای در محدوده نیست؛ با فعال‌سازی <strong>وام مسکن (+۱.۲ میلیارد) + کسر رهن مستأجر</strong> در «کشف محله»، یا بررسی <strong>حومهٔ استان تهران (پرند، اندیشه، پیشوا)</strong> و کلان‌شهر <strong>کرج (گلشهر، گوهردشت)</strong> گزینه‌های متناسب در دسترس است.</>

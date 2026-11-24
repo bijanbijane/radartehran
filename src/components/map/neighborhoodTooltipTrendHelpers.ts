@@ -197,7 +197,7 @@ export function buildNeighborhoodTooltipTrendSectionHtml(params: {
       <div style="display:flex;align-items:center;gap:4px;">
         <select data-testid="tooltip-trend-period-select" aria-label="بازه زمانی روند بازار" style="font-size:9px;padding:1px 3px;border-radius:4px;"><option value="3">۳ ماهه</option><option value="6" selected>۶ ماهه</option><option value="12">۱۲ ماهه</option></select>
         <button type="button" data-testid="tooltip-export-csv-btn" style="font-size:9px;padding:1px 4px;border-radius:4px;">خروجی CSV</button>
-        <span style="color:${strokeColor};font-weight:800;">${escapeHtmlAttr(growthText)}</span>
+        <span style="color:${strokeColor};font-weight:700;">${escapeHtmlAttr(growthText)}</span>
       </div>
     </div>
     <svg class="recharts-surface" width="208" height="48" viewBox="0 0 208 48" role="img" aria-label="نمودار روند ۶ ماهه قیمت محله">

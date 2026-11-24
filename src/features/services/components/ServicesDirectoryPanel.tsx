@@ -14,11 +14,13 @@ import {
   type ServiceProviderEntity,
   type ServiceSortMode,
 } from '../types/service.types';
+import type { ServicesSubTabId } from '../../../navigation/registry/route.types';
 import { ServiceProviderCard } from './ServiceProviderCard';
 
 import { useRadarLocale } from '../../../components/AreaUnitToggle';
 
 export interface ServicesDirectoryPanelProps {
+  activeSubTab?: ServicesSubTabId;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   visibleProviders: ServiceProviderEntity[];
   filters: ServiceFilterState;
@@ -48,6 +50,7 @@ const CATEGORY_FILTER_CHIPS: Array<{
 ];
 
 export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
+  activeSubTab,
   evaluatedNeighborhoods,
   visibleProviders,
   filters,
@@ -58,6 +61,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
 }) => {
   const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
+  const showCategorySelect = !activeSubTab || activeSubTab === 'all';
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
@@ -83,7 +87,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
 
       <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 items-center">
-          <div className="relative lg:col-span-2">
+          <div className={`relative ${showCategorySelect ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input
               type="text"
@@ -95,28 +99,30 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
               className="w-full min-h-[44px] md:min-h-[38px] ps-8 pe-3 py-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
-          <select
-            aria-label={isEn ? 'Specialty category' : 'رسته تخصصی'}
-            value={
-              filters.category === 'brokerage'
-                ? 'agencies'
-                : filters.canonicalCategory || 'all'
-            }
-            onChange={(e) => {
-              const found = CATEGORY_FILTER_CHIPS.find((c) => c.id === e.target.value) || CATEGORY_FILTER_CHIPS[0];
-              trackServiceEvent('service_category_selected', { category: found.canonicalCategory });
-              setFilters((prev) => ({
-                ...prev,
-                canonicalCategory: found.canonicalCategory,
-                category: found.category,
-              }));
-            }}
-            className="min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold"
-          >
-            {CATEGORY_FILTER_CHIPS.map((chip) => (
-              <option key={chip.id} value={chip.id}>{isEn ? chip.labelEn : chip.labelFa}</option>
-            ))}
-          </select>
+          {showCategorySelect && (
+            <select
+              aria-label={isEn ? 'Specialty category' : 'رسته تخصصی'}
+              value={
+                filters.category === 'brokerage'
+                  ? 'agencies'
+                  : filters.canonicalCategory || 'all'
+              }
+              onChange={(e) => {
+                const found = CATEGORY_FILTER_CHIPS.find((c) => c.id === e.target.value) || CATEGORY_FILTER_CHIPS[0];
+                trackServiceEvent('service_category_selected', { category: found.canonicalCategory });
+                setFilters((prev) => ({
+                  ...prev,
+                  canonicalCategory: found.canonicalCategory,
+                  category: found.category,
+                }));
+              }}
+              className="min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold"
+            >
+              {CATEGORY_FILTER_CHIPS.map((chip) => (
+                <option key={chip.id} value={chip.id}>{isEn ? chip.labelEn : chip.labelFa}</option>
+              ))}
+            </select>
+          )}
           <select
             aria-label={isEn ? 'Filter by neighborhood' : 'فیلتر محله'}
             value={filters.hoodId}

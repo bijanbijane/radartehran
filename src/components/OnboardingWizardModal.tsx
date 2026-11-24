@@ -62,7 +62,7 @@ export function OnboardingWizardModal({
             <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-600)] text-white flex items-center justify-center shadow-xs shrink-0"><Compass className="w-5 h-5" /></div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 id="onboarding-wizard-title" className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                <h2 id="onboarding-wizard-title" className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                   {isEn ? 'RadarTehran Quick Setup' : 'تنظیم سریع رادارتهران'}
                 </h2>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -90,7 +90,7 @@ export function OnboardingWizardModal({
               { num: 3, labelFa: 'سبک زندگی و نتیجه', labelEn: 'Lifestyle & Match' },
             ].map((s) => (
               <button key={s.num} type="button" onClick={() => setStep(s.num as 1 | 2 | 3)} className={`flex items-center gap-2 text-xs font-bold transition cursor-pointer ${step === s.num ? 'text-emerald-700 dark:text-emerald-400' : step > s.num ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition ${step === s.num ? 'bg-[var(--color-brand-600)] text-white shadow-xs' : step > s.num ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{toPersianNum(s.num)}</div>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition ${step === s.num ? 'bg-[var(--color-brand-600)] text-white shadow-xs' : step > s.num ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{toPersianNum(s.num)}</div>
                 <span className="hidden sm:inline">{isEn ? s.labelEn : s.labelFa}</span>
               </button>
             ))}
@@ -109,14 +109,14 @@ export function OnboardingWizardModal({
                 <div className="grid grid-cols-2 gap-3">
                   <button type="button" onClick={() => setMode('buy')} className={`p-4 rounded-2xl border-2 text-right transition flex flex-col gap-1 cursor-pointer ${mode === 'buy' ? 'border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2"><KeyRound className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />{isEn ? 'Buy & Investment' : 'خرید مسکن یا سرمایه‌گذاری'}</span>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2"><KeyRound className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />{isEn ? 'Buy & Investment' : 'خرید مسکن یا سرمایه‌گذاری'}</span>
                       {mode === 'buy' && <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />}
                     </div>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{isEn ? 'Total price, mortgage, building age' : 'محاسبه قیمت کل، سن بنا، کسر رهن مستأجر و وام'}</span>
                   </button>
                   <button type="button" onClick={() => setMode('rent')} className={`p-4 rounded-2xl border-2 text-right transition flex flex-col gap-1 cursor-pointer ${mode === 'rent' ? 'border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />{isEn ? 'Rent & Deposit' : 'رهن و اجاره خانه'}</span>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />{isEn ? 'Rent & Deposit' : 'رهن و اجاره خانه'}</span>
                       {mode === 'rent' && <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />}
                     </div>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{isEn ? 'Convert deposit to monthly rent with 3% formula' : 'تنظیم هم‌زمان ودیعه و اجاره ماهانه با فرمول عرف ۳٪'}</span>
@@ -125,7 +125,7 @@ export function OnboardingWizardModal({
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Target Area:' : 'متراژ دلخواه شما:'}</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Target Area:' : 'متراژ دلخواه شما:'}</span>
                   <div className="flex items-center gap-2">
                     <NumericDraftInput aria-label={isEn ? 'Target area' : 'متراژ دلخواه'} min={30} max={400} fallback={80} value={targetSqm} onValueChange={setTargetSqm} className="w-20 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{areaUnit === 'sqft' ? formatAreaShort(targetSqm, 'sqft') : `${toPersianNum(targetSqm)} متر`}</span>
@@ -156,7 +156,7 @@ export function OnboardingWizardModal({
                 <div className="space-y-4">
                   <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Cash Budget (Million):' : 'کل بودجه نقدی در دسترس شما:'}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Cash Budget (Million):' : 'کل بودجه نقدی در دسترس شما:'}</span>
                       <NumericDraftInput aria-label={isEn ? 'Cash budget' : 'بودجه نقدی خرید'} min={500} max={150000} step={500} fallback={10500} value={buyTotalBudget} onValueChange={setBuyTotalBudget} className="w-28 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
@@ -185,7 +185,7 @@ export function OnboardingWizardModal({
                 <div className="space-y-4">
                   <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         {isEn ? 'Available Deposit:' : 'ودیعه در دسترس (پیش):'}
                         {showIntl && <span className="font-normal text-[10px] text-emerald-700 dark:text-emerald-400 block" dir="ltr">{formatMillionTomanAsIntlCurrency(deposit, currency, locale)}</span>}
                       </span>
@@ -193,7 +193,7 @@ export function OnboardingWizardModal({
                     </div>
                     <input type="range" aria-label={isEn ? 'Available deposit slider' : 'اسلایدر ودیعه در دسترس'} min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-700">
-                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         {isEn ? 'Monthly Rent Budget (Million):' : 'اجاره ماهانه قابل پرداخت (میلیون تومان):'}
                         {showIntl && <span className="font-normal text-[10px] text-emerald-700 dark:text-emerald-400 block" dir="ltr">{formatMillionTomanAsIntlCurrency(monthlyRent, currency, locale)}</span>}
                       </span>
@@ -214,13 +214,13 @@ export function OnboardingWizardModal({
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70 dark:border-slate-700">
-                  <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Primary Work / Commute Hub:' : 'قطب محل کار یا تردد روزانه شما:'}</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Primary Work / Commute Hub:' : 'قطب محل کار یا تردد روزانه شما:'}</label>
                   <select aria-label={isEn ? 'Work hub' : 'انتخاب قطب محل کار'} value={workHubId} onChange={(e) => setWorkHubId(e.target.value)} className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-emerald-600 focus:outline-none">
                     {workHubs.map((hub) => <option key={hub.id} value={hub.id}>{hub.name}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5 text-xs">
+                  <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 text-xs">
                     <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
                     {isEn ? `Within-Budget Neighborhoods (${toPersianNum(rankedGreenNeighborhoods.length)}):` : `محله‌های همخوان با فرض بودجه فعلی (${toPersianNum(rankedGreenNeighborhoods.length)} محله):`}
                   </span>
@@ -238,12 +238,12 @@ export function OnboardingWizardModal({
                       return (
                         <button key={hood.id} type="button" onClick={() => handleFinish(hood)} aria-label={isEn ? `Select ${hood.name}` : `انتخاب محله ${hood.name}`} className="p-2.5 rounded-xl text-start w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition cursor-pointer flex flex-col justify-between gap-1.5">
                           <div className="flex items-center justify-between w-full gap-1">
-                            <strong className="text-xs font-black text-slate-900 dark:text-white">🟢 {hood.name}</strong>
+                            <strong className="text-xs font-bold text-slate-900 dark:text-white">🟢 {hood.name}</strong>
                             <div className="flex items-center gap-1">
                               {idx > 0 && explain.isTieBandWithTop && (
                                 <span className="text-[9.5px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-1.5 py-0.5 rounded">هم‌تراز ±۰.۳</span>
                               )}
-                              <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800" title={explain.scoreSemanticsLabelFa}>
+                              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800" title={explain.scoreSemanticsLabelFa}>
                                 ★ {toPersianNum(hood.overallScore)}
                               </span>
                             </div>
@@ -274,11 +274,11 @@ export function OnboardingWizardModal({
           )}
           <div className="flex items-center gap-2">
             {step < 3 ? (
-              <button type="button" onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)} className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-extrabold text-white bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] rounded-xl shadow-xs transition cursor-pointer">
+              <button type="button" onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)} className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-white bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] rounded-xl shadow-xs transition cursor-pointer">
                 <span>{isEn ? 'Next' : 'ادامه'}</span> <ArrowLeft className="w-4 h-4" />
               </button>
             ) : (
-              <button type="button" onClick={() => handleFinish()} className="flex items-center gap-2 px-6 py-2.5 text-xs font-extrabold text-white bg-[var(--color-brand-600)] hover:bg-emerald-500 rounded-[10px] shadow-xs transition cursor-pointer">
+              <button type="button" onClick={() => handleFinish()} className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-[var(--color-brand-600)] hover:bg-emerald-500 rounded-[10px] shadow-xs transition cursor-pointer">
                 <Sparkles className="w-4 h-4 stroke-[1.75]" /> <span>{isEn ? 'Explore on Map' : 'شروع کاوش هوشمند روی نقشه'}</span>
               </button>
             )}

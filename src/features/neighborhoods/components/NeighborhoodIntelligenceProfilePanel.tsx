@@ -98,7 +98,7 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                   <span>{m.title}</span>
                   <span className="rounded bg-slate-200/70 dark:bg-slate-700 px-1.5 py-0.5 text-[9px] font-bold">{m.dataQuality}</span>
                 </div>
-                <div className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
                   {m.formattedValue} <span className="text-[10px] font-normal text-slate-500">{m.unit}</span>
                 </div>
                 {m.comparisonLabel && <p className="mt-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">{m.comparisonLabel}</p>}
@@ -173,7 +173,7 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                   {profile.landUseShares.map((item) => (
                     <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px]">
                       <div className="font-bold text-slate-800 dark:text-slate-200">{item.labelFa}</div>
-                      <div className="text-sm font-black text-indigo-600 dark:text-indigo-400">{item.sharePercent}%</div>
+                      <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{item.sharePercent}%</div>
                       <div className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500"><Layers className="w-3 h-3" /><span>لایه: {item.layerId}</span></div>
                     </div>
                   ))}

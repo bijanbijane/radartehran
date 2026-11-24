@@ -11,6 +11,7 @@ import {
 } from './PropertyFilterDraft';
 import { PROPERTY_TYPE_LABELS_FA, type PropertyType } from '../types/property.types';
 import type { TransactionType } from '../types/listing.types';
+import type { PropertiesSubTabId } from '../../../navigation/registry/route.types';
 
 export type PropertyExplorerViewMode = 'split' | 'list' | 'map';
 
@@ -21,6 +22,8 @@ export interface PropertyFilterBarProps {
   totalResults: number;
   selectedHoodName: string;
   viewMode: PropertyExplorerViewMode;
+  activeSubTab?: PropertiesSubTabId;
+  splitMapMode?: boolean;
   onChangeViewMode: (m: PropertyExplorerViewMode) => void;
   onUpdateDraft: (patch: Partial<PropertyFilterDraft>) => void;
   onApply: (nextDraft?: PropertyFilterDraft) => void;
@@ -53,6 +56,8 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   totalResults,
   selectedHoodName,
   viewMode,
+  activeSubTab,
+  splitMapMode,
   onChangeViewMode,
   onUpdateDraft,
   onApply,
@@ -60,6 +65,8 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   onOpenFilterDrawer,
 }) => {
   const chips = buildActiveFilterChips(applied, selectedHoodName);
+  const showTxSelector = !activeSubTab || (activeSubTab !== 'buy' && activeSubTab !== 'rent');
+  const showTypeSelect = !activeSubTab || (activeSubTab !== 'commercial' && activeSubTab !== 'office');
 
   const handleTxQuickSelect = (tx: 'all' | TransactionType) => {
     const next = { ...draft, transactionType: tx };
@@ -108,36 +115,40 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-[9px] bg-[var(--color-bg-muted)] p-1 overflow-x-auto max-w-full">
-            {TX_OPTIONS.map((tx) => (
-              <button
-                key={tx.id}
-                type="button"
-                data-testid={`property-tx-${tx.id}`}
-                onClick={() => handleTxQuickSelect(tx.id)}
-                className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[7px] text-xs font-bold whitespace-nowrap transition cursor-pointer ${
-                  applied.transactionType === tx.id
-                    ? 'bg-[var(--color-brand-600)] text-white'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]'
-                }`}
-              >
-                {tx.label}
-              </button>
-            ))}
-          </div>
+          {showTxSelector && (
+            <div className="flex items-center gap-1 rounded-[9px] bg-[var(--color-bg-muted)] p-1 overflow-x-auto max-w-full">
+              {TX_OPTIONS.map((tx) => (
+                <button
+                  key={tx.id}
+                  type="button"
+                  data-testid={`property-tx-${tx.id}`}
+                  onClick={() => handleTxQuickSelect(tx.id)}
+                  className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[7px] text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                    applied.transactionType === tx.id
+                      ? 'bg-[var(--color-brand-600)] text-white'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]'
+                  }`}
+                >
+                  {tx.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <select
-            aria-label="نوع ملک"
-            data-testid="property-type-select"
-            value={applied.propertyType}
-            onChange={(e) => handlePropertyTypeQuickSelect(e.target.value as 'all' | PropertyType)}
-            className="min-h-[44px] md:min-h-[38px] px-2.5 py-2 rounded-[9px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
-          >
-            <option value="all">همه کاربری‌ها</option>
-            {(Object.keys(PROPERTY_TYPE_LABELS_FA) as PropertyType[]).map((pt) => (
-              <option key={pt} value={pt}>{PROPERTY_TYPE_LABELS_FA[pt]}</option>
-            ))}
-          </select>
+          {showTypeSelect && (
+            <select
+              aria-label="نوع ملک"
+              data-testid="property-type-select"
+              value={applied.propertyType}
+              onChange={(e) => handlePropertyTypeQuickSelect(e.target.value as 'all' | PropertyType)}
+              className="min-h-[44px] md:min-h-[38px] px-2.5 py-2 rounded-[9px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
+            >
+              <option value="all">همه کاربری‌ها</option>
+              {(Object.keys(PROPERTY_TYPE_LABELS_FA) as PropertyType[]).map((pt) => (
+                <option key={pt} value={pt}>{PROPERTY_TYPE_LABELS_FA[pt]}</option>
+              ))}
+            </select>
+          )}
 
           <button
             type="button"
@@ -212,36 +223,38 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
             </select>
           </div>
 
-          <div
-            role="group"
-            aria-label="حالت نمایش فهرست و نقشه"
-            className="flex items-center gap-0.5 rounded-[8px] border border-[var(--color-border-subtle)] p-0.5"
-          >
-            {[
-              { id: 'list' as const, icon: List, label: 'فهرست' },
-              { id: 'split' as const, icon: Columns2, label: 'دوتایی با نقشه' },
-              { id: 'map' as const, icon: MapIcon, label: 'نقشه' },
-            ].map((m) => {
-              const IconC = m.icon;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  aria-pressed={viewMode === m.id}
-                  data-testid={`property-viewmode-${m.id}`}
-                  onClick={() => onChangeViewMode(m.id)}
-                  className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[6px] flex items-center gap-1 text-xs font-bold transition cursor-pointer ${
-                    viewMode === m.id
-                      ? 'bg-[var(--color-brand-600)] text-white'
-                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  <IconC className="w-3.5 h-3.5" />
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {!splitMapMode && (
+            <div
+              role="group"
+              aria-label="حالت نمایش فهرست و نقشه"
+              className="flex items-center gap-0.5 rounded-[8px] border border-[var(--color-border-subtle)] p-0.5"
+            >
+              {[
+                { id: 'list' as const, icon: List, label: 'فهرست' },
+                { id: 'split' as const, icon: Columns2, label: 'دوتایی با نقشه' },
+                { id: 'map' as const, icon: MapIcon, label: 'نقشه' },
+              ].map((m) => {
+                const IconC = m.icon;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    aria-pressed={viewMode === m.id}
+                    data-testid={`property-viewmode-${m.id}`}
+                    onClick={() => onChangeViewMode(m.id)}
+                    className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[6px] flex items-center gap-1 text-xs font-bold transition cursor-pointer ${
+                      viewMode === m.id
+                        ? 'bg-[var(--color-brand-600)] text-white'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    <IconC className="w-3.5 h-3.5" />
+                    <span>{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

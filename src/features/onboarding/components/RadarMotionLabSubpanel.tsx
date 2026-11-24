@@ -114,7 +114,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
       {/* Motion Tokens Table + Save Button Server-Confirmed State Machine */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توکن‌های استاندارد زمان‌بندی و منحنی حرکت (Compositor-Only)</span>
           </h3>
@@ -146,7 +146,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
         </div>
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماشین وضعیت دکمه ذخیره (ممنوعیت جعل موفقیت پیش از تأیید سرور)</span>
           </h3>
@@ -202,7 +202,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
       {/* Scenario 44 & 46: Map Camera Race Cancellation + Layer Empty/Active Feedback */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Navigation className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>جلوگیری از رقابت حرکت‌های نقشه (لغو خودکار مقصد قبلی)</span>
           </h3>
@@ -229,7 +229,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
         </div>
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سناریوی تغییر لایه بازار و وضعیت بدون داده (بند ۴۶)</span>
           </h3>

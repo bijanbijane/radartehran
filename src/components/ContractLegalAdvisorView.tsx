@@ -15,7 +15,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
             <Scale className="w-4 h-4 stroke-[1.75]" />
           </span>
           <div>
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               مشاور حقوقی هوشمند قولنامه و سپر ضدکلاهبرداری مسکن
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -89,7 +89,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
             )}
             <button
               type="submit" disabled={analyzingClause}
-              className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 stroke-[1.75]" />
               <span>{analyzingClause ? 'در حال کالبدشکافی حقوقی بند قرارداد...' : 'بررسی هوشمند دام‌های حقوقی و وجه التزام'}</span>
@@ -100,7 +100,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`px-2.5 py-1 rounded-lg font-extrabold text-[11px] ${
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] ${
                       clauseResult.riskLevel === 'HIGH'
                         ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
                         : clauseResult.riskLevel === 'MEDIUM'
@@ -119,7 +119,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
               <p className="text-slate-800 dark:text-slate-100 font-semibold leading-relaxed">{clauseResult.summary}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl p-3 space-y-1.5">
-                  <div className="font-extrabold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                  <div className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 stroke-[1.75] text-rose-600 dark:text-rose-400" />
                     <span>دام‌های حقوقی شناسایی‌شده:</span>
                   </div>
@@ -128,7 +128,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                   </ul>
                 </div>
                 <div className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-xl p-3 space-y-1.5">
-                  <div className="font-extrabold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                  <div className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 stroke-[1.75] text-amber-600 dark:text-amber-400" />
                     <span>وضعیت وجه التزام و تضامین کسری:</span>
                   </div>
@@ -142,7 +142,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
               </div>
               <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+                  <span className="font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
                     <FileText className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                     <span>متن پیشنهادی و استاندارد جایگزین در قرارداد:</span>
                   </span>
@@ -184,7 +184,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
         <div className="space-y-3.5">
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="font-extrabold text-slate-900 dark:text-white text-sm">
+              <div className="font-bold text-slate-900 dark:text-white text-sm">
                 امتیاز امنیت معامله شما پیش از واریز بیعانه:{' '}
                 <span
                   className={
@@ -242,7 +242,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                     className="mt-1 accent-emerald-600 w-4 h-4 cursor-pointer"
                   />
                   <div className="space-y-0.5">
-                    <div className="font-extrabold text-slate-900 dark:text-white">
+                    <div className="font-bold text-slate-900 dark:text-white">
                       {toPersianNum(idx + 1)}. {item.title} </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       {item.detail} </div>

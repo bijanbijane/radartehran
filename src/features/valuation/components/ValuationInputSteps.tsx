@@ -84,9 +84,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
   return (
     <div className="space-y-4 text-xs" data-testid="valuation-input-steps">
       {/* Step 1: Category & Coverage */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+      <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. نوع ملک و هدف ارزش‌گذاری</span>
           </span>
@@ -105,7 +105,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             data-testid="valuation-category-select"
             value={input.propertyCategory}
             onChange={(e) => onChange({ propertyCategory: e.target.value as ValuationPropertyCategory })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
+            className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
           >
             {(Object.keys(VALUATION_CATEGORY_LABELS_FA) as ValuationPropertyCategory[]).map((cat) => (
               <option key={cat} value={cat}>{VALUATION_CATEGORY_LABELS_FA[cat]}</option>
@@ -116,7 +116,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             data-testid="valuation-purpose-select"
             value={input.purpose}
             onChange={(e) => onChange({ purpose: e.target.value as ValuationPurpose })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
+            className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
           >
             {(Object.keys(VALUATION_PURPOSE_LABELS_FA) as ValuationPurpose[]).map((p) => (
               <option key={p} value={p}>{VALUATION_PURPOSE_LABELS_FA[p]}</option>
@@ -126,8 +126,8 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
       </div>
 
       {/* Step 2: Geography, Street Tier & Location Precision */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-        <span className="font-black text-[var(--color-text-primary)] dark:text-white block">۲. محدوده جغرافیایی و دقت موقعیت مکانی</span>
+      <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
+        <span className="font-bold text-[var(--color-text-primary)] block">۲. محدوده جغرافیایی و دقت موقعیت مکانی</span>
         <select
           aria-label="محله هدف ارزش‌گذاری"
           data-testid="valuation-hood-select"
@@ -139,7 +139,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
               onChange({ hoodId: found.id });
             }
           }}
-          className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
+          className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
         >
           {evaluatedNeighborhoods.map((h) => (
             <option key={h.id} value={h.id}>محله {h.name} ({h.zone})</option>
@@ -169,7 +169,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             id="ws-location-precision"
             value={input.locationPrecision}
             onChange={(e) => onChange({ locationPrecision: e.target.value as ValuationLocationPrecision })}
-            className="w-full min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold"
+            className="w-full min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-bold"
           >
             {(Object.keys(LOCATION_PRECISION_LABELS_FA) as ValuationLocationPrecision[]).map((lp) => (
               <option key={lp} value={lp}>{LOCATION_PRECISION_LABELS_FA[lp]}</option>
@@ -180,7 +180,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
 
       {isResidential && (
         <>
-          <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 space-y-2">
+          <div className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-brand-600)]/25 space-y-2">
             <label htmlFor="ws-ad-extract-input" className="flex items-center text-xs font-bold text-[var(--color-brand-fg)]">
               <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> استخراج گزینشی از متن آگهی (فقط فیلدهای ذکرشده در متن)</span>
             </label>
@@ -193,7 +193,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
                 value={adText}
                 onChange={(e) => setAdText(e.target.value)}
                 placeholder="مثال: ۱۰۰ متر طبقه ۳ از ۵ با پارکینگ و آسانسور ساخت ۱۳۹۸..."
-                className="flex-1 min-h-[44px] md:min-h-[38px] px-2.5 py-1.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs"
+                className="flex-1 min-h-[44px] md:min-h-[38px] px-2.5 py-1.5 rounded-[8px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-xs"
               />
               <button type="button" data-testid="valuation-ad-extract-btn" onClick={handleExtractAd} className="min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
                 پرکردن خودکار
@@ -206,9 +206,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             )}
           </div>
 
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 tabular-nums">
+          <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 tabular-nums">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-black text-[var(--color-text-primary)] dark:text-white">۳. مشخصات فیزیکی واحد (مبنای محاسبه: مترمربع m²)</span>
+              <span className="font-bold text-[var(--color-text-primary)]">۳. مشخصات فیزیکی واحد (مبنای محاسبه: مترمربع m²)</span>
               <div className="flex flex-wrap gap-1">
                 <OriginChip origin={input.inputOrigins.sqm} />
                 <OriginChip origin={input.inputOrigins.floor} />
@@ -217,19 +217,19 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="text-xs text-[var(--color-text-muted)] block mb-1">متراژ (متر)</label>
-                <NumericDraftInput min={30} max={600} fallback={85} aria-label="متراژ واحد" data-testid="valuation-sqm-input" value={input.sqm} onValueChange={(nextSqm) => setFieldUser('sqm', { sqm: nextSqm })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={30} max={600} fallback={85} aria-label="متراژ واحد" data-testid="valuation-sqm-input" value={input.sqm} onValueChange={(nextSqm) => setFieldUser('sqm', { sqm: nextSqm })} className="w-full p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold" />
               </div>
               <div>
                 <label className="text-xs text-[var(--color-text-muted)] block mb-1">سال ساخت</label>
-                <NumericDraftInput min={1340} max={currentYear} fallback={1398} aria-label="سال ساخت" value={input.buildYear} onValueChange={(nextYear) => setFieldUser('buildYear', { buildYear: nextYear })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={1340} max={currentYear} fallback={1398} aria-label="سال ساخت" value={input.buildYear} onValueChange={(nextYear) => setFieldUser('buildYear', { buildYear: nextYear })} className="w-full p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold" />
               </div>
               <div>
                 <label className="text-xs text-[var(--color-text-muted)] block mb-1">طبقه واحد (همکف=۰)</label>
-                <NumericDraftInput min={-2} max={60} fallback={3} aria-label="طبقه واحد" value={input.floor} onValueChange={(f) => setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={-2} max={60} fallback={3} aria-label="طبقه واحد" value={input.floor} onValueChange={(f) => setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) })} className="w-full p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold" />
               </div>
               <div>
                 <label className="text-xs text-[var(--color-text-muted)] block mb-1">کل طبقات</label>
-                <NumericDraftInput min={1} max={60} fallback={5} aria-label="کل طبقات" value={input.totalFloors} onValueChange={(tf) => setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={1} max={60} fallback={5} aria-label="کل طبقات" value={input.totalFloors} onValueChange={(tf) => setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) })} className="w-full p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold" />
               </div>
             </div>
             {(fieldErrors.sqm || fieldErrors.buildYear || fieldErrors.floor || fieldErrors.totalFloors) && (
@@ -240,9 +240,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             )}
           </div>
 
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+          <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+              <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <Wrench className="w-4 h-4 text-[var(--color-brand-fg)]" />
                 <span>۴. وضعیت نوسازی و امکانات سندی</span>
               </span>
@@ -267,14 +267,14 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
           </div>
 
           {input.purpose === 'sale' && (
-            <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
+            <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <label htmlFor="ws-asking-billion" className="font-black text-[var(--color-text-primary)] dark:text-white block">
+                <label htmlFor="ws-asking-billion" className="font-bold text-[var(--color-text-primary)] block">
                   ۵. قیمت اعلامی فروشنده برای سنجش شکاف (اختیاری - میلیارد تومان)
                 </label>
                 <OriginChip origin={input.inputOrigins.sellerAsking} />
               </div>
-              <input id="ws-asking-billion" type="text" inputMode="decimal" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید (مثلاً ۱۰.۵)" className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold tabular-nums" />
+              <input id="ws-asking-billion" type="text" inputMode="decimal" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید (مثلاً ۱۰.۵)" className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-bold tabular-nums" />
               {fieldErrors.sellerAsking && (
                 <div className="text-xs font-bold text-rose-700 dark:text-rose-300">{fieldErrors.sellerAsking}</div>
               )}

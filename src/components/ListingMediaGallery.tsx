@@ -180,7 +180,7 @@ export function ListingMediaGallery({
               className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-3 space-y-2 shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                   {listing.title} — فایل آبجکت استوریج
                 </span>
                 <button

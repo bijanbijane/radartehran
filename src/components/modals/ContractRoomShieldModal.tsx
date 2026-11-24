@@ -166,7 +166,7 @@ export function ContractRoomShieldModal({
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h2 id={titleId} tabIndex={-1} data-dialog-initial-focus className="text-base sm:text-lg font-black text-white flex items-center gap-2 focus:outline-none">
+              <h2 id={titleId} tabIndex={-1} data-dialog-initial-focus className="text-base sm:text-lg font-bold text-white flex items-center gap-2 focus:outline-none">
                 <span>سپر و دستیار زنده اتاق قرارداد</span>
                 <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ویژه نشست</span>
               </h2>
@@ -294,7 +294,7 @@ export function ContractRoomShieldModal({
                               <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">گام {toPersianDigits(idx + 1)}</span>
                             </div>
                             <h4 className="text-sm font-bold text-white mb-2">{st.stageName}</h4>
-                            <div className="text-lg font-black text-amber-300 mb-2 tabular-nums">
+                            <div className="text-lg font-bold text-amber-300 mb-2 tabular-nums">
                               {toPersianDigits(st.amountMillionToman.toLocaleString())} <span className="text-xs font-normal text-slate-300">میلیون تومان{fxTag(st.amountMillionToman)}</span>
                             </div>
                             <div className="text-[11px] text-slate-300 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 mb-2">

@@ -65,7 +65,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       const perUnit = p.pricePerSqmMillion ? convertPricePerSqmToUnit(p.pricePerSqmMillion, areaUnit) : null;
       const fx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(totalM, intlCurrency, radarLocale)}` : '';
       return {
-        main: `${toPersianNum((totalM / 1000).toFixed(2))} میلیارد تومان`,
+        main: `${toPersianNum((totalM / 1000).toFixed(2).replace('.', '٫'))} میلیارد تومان`,
         sub: `${perUnit ? `هر ${unitLabel}: ${toPersianNum(perUnit)} م` : 'قیمت کل'}${fx}`,
       };
     }
@@ -84,15 +84,15 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       data-testid={`property-card-${listing.listingId}`}
       onMouseEnter={() => onHoverChange?.(listing.listingId)}
       onMouseLeave={() => onHoverChange?.(null)}
-      className={`rt-card rounded-[14px] bg-[var(--color-bg-surface)] dark:bg-slate-900 border transition overflow-hidden flex flex-col justify-between ${
+      className={`rt-card rounded-[14px] bg-[var(--color-bg-surface)] border transition overflow-hidden flex flex-col justify-between ${
         isHighlighted
           ? 'border-[var(--color-brand-600)] ring-1 ring-[var(--color-brand-600)]/40'
-          : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)]/60'
+          : 'border-[var(--color-border-subtle)] hover:border-[var(--color-brand-600)]/60'
       }`}
     >
       {/* Media frame if valid photo exists, otherwise compact typographic header (zero empty grey placeholder boxes) */}
       {firstValidImage ? (
-        <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] dark:bg-slate-800/80 relative overflow-hidden border-b border-[var(--color-border-subtle)] dark:border-slate-800">
+        <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] relative overflow-hidden border-b border-[var(--color-border-subtle)]">
           <img src={firstValidImage} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
             <span className="px-2 py-0.5 rounded-[7px] bg-slate-900/85 text-white text-xs font-bold">
@@ -141,7 +141,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <button
             type="button"
             onClick={() => onOpenDetail(listing.listingId)}
-            className="text-start text-sm font-black text-[var(--color-text-primary)] hover:text-[var(--color-brand-fg)] transition line-clamp-2 cursor-pointer"
+            className="text-start text-sm font-bold text-[var(--color-text-primary)] hover:text-[var(--color-brand-fg)] transition line-clamp-2 cursor-pointer"
           >
             {listing.title}
           </button>
@@ -158,7 +158,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="pt-2.5 border-t border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-baseline justify-between gap-2 tabular-nums">
             <div>
-              <div className="text-sm font-black text-[var(--color-text-primary)]">{priceText.main}</div>
+              <div className="text-sm font-bold text-[var(--color-text-primary)]">{priceText.main}</div>
               <div className="text-xs text-[var(--color-text-muted)]">{priceText.sub}</div>
             </div>
             {listing.marketContext.gapPercentFromV64 !== null && (

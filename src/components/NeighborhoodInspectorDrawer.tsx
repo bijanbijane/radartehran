@@ -14,12 +14,12 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
   const desktopVisibilityClass = desktopVisible ? 'lg:flex' : 'lg:hidden', mobileVisibilityClass = mobileSheetOpen ? 'flex' : 'hidden';
   return ( <>
       <div onClick={() => setMobileSheetOpen(false)} aria-hidden="true" className={`lg:hidden fixed inset-0 z-[34] bg-slate-950/35 backdrop-blur-[2px] transition-opacity duration-300 ${mobileSheetOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-      <aside data-snap-state={currentSnap} data-desktop-dock={isOverlayOnSecondaryView ? 'left-companion' : 'right-primary'} className={`${mobileVisibilityClass} ${desktopVisibilityClass} fixed z-[35] lg:z-[25] apple-inspector-panel rounded-t-[20px] rounded-b-[12px] lg:rounded-[12px] flex-col overflow-hidden transition-[height,transform,box-shadow] duration-300 ${isOverlayOnSecondaryView ? 'lg:top-[72px] lg:left-4 lg:right-auto' : 'lg:top-[72px] lg:right-4 lg:left-auto'} lg:w-[356px] lg:translate-y-0 ${desktopCollapsed ? 'lg:bottom-auto lg:h-[68px]' : 'lg:bottom-4 lg:h-auto'} ${snapMode === 'peek' ? 'bottom-0 inset-x-0 h-[50dvh] max-h-[calc(100dvh-4rem)] shadow-2xl' : 'bottom-0 inset-x-0 h-[84dvh] max-h-[calc(100dvh-3.5rem)] shadow-2xl'}`}>
+      <aside data-snap-state={currentSnap} data-desktop-dock={isOverlayOnSecondaryView ? 'left-companion' : 'right-primary'} className={`${mobileVisibilityClass} ${desktopVisibilityClass} fixed z-[35] lg:z-[25] apple-inspector-panel rounded-t-[20px] rounded-b-[12px] lg:rounded-[12px] flex-col overflow-hidden transition-[height,transform,box-shadow] duration-300 ${isOverlayOnSecondaryView ? 'lg:top-[calc(var(--header-height)+8px)] lg:left-4 lg:right-auto' : 'lg:top-[calc(var(--header-height)+8px)] lg:right-4 lg:left-auto'} lg:w-[356px] lg:translate-y-0 ${desktopCollapsed ? 'lg:bottom-auto lg:h-[68px]' : 'lg:bottom-4 lg:h-auto'} ${snapMode === 'peek' ? 'bottom-0 inset-x-0 h-[50dvh] max-h-[calc(100dvh-4rem)] shadow-2xl' : 'bottom-0 inset-x-0 h-[84dvh] max-h-[calc(100dvh-3.5rem)] shadow-2xl'}`}>
         <button type="button" onPointerDown={(e) => { didDragRef.current = false; dragStartRef.current = { y: e.clientY, t: Date.now() }; try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {} }} onPointerUp={(e) => { try { if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture?.(e.pointerId); } catch {} if (!dragStartRef.current) return; const dy = e.clientY - dragStartRef.current.y; const dt = Math.max(16, Date.now() - dragStartRef.current.t); dragStartRef.current = null; const nextSnap = computeNextSnapStateFromGesture({ currentState: currentSnap, deltaY: dy, velocityY: dy / dt }); if (nextSnap !== currentSnap) { didDragRef.current = true; applySnapState(nextSnap); } }} onClick={() => { if (didDragRef.current) { didDragRef.current = false; return; } setMobileSheetOpen(!mobileSheetOpen); }} className="lg:hidden w-full pt-2.5 pb-1 flex justify-center shrink-0 cursor-pointer group touch-none radar-drawer-drag-handle min-h-[24px]" aria-expanded={mobileSheetOpen} aria-controls="neighborhood-inspector-content" aria-label={mobileSheetOpen ? 'بستن پنل کالبدشکافی' : 'باز کردن پنل کالبدشکافی'}> <span className="w-10 h-1.5 rounded-full bg-slate-300/80 dark:bg-slate-600/80 group-hover:bg-slate-400 transition-all duration-200" />
         </button> {desktopCollapsed && (
           <div className="hidden lg:flex min-h-[60px] py-2 px-4 items-center justify-between gap-3 shrink-0"> <button type="button" onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }} aria-expanded={!desktopCollapsed && mobileSheetOpen} aria-controls="neighborhood-inspector-content" className="min-w-0 flex-1 text-start cursor-pointer">
-              <div className="flex items-center gap-2"> <h2 className="text-sm font-black text-[var(--color-text-primary)] truncate">محله {selectedHood.name}</h2>
-                <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs tabular-nums shrink-0">{toPersianNum(selectedHood.overallScore)} / ۱۰</span> </div>
+              <div className="flex items-center gap-2"> <h2 className="text-sm font-bold text-[var(--color-text-primary)] truncate">محله {selectedHood.name}</h2>
+                <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold text-xs tabular-nums shrink-0">{toPersianNum(selectedHood.overallScore)} / ۱۰</span> </div>
               <div className="text-xs text-[var(--color-text-muted)] mt-1 tabular-nums truncate">
                 خرید: {areaUnit === 'sqft' ? 'هر ft²' : 'متری'} <strong className="text-[var(--color-text-primary)]">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong> · رهن ({formatAreaShort(80, areaUnit)}):{' '}
                 <strong className="text-[var(--color-brand-600)]">{toPersianNum(selectedHood.rahn80m)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}</strong>
@@ -39,7 +39,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   <span>فهرست محله‌ها</span>
                 </button>
               )}
-              <span className="text-xs font-extrabold text-[var(--color-text-muted)] tracking-tight truncate">{inspectorCopy.headerTitle}</span>
+              <span className="text-xs font-bold text-[var(--color-text-muted)] tracking-tight truncate">{inspectorCopy.headerTitle}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button type="button" onClick={() => setSnapMode((prev) => (prev === 'peek' ? 'expanded' : 'peek'))} className="lg:hidden min-h-[40px] px-2.5 py-1 rounded-[8px] bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] cursor-pointer whitespace-nowrap inline-flex items-center gap-1">
@@ -61,7 +61,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   <Heart className="w-3.5 h-3.5 stroke-[1.75] text-rose-500 fill-rose-500" />
                   <span>منتخب من ({toPersianNum(favoriteHoodIds.length)})</span>
                 </span>
-                {favoriteHoodIds.length >= 2 && ( <button type="button" onClick={onOpenShortlistMatrix} className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1 cursor-pointer">
+                {favoriteHoodIds.length >= 2 && ( <button type="button" onClick={onOpenShortlistMatrix} className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 cursor-pointer">
                     <ArrowLeftRight className="w-3 h-3 text-[var(--color-brand-600)]" /><span>مقایسه منتخب‌ها</span>
                   </button> )}
               </div>
@@ -87,7 +87,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   {selectedHood.status === 'green' ? 'متناسب با بودجه' : `${toPersianNum(selectedHood.diffPercent)}٪ بالاتر از بودجه`}
                 </span>
               </div>
-              <h2 className="text-xl font-black text-[var(--color-text-primary)] mt-0.5 truncate">محله {selectedHood.name}</h2>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-0.5 truncate">محله {selectedHood.name}</h2>
               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                 {activeCity === 'tehran' && (() => { const tz = getTrafficZoneStatus(selectedHood.id);
                   return <span className={`inline-block px-2 py-0.5 rounded-[7px] text-xs font-bold border ${tz.badgeClass}`}>{tz.label}</span>;
@@ -117,19 +117,19 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                 <Share2 className="w-4 h-4 stroke-[1.75]" />
               </button>
               <div className="bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-[8px] px-2.5 py-1.5 text-center">
-                <div className="text-xs font-black text-[var(--color-text-primary)] tabular-nums">{toPersianNum(selectedHood.overallScore)} / ۱۰</div>
+                <div className="text-xs font-bold text-[var(--color-text-primary)] tabular-nums">{toPersianNum(selectedHood.overallScore)} / ۱۰</div>
               </div>
             </div>
           </div>
           <div data-testid="inspector-price-card" className="grid grid-cols-2 gap-2.5 my-2.5">
             <div className="apple-grouped-card p-2.5">
               <div className="text-xs text-[var(--color-text-muted)]">{formatUnitBuyPriceTitle(areaUnit, radarLocale)}</div>
-              <div className="text-base font-black text-[var(--color-text-primary)] mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} <span className="text-xs font-medium text-[var(--color-text-muted)]">{isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? <span dir="ltr">{` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})`}</span> : ''}</span></div>
+              <div className="text-base font-bold text-[var(--color-text-primary)] mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} <span className="text-xs font-medium text-[var(--color-text-muted)]">{isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? <span dir="ltr">{` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})`}</span> : ''}</span></div>
               <div className="text-xs text-[var(--color-text-muted)] mt-0.5 tabular-nums">{formatAreaShort(targetSqm, areaUnit, !isEn)}: {toPersianNum(((selectedHood.buyPerSqm * targetSqm) / 1000).toFixed(2))} {isEn ? 'B' : 'میلیارد'} · {isEn ? 'Est. deal' : 'برآورد معامله'}: {toPersianNum(convertPricePerSqmToUnit(hoodAggMetrics.estimatedDealPricePerSqm, areaUnit))} {isEn ? 'M' : 'م'}</div>
             </div>
             <div className="apple-grouped-card p-2.5">
               <div className="text-xs text-[var(--color-text-muted)]">{isEn ? 'Full Deposit' : 'رهن کامل'} ({formatAreaShort(targetSqm, areaUnit, !isEn)})</div>
-              <div className="text-base font-black text-[var(--color-brand-fg)] mt-0.5 tabular-nums">{toPersianNum(Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier))} <span className="text-xs font-medium text-[var(--color-text-muted)]">{isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? <span dir="ltr">{` (${formatMillionTomanAsIntlCurrency(Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier), intlCurrency, radarLocale)})`}</span> : ''}</span></div>
+              <div className="text-base font-bold text-[var(--color-brand-fg)] mt-0.5 tabular-nums">{toPersianNum(Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier))} <span className="text-xs font-medium text-[var(--color-text-muted)]">{isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? <span dir="ltr">{` (${formatMillionTomanAsIntlCurrency(Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier), intlCurrency, radarLocale)})`}</span> : ''}</span></div>
               <div className="text-xs text-[var(--color-text-muted)] mt-0.5 tabular-nums">{selectedHood.distKm !== null ? (isEn ? `Direct distance to ${selectedWorkHub.name}: ${selectedHood.distKm} km` : `فاصله تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm)} کیلومتر`) : `${isEn ? 'Base' : 'پایه'} ${formatAreaShort(80, areaUnit, !isEn)}: ${toPersianNum(selectedHood.rahn80m)} ${isEn ? 'M' : 'م'}`}</div>
             </div>
           </div>
@@ -140,7 +140,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               { id: 'reviews' as const, label: inspectorCopy.reviewsTab },
               { id: 'vote' as const, label: inspectorCopy.voteTab }, ].map((t, idx, arr) => { const isActive = activeTab === t.id; return ( <button
                   key={t.id} id={`inspector-tab-${t.id}`} type="button" role="tab" aria-selected={isActive} aria-controls={`inspector-panel-${t.id}`} tabIndex={isActive ? 0 : -1} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)} onKeyDown={(event) => { const nextIndex = event.key === 'ArrowLeft' ? (idx + 1) % arr.length : event.key === 'ArrowRight' ? (idx + arr.length - 1) % arr.length : event.key === 'Home' ? 0 : event.key === 'End' ? arr.length - 1 : -1; if (nextIndex >= 0) { event.preventDefault(); setActiveTab(arr[nextIndex].id); event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus(); } }}
-                  className={`flex-1 basis-auto min-h-11 rounded-[8px] px-2 text-center whitespace-nowrap transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  className={`flex-1 basis-auto min-h-11 rounded-[8px] px-2 text-center whitespace-nowrap transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   {t.label}
                 </button>
@@ -198,26 +198,26 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             <QuickHoodRankingStrip evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHoodId={selectedHood.id} mode={mode} onSelectNeighborhood={onSelectNeighborhood} activeCity={activeCity} onSwitchCity={onSwitchCity} />
           </div>
           <div className="my-3.5 space-y-2">
-            <button type="button" onClick={() => setShowHedonicModal(true)} className="w-full py-2.5 px-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-black flex items-center justify-between transition cursor-pointer shadow-xs">
+            <button type="button" onClick={() => setShowHedonicModal(true)} className="w-full py-2.5 px-3 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] hover:opacity-90 text-xs font-bold flex items-center justify-between transition cursor-pointer shadow-xs">
               <span className="flex items-center gap-1.5">
                 <Calculator className="w-4 h-4 stroke-[1.75]" /><span>{inspectorCopy.hedonicCta}</span>
               </span>
-              <span className="text-xs bg-white/20 dark:bg-slate-900/10 px-2 py-0.5 rounded-[7px] font-bold">محله {selectedHood.name} · {formatAreaShort(targetSqm, areaUnit)}</span>
+              <span className="text-xs bg-white/20 dark:bg-slate-900/15 px-2 py-0.5 rounded-[7px] font-bold">محله {selectedHood.name} · {formatAreaShort(targetSqm, areaUnit)}</span>
             </button>
             {featureFlags.enableCommissionCalc && ( <div className="flex items-center gap-2">
                 <button
                   type="button" onClick={() => setExpansionModalType('commission')}
-                  className="flex-1 py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between transition cursor-pointer"
+                  className="flex-1 py-2 px-3 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-secondary)] flex items-center justify-between transition cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
                     <Calculator className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-fg)]" />
                     <span>ماشین‌حساب کمیسیون و محضر ({selectedHood.name})</span>
                   </span>
-                  <span className="text-xs text-[var(--color-brand-fg)] font-extrabold">{intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale) : 'محاسبه آنلاین'}</span>
+                  <span className="text-xs text-[var(--color-brand-fg)] font-bold">{intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale) : 'محاسبه آنلاین'}</span>
                 </button>
                 {featureFlags.enableAiContractCheck && ( <button
                     type="button" onClick={() => setExpansionModalType('contract')} title="مشاور حقوقی هوشمند قولنامه"
-                    className="py-2 px-2.5 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 transition cursor-pointer shrink-0"
+                    className="py-2 px-2.5 rounded-[10px] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-secondary)] flex items-center gap-1 transition cursor-pointer shrink-0"
                   >
                     <Scale className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-fg)]" />
                     <span>قولنامه</span>
@@ -227,17 +227,17 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             {(featureFlags.enableAiValuation || featureFlags.enableFakeAdDetector || featureFlags.enableMortgageSimulator || featureFlags.enablePropertySwap) && (
               <div className="grid grid-cols-3 gap-1.5 text-xs">
                 {featureFlags.enableAiValuation && (
-                  <button type="button" onClick={() => { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
+                  <button type="button" onClick={() => { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
                     <Sparkles className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-fg)] shrink-0" /><span className="truncate">کارشناسی قیمت ملک</span>
                   </button>
                 )}
                 {featureFlags.enableFakeAdDetector && (
-                  <button type="button" onClick={() => { setSuperModuleInitialTab('fake_detector'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
+                  <button type="button" onClick={() => { setSuperModuleInitialTab('fake_detector'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-[var(--color-bg-surface)] hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
                     <ShieldAlert className="w-3.5 h-3.5 stroke-[1.75] text-rose-500 shrink-0" /><span className="truncate">مچ‌گیر آگهی فیک</span>
                   </button>
                 )}
                 {(featureFlags.enableMortgageSimulator || featureFlags.enablePropertySwap) && (
-                  <button type="button" onClick={() => { setSuperModuleInitialTab(featureFlags.enableMortgageSimulator ? 'mortgage' : 'swap_suburb'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
+                  <button type="button" onClick={() => { setSuperModuleInitialTab(featureFlags.enableMortgageSimulator ? 'mortgage' : 'swap_suburb'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
                     <Building2 className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-fg)] shrink-0" /><span className="truncate">وام و تهاتر</span>
                   </button>
                 )}
@@ -247,12 +247,12 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
           <React.Suspense fallback={null}>
             {(activeTab === 'scorecard' || activeTab === 'vote') && ( <NeighborhoodPhotoGallery selectedHood={selectedHood} hoodLandmarks={hoodLandmarks} onFocusLandmarkOnMap={onFocusLandmarkOnMap} />
             )}
-            <details className="my-3.5 rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/70">
-              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-slate-800 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-slate-200">
+            <details className="my-3.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)]/80">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-emerald-600">
                 <span>تحلیل پیشرفته و مقایسه</span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">چرخه بازار · ماتریس محله‌ها</span>
+                <span className="text-xs font-medium text-[var(--color-text-muted)]">چرخه بازار · ماتریس محله‌ها</span>
               </summary>
-              <div className="space-y-3 border-t border-slate-200 p-3 dark:border-slate-800">
+              <div className="space-y-3 border-t border-[var(--color-border-subtle)] p-3">
               <Stage2MasterWidget
                 hoodId={selectedHood.id}
                 hoodName={selectedHood.name}

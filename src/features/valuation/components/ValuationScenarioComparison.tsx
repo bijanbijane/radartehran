@@ -64,7 +64,7 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
       className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+        <span className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <GitCompare className="w-4 h-4 text-[var(--color-brand-fg)]" />
           <span>تحلیل سناریوی فرضی جایگزین (What-If)</span>
         </span>
@@ -126,19 +126,19 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
       <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 tabular-nums text-center">
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
           <span className="text-xs text-[var(--color-text-muted)] block">سناریوی پایه</span>
-          <strong className="font-black text-[var(--color-text-primary)] dark:text-white">
+          <strong className="font-bold text-[var(--color-text-primary)] dark:text-white">
             {isRent ? `${toPersianNum(baseValue)} م رهن` : `${toPersianNum(baseResult.hedonic.hedonicTotalBillion)} م.ت`}
           </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#EAF3F0] dark:bg-emerald-950/30">
           <span className="text-xs text-[var(--color-brand-fg)] block">سناریوی فرضی</span>
-          <strong className="font-black text-[var(--color-brand-fg)]">
+          <strong className="font-bold text-[var(--color-brand-fg)]">
             {isRent ? `${toPersianNum(altValue)} م رهن` : `${toPersianNum(altResult.hedonic.hedonicTotalBillion)} م.ت`}
           </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
           <span className="text-xs text-[var(--color-text-muted)] block">تفاوت فرضی</span>
-          <strong className={`font-black ${deltaPercent >= 0 ? 'text-[var(--color-brand-fg)]' : 'text-rose-700 dark:text-rose-300'}`}>
+          <strong className={`font-bold ${deltaPercent >= 0 ? 'text-[var(--color-brand-fg)]' : 'text-rose-700 dark:text-rose-300'}`}>
             {deltaPercent > 0 ? '+' : ''}
             {isRent ? `${toPersianNum(deltaMillion)} م` : `${toPersianNum(deltaBillion)} م.ت`} ({deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaPercent)}٪)
           </strong>

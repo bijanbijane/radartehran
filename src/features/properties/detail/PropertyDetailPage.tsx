@@ -72,23 +72,23 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
     p.priceType === 'undisclosed'
       ? 'توافقی / استعلامی'
       : p.saleTotalMillion
-      ? `${toPersianNum((p.saleTotalMillion / 1000).toFixed(2))} میلیارد تومان`
+      ? `${toPersianNum((p.saleTotalMillion / 1000).toFixed(2).replace('.', '٫'))} میلیارد تومان`
       : `ودیعه ${toPersianNum(Math.round(p.depositMillion || 0).toLocaleString())} م`;
 
   return (
     <div className="w-full max-w-[1320px] mx-auto px-4 py-6 pb-24 lg:pb-8 space-y-5 animate-fadeIn" data-testid="property-detail-panel">
       {/* Breadcrumb & Back */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <button
             type="button"
             onClick={onBack}
-            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer hover:bg-[var(--color-bg-muted)]"
           >
             <ArrowRight className="w-4 h-4" />
             <span>بازگشت به فهرست</span>
           </button>
-          <span className="text-[var(--color-text-muted)] dark:text-slate-400">
+          <span className="text-[var(--color-text-muted)]">
             املاک / {property.hoodName} / {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
           </span>
         </div>
@@ -115,7 +115,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
             <div className="text-xs font-bold text-[var(--color-brand-fg)]">
               {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]} · {property.hoodName}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] leading-snug">{listing.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] leading-snug">{listing.title}</h1>
             <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{listing.description}</p>
             <DataProvenanceBar
               sourceLabel={
@@ -141,7 +141,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
               <div className="text-xs text-[var(--color-text-muted)]">
                 {p.priceType === 'negotiable' ? 'قیمت اعلامی (قابل مذاکره)' : p.priceType === 'fixed' ? 'قیمت قطعی اعلامی' : 'وضعیت قیمت'}
               </div>
-              <div className="text-2xl font-black text-[var(--color-text-primary)] tabular-nums mt-0.5">{priceSummaryText}</div>
+              <div className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums mt-0.5">{priceSummaryText}</div>
               {p.pricePerSqmMillion && (
                 <div className="text-xs text-[var(--color-brand-fg)] font-bold tabular-nums mt-1">
                   هر {unitLabel}: {toPersianNum(convertPricePerSqmToUnit(p.pricePerSqmMillion, areaUnit))} میلیون
@@ -207,34 +207,34 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
           </div>
 
           {/* Neighborhood Context Card */}
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs">
-            <h2 className="font-black text-[var(--color-text-primary)] dark:text-white">زمینه شهری محله {hood.name}</h2>
+          <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5 text-xs">
+            <h2 className="font-bold text-[var(--color-text-primary)]">زمینه شهری محله {hood.name}</h2>
             <div className="space-y-1.5 tabular-nums">
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-muted)]">امتیاز کلی سکونت</span>
-                <strong>{toPersianNum(hood.overallScore)} / ۱۰</strong>
+                <strong>{toPersianNum(String(hood.overallScore).replace('.', '٫'))} / ۱۰</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-muted)]">مترو و دسترسی</span>
-                <strong>{toPersianNum(hood.metro)} / ۱۰</strong>
+                <strong>{toPersianNum(String(hood.metro).replace('.', '٫'))} / ۱۰</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-muted)]">کیفیت هوا</span>
-                <strong>{toPersianNum(hood.air)} / ۱۰</strong>
+                <strong>{toPersianNum(String(hood.air).replace('.', '٫'))} / ۱۰</strong>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => { onSelectNeighborhood(hood); onOpenInspector(hood); }}
-                className="py-2 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
+                className="py-2 rounded-[8px] border border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)] cursor-pointer hover:bg-[var(--color-bg-muted)]"
               >
                 کارنامه محله
               </button>
               <button
                 type="button"
                 onClick={() => { onSelectNeighborhood(hood); onNavigateView('map'); }}
-                className="py-2 rounded-[8px] border border-[#B8D7CE] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold flex items-center justify-center gap-1 cursor-pointer"
+                className="py-2 rounded-[8px] border border-[var(--color-brand-600)]/25 bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold flex items-center justify-center gap-1 cursor-pointer"
               >
                 <MapPin className="w-3.5 h-3.5" />
                 <span>روی نقشه</span>
@@ -246,9 +246,9 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
 
       {/* Similar Properties (Strictly distinct from Valuation Comparables) */}
       {similarRecords.length > 0 && (
-        <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
+        <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)]">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black text-[var(--color-text-primary)]">فایل‌های مشابه برای مرور</h2>
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)]">فایل‌های مشابه برای مرور</h2>
             <span className="text-xs text-[var(--color-text-muted)]">مرتبط با جست‌وجو؛ مبنای معامله قطعی نیست</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">

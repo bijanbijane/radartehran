@@ -176,7 +176,7 @@ export function SearchHistory({
 
   return (
     <div role="region" aria-label={title} className={`w-full ${className}`}>
-      <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
+      <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
         <span className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-slate-400 stroke-[2]" />
           <span>{title}</span>

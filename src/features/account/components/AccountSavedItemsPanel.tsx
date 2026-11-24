@@ -41,7 +41,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
         <PersonalizationAndPreferencesHub />
         <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-xs" data-testid="account-saved-properties">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Home className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>فایل‌های ملکی ذخیره‌شده ({toPersianNum(p.savedProperties.length)})</span>
             </h2>
@@ -56,7 +56,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
               {p.savedProperties.map((prop) => (
                 <div key={prop.listingId} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-black text-[var(--color-text-primary)] truncate">{prop.titleSnapshot}</div>
+                    <div className="font-bold text-[var(--color-text-primary)] truncate">{prop.titleSnapshot}</div>
                     <div className="text-xs text-[var(--color-text-muted)] tabular-nums">
                       محله {prop.hoodNameSnapshot} · {prop.priceLabelSnapshot} · وضعیت: {prop.lastKnownStatus === 'published' ? 'فعال' : prop.lastKnownStatus}
                     </div>
@@ -84,7 +84,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
         <PersonalizationAndPreferencesHub />
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>جست‌وجوها و دیدبان‌های ذخیره‌شده ({toPersianNum(p.savedSearches.length)})</span>
             </h2>
@@ -122,7 +122,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
               {p.savedSearches.map((s) => (
                 <div key={s.id} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-black text-[var(--color-text-primary)] truncate">{s.title}</div>
+                    <div className="font-bold text-[var(--color-text-primary)] truncate">{s.title}</div>
                     <div className="text-xs text-[var(--color-text-muted)] truncate">{s.querySummaryFa}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -167,7 +167,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
       <PersonalizationAndPreferencesHub />
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>نماهای ذخیره‌شده نقشه ({toPersianNum(p.savedMapViews.length)})</span>
           </h2>
@@ -182,7 +182,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
             {p.savedMapViews.map((v) => (
               <div key={v.id} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                 <div>
-                  <div className="font-extrabold text-[var(--color-text-primary)]">{v.label}</div>
+                  <div className="font-bold text-[var(--color-text-primary)]">{v.label}</div>
                   <div className="text-xs text-[var(--color-text-muted)]">نشانک زنده فیلترها · {v.hoodName} · لنز {v.lens} · {v.mode === 'rent' ? 'رهن/اجاره' : 'خرید'}</div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -201,7 +201,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
 
       <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4 text-[var(--color-brand-fg)]" />
             <span>گزارش‌ها و تحلیل‌های بازار ذخیره‌شده ({toPersianNum(p.savedMarketAnalyses.length)})</span>
           </h2>

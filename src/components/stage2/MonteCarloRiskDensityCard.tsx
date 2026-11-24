@@ -134,7 +134,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
               <Sliders className="w-3.5 h-3.5 text-purple-500" />
               <span>شدت شوک ارزی/جهش قیمت (λ):</span>
             </span>
-            <span className="font-extrabold text-purple-600 dark:text-purple-400 text-xs">
+            <span className="font-bold text-purple-600 dark:text-purple-400 text-xs">
               {toPersianNum(Math.round(jumpIntensity * 100))}٪ در سال
             </span>
           </div>
@@ -155,7 +155,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">میانه بازده واقعی (تعدیل تورم):</div>
-          <div className={`text-sm font-black mt-0.5 ${report.metrics.realMedianReturnPct >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <div className={`text-sm font-bold mt-0.5 ${report.metrics.realMedianReturnPct >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
             {report.metrics.realMedianReturnPct >= 0 ? '+' : ''}{toPersianNum(report.metrics.realMedianReturnPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">اسمی: {toPersianNum(report.metrics.nominalMedianReturnPct)}٪</div>
@@ -163,7 +163,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">VaR کاغذی در برابر VaR نقدشوندگی:</div>
-          <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5" data-testid="stage2-illiquid-var-value">
+          <div className="text-sm font-bold text-rose-600 dark:text-rose-400 mt-0.5" data-testid="stage2-illiquid-var-value">
             -{toPersianNum(report.metrics.var95RealPct)}٪ / -{toPersianNum(report.metrics.illiquidityAdjustedVaR95RealPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">خروج فوری {toPersianNum(targetSqm)}م: {toPersianNum(illiquidVarCapitalMln)} م.ت{varFx}</div>
@@ -171,7 +171,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">زیان مشروط دم (CVaR 95%):</div>
-          <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
+          <div className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-0.5">
             -{toPersianNum(report.metrics.cvar95RealPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">نسبت عدم تقارن دم: {toPersianNum(report.metrics.tailAsymmetryRatio)}x</div>
@@ -179,7 +179,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">ضریب سورتینو (Sortino):</div>
-          <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+          <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
             {toPersianNum(report.metrics.sortinoRatio)}
           </div>
           <div className="text-[9px] text-slate-400">شارپ: {toPersianNum(report.metrics.sharpeRatio)}</div>

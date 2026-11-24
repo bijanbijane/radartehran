@@ -92,7 +92,7 @@ export const AccountNotificationsPanel: React.FC<AccountNotificationsPanelProps>
       {/* Unified Header */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Bell className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز اعلان‌ها و پیام‌های مرتبط ({toPersianNum(unreadTotal)} خوانده‌نشده)</span>
           </h2>
@@ -185,7 +185,7 @@ export const AccountNotificationsPanel: React.FC<AccountNotificationsPanelProps>
             <div className="space-y-4">
               {dateGroups.map((group) => (
                 <div key={group.bucket} className="space-y-2">
-                  <div className="text-[11px] font-black text-slate-400 px-1">{group.bucket}</div>
+                  <div className="text-[11px] font-bold text-slate-400 px-1">{group.bucket}</div>
                   <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                     {group.items.map((n) => {
                       const isCritical = n.severity === 'CRITICAL';
@@ -213,7 +213,7 @@ export const AccountNotificationsPanel: React.FC<AccountNotificationsPanelProps>
                                 </>
                               )}
                             </div>
-                            <div className="font-black text-slate-900 dark:text-white">{n.titleFa}</div>
+                            <div className="font-bold text-slate-900 dark:text-white">{n.titleFa}</div>
                             <p className="text-[11.5px] text-slate-600 dark:text-slate-300 leading-relaxed">{n.bodyFa}</p>
                           </div>
 

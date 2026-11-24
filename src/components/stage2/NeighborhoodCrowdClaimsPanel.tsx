@@ -408,7 +408,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
           <div className="flex flex-wrap gap-2">
             {leaderboard.slice(0, 3).map((u) => {
               const badge = TIER_BADGES[u.tier] || TIER_BADGES.NEWCOMER;
-              return <div key={u.userId} className={`px-2.5 py-1 rounded-xl border text-[11px] flex items-center gap-1.5 ${badge.color}`}><span className="font-bold">{u.displayName}</span><span>({badge.label})</span><span className="font-extrabold">• {toPersianDigits(u.points)} امتیاز</span></div>;
+              return <div key={u.userId} className={`px-2.5 py-1 rounded-xl border text-[11px] flex items-center gap-1.5 ${badge.color}`}><span className="font-bold">{u.displayName}</span><span>({badge.label})</span><span className="font-bold">• {toPersianDigits(u.points)} امتیاز</span></div>;
             })}
           </div>
         </div>

@@ -106,7 +106,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
         <div className="flex items-center gap-2">
           <Globe className="w-5 h-5 stroke-[1.75] text-indigo-600 dark:text-indigo-400 shrink-0" />
           <div>
-            <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               دیده‌بان اتصال و هماهنگی شبکه ابری CASPER HUB (Cloudflare D1 & Worker)
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -144,7 +144,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>هویت نماینده محلی</span> <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
           <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
         </div>
 
@@ -152,7 +152,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>دیتابیس D1 ابری</span> <Cpu className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : whoami?.database === 'local-ledger-fallback' ? 'دفتر معرفتی محلی (Fallback)' : 'پایدار'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : whoami?.database === 'local-ledger-fallback' ? 'دفتر معرفتی محلی (Fallback)' : 'پایدار'}</div>
           <div className="text-[10px] text-slate-500 mt-0.5 font-mono">bijanbijane-1.workers.dev</div>
         </div>
 
@@ -160,7 +160,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>آنتروپی شانون ایجنت‌ها</span> <Activity className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? `${toPersianNum(telemetry.agentContributionEntropyBits)} بیت` : '۱.۰۰ بیت'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? `${toPersianNum(telemetry.agentContributionEntropyBits)} بیت` : '۱.۰۰ بیت'}</div>
           <div className="text-[10px] text-slate-500 mt-0.5">توزیع تنوع مشارکت معرفتی</div>
         </div>
 
@@ -168,7 +168,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>سلامت دنباله (Gap Count)</span> <Zap className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
           <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
         </div>
       </div>
@@ -198,7 +198,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
 
       <form onSubmit={handlePostNote} className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
+          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <Send className="w-3.5 h-3.5 text-indigo-600" />
             <span>ارسال چک‌پوینت معرفتی و یادداشت مستقیم به CASPER HUB:</span>
           </span>
@@ -273,7 +273,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <button
               type="submit"
               disabled={sendingNote}
-              className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+              className="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>{sendingNote ? 'در حال ارسال به D1...' : 'ثبت در CASPER HUB'}</span>

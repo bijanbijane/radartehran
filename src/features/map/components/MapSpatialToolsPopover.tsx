@@ -148,7 +148,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                     <span>چندضلعی معتبر ({toPersianNum(polygonCheck.vertexCount)} نقطه · {toPersianNum(polygonCheck.areaSqKm)} کیلومتر مربع)</span>
                   </div>
                   <div data-testid="polygon-matched-hoods" className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
-                    <div className="flex items-center justify-between text-[10.5px] font-extrabold text-slate-800 dark:text-slate-100 tabular-nums">
+                    <div className="flex items-center justify-between text-[10.5px] font-bold text-slate-800 dark:text-slate-100 tabular-nums">
                       <span>محله‌های داخل محدوده: {toPersianNum(polygonMatch.matched.length)}</span>
                       {polygonMatch.avgBuyPerSqm !== null && (
                         <span className="text-emerald-700 dark:text-emerald-400">میانگین {toPersianNum(polygonMatch.avgBuyPerSqm)} م/م²</span>
@@ -194,7 +194,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <div className="text-sm font-black text-[#182522] dark:text-white tabular-nums" data-testid="spatial-measure-output">
+                  <div className="text-sm font-bold text-[#182522] dark:text-white tabular-nums" data-testid="spatial-measure-output">
                     خروجی: {measurement.formattedValueFa}
                   </div>
                   {measureKind === 'linear_distance' && (

@@ -130,8 +130,8 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                 </button>
               </div>
             </div>
-            <h1 id="home-hero-heading" className="text-2xl sm:text-[28px] lg:text-[32px] font-black text-[var(--color-text-primary)] leading-[1.35] tracking-tight">
-              {isEn ? 'See the housing market in full urban context.' : 'بازار ملک را در بستر شهر ببینید.'}
+            <h1 id="home-hero-heading" className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-[var(--color-text-primary)] leading-[1.35] tracking-tight">
+              {isEn ? 'See the housing market in full urban context' : 'بازار ملک را در بستر شهر ببینید'}
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
               {isEn

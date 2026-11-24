@@ -105,8 +105,8 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
           </div>
           <div className="text-right min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-black text-slate-800 dark:text-slate-100">{compareCopy.inlineTitle}</span>
-              <span className="px-1.5 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-extrabold tabular-nums">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{compareCopy.inlineTitle}</span>
+              <span className="px-1.5 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold tabular-nums">
                 {hoodA.name} vs {hoodB.name}
               </span>
             </div>
@@ -162,8 +162,8 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                 <Pin className={`w-2.5 h-2.5 ${isPinnedA ? 'text-[var(--color-brand-600)] fill-emerald-600' : 'text-slate-500'}`} />
                 <span>{isPinnedA ? (isEn ? 'Slot 1 (Pinned)' : 'محله اول (پین قفل شد)') : (isEn ? 'Slot 1 (Pin)' : 'محله اول (پین کردن)')}</span>
               </button>
-              <div className="font-black text-slate-900 dark:text-slate-100 truncate">{hoodA.name}</div>
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">
+              <div className="font-bold text-slate-900 dark:text-slate-100 truncate">{hoodA.name}</div>
+              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                 {isEn ? 'Score: ' : 'امتیاز: '}{toPersianNum(hoodA.overallScore)}
               </div>
             </div>
@@ -182,7 +182,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                 aria-label={isEn ? 'Select second neighborhood to compare' : 'انتخاب محله دوم برای مقایسه'}
                 value={hoodBId}
                 onChange={(e) => setHoodBId(Number(e.target.value))}
-                className="w-full text-center text-xs font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] py-0.5 px-1 focus:outline-none focus:border-emerald-500 cursor-pointer truncate"
+                className="w-full text-center text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] py-0.5 px-1 focus:outline-none focus:border-emerald-500 cursor-pointer truncate"
               >
                 {allNeighborhoods.map((h) => {
                   const optVal = mode === 'rent' ? h.rahn80m : convertPricePerSqmToUnit(h.buyPerSqm, areaUnit);
@@ -194,7 +194,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                   );
                 })}
               </select>
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">
+              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                 {isEn ? 'Score: ' : 'امتیاز: '}{toPersianNum(hoodB.overallScore)}
               </div>
             </div>
@@ -217,7 +217,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
           <div className="overflow-x-auto rounded-[10px] border border-slate-200/80 dark:border-slate-800">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="bg-slate-100/90 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-black border-b border-slate-200 dark:border-slate-700">
+                <tr className="bg-slate-100/90 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border-b border-slate-200 dark:border-slate-700">
                   <th className="py-2 px-2.5">{isEn ? 'Metric' : 'شاخص ارزیابی'}</th>
                   <th className="py-2 px-2 text-center w-28">{hoodA.name}</th>
                   <th className="py-2 px-2 text-center w-28">{hoodB.name}</th>
@@ -234,7 +234,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                     <td
                       className={`py-2 px-2 text-center tabular-nums font-bold ${
                         m.winner === 'A'
-                          ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black'
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
                           : 'text-slate-800 dark:text-slate-200'
                       }`}
                     >
@@ -244,7 +244,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                     <td
                       className={`py-2 px-2 text-center tabular-nums font-bold ${
                         m.winner === 'B'
-                          ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black'
+                          ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
                           : 'text-slate-800 dark:text-slate-200'
                       }`}
                     >

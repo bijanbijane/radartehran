@@ -119,15 +119,15 @@ export function CasperDecisionSuiteModal({
 
         {/* 3 Dilemma Tabs */}
         <div className="flex gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/70 text-xs font-bold">
-          <button type="button" onClick={() => setActiveDilemma('macro_stress')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'macro_stress' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-black' : 'text-slate-600 dark:text-slate-400'}`}>
+          <button type="button" onClick={() => setActiveDilemma('macro_stress')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'macro_stress' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
             <Activity className="w-3.5 h-3.5" />
             <span>آزمون استرس کلان</span>
           </button>
-          <button type="button" onClick={() => setActiveDilemma('rent_vs_buy')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'rent_vs_buy' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-black' : 'text-slate-600 dark:text-slate-400'}`}>
+          <button type="button" onClick={() => setActiveDilemma('rent_vs_buy')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'rent_vs_buy' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
             <Scale className="w-3.5 h-3.5" />
             <span>رهن در برابر خرید</span>
           </button>
-          <button type="button" onClick={() => setActiveDilemma('budget_funnel')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'budget_funnel' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-black' : 'text-slate-600 dark:text-slate-400'}`}>
+          <button type="button" onClick={() => setActiveDilemma('budget_funnel')} className={`flex-1 py-2 px-2 rounded-lg transition cursor-pointer text-center flex items-center justify-center gap-1.5 ${activeDilemma === 'budget_funnel' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
             <Gauge className="w-3.5 h-3.5" />
             <span>مسیریاب بهینه بودجه</span>
           </button>
@@ -154,7 +154,7 @@ export function CasperDecisionSuiteModal({
                   onClick={() => setScenario(s.id)}
                   className={`p-2.5 rounded-xl border text-right transition cursor-pointer ${scenario === s.id ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300'}`}
                 >
-                  <div className="text-xs font-black">{s.label}</div>
+                  <div className="text-xs font-bold">{s.label}</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{s.desc}</div>
                 </button>
               ))}
@@ -162,24 +162,24 @@ export function CasperDecisionSuiteModal({
 
             {/* Simulated Stress Report Card */}
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-black">
+              <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-slate-900 dark:text-white">نتیجه شبیه‌سازی در سناریوی {stressMetrics.scenarioName}</span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10.5px]">تست استرس قیمت</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1 text-xs tabular-nums">
                 <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                   <div className="text-[10px] text-slate-500">قیمت تخمینی پای قرارداد</div>
-                  <div className="text-sm font-black text-slate-900 dark:text-white mt-0.5">متری {toPersianNum(stressMetrics.dealPriceProjected)} م</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">متری {toPersianNum(stressMetrics.dealPriceProjected)} م</div>
                   <div className="text-[10px] text-indigo-600 dark:text-indigo-400">{stressMetrics.priceEffectToman}</div>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                   <div className="text-[10px] text-slate-500">سرعت خروج و زمان نقدشوندگی</div>
-                  <div className="text-sm font-black text-slate-900 dark:text-white mt-0.5">~ {toPersianNum(stressMetrics.liquidityDaysProjected)} روز</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">~ {toPersianNum(stressMetrics.liquidityDaysProjected)} روز</div>
                   <div className="text-[10px] text-amber-600 dark:text-amber-400">{stressMetrics.safetyMargin}</div>
                 </div>
               </div>
               <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] text-indigo-950 dark:text-indigo-200 space-y-1">
-                <div className="font-black flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-indigo-600" /> حکم استراتژیک برای خریدار:</div>
+                <div className="font-bold flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-indigo-600" /> حکم استراتژیک برای خریدار:</div>
                 <p className="leading-relaxed">{stressMetrics.buyerVerdict}</p>
               </div>
             </div>
@@ -189,19 +189,19 @@ export function CasperDecisionSuiteModal({
         {/* Tab 2: Rent vs Buy Epistemic Arbitrage */}
         {activeDilemma === 'rent_vs_buy' && (
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-3">
-            <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Scale className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>مدل بی‌تفاوتی سرمایه در {selectedHood.name} (واحد ۸۰ متری)</span>
             </div>
             <div className="grid grid-cols-2 gap-2.5 text-xs tabular-nums">
               <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 space-y-1">
                 <div className="text-[11px] font-bold text-slate-500">گزینه ۱: خرید مستقیم سنددار</div>
-                <div className="text-sm font-black text-slate-900 dark:text-white">{toPersianNum(((selectedHood.buyPerSqm * 80) / 1000).toFixed(2))} میلیارد تومان</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-white">{toPersianNum(((selectedHood.buyPerSqm * 80) / 1000).toFixed(2))} میلیارد تومان</div>
                 <div className="text-[10px] text-[var(--color-brand-600)]">مصونیت کامل در برابر تورم زمین</div>
               </div>
               <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 space-y-1">
                 <div className="text-[11px] font-bold text-slate-500">گزینه ۲: رهن کامل + آربیتراژ</div>
-                <div className="text-sm font-black text-slate-900 dark:text-white">{toPersianNum(selectedHood.rahn80m)} میلیون رهن</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-white">{toPersianNum(selectedHood.rahn80m)} میلیون رهن</div>
                 <div className="text-[10px] text-indigo-600">نقدینگی آزاد برای سپرده یا طلا</div>
               </div>
             </div>
@@ -216,7 +216,7 @@ export function CasperDecisionSuiteModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700 dark:text-slate-300">تنظیم بودجه نقد خریدار:</span>
-              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 tabular-nums">{toPersianNum((simulatedBudget / 1000).toFixed(1))} میلیارد تومان</span>
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{toPersianNum((simulatedBudget / 1000).toFixed(1))} میلیارد تومان</span>
             </div>
             <div className="flex gap-2">
               {[4500, 7500, 10500, 16000].map((b) => (
@@ -239,11 +239,11 @@ export function CasperDecisionSuiteModal({
                   className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between hover:border-indigo-400 transition cursor-pointer"
                 >
                   <div>
-                    <div className="text-xs font-black text-slate-900 dark:text-white">{h.name} ({h.zone})</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">{h.name} ({h.zone})</div>
                     <div className="text-[10px] text-slate-500 tabular-nums">متری {toPersianNum(h.buyPerSqm)} م · ۸۰م²: {toPersianNum(((h.buyPerSqm * 80) / 1000).toFixed(2))} میلیارد</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-black tabular-nums">{toPersianNum(h.overallScore)}/۱۰</span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold tabular-nums">{toPersianNum(h.overallScore)}/۱۰</span>
                     <ArrowRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>

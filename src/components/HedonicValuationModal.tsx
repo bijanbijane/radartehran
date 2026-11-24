@@ -50,7 +50,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-[12px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shrink-0"><Calculator className="w-5 h-5 stroke-[1.75]" /></div>
             <div>
-              <h2 id="hedonic-modal-title" className="text-base sm:text-lg font-black text-slate-900 dark:text-white">ماشین‌حساب هوشمند قیمت‌گذاری ملک (الگوریتم Hedonic)</h2>
+              <h2 id="hedonic-modal-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">ماشین‌حساب هوشمند قیمت‌گذاری ملک (الگوریتم Hedonic)</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ارزش‌گذاری کارشناسی بر اساس متراژ ({formatAreaShort(sqm, areaUnit)})، سال ساخت، وضعیت نوسازی و طبقه در مقایسه با میانگین محله</p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             {/* Neighborhood Selection */}
             <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <label htmlFor="hedonic-hood-select" className="font-extrabold text-slate-800 dark:text-slate-200">محله انتخابی جهت کارشناسی:</label>
+                <label htmlFor="hedonic-hood-select" className="font-bold text-slate-800 dark:text-slate-200">محله انتخابی جهت کارشناسی:</label>
                 <span className="text-slate-500 dark:text-slate-400 tabular-nums">
                   میانگین پایه: <strong className="text-slate-900 dark:text-white">{toPersianNum(convertPricePerSqmToUnit(valuation.hoodBasePerSqm, areaUnit))} م/{unitLabel}</strong> (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(hoodDealPerSqm, areaUnit))} م)
                   {intlCurrency !== 'IRT' && <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold mr-1" dir="ltr">({formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(valuation.hoodBasePerSqm, areaUnit), intlCurrency, radarLocale)})</span>}
@@ -96,22 +96,22 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             </div>
             {/* Smart NLP Ad Extractor */}
             <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/70 rounded-[12px] p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between gap-1 text-[11px] font-extrabold text-emerald-950 dark:text-emerald-200">
+              <div className="flex items-center justify-between gap-1 text-[11px] font-bold text-emerald-950 dark:text-emerald-200">
                 <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /> استخراج هوشمند از متن آگهی دیوار یا مشاور:</span>
                 {nlpFeedback && <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold">{nlpFeedback}</span>}
               </div>
               <div className="flex gap-1.5">
                 <input type="text" aria-label="متن آگهی جهت استخراج هوشمند" value={adRawText} onChange={(e) => setAdRawText(e.target.value)} placeholder="متن آگهی را اینجا پیست کنید (مثال: ۱۰۰ متر طبقه ۳ از ۵ با پارکینگ و آسانسور ساخت ۱۳۹۸...)" className="flex-1 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-[8px] px-2.5 py-1 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
-                <button type="button" onClick={handleNlpExtract} className="px-3 py-1 bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-black rounded-[8px] transition cursor-pointer shrink-0">استخراج</button>
+                <button type="button" onClick={handleNlpExtract} className="px-3 py-1 bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold rounded-[8px] transition cursor-pointer shrink-0">استخراج</button>
               </div>
             </div>
             {/* 1. Area (Sqm) & 2. Build Year */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
                   <div className="flex items-center gap-1">
-                    <NumericDraftInput min={30} max={500} fallback={85} aria-label="متراژ ملک" value={sqm} onValueChange={setSqm} className="w-16 px-2 py-1 text-center font-black text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                    <NumericDraftInput min={30} max={500} fallback={85} aria-label="متراژ ملک" value={sqm} onValueChange={setSqm} className="w-16 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">متر</span>
                   </div>
                 </div>
@@ -120,9 +120,9 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               </div>
               <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
                   <div className="flex items-center gap-1">
-                    <NumericDraftInput min={1370} max={1405} fallback={1398} aria-label="سال ساخت ملک" value={buildYear} onValueChange={setBuildYear} className="w-18 px-2 py-1 text-center font-black text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                    <NumericDraftInput min={1370} max={1405} fallback={1398} aria-label="سال ساخت ملک" value={buildYear} onValueChange={setBuildYear} className="w-18 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                     <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">({valuation.buildingAgeYears === 0 ? 'نوساز' : `${toPersianNum(valuation.buildingAgeYears)} ساله`})</span>
                   </div>
                 </div>
@@ -133,7 +133,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             {/* 3. Renovation Status */}
             <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">اثر مستقیم و جبران استهلاک سنی</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -142,7 +142,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
                   return (
                     <button key={opt.id} type="button" onClick={() => setRenovationStatus(opt.id)} className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-600 text-emerald-950 dark:text-emerald-200 shadow-xs' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'}`}>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-extrabold">{opt.shortLabel}</span>
+                        <span className="text-xs font-bold">{opt.shortLabel}</span>
                         <span className={`text-[10.5px] font-bold tabular-nums ${opt.baseImpactPercent > 0 ? 'text-emerald-700 dark:text-emerald-400' : opt.baseImpactPercent < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'}`}>{opt.baseImpactPercent > 0 ? `+${toPersianNum(opt.baseImpactPercent)}٪` : `${toPersianNum(opt.baseImpactPercent)}٪`}</span>
                       </div>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{opt.label}</span>
@@ -156,9 +156,9 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
                     <div className="flex items-center gap-1">
-                      <NumericDraftInput min={-1} max={25} fallback={3} aria-label="طبقه واحد" value={floor} onValueChange={(nextFloor) => { setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-14 px-2 py-0.5 text-center font-black text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                      <NumericDraftInput min={-1} max={25} fallback={3} aria-label="طبقه واحد" value={floor} onValueChange={(nextFloor) => { setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-14 px-2 py-0.5 text-center font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                       <span className="text-[11px] text-slate-600 dark:text-slate-400 font-bold">{floor === 0 ? '(همکف)' : floor < 0 ? '(زیرهمکف)' : `از ${toPersianNum(totalFloors)}`}</span>
                     </div>
                   </div>
@@ -198,7 +198,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               </div>
               {valuation.sellerPriceEvaluation && (
                 <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${valuation.sellerPriceEvaluation.verdict === 'bargain' ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200' : valuation.sellerPriceEvaluation.verdict === 'fair' ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-200' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-950 dark:text-rose-200'}`}>
-                  <div className="font-extrabold flex items-center justify-between">
+                  <div className="font-bold flex items-center justify-between">
                     <span>نتیجه راستی‌آزمایی قیمت فروشنده:</span>
                     <span>{valuation.sellerPriceEvaluation.verdictLabel}</span>
                   </div>

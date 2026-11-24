@@ -75,7 +75,7 @@ export function SmartSuggestModal({
               <Sparkles className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {isEn ? 'Smart Neighborhood Recommendations' : 'پیشنهاد هوشمند و شفاف محله‌ها بر پایه بودجه و اولویت شما'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
@@ -107,7 +107,7 @@ export function SmartSuggestModal({
                 if (f.id === 'commute_metro') updateMapAdvancedOverlayState({ showMetroLines: true, showCommuteIsochrones: true });
               }}
               className={`py-2 px-2.5 rounded-lg text-center transition cursor-pointer ${
-                suggestSortBy === f.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                suggestSortBy === f.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {isEn ? f.labelEn : f.labelFa}
@@ -135,12 +135,12 @@ export function SmartSuggestModal({
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectItem(n); } }}
                     className="flex items-center gap-3 flex-1 min-w-[220px] cursor-pointer"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center font-black text-slate-900 dark:text-white text-xs tabular-nums shrink-0 mt-0.5">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center font-bold text-slate-900 dark:text-white text-xs tabular-nums shrink-0 mt-0.5">
                       {toPersianNum(index + 1)}
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-extrabold text-slate-900 dark:text-white text-sm">{isEn ? n.name : `محله ${n.name}`}</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">{isEn ? n.name : `محله ${n.name}`}</span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">({n.zone})</span>
                         <span className={`text-[11px] font-bold ${n.status === 'green' ? 'text-emerald-700 dark:text-emerald-400' : n.status === 'yellow' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           · {isEn ? (n.status === 'green' ? 'Within Budget' : n.status === 'yellow' ? 'Borderline' : `+${toPersianNum(n.diffPercent)}% Above Budget`) : explain.budgetFitSemanticsLabelFa}
@@ -185,7 +185,7 @@ export function SmartSuggestModal({
                   </div>
 
                   <div className="text-left flex flex-col items-end gap-1">
-                    <div className="text-xs font-extrabold text-slate-900 dark:text-white tabular-nums">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">
                       {mode === 'rent'
                         ? (isEn
                             ? `Deposit ${formatAreaValue(safeTargetSqm, areaUnit, true)}: ${toPersianNum(scaledRahn)}M · Rent: ${toPersianNum(Math.round(scaledRahn * 0.03))}M/mo`

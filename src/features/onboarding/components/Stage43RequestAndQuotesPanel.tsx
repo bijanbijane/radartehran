@@ -99,7 +99,7 @@ export const Stage43RequestAndQuotesPanel: React.FC<Props> = ({
             <div key={q.quoteId} className="rounded-lg border border-slate-800 bg-slate-900 p-2.5 space-y-1 text-[11px] text-slate-300">
               <div className="flex items-center justify-between">
                 <strong className="text-white">{q.providerNameFa}</strong>
-                <span className="font-black text-emerald-300">{q.amountM} م‌تومان ({q.priceStageLabel})</span>
+                <span className="font-bold text-emerald-300">{q.amountM} م‌تومان ({q.priceStageLabel})</span>
               </div>
               <div>دامنه تعهد: {q.scopeIncludedFa}</div>
               <div className="text-amber-300">هزینه‌های خارج از دامنه: {q.outOfScopeCostsFa}</div>

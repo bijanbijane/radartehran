@@ -106,12 +106,19 @@
   --color-action-soft: var(--palette-brand-50);
 
   --font-family-primary: 'Vazirmatn', sans-serif;
-  --header-height: 68px;
+  --header-height: 56px;
   --header-compact-height: 56px;
+  --container-max: 1320px;
   --secondary-nav-height: 48px;
   --map-panel-width: 352px;
   --map-panel-min-width: 280px;
   --mobile-bottom-nav-height: 64px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-height: 64px;
+  }
 }
 
 .dark,

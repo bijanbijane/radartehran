@@ -184,7 +184,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
           <span className="text-xs font-bold text-[var(--color-brand-fg)]">
             ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع · شهر {cityNameFa})
           </span>
-          <h2 className="text-lg sm:text-xl font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-2 mt-0.5">
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2 mt-0.5">
             <Calculator className="w-5 h-5 text-[var(--color-brand-600)]" />
             <span>میز کار ارزش‌گذاری ملک در {activeHood.name}</span>
           </h2>

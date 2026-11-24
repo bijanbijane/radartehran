@@ -29,7 +29,7 @@ export const ServiceProviderCard: React.FC<ServiceProviderCardProps> = ({
             {CANONICAL_CATEGORY_LABELS_FA[provider.canonicalCategory]}
           </span>
           {listingTier === 'sponsored_ad' ? (
-            <span className="px-2 py-0.5 rounded-[6px] bg-[#FFF4E5] border border-[#F4D3A1] text-[#875000] text-xs font-black flex items-center gap-1 whitespace-nowrap">
+            <span className="px-2 py-0.5 rounded-[6px] bg-[#FFF4E5] border border-[#F4D3A1] text-[#875000] text-xs font-bold flex items-center gap-1 whitespace-nowrap">
               <Sparkles className="w-3 h-3" />
               <span>{provider.adDisclosureLabelFa || 'نمایش تبلیغاتی'}</span>
             </span>
@@ -41,7 +41,7 @@ export const ServiceProviderCard: React.FC<ServiceProviderCardProps> = ({
         </div>
 
         <div>
-          <h3 className="text-sm font-black text-[var(--color-text-primary)]">{identity.displayName}</h3>
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{identity.displayName}</h3>
           <p className="text-xs text-[var(--color-text-muted)] flex flex-wrap items-center gap-1 mt-0.5">
             <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0" />
             <span>دفتر: {coverage.officeNeighborhoodName} ({identity.zone})</span>

@@ -39,7 +39,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
   if (activeTab === 'valuation') { return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>مشخصات فنی و نوع سند در محله {activeHood.name}</span>
@@ -82,7 +82,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
             <div className="font-bold text-slate-800 dark:text-slate-200 text-[11px] flex items-center justify-between">
               <span>محاسبه‌گر قدرالسهم عرصه و پرتی نقشه:</span>
-              <span className="text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                 {landShareResult.landShareMethod === 'REGISTERED'
                   ? `قدرالسهم ثبت‌شده: ${formatAreaValue(landShareResult.exactLandShareSqm, areaUnit, true)}`
                   : `برآورد سهم زمین: ${formatAreaValue(landShareResult.exactLandShareSqm, areaUnit, true)}`}
@@ -102,13 +102,13 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div>
                 <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">گزارش تحلیلی کارشناسی هوشمند ارزش ملک (مدل هدونیک · غیررسمی)</div>
-                <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">واحد {formatAreaValue(valSqm, areaUnit, true)} در {activeHood.name}</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">واحد {formatAreaValue(valSqm, areaUnit, true)} در {activeHood.name}</div>
               </div>
               <Award className="w-6 h-6 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             </div>
             <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3 space-y-1">
               <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold">ارزش منصفانه روز بازار (Fair Market Value):</div>
-              <div className="text-xl font-black text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fairTotalMillion, intlCurrency, locale)})` : ''}</div>
+              <div className="text-xl font-bold text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fairTotalMillion, intlCurrency, locale)})` : ''}</div>
               <div className="text-[11px] text-emerald-700 dark:text-emerald-400 tabular-nums">
                 معادل {areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(valuationResult.fairPerSqm, areaUnit))} میلیون تومان ({valuationResult.multiplierPercent >= 0 ? '+' : ''}{toPersianNum(valuationResult.multiplierPercent)}٪ تراز واحد)
               </div>
@@ -116,28 +116,28 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
             <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
               <div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">معادل طلا ۱۸ عیار:</div>
-                <div className="text-xs font-black text-amber-700 dark:text-amber-400 mt-0.5 tabular-nums">{toPersianNum(valuationResult.goldGramPriceTotal.toLocaleString())} گرم طلا</div>
+                <div className="text-xs font-bold text-amber-700 dark:text-amber-400 mt-0.5 tabular-nums">{toPersianNum(valuationResult.goldGramPriceTotal.toLocaleString())} گرم طلا</div>
                 <div className="text-[9px] text-slate-400">متری {toPersianNum(convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, 'sqm'))} گرم</div>
               </div>
               <div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">ارزش هر متر مربع (تومان):</div>
-                <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5 tabular-nums">{toPersianNum(Math.round(valuationResult.fairPerSqm).toLocaleString('fa-IR'))} میلیون تومان</div>
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5 tabular-nums">{toPersianNum(Math.round(valuationResult.fairPerSqm).toLocaleString('fa-IR'))} میلیون تومان</div>
                 <div className="text-[9px] text-slate-400">کل متراژ: {formatAreaValue(valSqm, 'sqm', true)}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 rounded-xl p-2">
                 <div className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">فروش فوری (شکار -۱۲٪):</div>
-                <div className="text-xs font-black text-amber-950 dark:text-amber-200 mt-0.5 tabular-nums">{toPersianNum((valuationResult.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fastSaleTotalMillion, intlCurrency, locale)})` : ''}</div>
+                <div className="text-xs font-bold text-amber-950 dark:text-amber-200 mt-0.5 tabular-nums">{toPersianNum((valuationResult.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fastSaleTotalMillion, intlCurrency, locale)})` : ''}</div>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
                 <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">رهن کامل معادل (اجاره: {toPersianNum(Math.round(valuationResult.fullRahnMillion * 0.03))} م/ماه):</div>
-                <div className="text-xs font-black text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums">{toPersianNum(valuationResult.fullRahnMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fullRahnMillion, intlCurrency, locale)})` : ''}</div>
+                <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums">{toPersianNum(valuationResult.fullRahnMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fullRahnMillion, intlCurrency, locale)})` : ''}</div>
               </div>
             </div>
           </div>
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button type="button" onClick={handleSaveToPortfolio} className="w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition">
+            <button type="button" onClick={handleSaveToPortfolio} className="w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer transition">
               <Home className="w-4 h-4 stroke-[1.75]" />
               <span>افزودن این خانه به «پرتفوی دارایی ملکی من»</span>
             </button>
@@ -146,7 +146,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
                 {savedPortfolioList.map((item, idx) => (
                   <div key={`${item.hoodId}-${item.sqm}-${idx}`} className="flex items-center justify-between">
                     <span>{toPersianNum(idx + 1)}. {item.hoodName} ({formatAreaValue(item.sqm, areaUnit, true)})</span>
-                    <span className="font-black">{toPersianNum((item.totalValueMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(item.totalValueMillion, intlCurrency, locale)})` : ''} ({toPersianNum(item.goldCoinsEquivalent)} سکه)</span>
+                    <span className="font-bold">{toPersianNum((item.totalValueMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(item.totalValueMillion, intlCurrency, locale)})` : ''} ({toPersianNum(item.goldCoinsEquivalent)} سکه)</span>
                   </div>
                 ))} </div>
             )} {portfolioNotice && <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold text-center">{portfolioNotice}</div>} <button type="button" onClick={() => {
@@ -160,7 +160,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
     ); } if (activeTab === 'fake_detector') { return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 stroke-[1.75] text-rose-600 dark:text-rose-400" />
             <span>مچ‌گیر هوشمند آگهی فیک و تله قیمتی ({activeHood.name})</span>
           </div>
@@ -175,7 +175,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
             <textarea rows={2} aria-label="متن توضیحات آگهی دیوار یا شیپور" value={adText} onChange={(e) => setAdText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-100" />
           </div>
           <div className={`p-3 rounded-2xl border space-y-2 ${fakeAdAnalysis.level === 'HIGH' ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/70 text-rose-950 dark:text-rose-200' : fakeAdAnalysis.level === 'MEDIUM' ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/70 text-amber-950 dark:text-amber-200' : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/70 text-emerald-950 dark:text-emerald-200'}`}>
-            <div className="flex items-center justify-between font-extrabold text-sm">
+            <div className="flex items-center justify-between font-bold text-sm">
               <span>امتیاز هشدار نشانه‌های مشکوک: {toPersianNum(fakeAdAnalysis.warningScore)} از ۱۰۰</span>
               <span className="text-[11px]">{fakeAdAnalysis.discountPct > 0 ? `${toPersianNum(fakeAdAnalysis.discountPct)}٪ زیر میانگین` : 'طبیعی'}</span>
             </div>
@@ -191,25 +191,25 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5">
             <div className="font-bold text-slate-900 dark:text-slate-100 text-[11px] flex items-center justify-between">
               <span>تقویم فصلی خرید مسکن ایران:</span>
-              <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">آذر و دی = اوج چانه‌زنی خریدار</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">آذر و دی = اوج چانه‌زنی خریدار</span>
             </div>
             <div className="grid grid-cols-4 gap-1.5 text-center text-[10px]">
               {IRAN_SEASONAL_MARKET_CALENDAR.slice(6, 10).map((m) => (
                 <div key={m.month} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5">
-                  <div className="font-black text-slate-800 dark:text-slate-200">{m.month}</div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">{m.month}</div>
                   <div className="text-emerald-700 dark:text-emerald-400 font-bold">{toPersianNum(m.buyerAdvantageScore)}/۱۰ امتیاز خریدار</div>
                 </div>
               ))} </div>
           </div>
         </div>
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
             <Scale className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مربی تخفیف‌گیری سر جلسه قولنامه</span>
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 space-y-1.5">
             <div className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold">فرمول لنگراندازی و قیمت تارگت:</div>
-            <div className="text-sm font-black text-emerald-950 dark:text-emerald-200 tabular-nums">
+            <div className="text-sm font-bold text-emerald-950 dark:text-emerald-200 tabular-nums">
               پیشنهاد اولیه: {toPersianNum((negotiationResult.anchorOfferMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(negotiationResult.anchorOfferMillion, intlCurrency, locale)})` : ''} (تارگت توافق: {toPersianNum((negotiationResult.targetClosingPriceMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(negotiationResult.targetClosingPriceMillion, intlCurrency, locale)}` : ''})
             </div>
             <div className="text-[10px] text-emerald-700 dark:text-emerald-400">صرفه‌جویی مورد انتظار: حدود {toPersianNum(negotiationResult.discountTomansMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(negotiationResult.discountTomansMillion, intlCurrency, locale)})` : ''}</div>
@@ -217,9 +217,9 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           <div className="space-y-1.5">
             <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">تقسیم مطمئن مراحل پرداخت چک صیادی:</div>
             <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">پای قولنامه</div><div className="font-black text-slate-900 dark:text-slate-100 mt-0.5">۶۰٪</div><div className="text-[9px] text-slate-400">چک روز صیادی</div></div>
-              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">تحویل کلید</div><div className="font-black text-slate-900 dark:text-slate-100 mt-0.5">۲۵٪</div><div className="text-[9px] text-slate-400">پس از رویت تخلیه</div></div>
-              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">انتقال سند محضر</div><div className="font-black text-emerald-700 dark:text-emerald-400 mt-0.5">۱۵٪</div><div className="text-[9px] text-slate-400">تسویه نهایی</div></div>
+              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">پای قولنامه</div><div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">۶۰٪</div><div className="text-[9px] text-slate-400">چک روز صیادی</div></div>
+              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">تحویل کلید</div><div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">۲۵٪</div><div className="text-[9px] text-slate-400">پس از رویت تخلیه</div></div>
+              <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2"><div className="text-slate-500 dark:text-slate-400 font-bold">انتقال سند محضر</div><div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">۱۵٪</div><div className="text-[9px] text-slate-400">تسویه نهایی</div></div>
             </div>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5">
@@ -239,7 +239,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
     ); } return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-        <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
           <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>فرمول خرید ترکیبی مسکن با تجمیع سرمایه‌ها و وام</span>
         </div>
@@ -251,10 +251,10 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
         </div>
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3.5 space-y-2.5">
           <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold">قدرت خرید بر اساس نقدینگی، دارایی‌های قابل تبدیل و وام</div>
-          <div className="text-xl font-black text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(combinedPowerResult.totalPurchasingPowerWithRahnMillion, intlCurrency, locale)})` : ''}</div>
+          <div className="text-xl font-bold text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(combinedPowerResult.totalPurchasingPowerWithRahnMillion, intlCurrency, locale)})` : ''}</div>
           <div className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">ودیعهٔ مستأجر یک تعهد بازپرداخت است و به دارایی خالص شما اضافه نمی‌شود. در محله فعلی (<strong>{activeHood.name}</strong> · متری {toPersianNum(activeHood.buyPerSqm)} م) این آورده خالص برای حدود <strong>{formatAreaValue(Math.floor(combinedPowerResult.totalEquityBeforeRahnMillion / Math.max(15, activeHood.buyPerSqm)), areaUnit, true)}</strong> کافی است (و با فرض قیمت متری ۷۵ میلیون تومان، از نظر قیمت پایه برای حدود <strong>{formatAreaValue(combinedPowerResult.maxAffordableSqmAt75m ?? 0, areaUnit, true)}</strong>). هزینه‌های معامله، تعمیر و تعهدات احتمالی باید جداگانه بررسی شوند.</div>
           {onApplyCombinedBudget && (
-            <button type="button" onClick={() => onApplyCombinedBudget(combinedPowerResult.totalPurchasingPowerWithRahnMillion, valSqm)} className="w-full py-2 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition shadow-2xs">اعمال این بودجه ترکیبی روی رادار نقشه ({toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد)</button>
+            <button type="button" onClick={() => onApplyCombinedBudget(combinedPowerResult.totalPurchasingPowerWithRahnMillion, valSqm)} className="w-full py-2 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer transition shadow-2xs">اعمال این بودجه ترکیبی روی رادار نقشه ({toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد)</button>
           )} </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5">
           <div className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">محاسبه‌گر آب رفتن پول پیش مستأجر در تورم ۴۰٪:</div>
@@ -262,7 +262,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
         </div>
       </div>
       <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-        <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
           <TrendingUp className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>آربیتراژ رهن کامل در برابر سرمایه‌گذاری در صندوق طلا</span>
         </div>
@@ -273,7 +273,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           </div>
           <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200">نتیجه تحلیل مالی:</div>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{rahnArbitrageResult.explanation}</p>
-          <div className="text-xs font-black text-emerald-700 dark:text-emerald-400">مزیت سالانه: {toPersianNum(rahnArbitrageResult.annualAdvantageMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahnArbitrageResult.annualAdvantageMillion, intlCurrency, locale)})` : ''}</div>
+          <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">مزیت سالانه: {toPersianNum(rahnArbitrageResult.annualAdvantageMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahnArbitrageResult.annualAdvantageMillion, intlCurrency, locale)})` : ''}</div>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5">
           <div className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">شرایط مسکن حمایتی و فرم (ج):</div>

@@ -97,7 +97,7 @@ export function HedonicInlineWidget({
   return (
     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 space-y-3 text-xs">
       <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2">
-        <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+        <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>{inspectorCopy.hedonicCta}</span>
         </span>
@@ -127,7 +127,7 @@ export function HedonicInlineWidget({
             fallback={85}
             value={sqm}
             onValueChange={setSqm}
-            className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
+            className="radar-tabular-num w-full font-bold text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
@@ -139,7 +139,7 @@ export function HedonicInlineWidget({
             fallback={1398}
             value={buildYear}
             onValueChange={setBuildYear}
-            className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
+            className="radar-tabular-num w-full font-bold text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
@@ -151,7 +151,7 @@ export function HedonicInlineWidget({
             fallback={3}
             value={floor}
             onValueChange={setFloor}
-            className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
+            className="radar-tabular-num w-full font-bold text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>
       </div>
@@ -181,7 +181,7 @@ export function HedonicInlineWidget({
       <div className="bg-white dark:bg-slate-950/60 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-slate-500 dark:text-slate-400 text-[11px]">قیمت کارشناسی این ملک:</span>
-          <strong className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
+          <strong className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
             {toPersianNum(result.hedonicTotalBillion)} میلیارد تومان
             {intlCurrency !== 'IRT' && (
               <span className="text-[11px] text-amber-600 dark:text-amber-400 mr-1.5">
@@ -197,7 +197,7 @@ export function HedonicInlineWidget({
             <strong className="text-slate-900 dark:text-white">{toPersianNum(unitPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, radarLocale)})` : ''}</strong> (میانگین محله: {toPersianNum(unitHoodBase)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitHoodBase, intlCurrency, radarLocale)}` : ''})
           </span>
           <span
-            className={`font-extrabold tabular-nums ${
+            className={`font-bold tabular-nums ${
               result.diffFromHoodAvgPercent > 0
                 ? 'text-amber-700 dark:text-amber-400'
                 : result.diffFromHoodAvgPercent < 0
@@ -213,7 +213,7 @@ export function HedonicInlineWidget({
         <div className="flex items-center justify-between text-[10.5px] pt-1.5 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 tabular-nums">
           <span>
             فروش فوری نقدی (-۱۲٪):{' '}
-            <strong className="text-amber-700 dark:text-amber-400 font-extrabold">{toPersianNum((result.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد ({areaUnit === 'sqft' ? 'ft² ' : 'متری '}{toPersianNum(fastSaleUnitPrice)} م)</strong>
+            <strong className="text-amber-700 dark:text-amber-400 font-bold">{toPersianNum((result.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد ({areaUnit === 'sqft' ? 'ft² ' : 'متری '}{toPersianNum(fastSaleUnitPrice)} م)</strong>
             {intlCurrency !== 'IRT' && (
               <span className="text-[10px] text-amber-600 dark:text-amber-400 mr-1">
                 ({formatMillionTomanAsIntlCurrency(result.fastSaleTotalMillion, intlCurrency, radarLocale)})

@@ -44,7 +44,7 @@ export const PropertySpecsAndLocationSection: React.FC<{
     <div className="space-y-4">
       {/* 1. Unit Specifications vs Building Specifications */}
       <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4">
-        <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">مشخصات فنی واحد و ساختمان (تفکیک «نامشخص» از «ندارد»)</h2>
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">مشخصات فنی واحد و ساختمان (تفکیک «نامشخص» از «ندارد»)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="space-y-2">
             <h3 className="text-[11px] font-bold text-[var(--color-text-muted)] dark:text-slate-400">ویژگی‌های اختصاصی واحد</h3>
@@ -74,7 +74,7 @@ export const PropertySpecsAndLocationSection: React.FC<{
       {/* 2. Multi-Dimensional Verification & Location Precision */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs">
-          <div className="flex items-center gap-1.5 font-black text-[var(--color-text-primary)] dark:text-white">
+          <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)] dark:text-white">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>وضعیت راستی‌آزمایی چندبعدی</span>
           </div>
@@ -94,7 +94,7 @@ export const PropertySpecsAndLocationSection: React.FC<{
         </section>
 
         <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs">
-          <div className="flex items-center gap-1.5 font-black text-[var(--color-text-primary)] dark:text-white">
+          <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)] dark:text-white">
             <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>موقعیت و سطح دقت جغرافیایی</span>
           </div>
@@ -124,7 +124,7 @@ export const PropertySpecsAndLocationSection: React.FC<{
       {/* 3. Honest Price & Status History */}
       <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 font-black text-[var(--color-text-primary)] dark:text-white">
+          <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)] dark:text-white">
             <Clock className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>تاریخچه ثبت و تغییرات واقعی فایل</span>
           </div>
@@ -222,7 +222,7 @@ export const PublisherAndReportBox: React.FC<{
           <div role="dialog" aria-modal="true" aria-label="گزارش مغایرت یا مشکل فایل" className="fixed inset-0 z-[9500] bg-black/50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
             <div ref={reportDialogRef} tabIndex={-1} dir="rtl" onClick={(e) => e.stopPropagation()} className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
                   <ShieldAlert className="w-4 h-4 text-[#B3261E]" />
                   <span>گزارش مغایرت یا مشکل فایل</span>
                 </h3>

@@ -103,7 +103,7 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
         <div className="text-xs text-[var(--color-text-muted)] font-medium truncate" title={freshnessLine}>
           {freshnessLine}
         </div>
-        <strong className="text-sm font-black text-[var(--color-text-primary)] mt-0.5 block">
+        <strong className="text-sm font-bold text-[var(--color-text-primary)] mt-0.5 block">
           {hasAsking ? fmtUnitPrice(buyPerSqm) : copy.priceUnavailableLabel}
         </strong>
         {resolvedDealPerSqm !== null && (
@@ -125,7 +125,7 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
             : copy.invalidAreaLabel}
         </span>
         <strong
-          className={`text-sm font-black mt-0.5 block ${
+          className={`text-sm font-bold mt-0.5 block ${
             scaledDeposit !== null
               ? 'text-[var(--color-brand-600)] dark:text-emerald-400'
               : 'text-amber-700 dark:text-amber-400 text-xs'

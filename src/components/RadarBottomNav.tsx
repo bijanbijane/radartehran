@@ -104,7 +104,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
               p.setShowToolsPopover(false);
               setMoreOpen((open) => !open);
             }}
-            className={`relative min-h-[52px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold transition active:scale-95 cursor-pointer touch-manipulation ${moreOpen || isMoreView ? tabActive : tabIdle}`}
+            className={`relative w-full h-full min-h-[52px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold transition active:scale-95 cursor-pointer touch-manipulation ${moreOpen || isMoreView ? tabActive : tabIdle}`}
           >
             {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--color-brand-600)]" aria-hidden="true" />}
             <MoreHorizontal className="h-[18px] w-[18px]" aria-hidden="true" />

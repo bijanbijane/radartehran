@@ -33,7 +33,7 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
         <div>
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">
             تحلیل تفکیکی ودیعه، اجاره ماهانه و بازده اجاره در {geoScopeFa}
           </h3>
           <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
@@ -56,7 +56,7 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 tabular-nums">
         <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
           <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">شاخص خام رهن کامل (۸۰ متر)</span>
-          <strong className="text-lg font-black text-[var(--color-text-primary)] dark:text-white mt-1 block">
+          <strong className="text-lg font-bold text-[var(--color-text-primary)] dark:text-white mt-1 block">
             {toPersianNum(rentBreakdown.deposit80mMillion)} م.ت
           </strong>
           {intlCurrency !== 'IRT' && (
@@ -68,7 +68,7 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
 
         <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
           <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">بخش اجاره ماهانه (قرارداد ترکیبی ۶۰٪ رهن)</span>
-          <strong className="text-lg font-black text-[var(--color-text-primary)] dark:text-white mt-1 block">
+          <strong className="text-lg font-bold text-[var(--color-text-primary)] dark:text-white mt-1 block">
             {toPersianNum(rentBreakdown.monthlyRentAtMixedMillion)} م.ت / ماه
           </strong>
           <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">باقی‌مانده به‌صورت ودیعه</span>
@@ -79,7 +79,7 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
             <span className="text-xs text-[var(--color-brand-700)] dark:text-emerald-300 font-bold block">
               معادل تمام‌اجاره ماهانه (نسخه {RENT_CONVERSION_EFFECTIVE_VERSION})
             </span>
-            <strong className="text-lg font-black text-[#103B38] dark:text-emerald-200 mt-1 block">
+            <strong className="text-lg font-bold text-[#103B38] dark:text-emerald-200 mt-1 block">
               {toPersianNum(rentBreakdown.convertedFullMonthlyMillion)} م.ت / ماه
             </strong>
             <span className="text-xs text-[var(--color-brand-700)] dark:text-emerald-400">
@@ -90,7 +90,7 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
 
         <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
           <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">بازده ناخالص اجاره سالانه به قیمت فروش</span>
-          <strong className="text-lg font-black text-[#155E9A] dark:text-sky-300 mt-1 block">
+          <strong className="text-lg font-bold text-[#155E9A] dark:text-sky-300 mt-1 block">
             {toPersianNum(rentBreakdown.grossYieldPct)}٪
           </strong>
           <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">نسبت سالانه اجاره معادل به ارزش واحد</span>

@@ -108,7 +108,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
               {sidebarOpenMobile ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           )}
-          <span className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">محیط عملیاتی و مدیریت رادار تهران</span>
+          <span className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">محیط عملیاتی و مدیریت رادار تهران</span>
           <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
             {p.isVerifiedAdmin && ui.adminUnlocked ? 'نشست ادمین تاییدشده' : 'ورود مدیران'}
           </span>
@@ -130,7 +130,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             aria-label="منوی بخش‌های مدیریت"
             className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[#131E1B] border-l border-[var(--color-border-subtle)] dark:border-slate-800 p-3 space-y-1.5`}
           >
-            <div className="px-2.5 py-1.5 text-xs font-black text-slate-500">گروه‌های عملیاتی پنل</div>
+            <div className="px-2.5 py-1.5 text-xs font-bold text-slate-500">گروه‌های عملیاتی پنل</div>
             {ADMIN_SIDEBAR_SECTIONS.map((sec) => {
               const Icon = ADMIN_ICONS[sec.id];
               const active = currentSection === sec.id;
@@ -159,7 +159,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         <section className={`flex-1 min-w-0 p-4 sm:p-6 space-y-4 ${!p.isVerifiedAdmin ? 'flex flex-col items-center justify-center py-10' : ''}`}>
           {!p.isVerifiedAdmin ? (
             <div className="w-full max-w-xl mx-auto space-y-3 text-center">
-              <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">ورود امن مدیران سامانه</h1>
+              <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">ورود امن مدیران سامانه</h1>
               <p className="text-xs text-[var(--color-text-muted)]">
                 دسترسی به ابزارهای پایش، مدیریت محتوا و تنظیمات سامانه تنها پس از تأیید هویت مدیر مجاز فعال می‌شود.
               </p>
@@ -168,7 +168,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             <>
               <div className="p-3.5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)]">{activeMeta.labelFa}</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)]">{activeMeta.labelFa}</h1>
                   <p className="text-xs text-[var(--color-text-muted)]">{activeMeta.descriptionFa}</p>
                 </div>
                 <span className="text-xs font-mono text-[var(--color-text-muted)]">{activeMeta.requiredPermission}</span>
@@ -191,7 +191,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
               {(currentSection === 'overview' || currentSection === 'operations') && (
                 <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[#131E1B] border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-extrabold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
+                    <span className="font-bold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
                     <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-xs">
                       پایلوت نقشه · وضعیت پایدار
                     </span>

@@ -121,7 +121,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
     <section data-testid="analytics-and-research-workspace" className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <strong className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سکوی داده، تحلیل آماری و هوشمندی پژوهشی ({selectedNeighborhoodNameFa})</span>
           </strong>
@@ -160,7 +160,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
 
       {!dist || snap.value === null ? (
         <div data-testid="analytics-no-data-state" className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-slate-700 dark:text-slate-300">
-          <strong className="font-black text-slate-900 dark:text-white block">
+          <strong className="font-bold text-slate-900 dark:text-white block">
             داده تحلیلی معتبر برای «{selectedNeighborhoodNameFa}» هنوز در دسترس نیست (UNAVAILABLE)
           </strong>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -176,7 +176,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
                 {snap.dataOrigin === 'SIMULATED' ? 'شبیه‌سازی' : snap.sufficiencyStatus}
               </span>
             </div>
-            <strong className="text-base font-black text-slate-900 dark:text-white block tabular-nums">
+            <strong className="text-base font-bold text-slate-900 dark:text-white block tabular-nums">
               میانه (P50): {toPersianNum(uMetric(dist.median))} میلیون تومان / {areaLbl}{fxNote(dist.median)}
             </strong>
             <div className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
@@ -189,7 +189,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
 
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="text-[11px] text-slate-500">محصول داده ۲: شاخص عرضه و مقایسه متقارن دوره‌ای</div>
-            <strong className="text-base font-black text-slate-900 dark:text-white block tabular-nums">
+            <strong className="text-base font-bold text-slate-900 dark:text-white block tabular-nums">
               {snap.dataOrigin === 'SIMULATED' ? `۰ نمونه زنده (${toPersianNum(dist.count)} نقطه شبیه‌سازی)` : `${toPersianNum(dist.uniqueEntityCount)} نمونه زنده محلی`}
             </strong>
             <div className="text-[11px] text-amber-700 dark:text-amber-300 font-bold tabular-nums">
@@ -200,7 +200,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
 
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="text-[11px] text-slate-500">محصول داده ۳: نمایه مکانی نسخه‌بندی‌شده (SCD Type 2)</div>
-            <strong className="text-sm font-black text-slate-900 dark:text-white block">
+            <strong className="text-sm font-bold text-slate-900 dark:text-white block">
               {selectedNeighborhoodNameFa} ({snap.geography.boundaryVersion})
             </strong>
             <div className="text-[11px] text-slate-600 dark:text-slate-300">
@@ -226,7 +226,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
 
       {activeShell === 'PROFESSIONAL_WORKSPACE' && (
         <div data-testid="professional-metric-registry-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
-          <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>دفتر رسمی شاخص‌ها (Official Metric Registry) و لایه معنایی واحد:</span>
           </strong>
@@ -247,7 +247,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
       {activeShell === 'RESEARCH_WORKSPACE' && (
         <div data-testid="reproducible-research-workspace-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Microscope className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>محیط پژوهش بازتولیدپذیر (متصل به مرجع Backend):</span>
             </strong>
@@ -262,7 +262,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
             savedAnalyses.map((ana) => (
               <div key={ana.analysisId} className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong className="font-black text-slate-900 dark:text-white">{ana.titleFa}</strong>
+                  <strong className="font-bold text-slate-900 dark:text-white">{ana.titleFa}</strong>
                   <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-mono text-[10px]">{ana.reproducibleHash}</span>
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300">پرسش پژوهش: {ana.researchQuestionFa}</p>

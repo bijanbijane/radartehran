@@ -46,7 +46,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
         <div className="flex items-center gap-2">
           <Bug className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div>
-            <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               ابزار گزارش‌گیری خطاهای کوئری Firestore و بازرس داکیومنت‌های نامعتبر (Database Debugger)
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -78,7 +78,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
             <span>داکیومنت‌های بررسی‌شده</span>
             <Database className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
           </div>
-          <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-1">
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
             {toPersianNum(auditReport.totalDocumentsScanned)} سند
           </div>
         </div>
@@ -87,7 +87,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
             <span>فیلدهای عددی منفی</span>
             <AlertTriangle className={`w-3.5 h-3.5 ${auditReport.negativeFieldsCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`} />
           </div>
-          <div className="text-sm font-black mt-1">
+          <div className="text-sm font-bold mt-1">
             {toPersianNum(auditReport.negativeFieldsCount)} مورد
           </div>
         </div>
@@ -96,7 +96,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
             <span>داده‌های ناقص / خارج از بازه</span>
             <FileWarning className={`w-3.5 h-3.5 ${auditReport.incompleteFieldsCount + auditReport.outOfRangeCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`} />
           </div>
-          <div className="text-sm font-black mt-1">
+          <div className="text-sm font-bold mt-1">
             {toPersianNum(auditReport.incompleteFieldsCount + auditReport.outOfRangeCount)} مورد
           </div>
         </div>
@@ -105,7 +105,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
             <span>خطاهای کوئری Firestore</span>
             <ShieldAlert className={`w-3.5 h-3.5 ${errorLogs.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`} />
           </div>
-          <div className="text-sm font-black mt-1">
+          <div className="text-sm font-bold mt-1">
             {toPersianNum(errorLogs.length)} خطا
           </div>
         </div>
@@ -122,7 +122,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
       {/* بخش ۱: لیست داکیومنت‌های دارای داده‌های ناقص یا نامعتبر */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
-          <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+          <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <FileWarning className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>لیست داکیومنت‌های دارای داده‌های ناقص یا نامعتبر ({toPersianNum(filteredIssues.length)} مورد)</span>
           </div>
@@ -162,7 +162,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
               >
                 <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                   <span
-                    className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
+                    className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
                       issue.severity === 'CRITICAL_NEGATIVE'
                         ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                         : issue.severity === 'OUT_OF_RANGE'
@@ -195,7 +195,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
       {/* بخش ۲: لاگ خطاهای کوئری‌های Firestore */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+          <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span>لاگ خطاهای کوئری و عملیات Firestore ({toPersianNum(errorLogs.length)} مورد)</span>
           </div>
@@ -211,7 +211,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
               <div key={log.id} className="px-3 py-2 space-y-1 hover:bg-rose-50/40 dark:hover:bg-rose-950/30 text-[11px]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-mono font-extrabold text-[10px] uppercase">
+                    <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-mono font-bold text-[10px] uppercase">
                       {log.operationType}
                     </span>
                     <code className="font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded" dir="ltr">
@@ -232,7 +232,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
       {/* بخش ۳: بررسی سلامت مختصات جغرافیایی (lat/lng) و شناسه منطقه‌ای (cityId) محله‌ها */}
       <div data-testid="admin-geo-city-health-section" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
-          <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+          <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <MapPinOff className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>
               بررسی سلامت مختصات جغرافیایی (lat/lng) و شناسه منطقه‌ای (cityId) محله‌ها ({toPersianNum(geoCityIssues.length)} مورد نامعتبر)
@@ -255,13 +255,13 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
                   <div className="flex flex-wrap items-center gap-1.5">
                     <code className="font-mono font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                       {item.docId} </code>
-                    <span className="font-extrabold text-slate-900 dark:text-slate-100">{item.name}</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{item.name}</span>
                     {!item.hasValidCoordinates && (
-                      <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-extrabold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold text-[10px]">
                         مختصات نامعتبر
                       </span>
                     )} {!item.hasValidCityId && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-extrabold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-bold text-[10px]">
                         فاقد cityId معتبر
                       </span>
                     )} </div>

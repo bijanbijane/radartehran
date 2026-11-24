@@ -30,7 +30,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       {/* Global Channels & Mandatory Security Guard */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-black text-sm text-slate-900 dark:text-white">کانال‌های دریافت اعلان</h3>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">کانال‌های دریافت اعلان</h3>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
             <ShieldAlert className="w-3.5 h-3.5" />
             هشدارهای امنیتی غیرقابل غیرفعال‌سازی هستند
@@ -66,7 +66,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       {/* Quiet Hours (Asia/Tehran) + Digest Cadence */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <BellOff className="w-4 h-4 text-amber-600" />
             <span>ساعات سکوت (منطقه زمانی تهران)</span>
           </h3>
@@ -154,7 +154,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
 
       {/* Granular Category x Channel Matrix */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 overflow-x-auto">
-        <h3 className="font-black text-sm text-slate-900 dark:text-white">ماتریس تنظیمات هر دسته</h3>
+        <h3 className="font-bold text-sm text-slate-900 dark:text-white">ماتریس تنظیمات هر دسته</h3>
         <table className="w-full text-start border-collapse min-w-[460px]">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
@@ -199,7 +199,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
 
       {/* Registered Push Devices */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-        <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+        <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
           <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>دستگاه‌های ثبت‌شده اعلان (Push)</span>
         </h3>

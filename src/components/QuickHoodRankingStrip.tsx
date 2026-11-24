@@ -107,7 +107,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             type="button"
             aria-pressed={filterRankingByViewport}
             onClick={() => updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport })}
-            className={`px-2 py-0.5 rounded-[6px] text-[9.5px] font-extrabold border transition cursor-pointer shrink-0 ${
+            className={`px-2 py-0.5 rounded-[6px] text-[9.5px] font-bold border transition cursor-pointer shrink-0 ${
               filterRankingByViewport
                 ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
@@ -185,7 +185,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
               onClick={() => setCriterion(tab.id)}
               className={`px-2.5 py-1 rounded-[8px] text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0 transition cursor-pointer ${
                 active
-                  ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold'
+                  ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -224,7 +224,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
                 <span>
                   {rankPrefix} {hood.name}
                 </span>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                   · {formatSubMetric(hood)}
                 </span>
               </button>

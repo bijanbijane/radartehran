@@ -175,7 +175,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         {enableSponsorBilling ? (
           <div className="bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+              <span className="font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
                 <Receipt className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>انتخاب طرح اشتراک و صورت‌حساب خودکار</span>
               </span>
@@ -193,7 +193,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                     : 'bg-white/60 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
                 }`}
               >
-                <div className="font-extrabold">طرح ۱ ماهه (۳۰ روز اعتبار)</div>
+                <div className="font-bold">طرح ۱ ماهه (۳۰ روز اعتبار)</div>
                 <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold mt-0.5 tabular-nums">
                   {toPersianNum(billingSummary.baseMonthlyTariff)} میلیون تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(billingSummary.baseMonthlyTariff, currency, locale)})` : ''}
                 </div>
@@ -208,8 +208,8 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold">طرح ۳ ماهه با ۲۰٪ تخفیف</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-black">
+                  <span className="font-bold">طرح ۳ ماهه با ۲۰٪ تخفیف</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
                     ۲۰٪ تخفیف
                   </span>
                 </div>
@@ -223,7 +223,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                   مبلغ نهایی قابل پرداخت ({toPersianNum(billingSummary.validMonths * 30)} روز نمایش انحصاری):
                 </div>
-                <div className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
+                <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                   {toPersianNum(billingSummary.finalPayableMillion)} میلیون تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(billingSummary.finalPayableMillion, currency, locale)})` : ''}
                 </div>
               </div>
@@ -266,7 +266,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         )}
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
+          className="w-full py-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer"
         >
           ثبت و جایگزینی در کارت کارشناس رسمی محله
         </button>

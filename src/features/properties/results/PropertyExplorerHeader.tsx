@@ -32,14 +32,14 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
   onOpenCompare,
 }) => (
   <>
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] pb-4">
       <div>
         <span className="text-xs font-bold text-[var(--color-brand-fg)] block mb-1">
           {isEn
             ? 'Verified Property Discovery & Valuation Context'
             : 'کشف، مقایسه و راستی‌آزمایی فایل‌های ملکی · همگام با نقشه و ارزش‌گذاری'}
         </span>
-        <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)] tracking-tight">
+        <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)] tracking-tight">
           {isEn ? 'Property Explorer' : 'بازار املاک و فایل‌های هدف'}
         </h1>
       </div>

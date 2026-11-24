@@ -24,17 +24,17 @@ export const HOME_QUICK_ACCESS_ITEMS: readonly HomeQuickAccessItem[] = [
 
 export const HOME_METHODOLOGY_PILLARS: readonly HomeMethodologyPillar[] = [
   { id: 'source', titleFa: 'منبع', questionFa: 'داده از کجا آمده است؟', explanationFa: 'ترکیب آگهی‌های پایش‌شده پس از حذف موارد تکراری/طعمه و لایه‌های کالبدی شهری (مترو، طرح ترافیک و مراکز خدماتی).' },
-  { id: 'time', titleFa: 'زمان', questionFa: 'داده مربوط به چه تاریخی است؟', explanationFa: 'هر شاخص دارای بازه زمانی استخراج و تاریخ آخرین به‌روزرسانی صریح است؛ داده قدیمی با برچسب Stale مشخص می‌شود.' },
+  { id: 'time', titleFa: 'زمان', questionFa: 'داده مربوط به چه تاریخی است؟', explanationFa: 'هر شاخص دارای بازه زمانی استخراج و تاریخ آخرین به‌روزرسانی صریح است؛ داده قدیمی با برچسب «قدیمی» مشخص می‌شود.' },
   { id: 'method', titleFa: 'روش', questionFa: 'چطور محاسبه، پاک‌سازی یا برآورد شده است؟', explanationFa: 'میانه آماری قیمت پیشنهادی جدا از برآورد سناریوی مذاکره (غیرثبتی) گزارش می‌شود و هرگز با قیمت معامله قطعی ترکیب نمی‌گردد.' },
-  { id: 'limitation', titleFa: 'محدودیت', questionFa: 'چه چیزی را نمی‌توان از این داده نتیجه گرفت؟', explanationFa: 'شاخص‌ها جایگزین کارشناسی رسمی ثبتی یا معامله قطعی دفترخانه‌ای نیستند و در محله‌های کم‌نمونه با وضعیت Incomplete نمایش داده می‌شوند.' },
+  { id: 'limitation', titleFa: 'محدودیت', questionFa: 'چه چیزی را نمی‌توان از این داده نتیجه گرفت؟', explanationFa: 'شاخص‌ها جایگزین کارشناسی رسمی ثبتی یا معامله قطعی دفترخانه‌ای نیستند و در محله‌های کم‌نمونه با وضعیت «ناقص» نمایش داده می‌شوند.' },
 ];
 
 export const HOME_DATA_QUALITY_BADGES: Record<DataQuality, { code: DataQuality; labelFa: string; symbol: string; meaningFa: string; badgeClass: string }> = {
-  verified: { code: 'verified', labelFa: 'Verified · بررسی و تأیید شده', symbol: '✓', meaningFa: 'دارای نمونه کافی و معیار تأیید مشخص در بازه زمانی معتبر', badgeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' },
-  estimated: { code: 'estimated', labelFa: 'Estimated · برآوردشده', symbol: '≈', meaningFa: 'برآورد آماری بر پایه مدل هدونیک یا سناریوی مذاکره غیرثبتی', badgeClass: 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800' },
-  incomplete: { code: 'incomplete', labelFa: 'Incomplete · ناقص', symbol: '◐', meaningFa: 'تعداد نمونه در محدوده کمتر از حد نصاب آماری است', badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
-  stale: { code: 'stale', labelFa: 'Stale · قدیمی یا خارج از بازه مطلوب', symbol: '◷', meaningFa: 'تأخیر در به‌روزرسانی منبع؛ نیازمند احتیاط در تصمیم‌گیری', badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800' },
-  unavailable: { code: 'unavailable', labelFa: 'Unavailable · در دسترس نیست', symbol: '—', meaningFa: 'داده‌ای برای نمایش معتبر و به‌روز در این شاخص ثبت نشده است', badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700' },
+  verified: { code: 'verified', labelFa: 'تأییدشده', symbol: '✓', meaningFa: 'دارای نمونه کافی و معیار تأیید مشخص در بازه زمانی معتبر', badgeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' },
+  estimated: { code: 'estimated', labelFa: 'برآوردی', symbol: '≈', meaningFa: 'برآورد آماری بر پایه مدل هدونیک یا سناریوی مذاکره غیرثبتی', badgeClass: 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800' },
+  incomplete: { code: 'incomplete', labelFa: 'ناقص', symbol: '◐', meaningFa: 'تعداد نمونه در محدوده کمتر از حد نصاب آماری است', badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
+  stale: { code: 'stale', labelFa: 'قدیمی', symbol: '◷', meaningFa: 'تأخیر در به‌روزرسانی منبع؛ نیازمند احتیاط در تصمیم‌گیری', badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800' },
+  unavailable: { code: 'unavailable', labelFa: 'ناموجود', symbol: '—', meaningFa: 'داده‌ای برای نمایش معتبر و به‌روز در این شاخص ثبت نشده است', badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700' },
 };
 
 export const HOME_RESEARCH_REPORTS: readonly HomeResearchReportItem[] = [

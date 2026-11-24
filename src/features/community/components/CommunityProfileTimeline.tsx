@@ -69,7 +69,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
   return (
     <div className="space-y-3 pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800" data-testid="community-profile-timeline">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">Timeline مشارکت‌های عمومی کاربر</h3>
+        <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">Timeline مشارکت‌های عمومی کاربر</h3>
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="فیلتر نوع مشارکت">
           {KIND_TABS.map((tab) => (
             <button
@@ -156,7 +156,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
                 </div>
 
                 {item.titleFa && (
-                  <h4 className="font-black text-xs text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h4>
+                  <h4 className="font-bold text-xs text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h4>
                 )}
 
                 <p className="text-xs text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.excerptFa}</p>

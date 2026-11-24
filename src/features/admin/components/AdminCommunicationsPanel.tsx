@@ -39,7 +39,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
     <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs" data-testid="admin-communications-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Send className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز عملیات اعلان‌ها و ارتباطات (Communication Ops)</span>
           </h2>
@@ -84,19 +84,19 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
               <div className="text-[10.5px] text-slate-500">تلاش‌های موفق ارسال</div>
-              <div className="text-base font-black text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">{toPersianNum(deliveredCount)}</div>
+              <div className="text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">{toPersianNum(deliveredCount)}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
               <div className="text-[10.5px] text-slate-500">صف خطای نهایی (DLQ)</div>
-              <div className="text-base font-black text-rose-700 dark:text-rose-300 tabular-nums mt-0.5">{toPersianNum(pendingDlq.length)}</div>
+              <div className="text-base font-bold text-rose-700 dark:text-rose-300 tabular-nums mt-0.5">{toPersianNum(pendingDlq.length)}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
               <div className="text-[10.5px] text-slate-500">رویدادهای رجیستری</div>
-              <div className="text-base font-black text-slate-900 dark:text-white tabular-nums mt-0.5">{toPersianNum(Object.keys(EVENT_POLICY_REGISTRY).length)}</div>
+              <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">{toPersianNum(Object.keys(EVENT_POLICY_REGISTRY).length)}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
               <div className="text-[10.5px] text-slate-500">گزارش‌های مزاحمت باز</div>
-              <div className="text-base font-black text-amber-700 dark:text-amber-300 tabular-nums mt-0.5">
+              <div className="text-base font-bold text-amber-700 dark:text-amber-300 tabular-nums mt-0.5">
                 {toPersianNum(state.reports.filter((r) => r.status === 'PENDING').length)}
               </div>
             </div>
@@ -133,7 +133,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-black text-slate-900 dark:text-white">مدیریت صف خطای نهایی (DLQ)</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">مدیریت صف خطای نهایی (DLQ)</h3>
             {state.deadLetters.map((item) => (
               <div key={item.dlqId} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div>

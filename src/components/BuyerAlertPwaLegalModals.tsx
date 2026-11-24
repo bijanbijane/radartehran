@@ -73,7 +73,7 @@ export function BuyerAlertPwaLegalModals({
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4 stroke-[1.75]" />
                 </span>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Under-Market Deal Alerts' : 'ثبت شماره و اشتراک سقف قیمت ملک زیر قیمت'}
                 </h3>
               </div>
@@ -186,7 +186,7 @@ export function BuyerAlertPwaLegalModals({
               )}
               <button
                 type="submit" disabled={Boolean(isSavingBuyerAlert)} aria-busy={Boolean(isSavingBuyerAlert)}
-                className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-xs transition cursor-pointer shadow-xs"
+                className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs transition cursor-pointer shadow-xs"
               >
                 {isSavingBuyerAlert ? 'در حال ثبت امن درخواست...' : 'ثبت در لیست هشدار فایل‌های زیر قیمت'}
               </button>
@@ -200,7 +200,7 @@ export function BuyerAlertPwaLegalModals({
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Install Tehran Radar Web App' : 'نصب وب‌اپلیکیشن رادار تهران'}
                 </h3>
               </div>
@@ -210,15 +210,15 @@ export function BuyerAlertPwaLegalModals({
             </div>
             <div className="space-y-2.5 text-slate-600 dark:text-slate-300 leading-relaxed">
               <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
-                <div className="font-extrabold text-slate-900 dark:text-white">نصب در اندروید (Chrome):</div>
+                <div className="font-bold text-slate-900 dark:text-white">نصب در اندروید (Chrome):</div>
                 <p>روی منوی سه نقطه مرورگر کروم بزنید و گزینه <strong>Add to Home screen</strong> یا <strong>Install app</strong> را انتخاب کنید.</p>
               </div>
               <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
-                <div className="font-extrabold text-slate-900 dark:text-white">نصب در آیفون (Safari iOS):</div>
+                <div className="font-bold text-slate-900 dark:text-white">نصب در آیفون (Safari iOS):</div>
                 <p>در مرورگر سافاری روی دکمه <strong>Share</strong> در نوار پایین بزنید و گزینه <strong>Add to Home Screen</strong> را انتخاب کنید.</p>
               </div>
             </div>
-            <button type="button" onClick={() => setShowPwaModal(false)} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
+            <button type="button" onClick={() => setShowPwaModal(false)} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition cursor-pointer">
               {isEn ? 'Got it' : 'متوجه شدم'}
             </button>
           </div>
@@ -230,7 +230,7 @@ export function BuyerAlertPwaLegalModals({
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Legal Terms & Disclaimer' : 'چارچوب قانونی و سلب مسئولیت'}
                 </h3>
               </div>
@@ -242,7 +242,7 @@ export function BuyerAlertPwaLegalModals({
               <p>کلیه قیمت‌ها، شاخص‌های حباب‌سنج و تحلیل‌های ارائه‌شده در سامانه رادار، بر اساس پایش آماری داده‌های عمومی بازار تولید شده و صرفاً جنبه اطلاع‌رسانی دارد. این سامانه در معاملات ملکی ذینفع یا طرف قرارداد نبوده و بررسی اسناد بر عهده طرفین معامله و دفاتر اسناد و املاک رسمی است.</p>
               <p>خروجی‌های محاسباتی، مالیاتی، حقوقی و ترافیکی صرفاً برآورد تحلیلی و آموزشی بوده و جایگزین کارشناسی رسمی دادگستری نمی‌باشند.</p>
             </div>
-            <button type="button" onClick={() => setShowLegalModal(false)} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold transition cursor-pointer">
+            <button type="button" onClick={() => setShowLegalModal(false)} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold transition cursor-pointer">
               {isEn ? 'I Understand & Accept' : 'مورد تایید و مطالعه قرار گرفت'}
             </button>
           </div>

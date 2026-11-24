@@ -136,7 +136,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               موتور تصمیم‌یار معرفتی، پارتو، سرایت فضایی و هوش اجتماعی ({resolvedHoodName})
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -172,7 +172,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
                   const firstInDom = STAGE2_TABS.find((t) => t.domain === dom.id);
                   if (firstInDom) setActiveTab(firstInDom.id);
                 }}
-                className={`px-2 py-1.5 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer border ${
+                className={`px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
                   isDomActive
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                     : 'bg-slate-100/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border-slate-200/70 dark:border-slate-700 hover:bg-slate-200/70'

@@ -70,10 +70,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [cityMenuOpen]);
 
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
@@ -102,7 +99,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
       >
         {isEn ? 'Skip to main content' : 'رفتن به محتوای اصلی'}
       </a>
-      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-2 h-[56px] lg:h-[64px]">
+      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-2 h-[var(--header-height)]">
         <div className="flex items-center gap-2 shrink-0">
           <RadarLink
             href="/"
@@ -202,6 +199,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             ref={moreButtonRef}
             type="button"
             data-testid="global-nav-more"
+            aria-haspopup="menu"
             aria-expanded={megaMenuOpen}
             aria-controls={megaMenuPanelId}
             onMouseEnter={openFromHover}
@@ -253,12 +251,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             }`}
           >
             <User className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <span className="hidden xl:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
+            <span className="hidden lg:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
             {unreadCount > 0 && (
-              <span
-                data-testid="header-notification-badge"
-                className="min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-xs font-bold inline-flex items-center justify-center leading-none tabular-nums"
-              >
+              <span data-testid="header-notification-badge" className="min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-xs font-bold inline-flex items-center justify-center leading-none tabular-nums">
                 {formattedUnread}
               </span>
             )}

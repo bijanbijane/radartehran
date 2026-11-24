@@ -79,7 +79,7 @@ export const FinancialCalculatorsWorkspace: React.FC<FinancialCalculatorsWorkspa
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Calculator className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
-          <h2 className="text-base font-black text-[var(--color-text-primary)]">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)]">
             {isEn ? 'Interactive Financial Calculators' : 'محاسبه‌گرهای مالی و معاملاتی مسکن'}
           </h2>
         </div>
@@ -153,15 +153,15 @@ export const FinancialCalculatorsWorkspace: React.FC<FinancialCalculatorsWorkspa
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 tabular-nums">
             <div className="p-4 rounded-[12px] bg-[var(--color-brand-soft)]/50 border border-[var(--color-brand-600)]/30">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Monthly Payment' : 'قسط ماهانه'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-brand-fg)]">{fmt(mortgage.monthlyMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-brand-fg)]">{fmt(mortgage.monthlyMillion)} م</div>
             </div>
             <div className="p-4 rounded-[12px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Total Interest' : 'کل سود بانکی'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-text-primary)]">{fmt(mortgage.totalInterestMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">{fmt(mortgage.totalInterestMillion)} م</div>
             </div>
             <div className="p-4 rounded-[12px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Total Repayment' : 'جمع بازپرداخت'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-text-primary)]">{fmt(mortgage.totalRepaymentMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">{fmt(mortgage.totalRepaymentMillion)} م</div>
             </div>
           </div>
         </div>
@@ -191,15 +191,15 @@ export const FinancialCalculatorsWorkspace: React.FC<FinancialCalculatorsWorkspa
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 tabular-nums">
             <div className="p-4 rounded-[12px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Base Fee / Side' : 'کمیسیون پایه هر طرف'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-text-primary)]">{fmt(commission.basePerSideMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">{fmt(commission.basePerSideMillion)} م</div>
             </div>
             <div className="p-4 rounded-[12px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? '10% VAT / Side' : 'ارزش افزوده (۱۰٪)'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-text-primary)]">{fmt(commission.vatPerSideMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">{fmt(commission.vatPerSideMillion)} م</div>
             </div>
             <div className="p-4 rounded-[12px] bg-[var(--color-brand-soft)]/50 border border-[var(--color-brand-600)]/30">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Payable / Side' : 'مبلغ قابل پرداخت هر طرف'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-brand-fg)]">{fmt(commission.totalPerSideMillion)} م</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-brand-fg)]">{fmt(commission.totalPerSideMillion)} م</div>
             </div>
           </div>
         </div>
@@ -246,11 +246,11 @@ export const FinancialCalculatorsWorkspace: React.FC<FinancialCalculatorsWorkspa
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 tabular-nums">
             <div className="p-4 rounded-[12px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Converted Portion' : 'مبلغ تبدیل‌شده به اجاره'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-text-primary)]">{fmt(rentConv.remainingDeposit)} میلیون</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-text-primary)]">{fmt(rentConv.remainingDeposit)} میلیون</div>
             </div>
             <div className="p-4 rounded-[12px] bg-[var(--color-brand-soft)]/50 border border-[var(--color-brand-600)]/30">
               <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{isEn ? 'Monthly Rent' : 'اجاره ماهانه برآوردی'}</div>
-              <div className="mt-1 text-lg font-black text-[var(--color-brand-fg)]">{fmt(rentConv.monthlyRentMillion)} میلیون</div>
+              <div className="mt-1 text-lg font-bold text-[var(--color-brand-fg)]">{fmt(rentConv.monthlyRentMillion)} میلیون</div>
             </div>
           </div>
         </div>

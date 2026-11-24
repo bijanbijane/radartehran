@@ -88,7 +88,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-xs shrink-0"><ArrowLeftRight className="w-4 h-4 stroke-[1.75]" /></span>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">{compareCopy.modalTitle}</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">{compareCopy.modalTitle}</h3>
             </div>
             <button type="button" aria-label="بستن پنجره مقایسه" onClick={onClose} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition shrink-0">
               <X className="w-4 h-4 stroke-[1.75]" />
@@ -162,15 +162,15 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <div className="apple-grouped-card bg-amber-50/90 dark:bg-amber-950/25 ring-1 ring-amber-500/20 p-3.5 text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
                 <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
-                  <strong className="font-extrabold">مقایسه قدرت خرید واقعی شما: </strong>
+                  <strong className="font-bold">مقایسه قدرت خرید واقعی شما: </strong>
                   با بودجه فعلی شما ({toPersianNum(activeBudgetMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(activeBudgetMillion, intlCurrency, radarLocale)}` : ''})، در محله{' '}
                   <strong className="underline decoration-amber-400">{compHood1.name}</strong> امکان{' '}
                   {mode === 'buy' ? 'خرید' : 'اجاره'} واحد حدود{' '}
-                  <strong className="text-amber-800 dark:text-amber-300 font-black tabular-nums">{formatAreaValue(summaryStats.sqm1, areaUnit)}</strong>{' '}
+                  <strong className="text-amber-800 dark:text-amber-300 font-bold tabular-nums">{formatAreaValue(summaryStats.sqm1, areaUnit)}</strong>{' '}
                   و در محله{' '}
                   <strong className="underline decoration-amber-400">{compHood2.name}</strong> امکان{' '}
                   {mode === 'buy' ? 'خرید' : 'اجاره'} واحد حدود{' '}
-                  <strong className="text-amber-800 dark:text-amber-300 font-black tabular-nums">{formatAreaValue(summaryStats.sqm2, areaUnit)}</strong>{' '}
+                  <strong className="text-amber-800 dark:text-amber-300 font-bold tabular-nums">{formatAreaValue(summaryStats.sqm2, areaUnit)}</strong>{' '}
                   وجود دارد (اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong> · اختلاف هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: <strong className="tabular-nums">{toPersianNum(summaryStats.uSpread)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(summaryStats.uSpread, intlCurrency, radarLocale)})` : ''}</strong>).
                 </div>
               </div>
@@ -184,11 +184,11 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                       {isPeerMismatch && (
                         <div data-testid="compare-peer-mismatch-banner" className="p-2.5 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/40 ring-1 ring-indigo-500/25 text-[11px] text-indigo-950 dark:text-indigo-200 flex items-center justify-between shadow-2xs">
                           <span>⚖️ هشدار رده اقتصادی: اختلاف پایه قیمت این دو محله بیش از ۴۰٪ است؛ مقایسه بر اساس ارزش ریالی امکانات انجام شده است.</span>
-                          <span className="font-extrabold tabular-nums">نسبت: {toPersianNum(priceRatio.toFixed(1))} برابر</span>
+                          <span className="font-bold tabular-nums">نسبت: {toPersianNum(priceRatio.toFixed(1))} برابر</span>
                         </div>
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-extrabold">
+                        <div className="flex items-center gap-1.5 font-bold">
                           <Award className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                           <span>
                             نبرد تن‌به‌تن: محله {compHood1.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و محله {compHood2.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span> برتر است.
@@ -210,24 +210,24 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/50 dark:border-slate-800 overflow-hidden text-xs">
-              <div className="grid grid-cols-3 bg-slate-50/90 dark:bg-slate-800 py-3 px-4 font-extrabold text-slate-900 dark:text-white border-b border-slate-200/70 dark:border-slate-700">
+              <div className="grid grid-cols-3 bg-slate-50/90 dark:bg-slate-800 py-3 px-4 font-bold text-slate-900 dark:text-white border-b border-slate-200/70 dark:border-slate-700">
                 <div className="text-center text-sm truncate">{compHood1.name}</div>
                 <div className="text-center text-slate-500 dark:text-slate-400">{compareCopy.metricHeader}</div>
                 <div className="text-center text-sm truncate">{compHood2.name}</div>
               </div>
               <div className="grid grid-cols-3 items-center py-2.5 px-4 border-b border-amber-200/80 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20">
                 <div
-                  className={`text-center font-black tabular-nums py-1 rounded-lg ${
+                  className={`text-center font-bold tabular-nums py-1 rounded-lg ${
                     summaryStats.sqm1 > summaryStats.sqm2 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'text-amber-800 dark:text-amber-300'
                   }`}
                 >
                   {formatAreaValue(summaryStats.sqm1, areaUnit)}
                 </div>
-                <div className="text-center font-extrabold text-amber-900 dark:text-amber-200 px-2">
+                <div className="text-center font-bold text-amber-900 dark:text-amber-200 px-2">
                   متراژ قابل {mode === 'buy' ? 'خرید' : 'اجاره'} با بودجه شما
                 </div>
                 <div
-                  className={`text-center font-black tabular-nums py-1 rounded-lg ${
+                  className={`text-center font-bold tabular-nums py-1 rounded-lg ${
                     summaryStats.sqm2 > summaryStats.sqm1 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'text-amber-800 dark:text-amber-300'
                   }`}
                 >
@@ -274,7 +274,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                     onClose();
                   }}
                   aria-label={`انتخاب محله ${compHood1.name}`}
-                  className="py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                  className="py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
                 >
                   <MapPin className="w-4 h-4 stroke-[1.75]" />
                   <span>انتخاب محله {compHood1.name}</span>
@@ -286,7 +286,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                     onClose();
                   }}
                   aria-label={`انتخاب محله ${compHood2.name}`}
-                  className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs border border-slate-200 dark:border-slate-700"
+                  className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs border border-slate-200 dark:border-slate-700"
                 >
                   <MapPin className="w-4 h-4 stroke-[1.75]" />
                   <span>انتخاب محله {compHood2.name}</span>

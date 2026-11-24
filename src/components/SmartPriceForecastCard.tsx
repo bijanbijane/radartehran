@@ -71,7 +71,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
         <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
+          <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>پیش‌بینی هوشمند ۳ ماهه ({effectiveName})</span>
           </div>
@@ -80,7 +80,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
           </span>
         </div>
         <span
-          className={`px-2 py-0.5 rounded-[7px] text-[10.5px] font-extrabold border ${
+          className={`px-2 py-0.5 rounded-[7px] text-[10.5px] font-bold border ${
             forecast.signalTone === 'bullish'
               ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
               : forecast.signalTone === 'bearish'
@@ -124,7 +124,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         <div>
           <div className="text-[10.5px] text-slate-500 dark:text-slate-400">تغییر تخمینی ۳ ماهه</div>
           <div
-            className={`font-black text-xs mt-0.5 flex items-center justify-center gap-0.5 ${
+            className={`font-bold text-xs mt-0.5 flex items-center justify-center gap-0.5 ${
               isPositiveChange ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}
           >
@@ -134,7 +134,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         </div>
         <div className="border-r border-slate-200/70 dark:border-slate-800 pr-2">
           <div className="text-[10.5px] text-slate-500 dark:text-slate-400">قیمت تخمینی ({areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})</div>
-          <div className="font-black text-slate-900 dark:text-white text-xs mt-0.5">
+          <div className="font-bold text-slate-900 dark:text-white text-xs mt-0.5">
             {toPersianNum(projectedUnitPrice)} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">م (سناریوی v6.4: {toPersianNum(projectedDealUnitPrice)} م)</span>
             {intlCurrency !== 'IRT' && (
               <span className="mr-1 text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">
@@ -167,15 +167,15 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
             <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[10px] bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[9px] p-2 tabular-nums text-center">
               <div>
                 <div className="text-slate-500 dark:text-slate-400">کمیسیون + ۱۰٪ مالیات</div>
-                <div className="font-extrabold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.buyerCommissionWithVat)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.buyerCommissionWithVat, intlCurrency, radarLocale)})` : ''}</div>
+                <div className="font-bold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.buyerCommissionWithVat)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.buyerCommissionWithVat, intlCurrency, radarLocale)})` : ''}</div>
               </div>
               <div className="border-x border-slate-200/70 dark:border-slate-800 px-1">
                 <div className="text-slate-500 dark:text-slate-400">سهم زمین (بدون استهلاک)</div>
-                <div className="font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum((financialAuditSummary.landValueMillion / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.landValueMillion, intlCurrency, radarLocale)})` : ''}</div>
+                <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum((financialAuditSummary.landValueMillion / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.landValueMillion, intlCurrency, radarLocale)})` : ''}</div>
               </div>
               <div>
                 <div className="text-slate-500 dark:text-slate-400">تبدیل ۵۰٪ رهن (نرخ ۳٪)</div>
-                <div className="font-extrabold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.sampleDeposit)}م + {toPersianNum(financialAuditSummary.sampleMonthlyRent)}م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleDeposit, intlCurrency, radarLocale)} + ${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleMonthlyRent, intlCurrency, radarLocale)})` : ''}</div>
+                <div className="font-bold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.sampleDeposit)}م + {toPersianNum(financialAuditSummary.sampleMonthlyRent)}م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleDeposit, intlCurrency, radarLocale)} + ${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleMonthlyRent, intlCurrency, radarLocale)})` : ''}</div>
               </div>
             </div>
           )}
@@ -231,16 +231,16 @@ export function InspectorSponsorFooter({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">کارشناس رسمی محله {selectedHood.name}</span>
-                <span className="px-1.5 py-0.5 rounded bg-amber-100/90 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 text-[9px] font-extrabold">
+                <span className="px-1.5 py-0.5 rounded bg-amber-100/90 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 text-[9px] font-bold">
                   آگهی اسپانسرینگ · بدون تاثیر بر امتیاز محله
                 </span>
                 {!enableSponsorBilling && (
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[9px] font-extrabold">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold">
                     طرح حمایت رایگان رادار
                   </span>
                 )}
               </div>
-              <div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5 truncate">{selectedHood.sponsor.name}</div>
+              <div className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 truncate">{selectedHood.sponsor.name}</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                 {selectedHood.sponsor.specialty} · {toPersianNum(selectedHood.sponsor.experienceYears)} سال سابقه
               </div>

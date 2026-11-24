@@ -9,7 +9,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
           role="dialog" aria-modal="true" aria-label="دفترچه بازدیدهای من" onClick={() => setShowVisitedModal(false)} className="fixed inset-0 bg-black/35 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in" >
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}
             className="apple-window-sheet dark:bg-slate-900 max-w-lg w-full p-5 space-y-3.5 max-h-[90vh] overflow-y-auto focus:outline-none dark:border dark:border-slate-800" >
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800"> <span className="text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800"> <span className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Bookmark className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /> <span>دفترچه بازدیدهای میدانی من ({toPersianNum(visitedHomes.length)} فایل)</span>
               </span> <div className="flex items-center gap-2"><AreaUnitToggle compact showIntlControls /><button type="button" aria-label="بستن دفترچه بازدیدها" onClick={() => setShowVisitedModal(false)} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><X className="w-4 h-4 stroke-[1.75]" /></button></div>
             </div> <form
@@ -75,7 +75,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                     {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((r) => ( <option key={r} value={r}>{toPersianNum(r)} از ۱۰</option> ))}
                   </select>
                 </div>
-                <button type="submit" className="px-4 py-2 bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                <button type="submit" className="px-4 py-2 bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
                   ثبت در دفترچه
                 </button>
               </div>
@@ -118,14 +118,14 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                           type="button"
                           onClick={() => { const found = evaluatedNeighborhoods.find((n) => n.id === item.hoodId); if (found) { onSelectNeighborhood(found); setShowVisitedModal(false); setMobileSheetOpen(true); }
                           }}
-                          className="font-extrabold text-slate-900 dark:text-slate-100 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer transition"
+                          className="font-bold text-slate-900 dark:text-slate-100 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer transition"
                         >
                           محله {item.hoodName}
                         </button>
                         <span className="text-[10px] text-slate-400">({item.date})</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-extrabold tabular-nums text-[11px]">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold tabular-nums text-[11px]">
                           ⭐ {toPersianNum(item.rating)}/۱۰
                         </span>
                         <button
@@ -162,7 +162,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
             ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet dark:bg-slate-900 max-w-xl w-full p-5 space-y-3.5 max-h-[92vh] overflow-y-auto focus:outline-none dark:border dark:border-slate-800"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800">
-              <span className="text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <ArrowLeftRight className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>ماشین‌حساب معاوضه و ارتقای متراژ ملک (Trade-Up)</span>
               </span>
@@ -172,7 +172,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-3.5 space-y-3 text-xs">
-              <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. مشخصات ملک فعلی شما برای فروش:</div>
+              <div className="font-bold text-slate-900 dark:text-slate-100">۱. مشخصات ملک فعلی شما برای فروش:</div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">محله فعلی:</label>
@@ -198,13 +198,13 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-[11px]">
                 <span className="text-slate-500 dark:text-slate-400">ارزش تقریبی فروش ملک فعلی (هر {areaUnit === 'sqft' ? 'ft²' : 'متر'} {toPersianNum(Math.round(convertPricePerSqmToUnit(tradeUpResults.netProceedsFromSaleMillion / Math.max(1, tradeUpCurrentSqm), areaUnit)))} م):</span>
-                <strong className="text-emerald-700 dark:text-emerald-400 text-sm font-black tabular-nums">
+                <strong className="text-emerald-700 dark:text-emerald-400 text-sm font-bold tabular-nums">
                   {toPersianNum((tradeUpResults.netProceedsFromSaleMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(tradeUpResults.netProceedsFromSaleMillion, intlCurrency, radarLocale)})` : ''}
                 </strong>
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-3.5 space-y-3 text-xs">
-              <div className="font-extrabold text-slate-900 dark:text-slate-100">۲. اهرم‌های مالی و نقدینگی مازاد:</div>
+              <div className="font-bold text-slate-900 dark:text-slate-100">۲. اهرم‌های مالی و نقدینگی مازاد:</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex justify-between mb-1">
@@ -226,12 +226,12 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-700 dark:text-slate-300">کل سرمایه پایه در دسترس شما:</span>
-                <strong className="text-emerald-800 dark:text-emerald-300 text-sm font-black tabular-nums">{toPersianNum((tradeUpResults.totalBaseCapitalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(tradeUpResults.totalBaseCapitalMillion, intlCurrency, radarLocale)})` : ''}</strong>
+                <strong className="text-emerald-800 dark:text-emerald-300 text-sm font-bold tabular-nums">{toPersianNum((tradeUpResults.totalBaseCapitalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(tradeUpResults.totalBaseCapitalMillion, intlCurrency, radarLocale)})` : ''}</strong>
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-3.5 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-extrabold text-slate-900 dark:text-slate-100">۳. هدف ملک جدید شما:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">۳. هدف ملک جدید شما:</span>
                 <div className="flex items-center gap-1 apple-segmented dark:bg-slate-900">
                   {[
                     { id: 'new' as const, label: 'نوساز' }, { id: 'mid' as const, label: '۶ تا ۱۵ سال' }, { id: 'older' as const, label: 'قدیمی‌ساز' }, ].map((s) => ( <button
@@ -249,7 +249,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="font-extrabold text-xs text-slate-900 dark:text-slate-100">محله‌های قابل ارتقا با سرمایه شما ({toPersianNum(displayedTradeUpHoods.length)} محله):</div>
+                <div className="font-bold text-xs text-slate-900 dark:text-slate-100">محله‌های قابل ارتقا با سرمایه شما ({toPersianNum(displayedTradeUpHoods.length)} محله):</div>
                 <div className="flex items-center gap-1 apple-segmented dark:bg-slate-900">
                   <button type="button" onClick={() => setTradeUpFilterMode('all')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'all' ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>همه محله‌های قابل خرید</button>
                   <button type="button" onClick={() => setTradeUpFilterMode('cash_release')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'cash_release' ? 'apple-segmented-pill-active dark:bg-slate-800 text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>آزادسازی نقدینگی (با پول نقد مازاد)</button>
@@ -261,7 +261,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                   </div>
                 ) : (() => { const maxTradeUpScore = Math.max(...displayedTradeUpHoods.map((x) => x.hood.overallScore)); const tiedAtTopCount = displayedTradeUpHoods.filter((x) => Math.abs(maxTradeUpScore - x.hood.overallScore) <= 0.3).length; return displayedTradeUpHoods.map((item) => { const recExp = explainNeighborhoodRecommendation(item.hood, { mode: 'buy', topReferenceScore: maxTradeUpScore }); const showTieBadge = recExp.isTieBandWithTop && tiedAtTopCount > 1; return ( <div key={item.hood.id} className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-2.5 text-xs space-y-1 hover:border-emerald-500 transition">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100">محله {item.hood.name} <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(Math.round(convertPricePerSqmToUnit(item.hood.buyPerSqm, areaUnit)))} م)</span></span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100">محله {item.hood.name} <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(Math.round(convertPricePerSqmToUnit(item.hood.buyPerSqm, areaUnit)))} م)</span></span>
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">نمره: {toPersianNum(item.hood.overallScore)}{showTieBadge ? ' (≈ هم‌تراز ±۰.۳)' : ''}</span>
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">قیمت کل واحد ({formatAreaShort(tradeUpTargetSqm, areaUnit)}): {toPersianNum((item.targetUnitTotalPriceMillion / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(item.targetUnitTotalPriceMillion, intlCurrency, radarLocale)})` : ''}</div>

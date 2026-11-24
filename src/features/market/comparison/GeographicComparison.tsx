@@ -39,7 +39,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
         <div>
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مقایسه هم‌معنای محدوده‌ها (تا ۴ محله)</span>
           </h3>

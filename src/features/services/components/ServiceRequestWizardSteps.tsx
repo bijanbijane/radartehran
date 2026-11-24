@@ -56,7 +56,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
       <div className="space-y-2">
         {categoryServices.map((srv) => (
           <label key={srv.serviceId} className="block p-3 rounded-[10px] border border-[var(--color-border-subtle)] dark:border-slate-800 cursor-pointer">
-            <div className="flex items-center gap-2 font-black text-[var(--color-text-primary)] dark:text-white">
+            <div className="flex items-center gap-2 font-bold text-[var(--color-text-primary)] dark:text-white">
               <input
                 type="radio"
                 name="serviceId"

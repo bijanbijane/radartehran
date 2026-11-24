@@ -35,7 +35,7 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
         <div className="space-y-0.5">
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>همگام‌سازی فضایی با نقشه زنده ({geoScopeFa})</span>
           </h3>
@@ -115,7 +115,7 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
                 </div>
               </div>
               <div className="text-left shrink-0">
-                <div className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(uAsk)} م</div>
+                <div className="font-bold text-[var(--color-text-primary)] dark:text-white">{toPersianNum(uAsk)} م</div>
                 {agg.observedSampleCount === 0 && (
                   <ShieldAlert className="w-3 h-3 text-[#94A39B] mr-auto mt-0.5" aria-label="داده محدود" />
                 )}

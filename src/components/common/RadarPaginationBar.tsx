@@ -43,15 +43,15 @@ export function RadarPaginationBar<T>({
         <span data-testid="pagination-range-summary" className="font-medium">
           {isEn ? (
             <>
-              Showing <strong className="font-black text-[var(--color-text-primary)]">{fmt(slice.startIndex)}</strong>–
-              <strong className="font-black text-[var(--color-text-primary)]">{fmt(slice.endIndex)}</strong> of{' '}
-              <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">{fmt(slice.totalItems)}</strong> {itemLabelEn}
+              Showing <strong className="font-bold text-[var(--color-text-primary)]">{fmt(slice.startIndex)}</strong>–
+              <strong className="font-bold text-[var(--color-text-primary)]">{fmt(slice.endIndex)}</strong> of{' '}
+              <strong className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">{fmt(slice.totalItems)}</strong> {itemLabelEn}
             </>
           ) : (
             <>
-              نمایش <strong className="font-black text-[var(--color-text-primary)]">{fmt(slice.startIndex)}</strong> تا{' '}
-              <strong className="font-black text-[var(--color-text-primary)]">{fmt(slice.endIndex)}</strong> از{' '}
-              <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">{fmt(slice.totalItems)}</strong> {itemLabelFa}
+              نمایش <strong className="font-bold text-[var(--color-text-primary)]">{fmt(slice.startIndex)}</strong> تا{' '}
+              <strong className="font-bold text-[var(--color-text-primary)]">{fmt(slice.endIndex)}</strong> از{' '}
+              <strong className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">{fmt(slice.totalItems)}</strong> {itemLabelFa}
               {slice.totalPages > 1 && (
                 <span className="text-[var(--color-text-muted)] mr-1.5">
                   (صفحه {fmt(slice.currentPage)} از {fmt(slice.totalPages)})
@@ -109,7 +109,7 @@ export function RadarPaginationBar<T>({
                   aria-current={slice.currentPage === entry ? 'page' : undefined}
                   aria-label={isEn ? `Page ${entry}` : `صفحه ${toPersianNum(entry)}`}
                   onClick={() => onPageChange(entry)}
-                  className={`min-w-[44px] min-h-[44px] md:min-w-[34px] md:min-h-[34px] px-2 rounded-lg font-extrabold transition cursor-pointer ${
+                  className={`min-w-[44px] min-h-[44px] md:min-w-[34px] md:min-h-[34px] px-2 rounded-lg font-bold transition cursor-pointer ${
                     slice.currentPage === entry
                       ? 'bg-[var(--color-brand-600)] text-white shadow-2xs'
                       : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]'

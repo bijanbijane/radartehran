@@ -94,7 +94,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
-          <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Cpu className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز هوشمندی، حاکمیت پلتفرم، اتوماسیون و درگاه داده (مراحل ۶ تا ۲۸)</span>
           </h2>
@@ -149,14 +149,14 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <div className="text-[11px] text-slate-500">سلامت مرکب پلتفرم (Stage 23)</div>
-              <div className="font-black text-slate-900 dark:text-white mt-0.5">
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {intel?.healthScoreStatus === 'COMPUTED' && intel.healthScore0To100 !== null ? toPersianNum(intel.healthScore0To100) : 'NOT_AVAILABLE'}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Self-Eval: {intel?.selfEvaluationStatus || 'NOT_MEASURED'}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <div className="text-[11px] text-slate-500">تاب‌آوری و ماتریس ۱۰گانه (Stage 9)</div>
-              <div className="font-black text-slate-900 dark:text-white mt-0.5">
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {gov?.resilience.overallTier || 'READY'} · {toPersianNum(gov?.resilience.matrixCount ?? 10)} دامنه
               </div>
               <button
@@ -173,7 +173,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <div className="text-[11px] text-slate-500">انتشار و Rollout (Stages 11–14)</div>
-              <div className="font-black text-slate-900 dark:text-white mt-0.5">
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {gov?.opsCostRelease.rollout.currentWave || 'WAVE_A'} ({gov?.opsCostRelease.releaseGates.overallStatus || 'PASS_WITH_LIMITATIONS'})
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">{gov?.opsCostRelease.status || 'INSUFFICIENT_PRODUCTION_DATA'}</div>
@@ -199,7 +199,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
         <div className="space-y-3">
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="font-black text-slate-900 dark:text-white">
+              <div className="font-bold text-slate-900 dark:text-white">
                 Kill Switch مستقل اتوماسیون: {autoState?.killSwitchEngaged ? 'فعال (متوقف)' : 'آماده به کار'}
               </div>
               <div className="text-[10.5px] text-slate-500">
@@ -249,13 +249,13 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
       {activeTab === 'ecosystem' && isVerifiedAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Scale className="w-4 h-4 text-[var(--color-brand-600)]" /> حقوقی و تجاری (Stages 17–20)
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-300">
               حقوقی: <strong>{gov?.legal.readinessStatus}</strong> · تجاری: <strong>{gov?.commercial.commercialStatus}</strong> (Entry Gate: {gov?.commercial.commercialEntryGate}) · پرداخت زنده: غیرفعال
             </div>
-            <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5 pt-1">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 pt-1">
               <Database className="w-4 h-4 text-[var(--color-brand-600)]" /> تبادل داده و بازار ملک (Stages 27–28)
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-300">
@@ -263,7 +263,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
             </div>
           </div>
           <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /> پایلوت درگاه بیرونی (Stage 26 · SSRF Hardened)
             </div>
             {providers.map((p) => (

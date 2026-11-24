@@ -32,7 +32,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-md w-full p-5 text-center space-y-3"
         >
           <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-          <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
             اطلاعات محله‌ها جهت ثبت آگهی در دسترس نیست
           </h3>
           <button
@@ -52,7 +52,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0"><Award className="w-4 h-4 stroke-[1.75]" /></span>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">ثبت ملک زیر قیمت و رزرو کارشناس رسمی محله</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">ثبت ملک زیر قیمت و رزرو کارشناس رسمی محله</h3>
               {resolveCityIdForNeighborhood(agencyModalTab === 'reserve_sponsor' ? sponsorHoodId : bargainHoodId) !== activeCity && (
                 <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
                   محدودهٔ ثبت قفل‌شده روی شهر {CITY_DISPLAY_NAMES[resolveCityIdForNeighborhood(agencyModalTab === 'reserve_sponsor' ? sponsorHoodId : bargainHoodId)].fa} (مستقل از جابه‌جایی نقشه)
@@ -74,7 +74,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               setSponsorSubmitMsg?.(''); setAgencyModalTab('submit_bargain'); }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'submit_bargain'
-                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold'
+                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -87,7 +87,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'reserve_sponsor'
-                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold'
+                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -188,7 +188,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                         return `مبلغ رهن کامل پیشنهادی (میانگین ${formatAreaShort(bargainSqm, areaUnit)} ${targetBargainHood.name}: ${toPersianNum(scaledRahn)} میلیون · اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahn, currency, locale)}` : ''}):`;
                       })()}
                 </label>
-                <NumericDraftInput aria-label="قیمت پیشنهادی" min={10} max={bargainType === 'اجاره' ? 200000 : 10000} fallback={computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, bargainType).proposedPrice} value={bargainProposedPrice} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainProposedPrice(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <NumericDraftInput aria-label="قیمت پیشنهادی" min={10} max={bargainType === 'اجاره' ? 200000 : 10000} fallback={computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, bargainType).proposedPrice} value={bargainProposedPrice} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainProposedPrice(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
                 <div className="flex flex-wrap items-center justify-between gap-1.5 mt-1.5 text-[11px]">
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(liveBargainCheck.maxAllowedFor10Percent); }} className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold transition cursor-pointer">
@@ -274,7 +274,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             )}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer"
             >
               ثبت فوری فایل در محله {targetBargainHood.name}
             </button>

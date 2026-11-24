@@ -70,12 +70,12 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
   {
     id: 'properties.commercial', viewId: 'properties', subTab: 'commercial', path: '/properties/commercial', parentId: 'properties.all',
     titleFa: 'تجاری', titleEn: 'Commercial', shell: 'public', requiredPermissions: [],
-    navigationGroup: 'primary', breadcrumbFa: 'تجاری', breadcrumbEn: 'Commercial', mobileVisibility: 'hidden', status: 'beta',
+    navigationGroup: 'primary', breadcrumbFa: 'تجاری', breadcrumbEn: 'Commercial', mobileVisibility: 'hidden', status: 'active',
   },
   {
     id: 'properties.office', viewId: 'properties', subTab: 'office', path: '/properties/office', parentId: 'properties.all',
     titleFa: 'اداری', titleEn: 'Office', shell: 'public', requiredPermissions: [],
-    navigationGroup: 'primary', breadcrumbFa: 'اداری', breadcrumbEn: 'Office', mobileVisibility: 'hidden', status: 'beta',
+    navigationGroup: 'primary', breadcrumbFa: 'اداری', breadcrumbEn: 'Office', mobileVisibility: 'hidden', status: 'active',
   },
   {
     id: 'tools.all', viewId: 'tools', subTab: 'all', path: '/tools', parentId: 'home',

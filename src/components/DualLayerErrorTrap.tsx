@@ -139,10 +139,10 @@ class RenderPhaseErrorBoundary extends React.Component<
           className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center p-6"
         >
           <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 flex items-center justify-center mx-auto font-black text-lg">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 flex items-center justify-center mx-auto font-bold text-lg">
               !
             </div>
-            <h2 className="text-lg font-extrabold text-rose-700 dark:text-rose-400">
+            <h2 className="text-lg font-bold text-rose-700 dark:text-rose-400">
               محافظ خطای رندر (رادارتهران)
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
@@ -171,7 +171,7 @@ class RenderPhaseErrorBoundary extends React.Component<
               <button
                 type="button"
                 onClick={this.handleRetry}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer transition"
               >
                 تلاش مجدد
               </button>

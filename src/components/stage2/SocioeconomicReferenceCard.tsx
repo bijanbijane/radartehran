@@ -196,22 +196,22 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       {/* راهنمای تصمیم‌گیری فوری خریدار مسکن (Executive Buyer Directive) */}
       <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 font-extrabold text-amber-900 dark:text-amber-200">
+          <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
             <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span>دستور اقدام فوری خریدار مسکن در {rollup.hoodName}</span>
           </div>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${bubbleGapPct > 5 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${bubbleGapPct > 5 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'}`}>
             {bubbleGapPct > 0 ? `${toPersianDigits(bubbleGapPct)}٪ حباب اعلامی فروشنده` : 'قیمت منصفانه / زیر کف'}
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف سناریوی مذاکره (غیرثبتی):</span>
-            <span className="font-extrabold text-slate-800 dark:text-slate-100">{toPersianDigits(rollup.estimatedFairDealMillionToman)} م.ت/متر</span>
+            <span className="font-bold text-slate-800 dark:text-slate-100">{toPersianDigits(rollup.estimatedFairDealMillionToman)} م.ت/متر</span>
           </div>
           <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block">سقف چانه برای واحد ۸۵ متری:</span>
-            <span className="font-extrabold text-amber-700 dark:text-amber-300">حداقل {toPersianDigits(target85mDiscount)} م.ت تخفیف</span>
+            <span className="font-bold text-amber-700 dark:text-amber-300">حداقل {toPersianDigits(target85mDiscount)} م.ت تخفیف</span>
           </div>
           <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block">توصیه استراتژیک مذاکره:</span>
@@ -227,19 +227,19 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-rose-500" /><span>فشار استطاعت خرید</span></div>
-          <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.affordabilityPressureIndex)} از ۱۰۰</div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.affordabilityPressureIndex)} از ۱۰۰</div>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Compass className="w-3.5 h-3.5 text-indigo-500" /><span>سال‌های پس‌انداز لازم</span></div>
-          <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.yearsOfHouseholdSavingRequired)} سال</div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.yearsOfHouseholdSavingRequired)} سال</div>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Building2 className="w-3.5 h-3.5 text-amber-500" /><span>شتاب اعیان‌سازی</span></div>
-          <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.gentrificationVelocityScore)}٪</div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.gentrificationVelocityScore)}٪</div>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>سهم اجاره از درآمد</span></div>
-          <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.rentToIncomeBurdenPct)}٪</div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.rentToIncomeBurdenPct)}٪</div>
         </div>
       </div>
 

@@ -266,7 +266,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
-          <span className="inline-flex items-center gap-1.5 font-black text-slate-900 dark:text-white whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
             <Radar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{isEn ? 'Viewport Radar' : 'رادار کادر دید'}</span>
           </span>
@@ -274,7 +274,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
             {toPersianNum(snapshot.inViewportCount)} محله
             <span className="text-emerald-700 dark:text-emerald-400 font-bold"> ({toPersianNum(snapshot.affordableCount)} مناسب بودجه)</span>
           </span>
-          <span className="font-extrabold text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
+          <span className="font-bold text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
             میانه: {medianPrimaryText}
             {mode === 'buy' && negotiatedBuyUnit !== null && (
               <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mr-1">
@@ -285,7 +285,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
           </span>
           {diffText && (
             <span
-              className={`text-[10px] font-extrabold tabular-nums whitespace-nowrap ${
+              className={`text-[10px] font-bold tabular-nums whitespace-nowrap ${
                 (snapshot.diffVsCityPct ?? 0) <= 0
                   ? 'text-emerald-700 dark:text-emerald-400'
                   : 'text-amber-700 dark:text-amber-400'
@@ -360,7 +360,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
                 onClick={() => onSelectNeighborhood(hood)}
                 className="min-w-0 flex-1 text-start cursor-pointer"
               >
-                <div className="font-extrabold text-slate-900 dark:text-white truncate text-[11px]">
+                <div className="font-bold text-slate-900 dark:text-white truncate text-[11px]">
                   {hood.name}
                 </div>
                 <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tabular-nums truncate">

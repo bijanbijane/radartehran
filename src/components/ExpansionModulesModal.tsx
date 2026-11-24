@@ -63,7 +63,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <Calculator className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     ماشین‌حساب رسمی کمیسیون املاک، مالیات و هزینه محضر
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -98,7 +98,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <NumericDraftInput
                     aria-label="متراژ ملک" min={20} max={1000} fallback={85} value={commSqm}
                     onValueChange={setCommSqm}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
                 <div>
@@ -106,12 +106,12 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <NumericDraftInput
                     aria-label="قیمت هر متر" min={5} max={2000} fallback={135} value={commPricePerSqm}
                     onValueChange={setCommPricePerSqm}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
                 <div className="flex flex-col justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">ارزش کل معامله:</span>
-                  <strong className="text-sm font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
+                  <strong className="text-sm font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
                     {toPersianNum((commBuyTotalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(commBuyTotalMillion, intlCurrency, locale)})` : ''}
                   </strong>
                 </div>
@@ -123,7 +123,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <NumericDraftInput
                     aria-label="مبلغ ودیعه" min={0} max={50000} fallback={500} value={commDeposit}
                     onValueChange={setCommDeposit}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
                 <div>
@@ -131,16 +131,16 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <NumericDraftInput
                     aria-label="اجاره ماهانه" min={0} max={2000} fallback={15} value={commMonthlyRent}
                     onValueChange={setCommMonthlyRent}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
-                <div className="sm:col-span-2 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-[11px]"><span className="text-slate-500 dark:text-slate-400">معادل رهن کامل مبنای کمیسیون ({formatAreaShort(commSqm, areaUnit)}):</span><strong className="font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.round(commDeposit + (commMonthlyRent * 100) / 3))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.round(commDeposit + (commMonthlyRent * 100) / 3), intlCurrency, locale)})` : ''}</strong></div>
+                <div className="sm:col-span-2 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-[11px]"><span className="text-slate-500 dark:text-slate-400">معادل رهن کامل مبنای کمیسیون ({formatAreaShort(commSqm, areaUnit)}):</span><strong className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.round(commDeposit + (commMonthlyRent * 100) / 3))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.round(commDeposit + (commMonthlyRent * 100) / 3), intlCurrency, locale)})` : ''}</strong></div>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-4 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-emerald-200/70 dark:border-emerald-800/70 pb-2">
-                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200 text-sm">
+                  <span className="font-bold text-emerald-950 dark:text-emerald-200 text-sm">
                     {commDealType === 'buy' ? 'سهم پرداختی خریدار' : 'سهم پرداختی مستاجر'}
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-[var(--color-brand-600)] text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
@@ -162,13 +162,13 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   )}
                 </div>
                 <div className="pt-2.5 border-t border-emerald-200 dark:border-emerald-800/70 flex items-center justify-between">
-                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200">{commDealType === 'buy' ? 'جمع کل قابل پرداخت خریدار:' : 'جمع کل قابل پرداخت مستاجر:'}</span>
-                  <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{fmtFee(commResult.totalBuyerPayableToman)}</span>
+                  <span className="font-bold text-emerald-950 dark:text-emerald-200">{commDealType === 'buy' ? 'جمع کل قابل پرداخت خریدار:' : 'جمع کل قابل پرداخت مستاجر:'}</span>
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{fmtFee(commResult.totalBuyerPayableToman)}</span>
                 </div>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
-                  <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                  <span className="font-bold text-slate-900 dark:text-white text-sm">
                     {commDealType === 'buy' ? 'سهم پرداختی فروشنده' : 'سهم پرداختی موجر (مالک)'}
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold">شامل مالیات و محضر</span>
@@ -196,14 +196,14 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   )}
                 </div>
                 <div className="pt-2.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900 dark:text-white">{commDealType === 'buy' ? 'جمع کل قابل پرداخت فروشنده:' : 'جمع کل قابل پرداخت موجر:'}</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white tabular-nums">{fmtFee(commResult.totalSellerPayableToman)}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{commDealType === 'buy' ? 'جمع کل قابل پرداخت فروشنده:' : 'جمع کل قابل پرداخت موجر:'}</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">{fmtFee(commResult.totalSellerPayableToman)}</span>
                 </div>
               </div>
             </div>
             <button
               type="button" onClick={handleCopyCommissionSheet}
-              className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
             >
               {copiedCommission ? (
                 <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>برگه محاسبه کمیسیون کپی شد!</span></>
@@ -225,7 +225,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <Send className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">خروجی خودکار شکارها و نبض بازار برای کانال تلگرام</h3>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">خروجی خودکار شکارها و نبض بازار برای کانال تلگرام</h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">تولید خودکار پست استاندارد روزانه + اتصال مستقیم به ربات تلگرام (Webhook)</p>
                 </div>
               </div>
@@ -253,7 +253,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 type="button"
                 onClick={() => {
                   const textToCopy = intlCurrency !== 'IRT' || areaUnit === 'sqft' ? `${telegramText}\n${tgHoodSummary}` : telegramText;
-                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
               >
                 {copiedTelegram ? (
                   <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>پست تلگرام در حافظه کپی شد!</span></>
@@ -262,7 +262,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 )} </button>
             </div>
             <form onSubmit={handleSendToTelegramWebhook} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>ارسال مستقیم به کانال رسمی تلگرام (از طریق تنظیمات امن سرور ویژه ادمین)</span>
               </div>
@@ -273,7 +273,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <div role={tgSendStatus.type === 'error' ? 'alert' : 'status'} className={`p-2.5 rounded-xl font-semibold border ${tgSendStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'}`}>
                   {tgSendStatus.text} </div>
               )} <button
-                type="submit" disabled={sendingTelegram} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                type="submit" disabled={sendingTelegram} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
               >
                 <Send className="w-4 h-4 stroke-[1.75]" />
                 <span>{sendingTelegram ? 'در حال ارسال به ربات تلگرام...' : 'ارسال مستقیم پست به کانال تلگرام'}</span>

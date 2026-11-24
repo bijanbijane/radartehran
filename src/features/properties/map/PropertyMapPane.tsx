@@ -173,7 +173,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
                 />
               )}
               <span
-                className={`relative z-10 px-2 py-0.5 rounded-full text-[10.5px] font-black shadow-sm border transition tabular-nums whitespace-nowrap inline-flex items-center gap-1 ${
+                className={`relative z-10 px-2 py-0.5 rounded-full text-[10.5px] font-bold shadow-sm border transition tabular-nums whitespace-nowrap inline-flex items-center gap-1 ${
                   isActive
                     ? 'bg-[var(--color-text-primary)] text-white border-white scale-110'
                     : cl.isCluster
@@ -283,7 +283,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
         {focusedCluster && (
           <div className="absolute bottom-3 left-3 right-3 z-20 p-3 rounded-[10px] bg-white/95 dark:bg-slate-900/95 border border-[var(--color-border-subtle)] dark:border-slate-700 shadow-lg flex items-center justify-between gap-2 text-xs">
             <div className="min-w-0">
-              <div className="font-black text-[var(--color-text-primary)] dark:text-white truncate">{focusedCluster.primaryItem.listing.title}</div>
+              <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{focusedCluster.primaryItem.listing.title}</div>
               <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">
                 {focusedCluster.primaryItem.property.hoodName} · {focusedCluster.precision === 'approximate' ? `موقعیت تقریبی (شعاع ~${toPersianNum(focusedCluster.privacyRadiusMeters)} متر)` : 'سطح محله'}
               </div>

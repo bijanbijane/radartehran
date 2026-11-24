@@ -20,7 +20,7 @@ export const AdminServiceModerationCard: React.FC<{ isVerifiedAdmin: boolean }> 
       className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs"
     >
       <div className="flex items-center justify-between gap-2">
-        <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+        <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <ShieldAlert className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>صف ممیزی ارائه‌دهندگان خدمات و شکایات (Stage 21)</span>
         </strong>

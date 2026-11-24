@@ -32,7 +32,7 @@ export const KnowledgeMethodologyView: React.FC<KnowledgeMethodologyViewProps> =
   <div data-testid="knowledge-methodology-view" className="space-y-5 text-xs animate-fadeIn">
     <section className="p-5 rounded-[14px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
           <Layers className="w-4 h-4 text-[var(--color-brand-fg)]" />
           <span>زنجیره چهارمرحله‌ای تولید دانش در رادار تهران</span>
         </h2>
@@ -43,10 +43,10 @@ export const KnowledgeMethodologyView: React.FC<KnowledgeMethodologyViewProps> =
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {EPISTEMIC_PIPELINE.map((item) => (
           <div key={item.step} className="p-3.5 rounded-[10px] bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] space-y-1.5">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-brand-600)] text-white font-black text-xs">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-brand-600)] text-white font-bold text-xs">
               {item.step}
             </span>
-            <div className="font-black text-[var(--color-text-primary)]">{item.titleFa}</div>
+            <div className="font-bold text-[var(--color-text-primary)]">{item.titleFa}</div>
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{item.descFa}</p>
           </div>
         ))}
@@ -54,11 +54,11 @@ export const KnowledgeMethodologyView: React.FC<KnowledgeMethodologyViewProps> =
     </section>
 
     <section className="p-5 rounded-[14px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
-      <h2 className="text-base font-black text-[var(--color-text-primary)]">واحدهای پژوهش، نویسندگان و کارگروه بازبینی فنی</h2>
+      <h2 className="text-base font-bold text-[var(--color-text-primary)]">واحدهای پژوهش، نویسندگان و کارگروه بازبینی فنی</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {KNOWLEDGE_CONTRIBUTORS.map((c) => (
           <div key={c.id} className="p-3.5 rounded-[10px] border border-[var(--color-border-subtle)] space-y-1">
-            <div className="flex items-center gap-1.5 font-black text-[var(--color-text-primary)]">
+            <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)]">
               {c.roleKind === 'technical_reviewer' ? <ShieldCheck className="w-4 h-4 text-[var(--color-brand-fg)]" /> : <UserCheck className="w-4 h-4 text-[var(--color-brand-fg)]" />}
               <span>{c.nameFa}</span>
             </div>

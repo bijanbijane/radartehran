@@ -67,7 +67,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       {/* My Submitted Property Listings */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>فایل‌های ملکی ثبت‌شده من ({toPersianNum(myListings.length)})</span>
           </h2>
@@ -83,7 +83,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
             {myListings.map((rec) => (
               <div key={rec.listing.listingId} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="font-black text-slate-900 dark:text-white">{rec.listing.title}</div>
+                  <div className="font-bold text-slate-900 dark:text-white">{rec.listing.title}</div>
                   <div className="text-[11px] text-slate-500">
                     محله {rec.property.hoodName} · وضعیت: {rec.listing.status === 'pending_review' ? 'در صف بازبینی' : 'منتشرشده'}
                   </div>
@@ -100,7 +100,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       {/* My Service Requests & Received Proposals */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Briefcase className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>درخواست‌های خدمات و پیشنهادهای دریافتی ({toPersianNum(serviceRequests.length)})</span>
           </h2>
@@ -118,7 +118,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
               return (
                 <div key={req.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div className="font-black text-slate-900 dark:text-white">{req.providerName}</div>
+                    <div className="font-bold text-slate-900 dark:text-white">{req.providerName}</div>
                     <div className="text-[11px] text-slate-500">
                       محله {req.neighborhoodName} · وضعیت: {req.status} · {toPersianNum(propCount)} پیشنهاد
                     </div>
@@ -136,7 +136,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       {/* Community Price / Quality / Data Contributions */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <MessageSquarePlus className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مشارکت‌های میدانی و اصلاح داده ({toPersianNum(loadDataCorrectionProposals().length)} مورد)</span>
           </h2>
@@ -151,7 +151,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3" data-testid="account-saved-knowledge-section">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <BookMarked className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گزارش‌های ذخیره‌شده پایگاه دانش ({toPersianNum(savedKnowledgeItems.length)} مطالعه)</span>
             </h2>

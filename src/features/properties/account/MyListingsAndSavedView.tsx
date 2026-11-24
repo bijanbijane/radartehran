@@ -32,7 +32,7 @@ export const MyListingsAndSavedView: React.FC<MyListingsAndSavedViewProps> = ({
     return (
       <div className="space-y-3" data-testid="saved-properties-panel">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>فایل‌های ذخیره‌شده ({toPersianNum(savedItems.length)})</span>
           </h2>
@@ -52,7 +52,7 @@ export const MyListingsAndSavedView: React.FC<MyListingsAndSavedViewProps> = ({
               return (
                 <div key={s.listingId} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
                   <div className="min-w-0 space-y-1">
-                    <div className="font-black text-[var(--color-text-primary)] dark:text-white truncate">{live?.listing.title || s.titleSnapshot}</div>
+                    <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{live?.listing.title || s.titleSnapshot}</div>
                     <div className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
                       {s.hoodNameSnapshot} · {s.priceLabelSnapshot}
                     </div>
@@ -84,7 +84,7 @@ export const MyListingsAndSavedView: React.FC<MyListingsAndSavedViewProps> = ({
   return (
     <div className="space-y-3" data-testid="my-listings-panel">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فایل‌های ثبت‌شده توسط شما ({toPersianNum(myListings.length)})</h2>
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">فایل‌های ثبت‌شده توسط شما ({toPersianNum(myListings.length)})</h2>
         <button type="button" onClick={onOpenSubmitWizard} className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white text-xs font-bold flex items-center gap-1 cursor-pointer">
           <PlusCircle className="w-3.5 h-3.5" />
           <span>ثبت فایل جدید</span>
@@ -104,7 +104,7 @@ export const MyListingsAndSavedView: React.FC<MyListingsAndSavedViewProps> = ({
             <div key={rec.listing.listingId} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => onOpenDetail(rec.listing.listingId)} className="font-black text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] cursor-pointer">
+                  <button type="button" onClick={() => onOpenDetail(rec.listing.listingId)} className="font-bold text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] cursor-pointer">
                     {rec.listing.title}
                   </button>
                   <span className="px-2 py-0.5 rounded-[6px] bg-[var(--color-bg-muted)] dark:bg-slate-800 text-[10.5px] font-bold">

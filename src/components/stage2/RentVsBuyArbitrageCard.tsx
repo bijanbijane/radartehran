@@ -96,7 +96,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             <Scale className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <span>مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد»</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{dossier.hoodName}</span>
             </h4>
@@ -158,7 +158,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-indigo-600 shrink-0" />
           <div>
-            <span className="font-extrabold text-slate-800 dark:text-slate-200 block">نرخ بازده سبد سرمایه‌گذاری جایگزین:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">نرخ بازده سبد سرمایه‌گذاری جایگزین:</span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها (تامین‌کننده مابه‌التفاوت تمدید سالانه ودیعه)</span>
           </div>
         </div>
@@ -181,7 +181,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             onChange={(e) => setAlternativeReturnPct(Number(e.target.value))}
             className="w-32 accent-indigo-600 h-1.5 cursor-pointer"
           />
-          <strong className="text-indigo-700 dark:text-indigo-400 font-black tabular-nums min-w-[44px] text-left">٪{toPersianNum(alternativeReturnPct)}</strong>
+          <strong className="text-indigo-700 dark:text-indigo-400 font-bold tabular-nums min-w-[44px] text-left">٪{toPersianNum(alternativeReturnPct)}</strong>
         </div>
       </div>
 
@@ -194,11 +194,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
         }`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Home className="w-4 h-4 text-indigo-600" />
               <span>سناریوی اول: خرید قطعی {toPersianNum(targetSqm)} متر ({dossier.hoodName})</span>
             </span>
-            {isBuyWinner && <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">برنده مالی ✓</span>}
+            {isBuyWinner && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">برنده مالی ✓</span>}
           </div>
 
           <div className="space-y-1.5 text-[11px]">
@@ -212,7 +212,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
               <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
-              <strong className="text-base font-black text-indigo-700 dark:text-indigo-400 tabular-nums">{toPersianNum(displayedBuyWealth)} م.ت</strong>
+              <strong className="text-base font-bold text-indigo-700 dark:text-indigo-400 tabular-nums">{toPersianNum(displayedBuyWealth)} م.ت</strong>
             </div>
             <div className="text-[10px] text-slate-400 flex justify-between">
               <span>نرخ بازده داخلی اسمی سالانه (IRR):</span>
@@ -228,11 +228,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
         }`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-600" />
               <span>سناریوی دوم: «اجاره {toPersianNum(targetSqm)} متر + سرمایه‌گذاری مازاد»</span>
             </span>
-            {isRentWinner && <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">برنده مالی ✓</span>}
+            {isRentWinner && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">برنده مالی ✓</span>}
           </div>
 
           <div className="space-y-1.5 text-[11px]">
@@ -246,7 +246,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
               <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
-              <strong className="text-base font-black text-amber-700 dark:text-amber-400 tabular-nums">{toPersianNum(displayedRentWealth)} م.ت</strong>
+              <strong className="text-base font-bold text-amber-700 dark:text-amber-400 tabular-nums">{toPersianNum(displayedRentWealth)} م.ت</strong>
             </div>
             <div className="text-[10px] text-slate-400 flex justify-between">
               <span>نرخ بازده داخلی اسمی سالانه (IRR):</span>
@@ -259,11 +259,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
       {/* Decision Summary & Verdict */}
       <div className="p-3 rounded-lg border border-indigo-200/80 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50/50 via-white to-slate-50/50 dark:from-slate-900 dark:to-indigo-950/20 text-xs space-y-2">
         <div className="flex items-center justify-between">
-          <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>حکم نهایی تصمیم‌یار: {analysis.verdictFa}</span>
           </span>
-          <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
+          <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 tabular-nums">
             {showRealPurchasingPower ? 'شکاف ثروت حقیقی:' : 'شکاف ثروت اسمی:'} {toPersianNum(Math.abs(displayedDiff))} م.ت{wealthGapFx}
           </span>
         </div>

@@ -99,7 +99,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       <section aria-labelledby="home-featured-hoods-heading" data-testid="home-featured-neighborhoods-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)]">
+            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
               محله‌های منتخب {activeCityNameFa}
             </h2>
             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
@@ -156,7 +156,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     <span className="truncate">{hood.zone}</span>
                     <span className="font-mono font-bold text-[var(--color-text-primary)] tabular-nums">{toPersianNum(hood.overallScore)}/۱۰</span>
                   </div>
-                  <h3 className="text-base font-extrabold text-[var(--color-text-primary)]">محله {hood.name}</h3>
+                  <h3 className="text-base font-bold text-[var(--color-text-primary)]">محله {hood.name}</h3>
                   <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
                     {explain.nonCompensatoryWarningsFa[0] || explain.primaryReasonFa}
                   </p>

@@ -47,7 +47,7 @@ export const Stage40ReportPreviewAndExport: React.FC<Props> = ({ draft, onSaveTo
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
           <div>
             <span className="text-[10.5px] font-bold text-cyan-400 block">رادار تهران · پیش‌نمایش جلد و شناسنامه سند (RPT-08 / RPT-09)</span>
-            <h4 className="text-sm font-black text-white mt-0.5">{draft.titleFa}</h4>
+            <h4 className="text-sm font-bold text-white mt-0.5">{draft.titleFa}</h4>
             <div className="text-[11px] text-slate-400">موضوع: {draft.subjectTitleFa} · محدوده: {draft.geoBoundaryLabelFa}</div>
           </div>
           <div className="text-left text-[10.5px] space-y-0.5 text-slate-300">

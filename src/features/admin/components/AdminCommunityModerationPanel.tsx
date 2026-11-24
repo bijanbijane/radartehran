@@ -108,7 +108,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
 
   return (
     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3 text-xs" data-testid="admin-community-moderation-queue">
-      <strong className="font-black text-slate-800 dark:text-slate-100 block">
+      <strong className="font-bold text-slate-800 dark:text-slate-100 block">
         پیشنهادهای اصلاح داده محله ({toPersianNum(corrections.length)})
       </strong>
       {loadErrorFa && (
@@ -255,7 +255,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
 
       {safetyCases.length > 0 && (
         <div className="space-y-1.5 pt-2" data-testid="trust-safety-cases-section">
-          <strong className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 block">
+          <strong className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 block">
             پرونده‌های نظارت و ایمنی جامعه (Stage 5 · {toPersianNum(safetyCases.length)})
           </strong>
           {safetyCases.slice(0, 5).map((sc) => (

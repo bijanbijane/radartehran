@@ -72,7 +72,7 @@ export function SecondaryModals({
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Wind className="w-4 h-4 stroke-[1.75]" />
                 </span>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   نبض زنده بازار مسکن، شاخص هوای ایستگاه‌های {activeCityNameFa} و زمان‌بند ۲ ساعته
                 </h3>
               </div>
@@ -86,7 +86,7 @@ export function SecondaryModals({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
                 <div className="text-slate-500 dark:text-slate-400">شاخص آلودگی هوای ایستگاه‌های {activeCityNameFa} (AQI):</div>
-                <div className="text-base font-black text-emerald-700 dark:text-emerald-400 tabular-nums">
+                <div className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                   {toPersianNum(marketPulse?.airQuality?.tehranAverageAqi ?? 92)} ({marketPulse?.airQuality?.statusLabel || 'قابل قبول'})
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
@@ -98,7 +98,7 @@ export function SecondaryModals({
               </div>
               <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
                 <div className="text-slate-500 dark:text-slate-400">میانگین وزنی قیمت مسکن کل {activeCityNameFa}:</div>
-                <div className="text-base font-black text-slate-900 dark:text-white tabular-nums">
+                <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums">
                   {fmtUnitBuy(marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138)}
                 </div>
                 <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
@@ -118,7 +118,7 @@ export function SecondaryModals({
                 className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 text-right transition cursor-pointer"
               >
                 <div className="text-slate-500 dark:text-slate-400 text-[11px]">ارزان‌ترین محله امروز:</div>
-                <div className="font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums">
+                <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums">
                   {marketPulse?.marketSummary?.cheapestNeighborhood?.name || 'شهرری'} ({fmtUnitBuy(marketPulse?.marketSummary?.cheapestNeighborhood?.buyPerSqm || 62)})
                 </div>
               </button>
@@ -133,7 +133,7 @@ export function SecondaryModals({
                 className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 text-right transition cursor-pointer"
               >
                 <div className="text-slate-500 dark:text-slate-400 text-[11px]">گران‌ترین محله امروز:</div>
-                <div className="font-extrabold text-slate-900 dark:text-white mt-0.5 tabular-nums">
+                <div className="font-bold text-slate-900 dark:text-white mt-0.5 tabular-nums">
                   {marketPulse?.marketSummary?.mostExpensiveNeighborhood?.name || 'زعفرانیه'} ({fmtUnitBuy(marketPulse?.marketSummary?.mostExpensiveNeighborhood?.buyPerSqm || 310)})
                 </div>
               </button>
@@ -153,7 +153,7 @@ export function SecondaryModals({
                   }
                   setShowPulseModal(false);
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
                 <Scale className="w-4 h-4 stroke-[1.75]" />
                 <span>ترسیم کمان شکاف قیمتی شهر (ارزان‌ترین ⇄ گران‌ترین محله) روی نقشه</span>
@@ -180,7 +180,7 @@ export function SecondaryModals({
               </button>
               <button
                 type="button" onClick={onDeepWebSync} disabled={deepSyncing}
-                className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className={`w-4 h-4 stroke-[1.75] ${deepSyncing ? 'animate-spin' : ''}`} />
                 <span>{deepSyncing ? 'در حال بروزرسانی رادار...' : 'بروزرسانی فوری رادار'}</span>
@@ -197,7 +197,7 @@ export function SecondaryModals({
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Globe className="w-4 h-4 stroke-[1.75]" />
                 </span>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   فهرست سئو و صفحات اختصاصی محله‌های {activeCityNameFa}
                 </h3>
               </div>
@@ -217,7 +217,7 @@ export function SecondaryModals({
               </div>
             </div>
             <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5">
-              <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-1.5">
                 <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>{activeCityNameFa === 'تهران' ? 'مقایسه‌های پرطرفدار محله‌های تهران:' : `مقایسه سریع محله‌های ${activeCityNameFa}:`}</span>
               </h4>
@@ -243,7 +243,7 @@ export function SecondaryModals({
             </div>
             <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>صفحات اختصاصی قیمت مسکن محله‌های {activeCityNameFa}:</span>
                 </h4>

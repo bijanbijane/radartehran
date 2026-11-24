@@ -238,6 +238,7 @@ export interface BuildSynchronizedNavigationUrlInput {
   isRouteChange: boolean;
   activeCity: string;
   selectedHoodId?: number;
+  omitHoodParam?: boolean;
   keepBudget?: boolean;
   budget?: {
     mode: string;
@@ -265,7 +266,9 @@ export function buildSynchronizedNavigationUrl(input: BuildSynchronizedNavigatio
   } else {
     sp.delete('city');
   }
-  if (typeof input.selectedHoodId === 'number' && Number.isFinite(input.selectedHoodId)) {
+  if (input.omitHoodParam) {
+    sp.delete('hood');
+  } else if (typeof input.selectedHoodId === 'number' && Number.isFinite(input.selectedHoodId)) {
     sp.set('hood', String(input.selectedHoodId));
   }
   if (input.keepBudget && input.budget) {

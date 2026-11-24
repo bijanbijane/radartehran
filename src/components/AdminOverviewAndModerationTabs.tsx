@@ -106,11 +106,11 @@ export function AdminOverviewAndModerationTabs(
                 <div key={req.id} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">{req.agencyName}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">{req.agencyName}</span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">محله {req.hoodName}</span>
                       {featureFlags.enableSponsorBilling && (
                         <>
-                          <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] tabular-nums ${remainingDays > 7 ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] tabular-nums ${remainingDays > 7 ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
                             {toPersianNum(remainingDays)} روز اعتبار باقی‌مانده
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
@@ -161,7 +161,7 @@ export function AdminOverviewAndModerationTabs(
 
         <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto">
           <div className="min-w-[540px]">
-            <div className="grid grid-cols-5 bg-slate-50 dark:bg-slate-800 py-2.5 px-3 font-extrabold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-5 bg-slate-50 dark:bg-slate-800 py-2.5 px-3 font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
               <div>نام خریدار</div>
               <div>شماره موبایل</div>
               <div>محله هدف</div>
@@ -227,7 +227,7 @@ export function AdminOverviewAndModerationTabs(
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <form onSubmit={onAdminQuickPriceSave} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-        <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+        <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
           <Edit3 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>ویرایش دستی قیمت خرید و رهن محله‌ها</span>
         </div>
@@ -255,11 +255,11 @@ export function AdminOverviewAndModerationTabs(
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(adminEditHoodId, neighborhoods.find((n) => n.id === adminEditHoodId)?.name || 'تهران', adminEditBuySqm).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
-            <NumericDraftInput aria-label="میانگین هر متر خرید محله" min={10} max={5000} fallback={130} value={adminEditBuySqm} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditBuySqm(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
+            <NumericDraftInput aria-label="میانگین هر متر خرید محله" min={10} max={5000} fallback={130} value={adminEditBuySqm} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditBuySqm(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums" />
           </div>
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">رهن کامل {formatAreaShort(80, areaUnit)} (میلیون){fxTag(adminEditRahn80m)}: <span className="text-[10.5px] text-slate-500 dark:text-slate-400">(اجاره ماهانه: {toPersianNum(Math.round(adminEditRahn80m * 0.03))} م{fxTag(Math.round(adminEditRahn80m * 0.03))})</span></label>
-            <NumericDraftInput aria-label="رهن کامل ۸۰ متری محله" min={0} max={100000} fallback={1400} value={adminEditRahn80m} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditRahn80m(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-extrabold tabular-nums" />
+            <NumericDraftInput aria-label="رهن کامل ۸۰ متری محله" min={0} max={100000} fallback={1400} value={adminEditRahn80m} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditRahn80m(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums" />
           </div>
         </div>
         {adminPriceSavedMsg && (() => {
@@ -279,31 +279,31 @@ export function AdminOverviewAndModerationTabs(
             </div>
           );
         })()}
-        <button type="submit" className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
+        <button type="submit" className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition cursor-pointer">
           ذخیره فوری قیمت محله
         </button>
       </form>
 
       <div className="space-y-4">
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>اجرای دستی رصد عمیق ۲ ساعته</span>
           </div>
-          <button type="button" onClick={onDeepWebSync} disabled={deepSyncing} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer disabled:opacity-50">
+          <button type="button" onClick={onDeepWebSync} disabled={deepSyncing} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition cursor-pointer disabled:opacity-50">
             {deepSyncing ? 'در حال بروزرسانی عمیق رادار...' : 'اجرای فوری رصد عمیق بازار، هوا و ترافیک'}
           </button>
         </div>
 
         <form onSubmit={onAdminChangePassword} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <KeyRound className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>قفل موقت نشست فعلی پنل مدیریت (در حافظه مرورگر)</span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">احراز هویت اصلی از طریق Google Auth انجام می‌شود؛ این رمز صرفاً برای قفل صفحه‌نمایش در همین نشست فعال است و روی سرور ذخیره نمی‌شود.</p>
           <div className="flex gap-2">
             <input type="password" aria-label="رمز قفل نشست فعلی پنل مدیریت" aria-invalid={classifyFeedbackTone(adminPassChangeMsg) === 'error'} value={newAdminPassword} onChange={(e) => { setAdminPassChangeMsg?.(''); setNewAdminPassword(e.target.value); }} placeholder="رمز قفل نشست (حداقل ۴ کاراکتر)..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
-            <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold cursor-pointer">تنظیم قفل</button>
+            <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold cursor-pointer">تنظیم قفل</button>
           </div>
           {adminPassChangeMsg && (() => {
             const tone = classifyFeedbackTone(adminPassChangeMsg);

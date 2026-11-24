@@ -81,7 +81,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
   return (
     <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-        <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-slate-100">
+        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
           <Database className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>
             ذخیرهٔ عکس و فیلم آگهی ({hoodName} · {formatAreaShort(sqm, areaUnit)} · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(unitPrice)} م · کل: {toPersianNum(effectiveTotalMillions.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(effectiveTotalMillions, intlCurrency, locale)}) · اجاره ماهانه: {toPersianNum(estMonthlyRentMillions)} م ({formatMillionTomanAsIntlCurrency(estMonthlyRentMillions, intlCurrency, locale)})) با بهینه‌سازی خودکار تصویر
@@ -123,7 +123,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
               <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span>{uploadStatusText || 'در حال ارسال رسانه به فضای ذخیره‌سازی...'}</span>
             </span>
-            <span className="tabular-nums text-emerald-800 dark:text-emerald-300 font-black">
+            <span className="tabular-nums text-emerald-800 dark:text-emerald-300 font-bold">
               {toPersianNum(Math.round(uploadProgress))}٪
             </span>
           </div>

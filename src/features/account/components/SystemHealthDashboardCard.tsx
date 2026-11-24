@@ -111,7 +111,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 داشبورد سلامت سیستم (System Health)
               </h3>
               {snapshot && (
@@ -149,7 +149,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
             data-testid="system-health-refresh-btn"
             onClick={() => void runProbe()}
             disabled={probing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white transition cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${probing ? 'animate-spin' : ''}`} />
             <span>{probing ? 'در حال پینگ...' : 'تست پینگ زنده'}</span>
@@ -162,13 +162,13 @@ export const SystemHealthDashboardCard: React.FC = () => {
         <div className="grid grid-cols-3 gap-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 border border-slate-200/60 dark:border-slate-800 text-xs">
           <div className="flex items-center justify-between px-2">
             <span className="text-slate-500 dark:text-slate-400 font-bold">امتیاز پایداری شبکه:</span>
-            <span className="font-black text-slate-900 dark:text-white" data-testid="system-health-score">
+            <span className="font-bold text-slate-900 dark:text-white" data-testid="system-health-score">
               {snapshot.overallScorePct.toLocaleString('fa-IR')}٪
             </span>
           </div>
           <div className="flex items-center justify-between px-2 border-r border-slate-200 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 font-bold">میانگین زمان پاسخ:</span>
-            <span className="font-black font-mono text-teal-700 dark:text-teal-300" data-testid="system-health-avg-latency">
+            <span className="font-bold font-mono text-teal-700 dark:text-teal-300" data-testid="system-health-avg-latency">
               {snapshot.averageLatencyMs !== null ? `${snapshot.averageLatencyMs} ms` : '—'}
             </span>
           </div>
@@ -196,7 +196,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
                     {getServiceIcon(srv.id)}
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">{srv.titleFa}</h4>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{srv.titleFa}</h4>
                     <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{srv.subtitleEn}</p>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   <span
                     data-testid={`health-latency-${srv.id}`}
-                    className="font-mono font-black text-slate-900 dark:text-white bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700"
+                    className="font-mono font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700"
                   >
                     {srv.latencyMs !== null ? `${srv.latencyMs} ms` : 'آفلاین'}
                   </span>

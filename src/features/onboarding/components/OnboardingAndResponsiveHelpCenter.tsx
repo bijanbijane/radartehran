@@ -107,7 +107,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
           <span className="text-xs font-bold text-[var(--color-brand-fg)] block">
             راهنمای گام‌به‌گام، دسترس‌پذیری و تجربه چنددستگاهی
           </span>
-          <h2 className="text-lg font-black text-[var(--color-text-primary)]">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
             شروع کار با رادار تهران و امکانات کاربردی
           </h2>
         </div>
@@ -142,7 +142,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
                   <span>چک‌لیست شروع کار رادار (پیشرفت: {toPersianNum(completedCount)}/{toPersianNum(checklist.length)})</span>
                 </h3>
@@ -165,7 +165,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
 
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                   <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
                   <span>راهنمای تطبیقی نقشه و لایه‌های وابسته به زوم</span>
                 </h3>
@@ -187,7 +187,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-              <h3 className="text-sm font-black text-[#182522] dark:text-white">ثبت نسخه‌دار راهنماها (تفکیک «رد شده» از «تکمیل‌شده» + اجرای مجدد)</h3>
+              <h3 className="text-sm font-bold text-[#182522] dark:text-white">ثبت نسخه‌دار راهنماها (تفکیک «رد شده» از «تکمیل‌شده» + اجرای مجدد)</h3>
               {ONBOARDING_GUIDE_REGISTRY.slice(0, 4).map((g) => {
                 const st = manager.getGuideStatus(g.guideId);
                 return (
@@ -208,7 +208,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
 
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-[#182522] dark:text-white">تفکیک مسیر ورود بازارچه خدمات (متقاضی در برابر ارائه‌دهنده)</h3>
+                <h3 className="text-sm font-bold text-[#182522] dark:text-white">تفکیک مسیر ورود بازارچه خدمات (متقاضی در برابر ارائه‌دهنده)</h3>
                 <div className="inline-flex rounded-[6px] border border-[#DCE3DF] dark:border-slate-700 p-0.5">
                   <button type="button" onClick={() => setServiceRole('seeker')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'seeker' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>متقاضی خدمت (۷ گام)</button>
                   <button type="button" onClick={() => setServiceRole('provider')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'provider' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>ارائه‌دهنده (۶ گام)</button>
@@ -228,7 +228,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
         <div className="space-y-4" data-testid="stage-33-responsive-panel">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-              <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                 <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>شبیه‌ساز ۵ رده نمایشگر و حفظ وضعیت در تغییر ابعاد (Stage 33)</span>
               </h3>
@@ -246,7 +246,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
             </div>
 
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-              <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>قرارداد Bottom Sheet سه‌حالته موبایل و تفکیک ژست لمسی نقشه</span>
               </h3>

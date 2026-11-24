@@ -72,10 +72,10 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
           className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6 select-none"
         >
           <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-xl" title={refCurrencySample}>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto font-black text-lg">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto font-bold text-lg">
               !
             </div>
-            <h2 className="text-lg font-extrabold text-emerald-700">
+            <h2 className="text-lg font-bold text-emerald-700">
               رادارتهران
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
@@ -95,7 +95,7 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
               <button
                 type="button"
                 onClick={this.handleNonDestructiveRetry}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer transition"
               >
                 تلاش مجدد
               </button>

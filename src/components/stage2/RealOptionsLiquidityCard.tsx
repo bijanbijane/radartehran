@@ -97,7 +97,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               <Sliders className="w-3.5 h-3.5 text-amber-500" />
               <span>ارزش اختیار صبر (Option to Wait)</span>
             </span>
-            <span className="text-amber-600 dark:text-amber-400 font-extrabold text-[11px]">
+            <span className="text-amber-600 dark:text-amber-400 font-bold text-[11px]">
               {toPersianNum(horizonMonths)} ماهه
             </span>
           </div>
@@ -122,7 +122,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
 
           <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 space-y-1">
             <div className="text-[10px] text-slate-500 dark:text-slate-400">ارزش خالص اختیار تعویق (برای {toPersianNum(targetSqm)} متر):</div>
-            <div className="text-sm font-black text-amber-600 dark:text-amber-400">
+            <div className="text-sm font-bold text-amber-600 dark:text-amber-400">
               {toPersianNum(customRealOptions.valueOfWaitingTomanMln)} میلیون تومان
               <span className="text-[10px] font-normal text-slate-400">{valueWaitingFx}</span>
             </div>
@@ -148,7 +148,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               <Clock className="w-3.5 h-3.5 text-indigo-500" />
               <span>تابع بقای نقدشوندگی (DOM)</span>
             </span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-[10px]">
+            <span className="text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
               {report.liquidity.liquidityTierFa}
             </span>
           </div>
@@ -157,11 +157,11 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
           <div className="grid grid-cols-2 gap-1.5 text-center">
             <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-[10px] text-slate-400">میانگین روزهای عرضه:</div>
-              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{toPersianNum(report.liquidity.expectedDaysOnMarket)} روز</div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{toPersianNum(report.liquidity.expectedDaysOnMarket)} روز</div>
             </div>
             <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-[10px] text-slate-400">نیمه‌عمر جذب فایل:</div>
-              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{toPersianNum(report.liquidity.absorptionHalfLifeDays)} روز</div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{toPersianNum(report.liquidity.absorptionHalfLifeDays)} روز</div>
             </div>
           </div>
 
@@ -196,7 +196,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
               <span>بتای سرریز کلان (Macro Beta)</span>
             </span>
-            <span className="text-[var(--color-brand-600)] dark:text-emerald-400 font-extrabold text-[10px]">
+            <span className="text-[var(--color-brand-600)] dark:text-emerald-400 font-bold text-[10px]">
               تأخیر {toPersianNum(report.elasticity.lagMonthsToFullPassThrough)} ماهه
             </span>
           </div>
@@ -211,15 +211,15 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
           <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
             <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-slate-400">بتای دلار:</div>
-              <div className="font-extrabold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.usdExchangeRateBeta)}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.usdExchangeRateBeta)}</div>
             </div>
             <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-slate-400">بتای طلا:</div>
-              <div className="font-extrabold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.goldCoinBeta)}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.goldCoinBeta)}</div>
             </div>
             <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-slate-400">بتای تورم:</div>
-              <div className="font-extrabold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.cpiInflationBeta)}</div>
+              <div className="font-bold text-slate-800 dark:text-slate-100">{toPersianNum(report.elasticity.cpiInflationBeta)}</div>
             </div>
           </div>
 

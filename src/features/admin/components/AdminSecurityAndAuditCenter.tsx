@@ -72,7 +72,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
       {/* Two-Step Sensitive Operation Execution Card */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <AlertOctagon className="w-4 h-4 text-rose-600" />
             <span>عملیات حساس حاکمیتی (نیازمند تأیید دومرحله‌ای + ثبت دلیل)</span>
           </strong>
@@ -99,7 +99,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
 
         {selectedOp && (
           <div data-testid="admin-sensitive-confirm-dialog" className="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 space-y-2.5">
-            <div className="font-black text-rose-900 dark:text-rose-200">تأیید دومرحله‌ای: {selectedOp.titleFa}</div>
+            <div className="font-bold text-rose-900 dark:text-rose-200">تأیید دومرحله‌ای: {selectedOp.titleFa}</div>
             <input
               type="text"
               value={reasonFa}
@@ -115,7 +115,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
                 placeholder="عبارت CONFIRM را تایپ کنید"
                 className="flex-1 min-w-[180px] p-2 rounded-lg bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 font-mono"
               />
-              <button type="button" onClick={executeSensitiveOp} className="px-3.5 py-2 rounded-lg bg-rose-600 text-white font-black cursor-pointer">
+              <button type="button" onClick={executeSensitiveOp} className="px-3.5 py-2 rounded-lg bg-rose-600 text-white font-bold cursor-pointer">
                 تأیید و ثبت در Audit Log
               </button>
               <button type="button" onClick={() => setSelectedOp(null)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold cursor-pointer">
@@ -136,7 +136,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
       {/* RBAC Matrix + Audit Log Viewer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-5 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماتریس تفکیک مجوزهای نقش (RBAC)</span>
           </strong>
@@ -157,7 +157,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
 
         <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <FileSearch className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گزارش ممیزی اقدامات حاکمیتی ({visibleLogs.length})</span>
             </strong>

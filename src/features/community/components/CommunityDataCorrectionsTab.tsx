@@ -126,13 +126,13 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
     <div className="space-y-4 text-xs" data-testid="community-data-corrections-tab">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button type="button" onClick={onOpenAgencySubmit} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1 cursor-pointer transition">
-          <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <div className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" /><span>ثبت فایل زیر قیمت یا مشاهده معامله</span>
           </div>
           <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-xs">ارسال مشاهده قیمتی واقعی برای محله {selectedHood.name}</p>
         </button>
         <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1 cursor-pointer transition">
-          <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <div className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-600" /><span>راستی‌آزمایی و مچ‌گیر آگهی ساختگی</span>
           </div>
           <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-xs">بررسی نابهنجاری قیمت در آگهی‌های پرت محله</p>
@@ -141,7 +141,7 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
 
       <form onSubmit={handleSubmit} className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <MapPinPlus className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>گزارش خطا و پیشنهاد اصلاح داده‌های مکانی یا شهری</span>
           </h2>
@@ -218,7 +218,7 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
                   <span>{st.label}</span>
                 </span>
               </div>
-              <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h3>
+              <h3 className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h3>
               <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.evidenceSummaryFa}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-xs">
                 <div><span className="text-[var(--color-text-muted)]">مقدار فعلی:</span> <strong className="text-[var(--color-text-primary)] dark:text-slate-200">{item.currentValueFa || 'داده موجود سامانه'}</strong></div>

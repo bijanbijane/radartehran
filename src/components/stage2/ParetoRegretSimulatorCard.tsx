@@ -168,7 +168,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">{st.titleFa}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{st.titleFa}</span>
                       {st.isMinimaxOptimal && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-600)] text-white">
                           <CheckCircle2 className="w-3 h-3" />
@@ -186,14 +186,14 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                   <div className="flex items-center gap-3 text-xs tabular-nums">
                     <div className="text-left">
                       <div className="text-[10px] text-slate-400">ثروت سال سوم (این سناریو)</div>
-                      <div className="font-black text-slate-900 dark:text-white">
+                      <div className="font-bold text-slate-900 dark:text-white">
                         {toPersianNum(activeCell.terminalWealthMillion)} م‌ت{' '}
                         <span className="text-[10px] font-normal text-indigo-600 dark:text-indigo-400">({activeCell.terminalWealthIntlText})</span>
                       </div>
                     </div>
                     <div className="text-left border-r border-slate-200 dark:border-slate-700 pr-3">
                       <div className="text-[10px] text-slate-400">امتیاز هورwicz / پشیمانی</div>
-                      <div className={`font-black ${st.maxRegretMillion === 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <div className={`font-bold ${st.maxRegretMillion === 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {toPersianNum(st.hurwiczScoreMillion)} م‌ت / {st.maxRegretMillion === 0 ? '۰ پشیمانی' : `-${toPersianNum(st.maxRegretMillion)} م‌ت`}
                       </div>
                     </div>
@@ -234,7 +234,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                     <button
                       type="button"
                       onClick={() => onSelectCompareHood?.(cand.hoodName)}
-                      className="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 hover:underline text-right cursor-pointer"
+                      className="text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:underline text-right cursor-pointer"
                     >
                       محله {cand.hoodName}
                     </button>

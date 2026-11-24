@@ -117,7 +117,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           </h3>
         </div>
         <div className="text-left">
-          <div className="radar-tabular-num text-lg font-extrabold text-[var(--color-brand-600)] dark:text-emerald-400">
+          <div className="radar-tabular-num text-lg font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
             {formatMillionToVerbalPersian(estimation.estimatedTotalMillion)} ({formatMillionTomanAsIntlCurrency(estimation.estimatedTotalMillion, intlCurrency, radarLocale)})
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">

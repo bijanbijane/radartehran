@@ -115,7 +115,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
           ].map((m) => (
             <div key={m.label} className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
               <div className="text-[10px] text-slate-500 dark:text-slate-400">{m.label}</div>
-              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100 mt-0.5">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
                 {toPersianNum(m.val)} <span className="text-[10px] font-normal text-slate-400">/ {m.max}</span>
               </div>
             </div>
@@ -247,7 +247,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${PROVENANCE_BADGE_STYLE[item.layerId]}`}>{item.titleFa}</span>
                   <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">{EPISTEMIC_CLASS_LABEL[item.epistemicClass]}</span>
                 </div>
-                <div className="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 my-0.5">{item.currentValueSummaryFa}</div>
+                <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 my-0.5">{item.currentValueSummaryFa}</div>
                 <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">منشأ: {item.sourceFa} • روش کنترل: {item.verificationMethodFa}</p>
               </div>
               <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1 text-[10px] text-amber-800 dark:text-amber-300">

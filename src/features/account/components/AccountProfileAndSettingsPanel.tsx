@@ -66,7 +66,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
     return (
       <div className="space-y-4 text-xs" data-testid="account-profile-panel">
         <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-4">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-[var(--color-brand-fg)]" />
             <span>هویت کاربری، نقش‌ها و وضعیت دسترسی</span>
           </h2>
@@ -151,7 +151,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
                         : 'border-[var(--color-border-subtle)] hover:border-[var(--color-border-strong)]'
                     }`}
                   >
-                    <div className="font-black text-[var(--color-text-primary)]">{wm.labelFa}</div>
+                    <div className="font-bold text-[var(--color-text-primary)]">{wm.labelFa}</div>
                     <div className="text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">{wm.descFa}</div>
                   </button>
                 );
@@ -173,7 +173,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
   return (
     <div className="space-y-4 text-xs" data-testid="account-settings-panel">
       <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
-        <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
           <Lock className="w-4 h-4 text-[var(--color-brand-fg)]" />
           <span>تنظیمات حریم خصوصی و انتشار اطلاعات</span>
         </h2>
@@ -194,7 +194,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
       </div>
 
       <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
-        <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
           <Laptop className="w-4 h-4 text-[var(--color-brand-fg)]" />
           <span>نشست‌ها و دستگاه‌های فعال ({p.sessions.length})</span>
         </h2>
@@ -216,7 +216,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
       </div>
 
       <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3" data-testid="account-data-retention-card">
-        <h2 className="text-base font-black text-[var(--color-text-primary)]">خروجی اطلاعات، مدیریت داده و حذف حساب</h2>
+        <h2 className="text-base font-bold text-[var(--color-text-primary)]">خروجی اطلاعات، مدیریت داده و حذف حساب</h2>
         <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <p className="leading-relaxed">

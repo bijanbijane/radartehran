@@ -78,7 +78,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
             <span className="text-[10.5px] font-bold text-[var(--color-brand-600)]">
               {SERVICE_CATEGORY_LABELS_FA[provider.category]} · محله {provider.identity.primaryNeighborhoodName}
             </span>
-            <h3 className="text-base font-black text-[var(--color-text-primary)] dark:text-white mt-0.5">
+            <h3 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white mt-0.5">
               ارسال درخواست به {provider.identity.displayName}
             </h3>
           </div>

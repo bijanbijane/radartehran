@@ -39,7 +39,7 @@ export const ChartAccessibleFrame: React.FC<ChartAccessibleFrameProps> = ({
     <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-2.5">
         <div>
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{titleFa}</h3>
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{titleFa}</h3>
           <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5 tabular-nums">
             واحد: {unitLabelFa} · {provenanceLineFa} · {INDICATOR_STATUS_LABELS_FA[status]}
           </p>

@@ -72,7 +72,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs" data-testid="account-community-privacy-panel">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
@@ -153,7 +153,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
       <section className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
@@ -223,7 +223,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
-          <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>وضعیت اعتبار ۵ محوری و مشارکت‌های ثبت‌شده ({toPersianNum(myContributions.length)})</span>
           </h3>
@@ -232,7 +232,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
               {(['data', 'community', 'research', 'sources', 'professional'] as const).map((axis) => (
                 <div key={axis} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-slate-600 dark:text-slate-300">{REPUTATION_AXIS_LABELS_FA[axis]}</span>
-                  <span className="font-black tabular-nums text-emerald-700 dark:text-emerald-300">{toPersianNum(profile.reputation[axis])}</span>
+                  <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{toPersianNum(profile.reputation[axis])}</span>
                 </div>
               ))}
             </div>
@@ -248,7 +248,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
         </section>
 
         <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
-          <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <Scale className="w-4 h-4 text-sky-600" />
             <span>ثبت اعتراض و پیگیری تصمیمات نظارت</span>
           </h3>

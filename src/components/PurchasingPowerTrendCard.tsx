@@ -73,7 +73,7 @@ export function PurchasingPowerTrendCard({
     <div className="space-y-3.5">
       <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-          <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
+          <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
             {sqmDiff >= 0 ? (
               <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             ) : (
@@ -82,7 +82,7 @@ export function PurchasingPowerTrendCard({
             <span>تغییر قدرت خرید بودجه شما ({toPersianNum((safeBudget / 1000).toFixed(1))} میلیارد{fxBudget}) در ۶ ماه گذشته</span>
           </div>
           <span
-            className={`px-2 py-0.5 rounded-md text-[10.5px] font-black tabular-nums ${
+            className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold tabular-nums ${
               sqmDiff >= 0
                 ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                 : 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
@@ -99,7 +99,7 @@ export function PurchasingPowerTrendCard({
         <div className="grid grid-cols-2 gap-2.5 text-center">
           <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-xl p-2.5">
             <div className="text-[10.5px] text-slate-500 dark:text-slate-400">قدرت خرید ۶ ماه پیش در {selectedHood.name}</div>
-            <div className="text-sm font-black text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
               {formatAreaValue(sqm6MonthsAgo, areaUnit)}
             </div>
             <div className="text-[10px] text-slate-400 tabular-nums mt-0.5">
@@ -109,7 +109,7 @@ export function PurchasingPowerTrendCard({
 
           <div className="bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 rounded-xl p-2.5">
             <div className="text-[10.5px] text-emerald-800 dark:text-emerald-300">قدرت خرید امروز در {selectedHood.name}</div>
-            <div className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
+            <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
               {formatAreaValue(sqmToday, areaUnit)}
             </div>
             <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 tabular-nums mt-0.5">

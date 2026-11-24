@@ -84,7 +84,7 @@ export function reconcileMetroLinesLayer(params: {
     if (!entry || entry.geometryKey !== lineKey) {
       if (entry) { entry.stations.forEach((stMarker) => group.removeLayer?.(stMarker)); group.removeLayer?.(entry.polyline); }
       const polyline = L.polyline(line.coords, { color: line.color, weight: 3.5, opacity: 0.85, lineJoin: 'round' })
-        .bindTooltip(`<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;">${safeLineName}</div>`, { sticky: true, direction: 'top' });
+        .bindTooltip(`<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;">${safeLineName}</div>`, { sticky: true, direction: 'top' });
       group.addLayer?.(polyline);
       entry = { polyline, stations: new Map(), geometryKey: lineKey };
       entriesMap.set(key, entry);
@@ -148,7 +148,7 @@ export function buildComparisonArcGroup(
     deltaText = diff === 0 ? `قیمت برابر (${unitLabel} ${toPersianNum(uA)}م · معامله v6.4: ${toPersianNum(dA)}م${fxSuffix})` : diff > 0 ? `${safeNameB}: ${unitLabel} +${toPersianNum(diff)}م گران‌تر از ${safeNameA} (معامله v6.4: +${toPersianNum(dealDiff)}م)${fxSuffix}` : `${safeNameB}: ${unitLabel} ${toPersianNum(Math.abs(diff))}م ارزان‌تر از ${safeNameA} (معامله v6.4: ${toPersianNum(Math.abs(dealDiff))}م)${fxSuffix}`;
   }
   const safeDeltaText = escapeHtmlAttr(deltaText), arcMidPoint = arcPoints[8] || [ctrlLat, ctrlLng];
-  const arcBadgeIcon = L.divIcon({ className: 'comparison-arc-badge', html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);"><span style="white-space:nowrap;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.5px;font-weight:800;color:#ffffff;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:1.5px solid #ffffff;box-shadow:0 4px 12px rgba(79,70,229,0.55);">مقایسه: ${safeDeltaText}</span></div>`, iconSize: [0, 0] });
+  const arcBadgeIcon = L.divIcon({ className: 'comparison-arc-badge', html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);"><span style="white-space:nowrap;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.5px;font-weight:700;color:#ffffff;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:1.5px solid #ffffff;box-shadow:0 4px 12px rgba(79,70,229,0.55);">مقایسه: ${safeDeltaText}</span></div>`, iconSize: [0, 0] });
   sub.addLayer(L.marker(arcMidPoint, { icon: arcBadgeIcon, zIndexOffset: 950 }));
   return sub;
 }

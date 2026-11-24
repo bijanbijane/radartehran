@@ -251,7 +251,7 @@ export function reconcileInteractiveSpatialMeasureLayer(params: {
     const pinText = isDarkMap ? '#f8fafc' : '#0f172a';
     const icon = L.divIcon({
       className: 'radar-spatial-pin-icon',
-      html: `<div style="width:22px;height:22px;border-radius:9999px;background:${pinBg};color:${pinText};border:2.5px solid ${strokeColor};display:flex;align-items:center;justify-content:center;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:900;box-shadow:0 2px 6px rgba(0,0,0,0.28);">${safeIdx}</div>`,
+      html: `<div style="width:22px;height:22px;border-radius:9999px;background:${pinBg};color:${pinText};border:2.5px solid ${strokeColor};display:flex;align-items:center;justify-content:center;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.28);">${safeIdx}</div>`,
       iconSize: [22, 22],
       iconAnchor: [11, 11],
     });
@@ -273,7 +273,7 @@ export function reconcileInteractiveSpatialMeasureLayer(params: {
     const anchorPoint = state.points[state.points.length - 1];
     const labelIcon = L.divIcon({
       className: 'radar-spatial-label-icon',
-      html: `<div dir="rtl" style="white-space:nowrap;display:inline-flex;align-items:center;padding:3px 9px;border-radius:8px;background:${isDarkMap ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)'};color:${isDarkMap ? '#f8fafc' : '#0f172a'};border:1.5px solid ${strokeColor};font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.5px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,0.2);transform:translate(-50%,-135%);">${safeLabel}</div>`,
+      html: `<div dir="rtl" style="white-space:nowrap;display:inline-flex;align-items:center;padding:3px 9px;border-radius:8px;background:${isDarkMap ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)'};color:${isDarkMap ? '#f8fafc' : '#0f172a'};border:1.5px solid ${strokeColor};font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.5px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2);transform:translate(-50%,-135%);">${safeLabel}</div>`,
       iconSize: [0, 0],
       iconAnchor: [0, 0],
     });

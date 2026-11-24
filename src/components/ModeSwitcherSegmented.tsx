@@ -61,9 +61,9 @@ export function ModeSwitcherSegmented({
           title={shouldSuggestRent ? 'پیشنهاد هوشمند: با این بودجه، بررسی گزینه‌های رهن کامل توصیه می‌شود' : undefined}
           className={`relative py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer ${
             mode === 'rent'
-              ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-extrabold'
+              ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-bold'
               : shouldSuggestRent
-              ? 'bg-blue-50/90 dark:bg-blue-950/60 text-[#007AFF] dark:text-blue-400 font-black ring-2 ring-[#007AFF]/70 shadow-[0_0_12px_rgba(0,122,255,0.35)] animate-pulse'
+              ? 'bg-blue-50/90 dark:bg-blue-950/60 text-[#007AFF] dark:text-blue-400 font-bold ring-2 ring-[#007AFF]/70 shadow-[0_0_12px_rgba(0,122,255,0.35)] animate-pulse'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -82,9 +82,9 @@ export function ModeSwitcherSegmented({
           title={shouldSuggestBuy ? 'پیشنهاد هوشمند: با پس‌انداز بالای ۲ میلیارد، فرصت‌های خرید نقلی یا با تسهیلات را بررسی کنید' : undefined}
           className={`relative py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer ${
             mode === 'buy'
-              ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-extrabold'
+              ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-bold'
               : shouldSuggestBuy
-              ? 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-black ring-2 ring-emerald-500/70 shadow-[0_0_12px_rgba(16,185,129,0.35)] animate-pulse'
+              ? 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold ring-2 ring-emerald-500/70 shadow-[0_0_12px_rgba(16,185,129,0.35)] animate-pulse'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -110,7 +110,7 @@ export function ModeSwitcherSegmented({
               با پس‌انداز {toPersianNum(deposit.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(deposit, intlCurrency, locale)}) و اجاره ماهانه {toPersianNum(monthlyRent)} م ({formatMillionTomanAsIntlCurrency(monthlyRent, intlCurrency, locale)})، گزینه‌های خرید نقلی ({formatAreaShort(80, areaUnit)}) یا با وام در دسترس شماست!
             </span>
           </span>
-          <span className="shrink-0 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 underline">سوییچ به خرید</span>
+          <span className="shrink-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 underline">سوییچ به خرید</span>
         </button>
       )}
 
@@ -126,7 +126,7 @@ export function ModeSwitcherSegmented({
               با بودجه {toPersianNum(buyTotalBudget.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, locale)} · معادل هر {areaUnit === 'sqft' ? 'ft²' : 'متر'} {toPersianNum(impliedUnitBuy80m)} م برای واحد {formatAreaShort(80, areaUnit)})، رهن کامل واحدهای لوکس و نوساز می‌تواند گزینه مناسب‌تری باشد!
             </span>
           </span>
-          <span className="shrink-0 text-[10px] font-extrabold text-blue-700 dark:text-blue-400 underline">سوییچ به رهن</span>
+          <span className="shrink-0 text-[10px] font-bold text-blue-700 dark:text-blue-400 underline">سوییچ به رهن</span>
         </button>
       )}
     </div>

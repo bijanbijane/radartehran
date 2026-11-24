@@ -85,7 +85,7 @@ export const Stage47GuideAndToolsPanel: React.FC<{
           </div>
 
           <div>
-            <h4 className="text-sm font-black text-white">{activeGuide.titleFa}</h4>
+            <h4 className="text-sm font-bold text-white">{activeGuide.titleFa}</h4>
             <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-900/80 p-2.5 text-[11px]" data-testid="pk-summary-panel">
               <div><strong className="text-teal-300 block">۱. این محتوا درباره چیست؟</strong><span className="text-slate-200">{activeGuide.summaryWhatFa}</span></div>
               <div><strong className="text-teal-300 block">۲. برای چه کسی مفید است؟</strong><span className="text-slate-200">{activeGuide.summaryForWhomFa}</span></div>

@@ -99,6 +99,10 @@
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
     --app-height: 100dvh;
+    --header-height: 56px;
+    --container-max: 1320px;
+    --motion-fast: 120ms;
+    --motion-standard: 180ms;
 
     /* Surface Aliases (mapped cleanly to single design-system source) */
     --apple-bg-base: var(--color-bg-canvas);
@@ -118,5 +122,11 @@
     --apple-accent-red: var(--color-danger);
     --apple-shadow-floating: var(--shadow-elevation-2);
     --apple-shadow-sheet: var(--shadow-elevation-3);
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-height: 64px;
+    }
   }
 }

@@ -93,10 +93,10 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
                     className={`flex-1 min-w-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-emerald-600 ${copy.dir === 'rtl' ? 'text-right' : 'text-left'}`}
                   >
                     <div className="text-xs text-[var(--color-text-muted)] font-medium">{hood.zone} · {copy.scoreLabel(hood.overallScore)} {isTiedTop && <span className="text-indigo-700 dark:text-indigo-400 font-bold">{copy.tiedTopNote}</span>}</div>
-                    <h3 className="text-base font-black text-[var(--color-text-primary)] mt-0.5 flex flex-wrap items-center gap-1.5">
+                    <h3 className="text-base font-bold text-[var(--color-text-primary)] mt-0.5 flex flex-wrap items-center gap-1.5">
                       <span>{copy.neighborhoodPrefix ? `${copy.neighborhoodPrefix} ${hood.name}` : hood.name}</span>
                       {topFilteredScore !== undefined && Math.abs(hood.overallScore - topFilteredScore) < 0.05 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 font-black ring-1 ring-amber-500/25">{copy.topOpportunityBadge}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold ring-1 ring-amber-500/25">{copy.topOpportunityBadge}</span>
                       )}
                       {isSelected && <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">{copy.selectedOnMapBadge}</span>}
                     </h3>
@@ -158,7 +158,7 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
               onClick={() => onSelectNeighborhood(hood)}
               className={`flex items-center gap-3 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-emerald-600 ${copy.dir === 'rtl' ? 'text-right' : 'text-left'}`}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black tabular-nums shrink-0 ${isSelected ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-primary)]'}`}>{formatNum(hood.overallScore)}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold tabular-nums shrink-0 ${isSelected ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-primary)]'}`}>{formatNum(hood.overallScore)}</div>
               <div className="min-w-0">
                 <div className="font-bold text-[var(--color-text-primary)] text-sm flex flex-wrap items-center gap-1.5">
                   <span>{copy.neighborhoodPrefix ? `${copy.neighborhoodPrefix} ${hood.name}` : hood.name}</span>

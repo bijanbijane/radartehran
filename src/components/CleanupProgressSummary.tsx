@@ -71,7 +71,7 @@ export function CleanupProgressSummary({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
             خلاصهٔ پیشرفت پاکسازی و بازیابی فایل‌های رسانه
           </div>
           {metrics && (
@@ -151,7 +151,7 @@ export function CleanupProgressSummary({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-black text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                   <span>حذف شد: {toPersianNum(completedCount)} مورد</span>
                 </span>
@@ -166,7 +166,7 @@ export function CleanupProgressSummary({
 
             <div className="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span>رد شد: {toPersianNum(pendingCount)} مورد</span>
                 </span>
@@ -181,7 +181,7 @@ export function CleanupProgressSummary({
 
             <div className="bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-black text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                <span className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                   <span>ناموفق: {toPersianNum(failedCount)} مورد</span>
                 </span>

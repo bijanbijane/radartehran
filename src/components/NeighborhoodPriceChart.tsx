@@ -99,20 +99,20 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <TrendingUp className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
-          <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs truncate">
+          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">
             {chartView === '12m_buy_rent'
               ? (isEn ? `12M Buy & Rent Trend (${selectedHood.name})` : `روند ۱۲ ماهه قیمت خرید و اجاره (${selectedHood.name})`)
               : (isEn ? `6M Housing Price Trend (${selectedHood.name})` : `روند ۶ ماهه قیمت مسکن (${selectedHood.name})`)}
           </span>
         </div>
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-[8px] text-[10.5px] font-bold shrink-0 border border-slate-200/60 dark:border-slate-700">
-          <button type="button" onClick={() => setChartView('12m_buy_rent')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '12m_buy_rent' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
+          <button type="button" onClick={() => setChartView('12m_buy_rent')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '12m_buy_rent' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
             {isEn ? '12M Buy & Rent' : '۱۲ ماهه خرید و اجاره'}
           </button>
-          <button type="button" onClick={() => setChartView('6m_city')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '6m_city' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
+          <button type="button" onClick={() => setChartView('6m_city')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '6m_city' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
             {isEn ? '6M City Compare' : 'مقایسه ۶ ماهه'}
           </button>
-          <button type="button" onClick={handleOpenFullModal} title="مشاهده نمودار تمام‌صفحه روند ۱۲ ماهه خرید و اجاره" className="px-2 py-1 rounded-[6px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 transition cursor-pointer">
+          <button type="button" onClick={handleOpenFullModal} title="مشاهده نمودار تمام‌صفحه روند ۱۲ ماهه خرید و اجاره" className="px-2 py-1 rounded-[6px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1 transition cursor-pointer">
             <Maximize2 className="w-3 h-3" />
             <span>{isEn ? 'Expand' : 'بزرگ‌نمایی'}</span>
           </button>
@@ -162,7 +162,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                         <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 flex items-center justify-between">
                           <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">{selectedHood.name}</span>
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-extrabold">
+                        <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-bold">
                           <span>{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}:` : `خرید هر ${areaUnit === 'sqft' ? 'ft²' : 'متر مربع'}:`}</span>
                           <span className="tabular-nums">{toPersianNum(uBuyVal)} م (سناریو مذاکره: {toPersianNum(uDealPoint)} م){fxBuy}</span>
                         </div>
@@ -170,7 +170,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                           <span>{isEn ? '80m² Total:' : 'کل واحد (۸۰م):'}</span>
                           <span className="font-bold tabular-nums">{toPersianNum((total80Buy / 1000).toFixed(2))} میلیارد{fxTotal80}</span>
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-sky-700 dark:text-sky-400 font-extrabold">
+                        <div className="flex items-center justify-between gap-3 text-sky-700 dark:text-sky-400 font-bold">
                           <span>{isEn ? 'Deposit 80m²:' : 'رهن کامل (۸۰م):'}</span>
                           <span className="tabular-nums">{toPersianNum(rahnVal)} میلیون{fxRahn}</span>
                         </div>
@@ -228,7 +228,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                 <span>{cityNameFa} ({cityGrowth6m > 0 ? '+' : ''}{toPersianNum(cityGrowth6m)}٪)</span>
               </div>
             </div>
-            <span className={`inline-flex items-center gap-0.5 text-[10.5px] font-extrabold tabular-nums ${hoodGrowth6m >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <span className={`inline-flex items-center gap-0.5 text-[10.5px] font-bold tabular-nums ${hoodGrowth6m >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               <ArrowUpRight className={`w-3 h-3 ${hoodGrowth6m >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-500 rotate-90'}`} />
               <span>{hoodGrowth6m > 0 ? '+' : ''}{toPersianNum(hoodGrowth6m)}٪</span>
             </span>
@@ -253,7 +253,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                           <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 flex items-center justify-between">
                             <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-normal">{areaUnit === 'sqft' ? 'M/ft²' : 'میلیون/متر'}</span>
                           </div>
-                          <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-extrabold">
+                          <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-bold">
                             <span>{selectedHood.name}:</span><span className="tabular-nums">{toPersianNum(hoodVal)} م{fxH}</span>
                           </div>
                           <div className="flex items-center justify-between gap-3 text-slate-600 dark:text-slate-300">

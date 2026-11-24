@@ -114,7 +114,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
         <div className="flex items-center gap-2">
           <BrainCircuit className="h-5 w-5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               موتور تصمیم‌گیری چندمعیاره و تفکیک اعتبار داده — {hoodName}
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -123,7 +123,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           </div>
         </div>
         <div className="flex items-center gap-2 tabular-nums">
-          <span className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1 text-xs font-black text-white dark:text-slate-900">
+          <span className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1 text-xs font-bold text-white dark:text-slate-900">
             مطلوبیت تعدیل‌شده با ریسک: {toPersianNum(evaluation.riskAdjustedUtilityScore)} از ۱۰۰
           </span>
         </div>
@@ -131,7 +131,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
       {/* Section 1: 4-Layer Epistemic Data Matrix */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
           <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           <span>ماتریس ۴ لایه معرفتی داده و عدم قطعیت</span>
         </div>
@@ -144,7 +144,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
                   {layer.badgeTextFa}
                 </span>
               </div>
-              <div className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 tabular-nums">
+              <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
                 {toPersianNum(layer.primaryMetricFa)}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -158,7 +158,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
       {/* Section 2: Interactive Multi-Criteria Decision Simulator (MCDA) */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
             <SlidersHorizontal className="h-4 w-4 text-[var(--color-brand-600)]" />
             <span>شبیه‌ساز وزن‌دهی اولویت‌های تصمیم‌گیری شما (MCDA)</span>
           </div>
@@ -226,11 +226,11 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
         <div className={`rounded-xl border p-3 space-y-1.5 ${verdictBadgeClass}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-black">
+            <div className="flex items-center gap-1.5 text-xs font-bold">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               <span>حکم تحلیلی مدل: {evaluation.verdictTitleFa}</span>
             </div>
-            <span className="text-xs font-extrabold tabular-nums">
+            <span className="text-xs font-bold tabular-nums">
               نرخ هدف مذاکره: متری {toPersianNum(evaluation.targetOfferPerSqm)} م.ت ({intlDealFormatted})
             </span>
           </div>
@@ -244,7 +244,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
       {/* Section 3: Behavioral & Cognitive Bias Guardrails */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
           <ShieldAlert className="h-4 w-4 text-amber-600" />
           <span>سپر محافظت در برابر خطاهای شناختی و تله‌های روانی بازار</span>
         </div>
@@ -256,7 +256,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                   <span>{b.titleFa}</span>
                 </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200/70 dark:bg-amber-900 text-amber-950 dark:text-amber-200 shrink-0">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/70 dark:bg-amber-900 text-amber-950 dark:text-amber-200 shrink-0">
                   {b.severity === 'HIGH' ? 'ریسک بالا' : b.severity === 'MEDIUM' ? 'ریسک متوسط' : 'هشدار پایه'}
                 </span>
               </div>

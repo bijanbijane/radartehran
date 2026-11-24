@@ -106,7 +106,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
               <Wallet className="w-3.5 h-3.5 text-emerald-500" />
               <span>درآمد ماهانه خانوار:</span>
             </span>
-            <span className="font-extrabold text-[var(--color-brand-600)] dark:text-emerald-400 text-xs">
+            <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400 text-xs">
               {toPersianNum(monthlyIncomeMillion)} میلیون تومان
             </span>
           </div>
@@ -163,13 +163,13 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           <div className="grid grid-cols-2 gap-1.5 text-center">
             <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-[10px] text-slate-400">سال‌های درآمد (PIR):</div>
-              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
                 {toPersianNum(report.affordability.priceToIncomeRatio)} سال
               </div>
             </div>
             <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700">
               <div className="text-[10px] text-slate-400">سهم اجاره (RIR):</div>
-              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
                 {toPersianNum(report.affordability.rentToIncomeRatioPct)}٪
               </div>
             </div>
@@ -183,7 +183,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
             <span>اصطکاک تردد تا {report.commute.workHubName}</span>
-            <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold">
+            <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
               {toPersianNum(report.commute.estimatedOneWayMinutes)} دقیقه رفت
             </span>
           </div>
@@ -226,7 +226,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
 
           <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 space-y-0.5">
             <div className="text-[10px] text-slate-400">هزینه نهایی واقعی ماهانه (اجاره + تردد):</div>
-            <div className="text-sm font-black text-slate-900 dark:text-white">
+            <div className="text-sm font-bold text-slate-900 dark:text-white">
               {toPersianNum(report.arbitrage.totalCostOfHousingMillion)} میلیون تومان
               <span className="text-[10px] font-normal text-slate-400">{tcohFx}</span>
             </div>
@@ -246,7 +246,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
       {sub && (
         <div data-testid="stage2-isochrone-substitute-banner" className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="space-y-0.5">
-            <div className="font-extrabold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+            <div className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
               <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0" />
               <span>پیشنهاد آربیتراژ ایزوکرون رادار برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
             </div>

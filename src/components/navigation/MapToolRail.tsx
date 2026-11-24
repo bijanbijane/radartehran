@@ -236,7 +236,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       {p.openPanel === 'filters' && (
         <div role="dialog" aria-label={isEn ? 'Map filters' : 'فیلترهای نقشه'} className="pointer-events-auto w-64 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Explorer filters' : 'فیلتر کاوشگر نقشه'}</span>
+            <span className="font-bold text-slate-900 dark:text-white">{isEn ? 'Explorer filters' : 'فیلتر کاوشگر نقشه'}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل فیلتر" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
@@ -270,7 +270,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       {p.openPanel === 'layers' && (
         <div role="dialog" aria-label={isEn ? 'Map Layers & Overlays' : 'لایه‌ها و نمای نقشه'} className="pointer-events-auto w-64 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Urban GIS Overlays' : 'لایه‌های زیرساخت شهری'}</span>
+            <span className="font-bold text-slate-900 dark:text-white">{isEn ? 'Urban GIS Overlays' : 'لایه‌های زیرساخت شهری'}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل لایه‌ها" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
           <div className="space-y-1.5">
@@ -289,7 +289,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       {p.openPanel === 'analysis' && (
         <div role="dialog" aria-label={isEn ? 'Spatial Analytics Panel' : 'تحلیل سریع محدوده'} className="pointer-events-auto w-64 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="font-black text-slate-900 dark:text-white">محله {p.selectedHood.name}</span>
+            <span className="font-bold text-slate-900 dark:text-white">محله {p.selectedHood.name}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل تحلیل" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
           <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-1 tabular-nums">
@@ -326,7 +326,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       {p.openPanel === 'save_view' && (
         <div role="dialog" aria-label={isEn ? 'Saved Map Views' : 'نماهای ذخیره‌شده نقشه'} className="pointer-events-auto w-68 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Saved Views' : 'ذخیره و بازیابی نمای نقشه'}</span>
+            <span className="font-bold text-slate-900 dark:text-white">{isEn ? 'Saved Views' : 'ذخیره و بازیابی نمای نقشه'}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل نماها" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
           <form onSubmit={handleSaveView} className="flex gap-1.5">

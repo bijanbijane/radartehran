@@ -88,11 +88,11 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black text-slate-900 dark:text-white">حکم آنی رادار برای {selectedHood.name}</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">حکم آنی رادار برای {selectedHood.name}</span>
               <span
                 data-testid="casper-verdict-badge"
                 data-verdict={decision.decisionVerdict}
-                className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${verdictBadgeTheme}`}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${verdictBadgeTheme}`}
               >
                 {decision.verdictTitleFa}
               </span>
@@ -144,7 +144,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-black text-slate-900 dark:text-white">{toPersianNum(dealTotalBillion)}</span>
+            <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(dealTotalBillion)}</span>
             <span className="text-xs text-slate-500 dark:text-slate-400">میلیارد تومان</span>
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
@@ -163,7 +163,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
             )}
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-black text-slate-700 dark:text-slate-300">{toPersianNum(askingTotalBillion)}</span>
+            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{toPersianNum(askingTotalBillion)}</span>
             <span className="text-xs text-slate-400">میلیارد تومان</span>
           </div>
           <span className="text-[11px] text-slate-400 block">متری {toPersianNum(agg.askingPricePerSqm)} م</span>
@@ -176,7 +176,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
             <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-black text-slate-900 dark:text-white">{toPersianNum(fireSaleTotalBillion)}</span>
+            <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(fireSaleTotalBillion)}</span>
             <span className="text-xs text-slate-400">میلیارد تومان</span>
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 block">

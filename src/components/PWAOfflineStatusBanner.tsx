@@ -134,7 +134,7 @@ export function PWAOfflineStatusBanner({
           {!isOnline ? <WifiOff className="w-4 h-4 stroke-[2]" /> : <CloudOff className="w-4 h-4 stroke-[2]" />}
         </span>
         <div className="min-w-0 leading-relaxed">
-          <div className="font-extrabold text-amber-200 flex items-center gap-1.5 flex-wrap">
+          <div className="font-bold text-amber-200 flex items-center gap-1.5 flex-wrap">
             <span>{!isOnline ? 'حالت کاوش آفلاین فعال است' : microcopy.connectivityLabelFa}</span>
             <span className="px-1.5 py-0.5 rounded-md bg-amber-500/25 text-amber-100 text-[10px] font-bold">
               {microcopy.dataOriginLabelFa}
@@ -188,7 +188,7 @@ export function PWAOfflineStatusBanner({
           type="button"
           onClick={onTriggerPwaInstall}
           aria-label="نصب وب‌اپ رادار برای کاوش آفلاین"
-          className="flex items-center gap-1.5 font-extrabold text-emerald-800 dark:text-emerald-300 hover:text-[var(--color-brand-600)] dark:hover:text-emerald-200 cursor-pointer"
+          className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300 hover:text-[var(--color-brand-600)] dark:hover:text-emerald-200 cursor-pointer"
         >
           <Download className="w-3.5 h-3.5 stroke-[2] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>نصب وب‌اپ رادار (کاوش آفلاین)</span>

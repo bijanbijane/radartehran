@@ -232,7 +232,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
             <BookOpen className="w-4 h-4" />
             <span>پایگاه دانش، گزارش‌های تحلیلی و روش‌شناسی رادار تهران</span>
           </span>
-          <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
+          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
             {currentTab === 'guide'
               ? 'راهنمای کاربردی و شروع کار با رادار تهران'
               : currentTab === 'methodology'
@@ -314,7 +314,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           {relatedPublications.length > 0 && (
             <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)]" aria-label="مطالب مرتبط پایگاه دانش">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-black text-[var(--color-text-primary)]">مطالب مرتبط در پایگاه دانش</h2>
+                <h2 className="text-sm font-bold text-[var(--color-text-primary)]">مطالب مرتبط در پایگاه دانش</h2>
                 <RadarLink
                   href="/knowledge"
                   onNavigate={() => onNavigateView('knowledge', 'reports')}
@@ -333,7 +333,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                     >
                       <div className="space-y-1.5">
                         <span className="text-xs font-bold text-[var(--color-brand-fg)]">{pub.categoryLabelFa}</span>
-                        <h3 className="text-sm font-black text-[var(--color-text-primary)] leading-snug line-clamp-2">{pub.titleFa}</h3>
+                        <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">{pub.titleFa}</h3>
                         <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{pub.summaryFa}</p>
                       </div>
                       <RadarLink
@@ -363,7 +363,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                   <div className="text-xs text-[var(--color-text-muted)]">{b.geographyFa} · {b.limitationFa}</div>
                 </div>
                 <div className="text-end shrink-0">
-                  <div className="text-base font-black text-[var(--color-brand-fg)] tabular-nums">{b.metricValueFa}</div>
+                  <div className="text-base font-bold text-[var(--color-brand-fg)] tabular-nums">{b.metricValueFa}</div>
                   <button
                     type="button"
                     onClick={() => {
@@ -453,7 +453,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                         </span>
                         <span className={`px-2 py-0.5 rounded border font-bold ${fr.badgeClass}`}>{fr.labelFa}</span>
                       </div>
-                      <h2 className="text-base font-black text-[var(--color-text-primary)] leading-[1.5]">{pub.titleFa}</h2>
+                      <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-[1.5]">{pub.titleFa}</h2>
                       <p className="text-[var(--color-text-secondary)] leading-relaxed">{pub.summaryFa}</p>
                       <div className="text-xs text-[var(--color-text-muted)] pt-1">
                         محدوده: <strong className="text-[var(--color-text-primary)]">{pub.geographyScopeFa}</strong> · نسخه {pub.version} · شاخص‌ها: {toPersianNum(pub.calculatedIndicators.length)} مورد

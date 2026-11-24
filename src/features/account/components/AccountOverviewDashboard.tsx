@@ -68,7 +68,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
                 <span className="text-xs font-medium">{c.label}</span>
                 <Icon className="w-4 h-4 text-[var(--color-brand-600)]" />
               </div>
-              <strong className="text-sm font-black text-[var(--color-text-primary)] tabular-nums block">
+              <strong className="text-sm font-bold text-[var(--color-text-primary)] tabular-nums block">
                 {c.value}
               </strong>
             </button>
@@ -79,7 +79,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
       {/* Dedicated Action Required Queue (distinct from passive timeline, zero promo noise) */}
       <div className="p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5" data-testid="account-action-required-queue">
         <div className="flex items-center justify-between">
-          <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
             <Bookmark className="w-4 h-4 text-amber-600" />
             <span>نیازمند اقدام ({toPersianNum(snapshot.actionRequired.length)})</span>
           </strong>
@@ -119,7 +119,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-center justify-between">
-            <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <strong className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
               <History className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>آخرین فعالیت‌های شما در رادار تهران</span>
             </strong>
@@ -158,7 +158,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
         </div>
 
         <div className="lg:col-span-5 p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5">
-          <strong className="text-sm font-black text-[var(--color-text-primary)] block">دسترسی سریع ابزارهای شخصی</strong>
+          <strong className="text-sm font-bold text-[var(--color-text-primary)] block">دسترسی سریع ابزارهای شخصی</strong>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => onNavigateView?.('properties')} className="min-h-[56px] p-3 rounded-xl bg-[var(--color-bg-subtle)] hover:border-[var(--color-brand-600)] border border-transparent text-start font-bold cursor-pointer space-y-1">
               <Home className="w-4 h-4 text-[var(--color-brand-fg)]" />

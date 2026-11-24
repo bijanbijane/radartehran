@@ -68,7 +68,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
             <span className="text-[11px] font-bold tracking-wide text-emerald-700 dark:text-emerald-300">
               {RT_FE_PERFORMANCE_ARCHITECTURE_013_SPEC_ID} · FPA-001..FPA-031
             </span>
-            <h3 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
               معماری عملکرد، بهینه‌سازی و مدیریت منابع فرانت‌اند رادار تهران (مرحله سیزدهم و سی‌ام)
             </h3>
           </div>

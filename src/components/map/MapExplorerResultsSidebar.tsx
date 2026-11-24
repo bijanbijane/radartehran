@@ -90,7 +90,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
     <>
       <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] shrink-0">
         <div className="min-w-0">
-          <h2 className="text-sm font-black text-[var(--color-text-primary)] truncate">
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] truncate">
             {isEn ? 'Neighborhoods' : 'فهرست محله‌ها'}
           </h2>
           <p className="text-xs text-[var(--color-text-muted)] tabular-nums truncate">
@@ -189,7 +189,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                 <div
                   className={`p-3 rounded-[12px] border transition ${
                     selected
-                      ? 'border-[var(--color-brand-600)] ring-2 ring-[var(--color-brand-600)]/40 bg-[var(--color-brand-50)]'
+                      ? 'border-[var(--color-brand-600)] ring-2 ring-[var(--color-brand-600)]/40 bg-[var(--color-brand-soft)] dark:bg-[#173530]'
                       : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-strong)]'
                   }`}
                 >
@@ -199,7 +199,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                     className="w-full text-start cursor-pointer focus-visible:outline-none"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-extrabold text-[var(--color-text-primary)] truncate">
+                      <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">
                         {hood.name}
                       </span>
                       <RadarBadge tone={STATUS_BADGE[hood.status] || 'neutral'} className="shrink-0 text-xs">
@@ -222,7 +222,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                       <button
                         type="button"
                         onClick={onOpenInspector}
-                        className="text-xs font-extrabold text-[var(--color-brand-primary)] hover:underline cursor-pointer shrink-0"
+                        className="text-xs font-bold text-[var(--color-brand-fg)] hover:underline cursor-pointer shrink-0"
                       >
                         {isEn ? 'Details ←' : 'جزئیات ←'}
                       </button>
@@ -387,7 +387,7 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
           type="button"
           data-testid="map-explorer-sidebar-reopen"
           onClick={openDesktopList}
-          className="pointer-events-auto fixed z-[24] hidden lg:flex right-4 top-[72px] items-center gap-1.5 apple-vibrancy-bar rounded-[12px] px-3 py-2.5 text-xs font-extrabold text-[var(--color-text-primary)] cursor-pointer hover:border-[var(--color-brand-600)] transition"
+          className="pointer-events-auto fixed z-[24] hidden lg:flex right-4 top-[calc(var(--header-height)+8px)] items-center gap-1.5 apple-vibrancy-bar rounded-[12px] px-3 py-2.5 text-xs font-bold text-[var(--color-text-primary)] cursor-pointer hover:border-[var(--color-brand-600)] transition"
           aria-label={isEn ? 'Show map results' : 'نمایش نتایج نقشه'}
         >
           <List className="w-4 h-4 text-[var(--color-brand-600)]" aria-hidden="true" />
@@ -401,7 +401,7 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
         <aside
           data-testid="map-explorer-results-sidebar"
           aria-label={isEn ? 'Map search results' : 'نتایج جست‌وجو در نقشه'}
-          className="pointer-events-auto fixed z-[24] hidden lg:flex right-4 top-[72px] bottom-4 w-[356px] flex-col apple-inspector-panel rounded-[12px] overflow-hidden"
+          className="pointer-events-auto fixed z-[24] hidden lg:flex right-4 top-[calc(var(--header-height)+8px)] bottom-4 w-[356px] flex-col apple-inspector-panel rounded-[12px] overflow-hidden"
         >
           <MapExplorerSidebarPanel {...panelProps} onClose={collapseDesktopPanel} />
         </aside>
@@ -418,7 +418,7 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
             onClick={onOpenInspector}
             className="min-w-0 flex-1 text-start min-h-[44px] flex flex-col justify-center cursor-pointer"
           >
-            <span className="text-xs font-black text-[var(--color-text-primary)] truncate">
+            <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">
               {resolvedSelectedHood ? (isEn ? resolvedSelectedHood.name : `محله ${resolvedSelectedHood.name}`) : (isEn ? 'Select area' : 'انتخاب محله')}
             </span>
             {resolvedSelectedHood && (

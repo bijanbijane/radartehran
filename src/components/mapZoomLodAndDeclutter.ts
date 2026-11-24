@@ -119,7 +119,7 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   if (tier === 'compact_chip') {
     const safeTruncName = escapeHtmlAttr(formatCompactNeighborhoodName(hood.name));
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:4px;">${safeShortPrice}</span></span></div>`,
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:4px;">${safeShortPrice}</span></span></div>`,
       iconSize: [Math.max(sz.w, 108), Math.max(sz.h, 26)], iconAnchor: [Math.round(Math.max(sz.w, 108) / 2), Math.round(Math.max(sz.h, 26) / 2)],
     };
   }
@@ -128,12 +128,12 @@ export function buildNeighborhoodLodDivIconConfig(params: {
     const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
     const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="detailed" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:5px;">${safeFullPrice}</span><span class="hood-price-label" style="font-size:12px;background:rgba(0,0,0,0.32);padding:1px 6px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span></span></div>`,
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="detailed" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:5px;">${safeFullPrice}</span><span class="hood-price-label" style="font-size:12px;background:rgba(0,0,0,0.32);padding:1px 6px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span></span></div>`,
       iconSize: [Math.max(sz.w, 168), Math.max(sz.h, 30)], iconAnchor: [Math.round(Math.max(sz.w, 168) / 2), Math.round(Math.max(sz.h, 30) / 2)],
     };
   }
   return {
-    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="standard" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:2.5px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:4px;">${safeShortPrice}</span></span></div>`,
+    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="standard" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:2.5px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="font-weight:700;font-size:12px;border-right:1px solid rgba(255,255,255,0.45);padding-right:4px;">${safeShortPrice}</span></span></div>`,
     iconSize: [Math.max(sz.w, 120), Math.max(sz.h, 28)], iconAnchor: [Math.round(Math.max(sz.w, 120) / 2), Math.round(Math.max(sz.h, 28) / 2)],
   };
 }
@@ -151,7 +151,7 @@ export function buildNeighborhoodRichTooltipHtml(params: {
   return `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;min-width:215px;padding:3px 2px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(148,163,184,0.25);padding-bottom:4px;margin-bottom:5px;">
       <strong style="font-size:12.5px;color:${titleColor};">محله ${safeHoodName}${headerZoneText}</strong>
-      <span dir="ltr" style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;">${toPersianNum(hood.overallScore)} / ۱۰</span>
+      <span dir="ltr" style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:700;">${toPersianNum(hood.overallScore)} / ۱۰</span>
     </div>
     <div style="font-size:11px;line-height:1.65;color:${bodyTextColor};">
       <div>میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> (کل: ${toPersianNum(total80mMillions)} میلیارد)</div>
@@ -161,9 +161,9 @@ export function buildNeighborhoodRichTooltipHtml(params: {
     </div>
     ${buildNeighborhoodTooltipTrendSectionHtml({ hood, mode, safeSqmPill, scaledRahnPill, isDarkMap })}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;padding-top:6px;border-top:1px solid rgba(148,163,184,0.2);">
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="anatomy" style="background:#059669;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">کالبدشکافی</button>
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="hedonic" style="background:#4f46e5;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">قیمت‌گذاری ملک</button>
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="bargains" style="background:#d97706;color:#020617;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">فایل شکار (${toPersianNum((hood.bargains || []).length)})</button>
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="anatomy" style="background:#059669;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;cursor:pointer;">کالبدشکافی</button>
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="hedonic" style="background:#4f46e5;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;cursor:pointer;">قیمت‌گذاری ملک</button>
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="bargains" style="background:#d97706;color:#020617;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;cursor:pointer;">فایل شکار (${toPersianNum((hood.bargains || []).length)})</button>
       <a href="${divarUrl}" target="_blank" rel="noopener noreferrer" style="background:#334155;color:#f8fafc;text-decoration:none;text-align:center;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;">دیوار محله</a>
     </div></div>`;
 }
@@ -180,7 +180,7 @@ export function renderMacroClustersOnLeaflet(params: {
     );
     const dotSize = cluster.count === 1 ? 12 : Math.min(24, 14 + Math.round(Math.log2(cluster.count + 1) * 2));
     const clusterHtml = `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-      <span data-macro-cluster="${escapeHtmlAttr(cluster.clusterId)}" style="display:inline-flex;align-items:center;justify-content:center;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${cluster.dominantPillBg};border:2.5px solid #ffffff;box-shadow:0 3px 12px rgba(0,0,0,0.5), 0 0 0 4px ${cluster.dominantPillBg}44;color:#ffffff;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:900;">
+      <span data-macro-cluster="${escapeHtmlAttr(cluster.clusterId)}" style="display:inline-flex;align-items:center;justify-content:center;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${cluster.dominantPillBg};border:2.5px solid #ffffff;box-shadow:0 3px 12px rgba(0,0,0,0.5), 0 0 0 4px ${cluster.dominantPillBg}44;color:#ffffff;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:700;">
         ${cluster.count > 1 ? toPersianNum(cluster.count) : ''}
       </span>
     </div>`;
@@ -225,7 +225,7 @@ export function renderGoldBargainPinOnLeaflet(params: {
   const safeBargainProfit = escapeHtmlAttr(b.buyerProfitText);
   const goldAccent = isDarkMap ? '#fde047' : '#b45309'; const titleColor = isDarkMap ? '#34d399' : '#047857'; const bodyTextColor = isDarkMap ? '#e2e8f0' : '#1e293b'; const goldIcon = L.divIcon({ className: 'gold-bargain-pin',
     html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);cursor:pointer;">
-      <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:900;color:#020617;background:linear-gradient(135deg,#fde047,#f59e0b);border:1.5px solid #ffffff;box-shadow:0 0 12px rgba(245,158,11,0.85);">
+      <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;color:#020617;background:linear-gradient(135deg,#fde047,#f59e0b);border:1.5px solid #ffffff;box-shadow:0 0 12px rgba(245,158,11,0.85);">
         -${toPersianNum(b.discountPercent)}٪ زیر قیمت
       </span>
     </div>`,

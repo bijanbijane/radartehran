@@ -156,6 +156,14 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
 
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/market?${serializeMarketContextToQuery(applied, compareHoodIds)}`;
   const uDealUnit = convertPricePerSqmToUnit(bundle.selectedAgg.estimatedDealPricePerSqm, areaUnit);
+  const availableIndicators = useMemo(
+    () => bundle.indicators.filter((ind) => ind.status !== 'unavailable' && ind.value !== null),
+    [bundle.indicators],
+  );
+  const unavailableIndicators = useMemo(
+    () => bundle.indicators.filter((ind) => ind.status === 'unavailable' || ind.value === null),
+    [bundle.indicators],
+  );
 
   return (
     <div className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-intelligence-view">
@@ -216,28 +224,39 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
       {subTab === 'reports' && <MarketReportList reports={bundle.reports} onOpenMethodology={() => setMethodologyOpen(true)} />}
 
       <section aria-labelledby="market-kpis-heading" className="space-y-3">
-        <h2 id="market-kpis-heading" className="text-base font-extrabold text-[var(--color-text-primary)] dark:text-white">
+        <h2 id="market-kpis-heading" className="text-base font-bold text-[var(--color-text-primary)]">
           {isEn ? 'Key Market Indicators' : `شاخص‌های کلیدی بازار (${bundle.geoScopeFa})`}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {bundle.indicators.slice(0, subTab === 'overview' ? 6 : 3).map((ind) => (
-            <IndicatorCard
-              key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
-              onSelect={(selected) => {
-                setSelectedIndicatorId(selected.id);
-                trackMarketEvent('market_indicator_selected', { indicatorId: selected.id });
-                if (selected.id === 'rent_deposit_80m') p.onChangeSubTab?.('rent');
-                else if (selected.id === 'supply_valid_count') p.onChangeSubTab?.('supply');
-                else if (selected.id === 'asking_price_median_sqm') p.onChangeSubTab?.('prices');
-              }}
-            />
-          ))}
-        </div>
+        {availableIndicators.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {availableIndicators.slice(0, subTab === 'overview' ? 6 : 3).map((ind) => (
+              <IndicatorCard
+                key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
+                onSelect={(selected) => {
+                  setSelectedIndicatorId(selected.id);
+                  trackMarketEvent('market_indicator_selected', { indicatorId: selected.id });
+                  if (selected.id === 'rent_deposit_80m') p.onChangeSubTab?.('rent');
+                  else if (selected.id === 'supply_valid_count') p.onChangeSubTab?.('supply');
+                  else if (selected.id === 'asking_price_median_sqm') p.onChangeSubTab?.('prices');
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {unavailableIndicators.length > 0 && !bundle.isNonResidentialUnavailable && (
+          <div
+            data-testid="market-unavailable-indicators-note"
+            className="px-3.5 py-2.5 rounded-[10px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed"
+          >
+            <strong className="text-[var(--color-text-primary)] font-bold">شفافیت داده‌های ثبتی:</strong>{' '}
+            {unavailableIndicators.map((u) => u.titleFa).join('، ')} به دلیل در دسترس نبودن داده رسمی ثبتی در این دوره حذف شده و با برآورد مدل ترکیب نمی‌شود.
+          </div>
+        )}
       </section>
 
       {(subTab === 'overview' || subTab === 'prices' || subTab === 'rent') && (
         <section aria-labelledby="market-charts-heading" className="space-y-3">
-          <h2 id="market-charts-heading" className="text-base font-extrabold text-[var(--color-text-primary)] dark:text-white">
+          <h2 id="market-charts-heading" className="text-base font-bold text-[var(--color-text-primary)]">
             {isEn ? 'Price Trends & Distribution' : 'روند قیمتی و توزیع بازار'}
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

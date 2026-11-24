@@ -49,16 +49,18 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
   const [reviewTextByReq, setReviewTextByReq] = useState<Record<string, string>>({});
   const [reviewScoreByReq, setReviewScoreByReq] = useState<Record<string, 1 | 2 | 3 | 4 | 5>>({});
   const [reviewMsg, setReviewMsg] = useState<{ requestId: string; tone: 'success' | 'error'; text: string } | null>(null);
+  const isDevRuntime = Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
   const devDemoEnabled =
+    isDevRuntime &&
     typeof window !== 'undefined' &&
     typeof window.location?.search === 'string' &&
     new URLSearchParams(window.location.search).get('dev') === '1';
 
   if (requests.length === 0) {
     return (
-      <div className="p-8 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center space-y-2 text-xs">
+      <div className="p-8 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-xs">
         <ClipboardList className="w-8 h-8 text-[var(--color-text-muted)] mx-auto" />
-        <p className="font-bold text-[var(--color-text-primary)] dark:text-white">هنوز درخواستی ثبت نکرده‌اید.</p>
+        <p className="font-bold text-[var(--color-text-primary)]">هنوز درخواستی ثبت نکرده‌اید.</p>
         <p className="text-[var(--color-text-muted)]">از دایرکتوری متخصصان یا فرم ۷ مرحله‌ای، درخواست خود را ثبت کنید تا چرخه پیگیری و مقایسه پیشنهادها اینجا فعال شود.</p>
       </div>
     );
@@ -87,13 +89,13 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
           <article
             key={req.id}
             data-testid={`tracked-service-req-${req.id}`}
-            className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3"
+            className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3"
           >
-            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-2.5">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <strong className="text-sm text-[var(--color-text-primary)] dark:text-white">{req.providerName}</strong>
-                  <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold">
+                  <strong className="text-sm text-[var(--color-text-primary)]">{req.providerName}</strong>
+                  <span className="px-2 py-0.5 rounded-[6px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-xs font-bold">
                     {STATUS_LABELS_FA[req.status]}
                   </span>
                 </div>
@@ -136,24 +138,24 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
 
             {/* Side-by-side proposals comparison */}
             {reqProposals.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
-                <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
+              <div className="space-y-2 pt-2 border-t border-[var(--color-border-subtle)]">
+                <div className="font-bold text-[var(--color-text-primary)] flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
                   <span>مقایسه شفاف پیشنهادهای دریافتی ({toPersianNum(reqProposals.length)})</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   {reqProposals.map((prop) => (
-                    <div key={prop.proposalId} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
+                    <div key={prop.proposalId} className="p-3 rounded-[10px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
-                        <strong className="text-[var(--color-text-primary)] dark:text-white">{prop.providerName}</strong>
-                        <span className="font-bold text-[var(--color-brand-600)] tabular-nums">{prop.priceDisplayFa}</span>
+                        <strong className="text-[var(--color-text-primary)]">{prop.providerName}</strong>
+                        <span className="font-bold text-[var(--color-brand-fg)] tabular-nums">{prop.priceDisplayFa}</span>
                       </div>
-                      <p className="text-[10.5px] text-[var(--color-text-muted)]">{prop.providerVerificationSummaryFa} · زمان: {prop.timelineFa}</p>
-                      <p className="text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300">{prop.scopeSummaryFa}</p>
-                      <div className="text-[10px] text-[var(--color-text-muted)]">شامل: {prop.includesFa} · مستثنی: {prop.excludesFa}</div>
+                      <p className="text-xs text-[var(--color-text-muted)]">{prop.providerVerificationSummaryFa} · زمان: {prop.timelineFa}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">{prop.scopeSummaryFa}</p>
+                      <div className="text-xs text-[var(--color-text-muted)]">شامل: {prop.includesFa} · مستثنی: {prop.excludesFa}</div>
                       <div className="flex items-center gap-1.5 pt-1">
                         {prop.status === 'accepted' ? (
-                          <span className="text-[var(--color-brand-600)] font-black flex items-center gap-1">
+                          <span className="text-[var(--color-brand-fg)] font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> پیشنهاد انتخاب‌شده
                           </span>
                         ) : (
@@ -198,9 +200,9 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                     setReviewMsg({ requestId: req.id, tone: 'error', text: res.errorFa || 'خطا در ثبت نظر' });
                   }
                 }}
-                className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2"
+                className="p-3 rounded-[10px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2"
               >
-                <div className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
+                <div className="font-bold text-[var(--color-text-primary)] flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 text-amber-500" />
                   <span>ثبت بازخورد متصل به درخواست معتبر (نظرات منفی معتبر نیز حفظ می‌شوند)</span>
                 </div>
@@ -212,7 +214,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                       if (reviewMsg?.requestId === req.id) setReviewMsg(null);
                       setReviewScoreByReq((p) => ({ ...p, [req.id]: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 }));
                     }}
-                    className="p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                    className="p-2 rounded-[8px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
                   >
                     <option value={5}>۵ از ۵ (عالی)</option>
                     <option value={4}>۴ از ۵ (خوب)</option>
@@ -229,11 +231,11 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                       setReviewTextByReq((p) => ({ ...p, [req.id]: e.target.value }));
                     }}
                     placeholder="تجربه واقعی خود از شفافیت، زمان‌بندی و کیفیت خدمت را بنویسید..."
-                    className="flex-1 min-w-[200px] p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                    className="flex-1 min-w-[200px] p-2 rounded-[8px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)]"
                   />
                   <button
                     type="submit"
-                    className="px-3 py-1.5 rounded-[8px] bg-[var(--color-text-primary)] text-white font-bold cursor-pointer"
+                    className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
                   >
                     ثبت نظر معتبر
                   </button>

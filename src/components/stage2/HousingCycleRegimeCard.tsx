@@ -109,7 +109,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
         )}
         <div className="space-y-0.5 leading-relaxed">
-          <div className="font-extrabold">
+          <div className="font-bold">
             شتاب ۶ماهه اسمی: +{toPersianNum(cycle.historicalMomentum6mPct)}٪ • شتاب ۶ماهه حقیقی (پس از کسر تورم):{' '}
             <span className={cycle.realMomentum6mPct >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-400'}>
               {cycle.realMomentum6mPct >= 0 ? '+' : ''}{toPersianNum(cycle.realMomentum6mPct)}٪
@@ -130,16 +130,16 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
 
         {/* 4-Step Cycle Bar */}
         <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'ACCUMULATION_RECOVERY' ? 'bg-emerald-500 text-white font-extrabold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'ACCUMULATION_RECOVERY' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
             ۱. کف‌سازی و پیش‌رونق
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'EXPANSION_SURGE' ? 'bg-blue-500 text-white font-extrabold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'EXPANSION_SURGE' ? 'bg-blue-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
             ۲. رونق و شتاب
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'DISTRIBUTION_EXHAUSTION' ? 'bg-rose-500 text-white font-extrabold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'DISTRIBUTION_EXHAUSTION' ? 'bg-rose-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
             ۳. اشباع و قله حباب
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'CONTRACTION_STAGNATION' ? 'bg-amber-500 text-white font-extrabold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'CONTRACTION_STAGNATION' ? 'bg-amber-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
             ۴. رکود معاملاتی
           </div>
         </div>
@@ -153,7 +153,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">ریسک فرسایش و ترکیدن حباب:</div>
-          <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
+          <div className="text-sm font-bold text-rose-600 dark:text-rose-400 mt-0.5">
             {toPersianNum(cycle.bubbleExhaustionRiskPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">احتمال سقف دوره‌ای</div>
@@ -161,7 +161,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">نسبت قیمت به اجاره سالانه:</div>
-          <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">
+          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
             {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
           <div className="text-[9px] text-slate-400">لنگر تعادلی: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx ? ` · رهن ${toPersianNum(targetSqm)}م: ${toPersianNum(report.rahn80m)}م${rahnFx}` : ''}</div>
@@ -169,7 +169,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">شکاف پیشنهاد تا معامله:</div>
-          <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
+          <div className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-0.5">
             {toPersianNum(cycle.askingToDealSpreadPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">حاشیه تخفیف سناریوی مذاکره (غیرثبتی)</div>

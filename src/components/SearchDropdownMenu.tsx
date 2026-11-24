@@ -150,7 +150,7 @@ export function SearchDropdownMenu({
           />
           {trendingHoods.length > 0 && (
             <div className="border-t border-slate-200/80 dark:border-slate-800">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
                 <span className="flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" />
                   <span>محله‌های پرطرفدار و ترند</span>
@@ -172,7 +172,7 @@ export function SearchDropdownMenu({
             </div>
           )}
           <div className="border-t border-slate-200/80 dark:border-slate-800">
-            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
+            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
               <span>فهرست کامل محلات این منطقه</span>
               <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">{toPersianNum(evaluatedNeighborhoods.length)} محله</span>
             </div>
@@ -198,7 +198,7 @@ export function SearchDropdownMenu({
           />
           {searchMatches.length > 0 && (
             <div>
-              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
+              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
                 <span>۱. محدوده‌های جغرافیایی و محله‌ها (↑↓ و Enter)</span>
                 <span className="text-[10px] text-slate-400 tabular-nums">{toPersianNum(searchMatches.length)} محله</span>
               </div>
@@ -230,7 +230,7 @@ export function SearchDropdownMenu({
           )}
           {propertyDealMatches.length > 0 && (
             <div className="border-t border-slate-200/80 dark:border-slate-800">
-              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/30">
+              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/30">
                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /><span>۲. املاک و فایل‌های شکار زیر قیمت</span></span>
                 <span className="text-[10px] tabular-nums">{toPersianNum(propertyDealMatches.length)} مورد</span>
               </div>
@@ -244,7 +244,7 @@ export function SearchDropdownMenu({
           )}
           {moduleQuickMatches.length > 0 && onNavigateDestination && (
             <div className="border-t border-slate-200/80 dark:border-slate-800">
-              <div className="px-3 py-1 text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/30 flex items-center gap-1">
+              <div className="px-3 py-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/30 flex items-center gap-1">
                 <SlidersHorizontal className="w-3.5 h-3.5" /><span>۳. ابزارها و بخش‌های تحلیلی</span>
               </div>
               {moduleQuickMatches.map((mod) => (
@@ -259,7 +259,7 @@ export function SearchDropdownMenu({
           )}
           {crossCityMatches.length > 0 && (
             <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-900/50">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-indigo-900 dark:text-indigo-200 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-900/50">
                 <span>نتایج در سایر استان‌ها و شهرهای ایران</span>
                 <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold tabular-nums">{toPersianNum(crossCityMatches.length)} محله</span>
               </div>
@@ -286,7 +286,7 @@ export function SearchDropdownMenu({
           )}
           {trendingHoods.length > 0 && (
             <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
                 <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" /><span>محله‌های پرطرفدار و ترند</span></span>
                 <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">پیشنهاد سریع</span>
               </div>
@@ -294,7 +294,7 @@ export function SearchDropdownMenu({
                 {trendingHoods.map((n, idx) => (
                   <button key={`trending-${n.id}`} type="button" style={{ animationDelay: `${(idx + 1) * 45}ms` }} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-amber-50/50 dark:hover:bg-slate-800/70 transition flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs cursor-pointer group ios-stagger-item">
                     <div className="flex items-center gap-1.5 min-w-0"><Sparkles className="w-3 h-3 shrink-0 text-amber-500 group-hover:text-amber-600 transition" /><span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span><span className="text-[10px] text-slate-400 whitespace-nowrap">({n.zone})</span></div>
-                    <div className="flex flex-wrap items-center gap-1.5"><span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[10px] tabular-nums shrink-0">{toPersianNum(n.overallScore)} / ۱۰</span><span className="text-slate-600 dark:text-slate-400 font-bold tabular-nums text-[10.5px] leading-snug">{formatHoodPriceMetric(n)}</span></div>
+                    <div className="flex flex-wrap items-center gap-1.5"><span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] tabular-nums shrink-0">{toPersianNum(n.overallScore)} / ۱۰</span><span className="text-slate-600 dark:text-slate-400 font-bold tabular-nums text-[10.5px] leading-snug">{formatHoodPriceMetric(n)}</span></div>
                   </button>
                 ))}
               </div>

@@ -9,7 +9,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
     }
     return `✨ معرفی فایل خاص و لوکس در تاپ لوکیشن ${hName}\nسازه‌ای مهندسی‌ساز با متریال برند وارداتی\nواحد ${areaStr} پلان تفکیکی با ۲ کله غرق در نور (ارزش کارشناسی: ${toPersianNum(totB)} میلیارد${intlTotStr})\nسالن پرده‌خور، آشپزخانه فول مدرن، مشاعات هتلی، لابی شیک و پارکینگ اختصاصی\nسند ششدانگ تک‌برگ آماده انتقال قطعی در دفتر اسناد رسمی.`;
   }, [activeHood.name, valSqm, areaUnit, valBedrooms, fairPerSqm, fairTotalMillion, fullRahnMillion, aiAdTone, intlCurrency, locale]); if (activeTab === 'swap_suburb') { return ( <div className="grid grid-cols-1 lg:grid-cols-12 gap-4"> <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>محاسبه‌گر امتیاز تعاونی‌های مسکن منطقه ۲۲ چیتگر</span> </div>
           <div className="grid grid-cols-3 gap-2 text-[10px]"> <div>
               <label className="text-slate-500 dark:text-slate-400">واریزی تا امروز (م)</label> <NumericDraftInput aria-label="واریزی تا امروز" min={100} max={20000} fallback={1800} value={coopPaidMillion} onValueChange={setCoopPaidMillion} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
@@ -19,11 +19,11 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
               <label className="text-slate-500 dark:text-slate-400">برآورد ساخت ({areaUnit === 'sqft' ? `${toPersianNum(convertPricePerSqmToUnit(coopPromiseSqmMillion, areaUnit))} م/ft²` : `${toPersianNum(coopPromiseSqmMillion)} م/m²`})</label> <NumericDraftInput aria-label="برآورد ساخت تعاونی" min={15} max={100} fallback={35} value={coopPromiseSqmMillion} onValueChange={setCoopPromiseSqmMillion} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
             </div> </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5 text-[11px]"> <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">نقدینگی لازم امروز:</span> <span className="font-black text-slate-900 dark:text-slate-100">{toPersianNum(chitgarScoreResult.cashNeededTodayMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(chitgarScoreResult.cashNeededTodayMillion, intlCurrency, locale)})` : ''}</span>
+              <span className="text-slate-600 dark:text-slate-400">نقدینگی لازم امروز:</span> <span className="font-bold text-slate-900 dark:text-slate-100">{toPersianNum(chitgarScoreResult.cashNeededTodayMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(chitgarScoreResult.cashNeededTodayMillion, intlCurrency, locale)})` : ''}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-600 dark:text-slate-400">قیمت تمام‌شده تخمینی با ضرایب تعدیل:</span>
-              <span className="font-black text-emerald-700 dark:text-emerald-400">{areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(chitgarScoreResult.estimatedFinishedPricePerSqmMillion, areaUnit))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(chitgarScoreResult.estimatedFinishedPricePerSqmMillion, areaUnit), intlCurrency, locale)})` : ''} · کل {formatAreaValue(valSqm, areaUnit, true)}: {toPersianNum(((chitgarScoreResult.estimatedFinishedPricePerSqmMillion * valSqm) / 1000).toFixed(2))} میلیارد</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">{areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(chitgarScoreResult.estimatedFinishedPricePerSqmMillion, areaUnit))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(chitgarScoreResult.estimatedFinishedPricePerSqmMillion, areaUnit), intlCurrency, locale)})` : ''} · کل {formatAreaValue(valSqm, areaUnit, true)}: {toPersianNum(((chitgarScoreResult.estimatedFinishedPricePerSqmMillion * valSqm) / 1000).toFixed(2))} میلیارد</span>
             </div>
             <div className="text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg leading-relaxed mt-1">
               ⚠️ {chitgarScoreResult.riskNotice} </div>
@@ -38,7 +38,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           </div>
         </div>
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>سود مهاجرت مالی بین کلان‌شهرها</span>
@@ -54,11 +54,11 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
             <div className="grid grid-cols-2 gap-2 text-center text-[10px] pt-1">
               <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <div className="text-slate-500 dark:text-slate-400">متراژ قابل خرید:</div>
-                <div className="font-black text-slate-900 dark:text-slate-100 mt-0.5">{formatAreaValue(interCityResult.targetCityAffordableSqm, areaUnit, true)}</div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">{formatAreaValue(interCityResult.targetCityAffordableSqm, areaUnit, true)}</div>
               </div>
               <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <div className="text-slate-500 dark:text-slate-400">پس‌انداز نقد مازاد:</div>
-                <div className="font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(interCityResult.remainingCashBufferMillion)} میلیون{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(interCityResult.remainingCashBufferMillion, intlCurrency, locale)})` : ''}</div>
+                <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(interCityResult.remainingCashBufferMillion)} میلیون{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(interCityResult.remainingCashBufferMillion, intlCurrency, locale)})` : ''}</div>
               </div>
             </div>
           </div>
@@ -67,12 +67,12 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
     ); }
   if (activeTab === 'visit_checklist') { return ( <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <ClipboardCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>چک‌لیست ۱۲گانه بازدید حضوری آپارتمان</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-[var(--color-brand-600)] text-white font-black text-xs tabular-nums">
+            <span className="px-2 py-0.5 rounded-full bg-[var(--color-brand-600)] text-white font-bold text-xs tabular-nums">
               امتیاز: {toPersianNum(checklistScore)} / ۱۰۰
             </span>
           </div>
@@ -109,7 +109,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
                 if (visitTimerRef.current !== null) window.clearTimeout(visitTimerRef.current);
                 visitTimerRef.current = window.setTimeout(() => { visitTimerRef.current = null; setVisitSaveNotice(''); }, 2500);
               }}
-              className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer transition"
+              className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer transition"
             >
               + ثبت در دفترچه بازدیدها
             </button>
@@ -121,14 +121,14 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           )}
         </div>
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
             <Compass className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>کیفیت آب شرب، نویز و قنات‌های محله {activeHood.name}</span>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2 text-[11px]">
             <div>
               <span className="text-slate-500 dark:text-slate-400 font-bold">سختی آب شرب (TDS):</span>
-              <div className="font-black text-slate-900 dark:text-slate-100 mt-0.5">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                 {infraData.waterTdsPpm !== null
                   ? `${toPersianNum(infraData.waterTdsPpm)} PPM (${infraData.waterSource})`
                   : infraData.waterSource}
@@ -136,7 +136,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
             </div>
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="text-slate-500 dark:text-slate-400 font-bold">سطح نویز محیطی:</span>
-              <div className="font-black text-slate-900 dark:text-slate-100 mt-0.5">
+              <div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                 {infraData.noiseLevelDb !== null
                   ? `${toPersianNum(infraData.noiseLevelDb)} دسی‌بل (${infraData.noiseSource})`
                   : infraData.noiseSource}
@@ -159,14 +159,14 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
             <GraduationCap className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>رادار مدارس برتر، سمپاد و آموزش در محله {activeHood.name}</span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-slate-800 dark:text-slate-200">شاخص دسترسی آموزشی:</span>
-              <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm tabular-nums">
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm tabular-nums">
                 {toPersianNum(Math.min(9.9, Math.max(6.2, Math.round(((activeHood.overallScore * 0.55) + (activeHood.security * 0.25) + (activeHood.metro * 0.2)) * 10) / 10)))} / ۱۰
               </span>
             </div>
@@ -182,7 +182,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           </div>
         </div>
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
             <Layers className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>خطوط مترو آینده و ایمنی گسل زلزله</span>
           </div>
@@ -217,7 +217,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
     ); } return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-        <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
+        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>استودیو هوشمند آگهی‌نویسی املاک</span>
@@ -237,14 +237,14 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           {generatedAdText} </pre>
         <button
           type="button"
-          onClick={() => { navigator.clipboard?.writeText(generatedAdText).catch(() => {}); setCopiedAdNotice(true); if (adCopyTimerRef.current !== null) window.clearTimeout(adCopyTimerRef.current); adCopyTimerRef.current = window.setTimeout(() => { adCopyTimerRef.current = null; setCopiedAdNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition text-xs"
+          onClick={() => { navigator.clipboard?.writeText(generatedAdText).catch(() => {}); setCopiedAdNotice(true); if (adCopyTimerRef.current !== null) window.clearTimeout(adCopyTimerRef.current); adCopyTimerRef.current = window.setTimeout(() => { adCopyTimerRef.current = null; setCopiedAdNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer transition text-xs"
         >
           <Copy className="w-3.5 h-3.5 stroke-[1.75]" />
           <span>{copiedAdNotice ? 'متن آگهی کپی شد!' : 'کپی متن آگهی آماده انتشار در دیوار / شیپور / اینستاگرام'}</span>
         </button>
       </div>
       <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-        <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
+        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
           <Truck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>ماشین‌حساب اسباب‌کشی و ثبت در سامانه املاک و اسکان</span>
         </div>
@@ -276,7 +276,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         </label>
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 flex items-center justify-between text-xs">
           <span className="font-bold text-emerald-900 dark:text-emerald-200">هزینه کل برآورد اسباب‌کشی:</span>
-          <span className="font-black text-emerald-950 dark:text-emerald-300 text-sm tabular-nums">
+          <span className="font-bold text-emerald-950 dark:text-emerald-300 text-sm tabular-nums">
             {toPersianNum(movingCostResult.totalMovingCostThousand.toLocaleString())} هزار تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(movingCostResult.totalMovingCostThousand / 1000, intlCurrency, locale)})` : ''}
           </span>
         </div>

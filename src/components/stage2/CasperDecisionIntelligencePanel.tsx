@@ -82,7 +82,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <Scale className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-            <h4 className="text-xs font-black tracking-tight">
+            <h4 className="text-xs font-bold tracking-tight">
               موتور تصمیم‌یار، سپر خطای شناختی و راستی‌آزمایی داده (نسخه v6.4)
             </h4>
           </div>
@@ -101,17 +101,17 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">قیمت کل پیشنهادی (آگهی)</div>
-            <div className="text-xs font-black text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">{report.askingTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
+            <div className="text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">{report.askingTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{formatMillionTomanAsIntlCurrency(report.askingTotalMillion, intlCurrency)}</div>
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">سقف ورود منطقی شما</div>
-            <div className="text-xs font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5">{report.scenarioTargetTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
+            <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5">{report.scenarioTargetTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{report.scenarioTargetTotalIntl}</div>
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">صرفه‌جویی مذاکره هدف</div>
-            <div className="text-xs font-black text-teal-600 dark:text-teal-400 tabular-nums mt-0.5">{report.negotiationSavingsMillion.toLocaleString('fa-IR')} م‌ت</div>
+            <div className="text-xs font-bold text-teal-600 dark:text-teal-400 tabular-nums mt-0.5">{report.negotiationSavingsMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{report.negotiationSavingsIntl}</div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
               <div key={crit.id} className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold">{crit.labelFa} <span className="text-[10px] font-normal text-slate-400">(وزن {crit.weightPct}٪)</span></span>
-                  <span className="font-black tabular-nums text-teal-600 dark:text-teal-400">{crit.score}/۱۰۰</span>
+                  <span className="font-bold tabular-nums text-teal-600 dark:text-teal-400">{crit.score}/۱۰۰</span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div className={`h-full rounded-full ${crit.score >= 75 ? 'bg-emerald-500' : crit.score >= 55 ? 'bg-teal-500' : 'bg-amber-500'}`} style={{ width: `${crit.score}%` }} />
@@ -232,7 +232,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{alert.diagnosisFa}</p>
               <div className={`p-2 rounded-lg border ${mutedBg} flex items-center justify-between gap-2 text-[10px]`}>
                 <span className="font-semibold text-teal-700 dark:text-teal-300">پادزهر رفتاری: {alert.debiasingActionFa}</span>
-                <span className="font-black tabular-nums shrink-0 text-slate-700 dark:text-slate-200">اثر مالی: {alert.financialImpactMillionToman.toLocaleString('fa-IR')} م‌ت ({alert.financialImpactIntlFormatted})</span>
+                <span className="font-bold tabular-nums shrink-0 text-slate-700 dark:text-slate-200">اثر مالی: {alert.financialImpactMillionToman.toLocaleString('fa-IR')} م‌ت ({alert.financialImpactIntlFormatted})</span>
               </div>
             </div>
           ))}

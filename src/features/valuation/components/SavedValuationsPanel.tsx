@@ -21,7 +21,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
   return (
     <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs" data-testid="saved-valuations-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">گزارش‌های ارزش‌گذاری ذخیره‌شده ({toPersianNum(reports.length)})</h3>
+        <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">گزارش‌های ارزش‌گذاری ذخیره‌شده ({toPersianNum(reports.length)})</h3>
         <span className="text-xs text-[var(--color-text-muted)]">تفکیک ذخیره‌سازی حساب کاربری و حافظه محلی دستگاه</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 tabular-nums">
@@ -51,7 +51,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">
                   {cityName} · {r.hoodName} · {toPersianNum(r.input.sqm)} متر (ساخت {toPersianNum(r.input.buildYear)})
                 </div>
-                <div className="text-xs font-black text-[var(--color-brand-600)] dark:text-emerald-400">
+                <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
                   {r.purpose === 'rent' && r.estimatedRahnMillion
                     ? `${toPersianNum(r.estimatedRahnMillion)} میلیون رهن کامل`
                     : `${toPersianNum((r.hedonicTotalMillion / 1000).toFixed(2))} میلیارد تومان`}

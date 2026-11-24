@@ -20,7 +20,7 @@ export const MarketReportList: React.FC<MarketReportListProps> = ({
       className="space-y-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <FileText className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>گزارش‌های تحلیلی و جمع‌بندی محدوده</span>
         </h3>

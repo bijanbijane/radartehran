@@ -50,7 +50,19 @@ export function buildNavigationBreadcrumbs(input: BuildBreadcrumbsInput): Breadc
     isCurrent: false,
   }));
 
-  if (cityName && viewId !== 'admin' && viewId !== 'home' && viewId !== 'not_found') {
+  const isLegalDoc = subTab === 'legal_privacy' || subTab === 'legal_terms';
+  const isCityScopedRoute = !isLegalDoc && viewId !== 'admin' && viewId !== 'home' && viewId !== 'not_found' && viewId !== 'userspace' && viewId !== 'knowledge' && subTab !== 'registry' && subTab !== 'calculators';
+
+  if (isLegalDoc) {
+    nodes.splice(1, 0, {
+      id: 'legal-center',
+      label: isEn ? 'Legal Documents' : 'اسناد حقوقی',
+      viewId: 'knowledge',
+      subTab: 'legal_privacy',
+      path: '/legal/privacy',
+      isCurrent: false,
+    });
+  } else if (cityName && isCityScopedRoute) {
     nodes.splice(1, 0, {
       id: `city-${cityName}`,
       label: cityName,
@@ -60,7 +72,13 @@ export function buildNavigationBreadcrumbs(input: BuildBreadcrumbsInput): Breadc
     });
   }
 
-  if (hoodName && (viewId === 'discover' || viewId === 'intelligence' || viewId === 'properties' || viewId === 'tools')) {
+  const isHoodScopedRoute =
+    (viewId === 'discover' && subTab !== 'registry') ||
+    viewId === 'intelligence' ||
+    viewId === 'properties' ||
+    (viewId === 'tools' && subTab !== 'calculators');
+
+  if (hoodName && isHoodScopedRoute) {
     nodes.push({
       id: `hood-${hoodName}`,
       label: isEn ? hoodName : `محله ${hoodName}`,

@@ -114,7 +114,7 @@ export function BuyerPriceThresholdManagerSection({
   return (
     <div className="apple-grouped-card dark:bg-slate-800/60 p-3.5 space-y-3 text-xs border border-emerald-200/80 dark:border-emerald-800/70">
       <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-700 pb-2">
-        <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <BellRing className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>اشتراک هوشمند سقف قیمت محله (پایش زنده و اعلان پایدار)</span>
         </div>
@@ -137,13 +137,13 @@ export function BuyerPriceThresholdManagerSection({
           <NumericDraftInput
             aria-label="سقف قیمت انتخابی" min={10} max={50000} step={dealType === 'خرید' ? 2 : 25} fallback={defaultThreshold} value={thresholdInput}
             onValueChange={(nextVal) => { setJustSavedNotice(''); setThresholdInput(nextVal); }}
-            className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-black tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
+            className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
           />
         </div>
         <div className="sm:col-span-4">
           <button
             type="button" onClick={handleSaveThreshold}
-            className="w-full py-2 px-3 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+            className="w-full py-2 px-3 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2]" />
             <span>افزودن سقف قیمت</span>
@@ -180,7 +180,7 @@ export function BuyerPriceThresholdManagerSection({
                   </span>
                   <span className="text-slate-400 mx-1">·</span>
                   {match ? (
-                    <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">تطابق فعال ({toPersianNum(uObs)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uObs, intlCurrency, locale)}` : ''})</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">تطابق فعال ({toPersianNum(uObs)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uObs, intlCurrency, locale)}` : ''})</span>
                   ) : (
                     <span className="text-amber-700 dark:text-amber-400 font-semibold">در انتظار کاهش قیمت{subHood ? ` (فعلی: ${toPersianNum(uCur)} م)` : ''}</span>
                   )}
@@ -231,7 +231,7 @@ export function PersistentPriceThresholdMatchBanner({
             <BellRing className="w-4 h-4 stroke-[2]" />
           </span>
           <div className="min-w-0">
-            <div className="font-black text-slate-900 dark:text-white truncate">
+            <div className="font-bold text-slate-900 dark:text-white truncate">
               تطابق سقف قیمت در محله {topMatch.subscription.hoodName}
               {extraCount > 0 ? ` (+${toPersianNum(extraCount)} مورد دیگر)` : ''}
             </div>
@@ -260,7 +260,7 @@ export function PersistentPriceThresholdMatchBanner({
       <div className="flex items-center justify-between gap-2 pt-1">
         <button
           type="button"
-          onClick={() => onInspectMatchedHood(topMatch.neighborhood)} className="flex-1 py-1.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer"
+          onClick={() => onInspectMatchedHood(topMatch.neighborhood)} className="flex-1 py-1.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer"
         >
           <MapPin className="w-3.5 h-3.5" />
           <span>مشاهده محله و فایل‌ها</span>

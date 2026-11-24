@@ -74,7 +74,7 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
     const compactText = escapeHtmlAttr(`${toPersianNum(convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit))}م`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:2.5px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"><span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:2.5px;">${safePriceLabel || compactText}</span>
+        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:2.5px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"><span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:2.5px;">${safePriceLabel || compactText}</span>
         </span>
       </div>`,
       iconSize: [54, 22], iconAnchor: [27, 11], }; }
@@ -83,7 +83,7 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
     const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3.5px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span>
+        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3.5px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span>
           <span style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safePriceLabel}</span> <span style="font-size:9.5px;background:rgba(0,0,0,0.22);padding:1px 5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span>
         </span>
       </div>`,
@@ -91,7 +91,7 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
   const isCompactZoom12 = zoom <= 12 && !isSelected;
   return {
     html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-      <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:${isCompactZoom12 ? '3px' : '4px'};padding:${isCompactZoom12 ? '2px 7px' : '3px 9px'};border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:${isCompactZoom12 ? '10px' : '11px'};font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
+      <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:${isCompactZoom12 ? '3px' : '4px'};padding:${isCompactZoom12 ? '2px 7px' : '3px 9px'};border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:${isCompactZoom12 ? '10px' : '11px'};font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
         ${sponsorStar}<span>${safeHoodName}</span>
         <span style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:${isCompactZoom12 ? '3px' : '4px'};">${safePriceLabel}</span>
       </span>
@@ -236,7 +236,7 @@ export function renderAdvancedSpatialOverlaysOnLeaflet(params: {
       const poly = L.polyline(line.coords, {
         color: line.color, weight: 3.5, opacity: 0.85, lineJoin: 'round',
       }).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;">${safeLineName}</div>`,
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;">${safeLineName}</div>`,
         { sticky: true, direction: 'top' }
       );
       group.addLayer(poly);

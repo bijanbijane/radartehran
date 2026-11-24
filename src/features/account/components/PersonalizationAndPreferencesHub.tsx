@@ -61,7 +61,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
       <div className="space-y-3" data-testid="unified-saved-items-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <strong className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Bookmark className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>ذخیره‌های من (نگهداری یکپارچه املاک، محله‌ها، جست‌وجوها، نقشه‌ها و مطالب)</span>
             </strong>
@@ -122,7 +122,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
                   <input type="checkbox" aria-label={`انتخاب ${it.titleFa}`} checked={selectedIds.includes(it.id)} onChange={() => toggleSelect(it.id)} className="mt-1 accent-[var(--color-brand-600)] w-4 h-4 shrink-0" />
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <strong className="font-black text-[var(--color-text-primary)] truncate">{it.titleFa}</strong>
+                      <strong className="font-bold text-[var(--color-text-primary)] truncate">{it.titleFa}</strong>
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${it.targetLifecycleStatus === 'ACTIVE' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200'}`}>
                         {it.targetLifecycleStatus === 'ACTIVE' ? 'فعال' : it.targetLifecycleStatus === 'EXPIRED' ? 'آگهی منقضی (نگهداری جهت مقایسه)' : 'هشدار لایه غیرفعال نقشه'}
                       </span>
@@ -151,7 +151,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
 
       <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3" data-testid="user-preferences-and-personalization-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Sliders className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ترجیحات من و کنترل سطح شخصی‌سازی (بدون تغییر حقیقت داده پایگاه داده)</span>
           </strong>
@@ -192,7 +192,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
             </div>
             <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
               <span className="text-xs text-[var(--color-text-muted)] block">پیش‌نمایش زنده (مقدار خام دیتابیس: 14900 م.ت):</span>
-              <strong data-testid="pref-live-price-preview" className="text-sm font-black text-[var(--color-brand-fg)] block mt-0.5 tabular-nums">
+              <strong data-testid="pref-live-price-preview" className="text-sm font-bold text-[var(--color-brand-fg)] block mt-0.5 tabular-nums">
                 {samplePricePreview.displayAmount} {samplePricePreview.unitLabelFa}
               </strong>
             </div>
@@ -208,15 +208,15 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-muted)] block text-xs">۱. شهر پیش‌فرض ثابت حساب:</span>
-                <strong className="font-black text-[var(--color-text-primary)]">{prefs.map.defaultCityId}</strong>
+                <strong className="font-bold text-[var(--color-text-primary)]">{prefs.map.defaultCityId}</strong>
               </div>
               <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-muted)] block text-xs">۲. آخرین محدوده مشاهده‌شده:</span>
-                <strong className="font-black text-[var(--color-text-primary)]">{prefs.map.lastViewedCityId}</strong>
+                <strong className="font-bold text-[var(--color-text-primary)]">{prefs.map.lastViewedCityId}</strong>
               </div>
               <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-muted)] block text-xs">۳. نقشه‌های ذخیره‌شده من:</span>
-                <strong className="font-black text-[var(--color-brand-fg)]">{items.filter((i) => i.entityType === 'MAP_PRESET').length} نمای قابل بازسازی</strong>
+                <strong className="font-bold text-[var(--color-brand-fg)]">{items.filter((i) => i.entityType === 'MAP_PRESET').length} نمای قابل بازسازی</strong>
               </div>
             </div>
           </div>

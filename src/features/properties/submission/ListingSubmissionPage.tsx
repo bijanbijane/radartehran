@@ -190,7 +190,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
     <div className="max-w-3xl mx-auto p-4 sm:p-6 rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-5" data-testid="listing-submission-wizard">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3.5">
         <div>
-          <h2 className="text-base sm:text-lg font-black text-[var(--color-text-primary)] dark:text-white">ثبت ساختاریافته فایل ملکی (گام {toPersianNum(step)} از ۷)</h2>
+          <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] dark:text-white">ثبت ساختاریافته فایل ملکی (گام {toPersianNum(step)} از ۷)</h2>
           <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
             پیش‌نویس شما به‌صورت خودکار ذخیره می‌شود · {savedNotice || `آخرین ذخیره: ${new Date(draft.lastSavedAtIso).toLocaleTimeString('fa-IR')}`}
           </p>

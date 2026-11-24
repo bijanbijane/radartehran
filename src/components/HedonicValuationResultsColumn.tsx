@@ -61,7 +61,7 @@ export function HedonicValuationResultsColumn({
 
           <div className="flex items-baseline justify-between gap-2 pt-1">
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-800 dark:text-emerald-400 tabular-nums">
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-800 dark:text-emerald-400 tabular-nums">
                 {toPersianNum(valuation.hedonicTotalBillion)}{' '}
                 <span className="text-sm font-bold text-slate-600 dark:text-slate-400">میلیارد تومان</span>
               </div>
@@ -72,7 +72,7 @@ export function HedonicValuationResultsColumn({
             </div>
             <div className="text-left bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800 rounded-xl px-3 py-2">
               <div className="text-[10px] text-slate-500 dark:text-slate-400">{areaUnit === 'sqft' ? 'هر فوت مربع (ft²)' : 'هر متر مربع'}</div>
-              <div className="text-sm font-black text-slate-900 dark:text-white tabular-nums">
+              <div className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
                 {toPersianNum(convertPricePerSqmToUnit(valuation.hedonicPerSqm, areaUnit))} م
                 {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(valuation.hedonicPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}
               </div>
@@ -122,11 +122,11 @@ export function HedonicValuationResultsColumn({
         {/* Comparison vs Neighborhood Average Card */}
         <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+            <span className="text-xs font-bold text-slate-900 dark:text-white">
               مقایسه با میانگین محله {valuation.hoodName}
             </span>
             <span
-              className={`text-xs font-black flex items-center gap-1 tabular-nums ${
+              className={`text-xs font-bold flex items-center gap-1 tabular-nums ${
                 valuation.comparisonStatus === 'above_average'
                   ? 'text-amber-700 dark:text-amber-400'
                   : valuation.comparisonStatus === 'below_average'
@@ -197,7 +197,7 @@ export function HedonicValuationResultsColumn({
 
         {/* Hedonic Factor Breakdown Table */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 space-y-2">
-          <div className="text-xs font-extrabold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800">
+          <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800">
             کالبدشکافی ضرایب هدونیک (چرا این قیمت؟)
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-800 text-[11px]">
@@ -211,7 +211,7 @@ export function HedonicValuationResultsColumn({
                 </div>
                 <div className="text-left shrink-0 tabular-nums">
                   <span
-                    className={`font-extrabold ${
+                    className={`font-bold ${
                       f.impactPercent > 0
                         ? 'text-emerald-700 dark:text-emerald-400'
                         : f.impactPercent < 0
@@ -238,7 +238,7 @@ export function HedonicValuationResultsColumn({
         <button
           type="button"
           onClick={onCopyValuation}
-          className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+          className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
         >
           {copiedReport ? (
             <>
@@ -259,7 +259,7 @@ export function HedonicValuationResultsColumn({
             setDownloadingPng(true);
             try { await downloadHedonicValuationCardPng(valuation); } catch { /* handled safely */ } finally { setDownloadingPng(false); }
           }}
-          className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-60"
+          className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-60"
         >
           <Download className="w-4 h-4" />
           <span>{downloadingPng ? 'در حال ساخت تصویر...' : 'دانلود تصویر برگه کارشناسی (PNG)'}</span>

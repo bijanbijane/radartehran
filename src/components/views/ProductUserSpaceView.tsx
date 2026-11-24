@@ -154,12 +154,12 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       <div className="p-5 sm:p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--color-brand-600)] text-white flex items-center justify-center font-black text-lg shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--color-brand-600)] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
               {p.currentUser?.displayName ? p.currentUser.displayName.charAt(0).toUpperCase() : <User className="w-6 h-6 stroke-[2]" />}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">{p.currentUser?.displayName || (isEn ? 'Guest User Account' : 'حساب کاربری مهمان')}</h1>
+                <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">{p.currentUser?.displayName || (isEn ? 'Guest User Account' : 'حساب کاربری مهمان')}</h1>
                 {p.currentUser?.emailVerified && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold border border-[var(--color-border-subtle)]">
                     <CheckCircle2 className="w-3.5 h-3.5" /><span>{isEn ? 'Verified' : 'تأییدشده'}</span>
@@ -214,7 +214,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="p-3.5 rounded-2xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <span className="text-rose-800 dark:text-rose-200 font-bold">آیا از حذف دائمی حساب کاربری، آگهی‌ها، هشدارهای خرید و فایل‌های رسانه خود اطمینان دارید؟</span>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => void handleConfirmAccountDelete()} disabled={busyAction === 'delete'} className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
+              <button type="button" onClick={() => void handleConfirmAccountDelete()} disabled={busyAction === 'delete'} className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
               <button type="button" onClick={() => setConfirmDeleteOpen(false)} className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold cursor-pointer">انصراف</button>
             </div>
           </div>
@@ -267,7 +267,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             renderCardHeader={(hood, isSelected, isOtherCity, cityLabel, explain) => (
               <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-black text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${cityLabel} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
+                  <h3 className="font-bold text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${cityLabel} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
                   {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold">فعال روی نقشه</span>}
                 </div>
                 <span className="text-xs text-[var(--color-text-muted)]">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>

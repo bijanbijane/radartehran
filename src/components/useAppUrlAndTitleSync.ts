@@ -360,13 +360,19 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           const canonicalPath = preserveDynamicPath
             ? currentPath
             : buildCanonicalPathForDestination(viewId, activeSubTab);
+          const isNeighborhoodScoped =
+            (viewId === 'discover' && canonicalPath !== '/areas/registry' && activeSubTab !== 'registry') ||
+            viewId === 'intelligence' ||
+            viewId === 'properties' ||
+            (viewId === 'tools' && activeSubTab !== 'calculators' && activeSubTab !== 'compare_props');
           const nextUrl = buildSynchronizedNavigationUrl({
             canonicalPath,
             currentSearch,
             currentHash,
             isRouteChange: isRouteChange && !preserveDynamicPath,
             activeCity,
-            selectedHoodId: selectedHood.id,
+            selectedHoodId: isNeighborhoodScoped ? selectedHood.id : undefined,
+            omitHoodParam: !isNeighborhoodScoped,
             keepBudget,
             budget: { mode, deposit, monthlyRent, buyTotalBudget, targetSqm },
           });

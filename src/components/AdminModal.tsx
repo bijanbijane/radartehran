@@ -104,17 +104,17 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={asPageView ? "bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200/70 dark:border-slate-800 p-5 focus:outline-none" : "apple-window-sheet max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto focus:outline-none"}
+        className={asPageView ? "bg-[var(--color-bg-surface)] rounded-2xl shadow-lg border border-[var(--color-border-subtle)] p-5 focus:outline-none" : "apple-window-sheet max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto focus:outline-none"}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-3.5 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Lock className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                 {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
-              </h3>
+              </h2>
               {isVerifiedAdmin && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                   نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م
@@ -178,7 +178,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                   role="alert"
                   className="p-3 rounded-[10px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 space-y-1.5"
                 >
-                  <div className="font-extrabold">
+                  <div className="font-bold">
                     دسترسی غیرمجاز — حساب فاقد مجوز مدیریت
                   </div>
                   <p className="text-xs leading-relaxed">
@@ -208,7 +208,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
               )}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
+                className="w-full py-2.5 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition cursor-pointer"
               >
                 بررسی مجوز و بازگشایی پنل مدیریت
               </button>

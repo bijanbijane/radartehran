@@ -142,7 +142,7 @@ export function ShareModal({
     <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-label={isEn ? 'Neighborhood Scorecard' : 'کارت کارنامه محله'} onClick={onClose} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
       <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-sm w-full p-5 space-y-3.5 max-h-[92vh] overflow-y-auto focus:outline-none shadow-2xl">
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800">
-          <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Share2 className="w-3.5 h-3.5 stroke-[1.75]" />
             </span>
@@ -160,23 +160,23 @@ export function ShareModal({
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
             <div>
               <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">{safeZone}</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{isEn ? safeName : `محله ${safeName}`}</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{isEn ? safeName : `محله ${safeName}`}</div>
             </div>
             <div className="bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 rounded-xl px-3 py-1.5 text-center">
               <div className="text-[10px] text-slate-500 dark:text-slate-400">{isEn ? 'Score' : 'امتیاز کل'}</div>
-              <div className="text-lg font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(safeOverall)}<span className="text-xs font-normal text-slate-400"> / ۱۰</span></div>
+              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(safeOverall)}<span className="text-xs font-normal text-slate-400"> / ۱۰</span></div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
               <div className="text-slate-500 dark:text-slate-400 text-[11px]">{formatUnitBuyPriceTitle(areaUnit)}:</div>
-              <div className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(safeBuy, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(safeBuy, areaUnit), intlCurrency, locale)})` : ''}</div>
+              <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(safeBuy, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(safeBuy, areaUnit), intlCurrency, locale)})` : ''}</div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م</div>
             </div>
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
               <div className="text-slate-500 dark:text-slate-400 text-[11px]">{isEn ? 'Full Deposit (80m²):' : `رهن کامل ${formatAreaShort(80, areaUnit)}:`}</div>
-              <div className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm mt-0.5 tabular-nums">{toPersianNum(safeRahn)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(safeRahn, intlCurrency, locale)})` : ''}</div>
+              <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm mt-0.5 tabular-nums">{toPersianNum(safeRahn)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(safeRahn, intlCurrency, locale)})` : ''}</div>
               <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 tabular-nums">{isEn ? `Rent: ${toPersianNum(Math.round(safeRahn * 0.03))}M` : `اجاره ماهانه: ${toPersianNum(Math.round(safeRahn * 0.03))} م`}</div>
             </div>
           </div>
@@ -204,7 +204,7 @@ export function ShareModal({
         </div>
 
         <div className="space-y-2 pt-1">
-          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} aria-label={isEn ? 'Download Story Image' : 'دانلود تصویر آماده استوری'} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
+          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} aria-label={isEn ? 'Download Story Image' : 'دانلود تصویر آماده استوری'} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
             {isGeneratingStory ? (
               <><Loader2 className="w-4 h-4 animate-spin" /><span>{isEn ? 'Rendering Story (1080×1920)...' : 'در حال رندر تصویر استوری (1080×1920)...'}</span></>
             ) : storyGeneratedSuccess ? (

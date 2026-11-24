@@ -275,7 +275,7 @@ export function RadarWorkspaceShell() {
         role={ui.primaryView === 'map' ? 'main' : 'region'}
         aria-label="نقشه تعاملی محله‌ها"
         aria-hidden={!isMapRegionVisible}
-        className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[56px] lg:top-[64px]'} focus:outline-none ${!isMapRegionVisible ? '-z-10 invisible opacity-0 pointer-events-none' : 'z-0'}`}
+        className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[var(--header-height)]'} focus:outline-none ${!isMapRegionVisible ? '-z-10 invisible opacity-0 pointer-events-none' : 'z-0'}`}
       >
         {ui.primaryView === 'map' && (
           <h1 className="sr-only">نقشه تعاملی قیمت مسکن و محله‌های {CITY_DISPLAY_NAMES[ui.activeCity]?.fa || 'تهران'}</h1>
@@ -291,9 +291,9 @@ export function RadarWorkspaceShell() {
         )}
       </div>
       {ui.invalidCityParam && (
-        <div className="fixed inset-0 top-[56px] lg:top-[64px] z-[55] bg-slate-950/45 backdrop-blur-[3px] flex items-start justify-center pt-10 sm:pt-16 px-3">
-          <div role="alert" data-testid="invalid-city-banner" className="max-w-xl w-full rounded-2xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 shadow-2xl p-4 sm:p-5 space-y-3 text-xs">
-            <div className="text-sm font-black text-amber-800 dark:text-amber-300">
+        <div className="fixed inset-0 top-[var(--header-height)] z-[55] bg-slate-950/45 backdrop-blur-[3px] flex items-start justify-center pt-10 sm:pt-16 px-3">
+          <div role="alert" data-testid="invalid-city-banner" className="max-w-xl w-full rounded-2xl border border-amber-300 dark:border-amber-700 bg-[var(--color-bg-surface)] shadow-2xl p-4 sm:p-5 space-y-3 text-xs">
+            <div className="text-sm font-bold text-amber-800 dark:text-amber-300">
               شهر درخواستی «{ui.invalidCityParam}» در {CANONICAL_BRAND_FA} پشتیبانی نمی‌شود
             </div>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed">

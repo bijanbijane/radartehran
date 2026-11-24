@@ -47,7 +47,7 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
                 className={`p-4 rounded-[12px] bg-white dark:bg-slate-900 border space-y-2 transition ${selected ? 'border-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-800'}`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <button type="button" onClick={() => setSelectedTopicId(topic.id)} className="text-start font-black text-sm text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] cursor-pointer">
+                  <button type="button" onClick={() => setSelectedTopicId(topic.id)} className="text-start font-bold text-sm text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] cursor-pointer">
                     {topic.titleFa}
                   </button>
                   <button
@@ -70,7 +70,7 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
 
         {activeTopic && (
           <section className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-            <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">محتوای مرتبط با «{activeTopic.titleFa}»</h3>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">محتوای مرتبط با «{activeTopic.titleFa}»</h3>
             {topicPosts.length === 0 && topicQuestions.length === 0 ? (
               <p className="text-[var(--color-text-muted)] dark:text-slate-400">هنوز گفت‌وگویی با این برچسب موضوعی ثبت نشده است.</p>
             ) : (
@@ -101,7 +101,7 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
               <LineChart className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>شاخص رسمی سامانه برای محله {selectedHood.name}</span>
             </h3>
@@ -115,21 +115,21 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
           <div className="grid grid-cols-3 gap-2 pt-1 tabular-nums">
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
               <span className="text-xs text-[var(--color-text-muted)] block">کیفیت کلی</span>
-              <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.overallScore)} / ۱۰</strong>
+              <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.overallScore)} / ۱۰</strong>
             </div>
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
               <span className="text-xs text-[var(--color-text-muted)] block">هوا و سکوت</span>
-              <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.air)} / ۱۰</strong>
+              <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.air)} / ۱۰</strong>
             </div>
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
               <span className="text-xs text-[var(--color-text-muted)] block">دسترسی مترو</span>
-              <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.metro)} / ۱۰</strong>
+              <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.metro)} / ۱۰</strong>
             </div>
           </div>
         </section>
 
         <section className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Compass className="w-4 h-4 text-sky-600" />
             <span>تجربه زیسته و مشاهدات ساکنان در {selectedHood.name}</span>
           </h3>

@@ -203,7 +203,7 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
                 : `بازار شفاف خدمات و متخصصان ملکی · ${selectedHood.name}`}
             </span>
           </span>
-          <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
+          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
             {isEn ? 'Real Estate Specialists, Legal Advisors & Agencies' : 'خدمات تخصصی، حقوقی و دفاتر فعال املاک'}
           </h1>
           <p className="text-xs text-[var(--color-text-muted)] mt-1 tabular-nums">
@@ -245,6 +245,7 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
 
       {activeTab === 'directory' && (
         <ServicesDirectoryPanel
+          activeSubTab={activeSubTab}
           evaluatedNeighborhoods={evaluatedNeighborhoods}
           visibleProviders={visibleProviders}
           filters={filters}

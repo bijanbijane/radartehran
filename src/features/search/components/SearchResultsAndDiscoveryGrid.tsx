@@ -87,7 +87,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
                   )}
                 </span>
               </div>
-              <strong className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block">
+              <strong className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white block">
                 {d.titleFa}
               </strong>
               <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{d.subtitleFa}</div>
@@ -147,7 +147,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
       className="p-3.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5"
     >
       <div className="flex items-center justify-between gap-2">
-        <strong className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+        <strong className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>موجودیت‌های مکانی همگام با نقشه اصلی ({toPersianNum(spatialResults.length)} مورد دارای مختصات)</span>
         </strong>
@@ -190,7 +190,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
           className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 flex flex-wrap items-center justify-between gap-2"
         >
           <div className="space-y-0.5">
-            <strong className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+            <strong className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>نتایج به‌صورت ناقص دریافت شده‌اند.</span>
             </strong>
@@ -217,7 +217,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
           data-testid="search-zero-result-assistant"
           className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-2.5"
         >
-          <strong className="text-sm font-black text-slate-900 dark:text-white block">
+          <strong className="text-sm font-bold text-slate-900 dark:text-white block">
             نتیجه‌ای با این ترکیب پیدا نشد
           </strong>
           <p className="text-slate-600 dark:text-slate-300">{searchResponse.zeroResultAssistant.reasonFa}</p>
@@ -257,7 +257,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
 
       <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5" data-testid="search-discovery-recommendations">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>کشف محتوا و پیشنهادهای مرتبط (با توضیح شفاف علت پیشنهاد)</span>
           </strong>
@@ -293,7 +293,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
                     ×
                   </button>
                 </div>
-                <strong className="font-black text-slate-900 dark:text-white block mt-1">{rec.titleFa}</strong>
+                <strong className="font-bold text-slate-900 dark:text-white block mt-1">{rec.titleFa}</strong>
                 <p className="text-[10.5px] text-slate-500 mt-0.5">{rec.subtitleFa}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">

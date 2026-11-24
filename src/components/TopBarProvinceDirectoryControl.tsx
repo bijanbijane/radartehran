@@ -95,7 +95,7 @@ export function TopBarProvinceAndCityDirectoryControl({
             onClick={() => onSwitchCity(cId)}
             className={`px-2 py-1 rounded-[7px] font-bold transition cursor-pointer ${
               activeCity === cId
-                ? 'apple-segmented-pill-active text-slate-900 font-extrabold'
+                ? 'apple-segmented-pill-active text-slate-900 font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >

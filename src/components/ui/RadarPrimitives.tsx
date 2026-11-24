@@ -85,7 +85,7 @@ export const RadarPageHeader: React.FC<{
       {eyebrow && (
         <p className="text-xs font-bold text-[var(--color-brand-fg)]">{eyebrow}</p>
       )}
-      <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] tracking-tight text-[var(--color-text-primary)]">
+      <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] tracking-tight text-[var(--color-text-primary)]">
         {title}
       </h1>
       {subtitle && (

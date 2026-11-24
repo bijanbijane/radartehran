@@ -140,7 +140,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400" />
           <div>
-            <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               مرکز هوش مصنوعی (AI Gateway) و تجارت داده و درآمدزایی (Data Commerce & x402)
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -166,7 +166,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           <button
             type="button"
             onClick={handleSaveRouting}
-            className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold cursor-pointer"
           >
             ذخیره مسیریابی در سرور
           </button>
@@ -181,7 +181,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* AI Model Routing */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مسیریابی مدل‌های هوش مصنوعی به تفکیک جریان کاری</span>
           </div>
@@ -224,7 +224,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
             </div>
             {searchTestResult?.structuredQuery && (
               <div className="p-2.5 rounded-lg bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 space-y-1">
-                <div className="font-mono font-extrabold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                <div className="font-mono font-bold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                   <span>{searchTestResult.structuredQuery.simulationBanner || MANDATORY_AI_SIMULATION_BANNER}</span>
                 </div>
@@ -240,7 +240,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
         </div>
         {/* Commercial Data & x402 Simulator */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <Coins className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>کاتالوگ محصولات داده تجاری، MCP و شبیه‌ساز x402</span>
           </div>
@@ -266,7 +266,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           </div>
           {paymentSimResult?.simulation && (
             <div className="p-2.5 rounded-lg bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 space-y-1">
-              <div className="font-mono font-extrabold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
+              <div className="font-mono font-bold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
                 <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                 <span>{paymentSimResult.simulation.simulationBanner || MANDATORY_PAYMENT_SIMULATION_BANNER}</span>
               </div>

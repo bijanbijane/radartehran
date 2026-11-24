@@ -136,7 +136,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             <span className="text-[11px] font-bold tracking-widest text-[var(--color-brand-600)] dark:text-emerald-400 uppercase block mb-0.5">
               {isEn ? 'Budget-to-Map Geospatial Match' : 'تطبیق توان مالی با نقشه شهر'}
             </span>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {isEn ? 'Where can I buy a home with my budget?' : 'با بودجه من کجای شهر می‌توانم خانه بخرم؟'}
             </h2>
           </div>
@@ -166,7 +166,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               fallback={initialBudgetMillion || 5000}
               value={totalBudgetMillion}
               onValueChange={(next) => setBudgetFilter({ totalBudgetMillion: next })}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-black text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">

@@ -86,7 +86,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
         }`}
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-2">
-          <span className="text-sm font-black text-[var(--color-text-primary)]">
+          <span className="text-sm font-bold text-[var(--color-text-primary)]">
             {isEn ? 'All Platform Modules' : 'سایر بخش‌ها و خدمات تخصصی'}
           </span>
           <button
@@ -99,7 +99,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {destinations.map((item) => {
             const Icon = item.Icon;
             const isActive = activeView === item.id;
@@ -119,9 +119,9 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
                 }`}
               >
                 <Icon className="h-4 w-4 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
-                <div className="min-w-0">
-                  <div className="text-xs font-extrabold truncate">{isEn ? item.labelEn : item.labelFa}</div>
-                  <div className="text-xs text-[var(--color-text-muted)] truncate">{isEn ? item.descEn : item.descFa}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold leading-snug">{isEn ? item.labelEn : item.labelFa}</div>
+                  <div className="text-xs text-[var(--color-text-muted)] leading-snug">{isEn ? item.descEn : item.descFa}</div>
                 </div>
               </RadarLink>
             );

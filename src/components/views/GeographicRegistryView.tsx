@@ -185,7 +185,7 @@ export function GeographicRegistryView(): React.ReactElement {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">مرجع رسمی جغرافیایی</p>
-            <h1 className="mt-1 text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
+            <h1 className="mt-1 text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
               رجیستری محله‌ها و تقسیمات ایران
             </h1>
             <p className="mt-1 text-xs leading-6 text-[var(--color-text-secondary)]">

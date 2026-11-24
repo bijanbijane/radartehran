@@ -35,7 +35,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
     <div data-testid="admin-operations-overview-card" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <ClipboardCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>نمای کلی صف‌های عملیاتی و ماتریس نقش حاکمیتی</span>
           </h2>
@@ -72,7 +72,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
               <div className="font-bold text-slate-700 dark:text-slate-200 truncate">{q.label}</div>
               <div className="text-[10.5px] text-slate-500 mt-0.5">{q.urgent ? 'نیازمند بررسی ممیز' : 'صف پایدار'}</div>
             </div>
-            <strong className="text-base font-black text-slate-900 dark:text-white tabular-nums shrink-0">
+            <strong className="text-base font-bold text-slate-900 dark:text-white tabular-nums shrink-0">
               {toPersianNum(q.count)}
             </strong>
           </button>

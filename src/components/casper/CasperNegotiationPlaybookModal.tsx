@@ -104,7 +104,7 @@ export function CasperNegotiationPlaybookModal({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 dark:text-white">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 راهنمای چانه‌زنی پای میز نشست
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -126,7 +126,7 @@ export function CasperNegotiationPlaybookModal({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
           <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
             <span className="text-[10px] text-slate-400 block mb-0.5">قیمت اعلامی</span>
-            <span className="text-xs font-black text-rose-600 dark:text-rose-400">
+            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
               {toPersianNum(totalAskingBillion)} م.م
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">متری {toPersianNum(askingPricePerSqm)} م</span>
@@ -134,7 +134,7 @@ export function CasperNegotiationPlaybookModal({
 
           <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
             <span className="text-[10px] text-slate-400 block mb-0.5">کف معامله واقعی</span>
-            <span className="text-xs font-black text-blue-600 dark:text-blue-400">
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
               {toPersianNum(totalDealBillion)} م.م
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">متری {toPersianNum(dealPricePerSqm)} م</span>
@@ -142,7 +142,7 @@ export function CasperNegotiationPlaybookModal({
 
           <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800">
             <span className="text-[10px] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold block mb-0.5">پیشنهاد بازگشایی</span>
-            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
               {toPersianNum(totalOfferBillion)} م.م
             </span>
             <span className="text-[10px] text-[var(--color-brand-600)]/80 dark:text-emerald-400/80 block mt-0.5">متری {toPersianNum(targetOfferPerSqm)} م</span>
@@ -150,7 +150,7 @@ export function CasperNegotiationPlaybookModal({
 
           <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
             <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold block mb-0.5">سقف ترک جلسه</span>
-            <span className="text-xs font-black text-amber-700 dark:text-amber-300">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
               {toPersianNum(totalWalkAwayBillion)} م.م
             </span>
             <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 block mt-0.5">متری {toPersianNum(walkAwayPricePerSqm)} م</span>

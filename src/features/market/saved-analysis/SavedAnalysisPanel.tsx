@@ -84,7 +84,7 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
         className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 p-5 space-y-4 text-xs"
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
-          <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">
+          <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">
             ذخیره تحلیل، اشتراک‌گذاری و خروجی مجاز
           </strong>
           <button

@@ -50,7 +50,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
       <div className="space-y-3 text-xs">
         <div className="apple-grouped-card dark:bg-slate-900 p-3.5 space-y-2.5 border-emerald-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>کارشناسی هوشمند متن آگهی دیوار/شیپور</span></span>
+            <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>کارشناسی هوشمند متن آگهی دیوار/شیپور</span></span>
             <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md tabular-nums">ضریب کیفی: {toPersianNum(qMult)}x</span>
           </div>
           <textarea rows={2} aria-label="متن کامل آگهی دیوار یا شیپور" value={adText} onChange={(e) => handlePasteAdText(e.target.value)} placeholder="متن کامل آگهی دیوار یا شیپور را اینجا الصاق (Paste) کنید تا متراژ، طبقه، سن بنا، قیمت و ریسک‌ها خودکار استخراج شوند..." className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] p-2 text-[11px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
@@ -76,13 +76,13 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
           )}
           <EpistemicMarketDisclaimer metrics={agg} className="mb-1" />
           <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-[10px] p-2.5 space-y-1.5 tabular-nums">
-            <div className="flex items-center justify-between"><span className="text-slate-500 dark:text-slate-400">ارزش عادلانه تابلو:</span><strong className="text-slate-900 dark:text-slate-100 font-black">{toPersianNum((fairAskTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairAskTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairAskTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
-            <div className="flex items-center justify-between"><span className="text-emerald-700 dark:text-emerald-400 font-semibold">{dealFairTotalLabelFa()}:</span><strong className="text-emerald-700 dark:text-emerald-400 font-black">{toPersianNum((fairDealTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairDealTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairDealTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
+            <div className="flex items-center justify-between"><span className="text-slate-500 dark:text-slate-400">ارزش عادلانه تابلو:</span><strong className="text-slate-900 dark:text-slate-100 font-bold">{toPersianNum((fairAskTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairAskTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairAskTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
+            <div className="flex items-center justify-between"><span className="text-emerald-700 dark:text-emerald-400 font-semibold">{dealFairTotalLabelFa()}:</span><strong className="text-emerald-700 dark:text-emerald-400 font-bold">{toPersianNum((fairDealTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairDealTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairDealTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
             {effectiveAskingTotal <= 0 ? (
               <div className="text-[10.5px] text-amber-700 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800 rounded-lg px-2 py-1 font-medium">قیمت در متن یافت نشد (توافقی) — قیمت پیشنهادی فروشنده را وارد کنید تا درصد حباب/شکار محاسبه شود</div>
             ) : (
               <div className="flex items-center justify-between pt-1 border-t border-slate-200/70 dark:border-slate-700">
-                <span className={`px-2 py-0.5 rounded-md border text-[10.5px] font-extrabold ${verdict.cls}`}>{verdict.label}</span>
+                <span className={`px-2 py-0.5 rounded-md border text-[10.5px] font-bold ${verdict.cls}`}>{verdict.label}</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">{devPct > 0 ? `+${toPersianNum(devPct)}٪ بالاتر از ارزش عادلانه` : `${toPersianNum(Math.abs(devPct))}٪ زیر ارزش عادلانه`}</span>
               </div>
             )}
@@ -113,11 +113,11 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
         {isSponsorActive(selectedHood.sponsor, featureFlags.enableSponsorBilling) && selectedHood.sponsor && (
           <div className="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 rounded-[12px] p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-black text-amber-950 dark:text-amber-200"><Award className="w-4 h-4 stroke-[1.75] text-amber-600 dark:text-amber-400" /><span>مشاور تخصصی و امین محله {selectedHood.name}</span></div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950 dark:text-amber-200"><Award className="w-4 h-4 stroke-[1.75] text-amber-600 dark:text-amber-400" /><span>مشاور تخصصی و امین محله {selectedHood.name}</span></div>
               <span className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">{toPersianNum(selectedHood.sponsor.experienceYears)} سال سابقه</span>
             </div>
             <div className="text-xs text-slate-800 dark:text-slate-200"><strong>{selectedHood.sponsor.name}</strong> · {selectedHood.sponsor.specialty}</div>
-            <button type="button" onClick={() => onTrackSponsorCall(selectedHood, selectedHood.sponsor!)} disabled={callingSponsorHoodId === selectedHood.id} className="w-full py-2.5 px-3 rounded-[10px] bg-amber-600 hover:bg-amber-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer text-xs shadow-xs">
+            <button type="button" onClick={() => onTrackSponsorCall(selectedHood, selectedHood.sponsor!)} disabled={callingSponsorHoodId === selectedHood.id} className="w-full py-2.5 px-3 rounded-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer text-xs shadow-xs">
               <Phone className="w-4 h-4 stroke-[1.75]" /><span>{revealedSponsorPhoneHoodId === selectedHood.id ? `شماره تماس: ${selectedHood.sponsor.phone}` : 'تماس مستقیم با مشاور تخصصی محله'}</span>
             </button>
           </div>
@@ -126,7 +126,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
           <div key={ab.id} className="apple-grouped-card dark:bg-slate-900 p-3 space-y-1.5 border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/20 dark:bg-emerald-950/20">
             <div className="flex items-center justify-between text-[11px]">
               <span className="font-bold text-slate-800 dark:text-slate-200">{formatAreaShort(ab.sqm, areaUnit)} · ساخت {toPersianNum(curJalaliYear - ab.age)} · طبقه {toPersianNum(ab.floor)}</span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold tabular-nums">{toPersianNum(ab.discountPct)}٪ زیر میانگین محله</span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold tabular-nums">{toPersianNum(ab.discountPct)}٪ زیر میانگین محله</span>
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-400 tabular-nums">قیمت کل: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum((ab.askingTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(ab.askingTotalMillion, intlCurrency, radarLocale)})` : ''}</strong> · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'} {toPersianNum(convertPricePerSqmToUnit(ab.perSqmMillion, areaUnit))} م (معیار: {toPersianNum(convertPricePerSqmToUnit(ab.fairPerSqmMillion, areaUnit))} م)</div>
             <button type="button" onClick={() => handlePasteAdText(ab.description)} className="w-full py-1 px-2 rounded-md bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold text-[10.5px] transition cursor-pointer">ارسال به کارشناس هوشمند آگهی ↑</button>

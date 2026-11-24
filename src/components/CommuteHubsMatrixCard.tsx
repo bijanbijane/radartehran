@@ -83,11 +83,11 @@ export function CommuteHubsMatrixCard({
         }`}
       >
         <div className="flex items-center justify-between gap-1">
-          <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1 truncate">
+          <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1 truncate">
             <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-slate-400'}`} />
             <span className="truncate">{hub.name}</span>
           </span>
-          <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
+          <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
             {toPersianNum(hub.distKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'}
           </span>
         </div>
@@ -105,7 +105,7 @@ export function CommuteHubsMatrixCard({
   return (
     <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
-        <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
+        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
           <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>فاصله، مترو و زمان تردد به قطب‌های کاری</span>
         </div>
@@ -133,14 +133,14 @@ export function CommuteHubsMatrixCard({
               <TrainFront className="w-3.5 h-3.5 shrink-0" style={{ color: spatialReport.nearestMetroColor }} />
               <span className="truncate">{spatialReport.nearestMetroLineName}</span>
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-slate-800 dark:text-slate-200 tabular-nums">
+            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
               ~{toPersianNum(spatialReport.nearestMetroDistKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'} ({toPersianNum(spatialReport.walkingMinutesEstimate)} {radarLocale === 'en' ? 'min walk' : 'دقیقه پیاده'})
             </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-extrabold border ${
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold border ${
                 spatialReport.trafficZoneStatus === 'inside_core'
                   ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800'
                   : spatialReport.trafficZoneStatus === 'inside_outer'

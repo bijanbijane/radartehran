@@ -94,7 +94,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             <span className="text-[10.5px] font-bold text-[var(--color-brand-600)]">
               {CANONICAL_CATEGORY_LABELS_FA[provider.canonicalCategory]} · {provider.identity.primaryNeighborhoodName}
             </span>
-            <h3 className="text-base font-black text-[var(--color-text-primary)] dark:text-white mt-0.5">
+            <h3 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white mt-0.5">
               {provider.identity.displayName}
             </h3>
           </div>

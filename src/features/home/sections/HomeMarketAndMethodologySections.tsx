@@ -86,7 +86,7 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
       <section aria-labelledby="home-market-snapshot-heading" data-testid="home-market-snapshot-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="home-market-snapshot-heading" className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)]">
+            <h2 id="home-market-snapshot-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
               نمایی از بازار املاک {activeCityNameFa}
             </h2>
             <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1">
@@ -146,7 +146,7 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
                       <span>{qBadge.labelFa}</span>
                     </span>
                   </div>
-                  <div className="text-2xl font-black text-[var(--color-text-primary)] tabular-nums">{isMissing ? '—' : m.formattedValue}</div>
+                  <div className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">{isMissing ? '—' : m.formattedValue}</div>
                   {!isMissing && <div className="text-xs text-[var(--color-text-secondary)]">{m.unit} · {m.dataTypeLabelFa}</div>}
                   {m.limitationNote && <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{m.limitationNote}</p>}
                 </div>
@@ -173,7 +173,7 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
       <section aria-labelledby="home-quick-access-heading" data-testid="home-quick-access-section" className="space-y-3.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 id="home-quick-access-heading" className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)]">
+            <h2 id="home-quick-access-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
               ابزارهای تصمیم‌گیری سریع
             </h2>
             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
@@ -211,7 +211,7 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
                 <ArrowLeft className="w-4 h-4 text-[var(--color-text-muted)]" aria-hidden="true" />
               </div>
               <div className="space-y-1">
-                <div className="text-sm font-extrabold text-[var(--color-text-primary)]">{card.titleFa}</div>
+                <div className="text-sm font-bold text-[var(--color-text-primary)]">{card.titleFa}</div>
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{card.descFa}</p>
               </div>
             </RadarLink>
@@ -228,7 +228,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
       <section aria-labelledby="home-research-heading" data-testid="home-research-section" className="space-y-3.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 id="home-research-heading" className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)]">
+            <h2 id="home-research-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
               پژوهش‌ها، فایل‌ها و خدمات تخصصی
             </h2>
             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
@@ -319,7 +319,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" aria-hidden="true" />
-            <h2 id="home-methodology-heading" className="text-sm sm:text-base font-extrabold text-[var(--color-text-primary)]">
+            <h2 id="home-methodology-heading" className="text-sm sm:text-base font-bold text-[var(--color-text-primary)]">
               شفافیت منبع و روش‌شناسی داده‌های رادارتهران
             </h2>
           </div>
@@ -334,7 +334,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {HOME_METHODOLOGY_PILLARS.map((pil) => (
             <div key={pil.id} className="p-3 rounded-[10px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
-              <div className="text-xs font-extrabold text-[var(--color-text-primary)]">{pil.titleFa}</div>
+              <div className="text-xs font-bold text-[var(--color-text-primary)]">{pil.titleFa}</div>
               <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{pil.explanationFa}</p>
             </div>
           ))}

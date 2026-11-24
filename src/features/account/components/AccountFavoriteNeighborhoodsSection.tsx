@@ -39,12 +39,12 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-2"><Heart className="w-4 h-4 text-rose-500 fill-rose-500" /><span>{isEn ? `Saved Neighborhoods (${favoriteHoods.length})` : `محله‌های نشان‌شده شما (${toPersianNum(favoriteHoods.length)})`}</span></h2>
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2"><Heart className="w-4 h-4 text-rose-500 fill-rose-500" /><span>{isEn ? `Saved Neighborhoods (${favoriteHoods.length})` : `محله‌های نشان‌شده شما (${toPersianNum(favoriteHoods.length)})`}</span></h2>
           {avgShortlistScore && <span className="text-xs px-2 py-0.5 rounded-md bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] font-bold">میانگین امتیاز: {toPersianNum(avgShortlistScore)}/۱۰</span>}
         </div>
         <div className="flex items-center gap-2">
           {favoriteHoods.length >= 2 && onOpenShortlistMatrix && (
-            <button type="button" onClick={onOpenShortlistMatrix} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] border border-[var(--color-border-subtle)] text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer">
+            <button type="button" onClick={onOpenShortlistMatrix} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] border border-[var(--color-border-subtle)] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
               <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" /><span>{isEn ? 'Shortlist Decision Matrix' : 'ماتریس مقایسه منتخب‌ها'}</span>
             </button>
           )}
@@ -92,7 +92,7 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
                   {renderCardHeader ? renderCardHeader(hood, isSelected, isOtherCity, MULTI_CITY_CONFIGS[favCityId]?.nameFa || '', explain) : (
                     <div role="button" tabIndex={0} onClick={() => onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNeighborhood(hood); } }} className="cursor-pointer">
                       <div className="flex items-center gap-1.5">
-                        <h3 className="font-black text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
+                        <h3 className="font-bold text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
                         {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-xs font-bold">فعال روی نقشه</span>}
                       </div>
                       <span className="text-xs text-[var(--color-text-muted)]">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-300">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
@@ -105,11 +105,11 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
                 <div className="py-3 my-3 border-y border-[var(--color-border-subtle)] grid grid-cols-2 text-xs tabular-nums">
                   <div>
                     <span className="text-xs text-[var(--color-text-muted)] block font-medium">{unitBuy === unitDeal ? 'برآورد معامله (غیرثبتی):' : 'اعلامی / برآورد معامله (غیرثبتی):'}</span>
-                    <strong className="text-[var(--color-text-primary)] font-black text-sm">{toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-[var(--color-brand-fg)]">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</strong>
+                    <strong className="text-[var(--color-text-primary)] font-bold text-sm">{toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-[var(--color-brand-fg)]">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</strong>
                   </div>
                   <div className="border-s border-[var(--color-border-subtle)] ps-3">
                     <span className="text-xs text-[var(--color-text-muted)] block font-medium">رهن ۸۰ متر:</span>
-                    <strong className="text-[var(--color-brand-fg)] font-black text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
+                    <strong className="text-[var(--color-brand-fg)] font-bold text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

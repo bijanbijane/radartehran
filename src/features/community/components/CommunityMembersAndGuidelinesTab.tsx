@@ -75,7 +75,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
     return (
       <div className="space-y-4 text-xs" data-testid="community-guidelines-tab">
         <section className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>آیین‌نامه رفتار، حریم خصوصی، تخلفات ۱۰گانه و حق اعتراض</span>
           </h2>
@@ -92,7 +92,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
         </section>
 
         <section className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
-          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فرآیند اعتراض و بازبینی تصمیم ناظر</h3>
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">فرآیند اعتراض و بازبینی تصمیم ناظر</h3>
           <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">
             هر کاربر می‌تواند نسبت به تصمیم مخفی‌سازی یا قفل محتوای خود از مسیر «حساب کاربری / جامعه من» درخواست بازبینی ثبت کند. تمامی تصمیمات ممیزی و تغییر وضعیت نشان‌ها با تاریخ و دلیل در دفتر حسابرسی مرکز حاکمیت ثبت می‌شوند.
           </p>
@@ -125,7 +125,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{m.displayNameFa}</span>
+              <span className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">{m.displayNameFa}</span>
               <span className="text-xs font-mono text-[var(--color-text-muted)] dark:text-slate-400">@{m.username}</span>
             </div>
             <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 line-clamp-2">{m.bioFa}</p>
@@ -188,7 +188,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
           <>
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
               <div className="space-y-1">
-                <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+                <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
                   <span data-testid="community-profile-display-name">{activeProfile.displayNameFa}</span>
                   {activeProfile.identityStatus === 'verified_phone' && <BadgeCheck className="w-4 h-4 text-sky-600" />}
                 </h2>
@@ -246,7 +246,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
             <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{activeProfile.bioFa}</p>
 
             <div className="space-y-2">
-              <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">تفکیک ۵ محور اعتبار (بدون ادغام در یک نمره ساختگی)</h3>
+              <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">تفکیک ۵ محور اعتبار (بدون ادغام در یک نمره ساختگی)</h3>
               <div className="space-y-2">
                 {AXES_ORDER.map((axis) => {
                   const val = activeProfile.reputation[axis] ?? 0;
@@ -268,7 +268,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
 
             {activeProfile.badges.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800" data-testid="community-profile-badges">
-                <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">نشان‌های معتبر و دارای تاریخ انقضا</h3>
+                <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">نشان‌های معتبر و دارای تاریخ انقضا</h3>
                 <div className="divide-y divide-[var(--color-border-subtle)] dark:divide-slate-800">
                   {activeProfile.badges.map((bdg) => (
                     <div key={bdg.id} className="py-2 first:pt-0 last:pb-0 space-y-0.5 text-xs">

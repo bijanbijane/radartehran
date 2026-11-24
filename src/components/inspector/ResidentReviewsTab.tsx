@@ -104,11 +104,11 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
       <div className="apple-grouped-card p-3.5 space-y-3">
         <div className="flex items-start justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-2.5">
           <div>
-            <h3 className="font-black text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2]" /><span>ترازنامه کیفیت زندگی ساکنان {selectedHood.name}</span></h3>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2]" /><span>ترازنامه کیفیت زندگی ساکنان {selectedHood.name}</span></h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">{summary.provenanceLabelFa}{fxBuyLabel}</p>
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-[12px] px-3 py-1.5 text-center shrink-0">
-            <div className="text-base font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(summary.compositeScore)} / ۱۰</div>
+            <div className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(summary.compositeScore)} / ۱۰</div>
             <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300">{toPersianNum(summary.recommendPercent)}٪ رضایت سکونت</div>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
               <div key={ax.key} className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1 truncate"><IconComp className="w-3 h-3 shrink-0" style={{ color: ax.color }} /><span className="truncate">{ax.label}</span></span>
-                  <strong className="text-slate-900 dark:text-slate-100 font-extrabold tabular-nums">{toPersianNum(ax.avg)}</strong>
+                  <strong className="text-slate-900 dark:text-slate-100 font-bold tabular-nums">{toPersianNum(ax.avg)}</strong>
                 </div>
                 <div className="h-1.5 w-full bg-slate-200/80 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, ax.avg * 10)}%`, backgroundColor: ax.color }} />
@@ -132,7 +132,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
 
       <div className="apple-grouped-card p-3.5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><MessageSquarePlus className="w-4 h-4 text-[#007AFF] stroke-[1.75]" /><span>ثبت نظر و امتیاز کیفیت زندگی در {selectedHood.name}</span></span>
+          <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><MessageSquarePlus className="w-4 h-4 text-[#007AFF] stroke-[1.75]" /><span>ثبت نظر و امتیاز کیفیت زندگی در {selectedHood.name}</span></span>
           <button type="button" onClick={() => setShowForm((v) => !v)} className="text-[11px] font-bold text-[#007AFF] hover:underline cursor-pointer">{showForm ? 'جمع کردن فرم' : 'باز کردن فرم ثبت نظر'}</button>
         </div>
         {showForm && (
@@ -145,11 +145,11 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
             </div>
             <div className="grid grid-cols-3 gap-1 apple-segmented dark:bg-slate-900/90 p-1 rounded-[9px] text-[11px] font-bold">
               {([{ id: 'owner', label: 'مالک ساکن' }, { id: 'tenant', label: 'مستاجر ساکن' }, { id: 'business', label: 'شاغل در محله' }] as const).map((role) => (
-                <button key={role.id} type="button" onClick={() => setResidencyType(role.id)} className={`py-1 rounded-[7px] transition cursor-pointer ${residencyType === role.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{role.label}</button>
+                <button key={role.id} type="button" onClick={() => setResidencyType(role.id)} className={`py-1 rounded-[7px] transition cursor-pointer ${residencyType === role.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{role.label}</button>
               ))}
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 rounded-[10px] p-2.5 space-y-2">
-              <div className="flex items-center justify-between text-[11px]"><span className="font-bold text-slate-700 dark:text-slate-300">امتیازدهی شما به ۶ شاخص محله:</span><span className="font-black text-emerald-700 dark:text-emerald-400 tabular-nums">میانگین شما: {toPersianNum(draftComposite)} از ۱۰</span></div>
+              <div className="flex items-center justify-between text-[11px]"><span className="font-bold text-slate-700 dark:text-slate-300">امتیازدهی شما به ۶ شاخص محله:</span><span className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">میانگین شما: {toPersianNum(draftComposite)} از ۱۰</span></div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 {qolAxes.map((ax) => (
                   <div key={ax.key} className="space-y-0.5">
@@ -184,7 +184,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
 
       <div className="apple-grouped-card p-3.5 space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>دیدگاه‌های ساکنان ({toPersianNum(filteredReviews.length)})</span></span>
+          <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>دیدگاه‌های ساکنان ({toPersianNum(filteredReviews.length)})</span></span>
           <div className="relative flex-1 max-w-[165px]">
             <Search className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="جست‌وجو در نظرات..." aria-label="جست‌وجو در نظرات ساکنان" className="w-full pr-7 pl-2 py-1 rounded-[8px] bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-[11px] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600" />
@@ -192,7 +192,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
         </div>
         <div className="grid grid-cols-4 gap-1 apple-segmented dark:bg-slate-900/90 p-1 rounded-[9px] text-[10.5px] font-bold">
           {([{ id: 'all', label: 'همه' }, { id: 'verified', label: 'تایید مکانی 📍' }, { id: 'owners', label: 'مالکان' }, { id: 'tenants', label: 'مستاجران' }] as const).map((tab) => (
-            <button key={tab.id} type="button" onClick={() => setFilterMode(tab.id)} className={`py-1 rounded-[7px] truncate transition cursor-pointer ${filterMode === tab.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{tab.label}</button>
+            <button key={tab.id} type="button" onClick={() => setFilterMode(tab.id)} className={`py-1 rounded-[7px] truncate transition cursor-pointer ${filterMode === tab.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{tab.label}</button>
           ))}
         </div>
         <div className="divide-y divide-slate-200/70 dark:divide-slate-700/70">
@@ -205,7 +205,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">{rev.authorName}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{rev.authorName}</span>
                       {isSeed ? (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded-[6px]" title="این مورد بر اساس شاخص‌های پایه محله تولید شده و نظر مستقیم ثبت‌شده کاربر نیست">
                           <span>سناریوی مرجع محله (نمونه پایه)</span>
@@ -218,7 +218,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
                     </div>
                     <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5">{getResidencyLabelFa(rev.residencyType, rev.residencyDuration)} · {rev.createdAtLabelFa}</div>
                   </div>
-                  <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-2 py-1 text-left shrink-0 tabular-nums"><span className="font-black text-slate-900 dark:text-slate-100 text-xs">{toPersianNum(rev.overallQoLScore)}</span><span className="text-[10px] text-slate-500 dark:text-slate-400"> / ۱۰</span></div>
+                  <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-2 py-1 text-left shrink-0 tabular-nums"><span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{toPersianNum(rev.overallQoLScore)}</span><span className="text-[10px] text-slate-500 dark:text-slate-400"> / ۱۰</span></div>
                 </div>
                 <p className="text-slate-700 dark:text-slate-300 text-[11.5px] leading-relaxed">{rev.comment}</p>
                 {(rev.prosTags.length > 0 || rev.consTags.length > 0) && (

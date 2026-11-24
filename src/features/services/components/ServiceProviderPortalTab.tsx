@@ -138,7 +138,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
         className="lg:col-span-7 p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3.5"
       >
         <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
-          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Award className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ثبت پروفایل متخصص / ارائه‌دهنده خدمات ملکی</span>
           </h2>
@@ -237,7 +237,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
 
       <aside className="lg:col-span-5 space-y-3">
         <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
-          <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>پرونده‌های ثبت‌شده شما ({submissions.length})</span>
           </strong>
