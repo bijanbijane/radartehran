@@ -7,6 +7,7 @@ import {
   isStaticAssetPath,
 } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { injectWorkerDynamicSeoHtml } from '../../../worker/routes/healthAndMetadataRoutes';
+import { seoFromPublicPath } from '../../../src/data/neighborhoodListingSamples';
 import type { WorkerEnv } from '../../../worker/types';
 
 const FALLBACK_SPA_SHELL_HTML = `<!doctype html>
@@ -24,6 +25,71 @@ const FALLBACK_SPA_SHELL_HTML = `<!doctype html>
     <div id="root"></div>
   </body>
 </html>`;
+
+const NON_INDEXABLE_PATH_PREFIXES = [
+  '/login',
+  '/account',
+  '/userspace',
+  '/profile',
+  '/saved-searches',
+  '/escrow',
+  '/agency/workspace',
+  '/service/orders',
+  '/admin',
+] as const;
+
+function normalizePathname(pathname: string): string {
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
+function isWithinPathPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(prefix + '/');
+}
+
+function shouldNoindexPath(pathname: string): boolean {
+  const normalized = normalizePathname(pathname);
+  return NON_INDEXABLE_PATH_PREFIXES.some((prefix) => isWithinPathPrefix(normalized, prefix));
+}
+
+function isUnknownTehranSeoPath(pathname: string): boolean {
+  const normalized = normalizePathname(pathname);
+  return (normalized === '/tehran' || normalized.startsWith('/tehran/')) &&
+    seoFromPublicPath(normalized) === null;
+}
+
+function applyNoindexRobotsMeta(html: string): string {
+  const noindexMeta = '<meta name="robots" content="noindex, nofollow" />';
+  const robotsMetaPattern = /<meta\b(?=[^>]*\bname=["']robots["'])[^>]*>/i;
+  if (robotsMetaPattern.test(html)) return html.replace(robotsMetaPattern, noindexMeta);
+  return html.replace(/<\/head>/i, noindexMeta + '\n</head>');
+}
+
+function renderSeoHtml(
+  html: string,
+  url: URL,
+  baseUrl: string,
+  areaUnit: AreaUnit,
+  intlCurrency: IntlCurrencyCode
+): string {
+  const hasSeoQuery = ['city', 'hood', 'compare'].some((key) => url.searchParams.has(key));
+  const hasSeoPath = seoFromPublicPath(url.pathname) !== null;
+  const enriched = hasSeoQuery || hasSeoPath
+    ? injectWorkerDynamicSeoHtml(html, url, baseUrl, areaUnit, intlCurrency)
+    : html;
+  return shouldNoindexPath(url.pathname) ? applyNoindexRobotsMeta(enriched) : enriched;
+}
+
+function createNotFoundResponse(correlationId: string): Response {
+  return new Response('Not Found', {
+    status: 404,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Correlation-Id': correlationId,
+    },
+  });
+}
 
 function applyStaticResponseSecurityHeaders(
   sourceResponse: Response,
@@ -63,6 +129,7 @@ export async function handleFrontendSpaOrStaticAssetRequest(
   baseUrl: string
 ): Promise<Response> {
   const pathname = url.pathname;
+  if (isUnknownTehranSeoPath(pathname)) return createNotFoundResponse(correlationId);
   const isAssetFileRequest = isStaticAssetPath(pathname);
   const { areaUnit, intlCurrency } = resolveAreaAndCurrency(url);
 
@@ -70,15 +137,9 @@ export async function handleFrontendSpaOrStaticAssetRequest(
     const assetResponse = await env.ASSETS.fetch(request);
     if (assetResponse.status !== 404 || isAssetFileRequest) {
       const contentType = assetResponse.headers.get('content-type') || '';
-      if (
-        !isAssetFileRequest &&
-        contentType.includes('text/html') &&
-        (url.searchParams.has('city') ||
-          url.searchParams.has('hood') ||
-          url.searchParams.has('compare'))
-      ) {
+      if (!isAssetFileRequest && contentType.includes('text/html')) {
         const rawHtml = await assetResponse.text();
-        const enrichedHtml = injectWorkerDynamicSeoHtml(rawHtml, url, baseUrl, areaUnit, intlCurrency);
+        const enrichedHtml = renderSeoHtml(rawHtml, url, baseUrl, areaUnit, intlCurrency);
         const htmlResp = new Response(enrichedHtml, {
           status: assetResponse.status,
           headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -92,7 +153,7 @@ export async function handleFrontendSpaOrStaticAssetRequest(
     const spaAssetResponse = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
     const rawHtml =
       spaAssetResponse.status === 200 ? await spaAssetResponse.text() : FALLBACK_SPA_SHELL_HTML;
-    const enrichedHtml = injectWorkerDynamicSeoHtml(rawHtml, url, baseUrl, areaUnit, intlCurrency);
+    const enrichedHtml = renderSeoHtml(rawHtml, url, baseUrl, areaUnit, intlCurrency);
     const htmlResp = new Response(enrichedHtml, {
       status: 200,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -111,7 +172,7 @@ export async function handleFrontendSpaOrStaticAssetRequest(
     });
   }
 
-  const enrichedHtml = injectWorkerDynamicSeoHtml(
+  const enrichedHtml = renderSeoHtml(
     FALLBACK_SPA_SHELL_HTML,
     url,
     baseUrl,

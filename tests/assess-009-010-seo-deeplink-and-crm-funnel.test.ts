@@ -15,6 +15,7 @@ import {
   serializeSafeJsonLd,
   escapeXml,
 } from '../src/utils/serverSeoAndSitemap';
+import { handleFrontendSpaOrStaticAssetRequest } from '../apps/frontend/worker/spaDelivery';
 import {
   acquireBargainSubmissionLock,
   isBargainSubmissionLocked,
@@ -169,5 +170,55 @@ await (async () => {
 
   console.log('✓ 2. ASSESS-010: Single-flight bargain lock, independent media retry & dual-write sync verified');
 })();
+
+// ============================================================================
+// 3. FRONTEND WORKER SEO FOUNDATION: clean URLs, scoped 404s, and noindex
+// ============================================================================
+{
+  const edgeShell = SAMPLE_INDEX_HTML.replace(
+    '<meta name="description"',
+    '<meta name="robots" content="index, follow" />\n  <meta name="description"',
+  );
+  const makeEnv = () => ({
+    ASSETS: {
+      fetch: async () => new Response(edgeShell, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }),
+    },
+  });
+
+  const cleanUrl = new URL('https://radartehran.ir/tehran/punak');
+  const cleanResponse = await handleFrontendSpaOrStaticAssetRequest(
+    new Request(cleanUrl), makeEnv() as any, cleanUrl, 'seo-clean-route', 'https://radartehran.ir',
+  );
+  const cleanHtml = await cleanResponse.text();
+  assert.equal(cleanResponse.status, 200, 'Known clean neighborhood routes must return HTML 200');
+  assert.ok(cleanHtml.includes('https://radartehran.ir/tehran/punak'), 'Clean neighborhood route must receive its own canonical URL');
+  assert.ok(cleanHtml.includes('پونک'), 'Clean neighborhood route must receive its server-side title/metadata');
+
+  const invalidUrl = new URL('https://radartehran.ir/tehran/not-a-real-neighborhood');
+  const invalidResponse = await handleFrontendSpaOrStaticAssetRequest(
+    new Request(invalidUrl), makeEnv() as any, invalidUrl, 'seo-invalid-route', 'https://radartehran.ir',
+  );
+  assert.equal(invalidResponse.status, 404, 'Unknown /tehran/* SEO slugs must not become SPA soft-404 pages');
+
+  const accountUrl = new URL('https://radartehran.ir/account/profile');
+  const accountResponse = await handleFrontendSpaOrStaticAssetRequest(
+    new Request(accountUrl), makeEnv() as any, accountUrl, 'seo-private-route', 'https://radartehran.ir',
+  );
+  const accountHtml = await accountResponse.text();
+  assert.equal(accountResponse.status, 200);
+  assert.ok(accountHtml.includes('name="robots" content="noindex, nofollow"'), 'Account routes must override the global index policy');
+  assert.equal((accountHtml.match(/name="robots"/g) || []).length, 1, 'Private route must contain exactly one robots directive');
+
+  const homeUrl = new URL('https://radartehran.ir/');
+  const homeResponse = await handleFrontendSpaOrStaticAssetRequest(
+    new Request(homeUrl), makeEnv() as any, homeUrl, 'seo-public-route', 'https://radartehran.ir',
+  );
+  const homeHtml = await homeResponse.text();
+  assert.ok(homeHtml.includes('name="robots" content="index, follow"'), 'Public homepage must preserve its global index policy');
+  console.log('✓ Frontend Worker clean-path SEO, invalid Tehran slug 404, and private-route noindex verified');
+}
 
 console.log('--- ALL ASSESS-009 & ASSESS-010 SEO & CRM FUNNEL TESTS PASSED ---');
