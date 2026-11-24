@@ -83,14 +83,14 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
 
   return (
     <div
-      role="dialog" aria-label="ابزارهای ترسیم، اندازه‌گیری و کاتالوگ لایه‌ها (RT-UI-MAP-001 & RT-UI-LAYERS-001)"
+      role="dialog" aria-label="ابزارهای ترسیم، اندازه‌گیری و کاتالوگ لایه‌های نقشه"
       data-testid="map-spatial-tools-popover"
       className="pointer-events-auto w-80 sm:w-88 max-w-[calc(100vw-5.25rem)] rounded-2xl border border-[#DCE3DF] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3.5 space-y-3 text-xs max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto"
     >
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
         <div role="tablist" aria-label="تب‌های ابزار مکانی و کاتالوگ لایه" className="flex items-center gap-1">
-          <button type="button" role="tab" aria-selected={panelTab === 'tools_15'} data-testid="spatial-tab-tools-15" onClick={() => setPanelTab('tools_15')} className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'tools_15' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}>ابزار نقشه (۱۵)</button>
-          <button type="button" role="tab" aria-selected={panelTab === 'catalog_16'} data-testid="spatial-tab-catalog-16" onClick={() => setPanelTab('catalog_16')} className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'catalog_16' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}>کاتالوگ لایه‌ها (۱۶)</button>
+          <button type="button" role="tab" aria-selected={panelTab === 'tools_15'} data-testid="spatial-tab-tools-15" onClick={() => setPanelTab('tools_15')} className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'tools_15' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}>ابزار نقشه</button>
+          <button type="button" role="tab" aria-selected={panelTab === 'catalog_16'} data-testid="spatial-tab-catalog-16" onClick={() => setPanelTab('catalog_16')} className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'catalog_16' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}>کاتالوگ لایه‌ها</button>
         </div>
         <button type="button" onClick={handleClose} aria-label="بستن پنل ابزار مکانی" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
       </div>

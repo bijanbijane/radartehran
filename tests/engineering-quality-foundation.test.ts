@@ -2089,7 +2089,7 @@ async function runSuite(): Promise<void> {
     assert.equal(discoverSrc.includes('<div key={hood.id} onClick='), false, 'ProductDiscoverView outer card wrappers must not intercept clicks');
 
     const homeSrc = readComp('src/components/views/ProductHomeView.tsx');
-    assert.equal(homeSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductHomeView featured neighborhood cards must handle click on inner role=button');
+    assert.equal(homeSrc.includes('div role="button"'), false, 'ProductHomeView must use semantic buttons/links instead of clickable div role=button');
     assert.equal(homeSrc.includes('<div key={hood.id} onClick='), false, 'ProductHomeView outer card wrapper must not intercept clicks');
 
     const userSpaceSrc = readComp('src/components/views/ProductUserSpaceView.tsx');

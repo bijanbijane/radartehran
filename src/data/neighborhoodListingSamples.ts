@@ -251,6 +251,18 @@ export function tehranPublicPathForCompare(leftId: number, rightId: number): str
   return hit ? `/tehran/${hit[0]}` : null;
 }
 
+export function findHoodIdByAreaSlug(slug: string): number | null {
+  const clean = String(slug || '').trim().toLowerCase();
+  if (!clean) return null;
+  const hit = PUBLIC_HOODS.find((row) => row[1] === clean);
+  return hit ? hit[0] : null;
+}
+
+export function getAreaSlugForHoodId(hoodId: number): string | null {
+  const hit = PUBLIC_HOODS.find((row) => row[0] === hoodId);
+  return hit ? hit[1] : null;
+}
+
 export function parseTehranPublicPath(pathname: string): { kind: 'hood'; hoodId: number } | { kind: 'compare'; leftId: number; rightId: number } | null {
   const slug = pathname.replace(/\/+$/, '').match(/^\/tehran\/([a-z0-9-]+)$/)?.[1];
   if (!slug) return null;

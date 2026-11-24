@@ -29,9 +29,9 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  xs: 'min-h-[32px] px-[10px] text-[12px] rounded-[8px]',
-  sm: 'min-h-[36px] px-[12px] text-[13px] rounded-[8px]',
-  md: 'min-h-[40px] sm:min-h-[40px] max-sm:min-h-[44px] px-[16px] text-[14px] rounded-[8px]',
+  xs: 'min-h-[44px] md:min-h-[32px] px-[10px] text-[12px] rounded-[8px]',
+  sm: 'min-h-[44px] md:min-h-[36px] px-[12px] text-[13px] rounded-[8px]',
+  md: 'min-h-[44px] md:min-h-[40px] px-[16px] text-[14px] rounded-[8px]',
   lg: 'min-h-[48px] px-[20px] text-[15px] rounded-[8px]',
 };
 

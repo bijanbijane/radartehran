@@ -1,8 +1,8 @@
 /**
- * @file MapExplorerToolbar.tsx — Zoom, reset, viewport-search & attribution (RT-UI-MAP-PILOT-001)
+ * @file MapExplorerToolbar.tsx — Consolidated bottom-left map controls (Zoom, Reset, GPS, Viewport Filter, Legend)
  */
 import React, { useEffect, useState } from 'react';
-import { Crosshair, MapPin } from 'lucide-react';
+import { Crosshair, Layers, MapPin, Ruler } from 'lucide-react';
 import type { CityId } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { CITY_DISPLAY_NAMES } from '../../utils/geo/cityGeospatialResolver';
@@ -15,6 +15,10 @@ export interface MapExplorerToolbarProps {
   mapZoomLevel: number;
   onLocateNearestHood: () => void;
   onOpenFilters: () => void;
+  onToggleLegend?: () => void;
+  isLegendOpen?: boolean;
+  isSpatialMeasureActive?: boolean;
+  onToggleSpatialMeasure?: () => void;
   locale?: 'fa' | 'en';
 }
 
@@ -23,7 +27,10 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
   activeCity,
   mapZoomLevel,
   onLocateNearestHood,
-  onOpenFilters,
+  onToggleLegend,
+  isLegendOpen = false,
+  isSpatialMeasureActive = false,
+  onToggleSpatialMeasure,
   locale = 'fa',
 }) => {
   const isEn = locale === 'en';
@@ -33,13 +40,19 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
   useEffect(() => setLiveZoom(mapZoomLevel), [mapZoomLevel]);
 
   useEffect(() => {
-    const map = mapInstanceRef.current as { on?: (e: string, fn: () => void) => void; off?: (e: string, fn: () => void) => void; getZoom?: () => number } | null;
+    const map = mapInstanceRef.current as {
+      on?: (e: string, fn: () => void) => void;
+      off?: (e: string, fn: () => void) => void;
+      getZoom?: () => number;
+    } | null;
     if (!map?.on) return undefined;
     const syncZoom = () => {
       try {
         const z = map.getZoom?.();
         if (typeof z === 'number' && Number.isFinite(z)) setLiveZoom(z);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     map.on('zoomend', syncZoom);
     return () => map.off?.('zoomend', syncZoom);
@@ -53,7 +66,9 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
   };
 
   const resetCityView = () => {
-    const map = mapInstanceRef.current as { flyTo?: (c: [number, number], z: number, o?: { duration?: number }) => void } | null;
+    const map = mapInstanceRef.current as {
+      flyTo?: (c: [number, number], z: number, o?: { duration?: number }) => void;
+    } | null;
     const cfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
     const center: [number, number] = [cfg.center[0], cfg.center[1] + (isDesktop ? 0.055 : 0)];
@@ -70,44 +85,100 @@ export const MapExplorerToolbar: React.FC<MapExplorerToolbarProps> = ({
   return (
     <div
       data-testid="map-explorer-toolbar"
-      className="pointer-events-auto fixed z-[22] right-2 sm:right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-6 max-lg:left-[auto] lg:right-[calc(21rem+0.75rem)] flex flex-col items-end gap-1.5 max-w-[calc(100vw-0.5rem)]"
+      className="pointer-events-auto fixed z-[22] left-3 lg:left-4 bottom-[calc(9.5rem+env(safe-area-inset-bottom))] md:bottom-[5.25rem] lg:bottom-5 flex flex-col items-start gap-1.5"
     >
       <div
         role="toolbar"
         aria-label={isEn ? 'Map canvas controls' : 'کنترل‌های بوم نقشه'}
-        className="apple-vibrancy-bar flex flex-col gap-0.5 sm:gap-1 p-1 sm:p-1.5 rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-700 shadow-lg"
+        className="apple-vibrancy-bar flex flex-col gap-1 p-1.5 rounded-[12px]"
       >
-        <RadarButton type="button" variant="secondary" size="sm" className="min-w-[44px] min-h-[44px] sm:min-w-[2.25rem] sm:min-h-0 px-0" aria-label={isEn ? 'Zoom in' : 'بزرگ‌نمایی'} onClick={() => zoomBy(1)}>
+        <RadarButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-black"
+          aria-label={isEn ? 'Zoom in' : 'بزرگ‌نمایی'}
+          onClick={() => zoomBy(1)}
+        >
           +
         </RadarButton>
-        <span className="text-[10px] text-center font-mono text-[var(--color-text-muted)] tabular-nums px-1">{liveZoom}</span>
-        <RadarButton type="button" variant="secondary" size="sm" className="min-w-[44px] min-h-[44px] sm:min-w-[2.25rem] sm:min-h-0 px-0" aria-label={isEn ? 'Zoom out' : 'کوچک‌نمایی'} onClick={() => zoomBy(-1)}>
+        <span className="text-xs text-center font-mono text-[var(--color-text-muted)] tabular-nums select-none">
+          {liveZoom}
+        </span>
+        <RadarButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0 text-sm font-black"
+          aria-label={isEn ? 'Zoom out' : 'کوچک‌نمایی'}
+          onClick={() => zoomBy(-1)}
+        >
           −
         </RadarButton>
-        <RadarButton type="button" variant="secondary" size="sm" className="text-[10px] font-bold" onClick={resetCityView} aria-label={isEn ? `Reset to ${cityLabel}` : `بازنشانی نمای ${cityLabel}`}>
-          <MapPin className="w-3.5 h-3.5" aria-hidden />
+        <RadarButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0"
+          onClick={resetCityView}
+          aria-label={isEn ? `Reset to ${cityLabel}` : `بازنشانی نمای ${cityLabel}`}
+          title={isEn ? `Reset to ${cityLabel}` : `بازنشانی نمای ${cityLabel}`}
+        >
+          <MapPin className="w-4 h-4" aria-hidden="true" />
         </RadarButton>
-        <RadarButton type="button" variant="secondary" size="sm" onClick={onLocateNearestHood} aria-label={isEn ? 'Nearest neighborhood' : 'نزدیک‌ترین محله'}>
-          <Crosshair className="w-3.5 h-3.5" aria-hidden />
+        <RadarButton
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="min-w-[44px] min-h-[44px] lg:min-w-[36px] lg:min-h-[36px] px-0"
+          onClick={onLocateNearestHood}
+          aria-label={isEn ? 'Nearest neighborhood' : 'نزدیک‌ترین محله'}
+          title={isEn ? 'Nearest neighborhood' : 'نزدیک‌ترین محله (GPS)'}
+        >
+          <Crosshair className="w-4 h-4" aria-hidden="true" />
         </RadarButton>
+        {onToggleSpatialMeasure && (
+          <RadarButton
+            type="button"
+            variant={isSpatialMeasureActive ? 'primary' : 'secondary'}
+            size="sm"
+            className="hidden lg:inline-flex min-w-[36px] min-h-[36px] px-0"
+            aria-pressed={isSpatialMeasureActive}
+            aria-label={isEn ? 'Distance ruler' : 'خط‌کش فاصله روی نقشه'}
+            title={isEn ? 'Distance ruler' : 'خط‌کش فاصله'}
+            onClick={onToggleSpatialMeasure}
+          >
+            <Ruler className="w-4 h-4" aria-hidden="true" />
+          </RadarButton>
+        )}
+      </div>
+
+      <div className="hidden lg:flex items-center gap-1.5">
         <RadarButton
           type="button"
           variant={filterRankingByViewport ? 'primary' : 'secondary'}
           size="sm"
-          className="hidden sm:inline-flex text-[9px] font-bold leading-tight max-w-[4.5rem]"
+          className="px-3 py-1.5 text-xs font-bold whitespace-nowrap apple-vibrancy-bar"
           disabled={!viewportBounds}
           aria-pressed={filterRankingByViewport}
           onClick={toggleViewportFilter}
         >
           {isEn ? 'In view' : 'کادر نقشه'}
         </RadarButton>
-        <RadarButton type="button" variant="secondary" size="sm" className="hidden sm:inline-flex text-[9px] font-bold" onClick={onOpenFilters}>
-          {isEn ? 'Filters' : 'فیلتر'}
-        </RadarButton>
+        {onToggleLegend && (
+          <RadarButton
+            type="button"
+            variant={isLegendOpen ? 'primary' : 'secondary'}
+            size="sm"
+            className="px-3 py-1.5 text-xs font-bold whitespace-nowrap apple-vibrancy-bar inline-flex items-center gap-1.5"
+            aria-expanded={isLegendOpen}
+            onClick={onToggleLegend}
+          >
+            <Layers className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>{isEn ? 'Legend' : 'راهنمای نقشه'}</span>
+          </RadarButton>
+        )}
       </div>
-      <p className="hidden sm:block text-[9px] text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-slate-700/60 max-w-[14rem] text-end">
-        © OSM · CARTO · {isEn ? 'Radar neighborhoods index' : 'شاخص محله‌ای رادار'}
-      </p>
     </div>
   );
 };

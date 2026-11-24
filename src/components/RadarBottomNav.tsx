@@ -59,7 +59,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
 
   const navItems = MOBILE_NAV_ORDER.map((id) => navById.get(id)).filter((item): item is ProductNavigationItem => !!item);
   const mapItem = navById.get('map');
-  const isMoreView = ['tools', 'userspace', 'services', 'knowledge', 'contributions', 'home'].includes(activeView);
+  const isMoreView = ['tools', 'userspace', 'services', 'knowledge', 'contributions'].includes(activeView);
 
   return (
     <>
@@ -79,9 +79,9 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
       <nav
         aria-label={isEn ? 'Mobile Primary Navigation' : 'نوار پیمایش موبایل'}
         data-currency-sample={currencyBadge}
-        className="lg:hidden fixed bottom-0 inset-x-0 flex flex-col pb-[var(--safe-bottom)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 z-[43] text-[11px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
+        className="md:hidden fixed bottom-0 inset-x-0 flex flex-col pb-[var(--safe-bottom)] bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-t border-[var(--color-border-subtle)] z-[43] text-xs text-[var(--color-text-secondary)] shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
       >
-        <div className="grid min-h-[64px] shrink-0 grid-cols-5 items-end">
+        <div className="grid min-h-[60px] shrink-0 grid-cols-5 items-end">
           {navItems.map((item) => {
             if (item.id === 'map' && mapItem) {
               return <MapCenterButton key="map" item={mapItem} isActive={activeView === 'map'} onSelect={() => handleSelectView('map')} />;
@@ -104,9 +104,9 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
               p.setShowToolsPopover(false);
               setMoreOpen((open) => !open);
             }}
-            className={`relative min-h-14 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-[10.5px] font-bold transition active:scale-95 cursor-pointer touch-manipulation ${moreOpen || isMoreView ? tabActive : tabIdle}`}
+            className={`relative min-h-[52px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold transition active:scale-95 cursor-pointer touch-manipulation ${moreOpen || isMoreView ? tabActive : tabIdle}`}
           >
-            {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--color-brand-600)] dark:bg-emerald-400" aria-hidden="true" />}
+            {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--color-brand-600)]" aria-hidden="true" />}
             <MoreHorizontal className="h-[18px] w-[18px]" aria-hidden="true" />
             <span>{isEn ? 'More' : 'بیشتر'}</span>
           </button>

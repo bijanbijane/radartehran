@@ -121,7 +121,7 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
             </button>
           </div>
           {titleError && (
-            <div role="alert" className="text-[11px] font-bold text-rose-700 dark:text-rose-300">
+            <div role="alert" className="text-xs font-bold text-rose-700 dark:text-rose-300">
               {titleError}
             </div>
           )}
@@ -162,7 +162,7 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
               >
                 <div>
                   <div className="font-bold text-[var(--color-text-primary)] dark:text-white">{item.title}</div>
-                  <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+                  <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
                     محله {item.neighborhoodName} · {item.filters.marketType} · {item.filters.period}
                   </div>
                 </div>

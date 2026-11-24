@@ -7,7 +7,7 @@ export interface RadarInputProps extends Omit<React.InputHTMLAttributes<HTMLInpu
   invalid?: boolean;
 }
 
-const HEIGHT = { sm: 'min-h-[36px]', md: 'min-h-[40px] max-sm:min-h-[44px]', lg: 'min-h-[48px]' } as const;
+const HEIGHT = { sm: 'min-h-[44px] md:min-h-[36px]', md: 'min-h-[44px] md:min-h-[40px]', lg: 'min-h-[48px]' } as const;
 
 export const RadarInput = React.forwardRef<HTMLInputElement, RadarInputProps>(function RadarInput(
   { inputSize = 'md', invalid = false, className = '', ...rest },

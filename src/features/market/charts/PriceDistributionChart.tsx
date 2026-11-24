@@ -38,7 +38,7 @@ export const PriceDistributionChart: React.FC<PriceDistributionChartProps> = ({
     >
       <div className="space-y-3">
         {/* Statistical summary row */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px] tabular-nums bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs tabular-nums bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
           <div><span className="text-[var(--color-text-muted)] block">P10 (کف)</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p10 !== null ? toPersianNum(stats.p10) : '—'}</strong></div>
           <div><span className="text-[var(--color-text-muted)] block">P25</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p25 !== null ? toPersianNum(stats.p25) : '—'}</strong></div>
           <div><span className="text-[var(--color-brand-600)] dark:text-emerald-400 block font-bold">میانه (P50)</span><strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-300">{stats.median !== null ? toPersianNum(stats.median) : '—'}</strong></div>
@@ -51,11 +51,11 @@ export const PriceDistributionChart: React.FC<PriceDistributionChartProps> = ({
           <ResponsiveContainer width="100%" height="100%" minWidth={240}>
             <BarChart data={stats.bins} margin={{ top: 8, right: 8, left: -12, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
-              <XAxis dataKey="rangeLabelFa" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} tickLine={false} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} tickFormatter={(v) => toPersianNum(v)} axisLine={false} tickLine={false} allowDecimals={false} />
+              <XAxis dataKey="rangeLabelFa" tick={{ fill: '#64748b', fontSize: 12, fontFamily: 'Vazirmatn' }} tickLine={false} />
+              <YAxis tick={{ fill: '#64748b', fontSize: 12, fontFamily: 'Vazirmatn' }} tickFormatter={(v) => toPersianNum(v)} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip
                 formatter={(val: any) => [`${toPersianNum(val)} فایل`, 'تعداد']}
-                contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 11, borderRadius: 10 }}
+                contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 12, borderRadius: 10 }}
               />
               <Bar dataKey="count" name="تعداد فایل" fill="#176B63" radius={[6, 6, 0, 0]} />
             </BarChart>

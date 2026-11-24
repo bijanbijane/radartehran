@@ -53,6 +53,23 @@ export interface PropertyExplorerPageProps {
   onToggleSplitMap?: () => void;
 }
 
+const STATIC_PROPERTY_SEGMENTS = new Set(['all', 'buy', 'rent', 'commercial', 'office', 'submit', 'saved', 'my-listings']);
+
+function extractListingIdFromPath(pathname: string): string | null {
+  const match = /^\/properties\/([^/]+)\/?$/.exec(pathname);
+  if (!match) return null;
+  const seg = decodeURIComponent(match[1]);
+  return STATIC_PROPERTY_SEGMENTS.has(seg.toLowerCase()) ? null : seg;
+}
+
+function resolvePropertiesParentPath(subTab?: PropertiesSubTabId): string {
+  if (subTab === 'buy') return '/properties/buy';
+  if (subTab === 'rent') return '/properties/rent';
+  if (subTab === 'commercial') return '/properties/commercial';
+  if (subTab === 'office') return '/properties/office';
+  return '/properties';
+}
+
 export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   useExchangeRateSnapshot();
@@ -75,16 +92,31 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? extractListingIdFromPath(window.location.pathname) : null,
+  );
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<PropertyExplorerViewMode>(p.splitMapMode ? 'list' : 'split');
+  const [viewMode, setViewMode] = useState<PropertyExplorerViewMode>('list');
+  const prevSubTabRef = useRef<PropertiesSubTabId | undefined>(p.activeSubTab);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      setSelectedListingId(extractListingIdFromPath(window.location.pathname));
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const initialTx = p.activeSubTab === 'rent' ? 'rent' : p.activeSubTab === 'buy' ? 'sale' : 'all';
   const [draft, setDraft] = useState<PropertyFilterDraft>(() => createDefaultPropertyFilters(initialTx));
   const [applied, setApplied] = useState<AppliedPropertyFilters>(() => commitPropertyFilterDraft(draft));
 
   useEffect(() => {
-    setSelectedListingId(null);
+    if (prevSubTabRef.current !== p.activeSubTab) {
+      prevSubTabRef.current = p.activeSubTab;
+      setSelectedListingId(null);
+    }
     if (p.activeSubTab === 'all') {
       setDraft((prev) => {
         const next: PropertyFilterDraft = { ...prev, transactionType: 'all', propertyType: 'all' };
@@ -157,7 +189,20 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
 
   const handleOpenDetail = (listingId: string) => {
     setSelectedListingId(listingId);
+    if (typeof window !== 'undefined') {
+      const nextUrl = `/properties/${encodeURIComponent(listingId)}`;
+      if (window.location.pathname !== nextUrl) {
+        window.history.pushState(null, '', nextUrl);
+      }
+    }
     trackPropertyEvent('property_detail_opened', { listingId });
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedListingId(null);
+    if (typeof window !== 'undefined' && extractListingIdFromPath(window.location.pathname)) {
+      window.history.pushState(null, '', resolvePropertiesParentPath(p.activeSubTab));
+    }
   };
 
   if (activeDetailRecord) {
@@ -173,7 +218,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
         radarLocale={radarLocale}
         isSaved={savedItems.some((s) => s.listingId === activeDetailRecord.listing.listingId)}
         isCompared={compareIds.includes(activeDetailRecord.listing.listingId)}
-        onBack={() => setSelectedListingId(null)}
+        onBack={handleCloseDetail}
         onOpenOtherDetail={handleOpenDetail}
         onToggleSave={handleToggleSave}
         onToggleCompare={handleToggleCompare}
@@ -189,8 +234,15 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
     );
   }
 
+  const handleChangeViewMode = (nextMode: PropertyExplorerViewMode) => {
+    setViewMode(nextMode);
+    if (p.splitMapMode && p.onToggleSplitMap) {
+      p.onToggleSplitMap();
+    }
+  };
+
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-properties-view">
+    <div className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-properties-view">
       <PropertyExplorerHeader
         isEn={isEn}
         sectionTab={sectionTab}
@@ -201,7 +253,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
         compareCount={compareIds.length}
         onChangeSection={setSectionTab}
         onToggleSplitMap={p.onToggleSplitMap}
-        onToggleViewMode={() => setViewMode((v) => (v === 'split' ? 'list' : 'split'))}
+        onToggleViewMode={() => handleChangeViewMode(viewMode === 'split' ? 'list' : 'split')}
         onOpenValuation={() => p.onOpenHedonicForProperty(p.selectedHood, { sqm: p.targetSqm })}
         onOpenCompare={() => setCompareOpen(true)}
       />
@@ -259,7 +311,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
             totalResults={filteredRecords.length}
             selectedHoodName={p.selectedHood.name}
             viewMode={viewMode}
-            onChangeViewMode={setViewMode}
+            onChangeViewMode={handleChangeViewMode}
             onUpdateDraft={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
             onApply={commitFilters}
             onReset={resetAllFilters}
@@ -280,7 +332,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
             highlightedId={highlightedId}
             targetSqm={p.targetSqm}
             onHighlight={setHighlightedId}
-            onChangeViewMode={setViewMode}
+            onChangeViewMode={handleChangeViewMode}
             onOpenDetail={handleOpenDetail}
             onToggleSave={handleToggleSave}
             onToggleCompare={handleToggleCompare}

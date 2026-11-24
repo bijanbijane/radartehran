@@ -84,7 +84,7 @@ const FA_COPY: DiscoverLocaleCopy = {
   eyebrow: 'اکتشاف و مقایسه جامع محلات · همگام با نقشه زنده',
   heading: 'کاشف محله‌های مسکونی',
   subtitle: (count, mode) =>
-    `ارزیابی تحلیلی ${toPersianNum(count)} محله بر پایه کیفیت زندگی، بودجه ${mode === 'rent' ? 'رهن کامل' : 'خرید'} و سناریوی مدل v6.4 (غیرثبتی)`,
+    `ارزیابی تحلیلی ${toPersianNum(count)} محله بر پایه کیفیت زندگی، بودجه ${mode === 'rent' ? 'رهن کامل' : 'خرید'} و برآورد معامله (غیرثبتی)`,
   viewportToggleUnavailableTitle: 'محدوده نقشه هنوز آماده نیست',
   viewportToggleActiveTitle: 'نمایش فقط محله‌های واقع در کادر فعلی نقشه زنده',
   viewportToggleLabel: (insideCount) => `فقط کادر نقشه (${toPersianNum(insideCount)})`,
@@ -107,8 +107,8 @@ const FA_COPY: DiscoverLocaleCopy = {
   sortLabel: 'ترتیب نمایش:',
   sortAriaLabel: 'ترتیب نمایش محله‌ها',
   sortScore: 'بالاترین امتیاز کیفیت سکونت',
-  sortPriceAsc: (unit) => `کمترین قیمت ${unit === 'sqft' ? 'هر فوت‌مربع' : 'متری'} (سناریو v6.4)`,
-  sortPriceDesc: (unit) => `بیشترین قیمت ${unit === 'sqft' ? 'هر فوت‌مربع' : 'متری'} (سناریو v6.4)`,
+  sortPriceAsc: (unit) => `کمترین قیمت ${unit === 'sqft' ? 'هر فوت‌مربع' : 'متری'} (برآورد معامله)`,
+  sortPriceDesc: (unit) => `بیشترین قیمت ${unit === 'sqft' ? 'هر فوت‌مربع' : 'متری'} (برآورد معامله)`,
   sortRahnAsc: (targetSqm, unit) =>
     targetSqm > 0 && Number.isFinite(targetSqm)
       ? `کمترین رهن کامل (${formatAreaShort(targetSqm, unit, true)})`
@@ -145,7 +145,7 @@ const FA_COPY: DiscoverLocaleCopy = {
   selectNeighborhoodAria: (name, zone, selected) =>
     `${selected ? 'محله فعال: ' : 'انتخاب '}محله ${name} (${zone})`,
   askingLabelPrefix: 'مبنای اعلامی',
-  scenarioPrefix: 'سناریو v6.4 (غیرثبتی):',
+  scenarioPrefix: 'برآورد معامله (غیرثبتی):',
   depositLabelPrefix: (targetSqm, unit) =>
     `رهن کامل برای ${formatAreaShort(targetSqm, unit, true)}`,
   approxFxPrefix: 'معادل تقریبی:',
@@ -160,7 +160,7 @@ const EN_COPY: DiscoverLocaleCopy = {
   eyebrow: 'Neighborhood Discovery & Comparison · Synced with Live Map',
   heading: 'Residential Neighborhood Explorer',
   subtitle: (count, mode) =>
-    `Analytical evaluation of ${count.toLocaleString('en-US')} neighborhoods by livability, ${mode === 'rent' ? 'full deposit' : 'purchase'} budget fit, and v6.4 scenario (unregistered)`,
+    `Analytical evaluation of ${count.toLocaleString('en-US')} neighborhoods by livability, ${mode === 'rent' ? 'full deposit' : 'purchase'} budget fit, and estimated closing scenario`,
   viewportToggleUnavailableTitle: 'Map viewport bounds not ready yet',
   viewportToggleActiveTitle: 'Show only neighborhoods inside current live map viewport',
   viewportToggleLabel: (insideCount) => `Map Viewport (${insideCount.toLocaleString('en-US')})`,
@@ -183,8 +183,8 @@ const EN_COPY: DiscoverLocaleCopy = {
   sortLabel: 'Sort by:',
   sortAriaLabel: 'Sort neighborhoods',
   sortScore: 'Highest Livability Score',
-  sortPriceAsc: (unit) => `Lowest price / ${unit === 'sqft' ? 'ft²' : 'm²'} (v6.4 scenario)`,
-  sortPriceDesc: (unit) => `Highest price / ${unit === 'sqft' ? 'ft²' : 'm²'} (v6.4 scenario)`,
+  sortPriceAsc: (unit) => `Lowest price / ${unit === 'sqft' ? 'ft²' : 'm²'} (estimated deal)`,
+  sortPriceDesc: (unit) => `Highest price / ${unit === 'sqft' ? 'ft²' : 'm²'} (estimated deal)`,
   sortRahnAsc: (targetSqm, unit) =>
     targetSqm > 0 && Number.isFinite(targetSqm)
       ? `Lowest Full Deposit (${formatAreaShort(targetSqm, unit, false)})`
@@ -221,7 +221,7 @@ const EN_COPY: DiscoverLocaleCopy = {
   selectNeighborhoodAria: (name, zone, selected) =>
     `${selected ? 'Active neighborhood: ' : 'Select '} ${name} (${zone})`,
   askingLabelPrefix: 'Asking base',
-  scenarioPrefix: 'Scenario v6.4 (unregistered):',
+  scenarioPrefix: 'Estimated deal (unregistered):',
   depositLabelPrefix: (targetSqm, unit) =>
     `Full deposit (${formatAreaShort(targetSqm, unit, false)})`,
   approxFxPrefix: 'Approx. equiv.:',

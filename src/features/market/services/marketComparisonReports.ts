@@ -267,7 +267,7 @@ export function buildMarketReportsList(params: {
       status: askingStatus,
       summaryFa:
         unitAsk !== null && unitDeal !== null
-          ? `نرخ پیشنهادی هر متر در ${geoScopeFa} برابر ${toPersianNum(unitAsk)} میلیون تومان است در حالی که سناریوی توافق مدل v6.4 عدد ${toPersianNum(unitDeal)} میلیون تومان را برآورد می‌کند.`
+          ? `نرخ پیشنهادی هر متر در ${geoScopeFa} برابر ${toPersianNum(unitAsk)} میلیون تومان است در حالی که برآورد سناریوی توافق عدد ${toPersianNum(unitDeal)} میلیون تومان را نشان می‌دهد.`
           : `برای ${geoScopeFa} در بازه ${periodLabelFa}، نمونه مشاهده‌شده کافی جهت اعلام نرخ پیشنهادی ثبت نشده است.`,
       keyTakeawaysFa: [
         'تمامی ارقام پیشنهادی آگهی بوده و نماینده معامله قطعی ثبت‌شده (۰ مورد) نیستند.',

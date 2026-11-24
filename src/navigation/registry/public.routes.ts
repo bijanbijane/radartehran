@@ -8,7 +8,7 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'more', breadcrumbFa: 'خانه', breadcrumbEn: 'Home', mobileVisibility: 'more_sheet', status: 'active',
   },
   {
-    id: 'map', viewId: 'map', path: '/explore/map', aliases: ['/map'], parentId: 'home',
+    id: 'map', viewId: 'map', path: '/map', aliases: ['/explore/map'], parentId: 'home',
     titleFa: 'نقشه', titleEn: 'Map', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'نقشه تعاملی', breadcrumbEn: 'Interactive Map', mobileVisibility: 'bottom_bar', status: 'active',
   },
@@ -18,9 +18,9 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'محله‌ها', breadcrumbEn: 'Neighborhoods', mobileVisibility: 'bottom_bar', status: 'active',
   },
   {
-    id: 'areas.registry', viewId: 'discover', subTab: 'registry', path: '/areas/registry', parentId: 'areas',
+    id: 'areas.registry', viewId: 'discover', subTab: 'registry', path: '/areas/registry', aliases: ['/knowledge/methodology/geographic-registry'], parentId: 'areas',
     titleFa: 'رجیستری ملی جغرافیایی', titleEn: 'National Geographic Registry', shell: 'public', requiredPermissions: [],
-    navigationGroup: 'primary', breadcrumbFa: 'مرجع رسمی جغرافیایی', breadcrumbEn: 'Official Geographic Registry', mobileVisibility: 'hidden', status: 'active',
+    navigationGroup: 'more', breadcrumbFa: 'مرجع رسمی جغرافیایی', breadcrumbEn: 'Official Geographic Registry', mobileVisibility: 'hidden', status: 'active',
   },
   {
     id: 'market.overview', viewId: 'intelligence', subTab: 'overview', path: '/market', aliases: ['/intelligence', '/analytics', '/workspace/analytics'], parentId: 'home',
@@ -88,6 +88,16 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'ارزش‌گذاری', breadcrumbEn: 'Valuation', mobileVisibility: 'hidden', status: 'active',
   },
   {
+    id: 'tools.budget_fit', viewId: 'tools', subTab: 'budget_fit', path: '/tools/budget-fit', parentId: 'tools.all',
+    titleFa: 'تطبیق بودجه و محله', titleEn: 'Budget Fit', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'primary', breadcrumbFa: 'تطبیق بودجه', breadcrumbEn: 'Budget Fit', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'tools.verifier', viewId: 'tools', subTab: 'verifier', path: '/tools/verifier', parentId: 'tools.all',
+    titleFa: 'سنجش قیمت آگهی', titleEn: 'Listing Verifier', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'primary', breadcrumbFa: 'سنجش آگهی', breadcrumbEn: 'Listing Verifier', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
     id: 'tools.compare_props', viewId: 'tools', subTab: 'compare_props', path: '/tools/compare-properties', parentId: 'tools.all',
     titleFa: 'مقایسه املاک', titleEn: 'Compare Properties', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'مقایسه املاک', breadcrumbEn: 'Compare Properties', mobileVisibility: 'hidden', status: 'active',
@@ -103,20 +113,64 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'محاسبه‌گرها', breadcrumbEn: 'Calculators', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'services', viewId: 'services', subTab: 'valuation', path: '/services', parentId: 'home',
-    aliases: ['/services/valuation', '/services/consulting', '/services/inspection', '/services/agencies'],
+    id: 'services', viewId: 'services', subTab: 'all', path: '/services', parentId: 'home',
     titleFa: 'خدمات تخصصی', titleEn: 'Services', shell: 'public', requiredPermissions: [],
     navigationGroup: 'more', breadcrumbFa: 'خدمات تخصصی', breadcrumbEn: 'Services', mobileVisibility: 'more_sheet', status: 'active',
   },
   {
+    id: 'services.valuation', viewId: 'services', subTab: 'valuation', path: '/services/valuation', parentId: 'services',
+    titleFa: 'کارشناسی قیمت و ارزش‌گذاری', titleEn: 'Valuation Services', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'کارشناسی قیمت', breadcrumbEn: 'Valuation', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'services.consulting', viewId: 'services', subTab: 'consulting', path: '/services/consulting', aliases: ['/services/legal'], parentId: 'services',
+    titleFa: 'مشاوره حقوقی و قرارداد', titleEn: 'Legal & Consulting', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'مشاوره حقوقی', breadcrumbEn: 'Consulting', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'services.inspection', viewId: 'services', subTab: 'inspection', path: '/services/inspection', parentId: 'services',
+    titleFa: 'کارشناسی فنی و بازدید', titleEn: 'Technical Inspection', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'کارشناسی فنی', breadcrumbEn: 'Inspection', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'services.agencies', viewId: 'services', subTab: 'agencies', path: '/services/agencies', parentId: 'services',
+    titleFa: 'دفاتر و مشاوران محله', titleEn: 'Local Agencies', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'مشاوران محله', breadcrumbEn: 'Agencies', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
     id: 'knowledge', viewId: 'knowledge', subTab: 'reports', path: '/knowledge', parentId: 'home',
-    aliases: ['/knowledge/reports', '/knowledge/guide', '/knowledge/methodology', '/knowledge/glossary', '/knowledge/search', '/research/workspace'],
+    aliases: ['/knowledge/reports', '/knowledge/search', '/research/workspace'],
     titleFa: 'دانش و گزارش‌ها', titleEn: 'Knowledge', shell: 'public', requiredPermissions: [],
     navigationGroup: 'more', breadcrumbFa: 'دانش و اطلاعات', breadcrumbEn: 'Knowledge', mobileVisibility: 'more_sheet', status: 'active',
   },
   {
-    id: 'contributions', viewId: 'contributions', subTab: 'overview', path: '/contributions', parentId: 'home',
-    aliases: ['/community', '/community/search'],
+    id: 'knowledge.guide', viewId: 'knowledge', subTab: 'guide', path: '/knowledge/guide', parentId: 'knowledge',
+    titleFa: 'راهنمای منطقه و بودجه', titleEn: 'Area & Budget Guide', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'راهنمای کاربردی', breadcrumbEn: 'Guide', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'knowledge.methodology', viewId: 'knowledge', subTab: 'methodology', path: '/knowledge/methodology', parentId: 'knowledge',
+    titleFa: 'روش‌شناسی داده و شفافیت مدل', titleEn: 'Data Methodology & Transparency', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'روش‌شناسی داده', breadcrumbEn: 'Methodology', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'legal.privacy', viewId: 'knowledge', subTab: 'legal_privacy', path: '/legal/privacy', parentId: 'home',
+    titleFa: 'سیاست حریم خصوصی و حفاظت از داده', titleEn: 'Privacy Policy', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'حریم خصوصی', breadcrumbEn: 'Privacy Policy', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'legal.terms', viewId: 'knowledge', subTab: 'legal_terms', path: '/legal/terms', parentId: 'home',
+    titleFa: 'قوانین و شرایط استفاده از سامانه', titleEn: 'Terms of Use', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'قوانین استفاده', breadcrumbEn: 'Terms of Use', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'knowledge.glossary', viewId: 'knowledge', subTab: 'glossary', path: '/knowledge/glossary', parentId: 'knowledge',
+    titleFa: 'فرهنگ‌نامه تخصصی املاک', titleEn: 'Real Estate Glossary', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'فرهنگ‌نامه', breadcrumbEn: 'Glossary', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'contributions', viewId: 'contributions', subTab: 'overview', path: '/community', parentId: 'home',
+    aliases: ['/contributions', '/community/search'],
     titleFa: 'جامعه کاربران و مشارکت', titleEn: 'Community & Contributions', shell: 'public', requiredPermissions: [],
     navigationGroup: 'more', breadcrumbFa: 'جامعه و مشارکت', breadcrumbEn: 'Community', mobileVisibility: 'more_sheet', status: 'active',
   },
@@ -176,9 +230,9 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'more', breadcrumbFa: 'راهنما', breadcrumbEn: 'Help', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'contributions.submit', viewId: 'contributions', subTab: 'submit', path: '/contributions/submit', parentId: 'contributions',
+    id: 'contributions.submit', viewId: 'contributions', subTab: 'submit', path: '/community/contribute', aliases: ['/contributions/submit'], parentId: 'contributions',
     titleFa: 'ثبت گزارش داده و قیمت', titleEn: 'Submit Data Fix', shell: 'public', requiredPermissions: [],
-    navigationGroup: 'more', breadcrumbFa: 'ثبت مشارکت', breadcrumbEn: 'Submit', mobileVisibility: 'hidden', status: 'active',
+    navigationGroup: 'more', breadcrumbFa: 'ثبت مشارکت', breadcrumbEn: 'Contribute', mobileVisibility: 'hidden', status: 'active',
   },
   {
     id: 'contributions.points', viewId: 'contributions', subTab: 'points', path: '/contributions/points', parentId: 'contributions',

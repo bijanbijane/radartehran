@@ -364,7 +364,7 @@ export function buildMarketSnapshotBundle(params: {
   const indicators: MarketIndicatorValue[] = isNonResidentialUnavailable
     ? [
         makeMarketIndicatorValue('asking_price_median_sqm', null, 'ناموجود', geoScopeFa, periodLabelFa, 0, 'unavailable', 'پوشش فعلی رادار تهران فقط برای بازار مسکونی فعال است.'),
-        makeMarketIndicatorValue('estimated_deal_v64_sqm', null, 'ناموجود', geoScopeFa, periodLabelFa, 0, 'unavailable', 'مدل v6.4 برای این نوع کاربری کالیبره نشده است.'),
+        makeMarketIndicatorValue('estimated_deal_v64_sqm', null, 'ناموجود', geoScopeFa, periodLabelFa, 0, 'unavailable', 'مدل برآورد معامله برای این نوع کاربری کالیبره نشده است.'),
         makeMarketIndicatorValue('supply_valid_count', 0, toPersianNum(0), geoScopeFa, periodLabelFa, 0, 'unavailable', 'فایل معتبر در این رده ثبت نشده است.'),
         makeMarketIndicatorValue('verified_transaction_sqm', null, '۰ معامله', geoScopeFa, periodLabelFa, 0, 'unavailable', 'رکورد معامله ثبت‌شده عمومی در دسترس نیست.'),
       ]

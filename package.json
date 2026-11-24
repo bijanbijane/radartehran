@@ -76,6 +76,7 @@
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend"
   },
   "dependencies": {
+    "@fontsource/vazirmatn": "^5.3.0",
     "@google/genai": "^1.29.0",
     "d3-scale": "^4.0.2",
     "decimal.js": "^10.6.0",

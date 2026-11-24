@@ -72,7 +72,9 @@ test('RT-UI-VIS-001 enforces 4-layer surfaces, controlled geometry, 3 density pr
 });
 
 test('RT-UI-COLOR-001 enforces 4-layer semantic colors, cartographic separation, WCAG AA contrast >= 4.5:1, and 20/20 criteria', () => {
-  assert.equal(BRAND_PALETTE.brand800, '#176B63');
+  assert.equal(BRAND_PALETTE.brand600, '#176B63');
+  assert.equal(BRAND_PALETTE.brand700, '#14534E');
+  assert.equal(BRAND_PALETTE.brand800, '#0F3F3B');
   assert.equal(NEUTRAL_PALETTE.canvas, '#F6F8F6');
   assert.equal(NEUTRAL_PALETTE.textPrimary, '#182522');
   assert.equal(SEMANTIC_PALETTE.focusRing, '#2864DC');
@@ -84,13 +86,14 @@ test('RT-UI-COLOR-001 enforces 4-layer semantic colors, cartographic separation,
   );
 
   assert.equal(CARTOGRAPHIC_PALETTE.priceIntensitySequential.length, 5);
-  assert.equal((CARTOGRAPHIC_PALETTE.priceIntensitySequential as readonly string[]).includes(BRAND_PALETTE.brand800), false);
+  assert.equal((CARTOGRAPHIC_PALETTE.priceIntensitySequential as readonly string[]).includes(BRAND_PALETTE.brand600), false);
   assert.equal(DATA_VIZ_SERIES_PALETTE.length, 6);
 
   for (const pair of COLOR_CONTRAST_CHECKS) {
     const ratio = computeHexContrastRatio(pair.fg, pair.bg);
     assert.ok(ratio >= pair.minRatio, `Contrast failure for ${pair.id}: got ${ratio}:1 < ${pair.minRatio}:1`);
   }
+  assert.ok(computeHexContrastRatio(BRAND_PALETTE.brandFgDark, '#131F1C') >= 4.5);
   assert.equal(COLOR_SYSTEM_ACCEPTANCE_CRITERIA.length, 20);
 });
 

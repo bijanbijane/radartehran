@@ -22,7 +22,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
     <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs" data-testid="saved-valuations-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">گزارش‌های ارزش‌گذاری ذخیره‌شده ({toPersianNum(reports.length)})</h3>
-        <span className="text-[10.5px] text-[var(--color-text-muted)]">تفکیک ذخیره‌سازی حساب کاربری و حافظه محلی دستگاه</span>
+        <span className="text-xs text-[var(--color-text-muted)]">تفکیک ذخیره‌سازی حساب کاربری و حافظه محلی دستگاه</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 tabular-nums">
         {reports.slice(0, 6).map((r) => {
@@ -33,7 +33,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[9.5px] font-bold ${
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-xs font-bold ${
                       isSynced
                         ? 'bg-[#EAF3F0] text-[var(--color-brand-700)] dark:bg-emerald-950/60 dark:text-emerald-300'
                         : 'bg-[#EEF5FC] text-[#1D4E89] dark:bg-sky-950/60 dark:text-sky-300'
@@ -43,7 +43,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                     <span>{isSynced ? 'ذخیره‌شده در حساب' : 'ذخیره‌شده روی این دستگاه'}</span>
                   </span>
                   {r.isHypotheticalScenario && (
-                    <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FFF4E5] text-[#875000] text-[9.5px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded-[5px] bg-[#FFF4E5] text-[#875000] text-xs font-bold">
                       سناریوی فرضی
                     </span>
                   )}
@@ -51,15 +51,15 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">
                   {cityName} · {r.hoodName} · {toPersianNum(r.input.sqm)} متر (ساخت {toPersianNum(r.input.buildYear)})
                 </div>
-                <div className="text-[11px] font-black text-[var(--color-brand-600)] dark:text-emerald-400">
+                <div className="text-xs font-black text-[var(--color-brand-600)] dark:text-emerald-400">
                   {r.purpose === 'rent' && r.estimatedRahnMillion
                     ? `${toPersianNum(r.estimatedRahnMillion)} میلیون رهن کامل`
                     : `${toPersianNum((r.hedonicTotalMillion / 1000).toFixed(2))} میلیارد تومان`}
-                  <span className="text-[10px] font-normal text-[var(--color-text-muted)] mr-1">
+                  <span className="text-xs font-normal text-[var(--color-text-muted)] mr-1">
                     ({VALUATION_PURPOSE_LABELS_FA[r.purpose || 'sale']})
                   </span>
                 </div>
-                <div className="text-[10px] text-[var(--color-text-muted)] truncate">
+                <div className="text-xs text-[var(--color-text-muted)] truncate">
                   {new Date(r.savedAtIso).toLocaleDateString('fa-IR')} · {r.dataSnapshotId}
                 </div>
               </div>
@@ -76,7 +76,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                   type="button"
                   onClick={() => onDeleteReport(r.id)}
                   title="حذف گزارش"
-                  className="p-1.5 rounded-[7px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[#B3261E] cursor-pointer"
+                  className="p-1.5 rounded-[7px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[#B3261E] dark:text-rose-400 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

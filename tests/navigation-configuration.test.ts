@@ -6,14 +6,16 @@ import {
 } from '../src/navigation/registry/navigationPermissionBridge';
 
 const locales = ['fa', 'en', 'ar', 'tr'] as const;
-const expectedPrimaryIds = ['home', 'discover', 'map', 'intelligence', 'tools', 'userspace'];
+const expectedPrimaryIds = ['home', 'discover', 'map', 'intelligence', 'tools', 'properties'];
 
 for (const locale of locales) {
   const guestItems = getProductNavigationItems(locale, guestNavigationVisibilityContext());
   const primaryItems = guestItems.filter((item) => item.group === 'primary');
+  const accountItems = guestItems.filter((item) => item.group === 'account');
   const administrativeItems = guestItems.filter((item) => item.group === 'administrative');
 
   assert.deepEqual(primaryItems.map((item) => item.id), expectedPrimaryIds);
+  assert.deepEqual(accountItems.map((item) => item.id), ['userspace']);
   assert.equal(administrativeItems.length, 0, 'Guest context must not surface admin primary nav');
   assert.ok(guestItems.every((item) => item.label.trim().length > 0));
   assert.equal(new Set(guestItems.map((item) => item.id)).size, guestItems.length);

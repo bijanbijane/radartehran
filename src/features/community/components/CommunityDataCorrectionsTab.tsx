@@ -129,13 +129,13 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
           <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" /><span>ثبت فایل زیر قیمت یا مشاهده معامله</span>
           </div>
-          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-[11px]">ارسال مشاهده قیمتی واقعی برای محله {selectedHood.name}</p>
+          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-xs">ارسال مشاهده قیمتی واقعی برای محله {selectedHood.name}</p>
         </button>
         <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1 cursor-pointer transition">
           <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-600" /><span>راستی‌آزمایی و مچ‌گیر آگهی ساختگی</span>
           </div>
-          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-[11px]">بررسی نابهنجاری قیمت در آگهی‌های پرت محله</p>
+          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-xs">بررسی نابهنجاری قیمت در آگهی‌های پرت محله</p>
         </button>
       </div>
 
@@ -148,47 +148,47 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
           <CommunityAuthorBadges profile={currentUserProfile} onSelectUsername={onSelectAuthor} />
         </div>
 
-        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+        <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
           مسیر چرخه داده: ثبت‌شده ← اعتبارسنجی اولیه ← بررسی تخصصی ← تأیید ← اعمال در نسخه داده مرجع. پیش‌نویس فرم به‌صورت خودکار در مرورگر ذخیره می‌شود.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
-            <label htmlFor="corr-hood-select" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">محله هدف</label>
+            <label htmlFor="corr-hood-select" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">محله هدف</label>
             <select id="corr-hood-select" value={hoodId} onChange={(e) => { setHoodId(Number(e.target.value)); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
               {visibleHoodOptions.map((h) => (<option key={h.id} value={h.id}>{h.name} ({h.zone})</option>))}
             </select>
           </div>
           <div>
-            <label htmlFor="corr-cat-select" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">دسته خطای داده</label>
+            <label htmlFor="corr-cat-select" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">دسته خطای داده</label>
             <select id="corr-cat-select" value={category} onChange={(e) => { setCategory(e.target.value as DataCorrectionCategory); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
               {(Object.keys(DATA_CORRECTION_CATEGORY_LABELS_FA) as DataCorrectionCategory[]).map((k) => (<option key={k} value={k}>{DATA_CORRECTION_CATEGORY_LABELS_FA[k]}</option>))}
             </select>
           </div>
           <div>
-            <label htmlFor="corr-date-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">تاریخ مشاهده میدانی</label>
+            <label htmlFor="corr-date-input" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">تاریخ مشاهده میدانی</label>
             <input id="corr-date-input" type="text" value={observedDateFa} onChange={(e) => { setObservedDateFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۱۴۰۵/۰۱/۲۰" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
-          <label htmlFor="corr-title-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">عنوان خطا یا اصلاح</label>
+          <label htmlFor="corr-title-input" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">عنوان خطا یا اصلاح</label>
           <input id="corr-title-input" type="text" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً تغییر دسترسی خروجی مترو یا اصلاح مرز غربی محله" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
-            <label htmlFor="corr-curr-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار یا وضعیت فعلی در سامانه</label>
+            <label htmlFor="corr-curr-input" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار یا وضعیت فعلی در سامانه</label>
             <input id="corr-curr-input" type="text" value={currentValueFa} onChange={(e) => { setCurrentValueFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً فاصله پیاده درج‌شده ۱۲ دقیقه" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
           <div>
-            <label htmlFor="corr-val-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار پیشنهادی مستند</label>
+            <label htmlFor="corr-val-input" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار پیشنهادی مستند</label>
             <input id="corr-val-input" type="text" value={suggestedFa} onChange={(e) => { setSuggestedFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۶ دقیقه پس از بازگشایی گذر شرقی" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
-          <label htmlFor="corr-evidence-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">شواهد میدانی و توضیح دقیق (بدون شماره تماس یا لینک)</label>
+          <label htmlFor="corr-evidence-input" className="block text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">شواهد میدانی و توضیح دقیق (بدون شماره تماس یا لینک)</label>
           <textarea id="corr-evidence-input" rows={2} value={evidenceFa} onChange={(e) => { setEvidenceFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="جزئیات مشاهده میدانی، نشانی تقاطع عمومی و دلیل مغایرت..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
         </div>
 
@@ -209,7 +209,7 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
           const canWithdraw = item.ownerUserId === currentUserProfile.userId && !['applied', 'approved', 'verified', 'withdrawn', 'rejected'].includes(item.status);
           return (
             <article key={item.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-[var(--color-text-muted)] dark:text-slate-400 font-bold">
                   محله {item.neighborhoodNameFa} · {DATA_CORRECTION_CATEGORY_LABELS_FA[item.category]} · مشاهده: {item.observedDateFa || item.createdAtFa}
                 </span>
@@ -220,24 +220,24 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
               </div>
               <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h3>
               <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.evidenceSummaryFa}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-xs">
                 <div><span className="text-[var(--color-text-muted)]">مقدار فعلی:</span> <strong className="text-[var(--color-text-primary)] dark:text-slate-200">{item.currentValueFa || 'داده موجود سامانه'}</strong></div>
                 <div><span className="text-[var(--color-brand-600)] dark:text-emerald-400">مقدار پیشنهادی:</span> <strong className="text-[var(--color-brand-700)] dark:text-emerald-300">{item.suggestedValueFa}</strong></div>
               </div>
               {item.appliedDataVersionId && (
-                <div className="text-[11px] font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
+                <div className="text-xs font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
                   شناسه اعمال در داده مرجع: {item.appliedDataVersionId}
                 </div>
               )}
               {item.moderatorNoteFa && (
-                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 border-t border-[var(--color-border-subtle)] dark:border-slate-800 pt-1.5">
+                <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 border-t border-[var(--color-border-subtle)] dark:border-slate-800 pt-1.5">
                   یادداشت ممیز: {item.moderatorNoteFa}
                 </div>
               )}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <CommunityAuthorBadges profile={item.authorProfile} onSelectUsername={onSelectAuthor} />
                 {canWithdraw && (
-                  <button type="button" onClick={() => onWithdrawProposal(item.id)} className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer">
+                  <button type="button" onClick={() => onWithdrawProposal(item.id)} className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer">
                     <RotateCcw className="w-3 h-3" /><span>انصراف از پیشنهاد</span>
                   </button>
                 )}

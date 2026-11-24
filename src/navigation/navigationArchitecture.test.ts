@@ -74,7 +74,7 @@ test('RT-FE-NAV-014: Unified registry integrity, ownership, and role visibility'
     userRoles: [],
     enabledFeatures: {},
   });
-  assert.ok(discovery.pages.some((p) => p.href === '/explore/map'));
+  assert.ok(discovery.pages.some((p) => p.href === '/map'));
   assert.ok(discovery.commands.length > 0);
 });
 
@@ -293,18 +293,18 @@ test('RT-FE-NAV-015: Primary nav metadata, permission bridge, and fail-safe disc
       activeRole: 'guest',
     }),
   );
-  assert.ok(anonDiscovery.pages.some((p) => p.href === '/explore/map'));
+  assert.ok(anonDiscovery.pages.some((p) => p.href === '/map'));
 });
 
 test('RT-UI-LAYOUT-001 contracts distinguish page max-widths and spacing tokens', () => {
   assert.equal(SPACING_SCALE_PX.S6, 24);
   assert.equal(resolveLayoutContractForView('home').maxWidthPx, 1320);
-  assert.equal(resolveLayoutContractForView('intelligence').maxWidthPx, 1360);
-  assert.equal(resolveLayoutContractForView('discover').maxWidthPx, 1280);
+  assert.equal(resolveLayoutContractForView('intelligence').maxWidthPx, 1320);
+  assert.equal(resolveLayoutContractForView('discover').maxWidthPx, 1320);
   assert.equal(resolveLayoutContractForView('map').maxWidthPx, 'flexible');
   assert.equal(resolveLayoutContractForView('admin').shell, 'admin');
   assert.ok(resolveViewContainerClass('home').includes('1320'));
-  assert.ok(LAYOUT_CONTRACT_REGISTRY.length >= 9);
+  assert.ok(LAYOUT_CONTRACT_REGISTRY.length >= 12);
 });
 
 test('RT-UX-ARCH-002: every registered route path resolves to its canonical destination', () => {
@@ -353,3 +353,65 @@ test('RT-UX-ARCH-002: primary navigation destinations have canonical routes and 
     }
   }
 });
+
+test('AUD-004/AUD-005/AUD-011/AUD-016: canonical routes, tools sub-routes, services sub-routes, and dynamic entity deep links', () => {
+  assert.equal(buildCanonicalPathForDestination('map'), '/map');
+  assert.equal(buildCanonicalPathForDestination('contributions'), '/community');
+  assert.equal(resolveRouteFromLocation('/map', '').viewId, 'map');
+  assert.equal(resolveRouteFromLocation('/explore/map', '').viewId, 'map');
+  assert.equal(resolveRouteFromLocation('/community', '').viewId, 'contributions');
+  assert.equal(resolveRouteFromLocation('/contributions', '').viewId, 'contributions');
+
+  assert.deepEqual(resolveRouteFromLocation('/tools/budget-fit', ''), {
+    viewId: 'tools',
+    subTab: 'budget_fit',
+    isUnknownPath: false,
+    isLegacyTehranPath: false,
+  });
+  assert.deepEqual(resolveRouteFromLocation('/tools/verifier', ''), {
+    viewId: 'tools',
+    subTab: 'verifier',
+    isUnknownPath: false,
+    isLegacyTehranPath: false,
+  });
+  assert.deepEqual(resolveRouteFromLocation('/services/valuation', ''), {
+    viewId: 'services',
+    subTab: 'valuation',
+    isUnknownPath: false,
+    isLegacyTehranPath: false,
+  });
+  assert.deepEqual(resolveRouteFromLocation('/services/agencies', ''), {
+    viewId: 'services',
+    subTab: 'agencies',
+    isUnknownPath: false,
+    isLegacyTehranPath: false,
+  });
+  assert.equal(resolveRouteFromLocation('/legal/privacy', '').viewId, 'knowledge');
+  assert.equal(resolveRouteFromLocation('/legal/privacy', '').subTab, 'legal_privacy');
+  assert.equal(resolveRouteFromLocation('/legal/terms', '').viewId, 'knowledge');
+  assert.equal(resolveRouteFromLocation('/legal/terms', '').subTab, 'legal_terms');
+  assert.equal(resolveRouteFromLocation('/login', '').viewId, 'userspace');
+  assert.equal(resolveRouteFromLocation('/profile', '').subTab, 'profile');
+  assert.equal(resolveRouteFromLocation('/community/contribute', '').viewId, 'contributions');
+  assert.equal(resolveRouteFromLocation('/contributions/submit', '').subTab, 'submit');
+
+  assert.equal(isDynamicPublicNavigationPath('/properties/prop-101'), true);
+  assert.equal(isDynamicPublicNavigationPath('/knowledge/articles/hedonic-valuation-guide'), true);
+  assert.equal(isDynamicPublicNavigationPath('/services/providers/prov-01'), true);
+
+  const propDeep = resolveRouteFromLocation('/properties/prop-101', '');
+  assert.equal(propDeep.viewId, 'properties');
+  assert.equal(propDeep.isUnknownPath, false);
+  assert.equal(propDeep.listingId, 'prop-101');
+
+  const articleDeep = resolveRouteFromLocation('/knowledge/articles/hedonic-valuation-guide', '');
+  assert.equal(articleDeep.viewId, 'knowledge');
+  assert.equal(articleDeep.isUnknownPath, false);
+  assert.equal(articleDeep.articleSlug, 'hedonic-valuation-guide');
+
+  const providerDeep = resolveRouteFromLocation('/services/providers/prov-01', '');
+  assert.equal(providerDeep.viewId, 'services');
+  assert.equal(providerDeep.isUnknownPath, false);
+  assert.equal(providerDeep.providerId, 'prov-01');
+});
+

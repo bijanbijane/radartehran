@@ -59,8 +59,8 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
                     <span>{followed ? 'دنبال‌شده' : 'دنبال‌کردن'}</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 leading-relaxed">{topic.descriptionFa}</p>
-                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">
+                <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 leading-relaxed">{topic.descriptionFa}</p>
+                <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">
                   حوزه: {topic.categoryFa} · {toPersianNum(topic.followersCount)} دنبال‌کننده · {toPersianNum(topic.activeThreadsCount)} بحث فعال
                 </div>
               </div>
@@ -105,24 +105,24 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
               <LineChart className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>شاخص رسمی سامانه برای محله {selectedHood.name}</span>
             </h3>
-            <button type="button" onClick={onOpenHoodMarket} className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
+            <button type="button" onClick={onOpenHoodMarket} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
               تحلیل بازار محله
             </button>
           </div>
-          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
             این ارقام از مدل محاسباتی و رصد بازار استخراج شده‌اند و از تجربه شخصی کاربران مجزا هستند:
           </p>
           <div className="grid grid-cols-3 gap-2 pt-1 tabular-nums">
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
-              <span className="text-[10.5px] text-[var(--color-text-muted)] block">کیفیت کلی</span>
+              <span className="text-xs text-[var(--color-text-muted)] block">کیفیت کلی</span>
               <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.overallScore)} / ۱۰</strong>
             </div>
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
-              <span className="text-[10.5px] text-[var(--color-text-muted)] block">هوا و سکوت</span>
+              <span className="text-xs text-[var(--color-text-muted)] block">هوا و سکوت</span>
               <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.air)} / ۱۰</strong>
             </div>
             <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60">
-              <span className="text-[10.5px] text-[var(--color-text-muted)] block">دسترسی مترو</span>
+              <span className="text-xs text-[var(--color-text-muted)] block">دسترسی مترو</span>
               <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(selectedHood.metro)} / ۱۰</strong>
             </div>
           </div>

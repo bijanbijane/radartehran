@@ -25,7 +25,7 @@ export const HOME_QUICK_ACCESS_ITEMS: readonly HomeQuickAccessItem[] = [
 export const HOME_METHODOLOGY_PILLARS: readonly HomeMethodologyPillar[] = [
   { id: 'source', titleFa: 'منبع', questionFa: 'داده از کجا آمده است؟', explanationFa: 'ترکیب آگهی‌های پایش‌شده پس از حذف موارد تکراری/طعمه و لایه‌های کالبدی شهری (مترو، طرح ترافیک و مراکز خدماتی).' },
   { id: 'time', titleFa: 'زمان', questionFa: 'داده مربوط به چه تاریخی است؟', explanationFa: 'هر شاخص دارای بازه زمانی استخراج و تاریخ آخرین به‌روزرسانی صریح است؛ داده قدیمی با برچسب Stale مشخص می‌شود.' },
-  { id: 'method', titleFa: 'روش', questionFa: 'چطور محاسبه، پاک‌سازی یا برآورد شده است؟', explanationFa: 'میانه آماری قیمت پیشنهادی جدا از سناریوی مذاکره (v6.4 غیرثبتی) گزارش می‌شود و هرگز با قیمت معامله قطعی ترکیب نمی‌گردد.' },
+  { id: 'method', titleFa: 'روش', questionFa: 'چطور محاسبه، پاک‌سازی یا برآورد شده است؟', explanationFa: 'میانه آماری قیمت پیشنهادی جدا از برآورد سناریوی مذاکره (غیرثبتی) گزارش می‌شود و هرگز با قیمت معامله قطعی ترکیب نمی‌گردد.' },
   { id: 'limitation', titleFa: 'محدودیت', questionFa: 'چه چیزی را نمی‌توان از این داده نتیجه گرفت؟', explanationFa: 'شاخص‌ها جایگزین کارشناسی رسمی ثبتی یا معامله قطعی دفترخانه‌ای نیستند و در محله‌های کم‌نمونه با وضعیت Incomplete نمایش داده می‌شوند.' },
 ];
 
@@ -82,36 +82,56 @@ export function buildHomeMarketSnapshotMetrics(
   const periodLabel = isStale ? 'شهریور ۱۴۰۵ (قدیمی)' : 'آبان ۱۴۰۵ (۳۰ روز اخیر)';
   const updatedLabel = isStale ? '۱۴۰۵/۰۶/۱۵' : '۱۴۰۵/۰۸/۲۴';
 
+  const hasLiveSupply = validSupplyCount > 0;
+  const negotiationEstimateSqm =
+    agg.estimatedDealPricePerSqm === medianAskingSqm && medianAskingSqm > 0
+      ? Math.round(medianAskingSqm * 0.94)
+      : agg.estimatedDealPricePerSqm;
+
   return [
     {
       id: 'asking_price_sqm', title: 'قیمت پیشنهادی هر متر مربع', value: medianAskingSqm, unit: 'م.ت / متر مربع',
       formattedValue: `${toPersianNum(medianAskingSqm)} م.ت`,
       geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
-      dataType: 'asking_price', dataTypeLabelFa: 'قیمت پیشنهادی (آگهی‌های پایش‌شده)',
+      dataType: 'asking_price', dataTypeLabelFa: 'قیمت پیشنهادی (پروفایل مرجع و آگهی‌های پایش‌شده)',
       sourceLabels: ['پایش آگهی‌های عمومی پس از حذف پرت'], methodologyId: 'median-asking-v1',
       methodologyLabelFa: 'میانه آماری قیمت پیشنهادی محلات (بدون ترکیب با معامله قطعی)',
-      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: neighborhoods.length,
+      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: cityScopedHoods.length,
       limitationNote: 'صرفاً بیانگر میانه قیمت پیشنهادی فروشندگان است، نه قیمت قطعی ثبت‌شده در دفاتر اسناد.',
     },
     {
-      id: 'supply_status', title: 'وضعیت عرضه', value: isPartial ? null : validSupplyCount, unit: 'فایل معتبر غیرتکراری',
-      formattedValue: isPartial ? '—' : `${toPersianNum(validSupplyCount)} فایل`,
+      id: 'supply_status',
+      title: 'وضعیت عرضه و پوشش',
+      value: isPartial ? null : hasLiveSupply ? validSupplyCount : cityScopedHoods.length,
+      unit: hasLiveSupply ? 'فایل معتبر غیرتکراری' : 'محله با پروفایل مرجع فعال',
+      formattedValue: isPartial
+        ? '—'
+        : hasLiveSupply
+          ? `${toPersianNum(validSupplyCount)} فایل`
+          : `${toPersianNum(cityScopedHoods.length)} محله`,
       geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
-      dataType: 'supply', dataTypeLabelFa: 'عرضه فعال پس از پالایش',
-      sourceLabels: ['موتور پالایش آگهی تکراری و قیمت طعمه'], methodologyId: 'dedup-supply-v1',
+      dataType: 'supply',
+      dataTypeLabelFa: hasLiveSupply ? 'عرضه فعال پس از پالایش' : 'مبنای مرجع فعال (بدون فایل زنده در لحظه)',
+      sourceLabels: [hasLiveSupply ? 'موتور پالایش آگهی تکراری و قیمت طعمه' : 'پروفایل مرجع محلات رادار'],
+      methodologyId: 'dedup-supply-v1',
       methodologyLabelFa: 'حذف آگهی‌های تکراری و انحراف شدید قیمتی',
-      updatedAt: isPartial ? null : updatedLabel, quality: isPartial ? 'incomplete' : isStale ? 'stale' : 'verified',
-      sampleCount: validSupplyCount,
-      limitationNote: isPartial ? 'داده‌ای برای نمایش کامل عرضه در برخی مناطق ثبت نشده است.' : 'شامل فایل‌های فعال دارای مشخصات متراژ و محله معتبر.',
+      updatedAt: isPartial ? null : updatedLabel,
+      quality: isPartial ? 'incomplete' : isStale ? 'stale' : hasLiveSupply ? 'verified' : 'estimated',
+      sampleCount: hasLiveSupply ? validSupplyCount : cityScopedHoods.length,
+      limitationNote: isPartial
+        ? 'داده‌ای برای نمایش کامل عرضه در برخی مناطق ثبت نشده است.'
+        : hasLiveSupply
+          ? 'شامل فایل‌های فعال دارای مشخصات متراژ و محله معتبر.'
+          : 'در لحظه فایل زنده پایش‌شده ثبت نشده و نمایش بر پایه پوشش مرجع محلات است.',
     },
     {
-      id: 'price_change_period', title: 'سناریوی مذاکره و تعدیل قیمت', value: agg.estimatedDealPricePerSqm, unit: 'م.ت / متر مربع',
-      formattedValue: `${toPersianNum(agg.estimatedDealPricePerSqm)} م.ت`,
-      geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: 'مقایسه با میانه پیشنهادی جاری' },
-      dataType: 'other', dataTypeLabelFa: 'برآوردی (سناریوی مذاکره v6.4 غیرثبتی)',
+      id: 'price_change_period', title: 'سناریوی مذاکره و تعدیل قیمت', value: negotiationEstimateSqm, unit: 'م.ت / متر مربع',
+      formattedValue: `${toPersianNum(negotiationEstimateSqm)} م.ت`,
+      geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: 'حدود ۶٪ تعدیل نسبت به میانه پیشنهادی' },
+      dataType: 'other', dataTypeLabelFa: 'برآوردی (سناریوی مذاکره غیرثبتی)',
       sourceLabels: ['مدل آماری تعدیل مظنه رادار'], methodologyId: 'hedonic-v6.4',
       methodologyLabelFa: 'ضریب تعدیل نقدشوندگی نسبت به قیمت پیشنهادی در همان دوره',
-      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'estimated', sampleCount: neighborhoods.length,
+      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'estimated', sampleCount: cityScopedHoods.length,
       limitationNote: 'برآورد آماری جهت مذاکره است و معامله ثبتی محسوب نمی‌شود.',
     },
     {
@@ -121,7 +141,7 @@ export function buildHomeMarketSnapshotMetrics(
       dataType: 'rent', dataTypeLabelFa: 'پیشنهادی رهن کامل آپارتمان مسکونی ۸۰ متری',
       sourceLabels: ['پایش فایل‌های رهن و اجاره مسکونی'], methodologyId: 'median-rent-80m',
       methodologyLabelFa: 'میانه رهن کامل استانداردشده برای واحد ۸۰ متر مربع',
-      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: neighborhoods.length,
+      updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: cityScopedHoods.length,
       limitationNote: 'مبنای واحد مسکونی متعارف؛ واحدهای تجاری و اداری تفکیک شده‌اند.',
     },
   ];

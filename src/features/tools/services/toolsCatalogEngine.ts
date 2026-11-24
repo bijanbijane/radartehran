@@ -113,11 +113,11 @@ export const STATIC_TOOL_CATEGORIES: ReadonlyArray<StaticToolCategory> = [
   },
   {
     id: 'urban',
-    categoryEn: 'Swap, Zoning (R122), Schools & Realtor Studio',
-    categoryFa: 'معاوضه، ساخت، ضوابط، تولید محتوا و سبک زندگی',
+    categoryEn: 'Swap, Urban Zoning, Schools & Realtor Studio',
+    categoryFa: 'معاوضه، ساخت، ضوابط شهری و سبک زندگی',
     items: [
       { id: 'swap', title: 'مرکز تهاتر ملک و مقایسه شهرهای حومه', baseDesc: 'موتور تطبیق معاوضه و ارزیابی اقتصادی شهرهای جدید اطراف کلان‌شهرها', icon: ArrowLeftRight, target: { kind: 'super', tab: 'swap_suburb' } },
-      { id: 'municipality', title: 'دستیار ضوابط شهرداری (R122) و بازسازی', baseDesc: 'محاسبه تراکم مجاز، درصد مشارکت در ساخت، جریمه ماده ۱۰۰ و برآورد هزینه نوسازی واحد', icon: Hammer, target: { kind: 'super', tab: 'municipality' } },
+      { id: 'municipality', title: 'دستیار ضوابط شهرداری، تراکم و بازسازی', baseDesc: 'محاسبه تراکم مجاز، درصد مشارکت در ساخت، جریمه ماده ۱۰۰ و برآورد هزینه نوسازی واحد', icon: Hammer, target: { kind: 'super', tab: 'municipality' } },
       { id: 'school_radar', title: 'رادار مدارس برتر، ایمنی گسل و سبک زندگی', baseDesc: 'فاصله تا پهنه‌های گسلی، کیفیت آموزشی مدارس اطراف و دسترسی معابر', icon: GraduationCap, target: { kind: 'super', tab: 'school_traffic' } },
       { id: 'realtor_studio', title: 'استودیو هوش مصنوعی آگهی‌نویسی و استوری ملکی', baseDesc: 'تولید متن جذاب و استاندارد برای دیوار و شیپور با فرمت استوری و بدون کلیشه‌های تکراری', icon: Share2, target: { kind: 'super', tab: 'realtor_studio' } },
     ],

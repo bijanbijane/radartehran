@@ -126,11 +126,11 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{m.displayNameFa}</span>
-              <span className="text-[11px] font-mono text-[var(--color-text-muted)] dark:text-slate-400">@{m.username}</span>
+              <span className="text-xs font-mono text-[var(--color-text-muted)] dark:text-slate-400">@{m.username}</span>
             </div>
-            <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 line-clamp-2">{m.bioFa}</p>
+            <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 line-clamp-2">{m.bioFa}</p>
             {m.verifiedCredentialFa && (
-              <div className="text-[11px] font-bold text-amber-800 dark:text-amber-300 inline-flex items-center gap-1">
+              <div className="text-xs font-bold text-amber-800 dark:text-amber-300 inline-flex items-center gap-1">
                 <Award className="w-3.5 h-3.5 shrink-0" /><span>{m.verifiedCredentialFa}</span>
               </div>
             )}
@@ -148,7 +148,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
               type="button"
               data-testid="community-profile-back-btn"
               onClick={() => onSelectUsername(null)}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer"
             >
               <ArrowRight className="w-3.5 h-3.5" />
               <span>بازگشت به فهرست اعضا</span>
@@ -192,10 +192,10 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
                   <span data-testid="community-profile-display-name">{activeProfile.displayNameFa}</span>
                   {activeProfile.identityStatus === 'verified_phone' && <BadgeCheck className="w-4 h-4 text-sky-600" />}
                 </h2>
-                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+                <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
                   @{activeProfile.username} · عضویت از {activeProfile.memberSinceFa} · نمایه عمومی (بدون اطلاعات تماس)
                 </div>
-                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-bold text-[var(--color-text-primary)] dark:text-slate-200 tabular-nums">
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200 tabular-nums">
                   <span data-testid="community-profile-followers-count">
                     {toPersianNum(Number(activeProfile.followersCount ?? 0))} دنبال‌کننده
                   </span>
@@ -234,7 +234,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
                     <span
                       data-testid="community-profile-follow-error"
                       role="alert"
-                      className="text-[11px] font-bold text-rose-700 dark:text-rose-300"
+                      className="text-xs font-bold text-rose-700 dark:text-rose-300"
                     >
                       {followErrorFa}
                     </span>
@@ -253,7 +253,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
                   const widthPct = Math.min(100, val);
                   return (
                     <div key={axis} className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center justify-between text-xs">
                         <span className="text-[var(--color-text-secondary)] dark:text-slate-300 font-medium">{REPUTATION_AXIS_LABELS_FA[axis]}</span>
                         <span className="font-bold tabular-nums text-[var(--color-text-primary)] dark:text-white">{toPersianNum(val)}</span>
                       </div>
@@ -271,7 +271,7 @@ export const CommunityMembersAndGuidelinesTab: React.FC<Props> = ({
                 <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">نشان‌های معتبر و دارای تاریخ انقضا</h3>
                 <div className="divide-y divide-[var(--color-border-subtle)] dark:divide-slate-800">
                   {activeProfile.badges.map((bdg) => (
-                    <div key={bdg.id} className="py-2 first:pt-0 last:pb-0 space-y-0.5 text-[11px]">
+                    <div key={bdg.id} className="py-2 first:pt-0 last:pb-0 space-y-0.5 text-xs">
                       <div className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300 flex items-center gap-1">
                         <ShieldCheck className="w-3.5 h-3.5 shrink-0" /><span>{bdg.titleFa}</span>
                       </div>

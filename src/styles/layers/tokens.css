@@ -1,36 +1,58 @@
 @layer tokens {
   :root {
-    --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    --font-mono: 'Vazirmatn', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, monospace;
 
-    --color-brand-50: #EAF3F0;
-    --color-brand-100: #CFE3DC;
-    --color-brand-200: #A5CBC0;
-    --color-brand-500: #1F7A70;
+    /* Layer 1: Brand — Deep Petroleum Green (synced 1:1 with src/design-system/colorSystem.ts) */
+    --color-brand-50: #F1F8F6;
+    --color-brand-100: #DCEFEA;
+    --color-brand-200: #B8DED4;
+    --color-brand-400: #70B9AA;
+    --color-brand-500: #279487;
     --color-brand-600: #176B63;
     --color-brand-700: #14534E;
-    --color-brand-900: #0F3B37;
+    --color-brand-800: #0F3F3B;
+    --color-brand-900: #0B302D;
+
+    --color-brand-primary: #176B63;
+    --color-brand-fg: #176B63;
+    --color-brand-hover: #14534E;
+    --color-brand-pressed: #0B302D;
+    --color-brand-soft: #EAF3F0;
 
     --color-accent-100: #F6E6C8;
     --color-accent-500: #C58A2B;
     --color-accent-700: #8F5E14;
 
+    /* Layer 2: Neutral Surfaces & Text (Light Default) */
     --color-bg-canvas: #F6F8F6;
     --color-bg-surface: #FFFFFF;
     --color-bg-elevated: #FBFCFB;
-    --color-bg-muted: #EEF2EF;
-    --bg-dark: #0F1715;
+    --color-bg-subtle: #F1F4F2;
+    --color-bg-muted: #F1F4F2;
+    --bg-dark: #0D1513;
 
     --color-text-primary: #182522;
     --color-text-secondary: #34433E;
-    --color-text-muted: #586760;
-    --color-text-disabled: #8A9891;
+    --color-text-muted: #4A5B56;
+    --color-text-disabled: #5E6E69;
     --color-text-on-brand: #FFFFFF;
 
     --color-border-subtle: #DCE3DF;
-    --color-border-strong: #BFCAC4;
-    --color-focus: #1F7A70;
+    --color-border-strong: #C5D0CA;
 
+    /* Layer 3: Semantic & Distinct Accessible Focus Blue */
+    --color-success: #176B4C;
+    --color-success-bg: #EAF5EE;
+    --color-warning: #875000;
+    --color-warning-bg: #FFF4E5;
+    --color-danger: #A61B1B;
+    --color-danger-bg: #FDECEC;
+    --color-info: #155E9A;
+    --color-info-bg: #EAF3FB;
+    --color-focus: #2864DC;
+
+    /* Spacing Scale (4px grid) */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -42,12 +64,25 @@
     --space-12: 48px;
     --space-16: 64px;
 
+    /* Controlled Soft Geometry (Uniform Radii) */
     --radius-xs: 6px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px;
+    --radius-button: 8px;
+    --radius-input: 8px;
+    --radius-card: 12px;
+    --radius-dialog: 16px;
+    --radius-bottom-sheet: 20px;
 
+    /* Single-Elevation Shadows */
+    --shadow-elevation-0: none;
+    --shadow-elevation-1: 0 1px 3px 0 rgba(16, 59, 56, 0.05), 0 0 0 1px rgba(24, 37, 34, 0.06);
+    --shadow-elevation-2: 0 8px 24px -6px rgba(16, 59, 56, 0.12), 0 0 0 1px rgba(24, 37, 34, 0.07);
+    --shadow-elevation-3: 0 20px 44px -12px rgba(16, 59, 56, 0.18), 0 0 0 1px rgba(24, 37, 34, 0.08);
+
+    /* Strict Z-Index Scale */
     --z-map-canvas: 0;
     --z-map-controls: 20;
     --z-inspector-drawer: 30;
@@ -63,23 +98,25 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
     --safe-right: env(safe-area-inset-right, 0px);
+    --app-height: 100dvh;
 
-    --apple-bg-base: #F6F8F6;
-    --apple-surface: rgba(255, 255, 255, 0.92);
-    --apple-surface-elevated: rgba(251, 252, 251, 0.96);
-    --apple-surface-secondary: rgba(238, 242, 239, 0.9);
-    --apple-fill-tertiary: rgba(118, 118, 128, 0.12);
-    --apple-fill-quaternary: rgba(116, 116, 128, 0.08);
-    --apple-text-primary: #182522;
-    --apple-text-secondary: #34433E;
-    --apple-text-tertiary: #586760;
-    --apple-separator: rgba(24, 37, 34, 0.12);
-    --apple-border-hairline: rgba(255, 255, 255, 0.65);
-    --apple-accent-green: #176B63;
-    --apple-accent-blue: #1F7A70;
-    --apple-accent-amber: #C47A1B;
-    --apple-accent-red: #B83A3A;
-    --apple-shadow-floating: 0 8px 24px rgba(18, 32, 28, 0.08), 0 2px 6px rgba(18, 32, 28, 0.05);
-    --apple-shadow-sheet: 0 20px 48px rgba(18, 32, 28, 0.16), 0 4px 12px rgba(18, 32, 28, 0.08);
+    /* Surface Aliases (mapped cleanly to single design-system source) */
+    --apple-bg-base: var(--color-bg-canvas);
+    --apple-surface: rgba(255, 255, 255, 0.96);
+    --apple-surface-elevated: #FFFFFF;
+    --apple-surface-secondary: var(--color-bg-muted);
+    --apple-fill-tertiary: rgba(24, 37, 34, 0.07);
+    --apple-fill-quaternary: rgba(24, 37, 34, 0.04);
+    --apple-text-primary: var(--color-text-primary);
+    --apple-text-secondary: var(--color-text-secondary);
+    --apple-text-tertiary: var(--color-text-muted);
+    --apple-separator: var(--color-border-subtle);
+    --apple-border-hairline: rgba(255, 255, 255, 0.7);
+    --apple-accent-green: var(--color-brand-600);
+    --apple-accent-blue: var(--color-focus);
+    --apple-accent-amber: var(--color-warning);
+    --apple-accent-red: var(--color-danger);
+    --apple-shadow-floating: var(--shadow-elevation-2);
+    --apple-shadow-sheet: var(--shadow-elevation-3);
   }
 }

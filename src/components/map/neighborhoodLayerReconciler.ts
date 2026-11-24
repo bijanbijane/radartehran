@@ -189,6 +189,8 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
         if (existing.lastIconKey !== lastIconKey) {
           const cfg = buildNeighborhoodLodDivIconConfig({ hood, tier, zoom: currentZoom, isSelected, hasSponsor, isDarkMap, pillBg: palette.pillBg, stroke: palette.stroke, shortPriceLabel, fullPriceLabel });
           existing.marker.setIcon?.(L.divIcon({ className: 'leaflet-div-icon custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }));
+          const mEl = existing.marker.getElement?.() as HTMLElement | null;
+          if (mEl) mEl.setAttribute('aria-label', `محله ${hood.name} — ${shortPriceLabel}`);
           existing.marker.setZIndexOffset?.(baseZ);
           existing.lastIconKey = lastIconKey; changed = true;
         }
@@ -199,7 +201,10 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
         if (changed) updated++; else retained++;
       } else {
         const cfg = buildNeighborhoodLodDivIconConfig({ hood, tier, zoom: currentZoom, isSelected, hasSponsor, isDarkMap, pillBg: palette.pillBg, stroke: palette.stroke, shortPriceLabel, fullPriceLabel });
-        const marker = L.marker([hood.lat, hood.lng], { icon: L.divIcon({ className: 'leaflet-div-icon custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }), zIndexOffset: baseZ }).addTo(map);
+        const markerLabel = `محله ${hood.name} — ${shortPriceLabel}`;
+        const marker = L.marker([hood.lat, hood.lng], { icon: L.divIcon({ className: 'leaflet-div-icon custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }), title: markerLabel, alt: markerLabel, zIndexOffset: baseZ }).addTo(map);
+        const markerEl = marker.getElement?.() as HTMLElement | null;
+        if (markerEl) markerEl.setAttribute('aria-label', markerLabel);
         marker.bindTooltip?.(buildNeighborhoodRichTooltipHtml({ hood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap }), { direction: 'top', interactive: true, offset: [0, -10] });
         const entry: NeighborhoodMarkerEntry = {
           marker, lat: hood.lat, lng: hood.lng, lastIconKey, lastTooltipKey, lastThemeKey: themeKey,

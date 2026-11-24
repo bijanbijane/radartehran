@@ -76,7 +76,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
           <span className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300">
             ارزش برآوردی مدل (غیررسمی) · {VALUATION_PURPOSE_LABELS_FA[purpose]} · {h.hoodName}
           </span>
-          <span className="text-[10.5px] font-bold text-[var(--color-text-muted)] dark:text-slate-400">
+          <span className="text-xs font-bold text-[var(--color-text-muted)] dark:text-slate-400">
             {result.snapshot.modelId} · {result.modelVersion}
           </span>
         </div>
@@ -89,7 +89,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                   {toPersianNum(rentRes.estimatedFullRahnMillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیون تومان (برآورد محدود رهن کامل)</span>
                 </div>
-                <div className="text-[11px] text-[#875000] dark:text-amber-300 font-bold mt-0.5">
+                <div className="text-xs text-[#875000] dark:text-amber-300 font-bold mt-0.5">
                   {rentRes.methodologyLimitationFa}
                 </div>
               </>
@@ -99,7 +99,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                   {toPersianNum(h.hedonicTotalBillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان (ارزش جاری فروش دارایی)</span>
                 </div>
-                <div className="text-[11px] text-[#48534F] dark:text-slate-400 mt-0.5">
+                <div className="text-xs text-[#48534F] dark:text-slate-400 mt-0.5">
                   {currentRes.definitionLabelFa} · تاریخ مرجع داده: {currentRes.referenceDateIso.slice(0, 10)} · هر {unitLabel}: {toPersianNum(perUnit)} میلیون تومان
                 </div>
               </>
@@ -109,7 +109,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                   {toPersianNum(h.hedonicTotalBillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان</span>
                 </div>
-                <div className="text-[11px] text-[#48534F] dark:text-slate-400 mt-0.5">
+                <div className="text-xs text-[#48534F] dark:text-slate-400 mt-0.5">
                   هر {unitLabel}: {toPersianNum(perUnit)} میلیون تومان (ارز مرجع: تومان)
                   {intlCurrency !== 'IRT' ? ` · معادل نمایشی (غیرثبتی): ${formatMillionTomanAsIntlCurrency(h.hedonicTotalMillion, intlCurrency, radarLocale)}` : ''}
                 </div>
@@ -118,7 +118,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
           </div>
 
           <div className="text-left bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 rounded-[10px] px-3 py-2">
-            <div className="text-[10px] text-[var(--color-text-muted)]">بازه حساسیت پارامتری مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
+            <div className="text-xs text-[var(--color-text-muted)]">بازه حساسیت پارامتری مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
             <strong className="text-xs font-black text-[var(--color-text-primary)] dark:text-white">
               {rentRes
                 ? `${toPersianNum(rentRes.sensitivityRahnRangeMillion.min)} تا ${toPersianNum(rentRes.sensitivityRahnRangeMillion.max)} میلیون رهن`
@@ -130,21 +130,21 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[#B8D7CE] dark:border-emerald-800/70 tabular-nums">
           {purpose === 'sale' ? (
             <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-              <span className="text-[10.5px] text-[var(--color-text-muted)] block">فروش فوری نقدی (-۱۲٪)</span>
+              <span className="text-xs text-[var(--color-text-muted)] block">فروش فوری نقدی (-۱۲٪)</span>
               <strong className="font-black text-[#875000] dark:text-amber-300">{toPersianNum((h.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد</strong>
             </div>
           ) : (
             <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-              <span className="text-[10.5px] text-[var(--color-text-muted)] block">وضعیت تبدیل اجاره ماهانه</span>
+              <span className="text-xs text-[var(--color-text-muted)] block">وضعیت تبدیل اجاره ماهانه</span>
               <strong className="font-black text-[var(--color-text-muted)] dark:text-slate-300">نیازمند نرخ توافقی طرفین</strong>
             </div>
           )}
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[var(--color-text-muted)] block">رهن کامل شاخص محله</span>
+            <span className="text-xs text-[var(--color-text-muted)] block">رهن کامل شاخص محله</span>
             <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">{toPersianNum(h.estimatedRahnMillion)} میلیون</strong>
           </div>
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[var(--color-text-muted)] block">شاخص پایه محله (غیرفایل)</span>
+            <span className="text-xs text-[var(--color-text-muted)] block">شاخص پایه محله (غیرفایل)</span>
             <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(convertPricePerSqmToUnit(result.v64NeighborhoodDealPerSqm, areaUnit))} م/{unitLabel}</strong>
           </div>
         </div>
@@ -155,14 +155,14 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
             <span>ذخیره این گزارش ارزش‌گذاری</span>
           </button>
           <button type="button" onClick={onCopySummary} className="px-3.5 py-2 rounded-[9px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5 cursor-pointer">
-            {copied ? <Check className="w-4 h-4 text-[#176B4C]" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-[#176B4C] dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
             <span>{copied ? 'خلاصه کپی شد' : 'کپی گزارش تحلیلی'}</span>
           </button>
         </div>
       </div>
 
       {/* 4 Separated Quality & Epistemic Axes */}
-      <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums" data-testid="valuation-four-quality-axes">
+      <div className="grid grid-cols-2 gap-2 text-xs tabular-nums" data-testid="valuation-four-quality-axes">
         <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800">
           <span className="text-[var(--color-text-muted)] block">۱. کیفیت تکمیل ورودی ملک</span>
           <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(result.completenessPercent)}٪ وزن‌دهی منشأ</strong>
@@ -182,7 +182,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       </div>
 
       {/* Explicit Out-of-Scope Disclaimers & Snapshot Provenance */}
-      <div className="p-3.5 rounded-[12px] bg-[#FFF4E5]/70 dark:bg-amber-950/20 border border-[#F4D3A1] dark:border-amber-800 space-y-1.5 text-[11px] text-[#875000] dark:text-amber-200">
+      <div className="p-3.5 rounded-[12px] bg-[#FFF4E5]/70 dark:bg-amber-950/20 border border-[#F4D3A1] dark:border-amber-800 space-y-1.5 text-xs text-[#875000] dark:text-amber-200">
         <div className="font-black flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 shrink-0" />
           <span>مرز کاربرد و شناسنامه محاسبه (تعداد معاملات رسمی تأییدشده: {toPersianNum(result.sufficiency.verifiedTransactionCount)} مورد)</span>
@@ -190,7 +190,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
         <p className="leading-relaxed">
           این خروجی <strong>قیمت قطعی معامله، کارشناسی رسمی دادگستری یا استعلام ثبتی نیست</strong>. {result.uncertainty.methodologyNoteFa}
         </p>
-        <div className="text-[10px] opacity-80 font-mono" dir="ltr">
+        <div className="text-xs opacity-80 font-mono" dir="ltr">
           snapshot={result.snapshot.snapshotId} · city={result.snapshot.cityId} · dataset={result.snapshot.datasetVersion} · {result.snapshot.calculatedAtIso.slice(0, 19)}Z
         </div>
       </div>
@@ -201,12 +201,12 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
             <span>سنجش قیمت اعلامی فروشنده</span>
             <span className="text-[var(--color-brand-600)]">{h.sellerPriceEvaluation.verdictLabel}</span>
           </div>
-          <p className="text-[11px] text-[#48534F] dark:text-slate-300 leading-relaxed">{h.sellerPriceEvaluation.verdictDescription}</p>
+          <p className="text-xs text-[#48534F] dark:text-slate-300 leading-relaxed">{h.sellerPriceEvaluation.verdictDescription}</p>
         </div>
       )}
 
       {h.nonCompensatoryWarnings.length > 0 && (
-        <div className="p-3.5 rounded-[12px] bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 space-y-1 text-[11px]">
+        <div className="p-3.5 rounded-[12px] bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 space-y-1 text-xs">
           {h.nonCompensatoryWarnings.map((w) => (
             <div key={w} className="flex items-start gap-1.5 font-bold">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -226,9 +226,9 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white">
                   {f.label}: <span className="font-normal text-[var(--color-text-muted)]">{f.valueLabel}</span>
                 </div>
-                <div className="text-[10.5px] text-[var(--color-text-muted)] truncate">{f.explanation}</div>
+                <div className="text-xs text-[var(--color-text-muted)] truncate">{f.explanation}</div>
               </div>
-              <strong className={f.impactPercent > 0 ? 'text-[#176B4C]' : f.impactPercent < 0 ? 'text-[#B3261E]' : 'text-[var(--color-text-muted)]'}>
+              <strong className={f.impactPercent > 0 ? 'text-[#176B4C] dark:text-emerald-400' : f.impactPercent < 0 ? 'text-[#B3261E] dark:text-rose-400' : 'text-[var(--color-text-muted)]'}>
                 {f.impactPercent > 0 ? '+' : ''}{toPersianNum(f.impactPercent)}٪
               </strong>
             </div>
@@ -243,13 +243,13 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
             <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>شواهد مقایسه‌ای ({toPersianNum(result.sufficiency.usableListingsCount)} آگهی کامل · {toPersianNum(result.sufficiency.verifiedTransactionCount)} معامله ثبتی)</span>
           </h3>
-          <span className="text-[10.5px] text-[var(--color-text-muted)]">تفکیک فایل از شاخص پایه محله</span>
+          <span className="text-xs text-[var(--color-text-muted)]">تفکیک فایل از شاخص پایه محله</span>
         </div>
 
         <div className="p-2.5 rounded-[8px] bg-[#EEF5FC]/70 dark:bg-sky-950/30 border border-[#BBD6F2] dark:border-sky-800 flex items-center justify-between gap-2 tabular-nums">
           <div>
             <div className="font-bold text-[#1D4E89] dark:text-sky-300">{result.neighborhoodBaselineEvidence.title}</div>
-            <div className="text-[10px] text-[var(--color-text-muted)] dark:text-slate-400">
+            <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
               {COMPARABLE_EVIDENCE_KIND_LABELS_FA[result.neighborhoodBaselineEvidence.evidenceKind]} · {result.neighborhoodBaselineEvidence.observedAt}
             </div>
           </div>
@@ -260,7 +260,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
 
         <div className="space-y-2 tabular-nums">
           {result.comparables.length === 0 ? (
-            <div className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px] text-[var(--color-text-muted)]">
+            <div className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-xs text-[var(--color-text-muted)]">
               فایل دارای متراژ و قیمت مستقل در این محله ثبت نشده است؛ برآورد صرفاً بر شاخص مرجع محله بالا تکیه دارد.
             </div>
           ) : (
@@ -270,7 +270,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                   <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">
                     {c.title} {c.sqm ? `(${toPersianNum(c.sqm)} متر)` : ''}
                   </div>
-                  <div className="text-[10.5px] text-[var(--color-text-muted)]">
+                  <div className="text-xs text-[var(--color-text-muted)]">
                     {COMPARABLE_EVIDENCE_KIND_LABELS_FA[c.evidenceKind]} · {c.street} · {c.similarityReason}
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
                   <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">
                     {toPersianNum(convertPricePerSqmToUnit(c.askPerSqmMillion, areaUnit))} م/{unitLabel}
                   </strong>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
                 </div>
               </div>
             ))

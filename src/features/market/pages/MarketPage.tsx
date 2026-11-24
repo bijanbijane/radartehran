@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TrendingUp } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood, type MarketPulseData } from '../../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../../utils/areaUnit';
 import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
@@ -159,30 +158,25 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
   const uDealUnit = convertPricePerSqmToUnit(bundle.selectedAgg.estimatedDealPricePerSqm, areaUnit);
 
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-intelligence-view">
+    <div className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-intelligence-view">
       <MarketContextBar
-        activeCity={p.activeCity} selectedHood={p.selectedHood} appliedFilters={applied} isEn={isEn}
-        onSelectMarketType={handleSelectMarketType} onSelectTransaction={handleSelectTransaction}
+        activeCity={p.activeCity}
+        selectedHood={p.selectedHood}
+        appliedFilters={applied}
+        isEn={isEn}
+        pulseSummaryFa={
+          p.marketPulse
+            ? `میانگین ${bundle.cityNameFa}: ${toPersianNum(convertPricePerSqmToUnit(p.marketPulse.marketSummary.tehranAverageBuyPerSqm, areaUnit))} م/متر · رهن ۸۰م: ${toPersianNum(p.marketPulse.marketSummary.tehranAverageRahn80m)} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealUnit, intlCurrency, radarLocale)})` : ''}`
+            : undefined
+        }
+        onOpenPulseModal={p.marketPulse ? p.onOpenPulseModal : undefined}
+        onSelectMarketType={handleSelectMarketType}
+        onSelectTransaction={handleSelectTransaction}
         onOpenMethodology={() => { setMethodologyOpen(true); trackMarketEvent('market_methodology_opened', { subTab }); }}
-        onOpenSaved={() => setSavedOpen(true)} onExportCsv={() => handleExport('csv')} onOpenFullMap={() => p.onNavigateView?.('map')}
+        onOpenSaved={() => setSavedOpen(true)}
+        onExportCsv={() => handleExport('csv')}
+        onOpenFullMap={() => p.onNavigateView?.('map')}
       />
-
-      {p.marketPulse && (
-        <div className="px-4 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-white flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums">
-          <span>
-            نبض کلان {bundle.cityNameFa}: میانگین پیشنهادی متری{' '}
-            <strong>{toPersianNum(convertPricePerSqmToUnit(p.marketPulse.marketSummary.tehranAverageBuyPerSqm, areaUnit))} م</strong>{' '}
-            · رهن ۸۰م: <strong>{toPersianNum(p.marketPulse.marketSummary.tehranAverageRahn80m)} م</strong>
-            {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealUnit, intlCurrency, radarLocale)})` : ''}
-          </span>
-          <div className="flex items-center gap-3 text-[11px] text-slate-300">
-            <span>شاخص هوا: {toPersianNum(p.marketPulse.airQuality.tehranAverageAqi)}</span>
-            <button type="button" onClick={p.onOpenPulseModal} className="text-emerald-300 font-bold hover:underline cursor-pointer flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /><span>نبض زنده</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       <MarketFilterPanel
         draft={draft} applied={applied} isDirty={dirty} availableZones={availableZones}
@@ -221,26 +215,36 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
 
       {subTab === 'reports' && <MarketReportList reports={bundle.reports} onOpenMethodology={() => setMethodologyOpen(true)} />}
 
-      <section aria-label="شاخص‌های کلیدی بازار" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {bundle.indicators.slice(0, subTab === 'overview' ? 6 : 3).map((ind) => (
-          <IndicatorCard
-            key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
-            onSelect={(selected) => {
-              setSelectedIndicatorId(selected.id);
-              trackMarketEvent('market_indicator_selected', { indicatorId: selected.id });
-              if (selected.id === 'rent_deposit_80m') p.onChangeSubTab?.('rent');
-              else if (selected.id === 'supply_valid_count') p.onChangeSubTab?.('supply');
-              else if (selected.id === 'asking_price_median_sqm') p.onChangeSubTab?.('prices');
-            }}
-          />
-        ))}
+      <section aria-labelledby="market-kpis-heading" className="space-y-3">
+        <h2 id="market-kpis-heading" className="text-base font-extrabold text-[var(--color-text-primary)] dark:text-white">
+          {isEn ? 'Key Market Indicators' : `شاخص‌های کلیدی بازار (${bundle.geoScopeFa})`}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {bundle.indicators.slice(0, subTab === 'overview' ? 6 : 3).map((ind) => (
+            <IndicatorCard
+              key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
+              onSelect={(selected) => {
+                setSelectedIndicatorId(selected.id);
+                trackMarketEvent('market_indicator_selected', { indicatorId: selected.id });
+                if (selected.id === 'rent_deposit_80m') p.onChangeSubTab?.('rent');
+                else if (selected.id === 'supply_valid_count') p.onChangeSubTab?.('supply');
+                else if (selected.id === 'asking_price_median_sqm') p.onChangeSubTab?.('prices');
+              }}
+            />
+          ))}
+        </div>
       </section>
 
       {(subTab === 'overview' || subTab === 'prices' || subTab === 'rent') && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MarketTrendChart series={bundle.trendSeries} geoScopeFa={bundle.geoScopeFa} cityNameFa={bundle.cityNameFa} periodLabelFa={bundle.periodLabelFa} transactionType={subTab === 'rent' ? 'rent' : applied.transactionType} areaUnit={areaUnit} status={bundle.quality.status} />
-          <PriceDistributionChart stats={bundle.distribution} geoScopeFa={bundle.geoScopeFa} status={bundle.quality.status} />
-        </div>
+        <section aria-labelledby="market-charts-heading" className="space-y-3">
+          <h2 id="market-charts-heading" className="text-base font-extrabold text-[var(--color-text-primary)] dark:text-white">
+            {isEn ? 'Price Trends & Distribution' : 'روند قیمتی و توزیع بازار'}
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <MarketTrendChart series={bundle.trendSeries} geoScopeFa={bundle.geoScopeFa} cityNameFa={bundle.cityNameFa} periodLabelFa={bundle.periodLabelFa} transactionType={subTab === 'rent' ? 'rent' : applied.transactionType} areaUnit={areaUnit} status={bundle.quality.status} />
+            <PriceDistributionChart stats={bundle.distribution} geoScopeFa={bundle.geoScopeFa} status={bundle.quality.status} />
+          </div>
+        </section>
       )}
 
       {subTab === 'prices' && <PriceAreaScatter points={bundle.scatterPoints} geoScopeFa={bundle.geoScopeFa} status={bundle.quality.status} />}

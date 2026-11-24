@@ -85,9 +85,9 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
   const isEn = radarLocale === 'en';
   void formatAreaUnitLabel(areaUnit, radarLocale);
 
-  const btnPad = compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs';
-  const activeCls = 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm';
-  const idleCls = 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+  const btnPad = compact ? 'px-2 py-1 text-xs min-h-[34px]' : 'px-2.5 py-1.5 text-xs min-h-[36px]';
+  const activeCls = 'bg-[var(--color-bg-surface)] text-[var(--color-brand-fg)] shadow-sm';
+  const idleCls = 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]';
   const usdTitle = rateState.snapshot
     ? isEn
       ? `Server FX rate: 1 USD = ${rateState.snapshot.usdToTomanRate.toLocaleString('en-US')} Toman`
@@ -100,7 +100,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
       <div
         role="group"
         aria-label={isEn ? 'Interface Language' : 'زبان رابط کاربری'}
-        className="inline-flex items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80"
+        className="inline-flex items-center rounded-xl bg-[var(--color-bg-muted)] p-0.5 border border-[var(--color-border-subtle)]"
       >
         <button
           type="button"
@@ -127,7 +127,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
       <div
         role="group"
         aria-label={isEn ? 'Area Unit' : 'واحد مساحت'}
-        className={`${hideAreaUnitOnMobile ? 'hidden sm:inline-flex' : 'inline-flex'} items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80`}
+        className={`${hideAreaUnitOnMobile ? 'hidden sm:inline-flex' : 'inline-flex'} items-center rounded-xl bg-[var(--color-bg-muted)] p-0.5 border border-[var(--color-border-subtle)]`}
       >
         <button
           type="button"
@@ -155,7 +155,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
         <div
           role="group"
           aria-label={isEn ? 'Display Currency' : 'واحد پول نمایش قیمت'}
-          className="inline-flex items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80"
+          className="inline-flex items-center rounded-xl bg-[var(--color-bg-muted)] p-0.5 border border-[var(--color-border-subtle)]"
         >
           <button
             type="button"
@@ -181,7 +181,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
             disabled
             aria-disabled="true"
             title={isEn ? 'No valid reference rate recorded' : UNSUPPORTED_CURRENCY_TOOLTIP}
-            className={`font-bold rounded-lg opacity-45 cursor-not-allowed text-slate-400 dark:text-slate-500 ${btnPad}`}
+            className={`font-bold rounded-lg opacity-50 cursor-not-allowed text-[var(--color-text-muted)] ${btnPad}`}
           >
             EUR
           </button>
@@ -190,7 +190,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
             disabled
             aria-disabled="true"
             title={isEn ? 'No valid reference rate recorded' : UNSUPPORTED_CURRENCY_TOOLTIP}
-            className={`font-bold rounded-lg opacity-45 cursor-not-allowed text-slate-400 dark:text-slate-500 ${btnPad}`}
+            className={`font-bold rounded-lg opacity-50 cursor-not-allowed text-[var(--color-text-muted)] ${btnPad}`}
           >
             AED
           </button>
@@ -201,7 +201,7 @@ const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
         <span
           dir="ltr"
           title={usdTitle}
-          className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 tabular-nums"
+          className="hidden xl:inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 tabular-nums"
         >
           {rateState.snapshot
             ? `1$= ${rateState.snapshot.usdToTomanRate.toLocaleString(isEn ? 'en-US' : 'fa-IR')} T`
@@ -222,21 +222,22 @@ export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ comp
   const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const displayClass = className.includes('hidden') ? '' : 'inline-flex';
+  const btnCls = compact ? 'px-2.5 py-1 text-xs min-h-[36px]' : 'px-3 py-1.5 text-xs min-h-[40px]';
   return (
     <div
       role="group"
       aria-label={isEn ? 'Simple or Pro Experience Mode' : 'حالت تجربه کاربری ساده یا تخصصی'}
-      className={`${displayClass} items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80 select-none ${className}`}
+      className={`${displayClass} items-center rounded-xl bg-[var(--color-bg-muted)] p-0.5 border border-[var(--color-border-subtle)] select-none ${className}`}
       dir={isEn ? 'ltr' : 'rtl'}
     >
       <button
         type="button"
         onClick={() => setMode('simple')}
         aria-pressed={mode === 'simple'}
-        className={`font-bold transition-all rounded-lg cursor-pointer ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+        className={`font-bold transition-all rounded-lg cursor-pointer ${btnCls} ${
           mode === 'simple'
-            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            ? 'bg-[var(--color-bg-surface)] text-[var(--color-brand-fg)] shadow-sm'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
         }`}
       >
         {isEn ? 'Simple' : 'ساده'}
@@ -245,10 +246,10 @@ export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ comp
         type="button"
         onClick={() => setMode('pro')}
         aria-pressed={mode === 'pro'}
-        className={`font-bold transition-all rounded-lg cursor-pointer ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+        className={`font-bold transition-all rounded-lg cursor-pointer ${btnCls} ${
           mode === 'pro'
-            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            ? 'bg-[var(--color-bg-surface)] text-[var(--color-brand-fg)] shadow-sm'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
         }`}
       >
         {isEn ? 'Pro' : 'تخصصی'}

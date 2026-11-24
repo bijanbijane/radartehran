@@ -4,6 +4,7 @@ import { AppRole, PermissionKey } from '../../platform/auth';
 export interface RouteRegistration {
   id: string;
   path: string;
+  canonicalRedirectPath?: string;
   titleFa: string;
   layout: AppShellLayoutKind;
   requiresAuth: boolean;
@@ -25,6 +26,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'auth-login',
     path: '/login',
+    canonicalRedirectPath: '/account',
     titleFa: 'ورود به حساب کاربری رادار تهران',
     layout: 'public',
     requiresAuth: false,
@@ -34,6 +36,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'profile',
     path: '/profile',
+    canonicalRedirectPath: '/account/profile',
     titleFa: 'پروفایل و پرتفوی شخصی',
     layout: 'authenticated',
     requiresAuth: true,
@@ -42,6 +45,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'saved-searches',
     path: '/saved-searches',
+    canonicalRedirectPath: '/account/saved-searches',
     titleFa: 'جستجوهای ذخیره‌شده و هشدارها',
     layout: 'authenticated',
     requiresAuth: true,
@@ -50,6 +54,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'escrow-deals',
     path: '/escrow',
+    canonicalRedirectPath: '/tools',
     titleFa: 'معاملات امن و حساب امانی',
     layout: 'authenticated',
     requiresAuth: true,
@@ -59,6 +64,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'agency-workspace',
     path: '/agency/workspace',
+    canonicalRedirectPath: '/services/agencies',
     titleFa: 'میزکار آژانس املاک و مشاوران',
     layout: 'authenticated',
     requiresAuth: true,
@@ -69,6 +75,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'service-workspace',
     path: '/service/orders',
+    canonicalRedirectPath: '/services',
     titleFa: 'میزکار ارائه‌دهندگان خدمات ملکی',
     layout: 'authenticated',
     requiresAuth: true,
@@ -79,6 +86,7 @@ export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
   {
     id: 'admin-governance',
     path: '/admin/governance',
+    canonicalRedirectPath: '/admin',
     titleFa: 'پنل حاکمیت و مدیریت رادار تهران',
     layout: 'admin',
     requiresAuth: true,

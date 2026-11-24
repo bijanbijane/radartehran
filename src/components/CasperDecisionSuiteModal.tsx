@@ -96,18 +96,18 @@ export function CasperDecisionSuiteModal({
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto no-scrollbar rounded-2xl casper-neon-card bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.15)] p-5 space-y-4 text-slate-900 dark:text-slate-100 outline-none"
+        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto no-scrollbar rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-xl p-5 space-y-4 text-[var(--color-text-primary)] outline-none"
       >
         {/* Header with Epistemic Badge */}
-        <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="flex items-start justify-between border-b border-[var(--color-border-subtle)] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20">
+            <div className="p-2.5 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-600)] dark:bg-[#173530] dark:text-[#86d8cb]">
               <Brain className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="casper-modal-title" className="text-base font-black text-slate-900 dark:text-white">دستیار تصمیم‌گیری هوشمند مسکن</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300">v6.4 معرفت‌شناختی</span>
+                <h3 id="casper-modal-title" className="text-base font-bold text-[var(--color-text-primary)]">دستیار تصمیم‌گیری هوشمند مسکن</h3>
+                <span className="px-2 py-0.5 rounded-[6px] text-xs font-semibold bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:bg-[#173530] dark:text-[#86d8cb]">تحلیل سناریوی معامله</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">آزمون فرضیات، شبیه‌سازی استرس رکود و خنثی‌سازی خطاهای شناختی</p>
             </div>

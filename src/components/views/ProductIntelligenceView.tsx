@@ -66,17 +66,6 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
 
   return (
     <MarketSectionErrorBoundary>
-      <div className="w-full max-w-[1360px] mx-auto px-4 pt-5 space-y-4">
-        <EpistemicMarketDisclaimer metrics={refAgg} />
-        <PublicDataProvenanceCard
-          entityId={resolveGovernanceEntityId(p.activeCity, p.selectedHood.id)}
-          neighborhoodNameFa={p.selectedHood.name}
-          sampleCount={refAgg.eligibleObservedCount}
-          uniqueEntityCount={null}
-          observedSampleCount={refAgg.observedSampleCount}
-          syntheticSampleCount={syntheticCount}
-        />
-      </div>
       <MarketPage
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
         selectedHood={p.selectedHood}
@@ -91,32 +80,50 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         activeSubTab={p.activeSubTab}
         onChangeSubTab={p.onChangeSubTab}
       />
-      <div className="w-full max-w-[1360px] mx-auto px-4 pb-6 space-y-4">
-        <AnalyticsAndResearchWorkspace
-          activePlaceId={resolveAnalyticsPlaceId(p.selectedHood.id, p.activeCity)}
-          activePlaceNameFa={p.selectedHood.name}
-          baseBuyPerSqm={p.selectedHood.buyPerSqm}
-          observedValues={observedPerSqm}
-        />
-        <div className="p-3 rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div className="w-full max-w-[1320px] mx-auto px-4 pb-6 space-y-4">
+        <details className="rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-[var(--color-bg-surface)] p-3 text-xs">
+          <summary className="cursor-pointer font-bold text-[var(--color-text-secondary)] select-none">
+            کیفیت داده، پوشش نمونه و روش‌شناسی برآورد محله {p.selectedHood.name} ⓘ
+          </summary>
+          <div className="mt-3 space-y-3">
+            <EpistemicMarketDisclaimer metrics={refAgg} />
+            <PublicDataProvenanceCard
+              entityId={resolveGovernanceEntityId(p.activeCity, p.selectedHood.id)}
+              neighborhoodNameFa={p.selectedHood.name}
+              sampleCount={refAgg.eligibleObservedCount}
+              uniqueEntityCount={null}
+              observedSampleCount={refAgg.observedSampleCount}
+              syntheticSampleCount={syntheticCount}
+            />
+          </div>
+        </details>
+        {p.activeSubTab === 'reports' && (
+          <AnalyticsAndResearchWorkspace
+            activePlaceId={resolveAnalyticsPlaceId(p.selectedHood.id, p.activeCity)}
+            activePlaceNameFa={p.selectedHood.name}
+            baseBuyPerSqm={p.selectedHood.buyPerSqm}
+            observedValues={observedPerSqm}
+          />
+        )}
+        <div className="p-3 rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-[var(--color-text-muted)] dark:text-slate-400">دسترسی سریع محله:</span>
+            <span className="font-bold text-[var(--color-text-muted)]">دسترسی سریع محله:</span>
             {quickSwitchHoods.map((hood) => (
               <button
                 key={hood.id}
                 type="button"
                 onClick={() => p.onSelectNeighborhood(hood)}
-                className={`px-2 py-1 rounded-md border cursor-pointer ${hood.id === p.selectedHood.id ? 'border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'}`}
+                className={`min-h-[44px] md:min-h-[34px] px-2.5 py-1 rounded-md border cursor-pointer ${hood.id === p.selectedHood.id ? 'border-[var(--color-brand-600)] text-[var(--color-brand-fg)] font-bold' : 'border-[var(--color-border-subtle)] text-[var(--color-text-primary)]'}`}
               >
                 {hood.name}
               </button>
             ))}
           </div>
-          <button type="button" onClick={p.onOpenPriceTrend} className="px-3 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
-            <TrendingUp className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
+          <button type="button" onClick={p.onOpenPriceTrend} className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] font-bold text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer">
+            <TrendingUp className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
             <span>
               نمودار کامل روند ({toPersianNum(unitDeal)} م/{areaUnit === 'sqft' ? 'ft²' : 'م'}
-              {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''} · سناریو v6.4)
+              {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''} · برآورد معامله)
             </span>
           </button>
         </div>

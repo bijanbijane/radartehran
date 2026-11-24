@@ -12,7 +12,7 @@ export function EpistemicMarketDisclaimer({ metrics, className = '' }: { metrics
   return (
     <p
       role="note"
-      className={`text-[10px] leading-relaxed font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-2 py-1 ${className}`}
+      className={`text-xs leading-relaxed font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-lg px-2 py-1 ${className}`}
     >
       {text}
     </p>

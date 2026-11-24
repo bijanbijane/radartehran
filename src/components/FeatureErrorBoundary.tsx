@@ -9,36 +9,22 @@
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
-import { toPersianNum } from '../data/neighborhoods';
-import {
-  convertPricePerSqmToUnit,
-  formatAreaShort,
-  formatAreaUnitLabel,
-  formatMillionTomanAsIntlCurrency,
-} from '../utils/areaUnit';
 import { logDiag } from '../utils/diagnostics';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
-
-function FeatureErrorUnitContextBadge(): React.ReactElement {
-  const [areaUnit] = useAreaUnit();
-  const [intlCurrency] = useIntlCurrency();
-  const [locale] = useRadarLocale();
-  const refUnitPrice = convertPricePerSqmToUnit(120, areaUnit);
-  const sample80mTotalMillions = 120 * 80;
-  const sampleMonthlyRentMillions = 45;
-  return (
-    <span className="inline-block text-[10px] text-slate-500 dark:text-slate-400 mr-1.5 tabular-nums">
-      · واحد: {formatAreaUnitLabel(areaUnit)} ({toPersianNum(refUnitPrice)} م) · ارز: {intlCurrency}
-      {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(refUnitPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(80, areaUnit)}: {toPersianNum(sample80mTotalMillions)} م · اجاره: {toPersianNum(sampleMonthlyRentMillions)} م
-    </span>
-  );
-}
+import {
+  formatAreaShort,
+  getStoredAreaUnit,
+  getStoredIntlCurrency,
+  type AreaUnit,
+  type IntlCurrencyCode,
+} from '../utils/areaUnit';
 
 export interface FeatureErrorBoundaryProps {
   featureNameFa?: string;
   boundaryId?: string;
   sectionName?: string;
   resetKey?: string | number;
+  areaUnit?: AreaUnit;
+  intlCurrency?: IntlCurrencyCode;
   children: ReactNode;
   onDismissModal?: () => void;
   compact?: boolean;
@@ -76,15 +62,32 @@ export class FeatureErrorBoundary extends Component<
     };
   }
 
+  public componentDidUpdate(prevProps: FeatureErrorBoundaryProps): void {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({
+        hasError: false,
+        errorCategory: 'RENDER_BOUNDARY_EXCEPTION',
+        correlationId: '',
+        retryCount: 0,
+      });
+    }
+  }
+
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const bId = this.props.boundaryId || this.props.sectionName || 'FeatureSection';
     const fName = this.props.featureNameFa || this.props.sectionName || 'بخش رابط کاربری';
+    const areaUnit: AreaUnit = this.props.areaUnit || getStoredAreaUnit();
+    const intlCurrency: IntlCurrencyCode = this.props.intlCurrency || getStoredIntlCurrency();
+    const sampleMonthlyRentMillions = 24;
     logDiag('ERROR', `FeatureErrorBoundary caught error in [${bId}]`, {
       boundaryId: bId,
       featureNameFa: fName,
       errorCategory: this.state.errorCategory,
       correlationId: this.state.correlationId,
       retryCount: this.state.retryCount,
+      benchmarkArea: formatAreaShort(80, areaUnit),
+      benchmarkCurrency: intlCurrency,
+      sampleMonthlyRentMillions,
       message: String(error?.message || 'Unknown error').slice(0, 200),
       componentStackTop: String(errorInfo?.componentStack || '').slice(0, 240),
     });
@@ -115,7 +118,6 @@ export class FeatureErrorBoundary extends Component<
       <div
         role="alert"
         aria-live="assertive"
-        dir="rtl"
         className={`rounded-2xl border border-amber-300/80 dark:border-amber-700/70 bg-amber-50/95 dark:bg-amber-950/60 text-slate-900 dark:text-slate-100 shadow-sm ${
           this.props.compact ? 'p-3 text-xs' : 'p-5 text-sm'
         }`}
@@ -129,10 +131,9 @@ export class FeatureErrorBoundary extends Component<
               </h3>
               <p className="mt-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                 سایر بخش‌های رادار تهران بدون مشکل فعال هستند. کد پیگیری فنی:{' '}
-                <code className="font-mono text-[11px] bg-white/80 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                <code className="font-mono text-xs bg-white/80 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
                   {this.state.correlationId}
                 </code>
-                <FeatureErrorUnitContextBadge />
               </p>
             </div>
           </div>
@@ -141,7 +142,7 @@ export class FeatureErrorBoundary extends Component<
               type="button"
               onClick={this.props.onDismissModal}
               aria-label="بستن این پنجره"
-              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+              className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -153,13 +154,13 @@ export class FeatureErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleSafeRetry}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition-colors"
+              className="min-h-[44px] md:min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition-colors cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               تلاش مجدد امن ({MAX_SAFE_RETRIES - this.state.retryCount} فرصت باقی‌مانده)
             </button>
           ) : (
-            <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
+            <span className="text-xs font-semibold text-rose-700 dark:text-rose-400">
               سقف تلاش مجدد خودکار برای جلوگیری از حلقه خطا تکمیل شد.
             </span>
           )}

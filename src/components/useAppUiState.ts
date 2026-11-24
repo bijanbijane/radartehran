@@ -44,7 +44,15 @@ export function useAppUiState(initialUrlState: any) {
   const [callingSponsorHoodId, setCallingSponsorHoodId] = useState<number | null>(null);
 
   const [selectedHoodId, setSelectedHoodId] = useState<number>(initialUrlState.initialHoodId);
-  const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => resolvePrimaryViewFromUrl() ?? 'map');
+  const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => {
+    const resolved = resolvePrimaryViewFromUrl();
+    if (resolved) return resolved;
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.has('hood') || sp.has('compare')) return 'map';
+    }
+    return 'home';
+  });
   const [activeSubTab, setActiveSubTab] = useState<ModuleSubTabId | undefined>(() =>
     typeof window !== 'undefined' ? resolveRouteFromLocation(window.location.pathname, window.location.search).subTab : undefined
   );

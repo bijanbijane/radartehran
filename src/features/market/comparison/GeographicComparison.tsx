@@ -43,8 +43,8 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
             <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مقایسه هم‌معنای محدوده‌ها (تا ۴ محله)</span>
           </h3>
-          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
-            تمامی ستون‌ها با یک تعریف یکسان (میانه پیشنهادی، برآورد v6.4، رهن ۸۰م و تعداد آگهی زنده) سنجیده می‌شوند.
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
+            تمامی ستون‌ها با یک تعریف یکسان (میانه پیشنهادی، برآورد معامله، رهن ۸۰م و تعداد آگهی زنده) سنجیده می‌شوند.
           </p>
         </div>
 
@@ -74,10 +74,10 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse tabular-nums">
           <thead>
-            <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-muted)] dark:text-slate-400 text-[11px]">
+            <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-muted)] dark:text-slate-400 text-xs">
               <th className="text-right py-2 px-2">محدوده</th>
               <th className="text-right py-2 px-2">پیشنهادی آگهی</th>
-              <th className="text-right py-2 px-2">سناریو v6.4 (غیرثبتی)</th>
+              <th className="text-right py-2 px-2">برآورد معامله (غیرثبتی)</th>
               <th className="text-right py-2 px-2">اختلاف با مبنا</th>
               <th className="text-right py-2 px-2">رهن ۸۰م (خام)</th>
               <th className="text-right py-2 px-2">وضعیت نمونه</th>
@@ -94,7 +94,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                 <tr key={row.hoodId} className="border-b border-[var(--color-border-subtle)]/60 dark:border-slate-800">
                   <td className="py-2.5 px-2 font-bold text-[var(--color-text-primary)] dark:text-white">
                     {row.hoodName}{' '}
-                    <span className="text-[10.5px] font-normal text-[var(--color-text-muted)] dark:text-slate-400">
+                    <span className="text-xs font-normal text-[var(--color-text-muted)] dark:text-slate-400">
                       ({row.zone}) {isBase ? '· مبنا' : ''}
                     </span>
                   </td>
@@ -104,7 +104,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                     {isBase ? '—' : `${row.gapFromBasePct > 0 ? '+' : ''}${toPersianNum(row.gapFromBasePct)}٪`}
                   </td>
                   <td className="py-2.5 px-2">{toPersianNum(row.rahn80mMillion)} م</td>
-                  <td className="py-2.5 px-2 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+                  <td className="py-2.5 px-2 text-xs text-[var(--color-text-muted)] dark:text-slate-400">
                     {toPersianNum(row.observedCount)} زنده · {INDICATOR_STATUS_LABELS_FA[row.status]}
                   </td>
                   <td className="py-2.5 px-2">
@@ -118,14 +118,14 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                                 comparisonArc: { active: true, isPinned: true, hoodA: selectedHood, hoodB: targetHood },
                               });
                             }}
-                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-[10.5px] font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
+                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
                           >
                             کمان روی نقشه
                           </button>
                           <button
                             type="button"
                             onClick={() => onSelectNeighborhood(targetHood)}
-                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-[10.5px] font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
+                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
                           >
                             انتخاب مبنا
                           </button>

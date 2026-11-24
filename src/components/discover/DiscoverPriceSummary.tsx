@@ -100,26 +100,26 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
   return (
     <div className={wrapperClass} dir={copy.dir}>
       <div className="min-w-0">
-        <div className="text-[10px] text-slate-400 font-medium truncate" title={freshnessLine}>
+        <div className="text-xs text-[var(--color-text-muted)] font-medium truncate" title={freshnessLine}>
           {freshnessLine}
         </div>
-        <strong className="text-sm font-black text-slate-900 dark:text-white mt-0.5 block">
+        <strong className="text-sm font-black text-[var(--color-text-primary)] mt-0.5 block">
           {hasAsking ? fmtUnitPrice(buyPerSqm) : copy.priceUnavailableLabel}
         </strong>
         {resolvedDealPerSqm !== null && (
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+          <span className="text-xs text-[var(--color-text-muted)] block">
             {copy.scenarioPrefix} {fmtUnitPrice(resolvedDealPerSqm)}
           </span>
         )}
         {intlCurrency !== 'IRT' && hasAsking && (
-          <span className="text-[9.5px] text-indigo-600 dark:text-indigo-400 font-semibold block mt-0.5">
+          <span className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold block mt-0.5">
             {copy.approxFxPrefix} {intlCurrency}
           </span>
         )}
       </div>
 
       <div className={`min-w-0 ${depositBorderClass}`}>
-        <span className="text-[10px] text-slate-400 block font-medium">
+        <span className="text-xs text-[var(--color-text-muted)] block font-medium">
           {safeSqm !== null
             ? `${copy.depositLabelPrefix(safeSqm, areaUnit)}:`
             : copy.invalidAreaLabel}
@@ -128,7 +128,7 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
           className={`text-sm font-black mt-0.5 block ${
             scaledDeposit !== null
               ? 'text-[var(--color-brand-600)] dark:text-emerald-400'
-              : 'text-amber-600 dark:text-amber-400 text-xs'
+              : 'text-amber-700 dark:text-amber-400 text-xs'
           }`}
         >
           {scaledDeposit !== null
@@ -138,7 +138,7 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
               : copy.priceUnavailableLabel}
         </strong>
         {intlCurrency !== 'IRT' && scaledDeposit !== null && (
-          <span className="text-[9.5px] text-indigo-600 dark:text-indigo-400 font-semibold block mt-0.5">
+          <span className="text-xs text-indigo-700 dark:text-indigo-400 font-semibold block mt-0.5">
             {copy.approxFxPrefix} {intlCurrency}
           </span>
         )}

@@ -45,14 +45,19 @@ export const PriceAreaScatter: React.FC<PriceAreaScatterProps> = ({
         <ResponsiveContainer width="100%" height="100%" minWidth={240}>
           <ScatterChart margin={{ top: 8, right: 12, left: -4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} />
-            <XAxis type="number" dataKey="sqm" name="متراژ" unit="m²" tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => toPersianNum(v)} />
-            <YAxis type="number" dataKey="perSqmMillion" name="قیمت/متر" tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => toPersianNum(v)} />
+            <XAxis type="number" dataKey="sqm" name="متراژ" unit="m²" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => toPersianNum(v)} />
+            <YAxis type="number" dataKey="perSqmMillion" name="قیمت/متر" tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => toPersianNum(v)} />
             <Tooltip
               cursor={{ strokeDasharray: '3 3' }}
               formatter={(value: any, name: any) => [toPersianNum(value), String(name)]}
-              contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 11, borderRadius: 10 }}
+              contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 12, borderRadius: 10 }}
             />
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'Vazirmatn' }} />
+            <Legend
+              wrapperStyle={{ fontSize: 12, fontFamily: 'Vazirmatn' }}
+              formatter={(value) => (
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{value}</span>
+              )}
+            />
             <Scatter name="فایل‌های معتبر" data={normalPts} fill="#176B63" />
             {outlierPts.length > 0 && <Scatter name="داده‌های پرت (خارج از بازه)" data={outlierPts} fill="#D97706" />}
           </ScatterChart>

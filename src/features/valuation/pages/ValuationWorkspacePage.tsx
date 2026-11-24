@@ -181,7 +181,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
     <section className="space-y-4 animate-fadeIn" data-testid="valuation-workspace-page">
       <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
+          <span className="text-xs font-bold text-[var(--color-brand-fg)]">
             ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع · شهر {cityNameFa})
           </span>
           <h2 className="text-lg sm:text-xl font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-2 mt-0.5">
@@ -202,7 +202,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
             <button
               type="button"
               onClick={onOpenModalCalculator}
-              className="px-3 py-1.5 rounded-[8px] bg-[var(--color-text-primary)] text-white font-bold cursor-pointer"
+              className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer"
             >
               باز کردن خروجی چاپی / PNG
             </button>

@@ -55,7 +55,7 @@ export function buildNavigationBreadcrumbs(input: BuildBreadcrumbsInput): Breadc
       id: `city-${cityName}`,
       label: cityName,
       viewId: 'map',
-      path: '/explore/map',
+      path: '/map',
       isCurrent: false,
     });
   }

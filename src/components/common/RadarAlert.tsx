@@ -22,7 +22,7 @@ export const RadarAlert: React.FC<RadarAlertProps> = ({
   <div
     role="alert"
     data-testid={testId}
-    className={`rounded-xl px-3 py-2 text-[11px] font-bold leading-relaxed ${semanticAlert[tone]} ${className}`}
+    className={`rounded-xl px-3 py-2 text-xs font-bold leading-relaxed ${semanticAlert[tone]} ${className}`}
   >
     {title ? <div className="mb-0.5 text-xs font-black">{title}</div> : null}
     {children}

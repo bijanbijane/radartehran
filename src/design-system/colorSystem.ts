@@ -1,16 +1,19 @@
 /** @file src/design-system/colorSystem.ts — RT-UI-COLOR-001 4-Layer Color System Architecture (Pure TS, zero React) */
 
 export const BRAND_PALETTE = {
-  brand950: '#103B38',
-  brand900: '#14534E',
-  brand800: '#176B63', // Primary Brand Identity (Deep Petroleum Green)
-  brand700: '#1B7F74',
-  brand600: '#279487',
+  brand950: '#072220',
+  brand900: '#0B302D',
+  brand800: '#0F3F3B',
+  brand700: '#14534E',
+  brand600: '#176B63', // Primary Brand Identity (Deep Petroleum Green)
+  brand500: '#279487',
   brand400: '#70B9AA',
   brand200: '#B8DED4',
   brand100: '#DCEFEA',
   brand50: '#F1F8F6',
   brandSoft: '#EAF3F0',
+  brandFgLight: '#176B63',
+  brandFgDark: '#6FE0D0',
 } as const;
 
 export const NEUTRAL_PALETTE = {
@@ -22,8 +25,8 @@ export const NEUTRAL_PALETTE = {
   surfaceDisabled: '#E8ECE9',
   textPrimary: '#182522',
   textSecondary: '#34433E',
-  textMuted: '#586760',
-  textSubdued: '#64716B',
+  textMuted: '#4A5B56',
+  textSubdued: '#5E6E69',
   borderSubtle: '#DCE3DF',
   borderStrong: '#C5D0CA',
   borderControl: '#7F8F86',
@@ -179,11 +182,11 @@ export const RADAR_DARK_SURFACE_TEXT_TOKENS = {
   'bg-elevated': '#1A2A26',
   'bg-muted': '#172522',
   'text-primary': '#EEF4F2',
-  'text-secondary': '#C2D1CC',
-  'text-muted': '#8CA19A',
-  'border-subtle': '#233631',
+  'text-secondary': '#C8D6D1',
+  'text-muted': '#A9BEB7',
+  'border-subtle': '#243833',
   'border-strong': '#324B44',
-  focus: '#5A95FF',
+  focus: '#60A5FA',
 } as const;
 
 export const RADAR_SEMANTIC_STATUS_PALETTE = SEMANTIC_PALETTE;

@@ -23,10 +23,9 @@ import { FEATURE_FLAGS_STORAGE_KEY, useAppPersistenceAndDerivedState } from './u
 import { formatAreaShort, formatMillionTomanAsIntlCurrency, getRadarLocaleDirection, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale, subscribeAreaUnit } from '../utils/areaUnit';
 import { SHOW_INTL_UNIT_CURRENCY_CONTROLS } from './AreaUnitToggle';
 import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
-import { MapToolRail } from './navigation/MapToolRail';
 import { MapExplorerResultsSidebar } from './map/MapExplorerResultsSidebar';
 import { MapExplorerToolbar } from './map/MapExplorerToolbar';
-import { MapViewportPulseDock } from './map/MapViewportPulseDock';
+import { createInitialMapPanelState, type DesktopMapPanelMode } from './map/mapSheetCoordinator';
 import { setInteractiveSpatialMode } from './map/interactiveSpatialMeasureLayer';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
@@ -80,12 +79,28 @@ export function RadarWorkspaceShell() {
   const { selectedHood, compHood1, compHood2, hoodLandmarks, targetBargainHood, liveBargainCheck, totalLiveBargainsCount, calculatedHoodMonthlyRent, localAnalysis, marketReport, bestIndicator, deepInsight, directMetroCommuteInfo, rentVsBuyVerdict, tradeUpResults } = useAppPersistenceAndDerivedState({
     ui, neighborhoods, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, favoriteHoodIds, featureFlags, isVerifiedAdmin, mode, targetSqm, rentAgeMultiplier, totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
   });
-  const closeFloatingMapPanels = (except?: 'search' | 'filter' | 'tools' | 'legend' | 'rail' | 'spatial') => {
+  const [desktopMapPanelMode, setDesktopMapPanelMode] = useState<DesktopMapPanelMode>(() => {
+    const width = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    let stored: string | null = null;
+    try { stored = localStorage.getItem('radar_map_explorer_sidebar_open_v1'); } catch { /* ignore */ }
+    return createInitialMapPanelState(width, stored).desktopPanelMode;
+  });
+  const [mobileMapListOpen, setMobileMapListOpen] = useState<boolean>(false);
+  const [splitMapActive, setSplitMapActive] = useState<boolean>(false);
+  const mapRegionRef = useRef<HTMLDivElement | null>(null);
+  const isMapRegionVisible = ui.primaryView === 'map' || (splitMapActive && (ui.primaryView === 'discover' || ui.primaryView === 'properties'));
+  useEffect(() => {
+    const el = mapRegionRef.current as (HTMLDivElement & { inert?: boolean }) | null;
+    if (el) el.inert = !isMapRegionVisible;
+  }, [isMapRegionVisible]);
+  const closeFloatingMapPanels = (except?: 'search' | 'filter' | 'tools' | 'legend' | 'rail' | 'spatial' | 'list' | 'inspector') => {
     if (except !== 'search') ui.setShowSearchDropdown(false);
     if (except !== 'filter') ui.setMobileFilterOpen(false);
     if (except !== 'tools') ui.setShowToolsPopover(false);
     if (except !== 'legend') ui.setShowMapLegendPopover(false);
     if (except !== 'rail') ui.setMapRailPanel(null);
+    if (except !== 'list') setMobileMapListOpen(false);
+    if (except !== 'inspector') ui.setMobileSheetOpen(false);
     if (except !== 'spatial') {
       ui.setShowSpatialTools(false);
       setInteractiveSpatialMode('explore', { preservePoints: true });
@@ -148,7 +163,7 @@ export function RadarWorkspaceShell() {
     ui.setVoteStatus(null); closeFloatingMapPanels();
     if (mapInstanceRef.current && typeof hood.lat === 'number' && !Number.isNaN(hood.lat)) {
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-      const [latOffset, lngOffset] = [!isDesktop && ui.primaryView !== 'map' ? -0.022 : 0, isDesktop ? (ui.primaryView !== 'map' ? 0.032 : 0.055) : 0];
+      const [latOffset, lngOffset] = [!isDesktop ? -0.012 : 0, isDesktop ? (ui.primaryView !== 'map' ? 0.032 : 0.045) : 0];
       const currentZoom = typeof mapInstanceRef.current.getZoom === 'function' ? mapInstanceRef.current.getZoom() : 12;
       const targetZoom = Math.max(13, Number.isFinite(currentZoom) ? currentZoom : 13);
       try { mapInstanceRef.current.flyTo([hood.lat + latOffset, hood.lng + lngOffset], targetZoom, { duration: 0.7 }); } catch { /* ignore */ }
@@ -183,9 +198,13 @@ export function RadarWorkspaceShell() {
 
   useEffect(() => {
     if (!mapInstanceRef.current) return undefined;
+    if (!isMapRegionVisible) {
+      try { mapInstanceRef.current.stop?.(); } catch { /* ignore */ }
+      return undefined;
+    }
     const timerId = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 60);
     return () => clearTimeout(timerId);
-  }, [ui.primaryView]);
+  }, [ui.primaryView, isMapRegionVisible]);
   useAppUrlAndTitleSync({
     activeCity: ui.activeCity, setActiveCity: ui.setActiveCity, selectedHood, selectedHoodId: ui.selectedHoodId,
     setSelectedHoodId: ui.setSelectedHoodId, showCompareModal: ui.showCompareModal, setShowCompareModal: ui.setShowCompareModal,
@@ -246,10 +265,22 @@ export function RadarWorkspaceShell() {
             else if (act === 'reverse_budget') setShowReverseBudgetModal(true);
           }}
           activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} invalidCityParam={ui.invalidCityParam} currentUser={currentUser}
+          onOpenProvincesModal={() => ui.setShowNationwideProvinceModal(true)}
         />
       )}
-      <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : ui.primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'} z-0 focus:outline-none`}>
-        <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC]" />
+      <div
+        ref={mapRegionRef}
+        id={ui.primaryView === 'map' ? 'radar-main-content' : undefined}
+        tabIndex={ui.primaryView === 'map' ? -1 : undefined}
+        role={ui.primaryView === 'map' ? 'main' : 'region'}
+        aria-label="نقشه تعاملی محله‌ها"
+        aria-hidden={!isMapRegionVisible}
+        className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[56px] lg:top-[64px]'} focus:outline-none ${!isMapRegionVisible ? '-z-10 invisible opacity-0 pointer-events-none' : 'z-0'}`}
+      >
+        {ui.primaryView === 'map' && (
+          <h1 className="sr-only">نقشه تعاملی قیمت مسکن و محله‌های {CITY_DISPLAY_NAMES[ui.activeCity]?.fa || 'تهران'}</h1>
+        )}
+        <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC] dark:bg-[#0D1513]" />
         {!isMapLoaded && (
           <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-canvas)]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-800/95 shadow-md border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">
@@ -260,7 +291,7 @@ export function RadarWorkspaceShell() {
         )}
       </div>
       {ui.invalidCityParam && (
-        <div className="fixed inset-0 top-[56px] lg:top-[68px] z-[55] bg-slate-950/45 backdrop-blur-[3px] flex items-start justify-center pt-10 sm:pt-16 px-3">
+        <div className="fixed inset-0 top-[56px] lg:top-[64px] z-[55] bg-slate-950/45 backdrop-blur-[3px] flex items-start justify-center pt-10 sm:pt-16 px-3">
           <div role="alert" data-testid="invalid-city-banner" className="max-w-xl w-full rounded-2xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 shadow-2xl p-4 sm:p-5 space-y-3 text-xs">
             <div className="text-sm font-black text-amber-800 dark:text-amber-300">
               شهر درخواستی «{ui.invalidCityParam}» در {CANONICAL_BRAND_FA} پشتیبانی نمی‌شود
@@ -279,7 +310,7 @@ export function RadarWorkspaceShell() {
         </div>
       )}
       {!ui.invalidCityParam && (ui.geoContextResolution?.status === 'outside_city_boundaries' || ui.geoContextResolution?.status === 'ambiguous') && (
-        <div role="status" data-testid="geo-context-banner" className="fixed left-1/2 -translate-x-1/2 bottom-20 lg:bottom-6 z-[45] max-w-md w-[calc(100vw-1.5rem)] rounded-xl border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-[11px]">
+        <div role="status" data-testid="geo-context-banner" className="fixed left-1/2 -translate-x-1/2 bottom-20 lg:bottom-6 z-[45] max-w-md w-[calc(100vw-1.5rem)] rounded-xl border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
           <span className="font-bold text-slate-700 dark:text-slate-200">
             {ui.geoContextResolution.status === 'ambiguous'
               ? 'مرکز نقشه در مرز هم‌پوشان شهری قرار دارد؛ شهر فعال تغییر نکرد.'
@@ -312,20 +343,31 @@ export function RadarWorkspaceShell() {
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
         isSpatialMeasureActive={ui.showSpatialTools && !ui.mapRailPanel} onToggleSpatialMeasure={handleToggleQuickSpatialMeasure}
         onNavigateView={(v, sub) => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); closeFloatingMapPanels(); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }} />
-      <MapToolRail
-        visible={ui.primaryView === 'map'} locale={radarLocale} activeCity={ui.activeCity} selectedHood={selectedHood} evaluatedNeighborhoods={evaluatedNeighborhoods} targetSqm={targetSqm} mapLens={ui.mapLens} setMapLens={ui.setMapLens}
-        mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} mode={mode} hasFilterApplied={ui.statusFilter !== 'all' || ui.onlyOutsideTrafficZone || ui.onlyHighMetro}
-        openPanel={ui.mapRailPanel} onChangeOpenPanel={ui.setMapRailPanel} showSpatialTools={ui.showSpatialTools} onChangeShowSpatialTools={ui.setShowSpatialTools}
-        onCloseCompetingPanels={() => closeFloatingMapPanels('rail')} onToggleFilterPopover={() => { closeFloatingMapPanels('filter'); ui.setMobileFilterOpen((p) => !p); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
-        onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView}
-        onSelectNeighborhood={handleSelectNeighborhood} statusFilter={ui.statusFilter} setStatusFilter={ui.setStatusFilter} />
       {ui.primaryView === 'map' && (
         <>
           <MapExplorerResultsSidebar
             evaluatedNeighborhoods={evaluatedNeighborhoods}
             selectedHoodId={ui.selectedHoodId}
+            selectedHood={selectedHood}
             onSelectNeighborhood={handleSelectNeighborhood}
             mode={mode}
+            desktopPanelMode={desktopMapPanelMode}
+            onChangeDesktopPanelMode={setDesktopMapPanelMode}
+            mobileListOpen={mobileMapListOpen}
+            onChangeMobileListOpen={(next) => {
+              if (next) closeFloatingMapPanels('list');
+              setMobileMapListOpen(next);
+            }}
+            onOpenInspector={() => {
+              const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+              if (isDesktop) {
+                setDesktopMapPanelMode('inspector');
+              } else {
+                closeFloatingMapPanels('inspector');
+                ui.setMobileSheetOpen(true);
+              }
+            }}
+            hideMobilePeekBar={ui.mobileSheetOpen || ui.mobileFilterOpen || ui.showToolsPopover || ui.showMapLegendPopover || ui.showSearchDropdown}
           />
           <MapExplorerToolbar
             mapInstanceRef={mapInstanceRef}
@@ -337,18 +379,15 @@ export function RadarWorkspaceShell() {
               closeFloatingMapPanels('filter');
               ui.setMobileFilterOpen(true);
             }}
+            onToggleLegend={() => {
+              const next = !ui.showMapLegendPopover;
+              if (next) closeFloatingMapPanels('legend');
+              ui.setShowMapLegendPopover(next);
+            }}
+            isLegendOpen={ui.showMapLegendPopover}
+            isSpatialMeasureActive={ui.showSpatialTools && !ui.mapRailPanel}
+            onToggleSpatialMeasure={handleToggleQuickSpatialMeasure}
           />
-          {!ui.invalidCityParam && selectedHood && (
-            <MapViewportPulseDock
-              evaluatedNeighborhoods={evaluatedNeighborhoods}
-              selectedHood={selectedHood}
-              mode={mode}
-              targetSqm={targetSqm}
-              rentAgeMultiplier={rentAgeMultiplier}
-              mapLens={ui.mapLens}
-              onSelectNeighborhood={handleSelectNeighborhood}
-            />
-          )}
         </>
       )}
       {ui.primaryView !== 'map' && (
@@ -358,13 +397,13 @@ export function RadarWorkspaceShell() {
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent} buyTotalBudget={buyTotalBudget} deposit={deposit} monthlyRent={monthlyRent} counts={counts}
             featureFlags={featureFlags} currentUser={currentUser} isVerifiedAdmin={isVerifiedAdmin} activeCity={ui.activeCity} crudActions={crudActions} handleDeepWebSync={handleDeepWebSync}
-            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => signOut(auth)} />
+            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => signOut(auth)} onSplitMapModeChange={setSplitMapActive} />
         </main>
       )}
       {(ui.primaryView === 'map' || ui.mobileSheetOpen) && ui.primaryView !== 'admin' && (
         <FeatureErrorBoundary sectionName="پنل کالبدشکافی محله" resetKey={ui.selectedHoodId}>
           <NeighborhoodInspectorDrawer
-            isOverlayOnSecondaryView={ui.primaryView !== 'map'} mobileSheetOpen={ui.mobileSheetOpen} setMobileSheetOpen={ui.setMobileSheetOpen} appleTheme={appleTheme}
+            isOverlayOnSecondaryView={ui.primaryView !== 'map'} desktopVisible={ui.primaryView !== 'map' || desktopMapPanelMode === 'inspector'} onBackToList={() => setDesktopMapPanelMode('list')} mobileSheetOpen={ui.mobileSheetOpen} setMobileSheetOpen={ui.setMobileSheetOpen} appleTheme={appleTheme}
             onToggleAppleTheme={toggleAppleTheme} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} favoriteHoodIds={favoriteHoodIds} onToggleFavoriteHood={toggleFavoriteHood}
             onOpenShortlistMatrix={() => ui.setShowShortlistMatrixModal(true)} evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} onSelectNeighborhood={handleSelectNeighborhood}
             activeCity={ui.activeCity} onSwitchCity={handleSwitchCity} onOpenShareModal={() => ui.setShowShareModal(true)} targetSqm={targetSqm} rentAgeMultiplier={rentAgeMultiplier}

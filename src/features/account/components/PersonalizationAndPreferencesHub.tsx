@@ -56,17 +56,16 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
   return (
     <section
       data-testid="personalization-and-preferences-hub"
-      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-5 text-xs"
-      dir="rtl"
+      className="p-4 sm:p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-5 text-xs"
     >
       <div className="space-y-3" data-testid="unified-saved-items-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
+            <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+              <Bookmark className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>ذخیره‌های من (نگهداری یکپارچه املاک، محله‌ها، جست‌وجوها، نقشه‌ها و مطالب)</span>
             </strong>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
               ذخیره‌سازی بر پایه شناسه پایدار موجودیت · پشتیبانی از بازگردانی فوری (Undo)، حذف گروهی و نمایش وضعیت آگهی‌های منقضی
             </p>
           </div>
@@ -118,30 +117,30 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
           {filteredItems.map((it) => {
             const formattedPrice = it.priceMillionToman !== undefined ? formatPriceByUserPreference(it.priceMillionToman, prefs.display) : null;
             return (
-              <div key={it.id} data-testid={`unified-saved-card-${it.id}`} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start justify-between gap-2">
+              <div key={it.id} data-testid={`unified-saved-card-${it.id}`} className="p-3 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 min-w-0">
-                  <input type="checkbox" aria-label={`انتخاب ${it.titleFa}`} checked={selectedIds.includes(it.id)} onChange={() => toggleSelect(it.id)} className="mt-1 accent-emerald-600" />
+                  <input type="checkbox" aria-label={`انتخاب ${it.titleFa}`} checked={selectedIds.includes(it.id)} onChange={() => toggleSelect(it.id)} className="mt-1 accent-[var(--color-brand-600)] w-4 h-4 shrink-0" />
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <strong className="font-black text-slate-900 dark:text-white truncate">{it.titleFa}</strong>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${it.targetLifecycleStatus === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                      <strong className="font-black text-[var(--color-text-primary)] truncate">{it.titleFa}</strong>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${it.targetLifecycleStatus === 'ACTIVE' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200'}`}>
                         {it.targetLifecycleStatus === 'ACTIVE' ? 'فعال' : it.targetLifecycleStatus === 'EXPIRED' ? 'آگهی منقضی (نگهداری جهت مقایسه)' : 'هشدار لایه غیرفعال نقشه'}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">{it.subtitleFa}</div>
+                    <div className="text-xs text-[var(--color-text-muted)]">{it.subtitleFa}</div>
                     {formattedPrice && (
-                      <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                      <div className="text-xs font-bold text-[var(--color-brand-fg)] tabular-nums">
                         مبلغ نمایشی: {formattedPrice.displayAmount} {formattedPrice.unitLabelFa} (شناسه فنی: {formatValueWithNumberPreference(it.entityId, prefs.display.numberFormat, true)})
                       </div>
                     )}
                     {it.unavailableLayerNamesFa && it.unavailableLayerNamesFa.length > 0 && (
-                      <div className="text-[10.5px] text-amber-800 dark:text-amber-300 font-bold">
+                      <div className="text-xs text-amber-800 dark:text-amber-300 font-bold">
                         توجه: یکی از لایه‌های این نقشه ({it.unavailableLayerNamesFa.join('، ')}) در حال حاضر در دسترس نیست؛ سایر لایه‌ها قابل بازگردانی‌اند.
                       </div>
                     )}
                   </div>
                 </div>
-                <button type="button" data-testid={`btn-remove-saved-${it.id}`} onClick={() => handleRemoveSingle(it.id)} className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer shrink-0" aria-label={`حذف ${it.titleFa}`}>
+                <button type="button" data-testid={`btn-remove-saved-${it.id}`} onClick={() => handleRemoveSingle(it.id)} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer shrink-0" aria-label={`حذف ${it.titleFa}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -191,9 +190,9 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
                 <option value="en">اعداد لاتین (14,900)</option>
               </select>
             </div>
-            <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-              <span className="text-[10.5px] text-slate-500 block">پیش‌نمایش زنده (مقدار خام دیتابیس: 14900 م.ت):</span>
-              <strong data-testid="pref-live-price-preview" className="text-sm font-black text-emerald-700 dark:text-emerald-400 block mt-0.5 tabular-nums">
+            <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+              <span className="text-xs text-[var(--color-text-muted)] block">پیش‌نمایش زنده (مقدار خام دیتابیس: 14900 م.ت):</span>
+              <strong data-testid="pref-live-price-preview" className="text-sm font-black text-[var(--color-brand-fg)] block mt-0.5 tabular-nums">
                 {samplePricePreview.displayAmount} {samplePricePreview.unitLabelFa}
               </strong>
             </div>
@@ -201,23 +200,23 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         )}
 
         {activePrefSection === 'MAP' && (
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" data-testid="prefs-map-panel">
-            <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
+          <div className="p-3 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] space-y-2" data-testid="prefs-map-panel">
+            <div className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>تفکیک سه وضعیت مکانی نقشه (مشاهده موقت شهر دیگر، شهر پیش‌فرض حساب شما را بازنویسی نمی‌کند):</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 block text-[10.5px]">۱. شهر پیش‌فرض ثابت حساب:</span>
-                <strong className="font-black text-slate-900 dark:text-white">{prefs.map.defaultCityId}</strong>
+              <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+                <span className="text-[var(--color-text-muted)] block text-xs">۱. شهر پیش‌فرض ثابت حساب:</span>
+                <strong className="font-black text-[var(--color-text-primary)]">{prefs.map.defaultCityId}</strong>
               </div>
-              <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 block text-[10.5px]">۲. آخرین محدوده مشاهده‌شده:</span>
-                <strong className="font-black text-slate-900 dark:text-white">{prefs.map.lastViewedCityId}</strong>
+              <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+                <span className="text-[var(--color-text-muted)] block text-xs">۲. آخرین محدوده مشاهده‌شده:</span>
+                <strong className="font-black text-[var(--color-text-primary)]">{prefs.map.lastViewedCityId}</strong>
               </div>
-              <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-slate-500 block text-[10.5px]">۳. نقشه‌های ذخیره‌شده من:</span>
-                <strong className="font-black text-emerald-700">{items.filter((i) => i.entityType === 'MAP_PRESET').length} نمای قابل بازسازی</strong>
+              <div className="p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+                <span className="text-[var(--color-text-muted)] block text-xs">۳. نقشه‌های ذخیره‌شده من:</span>
+                <strong className="font-black text-[var(--color-brand-fg)]">{items.filter((i) => i.entityType === 'MAP_PRESET').length} نمای قابل بازسازی</strong>
               </div>
             </div>
           </div>

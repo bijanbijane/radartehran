@@ -12,17 +12,17 @@ interface AuthorBadgesProps {
 export const CommunityAuthorBadges: React.FC<AuthorBadgesProps> = ({ profile, onSelectUsername }) => {
   const canClickProfile = Boolean(profile.username && onSelectUsername);
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--color-text-muted)]">
       {canClickProfile ? (
         <button
           type="button"
           onClick={() => onSelectUsername?.(profile.username!)}
-          className="font-bold text-[var(--color-text-primary)] dark:text-slate-100 hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 underline-offset-4 hover:underline cursor-pointer"
+          className="font-bold text-[var(--color-text-primary)] hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 underline-offset-4 hover:underline cursor-pointer"
         >
           {profile.displayNameFa}
         </button>
       ) : (
-        <span className="font-bold text-[var(--color-text-primary)] dark:text-slate-100">{profile.displayNameFa}</span>
+        <span className="font-bold text-[var(--color-text-primary)]">{profile.displayNameFa}</span>
       )}
       {profile.identityStatus === 'verified_phone' && (
         <>
@@ -53,14 +53,14 @@ export const CommunityAuthorBadges: React.FC<AuthorBadgesProps> = ({ profile, on
 export const CommunityTrustBanner: React.FC = () => (
   <div
     data-testid="community-trust-separation-banner"
-    className="p-4 rounded-[12px] bg-[#EAF3F0]/55 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900/80 text-xs space-y-1.5"
+    className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-xs space-y-1"
   >
     <div className="font-black text-[var(--color-brand-700)] dark:text-emerald-200 flex items-center gap-1.5">
       <ShieldCheck className="w-4 h-4 shrink-0" />
       <span>اصل تفکیک اعتماد و شفافیت در جامعه رادار تهران</span>
     </div>
-    <p className="text-[11.5px] text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">
-      در سامانه مشارکت، <strong>«هویت تأییدشده»</strong> (صرفاً احراز حساب)، <strong>«اعتبار مشارکت»</strong> (فعالیت میدانی و اصلاح داده محله) و <strong>«صلاحیت تخصصی»</strong> (مدرک ممیزی‌شده کارشناسان رسمی و پژوهشگران) کاملاً از هم مستقل‌اند؛ امتیاز بالای مشارکت هرگز به‌معنای صلاحیت تخصصی فنی یا حقوقی نیست.
+    <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+      <strong>«هویت تأییدشده»</strong>، <strong>«اعتبار مشارکت»</strong> و <strong>«صلاحیت تخصصی»</strong> کاملاً مستقل‌اند؛ امتیاز بالای مشارکت به‌معنای صلاحیت فنی یا حقوقی نیست.
     </p>
   </div>
 );

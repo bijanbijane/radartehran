@@ -165,7 +165,7 @@ export function ListingVerdictHero({
           ) : d.insufficientLiveSample ? (
             <p className="text-amber-700 dark:text-amber-400">{d.benchmarkLabelFa}: {toPersianNum(unitRef)} {uSuffix}{fxTag(unitRef)}. این عدد معیار معامله نیست.</p>
           ) : null}
-          <p className="text-[10px] text-slate-500">{verdict.disclaimerFa || LABEL_ADS_NOT_TRANSACTIONS_FA}</p>
+          <p className="text-xs text-[var(--color-text-muted)]">{verdict.disclaimerFa || LABEL_ADS_NOT_TRANSACTIONS_FA}</p>
         </div>
       )}
     </section>

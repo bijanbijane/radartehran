@@ -4,6 +4,19 @@ import type { CommunityHubTabId } from '../types/community.types';
 import { sanitizePublicNavigationQuery } from '../../../navigation/url/navigationUrlContract';
 import { commitManagedHistoryTransition } from '../../../navigation/url/historySingleWriter';
 
+export const COMMUNITY_PRIMARY_TABS: Array<{
+  id: CommunityHubTabId;
+  labelFa: string;
+  href: string;
+  matches: readonly CommunityHubTabId[];
+}> = [
+  { id: 'overview', labelFa: 'نمای کلی', href: '/community', matches: ['overview'] },
+  { id: 'discussions', labelFa: 'گفت‌وگوها', href: '/community/discussions', matches: ['discussions', 'social_discussion', 'topics', 'neighborhoods'] },
+  { id: 'questions', labelFa: 'پرسش‌وپاسخ', href: '/community/questions', matches: ['questions', 'expert_qa'] },
+  { id: 'data_contribution', labelFa: 'اصلاح داده و پیشنهادها', href: '/community/contributions', matches: ['data_contribution', 'research_proposals'] },
+  { id: 'members', labelFa: 'انجمن و قوانین', href: '/community/members', matches: ['members', 'guidelines'] },
+];
+
 export const COMMUNITY_HUB_TABS: Array<{ id: CommunityHubTabId; labelFa: string }> = [
   { id: 'overview', labelFa: 'خانه جامعه' },
   { id: 'discussions', labelFa: 'گفت‌وگوها' },

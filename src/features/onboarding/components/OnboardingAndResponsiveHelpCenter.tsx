@@ -26,7 +26,18 @@ import {
 import { WCAG_22_TARGET_STANDARD, WCAG_TEXT_SPACING_CONTRACT } from '../services/accessibilityEngine';
 import type { BottomSheetSnapState } from '../types/onboardingAndResponsive.types';
 import { OnboardingStageSwitch } from './OnboardingStageSwitch';
-import { ONBOARDING_STAGE_TABS, type OnboardingHelpStageTabId } from '../types/onboardingStageTabs';
+import type { OnboardingHelpStageTabId } from '../types/onboardingStageTabs';
+
+const CONSUMER_GUIDE_TABS: ReadonlyArray<{
+  id: OnboardingHelpStageTabId;
+  testId: string;
+  labelFa: string;
+}> = [
+  { id: 'stage32', testId: 'switch-stage-32-tab', labelFa: 'شروع سریع و چک‌لیست' },
+  { id: 'stage33', testId: 'switch-stage-33-tab', labelFa: 'تجربه موبایل و نمایشگرها' },
+  { id: 'stage34', testId: 'switch-stage-34-tab', labelFa: 'دسترس‌پذیری و صفحه‌کلید' },
+  { id: 'stage35', testId: 'switch-stage-35-tab', labelFa: 'تنظیمات حرکت و کاهش انیمیشن' },
+];
 
 export interface OnboardingAndResponsiveHelpCenterProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
@@ -60,7 +71,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
   );
   const [wcagTextSpacing, setWcagTextSpacing] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [liveStatusMsg, setLiveStatusMsg] = useState('آماده دریافت دستورات صفحه‌کلید، صفحه‌خوان (WCAG 2.2 AA) و آزمایشگاه حرکت.');
+  const [liveStatusMsg, setLiveStatusMsg] = useState('آماده دریافت راهنمای گام‌به‌گام، میان‌برهای صفحه‌کلید و تنظیمات دسترس‌پذیری.');
 
   void guideStatusTick;
   const completedCount = checklist.filter((c) => c.completed).length;
@@ -79,7 +90,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
   return (
     <section
       data-testid="onboarding-responsive-accessibility-center"
-      aria-label="مرکز راهنمای تعاملی، واکنش‌گرایی، دسترس‌پذیری و سیستم حرکت رادار تهران"
+      aria-label="مرکز راهنمای تعاملی و دسترس‌پذیری رادار تهران"
       style={
         wcagTextSpacing
           ? {
@@ -89,19 +100,19 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
             }
           : undefined
       }
-      className="rounded-[14px] border border-[#DCE3DF] dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 space-y-5 text-xs"
+      className="rounded-[14px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-4 sm:p-6 space-y-5 text-xs"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4">
         <div>
-          <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 block">
-            RT-UI-ONBOARDING-001 · RT-UI-RESPONSIVE-001 · RT-UI-ACCESSIBILITY-001 · RT-UI-MOTION-001
+          <span className="text-xs font-bold text-[var(--color-brand-fg)] block">
+            راهنمای گام‌به‌گام، دسترس‌پذیری و تجربه چنددستگاهی
           </span>
-          <h2 className="text-lg font-black text-[#182522] dark:text-white">
-            مرکز تجربه ورود (۳۲)، واکنش‌گرایی (۳۳)، دسترس‌پذیری WCAG 2.2 AA (۳۴) و سیستم حرکت (۳۵)
+          <h2 className="text-lg font-black text-[var(--color-text-primary)]">
+            شروع کار با رادار تهران و امکانات کاربردی
           </h2>
         </div>
-        <div role="tablist" aria-label="انتخاب مرحله معماری رابط" className="flex flex-wrap gap-1.5 w-full">
-          {ONBOARDING_STAGE_TABS.map((t) => (
+        <div role="tablist" aria-label="بخش‌های راهنمای کاربر" className="flex flex-wrap gap-1.5">
+          {CONSUMER_GUIDE_TABS.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -109,8 +120,10 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               aria-selected={stageTab === t.id}
               data-testid={t.testId}
               onClick={() => setStageTab(t.id)}
-              className={`px-3 py-2 min-h-[40px] max-w-full rounded-[8px] font-bold cursor-pointer text-right whitespace-normal break-words ${
-                stageTab === t.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'
+              className={`min-h-[44px] md:min-h-[38px] px-3.5 py-2 rounded-[8px] font-bold cursor-pointer transition ${
+                stageTab === t.id
+                  ? 'bg-[var(--color-brand-600)] text-white'
+                  : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               {t.labelFa}
@@ -119,9 +132,9 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
         </div>
       </div>
 
-      <div role="status" aria-live="polite" data-testid="a11y-live-region" className="px-3 py-2 rounded-[8px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#DCE3DF] dark:border-emerald-900 text-[var(--color-brand-700)] dark:text-emerald-200 flex items-center justify-between gap-2">
-        <span>اعلان وضعیت صفحه‌خوان (`role="status"`): <strong>{liveStatusMsg}</strong></span>
-        <span className="tabular-nums font-bold">هدف انطباق: WCAG {WCAG_22_TARGET_STANDARD.wcagVersion} سطح {WCAG_22_TARGET_STANDARD.targetLevel}</span>
+      <div role="status" aria-live="polite" data-testid="a11y-live-region" className="px-3 py-2 rounded-[8px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-[var(--color-brand-fg)] flex flex-wrap items-center justify-between gap-2">
+        <span>اعلان وضعیت: <strong>{liveStatusMsg}</strong></span>
+        <span className="tabular-nums font-bold">استاندارد دسترس‌پذیری: WCAG {WCAG_22_TARGET_STANDARD.wcagVersion} سطح {WCAG_22_TARGET_STANDARD.targetLevel}</span>
       </div>
 
       {stageTab === 'stage32' && (
@@ -133,7 +146,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
                   <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
                   <span>چک‌لیست شروع کار رادار (پیشرفت: {toPersianNum(completedCount)}/{toPersianNum(checklist.length)})</span>
                 </h3>
-                <span className="text-[11px] text-[#586760]">کاملاً اختیاری و غیرمسدودکننده</span>
+                <span className="text-xs text-[#586760]">کاملاً اختیاری و غیرمسدودکننده</span>
               </div>
               <ul className="space-y-2">
                 {checklist.map((item) => (
@@ -165,7 +178,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1">
                 <div className="font-bold text-[#182522] dark:text-white">تداوم اقدام پس از ورود (Post-Auth Action Continuation):</div>
                 <p className="text-[#586760]">{authPrompt.messageFa}</p>
-                <div className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
+                <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
                   مسیر بازگشت خودکار پس از ورود: <span dir="ltr">{authPrompt.pendingContinuation.returnRoute}</span> · سلب مسئولیت ارزش‌گذاری: {VALUATION_DISCLAIMER_FA}
                 </div>
               </div>
@@ -181,7 +194,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
                   <div key={g.guideId} className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <div className="font-bold text-[#182522] dark:text-white">{g.titleFa} ({g.version})</div>
-                      <div className="text-[11px] text-[#586760]">وضعیت فعلی: <strong>{st}</strong> · حداکثر راهنمای شناور هم‌زمان: ۱</div>
+                      <div className="text-xs text-[#586760]">وضعیت فعلی: <strong>{st}</strong> · حداکثر راهنمای شناور هم‌زمان: ۱</div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button type="button" onClick={() => { manager.completeGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} تکمیل شد.`); }} className="px-2 py-1 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">تکمیل</button>
@@ -250,14 +263,14 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {GIS_ACCORDION_LAYER_GROUPS.map((grp) => (
-                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-[11px] font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-slate-700'}`}>
+                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-xs font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-slate-700'}`}>
                     {grp.titleFa} ({toPersianNum(grp.layerIds.length)})
                   </button>
                 ))}
               </div>
             </div>
           </div>
-          <div className="text-[11px] text-[#586760]">پشتیبانی از {toPersianNum(RESPONSIVE_VIEWPORT_TIERS.length)} رده شکست استاندارد (از ۳۲۰ تا ۱۹۲۰ پیکسل) با سقف ۱۵٪ ارتفاع عناصر چسبان در موبایل.</div>
+          <div className="text-xs text-[#586760]">پشتیبانی از {toPersianNum(RESPONSIVE_VIEWPORT_TIERS.length)} رده شکست استاندارد (از ۳۲۰ تا ۱۹۲۰ پیکسل) با سقف ۱۵٪ ارتفاع عناصر چسبان در موبایل.</div>
         </div>
       )}
 

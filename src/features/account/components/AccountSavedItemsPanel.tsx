@@ -39,33 +39,33 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
     return (
       <div className="space-y-4">
         <PersonalizationAndPreferencesHub />
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs" data-testid="account-saved-properties">
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-xs" data-testid="account-saved-properties">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Home className="w-4 h-4 text-[var(--color-brand-600)]" />
+            <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+              <Home className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>فایل‌های ملکی ذخیره‌شده ({toPersianNum(p.savedProperties.length)})</span>
             </h2>
-            <button type="button" onClick={() => p.onNavigateView?.('properties')} className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
+            <button type="button" onClick={() => p.onNavigateView?.('properties')} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer">
               مرور فایل‌های ملکی
             </button>
           </div>
           {p.savedProperties.length === 0 ? (
-            <p className="text-slate-500 py-3">هنوز ملکی را نشان نکرده‌اید. در بخش «املاک» روی دکمه ذخیره هر فایل بزنید.</p>
+            <p className="text-[var(--color-text-muted)] py-3">هنوز ملکی را نشان نکرده‌اید. در بخش «املاک» روی دکمه ذخیره هر فایل بزنید.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {p.savedProperties.map((prop) => (
-                <div key={prop.listingId} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                <div key={prop.listingId} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-black text-slate-900 dark:text-white truncate">{prop.titleSnapshot}</div>
-                    <div className="text-[11px] text-slate-500 tabular-nums">
+                    <div className="font-black text-[var(--color-text-primary)] truncate">{prop.titleSnapshot}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] tabular-nums">
                       محله {prop.hoodNameSnapshot} · {prop.priceLabelSnapshot} · وضعیت: {prop.lastKnownStatus === 'published' ? 'فعال' : prop.lastKnownStatus}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onClick={() => p.onNavigateView?.('properties')} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold cursor-pointer">
+                    <button type="button" onClick={() => p.onNavigateView?.('properties')} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold cursor-pointer">
                       مشاهده
                     </button>
-                    <button type="button" onClick={() => p.onRemoveSavedProperty(prop.listingId)} aria-label={`حذف ${prop.titleSnapshot}`} className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer">
+                    <button type="button" onClick={() => p.onRemoveSavedProperty(prop.listingId)} aria-label={`حذف ${prop.titleSnapshot}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -93,11 +93,11 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
-            <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="عنوان جست‌وجو (مثلاً آپارتمان ۸۰ متری پونک)" className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
-            <input type="text" value={newQuery} onChange={(e) => setNewQuery(e.target.value)} placeholder="شرایط (بودجه، متراژ یا رسته خدمات)" className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 sm:col-span-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 rounded-xl bg-[var(--color-bg-subtle)]">
+            <input type="text" aria-label="عنوان جست‌وجوی ذخیره‌شده" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="عنوان جست‌وجو (مثلاً آپارتمان ۸۰ متری پونک)" className="min-h-[44px] md:min-h-[38px] p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]" />
+            <input type="text" aria-label="شرایط جست‌وجوی ذخیره‌شده" value={newQuery} onChange={(e) => setNewQuery(e.target.value)} placeholder="شرایط (بودجه، متراژ یا رسته خدمات)" className="min-h-[44px] md:min-h-[38px] p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] sm:col-span-2" />
             <div className="flex gap-1.5">
-              <select aria-label="ماژول دیدبان" value={newMod} onChange={(e) => setNewMod(e.target.value as SavedSearchWatchlistItem['module'])} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold flex-1">
+              <select aria-label="ماژول دیدبان" value={newMod} onChange={(e) => setNewMod(e.target.value as SavedSearchWatchlistItem['module'])} className="min-h-[44px] md:min-h-[38px] p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold flex-1">
                 <option value="properties">املاک</option>
                 <option value="neighborhoods">محله‌ها</option>
                 <option value="services">خدمات</option>
@@ -110,7 +110,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                   setNewTitle('');
                   setNewQuery('');
                 }}
-                className="px-3 py-2 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
+                className="min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /><span>ذخیره</span>
               </button>
@@ -120,23 +120,23 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
           {p.savedSearches.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {p.savedSearches.map((s) => (
-                <div key={s.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                <div key={s.id} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-black text-slate-900 dark:text-white truncate">{s.title}</div>
-                    <div className="text-[11px] text-slate-500 truncate">{s.querySummaryFa}</div>
+                    <div className="font-black text-[var(--color-text-primary)] truncate">{s.title}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] truncate">{s.querySummaryFa}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <select
                       aria-label={`بازه اعلان ${s.title}`}
                       value={s.alertCadence}
                       onChange={(e) => p.onChangeSearchCadence(s.id, e.target.value as SavedSearchWatchlistItem['alertCadence'])}
-                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10.5px] font-bold"
+                      className="min-h-[40px] md:min-h-[34px] p-1.5 rounded-lg bg-[var(--color-bg-muted)] text-xs text-[var(--color-text-primary)] font-bold"
                     >
                       <option value="off">بی‌صدا</option>
                       <option value="daily_digest">خلاصه روزانه</option>
                       <option value="instant_important">فوری</option>
                     </select>
-                    <button type="button" onClick={() => p.onDeleteSearchWatchlist(s.id)} aria-label={`حذف ${s.title}`} className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer">
+                    <button type="button" onClick={() => p.onDeleteSearchWatchlist(s.id)} aria-label={`حذف ${s.title}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -176,20 +176,20 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
           </button>
         </div>
         {p.savedMapViews.length === 0 ? (
-          <p className="text-slate-500 py-3">هنوز نمای نقشه‌ای ذخیره نکرده‌اید.</p>
+          <p className="text-[var(--color-text-muted)] py-3">هنوز نمای نقشه‌ای ذخیره نکرده‌اید.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {p.savedMapViews.map((v) => (
-              <div key={v.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              <div key={v.id} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                 <div>
-                  <div className="font-extrabold text-slate-900 dark:text-white">{v.label}</div>
-                  <div className="text-[11px] text-slate-400">نشانک زنده فیلترها · {v.hoodName} · لنز {v.lens} · {v.mode === 'rent' ? 'رهن/اجاره' : 'خرید'}</div>
+                  <div className="font-extrabold text-[var(--color-text-primary)]">{v.label}</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">نشانک زنده فیلترها · {v.hoodName} · لنز {v.lens} · {v.mode === 'rent' ? 'رهن/اجاره' : 'خرید'}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => (p.onRestoreSavedView ? p.onRestoreSavedView(v) : p.onNavigateView?.('map'))} className="px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer flex items-center gap-1">
+                  <button type="button" onClick={() => (p.onRestoreSavedView ? p.onRestoreSavedView(v) : p.onNavigateView?.('map'))} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer flex items-center gap-1">
                     <MapPin className="w-3 h-3" /><span>بازکردن</span>
                   </button>
-                  <button type="button" onClick={() => p.onDeleteSavedMapView(v.id)} aria-label={`حذف ${v.label}`} className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer">
+                  <button type="button" onClick={() => p.onDeleteSavedMapView(v.id)} aria-label={`حذف ${v.label}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -199,29 +199,29 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
         )}
       </div>
 
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
+          <h2 className="text-base font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <BarChart3 className="w-4 h-4 text-[var(--color-brand-fg)]" />
             <span>گزارش‌ها و تحلیل‌های بازار ذخیره‌شده ({toPersianNum(p.savedMarketAnalyses.length)})</span>
           </h2>
-          <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'reports')} className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold cursor-pointer">
+          <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'reports')} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold cursor-pointer">
             ورود به مرکز بازار
           </button>
         </div>
         {p.savedMarketAnalyses.length === 0 ? (
-          <p className="text-slate-500 py-2">گزارش بازار ذخیره‌شده‌ای وجود ندارد.</p>
+          <p className="text-[var(--color-text-muted)] py-2">گزارش بازار ذخیره‌شده‌ای وجود ندارد.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {p.savedMarketAnalyses.map((rep) => (
-              <div key={rep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              <div key={rep.id} className="p-3.5 rounded-xl border border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-bold text-slate-900 dark:text-white truncate">{rep.title}</div>
-                  <div className="text-[11px] text-slate-500">تصویر لحظه‌ای (Snapshot) · بازار {rep.filters.marketType} · دوره {rep.filters.period}</div>
+                  <div className="font-bold text-[var(--color-text-primary)] truncate">{rep.title}</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">تصویر لحظه‌ای (Snapshot) · بازار {rep.filters.marketType} · دوره {rep.filters.period}</div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'overview')} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold cursor-pointer">بازکردن</button>
-                  <button type="button" onClick={() => p.onDeleteSavedMarketAnalysis(rep.id)} aria-label={`حذف ${rep.title}`} className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'overview')} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-bold cursor-pointer">بازکردن</button>
+                  <button type="button" onClick={() => p.onDeleteSavedMarketAnalysis(rep.id)} aria-label={`حذف ${rep.title}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}

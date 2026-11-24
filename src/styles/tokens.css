@@ -116,25 +116,25 @@
 
 .dark,
 [data-apple-theme='dark'] {
-  --radar-surface-0: #020617;
-  --radar-surface-1: #0f172a;
-  --radar-surface-2: #0f172a;
-  --radar-surface-3: rgba(15, 23, 42, 0.96);
+  --radar-surface-0: #0d1513;
+  --radar-surface-1: #131f1c;
+  --radar-surface-2: #1a2a26;
+  --radar-surface-3: rgba(19, 31, 28, 0.96);
   --color-brand-primary: #279487;
-  --color-brand-hover: #70b9aa;
+  --color-brand-hover: #3aa397;
   --color-brand-pressed: #176b63;
-  --color-brand-soft: rgba(23, 107, 99, 0.25);
-  --color-canvas: #090d16;
-  --color-surface: #0f172a;
-  --color-surface-subtle: #1e293b;
-  --color-surface-sunken: #020617;
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #e2e8f0;
-  --color-text-muted: #94a3b8;
-  --color-text-subdued: #64748b;
-  --color-border-subtle: rgba(255, 255, 255, 0.1);
-  --color-border-strong: rgba(255, 255, 255, 0.18);
-  --color-border-control: rgba(255, 255, 255, 0.24);
+  --color-brand-soft: rgba(23, 107, 99, 0.28);
+  --color-canvas: #0d1513;
+  --color-surface: #131f1c;
+  --color-surface-subtle: #172522;
+  --color-surface-sunken: #0a100e;
+  --color-text-primary: #eef4f2;
+  --color-text-secondary: #c2d1cc;
+  --color-text-muted: #8ca19a;
+  --color-text-subdued: #6d827b;
+  --color-border-subtle: #243833;
+  --color-border-strong: #324b44;
+  --color-border-control: #426158;
   --color-focus: #60a5fa;
 }
 

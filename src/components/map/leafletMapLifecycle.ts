@@ -130,7 +130,6 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
     tileLayerRef.current = createLeafletBaseTileController({
       map, L, initialPreferredStyle: initialTileStyle, onSelectPreferredStyle,
     });
-    L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
     mapInstanceRef.current = map;
     onMapLoaded();
     mapTimer('success');

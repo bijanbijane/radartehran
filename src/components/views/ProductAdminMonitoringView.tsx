@@ -99,140 +99,155 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const sampleFx = formatMillionTomanAsIntlCurrency(100, 'IRT', 'fa');
 
   return (
-    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-slate-950 flex flex-col">
+    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-[#0D1513] flex flex-col">
       {/* Independent Admin Context Top Bar */}
-      <header className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 h-14 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-20 bg-white dark:bg-[#131E1B] border-b border-[var(--color-border-subtle)] dark:border-slate-800 px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <button type="button" onClick={() => setSidebarOpenMobile((o) => !o)} aria-label="منوی مدیریت" className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer">
-            {sidebarOpenMobile ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-          <span className="font-black text-sm text-slate-900 dark:text-white">محیط عملیاتی و مدیریت رادار تهران</span>
-          <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
-            {p.isVerifiedAdmin && ui.adminUnlocked ? 'نشست ادمین تاییدشده (RBAC)' : 'محافظت‌شده (Zero-Trust)'}
+          {p.isVerifiedAdmin && (
+            <button type="button" onClick={() => setSidebarOpenMobile((o) => !o)} aria-label="منوی مدیریت" className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer">
+              {sidebarOpenMobile ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          )}
+          <span className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">محیط عملیاتی و مدیریت رادار تهران</span>
+          <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
+            {p.isVerifiedAdmin && ui.adminUnlocked ? 'نشست ادمین تاییدشده' : 'ورود مدیران'}
           </span>
         </div>
         <button
           type="button"
           onClick={p.onBackToMap}
-          className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition hover:opacity-90 flex items-center gap-1.5 cursor-pointer"
+          className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>بازگشت به محیط عمومی</span>
         </button>
       </header>
 
-      {/* Independent Admin 2-Column Layout: RTL Right Sidebar + Left Content */}
+      {/* Independent Admin 2-Column Layout when verified; clean Sign-In Gate when unauthenticated */}
       <div className="flex-1 flex relative max-w-[1440px] w-full mx-auto">
-        <aside
-          aria-label="منوی بخش‌های مدیریت"
-          className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-3 space-y-1.5`}
-        >
-          <div className="px-2.5 py-1.5 text-[10.5px] font-black text-slate-400">گروه‌های عملیاتی پنل</div>
-          {ADMIN_SIDEBAR_SECTIONS.map((sec) => {
-            const Icon = ADMIN_ICONS[sec.id];
-            const active = currentSection === sec.id;
-            return (
-              <button
-                key={sec.id}
-                type="button"
-                aria-current={active ? 'page' : undefined}
-                onClick={() => handleSelectSection(sec)}
-                className={`w-full text-start px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition cursor-pointer ${
-                  active
-                    ? 'bg-[var(--color-brand-600)] text-white shadow-xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <div className="min-w-0">
-                  <div className="truncate">{sec.labelFa}</div>
-                </div>
-              </button>
-            );
-          })}
-        </aside>
+        {p.isVerifiedAdmin && (
+          <aside
+            aria-label="منوی بخش‌های مدیریت"
+            className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[#131E1B] border-l border-[var(--color-border-subtle)] dark:border-slate-800 p-3 space-y-1.5`}
+          >
+            <div className="px-2.5 py-1.5 text-xs font-black text-slate-500">گروه‌های عملیاتی پنل</div>
+            {ADMIN_SIDEBAR_SECTIONS.map((sec) => {
+              const Icon = ADMIN_ICONS[sec.id];
+              const active = currentSection === sec.id;
+              return (
+                <button
+                  key={sec.id}
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => handleSelectSection(sec)}
+                  className={`w-full text-start px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition cursor-pointer ${
+                    active
+                      ? 'bg-[var(--color-brand-600)] text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <div className="truncate">{sec.labelFa}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </aside>
+        )}
 
-        <section className="flex-1 min-w-0 p-4 sm:p-6 space-y-4">
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div>
-              <h1 className="text-base font-black text-slate-900 dark:text-white">{activeMeta.labelFa}</h1>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{activeMeta.descriptionFa}</p>
+        <section className={`flex-1 min-w-0 p-4 sm:p-6 space-y-4 ${!p.isVerifiedAdmin ? 'flex flex-col items-center justify-center py-10' : ''}`}>
+          {!p.isVerifiedAdmin ? (
+            <div className="w-full max-w-xl mx-auto space-y-3 text-center">
+              <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">ورود امن مدیران سامانه</h1>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                دسترسی به ابزارهای پایش، مدیریت محتوا و تنظیمات سامانه تنها پس از تأیید هویت مدیر مجاز فعال می‌شود.
+              </p>
             </div>
-            <span className="text-[10.5px] font-mono text-slate-400">{activeMeta.requiredPermission}</span>
-          </div>
-
-          {currentSection === 'overview' && (
-            <AdminOperationsOverviewCard
-              isVerifiedAdmin={p.isVerifiedAdmin}
-              activeRole={governanceRole}
-              onChangeRole={(role) => setGovernanceRole(saveActiveGovernanceRole(role))}
-              sponsorRequestsCount={(ui.sponsorRequests || []).length}
-              liveBargainsCount={p.totalLiveBargainsCount}
-              onJumpSection={(secId) => {
-                const match = ADMIN_SIDEBAR_SECTIONS.find((s) => s.id === secId);
-                if (match) handleSelectSection(match);
-              }}
-            />
-          )}
-
-          {(currentSection === 'overview' || currentSection === 'operations') && (
-            <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-extrabold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (UX Health Monitor · غیرشخصی)</span>
-                <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-[11px]">
-                  پایلوت نقشه (RT-PILOT-MAP-001) · S0/S1 Gate: پاک
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {DEFAULT_UI_ROLLOUT_FLAGS.map((flag) => (
-                  <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[10.5px] font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">
-                    {flag.key}: {flag.enabled ? 'فعال' : 'غیرفعال'}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currentSection === 'content' && (
-            <AdminGovernanceModerationWorkspace
-              section="content"
-              currentUser={p.currentUser}
-              isVerifiedAdmin={p.isVerifiedAdmin}
-              activeRole={governanceRole}
-            />
-          )}
-
-          {currentSection === 'data' && (
-            <AdminDataAndModelCenter
-              neighborhoods={mergedNeighborhoods}
-              activeCity={p.activeCity}
-              isVerifiedAdmin={p.isVerifiedAdmin}
-              activeRole={governanceRole}
-            />
-          )}
-
-          {currentSection === 'users' && (
+          ) : (
             <>
-              <AdminServiceModerationCard isVerifiedAdmin={p.isVerifiedAdmin} />
-              <AdminGovernanceModerationWorkspace
-                section="users"
-                currentUser={p.currentUser}
-                isVerifiedAdmin={p.isVerifiedAdmin}
-                activeRole={governanceRole}
-              />
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)]">{activeMeta.labelFa}</h1>
+                  <p className="text-xs text-[var(--color-text-muted)]">{activeMeta.descriptionFa}</p>
+                </div>
+                <span className="text-xs font-mono text-[var(--color-text-muted)]">{activeMeta.requiredPermission}</span>
+              </div>
+
+              {currentSection === 'overview' && (
+                <AdminOperationsOverviewCard
+                  isVerifiedAdmin={p.isVerifiedAdmin}
+                  activeRole={governanceRole}
+                  onChangeRole={(role) => setGovernanceRole(saveActiveGovernanceRole(role))}
+                  sponsorRequestsCount={(ui.sponsorRequests || []).length}
+                  liveBargainsCount={p.totalLiveBargainsCount}
+                  onJumpSection={(secId) => {
+                    const match = ADMIN_SIDEBAR_SECTIONS.find((s) => s.id === secId);
+                    if (match) handleSelectSection(match);
+                  }}
+                />
+              )}
+
+              {(currentSection === 'overview' || currentSection === 'operations') && (
+                <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[#131E1B] border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-extrabold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
+                    <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-xs">
+                      پایلوت نقشه · وضعیت پایدار
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DEFAULT_UI_ROLLOUT_FLAGS.map((flag) => (
+                      <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">
+                        {flag.key}: {flag.enabled ? 'فعال' : 'غیرفعال'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentSection === 'content' && (
+                <AdminGovernanceModerationWorkspace
+                  section="content"
+                  currentUser={p.currentUser}
+                  isVerifiedAdmin={p.isVerifiedAdmin}
+                  activeRole={governanceRole}
+                />
+              )}
+
+              {currentSection === 'data' && (
+                <AdminDataAndModelCenter
+                  neighborhoods={mergedNeighborhoods}
+                  activeCity={p.activeCity}
+                  isVerifiedAdmin={p.isVerifiedAdmin}
+                  activeRole={governanceRole}
+                />
+              )}
+
+              {currentSection === 'users' && (
+                <>
+                  <AdminServiceModerationCard isVerifiedAdmin={p.isVerifiedAdmin} />
+                  <AdminGovernanceModerationWorkspace
+                    section="users"
+                    currentUser={p.currentUser}
+                    isVerifiedAdmin={p.isVerifiedAdmin}
+                    activeRole={governanceRole}
+                  />
+                </>
+              )}
+
+              {currentSection === 'operations' && (
+                <AdminCommunicationsPanel isVerifiedAdmin={p.isVerifiedAdmin} />
+              )}
+
+              {(currentSection === 'overview' || currentSection === 'operations') && (
+                <AdminPlatformIntelligenceHub isVerifiedAdmin={p.isVerifiedAdmin} currentUser={p.currentUser} />
+              )}
+
+              {(currentSection === 'operations' || currentSection === 'security') && (
+                <AdminSecurityAndAuditCenter section={currentSection} isVerifiedAdmin={p.isVerifiedAdmin} activeRole={governanceRole} />
+              )}
             </>
-          )}
-
-          {currentSection === 'operations' && (
-            <AdminCommunicationsPanel isVerifiedAdmin={p.isVerifiedAdmin} />
-          )}
-
-          {(currentSection === 'overview' || currentSection === 'operations') && (
-            <AdminPlatformIntelligenceHub isVerifiedAdmin={p.isVerifiedAdmin} currentUser={p.currentUser} />
-          )}
-
-          {(currentSection === 'operations' || currentSection === 'security') && (
-            <AdminSecurityAndAuditCenter section={currentSection} isVerifiedAdmin={p.isVerifiedAdmin} activeRole={governanceRole} />
           )}
 
           <AdminModal

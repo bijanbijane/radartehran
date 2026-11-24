@@ -14,6 +14,7 @@ import {
 export interface HeaderNotificationBellProps {
   uid?: string;
   isEn?: boolean;
+  isAuthenticated?: boolean;
   unreadNotificationsCount?: number;
   onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
 }
@@ -26,6 +27,7 @@ export function normalizeUnreadNotificationCount(value: unknown): number {
 export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
   uid = 'local-user',
   isEn = false,
+  isAuthenticated = false,
   unreadNotificationsCount,
   onNavigateView,
 }) => {
@@ -70,7 +72,9 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
   const activeNotifs = state.notifications.filter((n) => n.status !== 'DISMISSED' && n.status !== 'ARCHIVED');
   const rawUnread = unreadNotificationsCount !== undefined
     ? unreadNotificationsCount
-    : activeNotifs.filter((n) => n.status === 'UNREAD').length;
+    : isAuthenticated
+      ? activeNotifs.filter((n) => n.status === 'UNREAD').length
+      : 0;
   const unreadCount = normalizeUnreadNotificationCount(rawUnread);
 
   const filtered = activeNotifs
@@ -93,13 +97,13 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
         aria-label={isEn ? 'Notifications' : `اعلان‌ها (${toPersianNum(unreadCount)} خوانده‌نشده)`}
         title={isEn ? 'Notifications' : 'اعلان‌ها و پیام‌های مرتبط'}
         onClick={() => setOpen((o) => !o)}
-        className="flex relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        className="flex items-center justify-center relative min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] rounded-[8px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] transition cursor-pointer"
       >
         <Bell className="w-4 h-4" aria-hidden="true" />
         {unreadCount > 0 && (
           <span
             data-testid="header-notification-badge"
-            className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-600 text-white ring-2 ring-white dark:ring-slate-900 text-[9.5px] font-black flex items-center justify-center tabular-nums"
+            className="absolute top-1 right-1 md:-top-1 md:-right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-600 text-white ring-2 ring-[var(--color-bg-surface)] text-[10px] font-bold flex items-center justify-center tabular-nums"
           >
             {toPersianNum(unreadCount)}
           </span>

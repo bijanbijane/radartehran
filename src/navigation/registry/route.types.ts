@@ -23,7 +23,7 @@ export type NavGroupClassification = 'primary' | 'more' | 'account' | 'administr
 export type DiscoverSubTabId = 'results' | 'registry';
 export type MarketSubTabId = 'overview' | 'prices' | 'rent' | 'supply' | 'compare' | 'reports';
 export type PropertiesSubTabId = 'all' | 'buy' | 'rent' | 'commercial' | 'office';
-export type ToolsSubTabId = 'all' | 'valuation' | 'compare_props' | 'compare_areas' | 'calculators';
+export type ToolsSubTabId = 'all' | 'valuation' | 'budget_fit' | 'verifier' | 'compare_props' | 'compare_areas' | 'calculators';
 export type AccountSubTabId =
   | 'overview'
   | 'profile'
@@ -35,8 +35,8 @@ export type AccountSubTabId =
   | 'community'
   | 'notifications'
   | 'settings';
-export type ServicesSubTabId = 'valuation' | 'consulting' | 'inspection' | 'agencies';
-export type KnowledgeSubTabId = 'reports' | 'guide' | 'methodology' | 'glossary';
+export type ServicesSubTabId = 'all' | 'valuation' | 'consulting' | 'inspection' | 'agencies';
+export type KnowledgeSubTabId = 'reports' | 'guide' | 'methodology' | 'glossary' | 'legal_privacy' | 'legal_terms';
 export type ContributionsSubTabId =
   | 'overview'
   | 'discussions'

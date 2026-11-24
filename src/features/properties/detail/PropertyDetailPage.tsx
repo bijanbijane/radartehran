@@ -76,7 +76,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
       : `ودیعه ${toPersianNum(Math.round(p.depositMillion || 0).toLocaleString())} م`;
 
   return (
-    <div className="w-full max-w-[1360px] mx-auto px-4 py-6 pb-24 lg:pb-8 space-y-5 animate-fadeIn" data-testid="property-detail-panel">
+    <div className="w-full max-w-[1320px] mx-auto px-4 py-6 pb-24 lg:pb-8 space-y-5 animate-fadeIn" data-testid="property-detail-panel">
       {/* Breadcrumb & Back */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -111,12 +111,12 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
         <div className="lg:col-span-8 space-y-5">
           <PropertyGallery media={property.media} title={listing.title} hoodName={property.hoodName} />
 
-          <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-            <div className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
+          <section className="p-4 sm:p-5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
+            <div className="text-xs font-bold text-[var(--color-brand-fg)]">
               {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]} · {property.hoodName}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] dark:text-white leading-snug">{listing.title}</h1>
-            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{listing.description}</p>
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] leading-snug">{listing.title}</h1>
+            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">{listing.description}</p>
             <DataProvenanceBar
               sourceLabel={
                 listing.sourceKind === 'curated_bargain'
@@ -126,7 +126,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   : 'شاخص مرجع محله در رادار تهران'
               }
               updatedAtLabel={`بروزرسانی: ${new Date(listing.updatedAtIso).toLocaleDateString('fa-IR')}`}
-              methodLabel="تطبیق با شاخص پایه و سناریو v6.4 (غیرثبتی)"
+              methodLabel="تطبیق با شاخص پایه و برآورد معامله (غیرثبتی)"
               credibility={listing.verification.priceReasonableness === 'verified' ? 'verified' : 'estimated'}
               limitationNote="معامله ثبت‌شده در این صفحه نمایش داده نمی‌شود؛ مقایسه قیمتی بر اساس نرخ پیشنهادی پایه محله است و جایگزین کارشناسی فنی و استعلام ثبتی نیست."
             />
@@ -136,14 +136,14 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-4 space-y-4">
-          <div className="p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4">
+          <div className="p-5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-4">
             <div>
-              <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+              <div className="text-xs text-[var(--color-text-muted)]">
                 {p.priceType === 'negotiable' ? 'قیمت اعلامی (قابل مذاکره)' : p.priceType === 'fixed' ? 'قیمت قطعی اعلامی' : 'وضعیت قیمت'}
               </div>
-              <div className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white tabular-nums mt-0.5">{priceSummaryText}</div>
+              <div className="text-2xl font-black text-[var(--color-text-primary)] tabular-nums mt-0.5">{priceSummaryText}</div>
               {p.pricePerSqmMillion && (
-                <div className="text-xs text-[var(--color-brand-600)] dark:text-emerald-400 font-bold tabular-nums mt-1">
+                <div className="text-xs text-[var(--color-brand-fg)] font-bold tabular-nums mt-1">
                   هر {unitLabel}: {toPersianNum(convertPricePerSqmToUnit(p.pricePerSqmMillion, areaUnit))} میلیون
                   {intlCurrency !== 'IRT' && p.saleTotalMillion
                     ? ` · ${formatMillionTomanAsIntlCurrency(p.saleTotalMillion, intlCurrency, radarLocale)}`
@@ -151,7 +151,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                 </div>
               )}
               {property.areaSqm && (
-                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 mt-1 tabular-nums">
+                <div className="text-xs text-[var(--color-text-muted)] mt-1 tabular-nums">
                   متراژ ثبت‌شده: {formatAreaShort(property.areaSqm, areaUnit)}
                 </div>
               )}
@@ -161,8 +161,8 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
               <div className="p-3 rounded-[9px] bg-[#EAF3F0] dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 text-xs">
                 <span className="text-[var(--color-brand-700)] dark:text-emerald-300 font-bold tabular-nums">
                   {listing.marketContext.gapPercentFromV64 <= 0
-                    ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از سناریو v6.4 محله`
-                    : `+${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از سناریو v6.4 محله`}
+                    ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از برآورد معامله محله`
+                    : `+${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از برآورد معامله محله`}
                 </span>
               </div>
             )}
@@ -248,8 +248,8 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
       {similarRecords.length > 0 && (
         <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فایل‌های مشابه برای مرور (Similar Listings)</h2>
-            <span className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">مرتبط با جست‌وجو؛ مبنای معامله قطعی نیست</span>
+            <h2 className="text-sm font-black text-[var(--color-text-primary)]">فایل‌های مشابه برای مرور</h2>
+            <span className="text-xs text-[var(--color-text-muted)]">مرتبط با جست‌وجو؛ مبنای معامله قطعی نیست</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
             {similarRecords.map((sim) => (

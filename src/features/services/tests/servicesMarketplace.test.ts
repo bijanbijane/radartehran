@@ -111,6 +111,26 @@ test('Stage 21 filtering respects hideSponsored, canonical category, and Persian
     hideSponsored: false,
   });
   assert.ok(punakMatches.some((p) => p.identity.primaryNeighborhoodName === 'پونک'));
+
+  const valuationMatches = filterServiceProviders(providers, {
+    category: 'all',
+    canonicalCategory: 'valuation',
+    searchQuery: '',
+    hoodId: 'all',
+    onlyWithDeclaredPhone: false,
+    hideSponsored: false,
+  });
+  assert.ok(valuationMatches.length > 0 && valuationMatches.every((p) => p.canonicalCategory === 'valuation'));
+
+  const inspectionMatches = filterServiceProviders(providers, {
+    category: 'all',
+    canonicalCategory: 'inspection',
+    searchQuery: '',
+    hoodId: 'all',
+    onlyWithDeclaredPhone: false,
+    hideSponsored: false,
+  });
+  assert.ok(inspectionMatches.length > 0 && inspectionMatches.every((p) => p.canonicalCategory === 'inspection'));
 });
 
 test('Stage 21 request lifecycle, IDOR ownership checks, proposal acceptance, negative review preservation, and moderation work end-to-end', () => {

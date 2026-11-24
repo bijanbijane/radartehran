@@ -107,25 +107,25 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500">دوره مرجع داده (Valid Time)</div>
+          <div className="text-xs text-[var(--color-text-muted)]">دوره مرجع داده (Valid Time)</div>
           <strong className="font-black text-slate-900 dark:text-white block mt-0.5">
             {contract.referencePeriod.labelFa}
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500">تعداد نمونه / ملک یکتا</div>
+          <div className="text-xs text-[var(--color-text-muted)]">تعداد نمونه / ملک یکتا</div>
           <strong className="font-black text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {sampleText}
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500">تعداد منابع و شواهد مستقل</div>
+          <div className="text-xs text-[var(--color-text-muted)]">تعداد منابع و شواهد مستقل</div>
           <strong className="font-black text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {toPersianNum(contract.provenance.sourceCount)} منبع ثبت‌شده · {toPersianNum(contract.provenance.independentEvidenceCount)} شاهد مستقل
           </strong>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500">تفکیک تایید روش و واقعیت بیرونی</div>
+          <div className="text-xs text-[var(--color-text-muted)]">تفکیک تایید روش و واقعیت بیرونی</div>
           <strong className="font-black text-amber-800 dark:text-amber-300 block mt-0.5">
             تایید روش محاسبه ≠ قیمت قطعی ثبتی
           </strong>
@@ -133,7 +133,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-        <div className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-1">
+        <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1">
           <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>{contract.limitationsFa[0]}</span>
         </div>
@@ -174,9 +174,9 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             <span>زنجیره منشأ داده (Data Lineage) و منابع قابل انتشار:</span>
           </strong>
           {lineageEdges.length === 0 ? (
-            <p className="text-[11px] text-slate-500">زنجیره منشأ ثبت‌شده‌ای برای «{resolvedNameFa}» موجود نیست.</p>
+            <p className="text-xs text-[var(--color-text-muted)]">زنجیره منشأ ثبت‌شده‌ای برای «{resolvedNameFa}» موجود نیست.</p>
           ) : (
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
               {lineageEdges.map((edge) => (
                 <span key={edge.id} className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono">
                   {edge.parentId} → [{edge.transformationId}] → {edge.childId}
@@ -185,7 +185,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             </div>
           )}
           {contract.provenance.attributionFa.length > 0 && (
-            <ul className="list-disc list-inside text-[11px] text-slate-600 dark:text-slate-300 space-y-0.5">
+            <ul className="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
               {contract.provenance.attributionFa.map((attr, idx) => (
                 <li key={idx}>{attr}</li>
               ))}
@@ -200,9 +200,9 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             مقایسه نسخه‌های تاریخی شاخص (تفکیک Data Version و Methodology Version):
           </strong>
           {diff ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <div className="text-slate-500">نسخه قبلی (Data: {diff.previousDataVersion} · Method v{diff.previousMethodologyVersion})</div>
+                <div className="text-[var(--color-text-muted)]">نسخه قبلی (Data: {diff.previousDataVersion} · Method v{diff.previousMethodologyVersion})</div>
                 <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                   مقدار: {toPersianNum(diff.previousValue)} میلیون/متر · وضعیت: {diff.previousQualityStatus}
                 </div>
@@ -215,7 +215,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
               </div>
             </div>
           ) : (
-            <p className="text-[11px] text-slate-500">تاریخچه نسخه کافی برای مقایسه در «{resolvedNameFa}» وجود ندارد.</p>
+            <p className="text-xs text-[var(--color-text-muted)]">تاریخچه نسخه کافی برای مقایسه در «{resolvedNameFa}» وجود ندارد.</p>
           )}
         </div>
       )}
@@ -229,6 +229,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="text"
+              aria-label="مقدار یا توضیح اصلاحی پیشنهادی"
               placeholder="مقدار یا توضیح اصلاحی پیشنهادی..."
               value={proposedVal}
               onChange={(e) => setProposedVal(e.target.value)}
@@ -236,6 +237,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             />
             <input
               type="text"
+              aria-label="منبع یا شاهد پشتیبان"
               placeholder="منبع یا شاهد پشتیبان (مثلاً کد نوسازی یا گزارش میدانی)..."
               value={proposalReason}
               onChange={(e) => setProposalReason(e.target.value)}

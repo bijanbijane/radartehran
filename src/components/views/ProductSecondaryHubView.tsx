@@ -4,17 +4,19 @@ import { Home, Map as MapIcon } from 'lucide-react';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../data/multiCityData';
 import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
-import type { ContributionsSubTabId, KnowledgeSubTabId, ModuleSubTabId } from '../../navigation/registry/route.types';
+import type { ContributionsSubTabId, KnowledgeSubTabId, ModuleSubTabId, ServicesSubTabId } from '../../navigation/registry/route.types';
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import type { SuperModuleTabId } from '../FutureSuperModulesModal';
 import type { ExpansionModalType } from '../ExpansionModulesModal';
+import { RadarLink } from '../ui/RadarPrimitives';
 import { ServicesMarketplacePage } from '../../features/services/pages/ServicesMarketplacePage';
 import { KnowledgeCenterPage } from '../../features/knowledge/pages/KnowledgeCenterPage';
 import { CommunityHubPage } from '../../features/community/pages/CommunityHubPage';
+import { LegalDocumentView } from './LegalDocumentView';
 
 export interface ProductSecondaryHubViewProps {
   viewKind: 'services' | 'knowledge' | 'contributions' | 'not_found';
-  activeSubTab?: KnowledgeSubTabId | ContributionsSubTabId;
+  activeSubTab?: ServicesSubTabId | KnowledgeSubTabId | ContributionsSubTabId;
   activeCity?: CityId;
   currentUser?: any;
   isVerifiedAdmin?: boolean;
@@ -45,23 +47,23 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   if (p.viewKind === 'not_found') {
     return (
       <div data-testid="product-not-found-view" className="w-full max-w-3xl mx-auto px-4 py-12 text-center space-y-5 animate-fadeIn">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xl">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-black text-xl">
           ۴۰۴
         </div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white">مسیر یا صفحه درخواستی یافت نشد</h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+        <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">مسیر یا صفحه درخواستی یافت نشد</h1>
+        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] max-w-md mx-auto leading-relaxed">
           نشانی واردشده در ساختار فعلی رادار {cityNameFa} تعریف نشده یا جابه‌جا شده است. می‌توانید به نقشه تعاملی، صفحه نخست یا لیست محله‌ها بازگردید.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-          <button type="button" onClick={() => p.onNavigateView('map')} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <RadarLink href="/map" onNavigate={() => p.onNavigateView('map')} className="min-h-[44px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold gap-1.5">
             <MapIcon className="w-4 h-4" /><span>بازگشت به نقشه زنده</span>
-          </button>
-          <button type="button" onClick={() => p.onNavigateView('home')} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          </RadarLink>
+          <RadarLink href="/" onNavigate={() => p.onNavigateView('home')} className="min-h-[44px] px-4 py-2 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] text-xs font-bold gap-1.5">
             <Home className="w-4 h-4" /><span>صفحه نخست</span>
-          </button>
-          <button type="button" onClick={() => p.onNavigateView('discover')} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer">
+          </RadarLink>
+          <RadarLink href="/areas" onNavigate={() => p.onNavigateView('discover')} className="min-h-[44px] px-4 py-2 rounded-xl border border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-xs font-bold">
             فهرست محله‌ها
-          </button>
+          </RadarLink>
         </div>
       </div>
     );
@@ -70,6 +72,7 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   if (p.viewKind === 'services') {
     return (
       <ServicesMarketplacePage
+        activeSubTab={p.activeSubTab as ServicesSubTabId | undefined}
         evaluatedNeighborhoods={p.evaluatedNeighborhoods && p.evaluatedNeighborhoods.length > 0 ? p.evaluatedNeighborhoods : [p.selectedHood]}
         selectedHood={p.selectedHood}
         unitPrice={unitPrice}
@@ -83,6 +86,14 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   }
 
   if (p.viewKind === 'knowledge') {
+    if (p.activeSubTab === 'legal_privacy' || p.activeSubTab === 'legal_terms') {
+      return (
+        <LegalDocumentView
+          documentKind={p.activeSubTab === 'legal_terms' ? 'terms' : 'privacy'}
+          onNavigateView={p.onNavigateView}
+        />
+      );
+    }
     return (
       <KnowledgeCenterPage
         activeSubTab={(p.activeSubTab as KnowledgeSubTabId) || 'reports'}

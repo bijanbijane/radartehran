@@ -119,7 +119,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           <div data-testid="similar-questions-hint" className="p-2.5 rounded-[9px] bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 space-y-1">
             <span className="font-bold text-sky-900 dark:text-sky-200 block">پرسش‌های مشابه موجود (صرفاً جهت راهنمایی — مانع ثبت نمی‌شود):</span>
             {similarSuggestions.map((s) => (
-              <div key={s.id} className="text-[11px] text-sky-800 dark:text-sky-300">· {s.titleFa}</div>
+              <div key={s.id} className="text-xs text-sky-800 dark:text-sky-300">· {s.titleFa}</div>
             ))}
           </div>
         )}
@@ -130,27 +130,36 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           value={bodyFa}
           onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="شرایط ملک، متن مبهم قرارداد یا متغیرهای کلیدی را بدون درج نام یا شماره تماس بنویسید..."
-          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100"
+          className="w-full p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
         />
         {feedback && (
-          <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
+          <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" disabled={submittingQuestion} data-testid="submit-question-btn" className="px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">
+        <button type="submit" disabled={submittingQuestion} data-testid="submit-question-btn" className="min-h-[44px] md:min-h-[38px] px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer disabled:opacity-50">
           {submittingQuestion ? 'در حال ثبت...' : 'ثبت پرسش تخصصی'}
         </button>
       </form>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">{toPersianNum(filteredQuestions.length)} پرسش ساختاریافته</span>
-        <div className="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+        <span className="text-xs font-bold text-[var(--color-text-muted)] tabular-nums">{toPersianNum(filteredQuestions.length)} پرسش ساختاریافته</span>
+        <div className="inline-flex items-center gap-1 p-1 bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] rounded-lg">
           {([
             { id: 'all', label: 'همه' },
             { id: 'open', label: 'بی‌پاسخ / باز' },
             { id: 'resolved', label: 'حل‌شده' },
           ] as const).map((f) => (
-            <button key={f.id} type="button" onClick={() => setStatusFilter(f.id)} className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${statusFilter === f.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setStatusFilter(f.id)}
+              className={`min-h-[40px] md:min-h-[32px] px-3 py-1 rounded-md font-bold cursor-pointer transition ${
+                statusFilter === f.id
+                  ? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-2xs'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
               {f.label}
             </button>
           ))}
@@ -162,41 +171,41 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           const isAsker = q.ownerUserId === currentUserId;
           const draft = answerDrafts[q.id] || { body: '', source: '' };
           return (
-            <article key={q.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+            <article key={q.id} className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-muted)]">
                 <span>محله {q.neighborhoodNameFa} · {q.createdAtFa}</span>
-                <span className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300">{Q_STATUS_FA[q.status]}</span>
+                <span className="font-bold text-[var(--color-brand-fg)]">{Q_STATUS_FA[q.status]}</span>
               </div>
-              <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{q.titleFa}</h3>
-              <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{q.bodyFa}</p>
+              <h3 className="font-black text-sm text-[var(--color-text-primary)]">{q.titleFa}</h3>
+              <p className="text-[var(--color-text-secondary)] leading-relaxed">{q.bodyFa}</p>
               <CommunityAuthorBadges profile={q.authorProfile} onSelectUsername={onSelectAuthor} />
 
               {q.answers.length > 0 && (
-                <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
+                <div className="pt-2 border-t border-[var(--color-border-subtle)] space-y-2">
                   {q.answers.map((ans) => (
-                    <div key={ans.id} className="p-3 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60 space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-bold">
+                    <div key={ans.id} className="p-3 rounded-[9px] bg-[var(--color-bg-subtle)] space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
                         {ans.markers.isAskerSelected && (
-                          <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="w-3.5 h-3.5" />پاسخ منتخب پرسش‌کننده</span>
+                          <span className="inline-flex items-center gap-1 text-[var(--color-brand-fg)]"><CheckCircle2 className="w-3.5 h-3.5" />پاسخ منتخب پرسش‌کننده</span>
                         )}
                         {ans.markers.hasCredibleSource && (
-                          <span className="inline-flex items-center gap-1 text-sky-700 dark:text-sky-300"><BookCheck className="w-3.5 h-3.5" />دارای منبع معتبر</span>
+                          <span className="inline-flex items-center gap-1 text-sky-800 dark:text-sky-300"><BookCheck className="w-3.5 h-3.5" />دارای منبع معتبر</span>
                         )}
                         {ans.markers.isExpertReviewed && (
-                          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><Award className="w-3.5 h-3.5" />بررسی‌شده توسط متخصص</span>
+                          <span className="inline-flex items-center gap-1 text-amber-800 dark:text-amber-300"><Award className="w-3.5 h-3.5" />بررسی‌شده توسط متخصص</span>
                         )}
                         {ans.markers.isOfficiallyVerified && (
-                          <span className="inline-flex items-center gap-1 text-[var(--color-brand-700)] dark:text-emerald-400"><ShieldCheck className="w-3.5 h-3.5" />تأییدشده رسمی رادار</span>
+                          <span className="inline-flex items-center gap-1 text-[var(--color-brand-fg)]"><ShieldCheck className="w-3.5 h-3.5" />تأییدشده رسمی رادار</span>
                         )}
                       </div>
-                      <p className="text-[var(--color-text-primary)] dark:text-slate-200 leading-relaxed">{ans.bodyFa}</p>
+                      <p className="text-[var(--color-text-primary)] leading-relaxed">{ans.bodyFa}</p>
                       {ans.sourceReferenceFa && (
-                        <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">منبع استناد: {ans.sourceReferenceFa}</div>
+                        <div className="text-xs text-[var(--color-text-muted)]">منبع استناد: {ans.sourceReferenceFa}</div>
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <CommunityAuthorBadges profile={ans.authorProfile} onSelectUsername={onSelectAuthor} />
                         {isAsker && (
-                          <button type="button" onClick={() => onToggleAskerSelected(q.id, ans.id)} className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
+                          <button type="button" onClick={() => onToggleAskerSelected(q.id, ans.id)} className="min-h-[36px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline cursor-pointer">
                             {ans.markers.isAskerSelected ? 'لغو انتخاب پاسخ' : 'انتخاب به‌عنوان پاسخ منتخب'}
                           </button>
                         )}
@@ -223,7 +232,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                     }
                   }}
                   placeholder="پاسخ فنی یا حقوقی مستند بنویسید..."
-                  className="sm:col-span-7 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                  className="sm:col-span-7 min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 />
                 <input
                   type="text"
@@ -241,13 +250,13 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                     }
                   }}
                   placeholder="مرجع یا ماده قانونی (اختیاری)"
-                  className="sm:col-span-3 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                  className="sm:col-span-3 min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                 />
                 <button
                   type="button"
                   disabled={submittingAnswerId === q.id}
                   onClick={() => { void handleAnswerSubmit(q.id); }}
-                  className="sm:col-span-2 px-3 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer disabled:opacity-50"
+                  className="sm:col-span-2 min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   ارسال پاسخ
                 </button>

@@ -33,6 +33,22 @@ function inferRoomsFromSqm(sqm: number | null): number | null {
   return 4;
 }
 
+function parseRoomsFromText(text: string, sqm: number | null): number | null {
+  if (text) {
+    const normalized = text.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+    const digitMatch = /(\d)\s*خواب/.exec(normalized);
+    if (digitMatch) {
+      const parsed = Number(digitMatch[1]);
+      if (parsed >= 0 && parsed <= 8) return parsed;
+    }
+    if (/تک\s*خواب|یک\s*خواب/.test(normalized)) return 1;
+    if (/دو\s*خواب/.test(normalized)) return 2;
+    if (/سه\s*خواب/.test(normalized)) return 3;
+    if (/چهار\s*خواب/.test(normalized)) return 4;
+  }
+  return inferRoomsFromSqm(sqm);
+}
+
 function parseAmenityMention(text: string, keyword: string): AmenityValue {
   if (text.includes(`بدون ${keyword}`) || text.includes(`فاقد ${keyword}`)) return 'lacks';
   if (text.includes(keyword)) return 'has';
@@ -113,7 +129,7 @@ export function buildPropertyListingRecords(
           privacyRadiusMeters: b.street ? 250 : 600,
           areaSqm: sqm,
           buildYearJalali: null,
-          roomsCount: inferRoomsFromSqm(sqm),
+          roomsCount: parseRoomsFromText(fullText, sqm),
           floorNumber: null,
           totalFloors: null,
           orientation: 'unknown',

@@ -50,7 +50,7 @@ export const MarketTrendChart: React.FC<MarketTrendChartProps> = ({
 
   return (
     <ChartAccessibleFrame
-      titleFa={isRent ? `روند شاخص رهن و معادل اجاره در ${geoScopeFa}` : `روند قیمت پیشنهادی و برآورد v6.4 در ${geoScopeFa}`}
+      titleFa={isRent ? `روند شاخص رهن و معادل اجاره در ${geoScopeFa}` : `روند قیمت پیشنهادی و برآورد معامله در ${geoScopeFa}`}
       unitLabelFa={unitLabelFa}
       provenanceLineFa={`بازه: ${periodLabelFa} · مقایسه با ${cityNameFa}`}
       status={status}
@@ -58,7 +58,7 @@ export const MarketTrendChart: React.FC<MarketTrendChartProps> = ({
       tableColumns={[
         { key: 'month', headerFa: 'دوره' },
         { key: 'primary', headerFa: isRent ? 'رهن ۸۰م (م.ت)' : 'پیشنهادی آگهی (م.ت)' },
-        { key: 'secondary', headerFa: isRent ? 'معادل اجاره ماهانه (م.ت)' : 'برآورد v6.4 (م.ت)' },
+        { key: 'secondary', headerFa: isRent ? 'معادل اجاره ماهانه (م.ت)' : 'برآورد معامله (م.ت)' },
         { key: 'samples', headerFa: 'نمونه / وضعیت' },
       ]}
       tableRows={tableRows}
@@ -67,14 +67,19 @@ export const MarketTrendChart: React.FC<MarketTrendChartProps> = ({
         <ResponsiveContainer width="100%" height="100%" minWidth={240}>
           <LineChart data={chartData} margin={{ top: 10, right: 12, left: -4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
-            <XAxis dataKey="monthLabelFa" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} tickLine={false} />
-            <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} tickFormatter={(v) => toPersianNum(v)} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+            <XAxis dataKey="monthLabelFa" tick={{ fill: '#64748b', fontSize: 12, fontFamily: 'Vazirmatn' }} tickLine={false} />
+            <YAxis tick={{ fill: '#64748b', fontSize: 12, fontFamily: 'Vazirmatn' }} tickFormatter={(v) => toPersianNum(v)} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
             <Tooltip
               formatter={(value: any, name: any) => [value !== null && value !== undefined ? `${toPersianNum(value)} م` : 'بدون داده', String(name)]}
               labelStyle={{ fontFamily: 'Vazirmatn', fontWeight: 700 }}
-              contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 11, borderRadius: 10 }}
+              contentStyle={{ fontFamily: 'Vazirmatn', fontSize: 12, borderRadius: 10 }}
             />
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'Vazirmatn' }} />
+            <Legend
+              wrapperStyle={{ fontSize: 12, fontFamily: 'Vazirmatn' }}
+              formatter={(value) => (
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{value}</span>
+              )}
+            />
             {isRent ? (
               <>
                 <Line type="monotone" dataKey="deposit80mMillion" name="رهن کامل ۸۰م" stroke="#155E9A" strokeWidth={2.5} connectNulls={false} dot={{ r: 3 }} />
@@ -83,7 +88,7 @@ export const MarketTrendChart: React.FC<MarketTrendChartProps> = ({
             ) : (
               <>
                 <Line type="monotone" dataKey="askDisplay" name="پیشنهادی آگهی" stroke="#176B63" strokeWidth={2.5} connectNulls={false} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="dealDisplay" name="برآورد سناریو v6.4" stroke="#B45309" strokeWidth={2} strokeDasharray="5 3" connectNulls={false} dot={{ r: 2.5 }} />
+                <Line type="monotone" dataKey="dealDisplay" name="برآورد سناریوی معامله" stroke="#B45309" strokeWidth={2} strokeDasharray="5 3" connectNulls={false} dot={{ r: 2.5 }} />
                 <Line type="monotone" dataKey="cityDisplay" name={`میانگین ${cityNameFa}`} stroke="#64748B" strokeWidth={1.75} strokeDasharray="2 3" connectNulls={false} dot={false} />
               </>
             )}

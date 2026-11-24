@@ -90,35 +90,46 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)]/60'
       }`}
     >
-      {/* Fixed 16:9 media frame OR honest architectural placeholder (no fake stock photos) */}
-      <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] dark:bg-slate-800/80 relative overflow-hidden border-b border-[var(--color-border-subtle)] dark:border-slate-800">
-        {firstValidImage ? (
+      {/* Media frame if valid photo exists, otherwise compact typographic header (zero empty grey placeholder boxes) */}
+      {firstValidImage ? (
+        <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] dark:bg-slate-800/80 relative overflow-hidden border-b border-[var(--color-border-subtle)] dark:border-slate-800">
           <img src={firstValidImage} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center px-4 text-[var(--color-text-muted)] dark:text-slate-400">
-            <Building2 className="w-7 h-7 opacity-60 mb-1.5" />
-            <span className="text-[11px] font-bold">بدون تصویر تأییدشده توسط ثبت‌کننده</span>
-            <span className="text-[10px] opacity-75">
-              محدوده: {property.hoodName} · {property.locationPrecision === 'approximate' ? 'موقعیت تقریبی' : 'سطح محله'}
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-[7px] bg-slate-900/85 text-white text-xs font-bold">
+              {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
             </span>
           </div>
-        )}
-        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-[7px] bg-slate-900/85 text-white text-[10.5px] font-bold">
-            {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
-          </span>
+          {verified && (
+            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-[7px] bg-[#EAF5EE] text-[#176B4C] text-xs font-bold flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              <span>راستی‌آزمایی‌شده</span>
+            </div>
+          )}
         </div>
-        {verified && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-[7px] bg-[#EAF5EE] text-[#176B4C] text-[10.5px] font-bold flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3" />
-            <span>راستی‌آزمایی‌شده</span>
+      ) : (
+        <div className="px-4 py-2.5 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Building2 className="w-3.5 h-3.5 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
+            <span className="font-bold text-[var(--color-text-primary)] truncate">
+              {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
+            </span>
           </div>
-        )}
-      </div>
+          <div className="flex items-center gap-1.5 shrink-0 text-[var(--color-text-muted)]">
+            {verified && (
+              <span className="text-[var(--color-brand-fg)] font-bold inline-flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>راستی‌آزمایی‌شده</span>
+              </span>
+            )}
+            {verified && <span aria-hidden="true">·</span>}
+            <span>{property.locationPrecision === 'approximate' ? 'موقعیت تقریبی' : 'سطح محله'}</span>
+          </div>
+        </div>
+      )}
 
       <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
         <div className="space-y-1.5">
-          <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 font-medium flex items-center justify-between gap-2">
+          <div className="text-xs text-[var(--color-text-muted)] font-medium flex items-center justify-between gap-2">
             <span className="truncate">
               {property.hoodName} · {property.street}
             </span>
@@ -130,44 +141,47 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <button
             type="button"
             onClick={() => onOpenDetail(listing.listingId)}
-            className="text-start text-sm font-black text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 transition line-clamp-2 cursor-pointer"
+            className="text-start text-sm font-black text-[var(--color-text-primary)] hover:text-[var(--color-brand-fg)] transition line-clamp-2 cursor-pointer"
           >
             {listing.title}
           </button>
 
-          <div className="text-[11px] text-[#48534F] dark:text-slate-300 tabular-nums flex flex-wrap gap-x-2">
+          <div className="text-xs text-[var(--color-text-secondary)] tabular-nums flex flex-wrap gap-x-2">
             <span>{property.areaSqm ? formatAreaShort(property.areaSqm, areaUnit) : 'متراژ نامشخص'}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>{property.roomsCount !== null ? `${toPersianNum(property.roomsCount)} خواب` : 'تعداد خواب نامشخص'}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>پارکینگ: {property.unitFeatures.parking === 'has' ? 'دارد' : property.unitFeatures.parking === 'lacks' ? 'ندارد' : 'نامشخص'}</span>
           </div>
         </div>
 
-        <div className="pt-2.5 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
+        <div className="pt-2.5 border-t border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-baseline justify-between gap-2 tabular-nums">
             <div>
-              <div className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{priceText.main}</div>
-              <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">{priceText.sub}</div>
+              <div className="text-sm font-black text-[var(--color-text-primary)]">{priceText.main}</div>
+              <div className="text-xs text-[var(--color-text-muted)]">{priceText.sub}</div>
             </div>
             {listing.marketContext.gapPercentFromV64 !== null && (
               <span
-                className={`text-[11px] font-bold shrink-0 ${
-                  listing.marketContext.gapPercentFromV64 <= 0 ? 'text-[#176B4C] dark:text-emerald-400' : 'text-[#875000] dark:text-amber-400'
+                className={`text-xs font-bold shrink-0 ${
+                  listing.marketContext.gapPercentFromV64 <= 0 ? 'text-[var(--color-brand-fg)]' : 'text-[#875000] dark:text-amber-300'
                 }`}
               >
-                {listing.marketContext.gapPercentFromV64 <= 0 ? '' : '+'}
-                {toPersianNum(listing.marketContext.gapPercentFromV64)}٪ نسبت به سناریو v6.4
+                {listing.marketContext.gapPercentFromV64 < 0
+                  ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از میانگین محله`
+                  : listing.marketContext.gapPercentFromV64 > 0
+                    ? `${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از میانگین محله`
+                    : 'هم‌سطح میانگین محله'}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px]">
+          <div className="flex items-center gap-1.5 text-xs">
             <button
               type="button"
               data-testid={`open-detail-${listing.listingId}`}
               onClick={() => onOpenDetail(listing.listingId)}
-              className="flex-1 min-h-[36px] px-2.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
+              className="flex-1 min-h-[44px] md:min-h-[36px] px-2.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
             >
               جزئیات کامل ملک
             </button>
@@ -177,9 +191,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 onClick={() => onOpenValuation(record)}
                 aria-label="ارزش‌گذاری این ملک"
                 title="ارزش‌گذاری هدونیک این ملک"
-                className="min-h-[36px] px-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200 hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center"
+                className="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer flex items-center justify-center"
               >
-                <Calculator className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
+                <Calculator className="w-4 h-4 text-[var(--color-brand-fg)]" />
               </button>
             )}
             <button
@@ -188,13 +202,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               aria-pressed={isCompared}
               aria-label="افزودن به مقایسه"
               title="مقایسه ملک"
-              className={`min-h-[36px] px-2.5 rounded-[8px] border cursor-pointer flex items-center justify-center ${
+              className={`min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border cursor-pointer flex items-center justify-center ${
                 isCompared
                   ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
               }`}
             >
-              <GitCompare className="w-3.5 h-3.5" />
+              <GitCompare className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -202,22 +216,22 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               aria-pressed={isSaved}
               aria-label="ذخیره ملک"
               title="ذخیره فایل"
-              className={`min-h-[36px] px-2.5 rounded-[8px] border cursor-pointer flex items-center justify-center ${
+              className={`min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border cursor-pointer flex items-center justify-center ${
                 isSaved
-                  ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]'
-                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-600)] text-[var(--color-brand-fg)]'
+                  : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
               }`}
             >
-              <Bookmark className="w-3.5 h-3.5" />
+              <Bookmark className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={() => onLocateOnMap(record)}
               aria-label="نمایش روی نقشه"
               title="نمایش موقعیت"
-              className="min-h-[36px] px-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-brand-700)] dark:text-emerald-300 cursor-pointer flex items-center justify-center"
+              className="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border border-[var(--color-border-subtle)] text-[var(--color-brand-fg)] hover:bg-[var(--color-bg-muted)] cursor-pointer flex items-center justify-center"
             >
-              <MapPin className="w-3.5 h-3.5" />
+              <MapPin className="w-4 h-4" />
             </button>
           </div>
         </div>

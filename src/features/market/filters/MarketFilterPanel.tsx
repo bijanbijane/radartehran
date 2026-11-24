@@ -23,20 +23,22 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
   onApply,
   onReset,
 }) => {
+  const [panelExpanded, setPanelExpanded] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const mobileSheetRef = useDialogFocus(mobileSheetOpen, () => setMobileSheetOpen(false));
   const cap = MARKET_TYPE_CAPABILITIES[draft.marketType];
+  const isDesktopPanelVisible = panelExpanded || isDirty;
 
   const renderFilterControls = (mobileMode: boolean) => (
     <div className={`grid grid-cols-1 ${mobileMode ? 'gap-3.5' : 'sm:grid-cols-2 lg:grid-cols-4 gap-3'} text-xs`}>
       <label className="space-y-1 block">
-        <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">سطح جغرافیایی</span>
+        <span className="font-semibold text-[var(--color-text-muted)] block">سطح جغرافیایی</span>
         <select
           aria-label="سطح جغرافیایی تحلیل"
           value={draft.geoLevel}
           onChange={(e) => onUpdateDraft({ geoLevel: e.target.value as MarketGeoLevel })}
-          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
         >
           <option value="neighborhood">محله انتخابی نقشه</option>
           <option value="zone">منطقه / پهنه</option>
@@ -46,12 +48,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 
       {draft.geoLevel === 'zone' && availableZones.length > 0 && (
         <label className="space-y-1 block">
-          <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">منطقه هدف</span>
+          <span className="font-semibold text-[var(--color-text-muted)] block">منطقه هدف</span>
           <select
             aria-label="انتخاب منطقه تحلیل"
             value={draft.zoneName}
             onChange={(e) => onUpdateDraft({ zoneName: e.target.value })}
-            className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+            className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
           >
             {availableZones.map((z) => (
               <option key={z} value={z}>{z}</option>
@@ -61,12 +63,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
       )}
 
       <label className="space-y-1 block">
-        <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">نوع ملک</span>
+        <span className="font-semibold text-[var(--color-text-muted)] block">نوع ملک</span>
         <select
           aria-label="نوع ملک"
           value={draft.propertySubType}
           onChange={(e) => onUpdateDraft({ propertySubType: e.target.value as PropertySubType })}
-          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
         >
           {cap.availableSubTypes.map((st) => (
             <option key={st.id} value={st.id}>{st.labelFa}</option>
@@ -75,12 +77,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
       </label>
 
       <label className="space-y-1 block">
-        <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">بازه زمانی</span>
+        <span className="font-semibold text-[var(--color-text-muted)] block">بازه زمانی</span>
         <select
           aria-label="بازه زمانی تحلیل"
           value={draft.period}
           onChange={(e) => onUpdateDraft({ period: e.target.value as MarketPeriodId })}
-          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+          className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
         >
           <option value="30d">۳۰ روز اخیر</option>
           <option value="90d">۹۰ روز اخیر (فصلی)</option>
@@ -92,12 +94,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
       {(advancedOpen || mobileMode) && (
         <>
           <label className="space-y-1 block">
-            <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">بازه متراژ</span>
+            <span className="font-semibold text-[var(--color-text-muted)] block">بازه متراژ</span>
             <select
               aria-label="بازه متراژ"
               value={draft.areaRange}
               onChange={(e) => onUpdateDraft({ areaRange: e.target.value as MarketFilterDraft['areaRange'] })}
-              className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+              className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
             >
               <option value="all">همه متراژها</option>
               <option value="under75">زیر ۷۵ متر</option>
@@ -108,12 +110,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 
           {cap.supportsAgeRange && (
             <label className="space-y-1 block">
-              <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">سن بنا</span>
+              <span className="font-semibold text-[var(--color-text-muted)] block">سن بنا</span>
               <select
                 aria-label="بازه سن بنا"
                 value={draft.ageRange}
                 onChange={(e) => onUpdateDraft({ ageRange: e.target.value as MarketFilterDraft['ageRange'] })}
-                className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+                className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
               >
                 <option value="all">همه سال‌های ساخت</option>
                 <option value="new_0_5">نوساز تا ۵ سال</option>
@@ -125,12 +127,12 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 
           {cap.supportsRooms && (
             <label className="space-y-1 block">
-              <span className="font-semibold text-[var(--color-text-muted)] dark:text-slate-400 block">تعداد خواب</span>
+              <span className="font-semibold text-[var(--color-text-muted)] block">تعداد خواب</span>
               <select
                 aria-label="تعداد اتاق خواب"
                 value={draft.rooms}
                 onChange={(e) => onUpdateDraft({ rooms: e.target.value as MarketFilterDraft['rooms'] })}
-                className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white font-semibold"
+                className="w-full min-h-[40px] px-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] font-semibold"
               >
                 <option value="all">همه واحدها</option>
                 <option value="1">۱ خواب</option>
@@ -147,7 +149,7 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
               onChange={(e) => onUpdateDraft({ onlyObserved: e.target.checked })}
               className="w-4 h-4 accent-[var(--color-brand-600)]"
             />
-            <span className="font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">فقط آگهی‌های زنده مشاهده‌شده</span>
+            <span className="font-semibold text-[var(--color-text-secondary)]">فقط آگهی‌های زنده مشاهده‌شده</span>
           </label>
         </>
       )}
@@ -157,14 +159,14 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
   return (
     <section
       aria-label="فیلترهای تحلیل بازار"
-      className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3"
+      className="px-4 py-3 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs">
           <SlidersHorizontal className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-          <span className="font-bold text-[var(--color-text-primary)] dark:text-white">فیلترهای تحلیلی (پیش‌نویس / اعمال قطعی)</span>
+          <span className="font-bold text-[var(--color-text-primary)]">فیلترهای تحلیلی</span>
           {isDirty && (
-            <span data-testid="market-filter-dirty-indicator" className="text-[11px] font-bold text-[#875000] dark:text-amber-300">
+            <span data-testid="market-filter-dirty-indicator" className="text-xs font-bold text-[#875000] dark:text-amber-300">
               · تغییر اعمال‌نشده
             </span>
           )}
@@ -175,7 +177,7 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
             type="button"
             onClick={() => setMobileSheetOpen(true)}
             data-testid="market-mobile-filter-open-btn"
-            className="sm:hidden min-h-[44px] px-3.5 py-2 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 text-xs font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5 cursor-pointer"
+            className="sm:hidden min-h-[44px] px-3.5 py-2 rounded-lg border border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>فیلتر پیشرفته</span>
@@ -183,17 +185,29 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 
           <button
             type="button"
-            onClick={() => setAdvancedOpen((s) => !s)}
-            className="hidden sm:inline-flex min-h-[34px] px-2.5 py-1 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-semibold text-[var(--color-text-secondary)] dark:text-slate-300 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
+            data-testid="market-filter-toggle-btn"
+            aria-expanded={isDesktopPanelVisible}
+            onClick={() => setPanelExpanded((v) => !v)}
+            className="hidden sm:inline-flex min-h-[36px] items-center px-3 py-1 rounded-lg border border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"
           >
-            {advancedOpen ? 'بستن فیلترهای بیشتر' : 'فیلترهای بیشتر (متراژ، سن، خواب)'}
+            {isDesktopPanelVisible ? 'بستن پنل فیلتر' : 'تنظیم فیلترها'}
           </button>
+
+          {isDesktopPanelVisible && (
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((s) => !s)}
+              className="hidden sm:inline-flex min-h-[36px] items-center px-2.5 py-1 rounded-lg border border-[var(--color-border-subtle)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"
+            >
+              {advancedOpen ? 'بستن فیلترهای بیشتر' : 'فیلترهای بیشتر (متراژ، سن، خواب)'}
+            </button>
+          )}
 
           <button
             type="button"
             onClick={onReset}
             data-testid="market-filter-reset-btn"
-            className="min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] dark:text-slate-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+            className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>بازنشانی</span>
@@ -203,10 +217,10 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
             type="button"
             onClick={onApply}
             data-testid="market-filter-apply-btn"
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${
+            className={`min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${
               isDirty
                 ? 'bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white'
-                : 'bg-[#EAF3F0] dark:bg-emerald-950/60 text-[#103B38] dark:text-emerald-200 border border-[var(--color-border-strong)] dark:border-emerald-800'
+                : 'bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-200 border border-[var(--color-border-strong)]'
             }`}
           >
             <Check className="w-3.5 h-3.5" />
@@ -215,7 +229,7 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
         </div>
       </div>
 
-      <div className="hidden sm:block">{renderFilterControls(false)}</div>
+      {isDesktopPanelVisible && <div className="hidden sm:block pt-1">{renderFilterControls(false)}</div>}
 
       {mobileSheetOpen && (() => {
         const sheetNode = (

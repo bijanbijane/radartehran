@@ -15,7 +15,7 @@ export const RENT_CONVERSION_EFFECTIVE_VERSION = '1405-v2';
 export const DATA_KIND_LABELS_FA: Record<MarketDataKind, string> = {
   asking_price: 'قیمت پیشنهادی آگهی',
   transaction_price: 'قیمت معامله ثبت‌شده',
-  estimated_value: 'قیمت برآوردی مدل (v6.4)',
+  estimated_value: 'قیمت برآوردی تحلیلی',
   rent: 'شاخص بازار رهن و اجاره',
   supply: 'سنجش عرضه فایل',
 };
@@ -45,7 +45,7 @@ export const MARKET_SOURCE_REGISTRY: readonly SourceRegistryEntry[] = [
   },
   {
     id: 'src-hedonic-v64',
-    nameFa: 'موتور ارزش‌گذاری هدونیک رادار (نسخه v6.4)',
+    nameFa: 'موتور ارزش‌گذاری هدونیک رادار',
     kindFa: 'برآورد تحلیلی و سناریو مذاکره',
     cadenceFa: 'محاسبه هم‌زمان با تغییر مشخصات',
     coverageNoteFa: 'این خروجی برآورد تحلیلی است و جایگزین نرخ قطعی قولنامه نیست.',
@@ -125,8 +125,8 @@ export const INDICATOR_REGISTRY: Record<MarketIndicatorId, MarketIndicatorDefini
   },
   estimated_deal_v64_sqm: {
     id: 'estimated_deal_v64_sqm',
-    titleFa: 'برآورد سناریوی معامله (v6.4)',
-    titleEn: 'Estimated Negotiation Price (v6.4)',
+    titleFa: 'برآورد سناریوی معامله (غیرثبتی)',
+    titleEn: 'Estimated Negotiation Price',
     shortDescFa: 'تخمین تحلیلی سطح توافق پس از تخفیف مذاکره (معامله ثبت‌شده رسمی نیست)',
     unitFa: 'میلیون تومان / مترمربع',
     dataKind: 'estimated_value',

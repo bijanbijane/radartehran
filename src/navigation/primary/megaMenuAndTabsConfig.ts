@@ -2,10 +2,12 @@
 import type {
   AccountSubTabId,
   DiscoverSubTabId,
+  KnowledgeSubTabId,
   MarketSubTabId,
   PropertiesSubTabId,
   RouteDestinationId,
   SecondaryTabDefinition,
+  ServicesSubTabId,
   ToolsSubTabId,
 } from '../registry/route.types';
 
@@ -72,7 +74,7 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
         descEn: 'Area specialists & verified sponsors',
         viewId: 'services',
         subTab: 'agencies',
-        status: 'beta',
+        status: 'active',
       },
     ],
   },
@@ -112,12 +114,13 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
         status: 'active',
       },
       {
-        id: 'know-seo',
-        labelFa: 'دایرکتوری سئو و صفحات محلات',
-        labelEn: 'Tehran Neighborhood Directory',
-        descFa: 'مرور مستقیم شاخص تمام مناطق و محلات شهر',
-        descEn: 'Direct city neighborhood index & profiles',
-        actionId: 'seo',
+        id: 'know-glossary',
+        labelFa: 'واژه‌نامه و اصطلاحات بازار',
+        labelEn: 'Real Estate Glossary',
+        descFa: 'تعریف دقیق شاخص‌ها، قدرالسهم، رهن کامل و مبایعه‌نامه',
+        descEn: 'Clear definitions for indices, deposits & contracts',
+        viewId: 'knowledge',
+        subTab: 'glossary',
         status: 'active',
       },
     ],
@@ -165,50 +168,7 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
         descEn: '5-axis reputation breakdown & community guidelines',
         viewId: 'contributions',
         subTab: 'members',
-        status: 'active',
-      },
-    ],
-  },
-  {
-    id: 'complementary',
-    titleFa: 'دسترسی‌های تکمیلی',
-    titleEn: 'Quick Access',
-    items: [
-      {
-        id: 'comp-home',
-        labelFa: 'صفحه نخست و خلاصه رادار',
-        labelEn: 'Platform Home & Summary',
-        descFa: 'ارزیابی بودجه و بررسی فوری متن یا لینک آگهی',
-        descEn: 'Quick budget fit & instant listing check',
-        viewId: 'home',
-        status: 'active',
-      },
-      {
-        id: 'comp-visited',
-        labelFa: 'دفترچه بازدیدهای میدانی من',
-        labelEn: 'My Visited Properties Log',
-        descFa: 'یادداشت‌ها و امتیازهای بازدید ملکی شما',
-        descEn: 'Saved inspection notes & ratings',
-        actionId: 'visited',
-        status: 'active',
-      },
-      {
-        id: 'comp-reverse',
-        labelFa: 'کاشف معکوس: با بودجه من کجا بخرم؟',
-        labelEn: 'Reverse Budget Finder',
-        descFa: 'تطبیق سریع قدرت نقدینگی با متراژ و محله',
-        descEn: 'Match liquidity to city districts instantly',
-        actionId: 'reverse_budget',
-        status: 'active',
-      },
-      {
-        id: 'comp-onboarding',
-        labelFa: 'راهنمای ۳ مرحله‌ای و حریم خصوصی',
-        labelEn: 'Guided Tour & Privacy',
-        descFa: 'آشنایی سریع با ابزارها و مدیریت داده‌ها',
-        descEn: '3-step walkthrough & transparency notice',
-        actionId: 'onboarding',
-        status: 'active',
+        status: 'beta',
       },
     ],
   },
@@ -216,7 +176,15 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
 
 export const DISCOVER_SECONDARY_TABS: readonly SecondaryTabDefinition<DiscoverSubTabId>[] = [
   { id: 'results', labelFa: 'محله‌های بازار', labelEn: 'Market Areas', path: '/areas' },
-  { id: 'registry', labelFa: 'رجیستری ملی', labelEn: 'National Registry', path: '/areas/registry' },
+];
+
+export const COMMUNITY_SECONDARY_TABS: readonly SecondaryTabDefinition<string>[] = [
+  { id: 'overview', labelFa: 'خانه جامعه', labelEn: 'Community Home', path: '/community' },
+  { id: 'topics', labelFa: 'موضوعات', labelEn: 'Topics', path: '/community/topics' },
+  { id: 'questions', labelFa: 'پرسش و پاسخ', labelEn: 'Q&A', path: '/community/questions' },
+  { id: 'discussions', labelFa: 'گفت‌وگوها', labelEn: 'Discussions', path: '/community/discussions' },
+  { id: 'submit', labelFa: 'ثبت مشارکت', labelEn: 'Contribute', path: '/community/contribute' },
+  { id: 'members', labelFa: 'اعضا و آیین‌نامه', labelEn: 'Members', path: '/community/members' },
 ];
 
 export const MARKET_SECONDARY_TABS: readonly SecondaryTabDefinition<MarketSubTabId>[] = [
@@ -239,9 +207,26 @@ export const PROPERTIES_SECONDARY_TABS: readonly SecondaryTabDefinition<Properti
 export const TOOLS_SECONDARY_TABS: readonly SecondaryTabDefinition<ToolsSubTabId>[] = [
   { id: 'all', labelFa: 'همه ابزارها', labelEn: 'All Tools', path: '/tools' },
   { id: 'valuation', labelFa: 'ارزش‌گذاری ملک', labelEn: 'Valuation', path: '/tools/valuation' },
+  { id: 'budget_fit', labelFa: 'تطبیق بودجه', labelEn: 'Budget Fit', path: '/tools/budget-fit' },
+  { id: 'verifier', labelFa: 'سنجش آگهی', labelEn: 'Listing Verifier', path: '/tools/verifier' },
   { id: 'compare_props', labelFa: 'مقایسه املاک', labelEn: 'Compare Properties', path: '/tools/compare-properties' },
   { id: 'compare_areas', labelFa: 'مقایسه محله‌ها', labelEn: 'Compare Areas', path: '/tools/compare-areas' },
   { id: 'calculators', labelFa: 'محاسبه‌گرها', labelEn: 'Calculators', path: '/tools/calculators' },
+];
+
+export const SERVICES_SECONDARY_TABS: readonly SecondaryTabDefinition<ServicesSubTabId>[] = [
+  { id: 'all', labelFa: 'همه خدمات', labelEn: 'All Services', path: '/services' },
+  { id: 'valuation', labelFa: 'کارشناسی قیمت', labelEn: 'Valuation', path: '/services/valuation' },
+  { id: 'consulting', labelFa: 'مشاوره حقوقی', labelEn: 'Consulting', path: '/services/consulting' },
+  { id: 'inspection', labelFa: 'کارشناسی فنی', labelEn: 'Inspection', path: '/services/inspection' },
+  { id: 'agencies', labelFa: 'مشاوران محله', labelEn: 'Agencies', path: '/services/agencies' },
+];
+
+export const KNOWLEDGE_SECONDARY_TABS: readonly SecondaryTabDefinition<KnowledgeSubTabId>[] = [
+  { id: 'reports', labelFa: 'گزارش‌ها و پژوهش‌ها', labelEn: 'Reports', path: '/knowledge' },
+  { id: 'guide', labelFa: 'راهنمای کاربردی', labelEn: 'Guide', path: '/knowledge/guide' },
+  { id: 'methodology', labelFa: 'روش‌شناسی داده', labelEn: 'Methodology', path: '/knowledge/methodology' },
+  { id: 'glossary', labelFa: 'فرهنگ‌نامه تخصصی', labelEn: 'Glossary', path: '/knowledge/glossary' },
 ];
 
 export const ACCOUNT_NAVIGATION_TABS: readonly SecondaryTabDefinition<AccountSubTabId>[] = [

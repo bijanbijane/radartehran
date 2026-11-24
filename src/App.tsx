@@ -5,7 +5,6 @@
 import { useEffect } from 'react';
 import { AuthProvider } from './app/providers/AuthProvider';
 import { DualLayerErrorTrap } from './components/DualLayerErrorTrap';
-import { RadarNavigationProvider } from './context/RadarNavigationContext';
 import { ComparisonFilterProvider } from './context/ComparisonFilterContext';
 import { RadarWorkspaceShell } from './components/RadarWorkspaceShell';
 import { formatMillionTomanAsIntlCurrency, getStoredIntlCurrency } from './utils/areaUnit';
@@ -65,11 +64,9 @@ export default function App() {
   return (
     <DualLayerErrorTrap>
       <AuthProvider>
-        <RadarNavigationProvider>
-          <ComparisonFilterProvider>
-            <RadarWorkspaceShell />
-          </ComparisonFilterProvider>
-        </RadarNavigationProvider>
+        <ComparisonFilterProvider>
+          <RadarWorkspaceShell />
+        </ComparisonFilterProvider>
       </AuthProvider>
     </DualLayerErrorTrap>
   );

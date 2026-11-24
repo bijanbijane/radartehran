@@ -1,4 +1,4 @@
-/** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stages 81, 83 & 85 Server-Backed Knowledge Base, Research & Account Bookmarks */
+/** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stages 81, 83 & 85 Server-Backed Knowledge Base with /knowledge/articles/:slug Deep Links (AUD-004, AUD-007, AUD-011, AUD-014, AUD-015) */
 import React, { useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { BookOpen, Info, RefreshCw, Search } from 'lucide-react';
@@ -6,6 +6,7 @@ import type { CityId } from '../../../data/multiCityData';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { KnowledgeSubTabId, ModuleSubTabId } from '../../../navigation/registry/route.types';
+import { RadarLink } from '../../../components/ui/RadarPrimitives';
 import { KNOWLEDGE_PUBLICATIONS } from '../data/knowledgeCatalog';
 import {
   KNOWLEDGE_DATA_BRIEFS,
@@ -47,12 +48,17 @@ export interface KnowledgeCenterPageProps {
   onOpenSeoDrawer: () => void;
 }
 
-const SUBTAB_LABELS: Array<{ id: KnowledgeSubTabId; labelFa: string }> = [
-  { id: 'reports', labelFa: 'گزارش‌ها و پژوهش‌های شهری' },
-  { id: 'guide', labelFa: 'راهنمای کاربردی' },
-  { id: 'methodology', labelFa: 'روش‌شناسی و معرفت‌شناسی' },
-  { id: 'glossary', labelFa: 'فرهنگ‌نامه تخصصی' },
-];
+function extractArticleSlugFromPath(pathname: string): string | null {
+  const match = /^\/knowledge\/articles\/([^/]+)\/?$/.exec(pathname);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function resolveKnowledgeParentPath(subTab: KnowledgeSubTabId): string {
+  if (subTab === 'guide') return '/knowledge/guide';
+  if (subTab === 'methodology') return '/knowledge/methodology';
+  if (subTab === 'glossary') return '/knowledge/glossary';
+  return '/knowledge';
+}
 
 export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
   activeSubTab = 'reports',
@@ -67,11 +73,12 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
   onOpenPulseModal,
   onOpenSeoDrawer,
 }) => {
-  const [selectedTab, setSelectedTab] = useState<KnowledgeSubTabId>(activeSubTab);
   const [query, setQuery] = useState('');
   const [contentType, setContentType] = useState<KnowledgeContentType | 'all'>('all');
   const [freshness, setFreshness] = useState<KnowledgeFreshnessStatus | 'all'>('all');
-  const [activePub, setActivePub] = useState<KnowledgePublication | null>(null);
+  const [activePubSlug, setActivePubSlug] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? extractArticleSlugFromPath(window.location.pathname) : null,
+  );
 
   const [serverPubs, setServerPubs] = useState<KnowledgePublication[]>(() => [...KNOWLEDGE_PUBLICATIONS]);
   const [dataBriefs, setDataBriefs] = useState<KnowledgeDataBrief[]>(() => [...KNOWLEDGE_DATA_BRIEFS]);
@@ -80,15 +87,22 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
   const [lastFetchedAtIso, setLastFetchedAtIso] = useState<string | null>(null);
   const [serverUpdatedAtIso, setServerUpdatedAtIso] = useState<string | null>(null);
 
-  // Stage 85.3: Account-scoped bookmarks; cleared immediately on account change or logout
   const [savedIds, setSavedIds] = useState<string[]>(() => loadSavedKnowledgeIds(currentUser?.uid));
   const [bookmarkStatusUnknown, setBookmarkStatusUnknown] = useState(false);
   const [savingPubId, setSavingPubId] = useState<string | null>(null);
   const [bookmarkFeedbackFa, setBookmarkFeedbackFa] = useState<string | null>(null);
 
-  const currentTab: KnowledgeSubTabId = activeSubTab || selectedTab;
+  const currentTab: KnowledgeSubTabId = activeSubTab || 'reports';
 
-  // Stage 83.5: Fetch publications from server API with AbortController on filter change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      setActivePubSlug(extractArticleSlugFromPath(window.location.pathname));
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   useEffect(() => {
     if (currentTab === 'glossary') return;
     const controller = new AbortController();
@@ -127,7 +141,6 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
     return () => controller.abort();
   }, []);
 
-  // Stage 85.3: Reset & re-fetch saved bookmarks whenever currentUser?.uid changes
   useEffect(() => {
     const uid = currentUser?.uid;
     setSavedIds([]);
@@ -147,6 +160,33 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
     });
     return () => controller.abort();
   }, [currentUser?.uid]);
+
+  const activePub = useMemo(() => {
+    if (!activePubSlug) return null;
+    return (
+      serverPubs.find((item) => item.slug === activePubSlug || item.id === activePubSlug) ||
+      KNOWLEDGE_PUBLICATIONS.find((item) => item.slug === activePubSlug || item.id === activePubSlug) ||
+      null
+    );
+  }, [activePubSlug, serverPubs]);
+
+  const handleOpenPublication = (pub: KnowledgePublication) => {
+    const slugKey = pub.slug || pub.id;
+    setActivePubSlug(slugKey);
+    if (typeof window !== 'undefined') {
+      const nextUrl = `/knowledge/articles/${encodeURIComponent(slugKey)}`;
+      if (window.location.pathname !== nextUrl) {
+        window.history.pushState(null, '', nextUrl);
+      }
+    }
+  };
+
+  const handleClosePublication = () => {
+    setActivePubSlug(null);
+    if (typeof window !== 'undefined' && extractArticleSlugFromPath(window.location.pathname)) {
+      window.history.pushState(null, '', resolveKnowledgeParentPath(currentTab));
+    }
+  };
 
   const handleToggleSavePublication = async (publicationId: string) => {
     setBookmarkFeedbackFa(null);
@@ -182,58 +222,62 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
     [serverPubs, currentTab, query, contentType, freshness],
   );
 
+  const relatedPublications = useMemo(() => visiblePublications.slice(0, 3), [visiblePublications]);
+
   return (
-    <div data-testid="product-knowledge-view" className="w-full max-w-6xl mx-auto px-4 py-6 space-y-5 animate-fadeIn">
-      <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4 flex flex-wrap items-end justify-between gap-3">
+    <div data-testid="product-knowledge-view" className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn">
+      <div className="border-b border-[var(--color-border-subtle)] pb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="text-[12px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center gap-1.5 mb-1">
+          <span className="text-xs font-bold text-[var(--color-brand-fg)] flex items-center gap-1.5 mb-1">
             <BookOpen className="w-4 h-4" />
             <span>پایگاه دانش، گزارش‌های تحلیلی و روش‌شناسی رادار تهران</span>
           </span>
-          <h1 className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white">پژوهش‌های مسکن، راهنماها و شفافیت داده</h1>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 text-xs">
-          {SUBTAB_LABELS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              data-testid={`knowledge-tab-${tab.id}`}
-              onClick={() => {
-                setSelectedTab(tab.id);
-                setActivePub(null);
-                onNavigateView('knowledge', tab.id);
-              }}
-              className={`px-3 py-1.5 rounded-[9px] font-bold cursor-pointer whitespace-nowrap transition ${
-                currentTab === tab.id
-                  ? 'bg-[var(--color-brand-600)] text-white'
-                  : 'bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-200'
-              }`}
-            >
-              {tab.labelFa}
-            </button>
-          ))}
+          <h1 className="text-2xl sm:text-[28px] font-black leading-[1.35] text-[var(--color-text-primary)]">
+            {currentTab === 'guide'
+              ? 'راهنمای کاربردی و شروع کار با رادار تهران'
+              : currentTab === 'methodology'
+                ? 'روش‌شناسی، شفافیت داده و مرجع جغرافیایی'
+                : currentTab === 'glossary'
+                  ? 'واژه‌نامه تخصصی بازار مسکن و شهرسازی'
+                  : 'پژوهش‌های مسکن، گزارش‌ها و تحلیل‌های تخصصی'}
+          </h1>
         </div>
       </div>
 
       {/* Mandatory Epistemic Principle Banner */}
-      <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/60 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900 text-[11.5px] text-[var(--color-brand-700)] dark:text-emerald-200 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-xs text-[var(--color-brand-fg)] flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            در تمامی پژوهش‌های رادار، سه لایه <strong>«داده خام»</strong>، <strong>«شاخص محاسبه‌شده با نسخه فرمول»</strong> و <strong>«تفسیر پژوهشی نویسنده»</strong> به‌صورت تفکیک‌شده ارائه می‌شوند تا معیارهای عددی با تحلیل تحریریه مخلوط نگردند.
+            در تمامی پژوهش‌های رادار، سه لایه <strong>«داده خام»</strong>، <strong>«شاخص محاسبه‌شده با نسخه فرمول»</strong> و <strong>«تفسیر پژوهشی نویسنده»</strong> به‌صورت تفکیک‌شده ارائه می‌شوند.
           </p>
         </div>
         {(serverUpdatedAtIso || lastFetchedAtIso) && (
-          <span className="text-[10.5px] text-[var(--color-text-muted)] shrink-0" dir="ltr">
-            Updated: {(serverUpdatedAtIso || lastFetchedAtIso || '').slice(0, 19).replace('T', ' ')}
+          <span className="text-xs text-[var(--color-text-muted)] shrink-0 tabular-nums">
+            به‌روزرسانی:{' '}
+            {(() => {
+              const raw = serverUpdatedAtIso || lastFetchedAtIso || '';
+              const d = new Date(raw);
+              return Number.isNaN(d.getTime())
+                ? toPersianNum(raw.slice(0, 10))
+                : d.toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric' });
+            })()}
           </span>
         )}
       </div>
 
       {bookmarkFeedbackFa && (
-        <div className="p-2.5 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold">
-          {bookmarkFeedbackFa}
+        <div className="p-3 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold flex flex-wrap items-center justify-between gap-2">
+          <span>{bookmarkFeedbackFa}</span>
+          {!currentUser && (
+            <RadarLink
+              href="/account"
+              onNavigate={() => onNavigateView('userspace', 'overview')}
+              className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[8px] bg-[var(--color-brand-600)] text-white text-xs font-bold"
+            >
+              ورود به حساب کاربری
+            </RadarLink>
+          )}
         </div>
       )}
 
@@ -248,71 +292,112 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           isSavingBookmark={savingPubId === activePub.id}
           bookmarkStatusUnknown={bookmarkStatusUnknown}
           onToggleSave={handleToggleSavePublication}
-          onBack={() => setActivePub(null)}
+          onBack={handleClosePublication}
           onSelectNeighborhood={onSelectNeighborhood}
           onNavigateView={onNavigateView}
         />
-      ) : (
-        <>
-          {currentTab === 'reports' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" data-testid="knowledge-data-briefs">
-              {dataBriefs.map((b) => (
-                <div key={b.briefId} className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-3">
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="text-[10.5px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
-                      {b.titleFa} · {b.periodFa} {b.calculationStatus === 'illustrative' ? '· (مثال آموزشی)' : ''}
-                    </span>
-                    <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{b.headlineFa}</div>
-                    <div className="text-[10.5px] text-[var(--color-text-muted)]">{b.geographyFa} · {b.limitationFa}</div>
-                  </div>
-                  <div className="text-end shrink-0">
-                    <div className="text-base font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">{b.metricValueFa}</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const p = serverPubs.find((x) => x.id === b.linkedReportId) || KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId);
-                        if (p && (p.status === 'published' || p.status === 'archived')) setActivePub(p);
-                      }}
-                      className="text-[11px] font-bold underline text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
-                    >
-                      گزارش کامل ←
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {currentTab === 'guide' && (
+      ) : currentTab === 'guide' || currentTab === 'methodology' ? (
+        <div className="space-y-5">
+          {currentTab === 'guide' ? (
             <OnboardingAndResponsiveHelpCenter evaluatedNeighborhoods={evaluatedNeighborhoods} onNavigateView={onNavigateView} />
-          )}
-          {currentTab === 'methodology' && (
+          ) : (
             <KnowledgeMethodologyView
               selectedHood={selectedHood}
               unitPrice={unitPrice}
               fxSample={fxSample}
               onOpenPulseModal={onOpenPulseModal}
               onOpenSeoDrawer={onOpenSeoDrawer}
+              onOpenRegistry={() => onNavigateView('discover', 'registry')}
             />
           )}
 
+          {relatedPublications.length > 0 && (
+            <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)]" aria-label="مطالب مرتبط پایگاه دانش">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-black text-[var(--color-text-primary)]">مطالب مرتبط در پایگاه دانش</h2>
+                <RadarLink
+                  href="/knowledge"
+                  onNavigate={() => onNavigateView('knowledge', 'reports')}
+                  className="min-h-[44px] md:min-h-[36px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
+                >
+                  مشاهده همه گزارش‌ها ←
+                </RadarLink>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                {relatedPublications.map((pub) => {
+                  const articleHref = `/knowledge/articles/${encodeURIComponent(pub.slug || pub.id)}`;
+                  return (
+                    <article
+                      key={pub.id}
+                      className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="space-y-1.5">
+                        <span className="text-xs font-bold text-[var(--color-brand-fg)]">{pub.categoryLabelFa}</span>
+                        <h3 className="text-sm font-black text-[var(--color-text-primary)] leading-snug line-clamp-2">{pub.titleFa}</h3>
+                        <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{pub.summaryFa}</p>
+                      </div>
+                      <RadarLink
+                        href={articleHref}
+                        onNavigate={() => handleOpenPublication(pub)}
+                        className="min-h-[44px] md:min-h-[36px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
+                      >
+                        مطالعه مقاله ←
+                      </RadarLink>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" data-testid="knowledge-data-briefs">
+            {dataBriefs.map((b) => (
+              <div key={b.briefId} className="p-3.5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex items-center justify-between gap-3">
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-xs font-bold text-[var(--color-brand-fg)]">
+                    {b.titleFa} · {b.periodFa} {b.calculationStatus === 'illustrative' ? '· (مثال آموزشی)' : ''}
+                  </span>
+                  <div className="font-bold text-[var(--color-text-primary)] truncate">{b.headlineFa}</div>
+                  <div className="text-xs text-[var(--color-text-muted)]">{b.geographyFa} · {b.limitationFa}</div>
+                </div>
+                <div className="text-end shrink-0">
+                  <div className="text-base font-black text-[var(--color-brand-fg)] tabular-nums">{b.metricValueFa}</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = serverPubs.find((x) => x.id === b.linkedReportId) || KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId);
+                      if (p && (p.status === 'published' || p.status === 'archived')) handleOpenPublication(p);
+                    }}
+                    className="min-h-[44px] md:min-h-[36px] text-xs font-bold underline text-[var(--color-text-primary)] cursor-pointer"
+                  >
+                    گزارش کامل ←
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Filter & Search Bar */}
-          <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="p-3.5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
             <div className="relative lg:col-span-2">
-              <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute right-2.5 top-2.5" />
+              <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
+                aria-label="جست‌وجو در مقالات و پژوهش‌های دانشنامه"
                 data-testid="knowledge-search-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="جست‌وجو در عنوان، محله، فرمول یا نویسنده (مثلاً مترو، پونک)..."
-                className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                className="w-full min-h-[44px] md:min-h-[38px] ps-8 pe-3 py-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
             <select
               aria-label="فیلتر نوع محتوا"
               value={contentType}
               onChange={(e) => setContentType(e.target.value as KnowledgeContentType | 'all')}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
+              className="min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold"
             >
               {(Object.keys(KNOWLEDGE_CONTENT_TYPE_LABELS_FA) as Array<KnowledgeContentType | 'all'>).map((k) => (
                 <option key={k} value={k}>{KNOWLEDGE_CONTENT_TYPE_LABELS_FA[k]}</option>
@@ -322,7 +407,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
               aria-label="وضعیت به‌روزرسانی"
               value={freshness}
               onChange={(e) => setFreshness(e.target.value as KnowledgeFreshnessStatus | 'all')}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
+              className="min-h-[44px] md:min-h-[38px] p-2 rounded-[8px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold"
             >
               <option value="all">گزارش‌های جاری و دوره‌ای</option>
               <option value="current">جاری (به‌روز)</option>
@@ -339,14 +424,14 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           )}
 
           {visiblePublications.length === 0 ? (
-            <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center space-y-2 text-xs">
-              <p className="font-bold text-[var(--color-text-primary)] dark:text-white">
+            <div className="p-6 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-xs">
+              <p className="font-bold text-[var(--color-text-primary)]">
                 {catalogState === 'loading' ? 'در حال دریافت گزارش‌ها از سرور مرکز دانش...' : 'مطلبی با فیلترهای انتخاب‌شده یافت نشد.'}
               </p>
               <button
                 type="button"
                 onClick={() => { setQuery(''); setContentType('all'); setFreshness('all'); }}
-                className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
+                className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
               >
                 بازنشانی فیلترها
               </button>
@@ -355,35 +440,36 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" data-testid="knowledge-publications-grid">
               {visiblePublications.map((pub) => {
                 const fr = KNOWLEDGE_FRESHNESS_LABELS_FA[pub.freshnessStatus];
+                const articleHref = `/knowledge/articles/${encodeURIComponent(pub.slug || pub.id)}`;
                 return (
                   <article
                     key={pub.id}
-                    className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-col justify-between space-y-3"
+                    className="p-5 rounded-[14px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-col justify-between space-y-3"
                   >
                     <div className="space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10.5px]">
-                        <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                        <span className="px-2 py-0.5 rounded bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold">
                           {pub.categoryLabelFa}
                         </span>
                         <span className={`px-2 py-0.5 rounded border font-bold ${fr.badgeClass}`}>{fr.labelFa}</span>
                       </div>
-                      <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white leading-[1.5]">{pub.titleFa}</h2>
-                      <p className="text-[var(--color-text-muted)] leading-relaxed">{pub.summaryFa}</p>
-                      <div className="text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300 pt-1">
-                        محدوده: <strong>{pub.geographyScopeFa}</strong> · نسخه {pub.version} · شاخص‌ها: {toPersianNum(pub.calculatedIndicators.length)} مورد
+                      <h2 className="text-base font-black text-[var(--color-text-primary)] leading-[1.5]">{pub.titleFa}</h2>
+                      <p className="text-[var(--color-text-secondary)] leading-relaxed">{pub.summaryFa}</p>
+                      <div className="text-xs text-[var(--color-text-muted)] pt-1">
+                        محدوده: <strong className="text-[var(--color-text-primary)]">{pub.geographyScopeFa}</strong> · نسخه {pub.version} · شاخص‌ها: {toPersianNum(pub.calculatedIndicators.length)} مورد
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-2">
-                      <span className="text-[10.5px] text-[var(--color-text-muted)]">{pub.publishedAtFa}</span>
-                      <button
-                        type="button"
+                    <div className="pt-2 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
+                      <span className="text-xs text-[var(--color-text-muted)]">{pub.publishedAtFa}</span>
+                      <RadarLink
+                        href={articleHref}
                         data-testid={`knowledge-open-${pub.id}`}
-                        onClick={() => setActivePub(pub)}
-                        className="px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer"
+                        onNavigate={() => handleOpenPublication(pub)}
+                        className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold"
                       >
                         مطالعه کامل و شاخص‌ها
-                      </button>
+                      </RadarLink>
                     </div>
                   </article>
                 );

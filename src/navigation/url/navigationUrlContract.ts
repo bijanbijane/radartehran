@@ -26,6 +26,9 @@ export interface ParsedNavigationLocation {
   subTab?: ModuleSubTabId;
   areaSlug?: string;
   memberUsername?: string;
+  listingId?: string;
+  articleSlug?: string;
+  providerId?: string;
   isUnknownPath: boolean;
   isLegacyTehranPath: boolean;
 }
@@ -104,6 +107,42 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
     return { viewId: 'contributions', subTab: 'members', memberUsername: username, isUnknownPath: false, isLegacyTehranPath: false };
   }
 
+  // Dynamic /properties/:listingId canonical listing detail route (AUD-004)
+  if (normPath.startsWith('/properties/') && !REGISTRY.some((route) => route.path === normPath)) {
+    const rawRest = normPath.slice('/properties/'.length);
+    if (rawRest && !rawRest.includes('/')) {
+      const listingId = safeDecodeSegment(rawRest);
+      if (listingId) {
+        return { viewId: 'properties', subTab: 'all', listingId, isUnknownPath: false, isLegacyTehranPath: false };
+      }
+    }
+    return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
+  }
+
+  // Dynamic /knowledge/articles/:slug canonical article detail route (AUD-004)
+  if (normPath.startsWith('/knowledge/articles/')) {
+    const rawRest = normPath.slice('/knowledge/articles/'.length);
+    if (rawRest && !rawRest.includes('/')) {
+      const articleSlug = safeDecodeSegment(rawRest);
+      if (articleSlug) {
+        return { viewId: 'knowledge', subTab: 'reports', articleSlug, isUnknownPath: false, isLegacyTehranPath: false };
+      }
+    }
+    return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
+  }
+
+  // Dynamic /services/providers/:providerId canonical provider detail route (AUD-004)
+  if (normPath.startsWith('/services/providers/')) {
+    const rawRest = normPath.slice('/services/providers/'.length);
+    if (rawRest && !rawRest.includes('/')) {
+      const providerId = safeDecodeSegment(rawRest);
+      if (providerId) {
+        return { viewId: 'services', subTab: 'all', providerId, isUnknownPath: false, isLegacyTehranPath: false };
+      }
+    }
+    return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
+  }
+
   // Exact registry path or alias match (supports valid percent-encoded static segments safely)
   const candidatePath = decodeStaticPathnameSegments(normPath);
   if (candidatePath === null) {
@@ -116,8 +155,8 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
   if (matched) {
     const segments = candidatePath.split('/').filter(Boolean);
     let resolvedSub = matched.subTab;
-    // Only derive alias sub-tab from path segment for grouped services/knowledge routes (contributions has explicit RouteDefinitions)
-    if (segments.length >= 2 && (matched.viewId === 'services' || matched.viewId === 'knowledge')) {
+    // Only derive sub-tab from path segment when the matched route definition has no explicit subTab
+    if (!resolvedSub && segments.length >= 2 && (matched.viewId === 'services' || matched.viewId === 'knowledge')) {
       resolvedSub = segments[1].replace(/-/g, '_') as ModuleSubTabId;
     }
     const queryView = params.get('view')?.trim().toLowerCase();
@@ -126,6 +165,21 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
       return { viewId: VIEW_ALIASES[queryView], subTab: subParam, isUnknownPath: false, isLegacyTehranPath: false };
     }
     return { viewId: matched.viewId, subTab: resolvedSub, isUnknownPath: false, isLegacyTehranPath: false };
+  }
+
+  // Legacy shell & shortcut redirects (zero dead-route 404s)
+  const LEGACY_REDIRECTS: Record<string, { viewId: RouteDestinationId; subTab?: ModuleSubTabId }> = {
+    '/login': { viewId: 'userspace', subTab: 'overview' },
+    '/profile': { viewId: 'userspace', subTab: 'profile' },
+    '/saved-searches': { viewId: 'userspace', subTab: 'saved_searches' },
+    '/escrow': { viewId: 'tools', subTab: 'all' },
+    '/service/orders': { viewId: 'services', subTab: 'all' },
+    '/agency/workspace': { viewId: 'services', subTab: 'agencies' },
+    '/tools/compare': { viewId: 'tools', subTab: 'compare_areas' },
+  };
+  const redirected = LEGACY_REDIRECTS[candidatePath];
+  if (redirected) {
+    return { viewId: redirected.viewId, subTab: redirected.subTab, isUnknownPath: false, isLegacyTehranPath: false };
   }
 
   // Legacy ?view= query support on root path

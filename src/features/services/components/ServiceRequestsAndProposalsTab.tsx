@@ -49,6 +49,10 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
   const [reviewTextByReq, setReviewTextByReq] = useState<Record<string, string>>({});
   const [reviewScoreByReq, setReviewScoreByReq] = useState<Record<string, 1 | 2 | 3 | 4 | 5>>({});
   const [reviewMsg, setReviewMsg] = useState<{ requestId: string; tone: 'success' | 'error'; text: string } | null>(null);
+  const devDemoEnabled =
+    typeof window !== 'undefined' &&
+    typeof window.location?.search === 'string' &&
+    new URLSearchParams(window.location.search).get('dev') === '1';
 
   if (requests.length === 0) {
     return (
@@ -89,22 +93,22 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <strong className="text-sm text-[var(--color-text-primary)] dark:text-white">{req.providerName}</strong>
-                  <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 text-[10.5px] font-bold">
+                  <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold">
                     {STATUS_LABELS_FA[req.status]}
                   </span>
                 </div>
-                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                   {CANONICAL_CATEGORY_LABELS_FA[req.canonicalCategory]} · محله {req.neighborhoodName} · {req.propertyTypeFa}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                {req.status === 'submitted' && (
+                {devDemoEnabled && req.status === 'submitted' && (
                   <button
                     type="button"
                     onClick={() => onSimulateSampleProposal(req)}
                     className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold cursor-pointer whitespace-nowrap"
                   >
-                    دریافت پیشنهاد نمونه (دمو)
+                    دریافت پیشنهاد نمونه (آزمایشی)
                   </button>
                 )}
                 {req.status === 'provider_selected' && (

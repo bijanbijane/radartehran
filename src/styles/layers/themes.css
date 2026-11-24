@@ -6,33 +6,62 @@
   [data-apple-theme='dark'],
   html.dark {
     color-scheme: dark;
-    --color-bg-canvas: #0F1715;
-    --color-bg-surface: #15211E;
-    --color-bg-elevated: #1B2926;
-    --color-bg-muted: #20312D;
-    --color-text-primary: #EDF3F0;
-    --color-text-secondary: #C3D0CA;
-    --color-text-muted: #8FA19A;
-    --color-border-subtle: #29403B;
-    --color-border-strong: #39554E;
-    --color-focus: #3AA397;
+    /* Unified Petroleum Dark Surface Scale (synced with colorSystem.ts) */
+    --color-bg-canvas: #0D1513;
+    --color-bg-surface: #131F1C;
+    --color-bg-elevated: #1A2A26;
+    --color-bg-subtle: #172522;
+    --color-bg-muted: #172522;
+    --color-text-primary: #EEF4F2;
+    --color-text-secondary: #C8D6D1;
+    --color-text-muted: #A9BEB7;
+    --color-border-subtle: #243833;
+    --color-border-strong: #324B44;
+    --color-focus: #60A5FA;
 
-    --apple-bg-base: #0F1715;
-    --apple-surface: rgba(21, 33, 30, 0.92);
-    --apple-surface-elevated: rgba(27, 41, 38, 0.95);
-    --apple-surface-secondary: rgba(32, 49, 45, 0.9);
-    --apple-fill-tertiary: rgba(118, 118, 128, 0.24);
-    --apple-fill-quaternary: rgba(118, 118, 128, 0.18);
-    --apple-text-primary: #EDF3F0;
-    --apple-text-secondary: #C3D0CA;
-    --apple-text-tertiary: #8FA19A;
-    --apple-separator: rgba(237, 243, 240, 0.14);
-    --apple-border-hairline: rgba(255, 255, 255, 0.12);
-    --apple-accent-green: #2E8F83;
-    --apple-accent-blue: #3AA397;
-    --apple-accent-amber: #F59E0B;
-    --apple-accent-red: #EF4444;
-    --apple-shadow-floating: 0 12px 36px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
-    --apple-shadow-sheet: 0 24px 60px -12px rgba(0, 0, 0, 0.72), 0 0 1px 0 rgba(255, 255, 255, 0.15);
+    --color-brand-50: rgba(23, 107, 99, 0.24);
+    --color-brand-100: rgba(23, 107, 99, 0.36);
+    --color-brand-200: rgba(39, 148, 135, 0.48);
+    --color-brand-primary: #279487;
+    --color-brand-fg: #6FE0D0;
+    --color-brand-hover: #3AA397;
+    --color-brand-soft: rgba(23, 107, 99, 0.28);
+
+    --color-success: #4ADE80;
+    --color-success-bg: rgba(16, 185, 129, 0.16);
+    --color-warning: #FCD34D;
+    --color-warning-bg: rgba(245, 158, 11, 0.18);
+    --color-danger: #FDA4AF;
+    --color-danger-bg: rgba(244, 63, 94, 0.18);
+    --color-info: #93C5FD;
+    --color-info-bg: rgba(59, 130, 246, 0.18);
+
+    --apple-bg-base: #0D1513;
+    --apple-surface: rgba(19, 31, 28, 0.96);
+    --apple-surface-elevated: #1A2A26;
+    --apple-surface-secondary: #172522;
+    --apple-fill-tertiary: rgba(238, 244, 242, 0.1);
+    --apple-fill-quaternary: rgba(238, 244, 242, 0.06);
+    --apple-text-primary: #EEF4F2;
+    --apple-text-secondary: #C8D6D1;
+    --apple-text-tertiary: #A9BEB7;
+    --apple-separator: #243833;
+    --apple-border-hairline: rgba(238, 244, 242, 0.08);
+    --apple-accent-green: #6FE0D0;
+    --apple-accent-blue: #60A5FA;
+    --apple-accent-amber: #FCD34D;
+    --apple-accent-red: #FDA4AF;
+    --apple-shadow-floating: 0 10px 28px -6px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(238, 244, 242, 0.08);
+    --apple-shadow-sheet: 0 20px 48px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(238, 244, 242, 0.1);
+  }
+
+  /* Ensure legacy brand-600/700 text utilities stay >=4.5:1 legible on dark surfaces */
+  html.dark .text-\[var\(--color-brand-600\)\]:not([class*='dark:text-']),
+  [data-apple-theme='dark'] .text-\[var\(--color-brand-600\)\]:not([class*='dark:text-']),
+  html.dark .text-\[var\(--color-brand-700\)\]:not([class*='dark:text-']),
+  [data-apple-theme='dark'] .text-\[var\(--color-brand-700\)\]:not([class*='dark:text-']),
+  html.dark .text-\[var\(--color-brand-primary\)\]:not([class*='dark:text-']),
+  [data-apple-theme='dark'] .text-\[var\(--color-brand-primary\)\]:not([class*='dark:text-']) {
+    color: var(--color-brand-fg);
   }
 }

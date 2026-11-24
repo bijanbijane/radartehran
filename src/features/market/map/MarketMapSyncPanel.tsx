@@ -39,12 +39,12 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
             <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>همگام‌سازی فضایی با نقشه زنده ({geoScopeFa})</span>
           </h3>
-          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
             انتخاب محدوده یا تغییر لایه نقشه بلافاصله هر دو پنل را هم‌سو می‌کند.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <button
             type="button"
             onClick={() => onSyncMapLens?.('heatmap')}
@@ -71,7 +71,7 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
       </div>
 
       {/* Explicit Spatial Legend with Sparse / Insufficient Data separation */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300 bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--color-text-secondary)] dark:text-slate-300 bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
         <span className="font-bold text-[var(--color-text-primary)] dark:text-white">راهنمای نقشه:</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[var(--color-brand-600)] inline-block" />متعادل / زیر ارزش</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#D97706] inline-block" />پرنوسان / نیاز به مذاکره</span>
@@ -110,7 +110,7 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
             >
               <div className="min-w-0">
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{h.name}</div>
-                <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">
+                <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
                   {agg.observedSampleCount === 0 ? 'مرجع داخلی (۰ آگهی زنده)' : `${toPersianNum(agg.observedSampleCount)} آگهی زنده`}
                 </div>
               </div>

@@ -70,24 +70,24 @@ export function getLensPalette(
     return { stroke: s.strokeColor, fill: s.fillColor, pillBg: s.pillBgColor };
   }
   if (mapLens === 'bubble') {
-    if (hood.marketReport.status === 'undervalued') return { stroke: '#10b981', fill: '#34d399', pillBg: '#059669' };
-    if (hood.marketReport.status === 'balanced') return { stroke: '#f59e0b', fill: '#fbbf24', pillBg: '#d97706' };
-    return { stroke: '#f43f5e', fill: '#fb7185', pillBg: '#e11d48' };
+    if (hood.marketReport.status === 'undervalued') return { stroke: '#047857', fill: '#34d399', pillBg: '#047857' };
+    if (hood.marketReport.status === 'balanced') return { stroke: '#b45309', fill: '#fbbf24', pillBg: '#9a3412' };
+    return { stroke: '#be123c', fill: '#fb7185', pillBg: '#be123c' };
   }
   if (mapLens === 'air') {
-    if (hood.air >= 7.5) return { stroke: '#10b981', fill: '#34d399', pillBg: '#059669' };
-    if (hood.air >= 5.5) return { stroke: '#f59e0b', fill: '#fbbf24', pillBg: '#d97706' };
-    return { stroke: '#f43f5e', fill: '#fb7185', pillBg: '#e11d48' };
+    if (hood.air >= 7.5) return { stroke: '#047857', fill: '#34d399', pillBg: '#047857' };
+    if (hood.air >= 5.5) return { stroke: '#b45309', fill: '#fbbf24', pillBg: '#9a3412' };
+    return { stroke: '#be123c', fill: '#fb7185', pillBg: '#be123c' };
   }
   if (mapLens === 'traffic') {
     const ts = hood.trafficInfo?.trafficScore ?? 6.5;
-    if (ts >= 7.2) return { stroke: '#10b981', fill: '#34d399', pillBg: '#059669' };
-    if (ts >= 6.0) return { stroke: '#f59e0b', fill: '#fbbf24', pillBg: '#d97706' };
-    return { stroke: '#f43f5e', fill: '#fb7185', pillBg: '#e11d48' };
+    if (ts >= 7.2) return { stroke: '#047857', fill: '#34d399', pillBg: '#047857' };
+    if (ts >= 6.0) return { stroke: '#b45309', fill: '#fbbf24', pillBg: '#9a3412' };
+    return { stroke: '#be123c', fill: '#fb7185', pillBg: '#be123c' };
   }
-  if (hood.status === 'green') return { stroke: '#10b981', fill: '#34d399', pillBg: '#059669' };
-  if (hood.status === 'yellow') return { stroke: '#f59e0b', fill: '#fbbf24', pillBg: '#d97706' };
-  return { stroke: '#f43f5e', fill: '#fb7185', pillBg: '#e11d48' };
+  if (hood.status === 'green') return { stroke: '#047857', fill: '#34d399', pillBg: '#047857' };
+  if (hood.status === 'yellow') return { stroke: '#b45309', fill: '#fbbf24', pillBg: '#9a3412' };
+  return { stroke: '#be123c', fill: '#fb7185', pillBg: '#be123c' };
 }
 
 export function buildMarkerPriceLabels(

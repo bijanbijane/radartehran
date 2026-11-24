@@ -33,9 +33,22 @@ export { IDENTITY_NOT_CREDENTIAL_NOTE_FA, PAST_RATING_DISCLAIMER_FA };
 function inferCategory(specialty: string, index: number): Exclude<ServiceCategory, 'all'> {
   if (/بازسازی|نوسازی|تعمیر/i.test(specialty)) return 'renovation_repair';
   if (/معمار|طراحی/i.test(specialty)) return 'architecture';
-  if (/حقوق|سند|کارشناس/i.test(specialty)) return index % 2 === 0 ? 'legal_valuation' : 'brokerage';
+  if (/حقوق|سند|کارشناس|ارزیابی|قیمت/i.test(specialty)) return index % 2 === 0 ? 'legal_valuation' : 'brokerage';
   if (/ساخت|برج|کلنگی|ویلایی/i.test(specialty) && index % 4 === 0) return 'contractor';
   return 'brokerage';
+}
+
+function inferCanonicalCategory(
+  specialty: string,
+  category: Exclude<ServiceCategory, 'all'>,
+  index: number,
+): ReturnType<typeof mapLegacyCategoryToCanonical> {
+  if (/ارزش|ارزیابی|قیمت|کارشناسی|تخمین/i.test(specialty)) return 'valuation';
+  if (/بازدید|بازرسی|فنی|تأسیسات|تاسیسات|سازه/i.test(specialty)) return 'inspection';
+  if (category === 'legal_valuation') return index % 2 === 0 ? 'valuation' : 'legal';
+  if (category === 'brokerage' && index % 5 === 1) return 'valuation';
+  if (category === 'brokerage' && index % 5 === 2) return 'inspection';
+  return mapLegacyCategoryToCanonical(category);
 }
 
 function buildOfferingForProvider(
@@ -109,7 +122,7 @@ export function buildServiceProvidersFromNeighborhoods(
       : 'organic_directory';
 
     const category = inferCategory(sp.specialty || '', idx);
-    const canonicalCategory = mapLegacyCategoryToCanonical(category);
+    const canonicalCategory = inferCanonicalCategory(sp.specialty || '', category, idx);
     const providerId = `sp-${hood.id}`;
     const specialtyFa = sanitizeInput(sp.specialty || `خدمات ملکی محله ${hood.name}`, 160);
     const credential = evaluateProviderVerificationTracks({ listingTier });

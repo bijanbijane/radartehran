@@ -307,10 +307,10 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
             {KNOWLEDGE_PUBLICATION_STATUS_LABELS_FA[pubStatus]}
           </span>
         </div>
-        <h2 className="text-[20px] sm:text-[22px] font-bold text-[var(--color-text-primary)] dark:text-white leading-[1.5]">{displayedPub.titleFa}</h2>
-        <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.summaryFa}</p>
+        <h2 className="text-[20px] sm:text-[22px] font-bold text-[var(--color-text-primary)] dark:text-white leading-[1.5] max-w-[720px]">{displayedPub.titleFa}</h2>
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.summaryFa}</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-[11px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-xs">
           <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">محدوده و دوره:</span><strong className="text-[var(--color-text-primary)] dark:text-white">{displayedPub.geographyScopeFa} · {displayedPub.periodLabelFa}</strong></div>
           <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">نویسنده پژوهش:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.author.nameFa}</strong></div>
           <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">بازبین فنی مستقل:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.technicalReviewer.nameFa}</strong></div>
@@ -319,13 +319,13 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
 
       <section id="tier-1-raw" data-testid="knowledge-tier-raw-data" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
         <h3 className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Database className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۱: داده خام و منابع پایه (Raw Data)</span></h3>
-        <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.rawDataSummaryFa}</p>
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.rawDataSummaryFa}</p>
       </section>
 
       <section id="tier-2-ind" data-testid="knowledge-tier-indicators" className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-brand-600)]/40 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Calculator className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۲: شاخص‌های محاسبه‌شده و سناریوهای آموزشی</span></h3>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold" dir="ltr">{displayedPub.formulaVersion}</span>
+          <span className="text-xs px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold" dir="ltr">{displayedPub.formulaVersion}</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {displayedPub.calculatedIndicators.map((ind) => {
@@ -337,25 +337,25 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-1">
                   <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{ind.labelFa}</span>
                   {isIllustrative ? (
-                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 text-[10px] font-bold">مثال آموزشی</span>
+                    <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 text-[11px] font-bold">مثال آموزشی</span>
                   ) : isPending ? (
-                    <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-900 text-[10px] font-bold">در انتظار محاسبه</span>
+                    <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-900 text-[11px] font-bold">در انتظار محاسبه</span>
                   ) : isUnavailable ? (
-                    <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-bold">فاقد داده کافی</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-bold">فاقد داده کافی</span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-300 text-[10px] font-bold">محاسبه تأییدشده</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-300 text-[11px] font-bold">محاسبه تأییدشده</span>
                   )}
                 </div>
                 <div className={`text-base font-black tabular-nums ${isIllustrative ? 'text-amber-800 dark:text-amber-300' : isPending || isUnavailable ? 'text-slate-500' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
                   {formatIndicatorExportValue(ind)}{' '}
-                  {!isPending && !isUnavailable && <span className="text-[11px] font-medium text-[var(--color-text-muted)]">({ind.unitFa})</span>}
+                  {!isPending && !isUnavailable && <span className="text-xs font-medium text-[var(--color-text-muted)]">({ind.unitFa})</span>}
                 </div>
-                <div className="text-[10.5px] text-[var(--color-text-muted)]">
+                <div className="text-xs text-[var(--color-text-muted)]">
                   دامنه: {ind.sampleScopeFa} · دوره: {ind.periodLabelFa}
                   {typeof ind.sampleSize === 'number' && ` · نمونه: ${toPersianNum(ind.sampleSize)} رکورد`}
                   {ind.datasetVersion && ` · نسخه دیتاست: ${ind.datasetVersion}`}
                 </div>
-                <div className="text-[10.5px] text-[#875000] dark:text-amber-300 font-medium">محدودیت شاخص: {ind.limitationFa}</div>
+                <div className="text-xs text-[#875000] dark:text-amber-300 font-medium">محدودیت شاخص: {ind.limitationFa}</div>
               </div>
             );
           })}
@@ -364,8 +364,8 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
 
       <section id="tier-3-interp" data-testid="knowledge-tier-interpretation" className="p-4 rounded-[12px] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900 space-y-2">
         <h3 className="font-black text-[var(--color-brand-700)] dark:text-emerald-300 flex items-center gap-1.5"><Compass className="w-4 h-4" /><span>لایه ۳: تفسیر پژوهشی و محدودیت‌ها (تفکیک‌شده از آمار خام)</span></h3>
-        <p className="editorial-prose text-[var(--color-text-primary)] dark:text-slate-200">{displayedPub.researchInterpretationFa}</p>
-        <div className="pt-1 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-[11px] text-[var(--color-text-muted)] space-y-1">
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-primary)] dark:text-slate-200">{displayedPub.researchInterpretationFa}</p>
+        <div className="pt-1 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-xs text-[var(--color-text-muted)] space-y-1 max-w-[720px]">
           <strong className="block text-[var(--color-text-primary)] dark:text-slate-200">سابقه نسخه ({displayedPub.version}) و محدودیت‌ها:</strong>
           <p>{displayedPub.changelogFa}</p>
           <ul className="list-disc pr-4 space-y-0.5">{displayedPub.limitationsFa.map((lim) => <li key={lim}>{lim}</li>)}</ul>

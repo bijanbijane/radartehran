@@ -8,6 +8,7 @@ import type { AccountWorkspaceSnapshot } from '../types/account.types';
 
 export interface AccountOverviewDashboardProps {
   snapshot: AccountWorkspaceSnapshot;
+  isAuthenticated?: boolean;
   favoriteHoodsCount: number;
   visitedHomesCount: number;
   onNavigateView?: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
@@ -16,12 +17,13 @@ export interface AccountOverviewDashboardProps {
 
 export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> = ({
   snapshot,
+  isAuthenticated = false,
   favoriteHoodsCount,
   visitedHomesCount,
   onNavigateView,
   onSwitchAccountTab,
 }) => {
-  const unreadNotifs = snapshot.notifications.filter((n) => !n.read).length;
+  const unreadNotifs = isAuthenticated ? snapshot.notifications.filter((n) => !n.read).length : 0;
 
   const summaryCards = [
     {
@@ -62,11 +64,11 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
               onClick={c.onClick}
               className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 text-start transition cursor-pointer space-y-1.5"
             >
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-[11px] font-medium">{c.label}</span>
+              <div className="flex items-center justify-between text-[var(--color-text-muted)]">
+                <span className="text-xs font-medium">{c.label}</span>
                 <Icon className="w-4 h-4 text-[var(--color-brand-600)]" />
               </div>
-              <strong className="text-sm font-black text-slate-900 dark:text-white tabular-nums block">
+              <strong className="text-sm font-black text-[var(--color-text-primary)] tabular-nums block">
                 {c.value}
               </strong>
             </button>
@@ -75,16 +77,16 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
       </div>
 
       {/* Dedicated Action Required Queue (distinct from passive timeline, zero promo noise) */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5" data-testid="account-action-required-queue">
+      <div className="p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5" data-testid="account-action-required-queue">
         <div className="flex items-center justify-between">
-          <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+          <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
             <Bookmark className="w-4 h-4 text-amber-600" />
             <span>نیازمند اقدام ({toPersianNum(snapshot.actionRequired.length)})</span>
           </strong>
-          <span className="text-[11px] text-slate-500">فقط موارد عملیاتی باز شما</span>
+          <span className="text-xs text-[var(--color-text-muted)]">فقط موارد عملیاتی باز شما</span>
         </div>
         {snapshot.actionRequired.length === 0 ? (
-          <p className="text-slate-500 py-1">در حال حاضر موردی منتظر اقدام فوری شما نیست.</p>
+          <p className="text-[var(--color-text-muted)] py-1">در حال حاضر موردی منتظر اقدام فوری شما نیست.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {snapshot.actionRequired.map((item) => (
@@ -93,17 +95,17 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
                 className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${
                   item.urgency === 'high'
                     ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-                    : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
+                    : 'bg-[var(--color-bg-muted)] border-[var(--color-border-subtle)]'
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="font-bold text-slate-900 dark:text-white truncate">{item.titleFa}</div>
-                  <div className="text-[11px] text-slate-600 dark:text-slate-300 truncate">{item.subtitleFa}</div>
+                  <div className="font-bold text-[var(--color-text-primary)] truncate">{item.titleFa}</div>
+                  <div className="text-xs text-[var(--color-text-secondary)] truncate">{item.subtitleFa}</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => onNavigateView?.(item.targetView, item.targetSubTab)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shrink-0 cursor-pointer"
+                  className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold shrink-0 cursor-pointer"
                 >
                   بررسی
                 </button>
@@ -115,36 +117,36 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
 
       {/* Quick Resume + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+        <div className="lg:col-span-7 p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-center justify-between">
-            <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <History className="w-4 h-4 text-[var(--color-brand-600)]" />
+            <strong className="text-sm font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+              <History className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>آخرین فعالیت‌های شما در رادار تهران</span>
             </strong>
             <button
               type="button"
               onClick={() => onSwitchAccountTab('activity')}
-              className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 cursor-pointer"
+              className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 text-xs font-bold text-[var(--color-brand-fg)] hover:underline cursor-pointer"
             >
               مشاهده همه
             </button>
           </div>
 
           {snapshot.activityTimeline.length === 0 ? (
-            <p className="text-slate-500 py-4">هنوز فعالیتی ثبت نشده است. اولین ارزش‌گذاری، ذخیره ملک یا درخواست خدمت خود را شروع کنید.</p>
+            <p className="text-[var(--color-text-muted)] py-4">هنوز فعالیتی ثبت نشده است. اولین ارزش‌گذاری، ذخیره ملک یا درخواست خدمت خود را شروع کنید.</p>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="divide-y divide-[var(--color-border-subtle)]">
               {snapshot.activityTimeline.slice(0, 5).map((item) => (
                 <div key={item.id} className="py-2 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-bold text-slate-900 dark:text-white truncate">{item.titleFa}</div>
-                    <div className="text-[10.5px] text-slate-500 truncate">{item.metaFa}</div>
+                    <div className="font-bold text-[var(--color-text-primary)] truncate">{item.titleFa}</div>
+                    <div className="text-xs text-[var(--color-text-muted)] truncate">{item.metaFa}</div>
                   </div>
                   {item.targetView && (
                     <button
                       type="button"
                       onClick={() => onNavigateView?.(item.targetView!, item.targetSubTab)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold shrink-0 cursor-pointer"
+                      className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-lg bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-bold shrink-0 cursor-pointer"
                     >
                       ادامه
                     </button>
@@ -155,24 +157,24 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
           )}
         </div>
 
-        <div className="lg:col-span-5 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
-          <strong className="text-sm font-black text-slate-900 dark:text-white block">دسترسی سریع ابزارهای شخصی</strong>
+        <div className="lg:col-span-5 p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-2.5">
+          <strong className="text-sm font-black text-[var(--color-text-primary)] block">دسترسی سریع ابزارهای شخصی</strong>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => onNavigateView?.('properties')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Home className="w-4 h-4 text-[var(--color-brand-600)]" />
-              <span className="block">کشف املاک</span>
+            <button type="button" onClick={() => onNavigateView?.('properties')} className="min-h-[56px] p-3 rounded-xl bg-[var(--color-bg-subtle)] hover:border-[var(--color-brand-600)] border border-transparent text-start font-bold cursor-pointer space-y-1">
+              <Home className="w-4 h-4 text-[var(--color-brand-fg)]" />
+              <span className="block text-[var(--color-text-primary)]">کشف املاک</span>
             </button>
-            <button type="button" onClick={() => onNavigateView?.('tools', 'valuation')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Calculator className="w-4 h-4 text-[var(--color-brand-600)]" />
-              <span className="block">ارزش‌گذاری جدید</span>
+            <button type="button" onClick={() => onNavigateView?.('tools', 'valuation')} className="min-h-[56px] p-3 rounded-xl bg-[var(--color-bg-subtle)] hover:border-[var(--color-brand-600)] border border-transparent text-start font-bold cursor-pointer space-y-1">
+              <Calculator className="w-4 h-4 text-[var(--color-brand-fg)]" />
+              <span className="block text-[var(--color-text-primary)]">ارزش‌گذاری جدید</span>
             </button>
-            <button type="button" onClick={() => onNavigateView?.('services')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Briefcase className="w-4 h-4 text-[var(--color-brand-600)]" />
-              <span className="block">درخواست خدمت</span>
+            <button type="button" onClick={() => onNavigateView?.('services')} className="min-h-[56px] p-3 rounded-xl bg-[var(--color-bg-subtle)] hover:border-[var(--color-brand-600)] border border-transparent text-start font-bold cursor-pointer space-y-1">
+              <Briefcase className="w-4 h-4 text-[var(--color-brand-fg)]" />
+              <span className="block text-[var(--color-text-primary)]">درخواست خدمت</span>
             </button>
-            <button type="button" onClick={() => onNavigateView?.('intelligence', 'reports')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <FileCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
-              <span className="block">تحلیل بازار</span>
+            <button type="button" onClick={() => onNavigateView?.('intelligence', 'reports')} className="min-h-[56px] p-3 rounded-xl bg-[var(--color-bg-subtle)] hover:border-[var(--color-brand-600)] border border-transparent text-start font-bold cursor-pointer space-y-1">
+              <FileCheck className="w-4 h-4 text-[var(--color-brand-fg)]" />
+              <span className="block text-[var(--color-text-primary)]">تحلیل بازار</span>
             </button>
           </div>
         </div>

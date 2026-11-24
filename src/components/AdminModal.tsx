@@ -113,16 +113,18 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
             </span>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)
+                {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-                نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م
-                {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitEditBuy, intlCurrency, locale)})` : ''} · {formatAreaShort(80, areaUnit)}: {toPersianNum((adminEditBuySqm || 120) * 80)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((adminEditBuySqm || 120) * 80, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(Math.round((adminEditRahn80m || 1500) * 0.03))} م
-              </p>
+              {isVerifiedAdmin && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                  نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م
+                  {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitEditBuy, intlCurrency, locale)})` : ''} · {formatAreaShort(80, areaUnit)}: {toPersianNum((adminEditBuySqm || 120) * 80)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((adminEditBuySqm || 120) * 80, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(Math.round((adminEditRahn80m || 1500) * 0.03))} م
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <AreaUnitToggle compact showIntlControls />
+            {isVerifiedAdmin && <AreaUnitToggle compact showIntlControls />}
             {isVerifiedAdmin && adminUnlocked && (
               <button
                 type="button"
@@ -132,32 +134,32 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 قفل پنل
               </button>
             )}
-            <button
-              type="button"
-              aria-label="بستن پنل مدیریت"
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
-            >
-              <X className="w-4 h-4 stroke-[2]" />
-            </button>
+            {!asPageView && (
+              <button
+                type="button"
+                aria-label="بستن پنل مدیریت"
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4 stroke-[2]" />
+              </button>
+            )}
           </div>
         </div>
         {!isVerifiedAdmin || !adminUnlocked ? (
           <form onSubmit={onAdminLogin} className="max-w-md mx-auto py-6 space-y-4 text-xs">
             <div className="apple-grouped-card p-4 space-y-3">
-              <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <div className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <KeyRound className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
-                <span>احراز هویت مدیر سیستم (Firebase Admin Auth)</span>
+                <span>ورود امن مدیران سامانه</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                دسترسی به اطلاعات CRM املاک، شماره متقاضیان خرید و تنظیمات کلود توسط قوانین امنیتی
-                سرور (Firestore Security Rules) محافظت می‌شود و نیازمند ورود با حساب رسمی مدیر
-                سیستم است.
+              <p className="text-[var(--color-text-secondary)] leading-relaxed">
+                دسترسی به اطلاعات مدیریتی، گزارش‌های عملیاتی و تنظیمات سامانه تحت کنترل دسترسی سرور محافظت می‌شود و تنها برای حساب‌های مجاز مدیریت فعال است.
               </p>
               {!currentUserEmail ? (
                 <div className="p-3 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-200 space-y-2">
                   <div className="font-bold">وضعیت فعلی: وارد حساب کاربری نشده‌اید</div>
-                  <p className="text-[11px] leading-relaxed">
+                  <p className="text-xs leading-relaxed">
                     لطفاً ابتدا با حساب گوگل مدیریت وارد شوید. کاربران مهمان مجوز مشاهده یا ویرایش
                     داده‌های مدیریتی را ندارند.
                   </p>
@@ -165,7 +167,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                     <button
                       type="button"
                       onClick={onGoogleSignIn}
-                      className="w-full py-2 rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-bold transition cursor-pointer"
+                      className="w-full min-h-[44px] py-2 rounded-[10px] bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] font-bold transition cursor-pointer"
                     >
                       ورود با حساب گوگل مدیریت
                     </button>
@@ -177,12 +179,11 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                   className="p-3 rounded-[10px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-200 space-y-1.5"
                 >
                   <div className="font-extrabold">
-                    دسترسی غیرمجاز (403 Unauthorized) — حساب فاقد مجوز مدیریت
+                    دسترسی غیرمجاز — حساب فاقد مجوز مدیریت
                   </div>
-                  <p className="text-[11px] leading-relaxed">
+                  <p className="text-xs leading-relaxed">
                     حساب فعلی (<code className="font-mono">{currentUserEmail}</code>) دارای سطح
-                    دسترسی ادمین نیست. عملیات خواندن/نوشتن مجموعه‌های مدیریتی در فایراستور برای این
-                    حساب مسدود است.
+                    دسترسی مدیریت سامانه نیست و دسترسی به این بخش برای آن مسدود است.
                   </p>
                 </div>
               ) : (

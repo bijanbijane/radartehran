@@ -31,7 +31,7 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
             <BookOpen className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>روش‌شناسی شاخص‌ها، شفافیت منابع و کیفیت داده</span>
           </h3>
-          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 mt-1">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-1">
             فرمول رهن به اجاره (نسخه {RENT_CONVERSION_EFFECTIVE_VERSION}) و استاندارد تفکیک سه‌گانه قیمت.
           </p>
         </div>
@@ -59,7 +59,7 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
           <div><span className="text-[var(--color-text-muted)] block">معامله ثبت‌شده رسمی</span><strong className="text-[#A61B1B] dark:text-rose-300">{toPersianNum(quality.verifiedTransactionCount)} مورد</strong></div>
           <div><span className="text-[var(--color-text-muted)] block">به‌روزرسانی</span><strong>{quality.freshnessLabelFa}</strong></div>
         </div>
-        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">{quality.limitationFa}</p>
+        <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">{quality.limitationFa}</p>
       </div>
 
       {/* 3-way Price Taxonomy */}
@@ -67,11 +67,11 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
         {(['asking_price', 'estimated_value', 'transaction_price'] as const).map((k) => (
           <div key={k} className="p-3 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
             <div className="font-bold text-[var(--color-text-primary)] dark:text-white">{DATA_KIND_LABELS_FA[k]}</div>
-            <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 leading-relaxed">
               {k === 'asking_price'
                 ? 'نرخ اعلام‌شده توسط مالک یا مشاور در آگهی‌ها؛ معمولاً شامل حاشیه چانه‌زنی است.'
                 : k === 'estimated_value'
-                  ? 'برآورد تحلیلی مدل هدونیک v6.4 با اعمال سن بنا، طبقه، امکانات و رژیم عرضه.'
+                  ? 'برآورد تحلیلی مدل ارزش‌گذاری هدونیک با اعمال سن بنا، طبقه، امکانات و رژیم عرضه.'
                   : 'فقط قراردادهای قطعی راستی‌آزمایی‌شده؛ تا اتصال سامانه رسمی، عدد صفر نمایش داده می‌شود.'}
             </p>
           </div>
@@ -85,10 +85,10 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
           <div key={m.id} className="p-3 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-1">
             <div className="flex items-center justify-between gap-2">
               <strong className="text-[var(--color-text-primary)] dark:text-white">{m.titleFa}</strong>
-              <span className="text-[10.5px] font-mono text-[var(--color-text-muted)]">v{m.version}</span>
+              <span className="text-xs font-mono text-[var(--color-text-muted)]">v{m.version}</span>
             </div>
-            <p className="text-[11px]">{m.summaryFa}</p>
-            <code className="block text-[10.5px] font-mono bg-[var(--color-bg-canvas)] dark:bg-slate-800 px-2 py-1 rounded text-[var(--color-brand-600)] dark:text-emerald-300" dir="ltr">
+            <p className="text-xs">{m.summaryFa}</p>
+            <code className="block text-xs font-mono bg-[var(--color-bg-canvas)] dark:bg-slate-800 px-2 py-1 rounded text-[var(--color-brand-600)] dark:text-emerald-300" dir="ltr">
               {m.formulaText}
             </code>
           </div>
@@ -100,7 +100,7 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
         <h4 className="font-bold text-[var(--color-text-primary)] dark:text-white">دفترچه منابع داده‌ای</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {MARKET_SOURCE_REGISTRY.map((src) => (
-            <div key={src.id} className="p-2.5 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-800 text-[11px] space-y-0.5">
+            <div key={src.id} className="p-2.5 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-800 text-xs space-y-0.5">
               <div className="font-bold text-[var(--color-text-primary)] dark:text-white">{src.nameFa}</div>
               <div className="text-[var(--color-brand-600)] dark:text-emerald-400">{src.kindFa} · {src.cadenceFa}</div>
               <div className="text-[var(--color-text-muted)] dark:text-slate-400">{src.coverageNoteFa}</div>

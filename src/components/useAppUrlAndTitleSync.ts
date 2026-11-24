@@ -4,7 +4,7 @@ import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, parseUrlIntlParams, setStoredAreaUnit, setStoredIntlCurrency, setStoredRadarLocale } from '../utils/areaUnit';
 import { SHOW_INTL_UNIT_CURRENCY_CONTROLS, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
-import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
+import { findHoodIdByAreaSlug, parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
 import { recordRecentNavigation } from '../navigation/journey/navigationJourneyMemory';
 import { findUnifiedRouteByPath } from '../navigation/registry/unifiedNavigationRegistry';
@@ -14,6 +14,7 @@ import type { AdminSectionId, ModuleSubTabId, RouteDestinationId } from '../navi
 import { matchesPersianSearch } from '../utils/security';
 import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
 import { CANONICAL_BRAND_FA, formatBrandCityTitle, parseStrictCityId } from '../utils/geo/cityGeospatialResolver';
+import { resolveRoutePageMeta } from '../navigation/url/routePageMeta';
 import type { MapNavigationIntent } from './useLeafletRadarMap';
 
 export interface UseAppUrlAndTitleSyncParams {
@@ -71,7 +72,13 @@ export function applyUrlParamsFromLocation(
   } else {
     if (navLoc.areaSlug) {
       const slugNorm = navLoc.areaSlug.replace(/-/g, ' ').trim();
-      const matchedHood = allCityHoods.find((e) => String(e.hood.id) === slugNorm || matchesPersianSearch(e.hood.name, slugNorm));
+      const mappedId = findHoodIdByAreaSlug(navLoc.areaSlug);
+      const matchedHood = allCityHoods.find(
+        (e) =>
+          (mappedId !== null && e.hood.id === mappedId) ||
+          String(e.hood.id) === slugNorm ||
+          matchesPersianSearch(e.hood.name, slugNorm),
+      );
       if (matchedHood) { setActiveCity(matchedHood.cityId); setSelectedHoodId(matchedHood.hood.id); }
     }
     if (setPrimaryView && (normalizePathname(pathname) !== '/' || search.includes('view=') || flyMap)) setPrimaryView(navLoc.viewId);
@@ -324,52 +331,79 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
         const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | ${brandWithCity}`;
         const desc = datedHood?.description ?? `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
-        const viewId = (primaryView || 'map') as RouteDestinationId;
+        const viewId = (primaryView || 'home') as RouteDestinationId;
+        const routeMeta = resolveRoutePageMeta({
+          viewId,
+          subTab: activeSubTab,
+          cityNameFa,
+          brandFa: CANONICAL_BRAND_FA,
+          selectedHoodName: viewId === 'map' ? selectedHood.name : undefined,
+        });
 
         if (viewId === 'not_found') {
-          updateSeoHeadMeta(`صفحه یافت نشد | ${brandWithCity}`, desc, window.location.pathname || '/404', { '@context': 'https://schema.org', '@type': 'WebPage', name: '404' });
+          updateSeoHeadMeta(routeMeta.title, routeMeta.description, window.location.pathname || '/404', { '@context': 'https://schema.org', '@type': 'WebPage', name: '404' });
           return;
         }
         if (viewId === 'admin') {
           const adminPath = buildCanonicalPathForDestination('admin', activeSubTab);
-          updateSeoHeadMeta(`محیط مدیریت سیستم | ${brandWithCity}`, `پنل عملیاتی و امنیتی ${CANONICAL_BRAND_FA}`, adminPath, { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Admin Shell' });
+          updateSeoHeadMeta(routeMeta.title, routeMeta.description, adminPath, { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Admin Shell' });
           commitHistoryUrl(adminPath);
           return;
         }
         if (viewId !== 'map' && viewId !== 'home') {
-          const preserveMemberProfilePath =
-            viewId === 'contributions' &&
-            activeSubTab === 'members' &&
-            currentPath.startsWith('/community/members/') &&
-            currentPath.length > '/community/members/'.length;
-          const canonicalPath = preserveMemberProfilePath
+          const preserveDynamicPath =
+            (viewId === 'contributions' && activeSubTab === 'members' && currentPath.startsWith('/community/members/') && currentPath.length > '/community/members/'.length) ||
+            (viewId === 'properties' && currentPath.startsWith('/properties/') && !['/properties/buy', '/properties/rent', '/properties/commercial', '/properties/office'].includes(currentPath)) ||
+            (viewId === 'knowledge' && currentPath.startsWith('/knowledge/articles/') && currentPath.length > '/knowledge/articles/'.length) ||
+            (viewId === 'services' && currentPath.startsWith('/services/providers/') && currentPath.length > '/services/providers/'.length) ||
+            (viewId === 'discover' && ((currentPath.startsWith('/areas/') && currentPath !== '/areas/registry') || currentPath.startsWith('/neighborhoods/')));
+          const canonicalPath = preserveDynamicPath
             ? currentPath
             : buildCanonicalPathForDestination(viewId, activeSubTab);
           const nextUrl = buildSynchronizedNavigationUrl({
             canonicalPath,
             currentSearch,
             currentHash,
-            isRouteChange: isRouteChange && !preserveMemberProfilePath,
+            isRouteChange: isRouteChange && !preserveDynamicPath,
             activeCity,
             selectedHoodId: selectedHood.id,
             keepBudget,
             budget: { mode, deposit, monthlyRent, buyTotalBudget, targetSqm },
           });
-          updateSeoHeadMeta(title, desc, canonicalPath, { '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`, description: desc });
-          commitHistoryUrl(nextUrl, preserveMemberProfilePath);
+          updateSeoHeadMeta(routeMeta.title, routeMeta.description, canonicalPath, { '@context': 'https://schema.org', '@type': 'WebPage', name: routeMeta.title, description: routeMeta.description });
+          commitHistoryUrl(nextUrl, preserveDynamicPath);
           return;
         }
 
-        const canonicalQuery = datedHood?.path ?? `?${cityPrefix}hood=${selectedHood.id}`;
-        updateSeoHeadMeta(title, desc, canonicalQuery, {
-          '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`,
-          description: desc, url: canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`,
-          geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
+        const isExplicitLegacyTehranPath = currentPath.startsWith('/tehran/');
+        if (isExplicitLegacyTehranPath && datedHood) {
+          updateSeoHeadMeta(title, desc, datedHood.path, {
+            '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`,
+            description: desc, url: `https://radartehran.ir${datedHood.path}`,
+            geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
+          });
+          const datedExtra = (viewId === 'home' ? baseBudgetSuffix : budgetSuffix).replace(/^&/, '');
+          const baseHoodUrl = `${datedHood.path}${datedExtra ? `?${datedExtra}` : ''}`;
+          const mergedHoodUrl = mergePreservedQueryIntoUrl(baseHoodUrl, currentSearch, !isRouteChange);
+          commitHistoryUrl(!isRouteChange && currentHash ? `${mergedHoodUrl}${currentHash}` : mergedHoodUrl);
+          return;
+        }
+
+        const canonicalPath = viewId === 'home' ? '/' : '/map';
+        updateSeoHeadMeta(routeMeta.title, routeMeta.description, canonicalPath, {
+          '@context': 'https://schema.org',
+          '@type': viewId === 'home' ? 'WebSite' : 'WebApplication',
+          name: routeMeta.title,
+          description: routeMeta.description,
+          url: `https://radartehran.ir${canonicalPath}`,
         });
-        const datedExtra = (viewId === 'home' ? baseBudgetSuffix : budgetSuffix).replace(/^&/, '');
-        const baseHoodUrl = datedHood ? `${datedHood.path}${datedExtra ? `?${datedExtra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
-        const mergedHoodUrl = mergePreservedQueryIntoUrl(baseHoodUrl, currentSearch, !isRouteChange);
-        commitHistoryUrl(!isRouteChange && currentHash ? `${mergedHoodUrl}${currentHash}` : mergedHoodUrl);
+        const cleanQueryParts: string[] = [];
+        if (activeCity !== 'tehran') cleanQueryParts.push(`city=${activeCity}`);
+        if (viewId === 'map') cleanQueryParts.push(`hood=${selectedHood.id}`);
+        if (keepBudget) cleanQueryParts.push(`mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}`);
+        const baseCleanUrl = `${canonicalPath}${cleanQueryParts.length ? `?${cleanQueryParts.join('&')}` : ''}`;
+        const mergedCleanUrl = mergePreservedQueryIntoUrl(baseCleanUrl, currentSearch, !isRouteChange);
+        commitHistoryUrl(!isRouteChange && currentHash ? `${mergedCleanUrl}${currentHash}` : mergedCleanUrl);
       }
     } catch { /* Ignore History API errors in restricted iframe contexts */ }
   }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, p.invalidCityParam, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, activeSubTab, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
