@@ -295,7 +295,6 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         savedAlerts: searches,
         publishedListings: bargains,
         calculationSnapshots: [],
-        buyerLeads: [],
         dataCorrections: [],
         sponsorRecords,
         crowdClaims: [],
