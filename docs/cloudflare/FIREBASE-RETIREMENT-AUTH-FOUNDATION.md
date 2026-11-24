@@ -80,3 +80,10 @@ This section records the live Cloudflare account state inspected after the mainl
 - The new mainline migration branch still contains Firebase runtime/configuration paths, Firebase package dependencies, and Firestore-backed domain adapters. PR #58 is an authentication and D1 foundation, not complete retirement.
 - PR #23 is a separate, heavily diverged migration stream (269 commits ahead and 217 behind the new mainline migration branch). Do not merge it wholesale.
 - A branch-by-branch Firebase reference audit and migration plan is still required. Do not claim that all branches are clean until every branch tip has been checked and reconciled.
+
+
+### Branch-tip path audit — 24 November 2026
+
+A read-only Git tree scan was completed for all 57 branches returned by the repository's branches endpoint. All 57 of 57 branch tips contain at least one path whose name includes `firebase` or `firestore`. Examples include Firebase project/configuration files, Firestore rules and tests, Firebase bootstrap/auth modules, Firestore repositories/adapters, and Firebase Worker auth modules. The retirement branch itself is not clean.
+
+This was a path-name inventory, not a full content/import scan; it does not prove that every branch has the same dependency graph or that all Firebase references are captured by filenames. Each branch still requires content-level dependency and caller analysis before safe reconciliation. No branch refs were rewritten, deleted, force-pushed, or merged during the scan.
