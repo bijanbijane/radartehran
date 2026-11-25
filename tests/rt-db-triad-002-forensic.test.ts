@@ -46,6 +46,7 @@ import {
   resolveDedicatedLifecycleReceiptSecret,
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
 import { resolveWriteAdmissionFromD1 } from '../worker/account-lifecycle/d1WriteAdmissionResolver';
+import { d1FirstRow } from '../worker/account-lifecycle/d1ResultHelpers';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -82,6 +83,7 @@ const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
   failOnSqlContains?: string | null;
+  failResultOnSqlContains?: string | null;
   yieldBeforeBatch?: boolean;
   yieldBeforeFirst?: boolean;
 }
@@ -90,10 +92,12 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
   db: D1Database;
   raw: DatabaseSync;
   setFailOnSqlContains: (pattern: string | null) => void;
+  setFailResultOnSqlContains: (pattern: string | null) => void;
   setYieldBeforeBatch: (enabled: boolean) => void;
 } {
   const raw = new DatabaseSync(':memory:');
   let failPattern: string | null = options.failOnSqlContains ?? null;
+  let failResultPattern: string | null = options.failResultOnSqlContains ?? null;
   let yieldBeforeBatch = Boolean(options.yieldBeforeBatch);
   const yieldBeforeFirst = Boolean(options.yieldBeforeFirst);
 
@@ -126,6 +130,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
       return row as T;
     },
     async all<T = Record<string, unknown>>() {
+      if (failResultPattern && sql.includes(failResultPattern)) {
+        return { results: [], success: false };
+      }
       const prepared = prepareExpanded(sql, boundValues);
       const stmt = raw.prepare(prepared.sql);
       const rows = stmt.all(...(prepared.values as any[])) as T[];
@@ -134,6 +141,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
     async run<T = unknown>() {
       if (failPattern && sql.includes(failPattern)) {
         throw new Error(`INJECTED_SQL_FAILURE:${failPattern}`);
+      }
+      if (failResultPattern && sql.includes(failResultPattern)) {
+        return { results: [] as T[], success: false, meta: { changes: 0 } };
       }
       const prepared = prepareExpanded(sql, boundValues);
       const stmt = raw.prepare(prepared.sql);
@@ -184,6 +194,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
     raw,
     setFailOnSqlContains: (p) => {
       failPattern = p;
+    },
+    setFailResultOnSqlContains: (p) => {
+      failResultPattern = p;
     },
     setYieldBeforeBatch: (v) => {
       yieldBeforeBatch = v;
@@ -745,6 +758,87 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       } finally {
         clearTestJwksForEdgeAuth();
       }
+    });
+  });
+
+  describe('D1 failure-result fail-closed regressions', () => {
+    it('does not convert unsuccessful D1 reads into missing rows', async () => {
+      const sqlite = createForensicSqliteD1();
+      sqlite.setFailResultOnSqlContains('SELECT 1');
+      await assert.rejects(
+        () => d1FirstRow(sqlite.db, 'SELECT 1'),
+        /D1_QUERY_FAILED/,
+      );
+    });
+
+    it('does not misclassify a failed permit insert as an account write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('INSERT INTO account_mutation_permits');
+      await assert.rejects(
+        () => acquireMutationPermitInD1({
+          userDb: sqlite.db,
+          uid: 'uid_permit_store_failure',
+          operationName: 'test_write',
+        }),
+        /ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE/,
+      );
+    });
+
+    it('does not continue account erasure after an unsuccessful registry read or user-table delete', async () => {
+      const makeFixture = async () => {
+        const userSqlite = createForensicSqliteD1();
+        const researchSqlite = createForensicSqliteD1();
+        applyMigrations(userSqlite.raw, 'migrations/user-d1');
+        applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+        const uid = 'uid_erasure_d1_failure';
+        await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'Regression' });
+        const env: WorkerEnv = {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        };
+        return { userSqlite, env, uid };
+      };
+
+      const registryFixture = await makeFixture();
+      registryFixture.userSqlite.setFailResultOnSqlContains(
+        'SELECT subject_key, subject_key_version FROM user_research_subject_registry',
+      );
+      await assert.rejects(
+        () => executeAccountDeletionLifecycle({
+          env: registryFixture.env,
+          uid: registryFixture.uid,
+          actorUid: registryFixture.uid,
+          idempotencyKey: 'idem_registry_read_failure',
+        }),
+        /RESEARCH_SUBJECT_REGISTRY_READ_FAILED/,
+      );
+      assert.ok(
+        registryFixture.userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(registryFixture.uid),
+        'profile must remain when the complete subject-key registry cannot be read',
+      );
+
+      const deleteFixture = await makeFixture();
+      deleteFixture.userSqlite.setFailResultOnSqlContains('DELETE FROM user_profiles');
+      await assert.rejects(
+        () => executeAccountDeletionLifecycle({
+          env: deleteFixture.env,
+          uid: deleteFixture.uid,
+          actorUid: deleteFixture.uid,
+          idempotencyKey: 'idem_user_delete_failure',
+        }),
+        /USER_DB_ERASURE_DELETE_FAILED/,
+      );
+      assert.ok(
+        deleteFixture.userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(deleteFixture.uid),
+        'profile must not be reported as erased when D1 returns success=false',
+      );
+      const block = deleteFixture.userSqlite.raw
+        .prepare('SELECT job_id FROM account_write_blocks WHERE uid = ?')
+        .get(deleteFixture.uid) as { job_id: string } | undefined;
+      assert.ok(block, 'write block must remain active after a partial erasure failure');
     });
   });
 
