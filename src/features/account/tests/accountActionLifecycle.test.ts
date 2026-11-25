@@ -172,6 +172,26 @@ test('Stage 184: stripSecretsFromExportValue scrubs nested sensitive keys and pr
   assert.equal(items[0].title, 'آگهی نمونه');
 });
 
+test('Stage 184: stripSecretsFromExportValue normalizes secret key variants and omits over-deep objects', () => {
+  let deep: Record<string, unknown> = { access_token: 'deep-secret' };
+  for (let i = 0; i < 10; i += 1) deep = { nested: deep };
+  const scrubbed = stripSecretsFromExportValue({
+    access_token: 'a',
+    refresh_token: 'b',
+    ApiKey: 'c',
+    CLIENT_SECRET: 'd',
+    safeField: 'kept',
+    deep,
+  }) as Record<string, unknown>;
+  assert.equal('access_token' in scrubbed, false);
+  assert.equal('refresh_token' in scrubbed, false);
+  assert.equal('ApiKey' in scrubbed, false);
+  assert.equal('CLIENT_SECRET' in scrubbed, false);
+  assert.equal(scrubbed.safeField, 'kept');
+  assert.equal(JSON.stringify(scrubbed).includes('deep-secret'), false);
+  assert.equal(JSON.stringify(scrubbed).includes('OMITTED_MAX_DEPTH'), true);
+});
+
 test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch, schema mismatch, and valid envelope', async () => {
   const makeFetch = (status: number, body: unknown): typeof fetch =>
     (async () =>
@@ -181,7 +201,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
       })) as unknown as typeof fetch;
 
   const r401 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(401, { status: 'error' }),
   });
@@ -189,7 +209,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r401.ok) assert.equal(r401.code, 'AUTH_REQUIRED');
 
   const r403 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(403, { status: 'error' }),
   });
@@ -197,7 +217,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r403.ok) assert.equal(r403.code, 'FORBIDDEN');
 
   const r429 = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(429, { status: 'error' }),
   });
@@ -205,7 +225,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!r429.ok) assert.equal(r429.code, 'RATE_LIMITED');
 
   const mismatch = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, {
       status: 'ok',
@@ -219,7 +239,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   if (!mismatch.ok) assert.equal(mismatch.code, 'OWNER_MISMATCH');
 
   const badSchema = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, {
       status: 'ok',
@@ -248,7 +268,7 @@ test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch
   };
   assert.equal(isValidServerAccountExportResponse(validPayload, 'u1'), true);
   const okRes = await requestAccountServerExport({
-    getToken: async () => 'tok',
+    currentUser: { uid: 'u1' },
     expectedUid: 'u1',
     fetchFn: makeFetch(200, validPayload),
   });
