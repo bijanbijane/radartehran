@@ -230,6 +230,18 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     if (batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
       throw new Error('RESEARCH_DB_ATOMIC_WRITE_FAILED');
     }
+    const eventChanges = batchResults[0]?.meta?.changes;
+    const idempotencyChanges = batchResults[1]?.meta?.changes;
+    if (!Number.isSafeInteger(eventChanges) || !Number.isSafeInteger(idempotencyChanges)) {
+      throw new Error('RESEARCH_DB_ATOMIC_WRITE_RESULT_UNCONFIRMED');
+    }
+    if (eventChanges === 0) {
+      deduplicatedCount += 1;
+      continue;
+    }
+    if (eventChanges !== 1 || idempotencyChanges !== 1) {
+      throw new Error('RESEARCH_DB_IDEMPOTENCY_STATE_INCONSISTENT');
+    }
     acceptedCount += 1;
   }
 
