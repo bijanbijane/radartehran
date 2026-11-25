@@ -20,6 +20,7 @@ import {
 import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
+  resolveDedicatedLifecycleReceiptSecret,
 } from '../account-lifecycle/workerLifecycleRuntime';
 import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
@@ -296,10 +297,10 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         publishedListings: bargains,
         calculationSnapshots: [],
         buyerLeads: [],
+        buyerAlerts,
         dataCorrections: [],
         sponsorRecords,
         crowdClaims: [],
-        buyerLeads: buyerAlerts,
         mediaObjects: media,
       };
       return jsonWorkerResponse(ctx, 200, { status: 'ok', exportData });
@@ -351,10 +352,17 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       if (!auth.isAdmin) {
         return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ADMIN_FORBIDDEN' });
       }
+      const receiptSecret = resolveDedicatedLifecycleReceiptSecret(env);
+      if (!receiptSecret) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error',
+          code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_UNAVAILABLE',
+        });
+      }
       const outbox = await processPendingResearchErasureOutbox({
         userDb,
         researchDb: resolveResearchDb(env),
-        receiptSecret: env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET,
+        receiptSecret,
       });
       return jsonWorkerResponse(ctx, 200, { status: 'ok', outbox });
     }
