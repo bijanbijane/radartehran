@@ -1,0 +1,38 @@
+name: Radar Performance Focused Regressions
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/data/neighborhoodListingSamples.ts'
+      - 'tests/real-market-price-aggregator.test.ts'
+      - '.github/workflows/performance-focused-regressions.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-performance-focused-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  listing-sample-cache:
+    name: Listing sample cache regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR merge ref
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Run complete market-price aggregator regression suite
+        run: npx tsx tests/real-market-price-aggregator.test.ts
