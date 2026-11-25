@@ -623,9 +623,22 @@ export interface KAnonymousResearchAggregation {
 }
 
 function assertDayAlignedAggregationWindow(windowStartIso: string, windowEndIso: string): void {
+  const utcMidnightPattern = /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/;
+  if (!utcMidnightPattern.test(windowStartIso) || !utcMidnightPattern.test(windowEndIso)) {
+    throw new AggregationWindowPolicyError(
+      'AGGREGATION_WINDOW_NOT_CANONICAL_UTC',
+      'Aggregation window boundaries must be explicit canonical UTC midnight timestamps ending in .000Z.',
+    );
+  }
   const startMs = Date.parse(windowStartIso);
   const endMs = Date.parse(windowEndIso);
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+  if (
+    !Number.isFinite(startMs) ||
+    !Number.isFinite(endMs) ||
+    new Date(startMs).toISOString() !== windowStartIso ||
+    new Date(endMs).toISOString() !== windowEndIso ||
+    endMs <= startMs
+  ) {
     throw new AggregationWindowPolicyError(
       'INVALID_AGGREGATION_WINDOW',
       'Aggregation windowStartIso and windowEndIso must be valid ISO-8601 timestamps with end > start.',
