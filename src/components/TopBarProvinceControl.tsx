@@ -1,6 +1,6 @@
 /**
  * @file src/components/TopBarProvinceControl.tsx
- * @description کنترل یکپارچه سوییچر ۵ کلان‌شهر + فهرست‌بندی سریع ۳۱ استان و شهرهای کشور در نوار بالای نقشه.
+ * @description کنترل یکپارچه سوییچر ۵ کلان‌شهر + فهرست‌بندی سریع پوشش بازار منتخبی کشور در نوار بالای نقشه.
  * استخراج‌شده جهت بهینه‌سازی بارگذاری تنبل (Lazy Loading) پنجره جامع استان‌ها.
  */
 
@@ -88,7 +88,7 @@ export function TopBarProvinceAndCityDirectoryControl({
       {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها */}
       <div className="relative flex items-center">
         <select
-          aria-label="فهرست‌بندی استان‌ها و شهرهای ایران"
+          aria-label="فهرست مناطق دارای پوشش بازار Radar"
           value={`hood:${selectedHoodId}`}
           onChange={(e) => {
             const val = e.target.value;
@@ -108,7 +108,7 @@ export function TopBarProvinceAndCityDirectoryControl({
             }
           }}
           className="bg-emerald-50/90 dark:bg-slate-800 hover:bg-emerald-100/80 dark:hover:bg-slate-700 text-emerald-950 dark:text-emerald-200 border border-emerald-300/80 dark:border-slate-700 rounded-[9px] px-2 py-1.5 text-[11px] font-extrabold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[155px] sm:max-w-[195px] truncate"
-          title="فهرست‌بندی جامع ۳۱ استان، شهرها و محله‌های ایران"
+          title="مناطق دارای داده بازار محلی Radar؛ مرجع رسمی در بخش کشف > رجیستری"
         >
           {ALL_31_IRAN_PROVINCES.map((prov) => {
             const provHoods = hoodsByProvinceId[prov.id] || [];
