@@ -893,6 +893,32 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         .get(deleteFixture.uid) as { job_id: string } | undefined;
       assert.ok(block, 'write block must remain active after a partial erasure failure');
     });
+    it('does not infer an empty research erasure scope from a missing RESEARCH_DB and HMAC key', async () => {
+      const userSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      const uid = 'uid_research_binding_missing';
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'Regression' });
+      const result = await executeAccountDeletionLifecycle({
+        env: {
+          USER_DB: userSqlite.db,
+          LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        },
+        uid,
+        actorUid: uid,
+        idempotencyKey: 'idem_research_binding_missing',
+      });
+      assert.equal(result.ok, false);
+      assert.equal(result.statusCode, 503);
+      assert.match(result.code, /RESEARCH_HMAC_SECRET_MISSING/);
+      assert.ok(
+        userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(uid),
+        'user data must remain while historical research erasure scope is unknown',
+      );
+      assert.ok(
+        userSqlite.raw.prepare('SELECT uid FROM account_write_blocks WHERE uid = ? AND released_at_iso IS NULL').get(uid),
+        'write block must remain active until erasure scope can be established',
+      );
+    });
   });
 
   describe('F-04, F-05 & F-07 [P0/P1]: Consent Revocation Race, Queue Consent Gate, k>=10, Query Differencing & Unicode PII', () => {
