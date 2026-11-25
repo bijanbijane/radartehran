@@ -73,6 +73,7 @@ import {
   executeResearchSubjectErasure,
   HARD_MIN_K_ANONYMITY,
   ingestResearchEventsBatch,
+  purgeExpiredResearchData,
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
@@ -815,6 +816,84 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('fails closed when the research subject registry write is unsuccessful', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const uid = 'uid_registry_write_failure';
+      await updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+      });
+      userSqlite.setFailResultOnSqlContains('INSERT OR IGNORE INTO user_research_subject_registry');
+      const result = await ingestResearchEventsBatch({
+        env: {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          RESEARCH_HMAC_KEY_VERSION: 'v1',
+        },
+        uid,
+        clientIp: '198.51.100.20',
+        rawEvents: [{
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 12,
+          idempotencyKey: 'registry_write_failure_event',
+          payload: { mapZoomBucket: 'z14', viewMode: 'buy' },
+        }],
+      });
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.statusCode, 503);
+        assert.equal(result.code, 'RESEARCH_SUBJECT_REGISTRY_WRITE_FAILED');
+      }
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        0,
+      );
+    });
+
+    it('does not erase research events when impacted aggregation scopes cannot be read', async () => {
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      await researchSqlite.db.prepare(
+        `INSERT INTO research_events (
+          event_id, subject_key, subject_key_version, event_type, schema_version,
+          city_id, hood_id, session_bucket, payload_json, occurred_at_iso, ingested_at_iso,
+          expires_at_iso, idempotency_key
+        ) VALUES ('evt_scope_read_failure', 'sk_v1_test', 'v1', 'radar.map.neighborhood_select',
+          1, 'tehran', 12, '2026-11-22', '{}', '2026-11-22T10:00:00.000Z',
+          '2026-11-22T10:00:00.000Z', '2027-01-01T00:00:00.000Z', 'idem_scope_read_failure')`,
+      ).run();
+      researchSqlite.setFailResultOnSqlContains('SELECT DISTINCT event_type, city_id');
+      await assert.rejects(
+        () => executeResearchSubjectErasure({
+          researchDb: researchSqlite.db,
+          outboxId: 'outbox_scope_read_failure',
+          subjectKey: 'sk_v1_test',
+          subjectKeyVersion: 'v1',
+        }),
+        /RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED/,
+      );
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE event_id = ?').get('evt_scope_read_failure') as { cnt: number }).cnt,
+        1,
+      );
+    });
+
+    it('reports retention-purge write failures instead of returning a successful zero-count result', async () => {
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      researchSqlite.setFailResultOnSqlContains('DELETE FROM research_events');
+      await assert.rejects(
+        () => purgeExpiredResearchData({ researchDb: researchSqlite.db }),
+        /RESEARCH_RETENTION_PURGE_FAILED/,
+      );
+    });
+
     it('does not convert unsuccessful D1 reads into missing rows', async () => {
       const sqlite = createForensicSqliteD1();
       sqlite.setFailResultOnSqlContains('SELECT 1');
@@ -1091,6 +1170,19 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(agg9.kThreshold, 10);
       assert.equal(agg9.kSuppressed, true);
       assert.equal(agg9.distinctSubjectsCount, null);
+
+      const aggNaN = await computeKAnonymousResearchAggregation({
+        researchDb: researchSqlite.db,
+        eventType: 'radar.map.neighborhood_select',
+        cityId: 'tehran',
+        hoodId: 10,
+        windowStartIso: '2026-11-22T00:00:00.000Z',
+        windowEndIso: '2026-11-23T00:00:00.000Z',
+        minCohortSize: Number.NaN,
+        nowMs: Date.parse('2026-11-22T12:00:00.000Z'),
+      });
+      assert.equal(aggNaN.kThreshold, 10);
+      assert.equal(aggNaN.kSuppressed, true, 'NaN must not bypass the hard k-anonymity floor');
 
       // 3. Add 3 more subjects (total 12) and then 1 more (total 13) -> both coarsen to 10 (blocks differencing!)
       for (let i = 10; i <= 12; i += 1) {
