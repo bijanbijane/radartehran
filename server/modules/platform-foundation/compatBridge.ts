@@ -1,4 +1,5 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import {
   CoreApiError as BaseCoreApiError,
   decodePaginationCursor,
@@ -52,45 +53,72 @@ export function getRequestTraceContext(req: Request): RequestTraceContext {
   };
 }
 
+interface VerifiedPlatformAdminContext {
+  actorId: string;
+  actorRole: 'primary_admin' | 'delegated_admin';
+  permissions: string[];
+}
+
+type RequestWithVerifiedPlatformAdmin = Request & {
+  verifiedPlatformAdminContext?: VerifiedPlatformAdminContext;
+};
+
+/**
+ * Verifies administrator identity before legacy platform routers are reached.
+ * Client-supplied x-actor-id, x-admin-role and x-admin-role-scope are never trusted.
+ */
+export function verifiedAdminContextMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  void (async () => {
+    const auth = await verifyAdminApiAuthorization(req);
+    if (!auth.authorized) {
+      res.status(auth.statusCode === 401 ? 401 : 403).json({
+        status: 'error',
+        code: auth.statusCode === 401 ? 'AUTHENTICATION_REQUIRED' : 'PERMISSION_DENIED',
+      });
+      return;
+    }
+
+    const isPrimary = auth.reason === 'AUTHORIZED_BOOTSTRAP_ADMIN' ||
+      auth.reason === 'AUTHORIZED_SERVER_SECRET';
+    (req as RequestWithVerifiedPlatformAdmin).verifiedPlatformAdminContext = {
+      actorId: auth.actorUid || auth.uid || 'verified-platform-admin',
+      actorRole: isPrimary ? 'primary_admin' : 'delegated_admin',
+      permissions: isPrimary
+        ? ['*']
+        : ['platform.modules.read', 'platform.config.read', 'platform.health.read'],
+    };
+    next();
+  })().catch(next);
+}
+
 export function requireAdminPermission(
   req: Request,
   requiredPerm: string,
 ): { actorId: string; actorRole: string } {
-  const adminToken =
-    req.headers['x-admin-token'] ??
-    req.headers['authorization'] ??
-    req.headers['x-platform-admin-actor'];
-  const roleScope = req.headers['x-admin-role-scope'];
-  const rawScope = Array.isArray(roleScope) ? roleScope[0] : roleScope;
-
-  if (!adminToken) {
+  const context = (req as RequestWithVerifiedPlatformAdmin).verifiedPlatformAdminContext;
+  if (!context) {
     throw new PlatformApplicationError({
       code: 'AUTHENTICATION_REQUIRED',
       category: 'AUTHENTICATION',
       httpStatus: 401,
-      message: `Authentication required for permission '${requiredPerm}'.`,
+      message: `Verified administrator authentication is required for '${requiredPerm}'.`,
     });
   }
 
-  if (
-    rawScope === 'read_only' &&
-    (requiredPerm.endsWith('.manage') || requiredPerm.endsWith('.write'))
-  ) {
+  if (!context.permissions.includes('*') && !context.permissions.includes(requiredPerm)) {
     throw new PlatformApplicationError({
       code: 'PERMISSION_DENIED',
       category: 'AUTHORIZATION',
       httpStatus: 403,
-      message: `Read-only administrator scope cannot perform '${requiredPerm}'.`,
+      message: `Verified administrator does not have permission '${requiredPerm}'.`,
     });
   }
 
-  const actorHeader = req.headers['x-actor-id'];
-  const actorId =
-    (Array.isArray(actorHeader) ? actorHeader[0] : actorHeader) || 'verified-platform-admin';
-  return {
-    actorId: String(actorId),
-    actorRole: rawScope === 'read_only' ? 'read_only_admin' : 'primary_admin',
-  };
+  return { actorId: context.actorId, actorRole: context.actorRole };
 }
 
 export function clampPageSize(raw: unknown, defaultLimit = 25, maxLimit = 50): number {
