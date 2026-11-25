@@ -37,6 +37,7 @@ import {
 } from '../worker/account-lifecycle/d1InternalRpcNonceStore';
 import {
   acquireMutationPermitInD1,
+  countActiveMutationPermitsInD1,
   blockUserWritesInD1,
   isUserWriteBlockedInD1,
   releaseMutationPermitInD1,
@@ -1142,6 +1143,24 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         () => d1FirstRow(sqlite.db, 'SELECT 1'),
         /D1_QUERY_FAILED/,
       );
+    });
+
+    it('keeps active mutation permits valid for the maximum Worker request lifetime', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const nowMs = 1_795_000_000_000;
+      const permit = await acquireMutationPermitInD1({
+        userDb: sqlite.db,
+        uid: 'uid_long_running_mutation',
+        operationName: 'long_upload',
+        ttlMs: 15 * 60_000,
+        nowMs,
+      });
+      assert.equal(permit.ok, true);
+      if (!permit.ok) return;
+      assert.equal(permit.expiresAtMs - nowMs, 15 * 60_000);
+      assert.equal(await countActiveMutationPermitsInD1(sqlite.db, permit.uid, nowMs + 14 * 60_000), 1);
+      assert.equal(await countActiveMutationPermitsInD1(sqlite.db, permit.uid, nowMs + 15 * 60_000), 0);
     });
 
     it('does not misclassify a failed permit insert as an account write block', async () => {
