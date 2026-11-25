@@ -78,7 +78,7 @@ import {
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
 import { evaluateTieredWorkerRateLimit } from '../worker/cache/kvAndEdgeRateLimiter';
-import { isObjectUnderLegalHold } from '../worker/storage/r2StorageAdapter';
+import { buildR2MediaObjectKey, isObjectUnderLegalHold } from '../worker/storage/r2StorageAdapter';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
@@ -819,6 +819,45 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('rejects unsafe R2 key components instead of silently coercing them', () => {
+      const validKey = buildR2MediaObjectKey({
+        city: 'TEHRAN',
+        hoodId: 1001,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      });
+      assert.match(validKey, /^listings\/tehran\/hood-1001\/image\/\d{4}-\d{2}\/media_12345678\.jpg$/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'unknown-city',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      }), /MEDIA_CITY_ID_UNSUPPORTED/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 0,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      }), /MEDIA_NEIGHBORHOOD_ID_INVALID/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: '../secret',
+      }), /MEDIA_OBJECT_ID_INVALID/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'application/octet-stream',
+        objectId: 'media_12345678',
+      }), /MEDIA_MIME_TYPE_UNSUPPORTED/);
+    });
+
     it('fails closed when the legal-hold index read is unsuccessful', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
