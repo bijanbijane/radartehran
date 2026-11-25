@@ -145,8 +145,16 @@ export async function processRadarQueueBatch(params: {
   nowMs?: number;
   executeJob: (envelope: RadarQueueEnvelope) => Promise<unknown>;
 }): Promise<QueueBatchProcessSummary> {
-  const maxRetries = Math.max(1, Math.min(10, params.maxRetries ?? 3));
-  const leaseDurationMs = Math.max(5_000, params.leaseDurationMs ?? DEFAULT_JOB_LEASE_DURATION_MS);
+  const requestedMaxRetries = Number(params.maxRetries ?? 3);
+  const maxRetries = Number.isSafeInteger(requestedMaxRetries)
+    ? Math.max(1, Math.min(10, requestedMaxRetries))
+    : 3;
+  const requestedLeaseDurationMs = Number(params.leaseDurationMs ?? DEFAULT_JOB_LEASE_DURATION_MS);
+  const leaseDurationMs = Number.isFinite(requestedLeaseDurationMs)
+    ? Math.max(5_000, Math.min(10 * 60_000, requestedLeaseDurationMs))
+    : DEFAULT_JOB_LEASE_DURATION_MS;
+  const suppliedNowMs = params.nowMs ?? Date.now();
+  const batchNowMs = Number.isFinite(suppliedNowMs) ? Number(suppliedNowMs) : Date.now();
   let processedCount = 0;
   let deduplicatedCount = 0;
   let retriedCount = 0;
@@ -154,7 +162,7 @@ export async function processRadarQueueBatch(params: {
   let failedCount = 0;
 
   for (const msg of params.batch.messages) {
-    const nowMs = params.nowMs ?? Date.now();
+    const nowMs = batchNowMs;
     const nowIso = new Date(nowMs).toISOString();
     const validation = validateQueueEnvelope(msg.body);
 
@@ -196,7 +204,7 @@ export async function processRadarQueueBatch(params: {
 
     try {
       // 1. Ensure durable row exists (PENDING)
-      await params.db
+      const ensureJobRes = await params.db
         .prepare(
           `INSERT OR IGNORE INTO queue_job_executions (
             idempotency_key, job_type, message_id, correlation_id, status, attempt_count,
@@ -216,6 +224,7 @@ export async function processRadarQueueBatch(params: {
           nowIso,
         )
         .run();
+      if (!ensureJobRes.success) throw new Error('QUEUE_EXECUTION_ROW_CREATE_FAILED');
 
       // 2. Inspect current durable state
       const existing = await params.db
@@ -259,7 +268,7 @@ export async function processRadarQueueBatch(params: {
         .run();
 
       const claimedChanges = claimRes.meta?.changes ?? 0;
-      if (claimedChanges !== 1) {
+      if (!claimRes.success || claimedChanges !== 1) {
         // Active unexpired lease held by another concurrent consumer: retry later without duplicate work
         msg.retry({ delaySeconds: 15 });
         retriedCount += 1;
@@ -287,7 +296,7 @@ export async function processRadarQueueBatch(params: {
         .bind(serializedResult, completedAtIso, completedAtIso, envelope.idempotencyKey, leaseOwner)
         .run();
 
-      if ((commitRes.meta?.changes ?? 0) !== 1) {
+      if (!commitRes.success || (commitRes.meta?.changes ?? 0) !== 1) {
         // Lease was lost or superseded; retry instead of silently ACKing
         msg.retry({ delaySeconds: computeQueueRetryDelaySeconds(msg.attempts) });
         retriedCount += 1;
@@ -322,12 +331,15 @@ export async function processRadarQueueBatch(params: {
             failedAtIso: errNowIso,
           },
           onDurableDeadLetterRecorded: async () => {
-            await params.db!
+            const deadLetterState = await params.db!
               .prepare(
                 'UPDATE queue_job_executions SET status = ?1, last_error_code = ?2, last_error_message = ?3, lease_owner = NULL, lease_expires_at_ms = NULL, updated_at_iso = ?4 WHERE idempotency_key = ?5',
               )
               .bind('PERMANENT_FAILURE', classified.code, classified.message, errNowIso, envelope.idempotencyKey)
               .run();
+            if (!deadLetterState.success || (deadLetterState.meta?.changes ?? 0) !== 1) {
+              throw new Error('QUEUE_DURABLE_DEAD_LETTER_STATE_WRITE_FAILED');
+            }
             await params.db!
               .prepare(
                 'INSERT OR REPLACE INTO queue_idempotency_keys (idempotency_key, job_type, processed_at_iso, status) VALUES (?1, ?2, ?3, ?4)',
