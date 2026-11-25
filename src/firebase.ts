@@ -1,11 +1,10 @@
 /**
- * @fileoverview Firebase Auth-only client bootstrap (RT-DATA-001: no client Firestore SDK).
+ * @fileoverview Compatibility shell for legacy Firestore diagnostics only.
+ * Authentication is provided by the Cloudflare D1 session client; Firebase Auth and App Check are not initialized.
  */
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
 import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
-import { initClientAppCheckIfConfigured, installClientAppCheckFetchInterceptor } from './utils/clientAppCheck';
 import { CLIENT_FIRESTORE_FORBIDDEN } from './platform/data/clientDataPolicy';
 import {
   beginConnectionProbeGeneration,
@@ -26,33 +25,9 @@ import {
   type WriteSyncState,
 } from './utils/firestoreConnectionState';
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './utils/areaUnit';
+import { getAuthClient } from './platform/auth';
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
-export const auth: Auth = getAuth(app);
-const viteAppCheckEnv: Record<string, string | undefined> =
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
-initClientAppCheckIfConfigured(app, {
-  ...viteAppCheckEnv,
-  VITE_FIREBASE_APP_CHECK_SITE_KEY: String(
-    viteAppCheckEnv.VITE_FIREBASE_APP_CHECK_SITE_KEY ||
-    viteAppCheckEnv.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY ||
-    firebaseConfig.recaptchaSiteKey ||
-    '',
-  ),
-});
-installClientAppCheckFetchInterceptor(app, async () => {
-  await auth.authStateReady();
-  return auth.currentUser ? auth.currentUser.getIdToken() : null;
-});
-export const googleProvider: GoogleAuthProvider = (() => {
-  const provider = new GoogleAuthProvider();
-  try {
-    provider.setCustomParameters({ prompt: 'select_account' });
-  } catch {
-    /* ignore */
-  }
-  return provider;
-})();
 
 /** @deprecated Client Firestore is forbidden; retained only for legacy type surface. */
 export type Firestore = never;
@@ -151,18 +126,20 @@ export function recordFirestoreQueryError(error: unknown, operationType: Operati
     error: errMsg,
     operationType,
     path,
-    authInfo: {
-      userId: auth.currentUser?.uid ?? null,
-      email: auth.currentUser?.email ?? null,
-      emailVerified: auth.currentUser?.emailVerified ?? null,
-      isAnonymous: auth.currentUser?.isAnonymous ?? null,
-      tenantId: auth.currentUser?.tenantId ?? null,
-      providerInfo:
-        auth.currentUser?.providerData?.map((provider) => ({
-          providerId: provider.providerId,
-          email: provider.email,
-        })) || [],
-    },
+    authInfo: (() => {
+      const currentUser = getAuthClient().getUser();
+      return {
+        userId: currentUser?.uid ?? null,
+        email: currentUser?.email ?? null,
+        emailVerified: currentUser?.emailVerified ?? null,
+        isAnonymous: currentUser ? false : null,
+        tenantId: null,
+        providerInfo: currentUser?.providerIds.map((providerId) => ({
+          providerId,
+          email: currentUser.email,
+        })) ?? [],
+      };
+    })(),
     timeFa: now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     timestampMs: Date.now(),
   };
