@@ -10,7 +10,10 @@ export function sanitizeWorkerErrorMessage(message: string): string {
     .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[REDACTED_JWT]')
     .replace(/\b(cookie|set-cookie)\s*:\s*[^\r\n]+/gi, '$1: [REDACTED]')
     .replace(/(__Host-radar_session|radar_session)=([^;\s]+)/gi, '$1=[REDACTED]')
-    .replace(/\b(x-admin-token|api[_-]?key|access[_-]?token|refresh[_-]?token|id[_-]?token|authorization|session(?:[_-]?token)?|token|client[_-]?secret|password|secret|otp)\s*[:=]\s*["']?([^\s,"'&;]+)/gi, '$1=[REDACTED]')
+    .replace(
+      /\b(x-admin-token|api[_-]?key|access[_-]?token|refresh[_-]?token|id[_-]?token|authorization|session(?:[_-]?token)?|token|client[_-]?secret|password|secret|otp)\s*[:=]\s*["']?([^\s,"'&;]+)/gi,
+      (match, key: string, value: string) => value.startsWith('[REDACTED') ? match : `${key}=[REDACTED]`,
+    )
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
     .replace(/\b(?:\+98|0098|98|0)?9\d{9}\b/g, '[REDACTED_PHONE]')
     .replace(/\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, '[REDACTED_IP]')
