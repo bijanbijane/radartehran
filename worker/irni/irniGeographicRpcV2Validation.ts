@@ -3,6 +3,7 @@ import type {
   IrniRpcEntityV2,
   IrniRpcError,
   IrniRpcLegacyAliasSnapshotV2,
+  IrniRpcLegacySystemCode,
   IrniRpcMetadataV2,
   IrniRpcRelationshipSnapshotV2,
   IrniRpcResult,
@@ -19,6 +20,9 @@ const VERIFICATION = new Set([
   'VERIFIED_INTERNATIONAL_STANDARD', 'VERIFIED_SECONDARY_GAZETTEER',
 ]);
 const LEGACY_SYSTEM_CODES = new Set(['TEHRAN_RADAR', 'LEGACY_IRAN_NEIGHBORHOOD_ID', 'RETIRED_CANONICAL_ID', 'OTHER_LEGACY']);
+function isLegacySystemCode(value: unknown): value is IrniRpcLegacySystemCode {
+  return typeof value === 'string' && LEGACY_SYSTEM_CODES.has(value);
+}
 const BOUNDARY = new Set([
   'EXACT_BOUNDARY_AVAILABLE', 'APPROXIMATE_BOUNDARY_AVAILABLE',
   'POINT_LOCATION_ONLY', 'REFERENCE_ONLY', 'BOUNDARY_UNAVAILABLE',
@@ -164,7 +168,7 @@ export function isAliasSnapshot(value: unknown): value is IrniRpcLegacyAliasSnap
     Array.isArray(value.aliases) &&
     value.aliases.every(alias => isRecord(alias) &&
       isText(alias.aliasId, 256) &&
-      typeof alias.legacySystemCode === 'string' && LEGACY_SYSTEM_CODES.has(alias.legacySystemCode) &&
+      isLegacySystemCode(alias.legacySystemCode) &&
       isText(alias.legacyIdentifierValue, 256) &&
       isText(alias.canonicalGeographicEntityId, 256) &&
       alias.aliasStatus === 'ACTIVE_COMPATIBILITY_ALIAS' &&
