@@ -482,6 +482,46 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(row?.job_id, 'job_first');
     });
 
+    it('does not treat a legal-hold-blocked deletion job as an active write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await sqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'BLOCKED_LEGAL_HOLD', 'LEGAL_HOLD_CHECK', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        'job_legal_hold_blocked',
+        'uid_legal_hold_blocked',
+        'idem_legal_hold_blocked',
+        'uid_legal_hold_blocked',
+        'USER_REQUESTED_ERASURE',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ).run();
+      const decision = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_legal_hold_blocked');
+      assert.equal(decision.status, 'OPEN');
+    });
+
+    it('fails closed when an active deletion job exists without its write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await sqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'INITIATED', 'WRITE_BLOCK', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        'job_active_without_block',
+        'uid_active_without_block',
+        'idem_active_without_block',
+        'uid_active_without_block',
+        'USER_REQUESTED_ERASURE',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ).run();
+      const decision = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_active_without_block');
+      assert.equal(decision.status, 'UNAVAILABLE');
+    });
+
     it('resolves the production USER_DB write-block schema and keeps blocked users closed', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
