@@ -70,13 +70,6 @@ jobs:
           npm run test:geo
 
       - name: Verify temporary D1 write-pause deadline behavior
-        run: |
-          npx tsx tests/d1-triad-binding-isolation.test.ts
-          npx tsx --test tests/frontend-api-service-binding.test.ts
-          npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
-          npm run test:geo
-
-      - name: Verify temporary D1 write-pause deadline behavior
         run: npx tsx --test worker/db/writePause.test.ts
 
       - name: Verify Firebase identity and Worker authentication contracts
