@@ -1216,6 +1216,17 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           err.retryable === false,
       );
 
+      // Missing consentRevision must not downgrade the queued job to a current-consent-only check.
+      const missingRevision = makeEnvelope('q_missing_rev', 3);
+      missingRevision.payload.consentRevision = undefined;
+      await assert.rejects(
+        () => dispatch(missingRevision),
+        (err: unknown) =>
+          err instanceof QueueJobExecutionError &&
+          err.code === 'INVALID_RESEARCH_INGEST_PAYLOAD' &&
+          err.retryable === false,
+      );
+
       // Matching consentRevision=3 -> accepted!
       const okQueue = await dispatch(makeEnvelope('q_fresh_rev', 3));
       assert.equal(okQueue.affectedCount, 1);
