@@ -66,7 +66,7 @@ export function registerMediaModuleRoutes(app: Express, options?: MediaRoutesOpt
         });
         return;
       }
-      res.locals.firebaseUid = auth.uid;
+      res.locals.firebaseUid = auth.actorUid || auth.uid;
       res.locals.firebaseIsAdmin = false;
       next();
     } catch {
@@ -75,7 +75,11 @@ export function registerMediaModuleRoutes(app: Express, options?: MediaRoutesOpt
   };
 
   const requireAdmin = async (req: Request, res: Response, next: () => void): Promise<void> => {
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(
+      req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+    );
     if (!auth.authorized) {
       if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuse(resolveIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason, message: 'دسترسی مدیر الزامی است.' });
