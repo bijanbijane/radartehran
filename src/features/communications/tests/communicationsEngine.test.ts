@@ -232,6 +232,12 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
 
   // Non-participant IDOR blocked on sendMessage
   assert.equal(engine.sendMessage({ conversationId: cid, senderUid: 'intruder', bodyFa: 'سلام پیام غیرمجاز' }).statusCode, 403);
+  assert.equal(engine.sendMessage({
+    conversationId: cid,
+    senderUid: 'u-buyer',
+    bodyFa: 'پیوست با شناسه نامعتبر',
+    attachments: [{ attachmentId: '../private', fileName: '../../secret.pdf', mimeType: 'application/pdf', sizeBytes: 100 }],
+  }).statusCode, 400);
 
   // Rate limit blocks flooding beyond MAX_MESSAGES_PER_MINUTE_STANDARD
   for (let i = 0; i < MAX_MESSAGES_PER_MINUTE_STANDARD - 1; i++) {
