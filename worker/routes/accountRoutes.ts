@@ -62,7 +62,9 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
   }
   const userDb = userDbRes.db;
 
-  const isSensitive = method !== 'GET' && method !== 'HEAD';
+  const isSensitive =
+    (method !== 'GET' && method !== 'HEAD') ||
+    (method === 'GET' && pathname === '/api/account/export-data');
   const auth = await authenticateAccountCaller(ctx, isSensitive);
   if (!auth.authenticated || !auth.uid) {
     return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
@@ -225,7 +227,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         ).bind(uid).all<Record<string, unknown>>(),
         userDb.prepare(
           'SELECT mode, deposit, monthly_rent, buy_total_budget, target_sqm, work_hub_id, updated_at_iso FROM user_preferences WHERE uid = ?1 LIMIT 1',
-        ).bind(uid).first<Record<string, unknown>>(),
+        ).bind(uid).all<Record<string, unknown>>(),
         userDb.prepare(
           'SELECT bargain_id, city_id, hood_id, title, listing_type, sqm, price_millions, price_text, discount_percent, buyer_profit_text, street, status, created_at_iso, updated_at_iso, approved_at_iso FROM bargains WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
         ).bind(uid).all<Record<string, unknown>>(),
@@ -240,9 +242,27 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         ).bind(uid).all<Record<string, unknown>>(),
       ]);
 
+      const exportReadResults = [
+        savedSearches,
+        notificationChannels,
+        mediaResult,
+        preferences,
+        bargainsResult,
+        sponsorRecordsResult,
+        buyerAlertsResult,
+        votesResult,
+      ];
+      if (exportReadResults.some((result) => !result.success)) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error',
+          code: 'ACCOUNT_EXPORT_SOURCE_READ_FAILED',
+          message: 'One or more account data sources could not be read; no partial export was returned.',
+        });
+      }
       const searches = savedSearches.results ?? [];
       const channels = notificationChannels.results ?? [];
       const media = mediaResult.results ?? [];
+      const preferencesRecord = preferences.results?.[0] ?? null;
       const bargains = bargainsResult.results ?? [];
       let sponsorRecords: Record<string, unknown>[];
       let buyerAlerts: Record<string, unknown>[];
@@ -259,14 +279,22 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_PII_DECRYPTION_UNAVAILABLE' });
       }
       const neighborhoodVotes = votesResult.results ?? [];
+      const truncatedSources = [
+        ...(channels.length >= 100 || dataRequests.length >= 50 ? ['USER_PROFILE'] : []),
+        ...(favorites.length >= 100 || searches.length >= 500 || neighborhoodVotes.length >= 500 ? ['FAVORITES_AND_WORKSPACES'] : []),
+        ...(buyerAlerts.length >= 500 ? ['BUYER_ALERTS'] : []),
+        ...(bargains.length >= 500 ? ['BARGAIN_LISTINGS'] : []),
+        ...(sponsorRecords.length >= 500 ? ['SPONSOR_RECORDS'] : []),
+        ...(media.length >= 500 ? ['MEDIA_METADATA'] : []),
+      ];
       const availableSources = [
-        { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
-        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length + (preferences ? 1 : 0) + neighborhoodVotes.length },
-        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: true, available: true, count: buyerAlerts.length },
-        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: true, available: true, count: bargains.length },
-        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: true, available: true, count: sponsorRecords.length },
-        { sourceId: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
-        { sourceId: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', included: true, available: true, count: media.length },
+        { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('USER_PROFILE'), count: (profile ? 1 : 0) + channels.length + dataRequests.length },
+        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('FAVORITES_AND_WORKSPACES'), count: favorites.length + searches.length + (preferencesRecord ? 1 : 0) + neighborhoodVotes.length },
+        { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('BUYER_ALERTS'), count: buyerAlerts.length },
+        { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('BARGAIN_LISTINGS'), count: bargains.length },
+        { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('SPONSOR_RECORDS'), count: sponsorRecords.length },
+        { sourceId: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', included: false, available: false, truncated: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
+        { sourceId: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', included: true, available: true, truncated: truncatedSources.includes('MEDIA_METADATA'), count: media.length },
       ];
       const unavailableSources = availableSources.filter((source) => !source.available).map((source) => source.sourceId);
       const totalRecordsExported = availableSources.reduce((sum, source) => sum + source.count, 0);
@@ -275,10 +303,11 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         exportedAtIso: new Date().toISOString(),
         ownerUid: uid,
         exportScope: 'server_account',
-        isPartialExport: unavailableSources.length > 0,
-        completenessStatus: unavailableSources.length > 0 ? 'INCOMPLETE_PARTIAL' : 'COMPLETE',
+        isPartialExport: unavailableSources.length > 0 || truncatedSources.length > 0,
+        completenessStatus: unavailableSources.length > 0 || truncatedSources.length > 0 ? 'INCOMPLETE_PARTIAL' : 'COMPLETE',
         totalRecordsExported,
-        omittedPagesCount: 0,
+        omittedPagesCount: truncatedSources.length,
+        truncatedSources,
         unavailableSources,
         domainSourcesIncluded: availableSources.filter((source) => source.available).map((source) => source.domainSource),
         sources: availableSources,
@@ -288,7 +317,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
           privacy,
           notificationChannels: channels,
           savedSearches: searches,
-          preferences,
+          preferences: preferencesRecord,
           dataRequests,
           neighborhoodVotes,
         },
