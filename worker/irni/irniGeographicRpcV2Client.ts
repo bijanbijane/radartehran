@@ -6,6 +6,7 @@ import type {
   IrniRpcError,
   IrniRpcIdentifierQueryV2,
   IrniRpcLegacyAliasSnapshotV2,
+  IrniRpcLegacySystemCode,
   IrniRpcMetadataV2,
   IrniRpcPageRequestV2,
   IrniRpcRelationshipSnapshotV2,
@@ -257,7 +258,7 @@ export class IrniGeographicRpcV2Client {
     const gate = await this.gate(expectedRevision);
     if (!gate.ok) return { ok: false, error: gate.error };
     const result = await this.invoke(
-      () => this.binding!.listApprovedLegacyAliases(systemCode, expectedRevision),
+      () => this.binding!.listApprovedLegacyAliases(systemCode as IrniRpcLegacySystemCode | undefined, expectedRevision),
       isAliasSnapshot,
     );
     return this.verifySnapshot(result, gate.metadata);
