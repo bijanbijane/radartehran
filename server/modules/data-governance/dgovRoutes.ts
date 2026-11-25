@@ -231,7 +231,8 @@ export function registerDataGovernanceRoutes(
       return;
     }
     const body = req.body || {};
-    const reviewerId = sanitizeInput(String(body.reviewerId || auth.uid || auth.email || ''), 80);
+    // Reviewer identity is always derived from verified admin authentication; body.reviewerId is untrusted audit input.
+    const reviewerId = sanitizeInput(String(auth.uid || auth.actorUid || auth.email || 'admin'), 80);
     const out = getServerDgovEngine().resolveConflictCase({
       caseId: String(body.caseId || ''),
       reviewerId,
