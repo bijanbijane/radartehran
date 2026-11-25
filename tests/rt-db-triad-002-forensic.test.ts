@@ -619,8 +619,14 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
         // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
         const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
-        const unkeyedHash = await hashUidForComplianceReceipt(uid);
-        assert.notEqual(expectedKeyedHash, unkeyedHash);
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
+        );
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid, 'short'),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
+        );
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
         clearTestJwksForEdgeAuth();
