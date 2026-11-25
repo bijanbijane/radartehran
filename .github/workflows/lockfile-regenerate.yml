@@ -1,0 +1,55 @@
+name: Regenerate Radar workspace lockfile
+
+on:
+  push:
+    branches:
+      - fix/rt-mainline-lockfile-types-2026-11-25
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "apps/**/package.json"
+      - "packages/**/package.json"
+      - "worker/types.ts"
+      - ".github/workflows/lockfile-regenerate.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar-lockfile-regeneration
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated remediation branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Regenerate lockfile from all declared workspaces
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify deterministic clean install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Commit generated lockfile when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile already matches the declared manifests."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(deps): regenerate workspace lockfile"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
