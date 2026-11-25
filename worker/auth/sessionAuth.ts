@@ -58,6 +58,7 @@ export async function sha256Hex(value: string): Promise<string> {
 export async function authenticateWorkerSession(
   ctx: WorkerRequestContext,
   sensitiveRoute = true,
+  requireRecentAuth = false,
 ): Promise<WorkerSessionPrincipal> {
   const unauthenticated = (reasonCode = 'UNAUTHENTICATED', statusCode: 401 | 403 | 503 = 401): WorkerSessionPrincipal => ({
     authenticated: false,
@@ -146,6 +147,12 @@ export async function authenticateWorkerSession(
     const isDelegatedAdmin = row.delegated_admin === 1;
     const isAdmin = isPrimaryAdmin || isDelegatedAdmin;
     const authTimeSeconds = createdAtSeconds;
+    if (requireRecentAuth) {
+      const authAgeSeconds = Math.floor(Date.now() / 1000) - authTimeSeconds;
+      if (!Number.isSafeInteger(authAgeSeconds) || authAgeSeconds < 0 || authAgeSeconds > 5 * 60) {
+        return unauthenticated('RECENT_LOGIN_REQUIRED', 403);
+      }
+    }
 
     const d1WritesPaused = resolveD1WritePauseState(ctx.env).paused;
     const lastSeenMs = Date.parse(String(row.last_seen_at_iso || ''));
