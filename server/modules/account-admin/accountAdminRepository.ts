@@ -14,7 +14,7 @@ import type {
   AdminGovernancePermission,
   AdminGovernanceRole,
 } from '../../../src/features/admin/types/admin.types';
-import { ADMIN_ROLE_DEFINITIONS } from '../../../src/features/admin/services/adminGovernanceService';
+import { ADMIN_ROLE_DEFINITIONS } from '../../../src/features/admin/types/adminRoleCatalog';
 import type { ListingStatus } from '../../../src/features/properties/types/listing.types';
 import type { ServiceComplaintRecord } from '../../../src/features/services/types/service.types';
 
