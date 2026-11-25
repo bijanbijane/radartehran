@@ -26,7 +26,7 @@ function failure(
   messageFa: string,
   retryable = false,
   details: IrniRpcError['details'] = {},
-): IrniRpcResult<never> {
+): { readonly ok: false; readonly error: IrniRpcError } {
   return {
     ok: false,
     error: {
