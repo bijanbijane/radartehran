@@ -11,6 +11,8 @@ import type {
   IrniRpcResult,
 } from '../worker/irni/irniGeographicRpcV2Types';
 import { handleIrniCanonicalRpcV2Route } from '../worker/routes/irniCanonicalRpcV2Routes';
+import { handleHealthAndMetadataRoute } from '../worker/routes/healthAndMetadataRoutes';
+import type { D1Database } from '../worker/types';
 
 const CHECKSUM = 'a'.repeat(64);
 const ID = 'IRGEO1-' + 'b'.repeat(64);
@@ -189,6 +191,29 @@ describe('Radar IRNI geographic RPC v2 consumer', () => {
     assert.equal(dispatched.migrationStatus, 'IMPLEMENTED');
     const body = await json(dispatched.response);
     assert.equal(body.contractVersion, '2.0.0');
+  });
+
+  it('reports geography readiness through RPC without requiring a Radar geography D1 binding', async () => {
+    const fakeDb = () => ({
+      prepare: (sql: string) => ({
+        first: async () => sql === 'SELECT 1 AS ok' ? { ok: 1 } : { count: 6 },
+      }),
+    } as unknown as D1Database);
+    const ctx = createWorkerRequestContext(
+      new Request('https://radartehran.ir/api/health/database-triad'),
+      { USER_DB: fakeDb(), RESEARCH_DB: fakeDb(), IRNI_GEOGRAPHY: binding() },
+    );
+    const response = await handleHealthAndMetadataRoute(ctx);
+    assert.ok(response);
+    assert.equal(response.status, 200);
+    const body = await json(response);
+    assert.equal(body.status, 'ok');
+    const bindings = body.bindings as Record<string, unknown>;
+    const probes = body.probes as Record<string, unknown>;
+    assert.equal(bindings.irniServiceBindingConfigured, true);
+    assert.equal(bindings.legacyNeighborhoodDbBindingPresent, false);
+    assert.equal(bindings.irniDirectDbBindingPresent, false);
+    assert.equal(probes.irniRpc, 'ok');
   });
 
   it('rejects mutations and missing binding without local or HTTPS fallback', async () => {
