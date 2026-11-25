@@ -176,7 +176,11 @@ export function registerAccountAdminRoutes(
   // === AUTHORITATIVE ADMIN RBAC, AUDIT, QUEUES, MODERATION & SENSITIVE OPS ===
   app.get('/api/admin/me', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+    process.env,
+    { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+  );
     if (!auth.authorized) {
       recordAbuseSignal(deps.getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ authorized: false, code: auth.reason, messageFa: 'احراز هویت مدیر سیستم برقرار نیست.' });
