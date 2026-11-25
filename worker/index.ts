@@ -31,6 +31,7 @@ import {
   type RadarQueueEnvelope,
 } from './queues/queueAndCronProcessor';
 import { dispatchWorkerApiOrSeoRequest } from './router';
+import { sanitizeWorkerErrorMessage } from './errorSanitizer';
 import {
   injectWorkerDynamicSeoHtml,
   resolveWorkerBaseUrl,
@@ -198,11 +199,7 @@ export default {
     } catch (err) {
       const errorCategory = err instanceof Error ? err.name : 'UNHANDLED_WORKER_EXCEPTION';
       const safeErrorMessage = err instanceof Error
-        ? err.message
-          .replace(/Bearer\\s+\\S+/gi, 'Bearer [REDACTED]')
-          .replace(/\\beyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\b/g, '[REDACTED_JWT]')
-          .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
-          .slice(0, 240)
+        ? sanitizeWorkerErrorMessage(err.message)
         : 'Non-Error exception';
       console.error('WORKER_UNHANDLED_EXCEPTION', JSON.stringify({
         correlationId: reqCtx.correlationId,
