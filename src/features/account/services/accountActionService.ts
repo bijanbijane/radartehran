@@ -22,13 +22,26 @@ export const SUPPORTED_EXPORT_SCHEMA_VERSION = '2.0.0';
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 const SENSITIVE_EXPORT_FIELD_NAMES = new Set([
   'token',
-  'idToken',
-  'accessToken',
-  'refreshToken',
+  'idtoken',
+  'accesstoken',
+  'refreshtoken',
   'password',
+  'passwordhash',
   'secret',
+  'clientsecret',
   'authorization',
-  'apiKey',
+  'apikey',
+  'cookie',
+  'sessioncookie',
+  'privatekey',
+  'signingkey',
+  'credential',
+  'credentials',
+  'jwt',
+  'bearertoken',
+  'authheader',
+  'oauthcode',
+  'oauthstate',
 ]);
 
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
@@ -36,12 +49,16 @@ function isPlainRecord(v: unknown): v is Record<string, unknown> {
 }
 
 export function stripSecretsFromExportValue(value: unknown, depth = 0): unknown {
-  if (depth > 8 || value === null || value === undefined) return value;
+  if (value === null || value === undefined) return value;
+  if (depth > 8) {
+    return Array.isArray(value) || isPlainRecord(value) ? '[OMITTED_MAX_DEPTH]' : value;
+  }
   if (Array.isArray(value)) return value.map((item) => stripSecretsFromExportValue(item, depth + 1));
   if (!isPlainRecord(value)) return value;
   const clean: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value)) {
-    if (SENSITIVE_EXPORT_FIELD_NAMES.has(key)) continue;
+    const normalizedKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    if (SENSITIVE_EXPORT_FIELD_NAMES.has(normalizedKey)) continue;
     clean[key] = stripSecretsFromExportValue(val, depth + 1);
   }
   return clean;
