@@ -67,15 +67,15 @@ export function CleanupProgressSummary({
   return (
     <div
       data-testid="cleanup-progress-summary"
-      className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5 text-xs"
+      className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-3.5 text-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+          <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-sm">
             خلاصهٔ پیشرفت پاکسازی و بازیابی فایل‌های رسانه
           </div>
           {metrics && (
-            <div className="text-slate-500 dark:text-slate-400 text-[11px] flex flex-wrap items-center gap-1.5 mt-0.5 tabular-nums">
+            <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px] flex flex-wrap items-center gap-1.5 mt-0.5 tabular-nums">
               <span>بررسی‌شده: {toPersianNum(metrics.scannedPendingCount ?? totalOperations)} پرونده</span>
               <span aria-hidden="true">·</span>
               <span>مجموع عملیات: {toPersianNum(totalOperations)} مورد</span>
@@ -104,7 +104,7 @@ export function CleanupProgressSummary({
       ) : metrics ? (
         <>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
+            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] tabular-nums">
               <span>نوار پیشرفت عملیات پاکسازی فایل‌ها</span>
               <span>
                 {toPersianNum(completedPct)}٪ تکمیل‌شده · {toPersianNum(pendingPct)}٪ در انتظار/ردشده · {toPersianNum(failedPct)}٪ ناموفق
@@ -116,7 +116,7 @@ export function CleanupProgressSummary({
               aria-valuemax={Math.max(1, totalOperations)}
               aria-valuenow={completedCount}
               aria-label="پیشرفت عملیات پاکسازی فایل‌های رسانه"
-              className="h-2.5 w-full rounded-lg bg-slate-200 dark:bg-slate-700 overflow-hidden flex"
+              className="h-2.5 w-full rounded-lg bg-slate-200 dark:bg-[var(--color-bg-elevated)] overflow-hidden flex"
             >
               {totalOperations === 0 ? (
                 <div className="h-full w-full bg-emerald-500/40" />

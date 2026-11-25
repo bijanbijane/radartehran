@@ -118,7 +118,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
   };
 
   return (
-    <section data-testid="analytics-and-research-workspace" className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs" dir="rtl">
+    <section data-testid="analytics-and-research-workspace" className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-4 text-xs" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <strong className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -139,7 +139,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
               key={sh.id} type="button" role="tab" aria-selected={activeShell === sh.id}
               data-testid={`analytics-shell-tab-${sh.id.toLowerCase()}`}
               onClick={() => setActiveShell(sh.id as AnalyticsAudienceShell)}
-              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${activeShell === sh.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${activeShell === sh.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}
             >
               {sh.label}
             </button>
@@ -147,29 +147,29 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
         </div>
       </div>
 
-      <div data-testid="analytics-temporal-provenance-bar" className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-[11px]">
-        <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+      <div data-testid="analytics-temporal-provenance-bar" className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[11px]">
+        <span className="flex items-center gap-1.5 text-slate-700 dark:text-[var(--color-text-secondary)]">
           <Clock className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>زمان مشاهده بازار (Observed): <strong dir="ltr">{snap.observedAt || 'ثبت‌نشده (UNKNOWN)'}</strong></span>
           <span>· زمان محاسبه (Computed): <strong dir="ltr">{snap.computedAt ? snap.computedAt.slice(0, 19) : '—'}</strong></span>
         </span>
-        <span data-testid="analytics-freshness-badge" className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-bold">
+        <span data-testid="analytics-freshness-badge" className="px-2 py-0.5 rounded bg-slate-200 dark:bg-[var(--color-bg-elevated)] font-bold">
           وضعیت تازگی: {snap.freshnessStatus || 'UNKNOWN'}
         </span>
       </div>
 
       {!dist || snap.value === null ? (
-        <div data-testid="analytics-no-data-state" className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-slate-700 dark:text-slate-300">
+        <div data-testid="analytics-no-data-state" className="p-4 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1 text-slate-700 dark:text-[var(--color-text-secondary)]">
           <strong className="font-bold text-slate-900 dark:text-white block">
             داده تحلیلی معتبر برای «{selectedNeighborhoodNameFa}» هنوز در دسترس نیست (UNAVAILABLE)
           </strong>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
             برای این محله هنوز آگهی زنده تاییدشده یا توزیع صدک‌های قیمت در مخزن تحلیلی ثبت نشده است؛ داده ساختگی یا داده محله‌های دیگر جایگزین نمی‌شود.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="analytics-core-data-products">
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1.5">
             <div className="flex items-center justify-between text-[11px] text-slate-500">
               <span>محصول داده ۱: شاخص قیمت پیشنهادی (IQR)</span>
               <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-bold">
@@ -179,7 +179,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
             <strong className="text-base font-bold text-slate-900 dark:text-white block tabular-nums">
               میانه (P50): {toPersianNum(uMetric(dist.median))} میلیون تومان / {areaLbl}{fxNote(dist.median)}
             </strong>
-            <div className="text-[11px] text-slate-600 dark:text-slate-300 tabular-nums">
+            <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] tabular-nums">
               صدک ۱۰ (P10): {toPersianNum(uMetric(dist.p10))} · صدک ۲۵ (P25): {toPersianNum(uMetric(dist.p25))} · صدک ۷۵ (P75): {toPersianNum(uMetric(dist.p75))} · صدک ۹۰ (P90): {toPersianNum(uMetric(dist.p90))}
             </div>
             <div className="text-[10.5px] text-slate-500">
@@ -187,7 +187,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1.5">
             <div className="text-[11px] text-slate-500">محصول داده ۲: شاخص عرضه و مقایسه متقارن دوره‌ای</div>
             <strong className="text-base font-bold text-slate-900 dark:text-white block tabular-nums">
               {snap.dataOrigin === 'SIMULATED' ? `۰ نمونه زنده (${toPersianNum(dist.count)} نقطه شبیه‌سازی)` : `${toPersianNum(dist.uniqueEntityCount)} نمونه زنده محلی`}
@@ -198,12 +198,12 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
             <div className="text-[10.5px] text-slate-500">نسخه مرز مکانی: {snap.geography.boundaryVersion}</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1.5">
             <div className="text-[11px] text-slate-500">محصول داده ۳: نمایه مکانی نسخه‌بندی‌شده (SCD Type 2)</div>
             <strong className="text-sm font-bold text-slate-900 dark:text-white block">
               {selectedNeighborhoodNameFa} ({snap.geography.boundaryVersion})
             </strong>
-            <div className="text-[11px] text-slate-600 dark:text-slate-300">
+            <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               اسنپ‌شات مرجع: <code className="font-mono">{snap.dataSnapshotId}</code> · روش v{toPersianNum(snap.methodologyVersion)}
             </div>
             <button type="button" data-testid="btn-export-analytical-slice" onClick={handleRequestExport} className="mt-1 px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold text-[11px] cursor-pointer">
@@ -225,17 +225,17 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
       )}
 
       {activeShell === 'PROFESSIONAL_WORKSPACE' && (
-        <div data-testid="professional-metric-registry-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div data-testid="professional-metric-registry-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
           <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>دفتر رسمی شاخص‌ها (Official Metric Registry) و لایه معنایی واحد:</span>
           </strong>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {localBundle.metricsRegistry.map((m) => (
-              <div key={m.id} className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-0.5">
+              <div key={m.id} className="p-2.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-0.5">
                 <div className="flex items-center justify-between gap-2">
                   <strong className="font-bold text-slate-900 dark:text-white">{m.displayNameFa}</strong>
-                  <code className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">{m.metricCode}</code>
+                  <code className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)]">{m.metricCode}</code>
                 </div>
                 <div className="text-[10.5px] text-slate-500">مفهوم مالی: <strong>{m.financialConcept}</strong> · دانه (Grain): {m.grain} · روش v{toPersianNum(m.methodologyVersion)}</div>
               </div>
@@ -245,7 +245,7 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
       )}
 
       {activeShell === 'RESEARCH_WORKSPACE' && (
-        <div data-testid="reproducible-research-workspace-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div data-testid="reproducible-research-workspace-panel" className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Microscope className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -260,18 +260,18 @@ export const AnalyticsAndResearchWorkspace: React.FC<AnalyticsAndResearchWorkspa
             <p className="text-[11px] text-slate-500">گزارش پژوهشی ثبت‌شده در سرور برای «{selectedNeighborhoodNameFa}» یافت نشد (داده‌های نمونه نمایشی غیرفعال‌اند).</p>
           ) : (
             savedAnalyses.map((ana) => (
-              <div key={ana.analysisId} className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1">
+              <div key={ana.analysisId} className="p-3 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <strong className="font-bold text-slate-900 dark:text-white">{ana.titleFa}</strong>
                   <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-mono text-[10px]">{ana.reproducibleHash}</span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300">پرسش پژوهش: {ana.researchQuestionFa}</p>
+                <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">پرسش پژوهش: {ana.researchQuestionFa}</p>
                 <div className="text-[10.5px] text-slate-500 flex flex-wrap items-center gap-2">
                   <span className="flex items-center gap-1"><Layers className="w-3 h-3" /> اسنپ‌شات داده: {ana.datasetVersions.join(', ')}</span>
                   <span>· شاخص‌ها: {ana.metricCodes.join(', ')}</span>
                   <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-[var(--color-brand-600)]" /> مرز: {ana.geographicScope.boundaryVersion}</span>
                 </div>
-                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 pt-1">{ana.outputSummaryFa}</p>
+                <p className="text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] pt-1">{ana.outputSummaryFa}</p>
               </div>
             ))
           )}

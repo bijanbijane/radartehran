@@ -86,7 +86,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
   return (
     <div className="space-y-4" data-testid="stage-36-datavis-panel">
       {/* Drill-down Breadcrumb + Linked View Neighborhood Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-[10px] bg-[#F6F8F6] dark:bg-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-[10px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]">
         <div className="flex items-center gap-1.5 font-bold text-[#182522] dark:text-white" data-testid="drilldown-breadcrumb">
           <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>مسیر Drill-down مکانی: تهران / {hood.districtFa} / {hood.nameFa} / توزیع و روند قیمت آگهی‌ها</span>
@@ -102,7 +102,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
                 onAnnounceStatus(`نماهای مرتبط (نقشه، نمودار و جدول) برای «${v.nameFa}» همگام‌سازی شدند.`);
               }}
               className={`px-2.5 py-1.5 rounded-[8px] font-bold cursor-pointer ${
-                selectedHoodKey === k ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+                selectedHoodKey === k ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)]'
               }`}
             >
               {v.nameFa}
@@ -113,12 +113,12 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
 
       {/* Section 6 & 8: Honest KPI Card + Percentiles (P10, P25, P50, P75, P90, IQR) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
               {primaryMetric.titleFa} ({primaryMetric.methodologyVersion})
             </span>
-            <span className="font-bold text-[#34433E] dark:text-slate-300">وضعیت کفایت: {sufficiency.status}</span>
+            <span className="font-bold text-[#34433E] dark:text-[var(--color-text-secondary)]">وضعیت کفایت: {sufficiency.status}</span>
           </div>
           <div className="text-xl font-bold text-[#182522] dark:text-white tabular-nums">
             {dist.p50Median !== null ? `${toPersianNum(dist.p50Median)} ${primaryMetric.unitFa}` : 'داده ناموجود'}
@@ -136,7 +136,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
           )}
         </div>
 
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توزیع صدک‌ها و نمودار جعبه‌ای (Box Plot & IQR)</span>
@@ -151,7 +151,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
               { label: 'P90', val: dist.p90 },
               { label: 'IQR', val: dist.iqrP75MinusP25 },
             ].map((cell) => (
-              <div key={cell.label} className="p-2 rounded bg-[#F6F8F6] dark:bg-slate-800">
+              <div key={cell.label} className="p-2 rounded bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]">
                 <div className="text-[10px] text-[#586760] font-bold">{cell.label}</div>
                 <div className="font-bold text-[#182522] dark:text-white">{cell.val !== null ? toPersianNum(cell.val) : '—'}</div>
               </div>
@@ -165,7 +165,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
 
       {/* Section 9, 10, 30.3 & 35: Chart Selector + Missing Data Time Series Table + Homogeneity Guard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Database className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سری زمانی با حفظ گسست داده مفقود (عدم تبدیل Null به صفر)</span>
@@ -173,13 +173,13 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
           <table className="w-full text-right border-collapse tabular-nums">
             <caption className="sr-only">جدول روند ماهانه میانه قیمت پیشنهادی با نمایش صریح ماه‌های فاقد داده</caption>
             <thead>
-              <tr className="border-b border-[#DCE3DF] dark:border-slate-700 text-[#586760]">
+              <tr className="border-b border-[#DCE3DF] dark:border-[var(--color-border-strong)] text-[#586760]">
                 <th scope="col" className="py-1">دوره ماهانه</th>
                 <th scope="col" className="py-1">میانه قیمت پیشنهادی</th>
                 <th scope="col" className="py-1">وضعیت نقطه در نمودار خطی</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#DCE3DF]/60 dark:divide-slate-800">
+            <tbody className="divide-y divide-[#DCE3DF]/60 dark:divide-[var(--color-border-subtle)]">
               {hood.timeSeries.map((pt) => (
                 <tr key={pt.monthFa}>
                   <td className="py-1.5 font-bold">{pt.monthFa}</td>
@@ -191,7 +191,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
           </table>
         </div>
 
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <GitCompare className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>انتخابگر نمودار (ONS) و نگهبان هم‌جنس بودن مقایسه (بند ۳۰.۳)</span>
@@ -202,7 +202,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
               id="analytical-question-select"
               value={questionKind}
               onChange={(e) => setQuestionKind(e.target.value as AnalyticalQuestionKind)}
-              className="w-full p-2 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+              className="w-full p-2 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)] font-bold"
             >
               <option value="temporal_trend">روند قیمت در طول زمان (Line Chart)</option>
               <option value="category_comparison">مقایسه قیمت مناطق با برچسب فارسی (Horizontal Bar — محور از صفر)</option>
@@ -211,13 +211,13 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
               <option value="spatial_area_rate">الگوی جغرافیایی شاخص محله‌ها (Choropleth Map)</option>
             </select>
           </div>
-          <div className="p-2 rounded bg-[#F6F8F6] dark:bg-slate-800">
+          <div className="p-2 rounded bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]">
             نمودار پیشنهادی: <strong>{chartRec.recommendedChart}</strong> · شروع محور از صفر: <strong>{chartRec.yAxisMustStartAtZero ? 'بله (الزامی)' : 'خیر'}</strong> · {chartRec.rationaleFa}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold">آزمون مقایسه با سری دوم:</span>
-            <button type="button" data-testid="compare-homogeneous-btn" onClick={() => setCompareOriginB('asking_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'asking_price' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'}`}>قیمت آگهی (هم‌جنس)</button>
-            <button type="button" data-testid="compare-heterogeneous-btn" onClick={() => setCompareOriginB('transaction_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'transaction_price' ? 'bg-rose-700 text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'}`}>قیمت معامله (نامتجانس)</button>
+            <button type="button" data-testid="compare-homogeneous-btn" onClick={() => setCompareOriginB('asking_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'asking_price' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]'}`}>قیمت آگهی (هم‌جنس)</button>
+            <button type="button" data-testid="compare-heterogeneous-btn" onClick={() => setCompareOriginB('transaction_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'transaction_price' ? 'bg-rose-700 text-white' : 'bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]'}`}>قیمت معامله (نامتجانس)</button>
           </div>
           <div className="font-bold text-[#182522] dark:text-white" data-testid="comparison-homogeneity-verdict">
             نتیجه اعتبارسنجی مقایسه: {homogeneity.reasonFa}

@@ -69,7 +69,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
             className={`p-3.5 rounded-xl border transition-colors flex flex-col justify-between gap-2 cursor-pointer ${
               isSelected
                 ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-[var(--color-brand-600)] ring-1 ring-[var(--color-brand-600)]'
-                : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+                : 'bg-slate-50/80 dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)]'
             }`}
           >
             <div className="space-y-1">
@@ -90,21 +90,21 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
               <strong className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white block">
                 {d.titleFa}
               </strong>
-              <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{d.subtitleFa}</div>
+              <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] font-medium">{d.subtitleFa}</div>
               <p className="text-[11px] text-slate-500 line-clamp-2">{d.summaryFa}</p>
 
               {d.pricePerSqmMillionToman !== undefined && (
                 <div className="pt-1 flex flex-wrap items-center gap-2 text-[10.5px] tabular-nums">
-                  <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)]">
                     پیشنهادی آگهی: <strong>{toPersianNum(d.pricePerSqmMillionToman)}</strong> میلیون تومان / مترمربع
                   </span>
                   {d.dealPricePerSqmMillionToman !== undefined && (
-                    <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)]">
                       سناریوی معامله غیرثبتی · میلیون تومان / مترمربع: <strong>{toPersianNum(d.dealPricePerSqmMillionToman)}</strong>
                     </span>
                   )}
                   {d.hedonicValuationPerSqmMillionToman !== undefined && (
-                    <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)]">
                       ارزش‌گذاری هدونیک · میلیون تومان / مترمربع: <strong>{toPersianNum(d.hedonicValuationPerSqmMillionToman)}</strong>
                     </span>
                   )}
@@ -112,7 +112,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 {item.explanationFa.slice(0, 2).map((exp, idx) => (
                   <span
@@ -144,7 +144,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
   const renderMapCompanion = () => (
     <div
       data-testid="search-map-companion-panel"
-      className="p-3.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5"
+      className="p-3.5 rounded-xl bg-slate-100/90 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2.5"
     >
       <div className="flex items-center justify-between gap-2">
         <strong className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -166,7 +166,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
               className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer ${
                 active
                   ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                  : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                  : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)] border-slate-300 dark:border-[var(--color-border-strong)]'
               }`}
             >
               <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -220,7 +220,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
           <strong className="text-sm font-bold text-slate-900 dark:text-white block">
             نتیجه‌ای با این ترکیب پیدا نشد
           </strong>
-          <p className="text-slate-600 dark:text-slate-300">{searchResponse.zeroResultAssistant.reasonFa}</p>
+          <p className="text-slate-600 dark:text-[var(--color-text-secondary)]">{searchResponse.zeroResultAssistant.reasonFa}</p>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -234,7 +234,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
                 key={sq}
                 type="button"
                 onClick={() => onApplySuggestedQuery(sq)}
-                className="min-h-[40px] px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold cursor-pointer"
+                className="min-h-[40px] px-2.5 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 dark:border-[var(--color-border-strong)] font-bold cursor-pointer"
               >
                 {sq}
               </button>
@@ -255,13 +255,13 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
         renderCards()
       )}
 
-      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5" data-testid="search-discovery-recommendations">
+      <div className="pt-3 border-t border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2.5" data-testid="search-discovery-recommendations">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>کشف محتوا و پیشنهادهای مرتبط (با توضیح شفاف علت پیشنهاد)</span>
           </strong>
-          <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer">
             <input
               type="checkbox"
               checked={personalizationOn}
@@ -276,7 +276,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
             <div
               key={rec.id}
               data-testid={`recommendation-card-${rec.id}`}
-              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-2"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-col justify-between gap-2"
             >
               <div>
                 <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-[var(--color-brand-600)] dark:text-emerald-300">
@@ -303,7 +303,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
                   </span>
                 )}
                 {rec.metricBadgeFa && (
-                  <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold">
+                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[10.5px] font-bold">
                     {rec.metricBadgeFa}
                   </span>
                 )}

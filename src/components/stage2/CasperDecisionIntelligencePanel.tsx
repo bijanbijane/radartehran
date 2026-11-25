@@ -87,30 +87,30 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
             </h4>
           </div>
           <div className="flex items-center gap-2 text-[11px] font-bold tabular-nums">
-            <span className="text-slate-500 dark:text-slate-400">شاخص اعتبار شواهد:</span>
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)]">شاخص اعتبار شواهد:</span>
             <span className="text-teal-600 dark:text-teal-400">{report.epistemicReliabilityIndex}٪</span>
-            <span className="text-slate-300 dark:text-slate-600">|</span>
-            <span className="text-slate-500 dark:text-slate-400">امتیاز کل تصمیم:</span>
+            <span className="text-slate-300 dark:text-[var(--color-text-muted)]">|</span>
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)]">امتیاز کل تصمیم:</span>
             <span className={report.overallDecisionScore >= 75 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : report.overallDecisionScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}>
               {report.overallDecisionScore}/۱۰۰
             </span>
           </div>
         </div>
-        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 mb-3">{report.decisionSummaryFa}</p>
+        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-[var(--color-text-secondary)] mb-3">{report.decisionSummaryFa}</p>
 
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">قیمت کل پیشنهادی (آگهی)</div>
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">قیمت کل پیشنهادی (آگهی)</div>
             <div className="text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">{report.askingTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{formatMillionTomanAsIntlCurrency(report.askingTotalMillion, intlCurrency)}</div>
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">سقف ورود منطقی شما</div>
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">سقف ورود منطقی شما</div>
             <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5">{report.scenarioTargetTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{report.scenarioTargetTotalIntl}</div>
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">صرفه‌جویی مذاکره هدف</div>
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">صرفه‌جویی مذاکره هدف</div>
             <div className="text-xs font-bold text-teal-600 dark:text-teal-400 tabular-nums mt-0.5">{report.negotiationSavingsMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{report.negotiationSavingsIntl}</div>
           </div>
@@ -124,29 +124,29 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
             <Sliders className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             <span>تنظیم مفروضات سناریو و اولویت تصمیم‌گیری کاربر</span>
           </div>
-          <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">
+          <span className="text-[10px] font-normal text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
             سناریو v6.4 (غیرثبتی): متری {report.dealBaselinePerSqmMillion.toLocaleString('fa-IR')} م‌ت | ضریب خروج فوری: {report.fastSaleFactorUsed}
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2.5">
           <label className="block text-[11px]">
-            <span className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)] mb-1">
               <span>مساحت هدف:</span>
-              <strong className="text-slate-800 dark:text-slate-100 tabular-nums">{displayArea} {areaLabelFa}</strong>
+              <strong className="text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">{displayArea} {areaLabelFa}</strong>
             </span>
             <input type="range" min={45} max={250} step={5} value={targetAreaSqm} onChange={(e) => setTargetAreaSqm(Number(e.target.value))} aria-label="متراژ هدف واحد مسکونی" className="w-full accent-teal-600 cursor-pointer" />
           </label>
           <label className="block text-[11px]">
-            <span className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)] mb-1">
               <span>تخفیف مذاکره از آگهی:</span>
               <strong className="text-teal-600 dark:text-teal-400 tabular-nums">{achievedDiscountPct}٪</strong>
             </span>
             <input type="range" min={0} max={20} step={1} value={achievedDiscountPct} onChange={(e) => setAchievedDiscountPct(Number(e.target.value))} aria-label="درصد تخفیف مذاکره از قیمت آگهی" className="w-full accent-teal-600 cursor-pointer" />
           </label>
           <label className="block text-[11px]">
-            <span className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)] mb-1">
               <span>افق نگهداری دارایی:</span>
-              <strong className="text-slate-800 dark:text-slate-100 tabular-nums">{holdingHorizonYears} سال</strong>
+              <strong className="text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">{holdingHorizonYears} سال</strong>
             </span>
             <input type="range" min={1} max={7} step={1} value={holdingHorizonYears} onChange={(e) => setHoldingHorizonYears(Number(e.target.value))} aria-label="افق نگهداری دارایی به سال" className="w-full accent-teal-600 cursor-pointer" />
           </label>
@@ -188,30 +188,30 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
       {activeSubView === 'mcda' && (
         <div className="space-y-2.5" data-testid="casper-view-mcda">
           <div className={`p-3 rounded-xl border ${cardBg} space-y-2.5`}>
-            <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">ارزیابی ۵ محور تصمیم‌گیری (وزن‌دهی متناسب با پروفایل شما):</div>
+            <div className="text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-primary)]">ارزیابی ۵ محور تصمیم‌گیری (وزن‌دهی متناسب با پروفایل شما):</div>
             {report.criteriaScores.map((crit) => (
               <div key={crit.id} className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold">{crit.labelFa} <span className="text-[10px] font-normal text-slate-400">(وزن {crit.weightPct}٪)</span></span>
                   <span className="font-bold tabular-nums text-teal-600 dark:text-teal-400">{crit.score}/۱۰۰</span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[var(--color-bg-elevated)] overflow-hidden">
                   <div className={`h-full rounded-full ${crit.score >= 75 ? 'bg-emerald-500' : crit.score >= 55 ? 'bg-teal-500' : 'bg-amber-500'}`} style={{ width: `${crit.score}%` }} />
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">{crit.benchmarkSummaryFa}</div>
+                <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{crit.benchmarkSummaryFa}</div>
               </div>
             ))}
           </div>
           <div className={`p-3 rounded-xl border ${cardBg} space-y-2`}>
-            <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200">تحلیل حساسیت و سناریوهای پادواقعی (Counterfactual Analysis):</div>
+            <div className="text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-primary)]">تحلیل حساسیت و سناریوهای پادواقعی (Counterfactual Analysis):</div>
             {report.counterfactuals.map((sc) => (
               <div key={sc.id} className={`p-2.5 rounded-lg border ${mutedBg} space-y-1`}>
                 <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
                   <span>{sc.titleFa}</span>
                   <span className="tabular-nums text-teal-600 dark:text-teal-400">{sc.resultingTotalMillionToman.toLocaleString('fa-IR')} م‌ت ({sc.resultingIntlFormatted})</span>
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">{sc.assumptionChangeFa}</div>
-                <div className={`text-[10px] font-semibold ${sc.deltaMillionToman < 0 && sc.id !== 'full_asking_no_negotiation' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>{sc.verdictShiftFa}</div>
+                <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{sc.assumptionChangeFa}</div>
+                <div className={`text-[10px] font-semibold ${sc.deltaMillionToman < 0 && sc.id !== 'full_asking_no_negotiation' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-[var(--color-text-secondary)]'}`}>{sc.verdictShiftFa}</div>
               </div>
             ))}
           </div>
@@ -227,12 +227,12 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
                   <AlertTriangle className={`w-3.5 h-3.5 shrink-0 ${alert.severity === 'high' ? 'text-rose-500' : alert.severity === 'medium' ? 'text-amber-500' : 'text-teal-500'}`} />
                   <span>{alert.titleFa}</span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">{alert.metricBadgeFa}</span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">{alert.metricBadgeFa}</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{alert.diagnosisFa}</p>
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">{alert.diagnosisFa}</p>
               <div className={`p-2 rounded-lg border ${mutedBg} flex items-center justify-between gap-2 text-[10px]`}>
                 <span className="font-semibold text-teal-700 dark:text-teal-300">پادزهر رفتاری: {alert.debiasingActionFa}</span>
-                <span className="font-bold tabular-nums shrink-0 text-slate-700 dark:text-slate-200">اثر مالی: {alert.financialImpactMillionToman.toLocaleString('fa-IR')} م‌ت ({alert.financialImpactIntlFormatted})</span>
+                <span className="font-bold tabular-nums shrink-0 text-slate-700 dark:text-[var(--color-text-primary)]">اثر مالی: {alert.financialImpactMillionToman.toLocaleString('fa-IR')} م‌ت ({alert.financialImpactIntlFormatted})</span>
               </div>
             </div>
           ))}
@@ -247,15 +247,15 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
                 <div className="flex items-center gap-1.5 font-bold">
                   {entry.statusTone === 'verified' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : entry.statusTone === 'caution' ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" /> : <HelpCircle className="w-3.5 h-3.5 text-sky-500 shrink-0" />}
                   <span>{entry.labelFa}:</span>
-                  <span className="text-slate-600 dark:text-slate-300">{entry.metricNameFa}</span>
+                  <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">{entry.metricNameFa}</span>
                 </div>
                 <span className="text-[10px] font-bold tabular-nums text-teal-600 dark:text-teal-400">اطمینان {entry.confidencePct}٪ ({entry.marginOfErrorFa})</span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
-                <span className="font-bold text-slate-800 dark:text-slate-100">{entry.valueDisplayFa}</span>
-                <span className="text-slate-500 dark:text-slate-400">منبع: {entry.sourceFa}</span>
+                <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{entry.valueDisplayFa}</span>
+                <span className="text-slate-500 dark:text-[var(--color-text-muted)]">منبع: {entry.sourceFa}</span>
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{entry.explanationFa}</p>
+              <p className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] leading-relaxed">{entry.explanationFa}</p>
             </div>
           ))}
         </div>

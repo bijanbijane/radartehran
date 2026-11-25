@@ -59,7 +59,7 @@ export const AdminSearchControlPanel: React.FC = () => {
   return (
     <section
       data-testid="admin-search-control-panel"
-      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs"
+      className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs"
       dir="rtl"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

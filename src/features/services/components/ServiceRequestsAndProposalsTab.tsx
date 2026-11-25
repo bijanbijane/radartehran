@@ -14,7 +14,7 @@ export interface ServiceRequestsAndProposalsTabProps {
   requests: ServiceRequestRecord[];
   proposals: ServiceProposalRecord[];
   reviews: ProviderReviewRecord[];
-  onSimulateSampleProposal: (req: ServiceRequestRecord) => void;
+  onSimulateSampleProposal?: (req: ServiceRequestRecord) => void;
   onProposalAction: (proposalId: string, action: 'shortlisted' | 'accepted' | 'rejected') => void;
   onTransitionRequest: (requestId: string, status: ServiceRequestStatus) => void;
   onSubmitReview: (payload: {
@@ -49,12 +49,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
   const [reviewTextByReq, setReviewTextByReq] = useState<Record<string, string>>({});
   const [reviewScoreByReq, setReviewScoreByReq] = useState<Record<string, 1 | 2 | 3 | 4 | 5>>({});
   const [reviewMsg, setReviewMsg] = useState<{ requestId: string; tone: 'success' | 'error'; text: string } | null>(null);
-  const isDevRuntime = Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
-  const devDemoEnabled =
-    isDevRuntime &&
-    typeof window !== 'undefined' &&
-    typeof window.location?.search === 'string' &&
-    new URLSearchParams(window.location.search).get('dev') === '1';
+  void onSimulateSampleProposal;
 
   if (requests.length === 0) {
     return (
@@ -104,15 +99,6 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                {devDemoEnabled && req.status === 'submitted' && (
-                  <button
-                    type="button"
-                    onClick={() => onSimulateSampleProposal(req)}
-                    className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold cursor-pointer whitespace-nowrap"
-                  >
-                    دریافت پیشنهاد نمونه (آزمایشی)
-                  </button>
-                )}
                 {req.status === 'provider_selected' && (
                   <button
                     type="button"
@@ -126,7 +112,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                   <button
                     type="button"
                     onClick={() => onTransitionRequest(req.id, 'cancelled')}
-                    className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[#B3261E] font-bold cursor-pointer whitespace-nowrap"
+                    className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[#B3261E] font-bold cursor-pointer whitespace-nowrap"
                   >
                     لغو درخواست
                   </button>
@@ -134,7 +120,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
               </div>
             </div>
 
-            <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{req.projectSummary}</p>
+            <p className="text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] leading-relaxed">{req.projectSummary}</p>
 
             {/* Side-by-side proposals comparison */}
             {reqProposals.length > 0 && (
@@ -170,7 +156,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                             <button
                               type="button"
                               onClick={() => onProposalAction(prop.proposalId, 'rejected')}
-                              className="px-2.5 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-slate-600 text-[var(--color-text-muted)] font-bold cursor-pointer"
+                              className="px-2.5 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-muted)] font-bold cursor-pointer"
                             >
                               رد
                             </button>

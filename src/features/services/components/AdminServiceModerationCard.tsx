@@ -17,7 +17,7 @@ export const AdminServiceModerationCard: React.FC<{ isVerifiedAdmin: boolean }> 
   return (
     <div
       data-testid="admin-services-moderation-queue"
-      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs"
+      className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3 text-xs"
     >
       <div className="flex items-center justify-between gap-2">
         <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
@@ -34,7 +34,7 @@ export const AdminServiceModerationCard: React.FC<{ isVerifiedAdmin: boolean }> 
       ) : (
         <div className="space-y-2">
           {submissions.slice(0, 6).map((sub) => (
-            <div key={sub.submissionId} className="p-3 rounded-xl bg-[#F8F9FA] dark:bg-slate-800/80 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div key={sub.submissionId} className="p-3 rounded-xl bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white">
                   {sub.displayName} · {CANONICAL_CATEGORY_LABELS_FA[sub.canonicalCategory]}

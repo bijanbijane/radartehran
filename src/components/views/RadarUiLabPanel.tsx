@@ -33,9 +33,9 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
     <section
       data-testid="radar-ui-lab-panel"
       aria-label="آزمایشگاه اجزای رابط رادار تهران"
-      className="rounded-[16px] border-2 border-[var(--color-brand-600)]/40 bg-[var(--color-bg-canvas)] dark:bg-slate-950 p-4 sm:p-6 space-y-6"
+      className="rounded-[16px] border-2 border-[var(--color-brand-600)]/40 bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)] p-4 sm:p-6 space-y-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-4">
         <div>
           <span className="text-[13px] font-semibold text-[var(--color-brand-600)] dark:text-emerald-400 block">
             {activeLabTab === 'components'
@@ -49,13 +49,13 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
           <h2 className="text-[20px] font-bold text-[var(--color-text-primary)] dark:text-white">Radar UI & Interaction QA Lab</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex flex-wrap rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
+          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex flex-wrap rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-0.5">
             <button type="button" onClick={() => setActiveLabTab('components')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'components' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>اجزای رابط (۸)</button>
             <button type="button" data-testid="switch-interaction-qa-tab" onClick={() => setActiveLabTab('interaction')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'interaction' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>تعاملات (۹)</button>
             <button type="button" data-testid="switch-validation-qa-tab" onClick={() => setActiveLabTab('validation')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'validation' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>اعتبارسنجی و پایلوت (۱۰–۱۱)</button>
             <button type="button" data-testid="switch-onboarding-responsive-qa-tab" onClick={() => setActiveLabTab('onboarding')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'onboarding' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>ورود، واکنش‌گرایی، دسترس‌پذیری و حرکت (۳۲–۳۵)</button>
           </div>
-          <div role="group" aria-label="نمای آزمایش" className="inline-flex rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
+          <div role="group" aria-label="نمای آزمایش" className="inline-flex rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-0.5">
             <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'desktop' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>دسکتاپ</button>
             <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'mobile' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>موبایل (۳۹۰px)</button>
           </div>
@@ -65,7 +65,7 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
         </div>
       </div>
 
-      <div className={`space-y-6 transition-all ${viewportMode === 'mobile' ? 'max-w-[390px] mx-auto border border-[var(--color-border-strong)] dark:border-slate-700 rounded-[20px] p-4 bg-white dark:bg-slate-900' : ''}`}>
+      <div className={`space-y-6 transition-all ${viewportMode === 'mobile' ? 'max-w-[390px] mx-auto border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] rounded-[20px] p-4 bg-white dark:bg-[var(--color-bg-surface)]' : ''}`}>
         {activeLabTab === 'interaction' ? (
           <InteractionQaLabTab />
         ) : activeLabTab === 'validation' ? (
@@ -110,8 +110,8 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
               helperText="ارقام به صورت خودکار به عدد خالص نرمال‌سازی می‌شوند."
             />
           </div>
-          <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-[14px]">
-            <span className="font-medium text-[var(--color-text-secondary)] dark:text-slate-300">نوع معامله:</span>
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] text-[14px]">
+            <span className="font-medium text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">نوع معامله:</span>
             {(['buy', 'rent'] as const).map((opt) => (
               <label key={opt} className="inline-flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="lab-deal" checked={dealType === opt} onChange={() => setDealType(opt)} className="accent-[var(--color-brand-600)]" />

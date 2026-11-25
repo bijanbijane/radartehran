@@ -23,7 +23,7 @@ export const SearchResultCount: React.FC<SearchResultCountProps> = ({
 }) => {
   return (
     <div dir="rtl" role="status" aria-live="polite" className="space-y-1 text-right text-xs">
-      <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-[var(--color-text-secondary)]">
         {displayState === 'ResultsLoading' ? (
           <span>در حال دریافت نتایج جست‌وجو...</span>
         ) : totalServerCount !== null ? (

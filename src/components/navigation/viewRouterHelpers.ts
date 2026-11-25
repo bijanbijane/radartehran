@@ -25,12 +25,24 @@ export function resolveSecondaryTabsForView(viewId: PrimaryViewId): readonly Sec
   return [];
 }
 
+const PRESERVED_COMMUNITY_SUBTABS = new Set<string>([
+  'overview', 'discussions', 'questions', 'topics', 'neighborhoods',
+  'submit', 'research', 'members', 'guidelines', 'market', 'contributions',
+  'reports', 'help', 'points', 'verify',
+]);
+
 export function resolveEffectiveSubTab(
   viewId: PrimaryViewId,
   activeSubTab?: ModuleSubTabId,
 ): ModuleSubTabId | undefined {
   if (viewId === 'discover' && activeSubTab === 'registry') return 'registry';
   if (viewId === 'knowledge' && (activeSubTab === 'legal_privacy' || activeSubTab === 'legal_terms')) {
+    return activeSubTab;
+  }
+  if (viewId === 'tools' && activeSubTab === 'compare_props') {
+    return 'compare_props';
+  }
+  if (viewId === 'contributions' && activeSubTab && PRESERVED_COMMUNITY_SUBTABS.has(activeSubTab)) {
     return activeSubTab;
   }
   const tabs = resolveSecondaryTabsForView(viewId);

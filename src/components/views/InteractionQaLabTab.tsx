@@ -150,7 +150,7 @@ export const InteractionQaLabTab: React.FC = () => {
             {boundsNeedsRefresh ? 'جست‌وجو در این محدوده' : 'شبیه‌سازی جابه‌جایی نقشه'}
           </RadarButton>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
           <span className="text-[12px] font-semibold text-[var(--color-text-muted)]">فیلترهای فعال:</span>
           {chips.map((c) => (
             <button
@@ -174,7 +174,7 @@ export const InteractionQaLabTab: React.FC = () => {
           <RadarButton variant="secondary" size="sm" leadingIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={runRaceSimulation}>
             شبیه‌سازی جست‌وجوی همزمان A ← B
           </RadarButton>
-          <div className="mt-3 p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800 text-[12px] font-semibold text-[#176B4C] dark:text-emerald-300">
+          <div className="mt-3 p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] text-[12px] font-semibold text-[#176B4C] dark:text-emerald-300">
             {raceWinner}
           </div>
           {telemetryPreview && (
@@ -198,7 +198,7 @@ export const InteractionQaLabTab: React.FC = () => {
                 const validSqm = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 95;
                 setRequestKey(createIdempotentRequestKey({ hoodId: 5, sqm: validSqm, buildYear: 1398, attemptNonce: 'demo1' }));
               }}
-              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] tabular-nums"
+              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-[13px] tabular-nums"
             />
             <RadarButton variant="outline" size="sm" loading={valSubmitting} onClick={() => runValuationSimulation(true)}>
               شبیه‌سازی خطای شبکه
@@ -228,9 +228,9 @@ export const InteractionQaLabTab: React.FC = () => {
               key={sc.id}
               type="button"
               onClick={() => setPassedFlows((p) => ({ ...p, [sc.id]: !p[sc.id] }))}
-              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
             >
-              <span className="font-medium text-[var(--color-text-primary)] dark:text-slate-100">{sc.id}: {sc.titleFa}</span>
+              <span className="font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">{sc.id}: {sc.titleFa}</span>
               <CheckCircle2 className={`w-4 h-4 shrink-0 ${passedFlows[sc.id] ? 'text-[#176B4C]' : 'text-slate-300'}`} />
             </button>
           ))}

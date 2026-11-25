@@ -159,7 +159,7 @@ test('Dialog scroll-lock ref counting and Escape/useDialogFocus contracts across
 
   const casperModalSrc = readSrc('src/components/CasperDecisionSuiteModal.tsx');
   assert.match(casperModalSrc, /useIntlCurrency/);
-  assert.match(casperModalSrc, /text-slate-900 dark:text-slate-100/);
+  assert.match(casperModalSrc, /(text-slate-900 dark:text-(slate-100|\[var\(--color-text-primary\)\])|text-\[var\(--color-text-primary\)\])/);
 
   const serviceReqSrc = readSrc('src/features/services/components/ServiceRequestModal.tsx');
   assert.match(serviceReqSrc, /normalizeServicePhoneDigits/);

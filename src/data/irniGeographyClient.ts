@@ -20,29 +20,73 @@ interface IrniLegacyAliasApiResponse {
   source: 'IRNI_CANONICAL_REGISTRY';
 }
 
+const IRNI_ALIASES_TTL_MS = 5 * 60 * 1000;
+const IRNI_RATE_LIMIT_COOLDOWN_MS = 60 * 1000;
+
+let cachedIrniSnapshot: IrniLegacyAliasSnapshot | null = null;
+let cachedIrniExpiresAt = 0;
+let irniRateLimitCooldownUntil = 0;
+let inFlightIrniRequest: Promise<IrniLegacyAliasSnapshot> | null = null;
+
+export function clearIrniLegacyAliasesCacheForTesting(): void {
+  cachedIrniSnapshot = null;
+  cachedIrniExpiresAt = 0;
+  irniRateLimitCooldownUntil = 0;
+  inFlightIrniRequest = null;
+}
+
 export async function fetchIrniLegacyAliases(
   signal?: AbortSignal,
 ): Promise<IrniLegacyAliasSnapshot> {
-  const response = await fetch(
-    '/api/v1/geography/legacy-aliases?legacySystemCode=TEHRAN_RADAR',
-    { headers: { accept: 'application/json' }, signal, cache: 'no-store' },
-  );
-  const body = await response.json().catch(() => null) as IrniLegacyAliasApiResponse | null;
-  if (!response.ok || !body || body.status !== 'ok' ||
-      body.source !== 'IRNI_CANONICAL_REGISTRY' ||
-      !Number.isSafeInteger(body.registryRevision) || !Array.isArray(body.items)) {
-    const code = body && typeof body === 'object' && 'code' in body ? String(body.code) : 'IRNI_LEGACY_ALIAS_API_UNAVAILABLE';
-    throw new Error(code);
+  const now = Date.now();
+  if (cachedIrniSnapshot && now < cachedIrniExpiresAt) {
+    return cachedIrniSnapshot;
   }
-  return {
-    registryRevision: body.registryRevision,
-    items: body.items.filter((item) =>
-      item.legacySystemCode === 'TEHRAN_RADAR' &&
-      item.aliasStatus === 'ACTIVE_COMPATIBILITY_ALIAS' &&
-      typeof item.legacyIdentifierValue === 'string' &&
-      typeof item.canonicalGeographicEntityId === 'string',
-    ),
-  };
+  if (now < irniRateLimitCooldownUntil) {
+    if (cachedIrniSnapshot) return cachedIrniSnapshot;
+    throw new Error('IRNI_LEGACY_ALIAS_RATE_LIMITED');
+  }
+  if (inFlightIrniRequest) {
+    return inFlightIrniRequest;
+  }
+
+  const request = (async (): Promise<IrniLegacyAliasSnapshot> => {
+    try {
+      const response = await fetch(
+        '/api/v1/geography/legacy-aliases?legacySystemCode=TEHRAN_RADAR',
+        { headers: { accept: 'application/json' }, signal },
+      );
+      if (response.status === 429) {
+        irniRateLimitCooldownUntil = Date.now() + IRNI_RATE_LIMIT_COOLDOWN_MS;
+        if (cachedIrniSnapshot) return cachedIrniSnapshot;
+        throw new Error('IRNI_LEGACY_ALIAS_RATE_LIMITED');
+      }
+      const body = await response.json().catch(() => null) as IrniLegacyAliasApiResponse | null;
+      if (!response.ok || !body || body.status !== 'ok' ||
+          body.source !== 'IRNI_CANONICAL_REGISTRY' ||
+          !Number.isSafeInteger(body.registryRevision) || !Array.isArray(body.items)) {
+        const code = body && typeof body === 'object' && 'code' in body ? String(body.code) : 'IRNI_LEGACY_ALIAS_API_UNAVAILABLE';
+        throw new Error(code);
+      }
+      const snapshot: IrniLegacyAliasSnapshot = {
+        registryRevision: body.registryRevision,
+        items: body.items.filter((item) =>
+          item.legacySystemCode === 'TEHRAN_RADAR' &&
+          item.aliasStatus === 'ACTIVE_COMPATIBILITY_ALIAS' &&
+          typeof item.legacyIdentifierValue === 'string' &&
+          typeof item.canonicalGeographicEntityId === 'string',
+        ),
+      };
+      cachedIrniSnapshot = snapshot;
+      cachedIrniExpiresAt = Date.now() + IRNI_ALIASES_TTL_MS;
+      return snapshot;
+    } finally {
+      inFlightIrniRequest = null;
+    }
+  })();
+
+  inFlightIrniRequest = request;
+  return request;
 }
 
 /**

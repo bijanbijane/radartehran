@@ -44,7 +44,7 @@ const TIER_BADGES: Record<string, { label: string; color: string }> = {
   CHIEF_INSPECTOR: { label: 'بازرس ارشد محله', color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800' },
   TRUSTED_SCOUT: { label: 'دیده‌بان معتمد', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800' },
   LOCAL_RESIDENT: { label: 'ساکن تاییدشده', color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-800' },
-  NEWCOMER: { label: 'مشارکت‌کننده جدید', color: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  NEWCOMER: { label: 'مشارکت‌کننده جدید', color: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-secondary)] dark:border-[var(--color-border-strong)]' },
 };
 
 function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string, basePriceSqm?: number, providedHood?: Neighborhood, intlCurrency: IntlCurrencyCode = 'USD') {
@@ -304,13 +304,13 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   };
 
   return (
-    <div data-testid="neighborhood-crowd-claims-panel" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
+    <div data-testid="neighborhood-crowd-claims-panel" className="bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] p-4 shadow-sm space-y-4" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"><ShieldCheck className="w-5 h-5" /></div>
           <div>
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">راستی‌آزمایی جمعی و گزارش‌های میدانی ({hoodName})</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">تفکیک «تاییدیه میدانی قابل راستی‌آزمایی» از «تجربه زیسته ساکنان» با امتیازدهی اعتبارسنجی</p>
+            <h4 className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-sm">راستی‌آزمایی جمعی و گزارش‌های میدانی ({hoodName})</h4>
+            <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">تفکیک «تاییدیه میدانی قابل راستی‌آزمایی» از «تجربه زیسته ساکنان» با امتیازدهی اعتبارسنجی</p>
           </div>
         </div>
         <button
@@ -335,31 +335,31 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         <div role="alert" className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2"><AlertTriangle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>
       )}
       {showForm && canMutate && (
-        <form noValidate onSubmit={handleSubmit} className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+        <form noValidate onSubmit={handleSubmit} className="bg-slate-50 dark:bg-[var(--color-bg-muted)] p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2.5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نام نمایشی</label>
-              <input type="text" value={authorName} onChange={(e) => { setAuthorName(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: علی (ساکن محله)" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نام نمایشی</label>
+              <input type="text" value={authorName} onChange={(e) => { setAuthorName(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: علی (ساکن محله)" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)]" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">دسته‌بندی موضوعی</label>
-              <select value={category} onChange={(e) => { setCategory(e.target.value); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">{Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">دسته‌بندی موضوعی</label>
+              <select value={category} onChange={(e) => { setCategory(e.target.value); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)]">{Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع گزارش</label>
-              <select value={claimType} onChange={(e) => { setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE'); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نوع گزارش</label>
+              <select value={claimType} onChange={(e) => { setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE'); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)]">
                 <option value="VERIFIED_FACT_CANDIDATE">سناریوی فرضی مذاکره / فکت مستند ملکی</option>
                 <option value="SUBJECTIVE_EXPERIENCE">تجربه سکونت / کیفیت کوچه و جای پارک</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">عنوان گزارش / نام کوچه یا خیابان</label>
-            <input type="text" aria-invalid={Boolean(errorMessage) && title.trim().length < 4} value={title} onChange={(e) => { setTitle(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: قیمت معامله طبقه سوم در خیابان اصلی یا وضعیت پارک شبانه" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">عنوان گزارش / نام کوچه یا خیابان</label>
+            <input type="text" aria-invalid={Boolean(errorMessage) && title.trim().length < 4} value={title} onChange={(e) => { setTitle(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: قیمت معامله طبقه سوم در خیابان اصلی یا وضعیت پارک شبانه" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)]" />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
-            <textarea rows={2} aria-invalid={Boolean(errorMessage) && body.trim().length < 8} value={body} onChange={(e) => { setBody(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">شرح دقیق و مستند</label>
+            <textarea rows={2} aria-invalid={Boolean(errorMessage) && body.trim().length < 8} value={body} onChange={(e) => { setBody(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)]" />
           </div>
           <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
         </form>
@@ -378,23 +378,23 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         </div>
       )}
       <div className="space-y-2">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">همه گزارش‌های اهالی و مشاوران محله ({toPersianDigits(claims.length)})</div>
+        <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">همه گزارش‌های اهالی و مشاوران محله ({toPersianDigits(claims.length)})</div>
         {loading ? <div className="text-xs text-slate-400 py-3">در حال بارگذاری گزارش‌های میدانی...</div> : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {claims.map((c) => (
-              <div key={c.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col gap-1.5">
+              <div key={c.id} className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-[var(--color-bg-muted)] flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-1">
-                  <div className="flex items-center gap-1.5"><span className="text-xs font-bold text-slate-800 dark:text-slate-100">{c.title}</span><span className="px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px]">{CATEGORY_LABELS[c.category] || c.category}</span></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{c.title}</span><span className="px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] text-[10px]">{CATEGORY_LABELS[c.category] || c.category}</span></div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.promotedToReference ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300' : c.claimType === 'VERIFIED_FACT_CANDIDATE' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300'}`}>
                     {c.promotedToReference ? 'داده مرجع تاییدشده' : c.claimType === 'VERIFIED_FACT_CANDIDATE' ? 'ادعای قابل راستی‌آزمایی' : 'تجربه شخصی ساکنان'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{c.body}</p>
-                <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">{c.body}</p>
+                <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
                   <span>توسط: {c.authorDisplayName} • وزن اعتبار: {toPersianDigits(c.trustWeightScore)}٪</span>
                   <div className="flex items-center gap-2">
-                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-700 dark:text-emerald-400 cursor-pointer"><ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span></button>
-                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 dark:text-rose-400 cursor-pointer"><ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span></button>
+                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-700 dark:text-emerald-400 cursor-pointer"><ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span></button>
+                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-rose-50 dark:hover:bg-rose-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 dark:text-rose-400 cursor-pointer"><ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span></button>
                   </div>
                 </div>
               </div>
@@ -403,8 +403,8 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         )}
       </div>
       {leaderboard.length > 0 && (
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 mb-2"><Award className="w-4 h-4 text-amber-500" /><span>مشارکت‌کنندگان برتر راستی‌آزمایی میدانی</span></div>
+        <div className="pt-2 border-t border-slate-200 dark:border-[var(--color-border-subtle)]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)] mb-2"><Award className="w-4 h-4 text-amber-500" /><span>مشارکت‌کنندگان برتر راستی‌آزمایی میدانی</span></div>
           <div className="flex flex-wrap gap-2">
             {leaderboard.slice(0, 3).map((u) => {
               const badge = TIER_BADGES[u.tier] || TIER_BADGES.NEWCOMER;

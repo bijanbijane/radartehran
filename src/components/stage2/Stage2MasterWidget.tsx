@@ -130,16 +130,16 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
       dir="rtl"
     >
       {/* Header Banner + Quick-Jump Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100/80 dark:border-slate-800 pb-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100/80 dark:border-[var(--color-border-subtle)] pb-2.5">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               موتور تصمیم‌یار معرفتی، پارتو، سرایت فضایی و هوش اجتماعی ({resolvedHoodName})
             </h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">
               سناریوی مذاکره (v6.4 · غیرثبتی): متری {toPersianNum(liveAgg.estimatedDealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(liveAgg.estimatedDealPricePerSqm, intlCurrency, 'fa')}) · منشأ: {provenanceTitleFa} · شکارهای زیر قیمت: {toPersianNum(liveAgg.autoBargains.length)} مورد
             </p>
           </div>
@@ -148,7 +148,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
           aria-label="پرش سریع به آزمایشگاه تصمیم‌گیری"
           value={activeTab}
           onChange={(e) => setActiveTab(e.target.value as Stage2ActiveTab)}
-          className="text-[11px] font-bold rounded-xl border border-indigo-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 px-2.5 py-1.5 shadow-2xs cursor-pointer"
+          className="text-[11px] font-bold rounded-xl border border-indigo-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-slate-800 dark:text-[var(--color-text-primary)] px-2.5 py-1.5 shadow-2xs cursor-pointer"
         >
           {STAGE2_TABS.map((t) => (
             <option key={t.id} value={t.id}>
@@ -175,7 +175,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
                 className={`px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
                   isDomActive
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-slate-100/80 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 border-slate-200/70 dark:border-slate-700 hover:bg-slate-200/70'
+                    : 'bg-slate-100/80 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-200/70 dark:border-[var(--color-border-strong)] hover:bg-slate-200/70'
                 }`}
               >
                 {dom.label}
@@ -187,7 +187,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
         <div
           role="tablist"
           aria-label="زبانه‌های موتور تصمیم‌یار مسکن"
-          className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700"
+          className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-[var(--color-bg-muted)] p-1 rounded-xl border border-slate-200/70 dark:border-[var(--color-border-strong)]"
         >
           {domainTabs.map((tab, idx) => {
             const IconC = tab.icon;
@@ -213,8 +213,8 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
                 }}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800/60'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-white dark:bg-[var(--color-bg-surface)] text-indigo-700 dark:text-indigo-300 shadow-xs border border-indigo-100 dark:border-indigo-800/60'
+                    : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 <IconC className="w-3.5 h-3.5 shrink-0" />

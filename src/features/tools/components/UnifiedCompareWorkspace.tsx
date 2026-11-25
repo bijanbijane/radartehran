@@ -35,6 +35,10 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
 }) => {
   const [locale] = useRadarLocale();
   const isEn = locale === 'en';
+  const [activeMode, setActiveMode] = useState<'areas' | 'properties'>(mode);
+  React.useEffect(() => {
+    setActiveMode(mode);
+  }, [mode]);
   const hoods = evaluatedNeighborhoods.length > 0 ? evaluatedNeighborhoods : [selectedHood];
   const [idA, setIdA] = useState<number>(selectedHood.id);
   const [idB, setIdB] = useState<number>(() => hoods.find((h) => h.id !== selectedHood.id)?.id ?? selectedHood.id);
@@ -72,7 +76,34 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
 
   const fmt = (n: number) => (isEn ? n.toLocaleString('en-US') : toPersianNum(n.toLocaleString('en-US')).replace(/\./g, '٫'));
 
-  if (mode === 'properties' && unitA && unitB) {
+  const modeSwitcher = (
+    <div role="group" aria-label={isEn ? 'Comparison mode' : 'نوع مقایسه'} className="inline-flex bg-[var(--color-bg-muted)] p-0.5 rounded-[8px] border border-[var(--color-border-subtle)] text-sm">
+      <button
+        type="button"
+        data-testid="compare-mode-areas-btn"
+        aria-pressed={activeMode === 'areas'}
+        onClick={() => setActiveMode('areas')}
+        className={`min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[6px] font-bold transition cursor-pointer ${
+          activeMode === 'areas' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+        }`}
+      >
+        {isEn ? 'Compare Areas' : 'مقایسه محله‌ها'}
+      </button>
+      <button
+        type="button"
+        data-testid="compare-mode-properties-btn"
+        aria-pressed={activeMode === 'properties'}
+        onClick={() => setActiveMode('properties')}
+        className={`min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[6px] font-bold transition cursor-pointer ${
+          activeMode === 'properties' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+        }`}
+      >
+        {isEn ? 'Compare Properties' : 'مقایسه املاک'}
+      </button>
+    </div>
+  );
+
+  if (activeMode === 'properties' && unitA && unitB) {
     const rows = [
       { label: isEn ? 'Neighborhood' : 'محله', a: unitA.hoodName, b: unitB.hoodName },
       { label: isEn ? 'Total Price' : 'قیمت کل برآوردی', a: `${fmt(unitA.priceBillion)} میلیارد تومان`, b: `${fmt(unitB.priceBillion)} میلیارد تومان` },
@@ -90,34 +121,37 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
         aria-label={isEn ? 'Property comparison matrix' : 'جدول مقایسه دو ملک'}
         className="rounded-[16px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-4"
       >
-        <div className="flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
-          <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-            {isEn ? 'Side-by-Side Property Comparison' : 'مقایسه کنار هم دو ملک'}
-          </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
+            <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+              {isEn ? 'Side-by-Side Property Comparison' : 'مقایسه کنار هم دو ملک'}
+            </h2>
+          </div>
+          {modeSwitcher}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="space-y-1 text-xs font-bold text-[var(--color-text-secondary)]">
+          <label className="space-y-1 text-sm font-bold text-[var(--color-text-secondary)]">
             <span>{isEn ? 'Property A' : 'ملک اول'}</span>
             <select
               aria-label={isEn ? 'Select first property' : 'انتخاب ملک اول برای مقایسه'}
               value={unitA.id}
               onChange={(e) => setUnitAId(e.target.value)}
-              className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
+              className="w-full min-h-[44px] md:min-h-[40px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-sm font-bold text-[var(--color-text-primary)]"
             >
               {realUnits.map((u) => (
                 <option key={u.id} value={u.id}>{u.title}</option>
               ))}
             </select>
           </label>
-          <label className="space-y-1 text-xs font-bold text-[var(--color-text-secondary)]">
+          <label className="space-y-1 text-sm font-bold text-[var(--color-text-secondary)]">
             <span>{isEn ? 'Property B' : 'ملک دوم'}</span>
             <select
               aria-label={isEn ? 'Select second property' : 'انتخاب ملک دوم برای مقایسه'}
               value={unitB.id}
               onChange={(e) => setUnitBId(e.target.value)}
-              className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
+              className="w-full min-h-[44px] md:min-h-[40px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-sm font-bold text-[var(--color-text-primary)]"
             >
               {realUnits.map((u) => (
                 <option key={u.id} value={u.id}>{u.title}</option>
@@ -127,20 +161,20 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
-                <th className="py-2.5 px-3 text-start font-bold">{isEn ? 'Metric' : 'شاخص'}</th>
-                <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitA.title}</th>
-                <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitB.title}</th>
+                <th className="py-3 px-3 text-start font-bold">{isEn ? 'Metric' : 'شاخص'}</th>
+                <th className="py-3 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitA.title}</th>
+                <th className="py-3 px-3 text-start font-bold text-[var(--color-text-primary)]">{unitB.title}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border-subtle)] tabular-nums">
               {rows.map((r) => (
                 <tr key={r.label}>
-                  <td className="py-2.5 px-3 font-semibold text-[var(--color-text-secondary)]">{r.label}</td>
-                  <td className="py-2.5 px-3 font-bold text-[var(--color-text-primary)]">{r.a}</td>
-                  <td className="py-2.5 px-3 font-bold text-[var(--color-text-primary)]">{r.b}</td>
+                  <td className="py-3 px-3 font-semibold text-[var(--color-text-secondary)]">{r.label}</td>
+                  <td className="py-3 px-3 font-bold text-[var(--color-text-primary)]">{r.a}</td>
+                  <td className="py-3 px-3 font-bold text-[var(--color-text-primary)]">{r.b}</td>
                 </tr>
               ))}
             </tbody>
@@ -172,44 +206,47 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
       aria-label={isEn ? 'Neighborhood comparison matrix' : 'جدول مقایسه دو محله'}
       className="rounded-[16px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <GitCompare className="w-5 h-5 text-[var(--color-brand-fg)]" aria-hidden="true" />
           <h2 className="text-base font-bold text-[var(--color-text-primary)]">
             {isEn ? 'Side-by-Side Neighborhood Comparison' : 'مقایسه تحلیلی دو محله کنار هم'}
           </h2>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--color-brand-fg)] tabular-nums">
-          <Compass className="w-4 h-4" aria-hidden="true" />
-          <span>
-            {isEn
-              ? `Price gap: ${priceDeltaPct > 0 ? '+' : ''}${priceDeltaPct}%`
-              : `اختلاف قیمت هر متر: ${priceDeltaPct > 0 ? '+' : ''}${toPersianNum(priceDeltaPct)}٪`}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {modeSwitcher}
+          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-brand-fg)] tabular-nums">
+            <Compass className="w-4 h-4" aria-hidden="true" />
+            <span>
+              {isEn
+                ? `Price gap: ${priceDeltaPct > 0 ? '+' : ''}${priceDeltaPct}%`
+                : `اختلاف قیمت هر متر: ${priceDeltaPct > 0 ? '+' : ''}${toPersianNum(priceDeltaPct)}٪`}
+            </span>
           </span>
-        </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label className="space-y-1 text-xs font-bold text-[var(--color-text-secondary)]">
+        <label className="space-y-1 text-sm font-bold text-[var(--color-text-secondary)]">
           <span>{isEn ? 'First Neighborhood' : 'محله اول'}</span>
           <select
             aria-label={isEn ? 'Select first neighborhood' : 'انتخاب محله اول برای مقایسه'}
             value={hoodA.id}
             onChange={(e) => setIdA(Number(e.target.value))}
-            className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
+            className="w-full min-h-[44px] md:min-h-[40px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-sm font-bold text-[var(--color-text-primary)]"
           >
             {hoods.map((h) => (
               <option key={h.id} value={h.id}>{h.name} ({h.zone})</option>
             ))}
           </select>
         </label>
-        <label className="space-y-1 text-xs font-bold text-[var(--color-text-secondary)]">
+        <label className="space-y-1 text-sm font-bold text-[var(--color-text-secondary)]">
           <span>{isEn ? 'Second Neighborhood' : 'محله دوم'}</span>
           <select
             aria-label={isEn ? 'Select second neighborhood' : 'انتخاب محله دوم برای مقایسه'}
             value={hoodB.id}
             onChange={(e) => setIdB(Number(e.target.value))}
-            className="w-full min-h-[44px] md:min-h-[38px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-xs font-bold text-[var(--color-text-primary)]"
+            className="w-full min-h-[44px] md:min-h-[40px] px-3 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-canvas)] text-sm font-bold text-[var(--color-text-primary)]"
           >
             {hoods.map((h) => (
               <option key={h.id} value={h.id}>{h.name} ({h.zone})</option>
@@ -219,20 +256,20 @@ export const UnifiedCompareWorkspace: React.FC<UnifiedCompareWorkspaceProps> = (
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
+        <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
-              <th className="py-2.5 px-3 text-start font-bold">{isEn ? 'Indicator' : 'شاخص مقایسه'}</th>
-              <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodA.name}</th>
-              <th className="py-2.5 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodB.name}</th>
+              <th className="py-3 px-3 text-start font-bold">{isEn ? 'Indicator' : 'شاخص مقایسه'}</th>
+              <th className="py-3 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodA.name}</th>
+              <th className="py-3 px-3 text-start font-bold text-[var(--color-text-primary)]">{hoodB.name}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border-subtle)] tabular-nums">
             {areaRows.map((r) => (
               <tr key={r.label}>
-                <td className="py-2.5 px-3 font-semibold text-[var(--color-text-secondary)]">{r.label}</td>
-                <td className="py-2.5 px-3 font-bold text-[var(--color-text-primary)]">{r.a}</td>
-                <td className="py-2.5 px-3 font-bold text-[var(--color-text-primary)]">{r.b}</td>
+                <td className="py-3 px-3 font-semibold text-[var(--color-text-secondary)]">{r.label}</td>
+                <td className="py-3 px-3 font-bold text-[var(--color-text-primary)]">{r.a}</td>
+                <td className="py-3 px-3 font-bold text-[var(--color-text-primary)]">{r.b}</td>
               </tr>
             ))}
           </tbody>

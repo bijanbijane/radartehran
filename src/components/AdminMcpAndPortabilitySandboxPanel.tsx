@@ -21,9 +21,9 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
     } finally { setIsRunningDossier(false); } }; return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
       {/* Interactive MCP Read-Only Tool Sandbox */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
+      <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-3 space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
             <Cpu className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>سندباکس تست ابزارهای مجاز MCP (`/api/v1/mcp/execute`)</span>
           </div>
@@ -33,13 +33,13 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
         </div>
         <div className="space-y-2">
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)] mb-1">
               انتخاب ابزار مجاز پروتکل MCP:
             </label>
             <select aria-label="انتخاب ابزار مجاز پروتکل MCP"
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value as AuthorizedMcpToolName)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-100"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)]"
             >
               {MCP_TOOLS_SPEC.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -47,17 +47,17 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 </option>
               ))}
             </select>
-            <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1">
+            <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)] mt-1">
               {MCP_TOOLS_SPEC.find((t) => t.id === selectedTool)?.descFa}
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
-              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">کلان‌شهر</label>
+              <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">کلان‌شهر</label>
               <select aria-label="انتخاب کلان‌شهر MCP"
                 value={city}
                 onChange={(e) => setCity(e.target.value as CityId)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)]"
               >
                 <option value="tehran">تهران</option>
                 <option value="karaj">کرج</option>
@@ -67,7 +67,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله اول</label>
+              <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">شناسه محله اول</label>
               <NumericDraftInput
                 aria-label="شناسه محله اول MCP"
                 min={1}
@@ -75,13 +75,13 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 fallback={1}
                 value={hoodId}
                 onValueChange={setHoodId}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
+                className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums"
               />
             </div>
             {selectedTool === 'compute_hedonic_valuation' && (
               <>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
                   <NumericDraftInput
                     aria-label="متراژ ملک MCP"
                     min={25}
@@ -89,11 +89,11 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                     fallback={90}
                     value={sqm}
                     onValueChange={setSqm}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
+                    className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">سن بنا (سال)</label>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">سن بنا (سال)</label>
                   <NumericDraftInput
                     aria-label="سن بنا MCP"
                     min={0}
@@ -101,14 +101,14 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                     fallback={4}
                     value={buildingAge}
                     onValueChange={setBuildingAge}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
+                    className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums"
                   />
                 </div>
               </>
             )}
             {selectedTool === 'search_approved_market_data' && (
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">
                   سقف قیمت هر متر (میلیون تومان · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((maxBuyPerSqm * 80) / 1000).toFixed(1))} میلیارد{areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(maxBuyPerSqm, 'sqft'))} م/ft²` : ''}{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(maxBuyPerSqm, areaUnit), intlCurrency, locale)}` : ''})
                 </label>
                 <NumericDraftInput
@@ -118,13 +118,13 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                   fallback={160}
                   value={maxBuyPerSqm}
                   onValueChange={setMaxBuyPerSqm}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
+                  className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums"
                 />
               </div>
             )}
             {selectedTool === 'compare_market_indicators' && (
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله دوم</label>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-0.5">شناسه محله دوم</label>
                 <NumericDraftInput
                   aria-label="شناسه محله دوم MCP"
                   min={1}
@@ -132,7 +132,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                   fallback={2}
                   value={secondHoodId}
                   onValueChange={setSecondHoodId}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
+                  className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums"
                 />
               </div>
             )}
@@ -163,8 +163,8 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
         </div>
       </div>
       {/* Cloudflare Runtime Portability & Production vs Simulation Ledger + AI Gateway & Dossier Sandbox */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
-        <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+      <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-3 space-y-2.5">
+        <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
           <Server className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>دفتر کل تفکیک حسابداری (Production vs Simulation) و پرتابلیتی Cloudflare</span>
         </div>
@@ -189,13 +189,13 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             </div>
           </div>
         </div>
-        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-[11px]">
-          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1">
+        <div className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1.5 text-[11px]">
+          <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center justify-between gap-1">
             <span>تست مسیریاب چندمدلی AI Gateway (`/api/ai/gateway/infer`)</span>
             <select aria-label="انتخاب جریان کاری AI Gateway"
               value={aiWorkflow}
               onChange={(e) => setAiWorkflow(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-900 dark:text-[var(--color-text-primary)]"
             >
               <option value="valuation_explanation">تبیین ارزش‌گذاری هدانیک</option>
               <option value="intelligent_search">جست‌وجوی هوشمند</option>
@@ -226,24 +226,24 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               {dossierResult.payload?.simulationBanner && <div className="text-amber-300">{dossierResult.payload.simulationBanner}</div>}
             </div>
           )} </div>
-        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-[11px]">
-          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+        <div className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1 text-[11px]">
+          <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>وضعیت پرتابلیتی چندابر (Portable-by-Design):</span>
           </div>
-          <div className="text-slate-600 dark:text-slate-300">
-            حالت اجرای فعلی:{' '} <code className="font-mono font-bold text-slate-800 dark:text-slate-100">
+          <div className="text-slate-600 dark:text-[var(--color-text-secondary)]">
+            حالت اجرای فعلی:{' '} <code className="font-mono font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               {cloudflareAndPortability?.runtimeMode || 'PORTABLE_NODE_AND_EDGE_HYBRID'} </code>{' '} · وابستگی قفل‌شده به ارائه‌دهنده واحد: <strong>صفر (Zero Vendor Lock-in)</strong>
           </div>
         </div>
         {aiRoutingAuditTrail.length > 0 && (
-          <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
-            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-[11px]">
-              <Database className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
+            <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1 text-[11px]">
+              <Database className="w-3.5 h-3.5 text-slate-600 dark:text-[var(--color-text-secondary)]" />
               <span>آخرین رخدادهای ممیزی تغییر مسیریابی AI Gateway:</span>
             </div>
-            <div className="max-h-20 overflow-y-auto space-y-1 text-[10px] text-slate-600 dark:text-slate-300">
-              {aiRoutingAuditTrail.slice(0, 3).map((item, idx) => ( <div key={idx} className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700 pb-0.5">
+            <div className="max-h-20 overflow-y-auto space-y-1 text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)]">
+              {aiRoutingAuditTrail.slice(0, 3).map((item, idx) => ( <div key={idx} className="flex items-center justify-between border-b border-slate-200/60 dark:border-[var(--color-border-strong)] pb-0.5">
                   <span>
                     نسخه v{toPersianNum(item.version || 1)} توسط <code className="font-mono">{item.actorEmail}</code>
                   </span>

@@ -115,23 +115,23 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
 
   const modalContent = (
     <div onClick={onClose} className="fixed inset-0 z-[9500] flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm" dir="rtl">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850">
+        <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-[var(--color-border-subtle)] bg-slate-50/70 dark:bg-[var(--color-bg-muted)]">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
                 آنتی‌ویروس و کارشناسی فوری آگهی مسکن
               </h3>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              <p className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">
                 کشف حباب پنهان، نقایص سندی و سناریوی چانه‌زنی با مشاور املاک
               </p>
             </div>
           </div>
-          <button type="button" aria-label="بستن" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
+          <button type="button" aria-label="بستن" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-[var(--color-text-primary)] cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -141,7 +141,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
           {/* Input Box */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor="ad-text-input" className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              <label htmlFor="ad-text-input" className="text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                 متن یا لینک آگهی (دیوار یا شیپور) را قرار دهید:
               </label>
               <div className="flex items-center gap-1 text-[10px]">
@@ -150,7 +150,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   aria-label="انتخاب محله مبنا"
                   value={selectedHoodName}
                   onChange={(e) => { setScanError(null); setHoodMismatchWarningFa(null); setSelectedHoodName(e.target.value); }}
-                  className="max-w-[160px] truncate rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-bold"
+                  className="max-w-[160px] truncate rounded-md border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-muted)] px-1.5 py-0.5 text-slate-800 dark:text-[var(--color-text-primary)] font-bold"
                 >
                   {(() => {
                     const list = evaluatedNeighborhoods.length > 0 ? evaluatedNeighborhoods : INITIAL_NEIGHBORHOODS;
@@ -166,7 +166,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               value={inputText}
               onChange={(e) => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(e.target.value); }}
               placeholder={`مثال (${cityNameFa}): ۹۵ متر ۲ خواب طبقه ۴ بدون آسانسور متری ۱۴۰ میلیون...`}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-rose-500 text-xs"
+              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-canvas)] text-slate-800 dark:text-[var(--color-text-primary)] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-rose-500 text-xs"
             />
 
             {cityKey === 'tehran' && (
@@ -175,14 +175,14 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <button
                   type="button"
                   onClick={() => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(SAMPLE_TEXT_SAADAT); setSelectedHoodName('سعادت‌آباد'); }}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[var(--color-bg-muted)] text-[10px] font-medium text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 cursor-pointer"
                 >
                   نمونه ۱ (سعادت‌آباد)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(SAMPLE_TEXT_PUNAK); setSelectedHoodName('پونک'); }}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[var(--color-bg-muted)] text-[10px] font-medium text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 cursor-pointer"
                 >
                   نمونه ۲ (پونک - بدون آسانسور)
                 </button>
@@ -203,7 +203,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
 
           {/* Diagnostic Result */}
           {diagnosis && (
-            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)]">
               {hoodMismatchWarningFa && (
                 <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-2">
                   {hoodMismatchWarningFa}
@@ -221,27 +221,27 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   <span className="text-[10px] block opacity-80">حکم کارشناسی سلامت معامله:</span>
                   <span className="font-bold text-sm">{diagnosis.verdictLabelFa}</span>
                 </div>
-                <span className="shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-current">
+                <span className="shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg bg-white/70 dark:bg-[var(--color-bg-surface)] border border-current">
                   {formatAreaShort(diagnosis.parsed.areaSqm, areaUnit)} در {diagnosis.hoodName}
                 </span>
               </div>
 
               {/* 3 Metric Cards */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? `${diagnosis.benchmarkLabelFa}:` : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
+                  <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? `${diagnosis.benchmarkLabelFa}:` : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
+                  <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-xs">
                     {toPersianDigits(Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10)} {areaUnit === 'sqft' ? 'م/ft²' : 'م/متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit), intlCurrency, radarLocale, rateState.snapshot)})` : ''}
                   </span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'شکاف با میانهٔ امروز:' : 'حباب ثمن کل:'}</span>
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
+                  <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'شکاف با میانهٔ امروز:' : 'حباب ثمن کل:'}</span>
                   <span className={`font-bold text-xs ${diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'text-slate-500' : diagnosis.totalBubbleMillion > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
                     {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'موجود نیست' : diagnosis.totalBubbleMillion > 0 ? `+${toPersianDigits(diagnosis.totalBubbleMillion)} م` : 'بدون حباب'}
                   </span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پیشنهاد نشست:</span>
+                <div className="p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
+                  <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">پیشنهاد نشست:</span>
                   <span className="font-bold text-indigo-700 dark:text-indigo-300 text-xs">
                     {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(diagnosis.negotiationScript.openingOfferMillion, intlCurrency, radarLocale, rateState.snapshot)})` : ''}`}
                   </span>
@@ -256,9 +256,9 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                     <span>تله‌ها و هشدارهای شناسایی‌شده در آگهی ({toPersianDigits(diagnosis.redFlags.length)} مورد):</span>
                   </div>
                   {diagnosis.redFlags.map((rf) => (
-                    <div key={rf.id} className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-rose-100 dark:border-rose-900/40 text-xs">
+                    <div key={rf.id} className="p-2 rounded-lg bg-white/80 dark:bg-[var(--color-bg-surface)] border border-rose-100 dark:border-rose-900/40 text-xs">
                       <span className="font-bold text-rose-900 dark:text-rose-200 block">{rf.title}</span>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{rf.explanation}</p>
+                      <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] mt-0.5 leading-relaxed">{rf.explanation}</p>
                     </div>
                   ))}
                 </div>
@@ -270,7 +270,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   <PhoneCall className="w-4 h-4 text-indigo-600" />
                   <span>سوالات مرگبار قبل از بازدید (از مشاور بپرسید):</span>
                 </div>
-                <ul className="space-y-1 text-[11px] text-slate-700 dark:text-slate-300 pr-3 list-disc">
+                <ul className="space-y-1 text-[11px] text-slate-700 dark:text-[var(--color-text-secondary)] pr-3 list-disc">
                   {diagnosis.negotiationScript.firstCallQuestions.map((q, idx) => (
                     <li key={idx}>{q}</li>
                   ))}
@@ -280,15 +280,15 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 </div>
               </div>
               {disclaimerFa && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{disclaimerFa}</p>
+                <p className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] leading-relaxed">{disclaimerFa}</p>
               )}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="p-3 border-t border-slate-100 dark:border-[var(--color-border-subtle)] bg-slate-50/60 dark:bg-[var(--color-bg-muted)] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
             <Zap className="w-3.5 h-3.5 text-amber-500" />
             <span>سهمیه رایگان: {toPersianDigits(quotaRemaining)} از {toPersianDigits(FREE_QUOTA_MAX)} استعلام</span>
           </div>

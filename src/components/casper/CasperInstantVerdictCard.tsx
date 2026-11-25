@@ -78,10 +78,10 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
     <div
       dir="rtl"
       data-testid="casper-instant-verdict-card"
-      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-white via-slate-50 to-slate-100/70 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 p-5 shadow-sm space-y-4"
+      className="w-full rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-gradient-to-br from-white via-slate-50 to-slate-100/70 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 p-5 shadow-sm space-y-4"
     >
       {/* Top Banner: Verdict & Priorities */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-[var(--color-border-subtle)] pb-3.5">
         <div className="flex items-center gap-2.5">
           <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${verdictIconTheme}`}>
             <Sparkles className="w-4 h-4" />
@@ -97,25 +97,25 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
                 {decision.verdictTitleFa}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
               واحد {toPersianNum(area)} متری · {agg.observedSampleCount > 0 ? `${toPersianNum(agg.observedSampleCount)} آگهی زنده در مدل` : 'فاقد آگهی زنده (مدل پایه)'} · بتای ارزی {toPersianNum(fx.betaSensitivity)}
             </p>
           </div>
         </div>
 
         {/* Priority Segmented Toggle */}
-        <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-800/70 p-1 rounded-xl self-start sm:self-auto text-[11px] font-bold">
-          <button type="button" onClick={() => setPriority('investment')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'investment' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>📈 رشد سرمایه</button>
-          <button type="button" onClick={() => setPriority('family')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'family' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>🏡 سکونت</button>
-          <button type="button" onClick={() => setPriority('liquidity')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'liquidity' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>⚡ نقدشوندگی</button>
+        <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-[var(--color-bg-muted)] p-1 rounded-xl self-start sm:self-auto text-[11px] font-bold">
+          <button type="button" onClick={() => setPriority('investment')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'investment' ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>📈 رشد سرمایه</button>
+          <button type="button" onClick={() => setPriority('family')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'family' ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>🏡 سکونت</button>
+          <button type="button" onClick={() => setPriority('liquidity')} className={`px-2 py-1 rounded-lg transition cursor-pointer ${priority === 'liquidity' ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500'}`}>⚡ نقدشوندگی</button>
         </div>
       </div>
 
       {/* Deed Legitimacy & Law 1403 Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] text-xs">
         <div className="flex items-center gap-1.5">
           <FileWarning className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">سپر اصالت سند (قانون الزام ۱۴۰۳):</span>
+          <span className="text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">سپر اصالت سند (قانون الزام ۱۴۰۳):</span>
         </div>
         <div className="flex flex-wrap items-center gap-1">
           {(['TEK_BARG_OFFICIAL', 'MANGOOLE_DAR_BOOKLET', 'OGHAF_ENDOWED', 'GHOULNAME_ADI', 'MASKAN_MEHR_NO_ARSE'] as IranianDeedType[]).map((d) => (
@@ -125,8 +125,8 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
               onClick={() => setDeedType(d)}
               className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
                 deedType === d
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  ? 'bg-slate-900 text-white dark:bg-[var(--color-brand-600)] dark:text-white border-slate-900 dark:border-white shadow-xs'
+                  : 'bg-white dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-muted)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50'
               }`}
             >
               {d === 'TEK_BARG_OFFICIAL' ? 'تک‌برگ رسمی' : d === 'MANGOOLE_DAR_BOOKLET' ? 'منگوله‌دار (-۵٪)' : d === 'OGHAF_ENDOWED' ? 'اوقافی (-۱۵٪)' : d === 'GHOULNAME_ADI' ? 'قولنامه‌ای (-۳۰٪)' : 'مسکن مهر (-۲۲٪)'}
@@ -145,17 +145,17 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(dealTotalBillion)}</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">میلیارد تومان</span>
+            <span className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">میلیارد تومان</span>
           </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+          <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] block">
             متری {toPersianNum(negotiationFloorSqm)} م {deed.discountPct > 0 ? `(کسر ${toPersianNum(deed.discountPct)}٪ سند)` : ''}
           </span>
         </div>
 
         {/* Asking Price & Bubble */}
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-1">
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">قیمت اعلامی آگهی‌های دیوار</span>
+            <span className="text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-muted)]">قیمت اعلامی آگهی‌های دیوار</span>
             {bubblePct > 0 && (
               <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900">
                 +{toPersianNum(bubblePct)}٪ حباب اولیه
@@ -163,7 +163,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
             )}
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{toPersianNum(askingTotalBillion)}</span>
+            <span className="text-xl font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">{toPersianNum(askingTotalBillion)}</span>
             <span className="text-xs text-slate-400">میلیارد تومان</span>
           </div>
           <span className="text-[11px] text-slate-400 block">متری {toPersianNum(agg.askingPricePerSqm)} م</span>
@@ -179,7 +179,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
             <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(fireSaleTotalBillion)}</span>
             <span className="text-xs text-slate-400">میلیارد تومان</span>
           </div>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+          <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] block">
             فروش عادی: {toPersianNum(liquidity.estimatedDaysToLiquidate)} روز ({liquidity.liquidityTierFa})
           </span>
         </div>
@@ -187,7 +187,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
 
       {/* Bottom Action Strip: Advice & Modals Triggers */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+        <p className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed font-medium">
           💡 <span className="text-slate-900 dark:text-white font-bold">توصیه عملیاتی رادار:</span> {toPersianNum(decision.verdictSummaryFa)}
         </p>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">

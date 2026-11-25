@@ -76,8 +76,8 @@ export function TopBarProvinceAndCityDirectoryControl({
             onClick={() => onSwitchCity(cId)}
             className={`px-2 py-1 rounded-[7px] font-bold transition cursor-pointer ${
               activeCity === cId
-                ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'apple-segmented-pill-active text-slate-900 dark:text-[var(--color-text-primary)] font-bold'
+                : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
             }`}
           >
             {MULTI_CITY_CONFIGS[cId]?.nameFa || cId}
@@ -107,7 +107,7 @@ export function TopBarProvinceAndCityDirectoryControl({
               }
             }
           }}
-          className="bg-emerald-50/90 dark:bg-slate-800 hover:bg-emerald-100/80 dark:hover:bg-slate-700 text-emerald-950 dark:text-emerald-200 border border-emerald-300/80 dark:border-slate-700 rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[155px] sm:max-w-[195px] truncate"
+          className="bg-emerald-50/90 dark:bg-[var(--color-bg-muted)] hover:bg-emerald-100/80 dark:hover:bg-[var(--color-bg-elevated)] text-emerald-950 dark:text-emerald-200 border border-emerald-300/80 dark:border-[var(--color-border-strong)] rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[155px] sm:max-w-[195px] truncate"
           title="فهرست‌بندی جامع ۳۱ استان، شهرها و محله‌های ایران"
         >
           {ALL_31_IRAN_PROVINCES.map((prov) => {

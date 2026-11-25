@@ -74,13 +74,13 @@ export const RtFePerformance013Subpanel: React.FC = () => {
           </div>
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--color-brand-600)] text-white">۳۱ واحد معماری · ۳۸ خروجی</span>
         </div>
-        <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-relaxed">
+        <p className="text-xs text-slate-700 dark:text-[var(--color-text-secondary)] mt-2 leading-relaxed">
           ساختار ۸بخشی عملکرد فرانت‌اند شامل اندازه‌گیری واقعی مرورگر (FIELD_RUM با PerformanceObserver مستقل برای Long Task) و تفکیک از شبیه‌ساز آموزشی (SYNTHETIC_LOCAL).
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Gauge className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -89,13 +89,13 @@ export const RtFePerformance013Subpanel: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <button
                 type="button" data-testid="perf-mode-field-rum" onClick={() => setMode('FIELD_RUM')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'FIELD_RUM' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'FIELD_RUM' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600'}`}
               >
                 FIELD_RUM
               </button>
               <button
                 type="button" data-testid="perf-mode-synthetic" onClick={() => setMode('SYNTHETIC_LOCAL')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'SYNTHETIC_LOCAL' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'SYNTHETIC_LOCAL' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600'}`}
               >
                 SYNTHETIC_LOCAL
               </button>
@@ -103,7 +103,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 data-testid="perf-budget-grade-badge"
                 className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
                   budgetResult.grade === 'INSUFFICIENT_SAMPLE'
-                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                    ? 'bg-slate-200 text-slate-800 dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-secondary)]'
                     : budgetResult.withinBudget
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
                       : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
@@ -116,7 +116,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">LCP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.lcpMaxMs}</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">LCP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.lcpMaxMs}</span>
               <NumericDraftInput
                 min={0}
                 max={60000}
@@ -124,12 +124,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="مقدار LCP بر حسب میلی‌ثانیه"
                 value={simLcpMs}
                 onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimLcpMs(next); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
                 dir="ltr"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">INP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.inpMaxMs}</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">INP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.inpMaxMs}</span>
               <NumericDraftInput
                 min={0}
                 max={60000}
@@ -137,12 +137,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="مقدار INP بر حسب میلی‌ثانیه"
                 value={simInpMs}
                 onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimInpMs(next); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
                 dir="ltr"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">CLS ≤ {RT_FE_FPA_CWV_TARGETS.clsMax}</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">CLS ≤ {RT_FE_FPA_CWV_TARGETS.clsMax}</span>
               <NumericDraftInput
                 allowDecimal
                 step={0.01}
@@ -152,12 +152,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="مقدار CLS"
                 value={simCls}
                 onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimCls(next); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
                 dir="ltr"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">Long Tasks (&gt;50ms)</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">Long Tasks (&gt;50ms)</span>
               <NumericDraftInput
                 min={0}
                 max={1000}
@@ -165,12 +165,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="تعداد Long Task مستقل"
                 value={simLongTaskCount}
                 onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimLongTaskCount(next); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
                 dir="ltr"
               />
             </label>
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/70 rounded-xl p-2.5">
+          <div className="text-xs text-slate-600 dark:text-[var(--color-text-muted)] bg-slate-50 dark:bg-[var(--color-bg-muted)] rounded-xl p-2.5">
             منشأ داده: <strong className="font-mono">{budgetResult.measurementSource}</strong> · شاخص‌های خارج از بودجه:{' '}
             <strong className="font-mono text-slate-900 dark:text-white" dir="ltr">
               {budgetResult.grade === 'INSUFFICIENT_SAMPLE'
@@ -182,18 +182,18 @@ export const RtFePerformance013Subpanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-4 space-y-3">
           <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Cpu className="w-4 h-4 text-teal-600" />
             رندر تطبیقی و بهینه‌سازی نقشه Leaflet (FPA-011 / FPA-023)
           </h4>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">رم دستگاه (GB)</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">رم دستگاه (GB)</span>
               <select
                 aria-label="حافظه رم دستگاه" value={deviceMemoryGb}
                 onChange={(e) => setDeviceMemoryGb(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5"
               >
                 <option value={2}>2 GB</option>
                 <option value={4}>4 GB</option>
@@ -201,7 +201,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">Zoom نقشه</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">Zoom نقشه</span>
               <NumericDraftInput
                 min={8}
                 max={18}
@@ -209,12 +209,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="سطح بزرگنمایی نقشه"
                 value={zoomLevel}
                 onValueChange={setZoomLevel}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left"
                 dir="ltr"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-slate-600 dark:text-slate-400">تعداد Marker</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">تعداد Marker</span>
               <NumericDraftInput
                 min={0}
                 max={100000}
@@ -222,12 +222,12 @@ export const RtFePerformance013Subpanel: React.FC = () => {
                 aria-label="تعداد نشانگرهای نقشه"
                 value={markerCount}
                 onValueChange={setMarkerCount}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left"
+                className="w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-left"
                 dir="ltr"
               />
             </label>
           </div>
-          <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" aria-label="فعال‌سازی کاهش حرکت سیستم" checked={reducedMotion} onChange={(e) => setReducedMotion(e.target.checked)} />
             ترجیح سیستم کاهش حرکت (prefers-reduced-motion)
           </label>
@@ -240,41 +240,41 @@ export const RtFePerformance013Subpanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-4">
           <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-2.5 flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             ۸ حوزه معماری عملکرد فرانت‌اند (FPA-002)
           </h4>
           <div className="space-y-1.5">
             {RT_FE_FPA_8_DOMAINS.map((d) => (
-              <div key={d.id} className="text-xs rounded-lg bg-slate-50 dark:bg-slate-800/70 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                <span className="font-semibold text-slate-800 dark:text-slate-100">{d.id}. {d.titleFa}</span>
+              <div key={d.id} className="text-xs rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2.5 py-1.5 flex items-center justify-between gap-2">
+                <span className="font-semibold text-slate-800 dark:text-[var(--color-text-primary)]">{d.id}. {d.titleFa}</span>
                 <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap shrink-0 text-left" dir="ltr">{d.nameEn}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-4">
           <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-2.5 flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-teal-600" />
             طبقه‌بندی ۴گانه اهمیت عملکردی صفحات (FPA-003)
           </h4>
           <div className="space-y-2">
             {RT_FE_FPA_4_PAGE_GROUPS.map((g) => (
-              <div key={g.group} className="text-xs rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
+              <div key={g.group} className="text-xs rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] p-2.5">
                 <div className="flex justify-between font-bold text-slate-900 dark:text-white">
                   <span>گروه {g.group}: {g.titleFa}</span>
                   <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-300" dir="ltr">{g.priority}</span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">{g.examplesFa}</p>
+                <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] mt-1">{g.examplesFa}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+      <div className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] p-4">
         <button type="button" onClick={() => setShowDeliverables((prev) => !prev)} className="w-full flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
           <span className="flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-amber-500" />
@@ -286,14 +286,14 @@ export const RtFePerformance013Subpanel: React.FC = () => {
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
             <div className="space-y-1 max-h-60 overflow-y-auto pl-2">
               {RT_FE_FPA_31_UNITS.map((u) => (
-                <div key={u.id} className="px-2 py-1 rounded bg-slate-50 dark:bg-slate-800/60">
+                <div key={u.id} className="px-2 py-1 rounded bg-slate-50 dark:bg-[var(--color-bg-muted)]">
                   <strong className="font-mono text-emerald-700 dark:text-emerald-300" dir="ltr">{u.id}</strong> — {u.titleFa}
                 </div>
               ))}
             </div>
             <div className="space-y-1 max-h-60 overflow-y-auto pl-2">
               {RT_FE_FPA_DELIVERABLES_38.map((o) => (
-                <div key={o.id} className="px-2 py-1 rounded bg-slate-50 dark:bg-slate-800/60">
+                <div key={o.id} className="px-2 py-1 rounded bg-slate-50 dark:bg-[var(--color-bg-muted)]">
                   <strong className="font-mono text-teal-700 dark:text-teal-300" dir="ltr">{o.id}</strong> — {o.titleFa}
                 </div>
               ))}

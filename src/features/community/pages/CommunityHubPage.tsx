@@ -124,22 +124,46 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
 
   const requireAuthResult = () => ({ ok: false, errorFa: COMMUNITY_AUTH_REQUIRED_FA });
 
+  const communityHeadingFa = (() => {
+    switch (activeTab) {
+      case 'discussions':
+      case 'social_discussion':
+        return `گفت‌وگوهای محلی و تجربه ساکنین ${cityNameFa}`;
+      case 'questions':
+      case 'expert_qa':
+        return `پرسش و پاسخ تخصصی مسکن ${cityNameFa}`;
+      case 'topics':
+      case 'neighborhoods':
+        return `موضوعات تخصصی و انجمن محله‌های ${cityNameFa}`;
+      case 'data_contribution':
+        return `ثبت مشارکت و اصلاح داده‌های بازار ${cityNameFa}`;
+      case 'research_proposals':
+        return `پیشنهادهای پژوهشی و اولویت گزارش‌های ${cityNameFa}`;
+      case 'members':
+        return `اعضای فعال و اعتبارسنجی جامعه رادار ${cityNameFa}`;
+      case 'guidelines':
+        return `آیین‌نامه، شفافیت و قوانین جامعه رادار ${cityNameFa}`;
+      default:
+        return `جامعه تخصصی رادار ${cityNameFa}`;
+    }
+  })();
+
   return (
     <div data-testid="product-contributions-view" className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn">
       <div className="border-b border-[var(--color-border-subtle)] pb-4 space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <span className="text-xs font-bold text-[var(--color-brand-fg)] flex items-center gap-1.5 mb-1">
+            <span className="text-sm font-semibold text-[var(--color-brand-fg)] flex items-center gap-1.5 mb-1">
               <MessageSquarePlus className="w-4 h-4 shrink-0" />
               <span>جامعه کاربران، پرسش‌وپاسخ تخصصی و مشارکت مکانی</span>
             </span>
-            <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
-              جامعه تخصصی رادار {cityNameFa}
+            <h1 className="text-2xl sm:text-[30px] font-bold leading-[1.3] text-[var(--color-text-primary)]">
+              {communityHeadingFa}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {typeof window !== 'undefined' && typeof window.location?.search === 'string' && new URLSearchParams(window.location.search).get('dev') === '1' && (
-              <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer">
+              <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] text-sm font-semibold text-[var(--color-text-secondary)] cursor-pointer">
                 <input type="checkbox" checked={includeSeeds} onChange={(e) => setIncludeSeeds(e.target.checked)} className="accent-[var(--color-brand-600)]" />
                 <span>نمایش محتوای نمونه</span>
               </label>
@@ -147,17 +171,18 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
             <RadarLink
               href="/account/community"
               onNavigate={() => onNavigateView('userspace', 'community')}
-              className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-secondary)] hover:border-[var(--color-brand-600)] whitespace-nowrap"
+              className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] text-sm font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-brand-600)] whitespace-nowrap"
             >
               تنظیمات جامعه من
             </RadarLink>
           </div>
         </div>
 
-        {(activeTab === 'members' || activeTab === 'guidelines') && (
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <button type="button" onClick={() => selectCommunityTab('members')} className={`min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-lg font-bold cursor-pointer ${activeTab === 'members' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>اعضای انجمن</button>
-            <button type="button" onClick={() => selectCommunityTab('guidelines')} className={`min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-lg font-bold cursor-pointer ${activeTab === 'guidelines' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>آیین‌نامه و قوانین</button>
+        {(activeTab === 'discussions' || activeTab === 'social_discussion' || activeTab === 'questions' || activeTab === 'expert_qa' || activeTab === 'topics' || activeTab === 'neighborhoods') && (
+          <div role="group" aria-label="زیربخش‌های گفت‌وگو و پرسش‌وپاسخ" className="flex flex-wrap items-center gap-1.5 text-sm">
+            <button type="button" onClick={() => selectCommunityTab('discussions')} className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-lg font-semibold cursor-pointer ${activeTab === 'discussions' || activeTab === 'social_discussion' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>گفت‌وگوها</button>
+            <button type="button" onClick={() => selectCommunityTab('questions')} className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-lg font-semibold cursor-pointer ${activeTab === 'questions' || activeTab === 'expert_qa' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>پرسش و پاسخ تخصصی</button>
+            <button type="button" onClick={() => selectCommunityTab('topics')} className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-lg font-semibold cursor-pointer ${activeTab === 'topics' || activeTab === 'neighborhoods' ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>موضوعات و محله‌ها</button>
           </div>
         )}
       </div>
@@ -168,17 +193,17 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
         {!currentUserProfile.isAuthenticated && (
           <div
             data-testid="community-guest-notice"
-            className="px-3.5 py-2.5 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800 flex flex-wrap items-center justify-between gap-2 text-xs"
+            className="px-4 py-3 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800 flex flex-wrap items-center justify-between gap-2 text-sm"
           >
-            <span className="font-bold text-amber-900 dark:text-amber-200">
+            <span className="font-semibold text-amber-900 dark:text-amber-200">
               حالت مطالعه مهمان: برای انتشار گفت‌وگو، پاسخ یا اصلاح داده وارد حساب شوید.
             </span>
             <RadarLink
               href="/account"
               onNavigate={() => onNavigateView('userspace', 'overview')}
-              className="min-h-[36px] px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold gap-1.5"
+              className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-semibold gap-1.5"
             >
-              <LogIn className="w-3.5 h-3.5" /><span>ورود به حساب</span>
+              <LogIn className="w-4 h-4" /><span>ورود به حساب</span>
             </RadarLink>
           </div>
         )}

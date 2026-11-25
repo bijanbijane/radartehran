@@ -95,21 +95,21 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
   }, [marketReport?.tehranGrowth6mPercent, trendData6m]);
 
   return (
-    <div className="apple-grouped-card dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2.5">
+    <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <TrendingUp className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
-          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">
+          <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-xs truncate">
             {chartView === '12m_buy_rent'
               ? (isEn ? `12M Buy & Rent Trend (${selectedHood.name})` : `روند ۱۲ ماهه قیمت خرید و اجاره (${selectedHood.name})`)
               : (isEn ? `6M Housing Price Trend (${selectedHood.name})` : `روند ۶ ماهه قیمت مسکن (${selectedHood.name})`)}
           </span>
         </div>
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-[8px] text-[10.5px] font-bold shrink-0 border border-slate-200/60 dark:border-slate-700">
-          <button type="button" onClick={() => setChartView('12m_buy_rent')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '12m_buy_rent' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--color-bg-muted)] p-0.5 rounded-[8px] text-[10.5px] font-bold shrink-0 border border-slate-200/60 dark:border-[var(--color-border-strong)]">
+          <button type="button" onClick={() => setChartView('12m_buy_rent')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '12m_buy_rent' ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs font-bold' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'}`}>
             {isEn ? '12M Buy & Rent' : '۱۲ ماهه خرید و اجاره'}
           </button>
-          <button type="button" onClick={() => setChartView('6m_city')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '6m_city' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
+          <button type="button" onClick={() => setChartView('6m_city')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '6m_city' ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs font-bold' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'}`}>
             {isEn ? '6M City Compare' : 'مقایسه ۶ ماهه'}
           </button>
           <button type="button" onClick={handleOpenFullModal} title="مشاهده نمودار تمام‌صفحه روند ۱۲ ماهه خرید و اجاره" className="px-2 py-1 rounded-[6px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1 transition cursor-pointer">
@@ -121,18 +121,18 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
 
       {chartView === '12m_buy_rent' ? (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300 pb-0.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] pb-0.5">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-[var(--color-brand-600)] rounded inline-block" />
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}` : `خرید ${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'}`} ({buyGrowth12m > 0 ? '+' : ''}{toPersianNum(buyGrowth12m)}٪ {isEn ? 'YoY' : 'سالانه'})</span>
+                <span className="font-semibold text-slate-800 dark:text-[var(--color-text-primary)]">{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}` : `خرید ${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'}`} ({buyGrowth12m > 0 ? '+' : ''}{toPersianNum(buyGrowth12m)}٪ {isEn ? 'YoY' : 'سالانه'})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-sky-600 rounded inline-block" />
                 <span className="font-semibold text-sky-800 dark:text-sky-300">{isEn ? `Deposit ${formatAreaShort(80, areaUnit)}` : `رهن و اجاره ${formatAreaShort(80, areaUnit)}`} ({rentGrowth12m > 0 ? '+' : ''}{toPersianNum(rentGrowth12m)}٪ {isEn ? 'YoY' : 'سالانه'})</span>
               </div>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] font-semibold tabular-nums">
               سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealCur, intlCurrency, radarLocale)})` : ''}</strong> · کل ۸۰م: {toPersianNum(hoodTotal80m)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م · بازده اجاره: {toPersianNum((((selectedHood.rahn80m * 0.36) / Math.max(1, selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪
             </span>
           </div>
@@ -158,15 +158,15 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                     const fxRahn = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahnVal, intlCurrency, radarLocale)})` : '';
                     const fxRent = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rentMonthlyVal, intlCurrency, radarLocale)})` : '';
                     return (
-                      <div dir={isEn ? 'ltr' : 'rtl'} className="apple-grouped-card bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700 rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[185px]">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 flex items-center justify-between">
-                          <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">{selectedHood.name}</span>
+                      <div dir={isEn ? 'ltr' : 'rtl'} className="apple-grouped-card bg-white/95 dark:bg-[var(--color-bg-surface)] backdrop-blur-md border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[185px]">
+                        <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-1 flex items-center justify-between">
+                          <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] font-normal">{selectedHood.name}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-bold">
                           <span>{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}:` : `خرید هر ${areaUnit === 'sqft' ? 'ft²' : 'متر مربع'}:`}</span>
                           <span className="tabular-nums">{toPersianNum(uBuyVal)} م (سناریو مذاکره: {toPersianNum(uDealPoint)} م){fxBuy}</span>
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-slate-700 dark:text-slate-300 text-[10.5px]">
+                        <div className="flex items-center justify-between gap-3 text-slate-700 dark:text-[var(--color-text-secondary)] text-[10.5px]">
                           <span>{isEn ? '80m² Total:' : 'کل واحد (۸۰م):'}</span>
                           <span className="font-bold tabular-nums">{toPersianNum((total80Buy / 1000).toFixed(2))} میلیارد{fxTotal80}</span>
                         </div>
@@ -174,9 +174,9 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                           <span>{isEn ? 'Deposit 80m²:' : 'رهن کامل (۸۰م):'}</span>
                           <span className="tabular-nums">{toPersianNum(rahnVal)} میلیون{fxRahn}</span>
                         </div>
-                        <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-400">
+                        <div className="pt-1 border-t border-slate-100 dark:border-[var(--color-border-subtle)] flex items-center justify-between text-[10.5px] text-slate-600 dark:text-[var(--color-text-muted)]">
                           <span>{isEn ? 'Rent Equiv:' : 'معادل اجاره ماهانه:'}</span>
-                          <span className="font-bold tabular-nums text-slate-800 dark:text-slate-200">{toPersianNum(rentMonthlyVal)} م{fxRent}</span>
+                          <span className="font-bold tabular-nums text-slate-800 dark:text-[var(--color-text-primary)]">{toPersianNum(rentMonthlyVal)} م{fxRent}</span>
                         </div>
                       </div>
                     );
@@ -189,11 +189,11 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
           </div>
           <div className="flex items-center justify-between gap-2 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/80 rounded-lg px-2 py-1">
             <span>{isEn ? 'Source: Model-generated series based on current price and seasonal trends' : 'منبع داده: سری شبیه‌سازی‌شده بر اساس قیمت فعلی و الگوی فصلی بازار'}</span>
-            <details className="text-slate-700 dark:text-slate-300">
+            <details className="text-slate-700 dark:text-[var(--color-text-secondary)]">
               <summary className="cursor-pointer font-bold text-emerald-700 dark:text-emerald-400">{isEn ? 'Accessible Data Table' : 'جدول دسترس‌پذیر داده‌ها'}</summary>
               <table className="mt-1 w-full text-[10px] border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <tr className="border-b border-slate-200 dark:border-[var(--color-border-strong)]">
                     <th className="text-right p-1">{isEn ? 'Month' : 'ماه'}</th>
                     <th className="text-right p-1">{isEn ? 'Buy' : 'خرید'}</th>
                     <th className="text-right p-1">{isEn ? 'Deposit 80m²' : 'رهن ۸۰م'}</th>
@@ -203,7 +203,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                   {trendData12m.map((pt) => {
                     const uPtBuy = convertPricePerSqmToUnit(pt.buyPerSqm, areaUnit);
                     return (
-                      <tr key={pt.month} className="border-b border-slate-100 dark:border-slate-800">
+                      <tr key={pt.month} className="border-b border-slate-100 dark:border-[var(--color-border-subtle)]">
                         <td className="p-1">{pt.month}</td>
                         <td className="p-1 tabular-nums">{toPersianNum(uPtBuy)}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uPtBuy, intlCurrency, radarLocale)})` : ''}</td>
                         <td className="p-1 tabular-nums">{toPersianNum(pt.rahn80m)}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(pt.rahn80m, intlCurrency, radarLocale)})` : ''}</td>
@@ -217,11 +217,11 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 pb-0.5">
+          <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] pb-0.5">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-[var(--color-brand-600)] rounded inline-block" />
-                <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedHood.name} ({hoodGrowth6m > 0 ? '+' : ''}{toPersianNum(hoodGrowth6m)}٪)</span>
+                <span className="font-semibold text-slate-700 dark:text-[var(--color-text-primary)]">{selectedHood.name} ({hoodGrowth6m > 0 ? '+' : ''}{toPersianNum(hoodGrowth6m)}٪)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 border-b border-dashed border-slate-400 inline-block" />
@@ -249,17 +249,17 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                       const fxH = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hoodVal, intlCurrency, radarLocale)})` : '';
                       const fxC = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(cityVal, intlCurrency, radarLocale)})` : '';
                       return (
-                        <div dir={isEn ? 'ltr' : 'rtl'} className="apple-grouped-card bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700 rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[170px]">
-                          <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 flex items-center justify-between">
-                            <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-normal">{areaUnit === 'sqft' ? 'M/ft²' : 'میلیون/متر'}</span>
+                        <div dir={isEn ? 'ltr' : 'rtl'} className="apple-grouped-card bg-white/95 dark:bg-[var(--color-bg-surface)] backdrop-blur-md border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[170px]">
+                          <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-1 flex items-center justify-between">
+                            <span>{isEn ? `Month: ${label}` : `ماه ${label}`}</span><span className="text-[10.5px] text-slate-400 dark:text-[var(--color-text-muted)] font-normal">{areaUnit === 'sqft' ? 'M/ft²' : 'میلیون/متر'}</span>
                           </div>
                           <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-bold">
                             <span>{selectedHood.name}:</span><span className="tabular-nums">{toPersianNum(hoodVal)} م{fxH}</span>
                           </div>
-                          <div className="flex items-center justify-between gap-3 text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center justify-between gap-3 text-slate-600 dark:text-[var(--color-text-secondary)]">
                             <span>{cityNameFa}:</span><span className="tabular-nums">{toPersianNum(cityVal)} م{fxC}</span>
                           </div>
-                          <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400">
+                          <div className="pt-1 border-t border-slate-100 dark:border-[var(--color-border-subtle)] flex items-center justify-between text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">
                             <span>{isEn ? 'Diff from Avg:' : 'اختلاف با میانگین:'}</span>
                             <span className={`font-bold tabular-nums ${diff >= 0 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                               {diff >= 0 ? `+${toPersianNum(diff)} م` : `${toPersianNum(diff)} م`}{diff !== 0 && intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(diff), intlCurrency, radarLocale)})` : ''}

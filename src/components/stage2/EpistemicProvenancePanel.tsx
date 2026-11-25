@@ -26,7 +26,7 @@ const PROVENANCE_BADGE_STYLE: Record<RadarDataProvenanceLayerId, string> = {
   PREDICTED_DATA: 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-200 dark:bg-fuchsia-950/60 dark:text-fuchsia-300 dark:border-fuchsia-800',
   CONFLICTING_DATA: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
   OUTDATED_DATA: 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800',
-  MISSING_DATA: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  MISSING_DATA: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-secondary)] dark:border-[var(--color-border-strong)]',
   UNKNOWN_DATA: 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
 };
 
@@ -83,7 +83,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
   const { confidenceDecomposition: cd, accountabilityManifest: am } = dossier;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
+    <div className="bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] p-4 shadow-sm space-y-4" dir="rtl">
       <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70 rounded-xl p-3 flex items-start gap-2.5">
         <Scale className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
         <div className="text-[11px] leading-relaxed text-indigo-950 dark:text-indigo-200">
@@ -93,11 +93,11 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
       </div>
 
       {/* Mathematical Confidence Decomposition */}
-      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-3 space-y-2.5">
+      <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-xl p-3 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               کالبدشکافی ریاضی شاخص اطمینان محله ({toPersianNum(cd.totalConfidencePct)} از ۱۰۰)
             </h4>
           </div>
@@ -113,15 +113,15 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
             { label: 'پالایش ضدتقلب (Z-Score)', val: cd.fraudFilterPoints, max: toPersianNum(cd.maxFraudFilterPoints) },
             { label: 'تازگی زمانی مشاهده', val: cd.temporalFreshnessPoints, max: toPersianNum(cd.maxTemporalFreshnessPoints) },
           ].map((m) => (
-            <div key={m.label} className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">{m.label}</div>
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+            <div key={m.label} className="bg-white dark:bg-[var(--color-bg-surface)] p-2 rounded-lg border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{m.label}</div>
+              <div className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-0.5">
                 {toPersianNum(m.val)} <span className="text-[10px] font-normal text-slate-400">/ {m.max}</span>
               </div>
             </div>
           ))}
         </div>
-        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono dir-ltr text-left">{cd.formulaText}</div>
+        <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] font-mono dir-ltr text-left">{cd.formulaText}</div>
       </div>
 
       {/* CASPER 4-Vector Behavioral & Cognitive Bias Shield */}
@@ -129,7 +129,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <Brain className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               سپر خطاهای شناختی و اقتصاد رفتاری (Cognitive & Behavioral Debiasing Shield)
             </h4>
           </div>
@@ -139,9 +139,9 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {dossier.cognitiveBiases.map((b) => (
-            <div key={b.biasId} className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <div key={b.biasId} className="p-2.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] space-y-1">
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">{b.titleFa}</span>
+                <span className="text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{b.titleFa}</span>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${b.severity === 'HIGH' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' : b.severity === 'MODERATE' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'}`}>
                   ریسک {toPersianNum(b.riskScore)}٪
                 </span>
@@ -160,16 +160,16 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Sliders className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               شبیه‌ساز پیامد تصمیم و مذاکره خلاف‌واقع (Counterfactual Simulator)
             </h4>
           </div>
           <div className="flex items-center gap-2 text-[11px]">
-            <label htmlFor="casper-area-select" className="text-slate-600 dark:text-slate-300 font-medium">متراژ مبنا:</label>
+            <label htmlFor="casper-area-select" className="text-slate-600 dark:text-[var(--color-text-secondary)] font-medium">متراژ مبنا:</label>
             <select
               id="casper-area-select" aria-label="متراژ مبنا برای شبیه‌سازی مذاکره" value={unitAreaSqm}
               onChange={(e) => { const v = Number(e.target.value); setUnitAreaSqm(v); onTargetSqmChange?.(v); }}
-              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-[11px] text-slate-800 dark:text-slate-100"
+              className="bg-white dark:bg-[var(--color-bg-muted)] border border-slate-300 dark:border-[var(--color-border-strong)] rounded-md px-1.5 py-0.5 text-[11px] text-slate-800 dark:text-[var(--color-text-primary)]"
             >
               {[65, 85, 110, 135].map((sqm) => <option key={sqm} value={sqm}>{toPersianNum(sqm)} متر</option>)}
             </select>
@@ -177,36 +177,36 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         </div>
 
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex justify-between text-[11px] font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">
             <span>نرخ چانه‌زنی پیشنهادی خریدار نسبت به قیمت اعلامی:</span>
             <span className="font-bold text-emerald-700 dark:text-emerald-400">{toPersianNum(buyerDiscountPct)}٪ تخفیف از قیمت آگهی</span>
           </div>
           <input
             type="range" min={0} max={20} step={1} aria-label="نرخ چانه‌زنی پیشنهادی خریدار"
             value={buyerDiscountPct} onChange={(e) => setBuyerDiscountPct(Number(e.target.value))}
-            className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+            className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-elevated)] rounded-lg"
           />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-          <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">کل مبلغ اعلامی آگهی</div>
-            <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{toPersianNum(counterfactual.askingTotalMillion)} م‌ت ({formatMillionTomanAsIntlCurrency(counterfactual.askingTotalMillion, intlCurrency, 'fa')})</div>
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] p-2 rounded-lg border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">کل مبلغ اعلامی آگهی</div>
+            <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-0.5">{toPersianNum(counterfactual.askingTotalMillion)} م‌ت ({formatMillionTomanAsIntlCurrency(counterfactual.askingTotalMillion, intlCurrency, 'fa')})</div>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">پیشنهاد شما ({toPersianNum(buyerDiscountPct)}٪-)</div>
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] p-2 rounded-lg border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">پیشنهاد شما ({toPersianNum(buyerDiscountPct)}٪-)</div>
             <div className="font-bold text-indigo-700 dark:text-indigo-400 mt-0.5">{counterfactual.buyerOfferIntlText}</div>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">حفظ سرمایه در برابر آگهی</div>
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] p-2 rounded-lg border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">حفظ سرمایه در برابر آگهی</div>
             <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(counterfactual.capitalPreservedMillion)} م‌ت ({formatMillionTomanAsIntlCurrency(counterfactual.capitalPreservedMillion, intlCurrency, 'fa')})</div>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">احتمال پذیرش فروشنده</div>
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] p-2 rounded-lg border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">احتمال پذیرش فروشنده</div>
             <div className="font-bold text-amber-700 dark:text-amber-400 mt-0.5">{toPersianNum(counterfactual.acceptanceProbabilityPct)}٪</div>
           </div>
         </div>
-        <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">{counterfactual.consequenceSummaryFa}</p>
+        <p className="text-[11px] text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed">{counterfactual.consequenceSummaryFa}</p>
       </div>
 
       <CasperDecisionMatrixCard hoodId={hoodId} hoodName={hoodName} basePriceSqm={basePriceSqm} targetSqm={unitAreaSqm} hood={hood} intlCurrency={intlCurrency} compact />
@@ -216,7 +216,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               ماتریس ۱۲ لایه منشأ داده و تفکیک معرفتی ({toPersianNum(filteredItems.length)} لایه)
             </h4>
           </div>
@@ -230,7 +230,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
               <button
                 key={btn.id} type="button" onClick={() => setFilterMode(btn.id as typeof filterMode)}
                 className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
-                  filterMode === btn.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  filterMode === btn.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)]'
                 }`}
               >
                 {btn.label}
@@ -241,16 +241,16 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-0.5">
           {filteredItems.map((item) => (
-            <div key={item.layerId} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col justify-between gap-1.5">
+            <div key={item.layerId} className="p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/60 dark:bg-[var(--color-bg-muted)] flex flex-col justify-between gap-1.5">
               <div>
                 <div className="flex items-center justify-between gap-1 flex-wrap mb-1">
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${PROVENANCE_BADGE_STYLE[item.layerId]}`}>{item.titleFa}</span>
-                  <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400">{EPISTEMIC_CLASS_LABEL[item.epistemicClass]}</span>
+                  <span className="text-[9px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)]">{EPISTEMIC_CLASS_LABEL[item.epistemicClass]}</span>
                 </div>
                 <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300 my-0.5">{item.currentValueSummaryFa}</div>
-                <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">منشأ: {item.sourceFa} • روش کنترل: {item.verificationMethodFa}</p>
+                <p className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">منشأ: {item.sourceFa} • روش کنترل: {item.verificationMethodFa}</p>
               </div>
-              <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-start gap-1 text-[10px] text-amber-800 dark:text-amber-300">
+              <div className="pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-strong)] flex items-start gap-1 text-[10px] text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" /><span>{item.limitationFa}</span>
               </div>
             </div>
@@ -259,13 +259,13 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
       </div>
 
       {/* Algorithmic Accountability & Bias Manifest */}
-      <div className="border-t border-slate-200 dark:border-slate-800 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[10px]">
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-700/70 space-y-1">
-          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+      <div className="border-t border-slate-200 dark:border-[var(--color-border-subtle)] pt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[10px]">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] p-2.5 rounded-xl border border-slate-200/70 dark:border-[var(--color-border-strong)] space-y-1">
+          <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1">
             <Cpu className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             مفروضات و ورودی‌های مدل ({am.version})
           </div>
-          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-0.5 leading-relaxed">
+          <ul className="list-disc list-inside text-slate-600 dark:text-[var(--color-text-secondary)] space-y-0.5 leading-relaxed">
             {am.assumptionsFa.map((a, idx) => <li key={idx}>{a}</li>)}
           </ul>
         </div>

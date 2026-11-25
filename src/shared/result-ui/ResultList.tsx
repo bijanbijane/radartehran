@@ -35,8 +35,8 @@ export const ResultList: React.FC<ResultListProps> = ({
               compact ? 'p-3' : 'p-4'
             } ${
               isSelected
-                ? 'border-slate-900 bg-slate-50 dark:border-slate-100 dark:bg-slate-800/80'
-                : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
+                ? 'border-slate-900 bg-slate-50 dark:border-[var(--color-brand-600)] dark:bg-[var(--color-bg-muted)]'
+                : 'border-slate-200 bg-white dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]'
             }`}
           >
             <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -50,11 +50,11 @@ export const ResultList: React.FC<ResultListProps> = ({
                 />
               )}
               <div className="min-w-0 flex-1">
-                <h4 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h4 className="truncate text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
                   {item.title}
                 </h4>
                 {item.subtitle && (
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  <p className="truncate text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
                     {item.subtitle}
                   </p>
                 )}
@@ -77,7 +77,7 @@ export const ResultList: React.FC<ResultListProps> = ({
                   type="button"
                   onClick={() => onAction?.('open-detail', item)}
                   aria-label={`جزئیات ${item.title}`}
-                  className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-300 px-3 font-sans text-xs font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                  className="inline-flex min-h-[44px] items-center rounded-xl border border-slate-300 px-3 font-sans text-xs font-semibold hover:bg-slate-50 dark:border-[var(--color-border-strong)] dark:hover:bg-[var(--color-bg-elevated)]"
                 >
                   مشاهده
                 </button>

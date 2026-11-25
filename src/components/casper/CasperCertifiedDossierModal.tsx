@@ -96,7 +96,7 @@ export function CasperCertifiedDossierModal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none print:border-none print:shadow-none print:p-0 print:max-w-none"
+        className="w-full max-w-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none print:border-none print:shadow-none print:p-0 print:max-w-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -115,7 +115,7 @@ export function CasperCertifiedDossierModal({
                   معتبر جهت پیوست به مبایعه‌نامه
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+              <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5 font-mono">
                 کد یکتای رهگیری ثبتی: <strong className="text-[var(--color-brand-600)] dark:text-emerald-400">{trackingCode}</strong>
               </p>
             </div>
@@ -124,14 +124,14 @@ export function CasperCertifiedDossierModal({
             type="button"
             onClick={onClose}
             aria-label="بستن کارنامه"
-            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer print:hidden"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-[var(--color-text-primary)] rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] transition cursor-pointer print:hidden"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Property Identity Card */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 dark:bg-[var(--color-bg-muted)] p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] text-xs">
           <div>
             <span className="text-slate-400 block text-[11px]">محله و منطقه:</span>
             <strong className="text-slate-900 dark:text-white">{hoodName} ({zone})</strong>
@@ -162,17 +162,17 @@ export function CasperCertifiedDossierModal({
               <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(totalFairBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] block">
               متری {toPersianNum(deed.discountedPriceSqm)} م.ت (با کسر ریسک سند)
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1">
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] space-y-1">
             <span className="text-[11px] font-bold text-slate-500 block">
               ۲. قیمت اعلامی متداول در آگهی‌ها
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{toPersianNum(totalAskingBillion)}</span>
+              <span className="text-xl font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">{toPersianNum(totalAskingBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
             <span className="text-[11px] text-slate-400 block">
@@ -188,14 +188,14 @@ export function CasperCertifiedDossierModal({
               <span className="text-xl font-bold text-slate-900 dark:text-white">{toPersianNum(totalFireSaleBillion)}</span>
               <span className="text-xs text-slate-400">میلیارد تومان</span>
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] block">
               نقدشوندگی ظرف {toPersianNum(liquidity.estimatedDaysToLiquidate)} روز در بازار عادی
             </span>
           </div>
         </div>
 
         {/* Legal & Liquidity Explanations */}
-        <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="space-y-2 text-xs text-slate-600 dark:text-[var(--color-text-secondary)] bg-slate-50 dark:bg-[var(--color-bg-canvas)] p-4 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)]">
           <p className="flex items-start gap-2">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] shrink-0 mt-0.5" />
             <span><strong>تحلیل اصالت حقوقی سند:</strong> {deed.warningSummaryFa}</span>
@@ -207,7 +207,7 @@ export function CasperCertifiedDossierModal({
         </div>
 
         {/* Footer & Print / Share Trigger */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-[var(--color-border-subtle)]">
           <div className="flex items-center gap-2 text-[11px] text-slate-400">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             <span>ممهور به مهر دیجیتال اعتبارسنجی مدل هدونیک رادار تهران v6.4</span>

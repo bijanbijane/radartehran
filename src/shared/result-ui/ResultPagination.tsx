@@ -29,9 +29,9 @@ export const ResultPagination: React.FC<ResultPaginationProps> = ({
     <nav
       dir="rtl"
       aria-label="صفحه‌بندی نتایج"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs dark:border-slate-800 dark:bg-slate-900"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]"
     >
-      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+      <div className="flex items-center gap-2 text-slate-600 dark:text-[var(--color-text-secondary)]">
         <span>صفحه <strong className="font-mono tabular-nums">{formatAsciiToPersianDigits(model.page)}</strong></span>
         {model.totalPages !== null && (
           <span>
@@ -47,7 +47,7 @@ export const ResultPagination: React.FC<ResultPaginationProps> = ({
           value={model.pageSize}
           aria-label="تعداد نتایج در هر صفحه"
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="min-h-[44px] rounded-xl border border-slate-300 bg-transparent px-2.5 font-mono tabular-nums dark:border-slate-700"
+          className="min-h-[44px] rounded-xl border border-slate-300 bg-transparent px-2.5 font-mono tabular-nums dark:border-[var(--color-border-strong)]"
         >
           {ALLOWED_RESULT_PAGE_SIZES.map((sz) => (
             <option key={sz} value={sz}>
@@ -61,7 +61,7 @@ export const ResultPagination: React.FC<ResultPaginationProps> = ({
           disabled={!canGoPrev}
           onClick={() => onPageChange(model.page - 1)}
           aria-label="صفحه قبلی"
-          className="min-h-[44px] rounded-xl border border-slate-300 px-3 font-semibold disabled:opacity-40 dark:border-slate-700"
+          className="min-h-[44px] rounded-xl border border-slate-300 px-3 font-semibold disabled:opacity-40 dark:border-[var(--color-border-strong)]"
         >
           صفحه قبل
         </button>
@@ -71,7 +71,7 @@ export const ResultPagination: React.FC<ResultPaginationProps> = ({
           disabled={!canGoNext}
           onClick={() => onPageChange(model.page + 1)}
           aria-label="صفحه بعدی"
-          className="min-h-[44px] rounded-xl border border-slate-300 px-3 font-semibold disabled:opacity-40 dark:border-slate-700"
+          className="min-h-[44px] rounded-xl border border-slate-300 px-3 font-semibold disabled:opacity-40 dark:border-[var(--color-border-strong)]"
         >
           صفحه بعد
         </button>

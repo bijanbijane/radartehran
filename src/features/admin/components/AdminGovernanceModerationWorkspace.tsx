@@ -103,7 +103,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
     };
 
     return (
-      <div data-testid="admin-content-moderation-workspace" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
+      <div data-testid="admin-content-moderation-workspace" className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <FileWarning className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -116,7 +116,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="sm:col-span-2">
-            <label htmlFor="admin-moderation-note" className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="admin-moderation-note" className="block text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">
               دلیل بررسی / یادداشت اجباری ممیز (حداقل ۵ نویسه):
             </label>
             <input
@@ -124,18 +124,18 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
               type="text"
               value={noteInput}
               onChange={(e) => setNoteInput(e.target.value)}
-              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-medium"
             />
           </div>
           <div>
-            <label htmlFor="admin-editorial-role" className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="admin-editorial-role" className="block text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">
               نقش تحریریه دانش:
             </label>
             <select
               id="admin-editorial-role"
               value={editorialRole}
               onChange={(e) => setEditorialRole(e.target.value as KnowledgeEditorialRole)}
-              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold"
             >
               <option value="release_manager">مدیر انتشار (Release Manager)</option>
               <option value="technical_reviewer">داور فنی (Technical Reviewer)</option>
@@ -161,13 +161,13 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
         ) : (
           <div className="space-y-2">
             {listings.slice(0, 8).map((rec) => (
-              <div key={rec.listing.listingId} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div key={rec.listing.listingId} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 dark:text-white truncate">
                     {rec.listing.title} · محله {rec.property.hoodName}
                   </div>
                   <div className="text-[10.5px] text-slate-500">
-                    وضعیت: <strong className="text-slate-700 dark:text-slate-200">{rec.listing.status}</strong> · ثبت‌کننده: {rec.listing.publisher.displayName}
+                    وضعیت: <strong className="text-slate-700 dark:text-[var(--color-text-primary)]">{rec.listing.status}</strong> · ثبت‌کننده: {rec.listing.publisher.displayName}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -187,10 +187,10 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
         )}
 
         {reports.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <strong className="font-bold text-slate-800 dark:text-slate-100 block">گزارش‌های خطا و تخطی کاربران ({toPersianNum(reports.length)})</strong>
+          <div className="pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)] space-y-2">
+            <strong className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] block">گزارش‌های خطا و تخطی کاربران ({toPersianNum(reports.length)})</strong>
             {reports.slice(0, 5).map((r) => (
-              <div key={r.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              <div key={r.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] flex items-center justify-between gap-2">
                 <span>شناسه فایل {r.listingId} · علت: <strong>{r.reason}</strong></span>
                 <span className="text-[10.5px] text-slate-500">{r.details || 'بدون توضیح اضافه'}</span>
               </div>
@@ -198,15 +198,15 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
           </div>
         )}
 
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2" data-testid="admin-knowledge-publications-queue">
-          <strong className="font-bold text-slate-800 dark:text-slate-100 block">
+        <div className="pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)] space-y-2" data-testid="admin-knowledge-publications-queue">
+          <strong className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] block">
             گردش‌کار تحریریه و وضعیت انتشار سرور پایگاه دانش ({toPersianNum(KNOWLEDGE_PUBLICATIONS.length)})
           </strong>
           {KNOWLEDGE_PUBLICATIONS.slice(0, 6).map((pub) => {
             const st = pubStatuses[pub.id] || pub.status || pub.defaultPublicationStatus;
             const isBusy = busyPubId === pub.id;
             return (
-              <div key={pub.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div key={pub.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 dark:text-white truncate">{pub.titleFa}</div>
                   <div className="text-[10.5px] text-slate-500">
@@ -226,7 +226,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
                     type="button"
                     disabled={isBusy}
                     onClick={() => handleKnowledgeTransition(pub.id, 'archived')}
-                    className="px-2 py-1 rounded-lg border border-slate-400 text-slate-700 dark:text-slate-200 font-bold cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg border border-slate-400 text-slate-700 dark:text-[var(--color-text-primary)] font-bold cursor-pointer disabled:opacity-50"
                   >
                     آرشیو
                   </button>
@@ -267,7 +267,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
   };
 
   return (
-    <div data-testid="admin-complaints-disputes-queue" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+    <div data-testid="admin-complaints-disputes-queue" className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3 text-xs">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <MessageSquareWarning className="w-4 h-4 text-amber-600" />
@@ -284,7 +284,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
         aria-label="گزارش رسیدگی شکایت"
         value={noteInput}
         onChange={(e) => setNoteInput(e.target.value)}
-        className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+        className="w-full p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]"
       />
       {feedbackFa && (
         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 font-bold">
@@ -296,7 +296,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
       ) : (
         <div className="space-y-2">
           {complaints.slice(0, 6).map((c) => (
-            <div key={c.complaintId} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div key={c.complaintId} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="font-bold text-slate-900 dark:text-white">پرونده {c.complaintId} · علت: {c.reason}</div>
                 <div className="text-[10.5px] text-slate-500">وضعیت: {c.status} · {c.details}</div>

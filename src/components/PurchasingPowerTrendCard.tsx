@@ -71,8 +71,8 @@ export function PurchasingPowerTrendCard({
 
   return (
     <div className="space-y-3.5">
-      <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+      <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5 text-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-2">
           <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
             {sqmDiff >= 0 ? (
               <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
@@ -97,9 +97,9 @@ export function PurchasingPowerTrendCard({
         </div>
 
         <div className="grid grid-cols-2 gap-2.5 text-center">
-          <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-xl p-2.5">
-            <div className="text-[10.5px] text-slate-500 dark:text-slate-400">قدرت خرید ۶ ماه پیش در {selectedHood.name}</div>
-            <div className="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-xl p-2.5">
+            <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">قدرت خرید ۶ ماه پیش در {selectedHood.name}</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums mt-0.5">
               {formatAreaValue(sqm6MonthsAgo, areaUnit)}
             </div>
             <div className="text-[10px] text-slate-400 tabular-nums mt-0.5">
@@ -118,20 +118,20 @@ export function PurchasingPowerTrendCard({
             <div className="text-[10px] text-teal-800 dark:text-teal-300 font-bold tabular-nums mt-0.5">
               با تخمین معامله ({toPersianNum(uDealPrice)} م): {formatAreaValue(sqmDealToday, areaUnit)}
             </div>
-            <div className="text-[9.5px] text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">
+            <div className="text-[9.5px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums mt-0.5">
               {formatAreaShort(80, areaUnit)}: {toPersianNum((total80mTodayMillions / 1000).toFixed(1))} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م/ماه
             </div>
           </div>
         </div>
 
-        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed bg-slate-50/80 dark:bg-slate-950/60 rounded-lg p-2 border border-slate-100 dark:border-slate-800">
+        <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] leading-relaxed bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] rounded-lg p-2 border border-slate-100 dark:border-[var(--color-border-subtle)]">
           {laggedCityGrowth
             ? `💡 فرصت خرید: رشد ۶ ماهه ${selectedHood.name} (${toPersianNum(marketReport.hoodGrowth6mPercent)}٪ · تغییر هر ${areaUnit === 'sqft' ? 'ft²' : 'متر'}: ${uPriceDelta >= 0 ? '+' : ''}${toPersianNum(uPriceDelta)} م${fxDelta} · تغییر واحد ${formatAreaShort(80, areaUnit)}: ${total80DeltaMillion >= 0 ? '+' : ''}${toPersianNum((total80DeltaMillion / 1000).toFixed(2))} میلیارد${fxTotal80Delta}) کمتر از میانگین شهر (${toPersianNum(marketReport.tehranGrowth6mPercent)}٪) بوده و جاماندگی قیمتی دارد.`
             : `📊 تحلیل روند: رشد ۶ ماهه ${selectedHood.name} (${toPersianNum(marketReport.hoodGrowth6mPercent)}٪ · تغییر هر ${areaUnit === 'sqft' ? 'ft²' : 'متر'}: ${uPriceDelta >= 0 ? '+' : ''}${toPersianNum(uPriceDelta)} م${fxDelta} · تغییر واحد ${formatAreaShort(80, areaUnit)}: ${total80DeltaMillion >= 0 ? '+' : ''}${toPersianNum((total80DeltaMillion / 1000).toFixed(2))} میلیارد${fxTotal80Delta}) بالاتر از میانگین شهر (${toPersianNum(marketReport.tehranGrowth6mPercent)}٪) بوده؛ چانه‌زنی ضروری است.`}
         </p>
 
-        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[10.5px]">
-          <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 truncate">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)] text-[10.5px]">
+          <span className="text-slate-600 dark:text-[var(--color-text-muted)] flex items-center gap-1 truncate">
             <TrainFront className="w-3.5 h-3.5 shrink-0" style={{ color: spatialReport.nearestMetroColor }} />
             <span>
               فاصله تا مترو: <strong>~{toPersianNum(spatialReport.nearestMetroDistKm)} کم{areaUnit === 'sqft' ? ` (${toPersianNum(Math.round(spatialReport.nearestMetroDistKm * 3280.84).toLocaleString('en-US'))} فوت)` : ''}</strong>
@@ -148,7 +148,7 @@ export function PurchasingPowerTrendCard({
               })
             }
             aria-label={overlayState.showMetroLines && overlayState.showTrafficZones ? 'مخفی‌سازی لایه‌های مترو و طرح ترافیک در نقشه' : 'نمایش خطوط مترو و محدوده طرح ترافیک روی نقشه'}
-            className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold cursor-pointer transition shrink-0"
+            className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-800 dark:text-[var(--color-text-primary)] font-bold cursor-pointer transition shrink-0"
           >
             {overlayState.showMetroLines && overlayState.showTrafficZones
               ? 'مخفی‌سازی مترو و طرح در نقشه'

@@ -120,9 +120,9 @@ export function ShareModal({
   if (!selectedHood) {
     return (
       <div role="dialog" aria-modal="true" aria-label="کارت کارنامه محله" onClick={onClose} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-        <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-3 focus:outline-none">
+        <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl max-w-sm w-full p-6 text-center space-y-3 focus:outline-none">
           <AlertCircle className="w-6 h-6 stroke-[1.75] text-amber-600 mx-auto" />
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">محله‌ای برای اشتراک‌گذاری انتخاب نشده است.</p>
+          <p className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">محله‌ای برای اشتراک‌گذاری انتخاب نشده است.</p>
           <button type="button" aria-label={isEn ? 'Close' : 'بستن کارت اشتراک‌گذاری'} onClick={onClose} className="px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer">بستن</button>
         </div>
       </div>
@@ -140,8 +140,8 @@ export function ShareModal({
 
   return (
     <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-label={isEn ? 'Neighborhood Scorecard' : 'کارت کارنامه محله'} onClick={onClose} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-sm w-full p-5 space-y-3.5 max-h-[92vh] overflow-y-auto focus:outline-none shadow-2xl">
-        <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-sm w-full p-5 space-y-3.5 max-h-[92vh] overflow-y-auto focus:outline-none shadow-2xl">
+        <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)]">
           <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Share2 className="w-3.5 h-3.5 stroke-[1.75]" />
@@ -150,50 +150,50 @@ export function ShareModal({
           </span>
           <div className="flex items-center gap-1.5">
             <AreaUnitToggle compact showIntlControls />
-            <button type="button" aria-label={isEn ? 'Close' : 'بستن کارت اشتراک‌گذاری'} onClick={onClose} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+            <button type="button" aria-label={isEn ? 'Close' : 'بستن کارت اشتراک‌گذاری'} onClick={onClose} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
               <X className="w-4 h-4 stroke-[1.75]" />
             </button>
           </div>
         </div>
 
-        <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
+        <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-[var(--color-border-subtle)] pb-3">
             <div>
               <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">{safeZone}</div>
               <div className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{isEn ? safeName : `محله ${safeName}`}</div>
             </div>
-            <div className="bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 rounded-xl px-3 py-1.5 text-center">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">{isEn ? 'Score' : 'امتیاز کل'}</div>
+            <div className="bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-1.5 text-center">
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? 'Score' : 'امتیاز کل'}</div>
               <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(safeOverall)}<span className="text-xs font-normal text-slate-400"> / ۱۰</span></div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
-              <div className="text-slate-500 dark:text-slate-400 text-[11px]">{formatUnitBuyPriceTitle(areaUnit)}:</div>
+            <div className="bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] p-2.5 rounded-xl">
+              <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">{formatUnitBuyPriceTitle(areaUnit)}:</div>
               <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(safeBuy, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(safeBuy, areaUnit), intlCurrency, locale)})` : ''}</div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م</div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5 tabular-nums">سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م</div>
             </div>
-            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
-              <div className="text-slate-500 dark:text-slate-400 text-[11px]">{isEn ? 'Full Deposit (80m²):' : `رهن کامل ${formatAreaShort(80, areaUnit)}:`}</div>
+            <div className="bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] p-2.5 rounded-xl">
+              <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">{isEn ? 'Full Deposit (80m²):' : `رهن کامل ${formatAreaShort(80, areaUnit)}:`}</div>
               <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm mt-0.5 tabular-nums">{toPersianNum(safeRahn)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(safeRahn, intlCurrency, locale)})` : ''}</div>
               <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 tabular-nums">{isEn ? `Rent: ${toPersianNum(Math.round(safeRahn * 0.03))}M` : `اجاره ماهانه: ${toPersianNum(Math.round(safeRahn * 0.03))} م`}</div>
             </div>
           </div>
 
           <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">{formatNeighborhoodPriceTruthFa(selectedHood.id, 0)}</p>
-          <div className="space-y-2 text-xs bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 rounded-xl p-3">
+          <div className="space-y-2 text-xs bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] rounded-xl p-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Market Status:' : 'وضعیت بازار:'}</span>
+              <span className="text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? 'Market Status:' : 'وضعیت بازار:'}</span>
               <span className="font-bold text-slate-900 dark:text-white">{safeBadge}</span>
             </div>
-            <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60 dark:border-slate-700">
-              <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Best Indicator:' : 'بهترین شاخص محله:'}</span>
+            <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-strong)]">
+              <span className="text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? 'Best Indicator:' : 'بهترین شاخص محله:'}</span>
               <span className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{safeBestLabel} ({toPersianNum(safeBestScore)} / ۱۰)</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5 text-[11px] text-center bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2 rounded-xl tabular-nums text-slate-600 dark:text-slate-300">
+          <div className="grid grid-cols-3 gap-1.5 text-[11px] text-center bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] p-2 rounded-xl tabular-nums text-slate-600 dark:text-[var(--color-text-secondary)]">
             <div>هوا: <strong className="text-slate-900 dark:text-white">{toPersianNum(selectedHood.air)}</strong></div>
             <div>آب و برق: <strong className="text-slate-900 dark:text-white">{toPersianNum(selectedHood.powerWater)}</strong></div>
             <div>اینترنت: <strong className="text-slate-900 dark:text-white">{toPersianNum(selectedHood.internet)}</strong></div>
@@ -213,7 +213,7 @@ export function ShareModal({
               <><ImageIcon className="w-4 h-4 stroke-[1.75]" /><Download className="w-4 h-4 stroke-[1.75]" /><span>{isEn ? 'Download Story Image (PNG HD)' : 'دانلود تصویر آماده استوری (PNG HD)'}</span></>
             )}
           </button>
-          <button type="button" onClick={handleSafeCopyClick} aria-label={isEn ? 'Copy text summary' : 'کپی متن کارنامه برای پیام‌رسان‌ها'} className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+          <button type="button" onClick={handleSafeCopyClick} aria-label={isEn ? 'Copy text summary' : 'کپی متن کارنامه برای پیام‌رسان‌ها'} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
             {copiedShare ? (
               <><Check className="w-4 h-4 stroke-[1.75]" /><span>{isEn ? 'Copied to clipboard!' : 'کپی شد! آماده ارسال'}</span></>
             ) : (

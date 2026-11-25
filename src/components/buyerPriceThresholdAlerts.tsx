@@ -112,8 +112,8 @@ export function BuyerPriceThresholdManagerSection({
   const uDefault = dealType === 'خرید' ? convertPricePerSqmToUnit(defaultThreshold, areaUnit) : defaultThreshold;
   const uInput = dealType === 'خرید' ? convertPricePerSqmToUnit(thresholdInput, areaUnit) : thresholdInput; const uDealDefault = currentHood && dealType === 'خرید' ? convertPricePerSqmToUnit(aggregateMarketMetricsForHood(currentHood).estimatedDealPricePerSqm, areaUnit) : 0;
   return (
-    <div className="apple-grouped-card dark:bg-slate-800/60 p-3.5 space-y-3 text-xs border border-emerald-200/80 dark:border-emerald-800/70">
-      <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-700 pb-2">
+    <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] p-3.5 space-y-3 text-xs border border-emerald-200/80 dark:border-emerald-800/70">
+      <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-strong)] pb-2">
         <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <BellRing className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>اشتراک هوشمند سقف قیمت محله (پایش زنده و اعلان پایدار)</span>
@@ -124,7 +124,7 @@ export function BuyerPriceThresholdManagerSection({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
         <div className="sm:col-span-8">
-          <label className="block text-[11px] text-slate-600 dark:text-slate-300 mb-1 flex items-center justify-between">
+          <label className="block text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] mb-1 flex items-center justify-between">
             <span>
               {dealType === 'خرید'
                 ? `سقف قیمت ${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'} در ${currentHood?.name || 'محله'} (میلیون تومان):`
@@ -137,7 +137,7 @@ export function BuyerPriceThresholdManagerSection({
           <NumericDraftInput
             aria-label="سقف قیمت انتخابی" min={10} max={50000} step={dealType === 'خرید' ? 2 : 25} fallback={defaultThreshold} value={thresholdInput}
             onValueChange={(nextVal) => { setJustSavedNotice(''); setThresholdInput(nextVal); }}
-            className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
+            className="w-full bg-slate-100/80 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
           />
         </div>
         <div className="sm:col-span-4">
@@ -151,7 +151,7 @@ export function BuyerPriceThresholdManagerSection({
         </div>
       </div>
       {currentHood && (
-        <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline neighborhood={currentHood} dealType={dealType} maxThresholdMillion={thresholdInput} /></React.Suspense>
+        <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-[var(--color-bg-muted)] animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline neighborhood={currentHood} dealType={dealType} maxThresholdMillion={thresholdInput} /></React.Suspense>
       )}
       {justSavedNotice && (
         <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
@@ -160,7 +160,7 @@ export function BuyerPriceThresholdManagerSection({
         </div>
       )}
       {subscriptions.length > 0 && (
-        <div className="space-y-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700 max-h-40 overflow-y-auto">
+        <div className="space-y-1.5 pt-1 border-t border-slate-200/60 dark:border-[var(--color-border-strong)] max-h-40 overflow-y-auto">
           {subscriptions.map((sub) => {
             const match = allMatches.find((m) => m.subscription.id === sub.id);
             const subHood = neighborhoods.find((n) => n.id === sub.hoodId);
@@ -170,12 +170,12 @@ export function BuyerPriceThresholdManagerSection({
             return (
               <div
                 key={sub.id}
-                className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px]"
+                className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-2.5 py-1.5 text-[11px]"
               >
                 <div className="min-w-0 truncate">
                   <strong className="text-slate-900 dark:text-white">{sub.hoodName}</strong>
                   <span className="text-slate-400 mx-1">·</span>
-                  <span className="text-slate-600 dark:text-slate-300">
+                  <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">
                     {sub.dealType === 'خرید' ? `سقف ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uSubMax)} م (کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((sub.maxThresholdMillion * 80) / 1000).toFixed(1))} میلیارد)` : `سقف رهن ${toPersianNum(uSubMax)} م (اجاره معادل: ${toPersianNum(Math.round(uSubMax * 0.03))} م)`}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uSubMax, intlCurrency, locale)})` : ''}
                   </span>
                   <span className="text-slate-400 mx-1">·</span>
@@ -187,7 +187,7 @@ export function BuyerPriceThresholdManagerSection({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {subHood && (
-                    <React.Suspense fallback={<div className="w-24 h-8 rounded bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
+                    <React.Suspense fallback={<div className="w-24 h-8 rounded bg-slate-100/70 dark:bg-[var(--color-bg-muted)] animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
                       neighborhood={subHood} dealType={sub.dealType} maxThresholdMillion={sub.maxThresholdMillion} observedMillion={match?.observedMillion} compact
                     /></React.Suspense>
                   )}
@@ -223,7 +223,7 @@ export function PersistentPriceThresholdMatchBanner({
     <div
       role="status"
       aria-live="polite"
-      className="fixed z-[38] bottom-[calc(4.75rem+var(--safe-bottom))] lg:bottom-6 left-3 right-3 lg:right-auto lg:w-[420px] apple-window-sheet bg-white dark:bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-3.5 shadow-2xl space-y-2 text-xs text-slate-900 dark:text-slate-100"
+      className="fixed z-[38] bottom-[calc(4.75rem+var(--safe-bottom))] lg:bottom-6 left-3 right-3 lg:right-auto lg:w-[420px] apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border-2 border-emerald-500/80 rounded-2xl p-3.5 shadow-2xl space-y-2 text-xs text-slate-900 dark:text-[var(--color-text-primary)]"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -245,17 +245,17 @@ export function PersistentPriceThresholdMatchBanner({
         <button
           type="button"
           aria-label="بستن اعلان تطابق قیمت"
-          onClick={() => onDismissMatch(topMatch.matchKey)} className="p-1 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer shrink-0"
+          onClick={() => onDismissMatch(topMatch.matchKey)} className="p-1 rounded-full bg-slate-200/80 dark:bg-[var(--color-bg-muted)] hover:bg-slate-300/80 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer shrink-0"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+      <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
         {topMatch.matchedSource === 'bargain_listing' && topMatch.bargainTitle
           ? `فایل زیر قیمت «${topMatch.bargainTitle}» (${toPersianNum(topMatch.discountPercent)}٪ زیر میانگین) در آستانه قیمت انتخابی شما قرار دارد.`
           : `میانگین فعلی محله ${topMatch.subscription.hoodName} در محدوده سقف قیمت ثبت‌شده شما قرار دارد.`}
       </p>
-      <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
+      <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-[var(--color-bg-muted)] animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
         neighborhood={topMatch.neighborhood} dealType={topMatch.subscription.dealType} maxThresholdMillion={topMatch.subscription.maxThresholdMillion} observedMillion={topMatch.observedMillion} /></React.Suspense>
       <div className="flex items-center justify-between gap-2 pt-1">
         <button
@@ -268,7 +268,7 @@ export function PersistentPriceThresholdMatchBanner({
         </button>
         <button
           type="button"
-          onClick={onOpenAlertModal} className="py-1.5 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] transition cursor-pointer shrink-0"
+          onClick={onOpenAlertModal} className="py-1.5 px-2.5 rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold text-[11px] transition cursor-pointer shrink-0"
         >
           مدیریت هشدارها
         </button>

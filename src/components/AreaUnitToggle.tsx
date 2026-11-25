@@ -222,10 +222,11 @@ export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ comp
   const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const displayClass = className.includes('hidden') ? '' : 'inline-flex';
-  const btnCls = compact ? 'px-2.5 py-1 text-xs min-h-[36px]' : 'px-3 py-1.5 text-xs min-h-[40px]';
+  const btnCls = compact ? 'px-2.5 py-1 text-xs min-h-[36px]' : 'px-3.5 py-1.5 text-sm min-h-[40px]';
   return (
     <div
       role="group"
+      data-testid="experience-mode-toggle"
       aria-label={isEn ? 'Simple or Pro Experience Mode' : 'حالت تجربه کاربری ساده یا تخصصی'}
       className={`${displayClass} items-center rounded-xl bg-[var(--color-bg-muted)] p-0.5 border border-[var(--color-border-subtle)] select-none ${className}`}
       dir={isEn ? 'ltr' : 'rtl'}

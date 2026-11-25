@@ -276,18 +276,18 @@ export function formatAreaValue(sqm: number, unit: AreaUnit = 'sqm', persianDigi
   const useFaDigits = persianDigits ?? getStoredRadarLocale() !== 'en';
   const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), useFaDigits);
   if (!useFaDigits) return unit === 'sqft' ? `${formatted} sq ft (ft²)` : `${formatted} sq m (m²)`;
-  return unit === 'sqft' ? `${formatted} فوت مربع (ft²)` : `${formatted} متر مربع`;
+  return unit === 'sqft' ? `${formatted} فوت مربع` : `${formatted} متر مربع`;
 }
 export function formatAreaShort(sqm: number, unit: AreaUnit = 'sqm', persianDigits?: boolean): string {
   const useFaDigits = persianDigits ?? getStoredRadarLocale() !== 'en';
   const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), useFaDigits);
   if (!useFaDigits) return unit === 'sqft' ? `${formatted} ft²` : `${formatted} m²`;
-  return unit === 'sqft' ? `${formatted} ft²` : `${formatted} متری`;
+  return unit === 'sqft' ? `${formatted} فوت مربع` : `${formatted} متری`;
 }
 export function formatAreaUnitLabel(unit: AreaUnit = 'sqm', locale?: RadarLocale): string {
   const isEn = (locale ?? getStoredRadarLocale()) === 'en';
   if (isEn) return unit === 'sqft' ? 'Square Feet (ft²)' : 'Square Meters (m²)';
-  return unit === 'sqft' ? 'فوت مربع (ft²)' : 'متر مربع (m²)';
+  return unit === 'sqft' ? 'فوت مربع' : 'متر مربع';
 }
 export function formatUnitBuyPriceTitle(unit: AreaUnit = 'sqm', locale?: RadarLocale): string {
   const isEn = (locale ?? getStoredRadarLocale()) === 'en';

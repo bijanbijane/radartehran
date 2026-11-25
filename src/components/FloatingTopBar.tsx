@@ -154,66 +154,66 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
               <div className="flex items-center gap-1.5">
                 {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} title={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} aria-label={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer whitespace-nowrap">یافتن محله با بودجه من</button>}
                 <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>راهنما</span></button>
-                <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer"><X className="w-4 h-4 stroke-[2]" /></button>
+                <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer"><X className="w-4 h-4 stroke-[2]" /></button>
               </div>
             </div>
             <ModeSwitcherSegmented mode={mode} setMode={setMode} deposit={deposit} monthlyRent={monthlyRent} buyTotalBudget={useLoanBooster ? buyTotalBudget + 1200 : buyTotalBudget} />
-            <div className="space-y-3 apple-grouped-card bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-xl p-3.5">
+            <div className="space-y-3 apple-grouped-card bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5">
               {mode === 'rent' ? ( <>
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-slate-600 dark:text-slate-300">مبلغ ودیعه (پول پیش):</span>
+                      <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">مبلغ ودیعه (پول پیش):</span>
                       <div className="flex items-center gap-1.5">
-                        <input type="number" aria-label="مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                        <input type="number" aria-label="مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                         <span className="text-xs text-[var(--color-text-muted)]">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(deposit) : formatMillionTomanAsIntlCurrency(deposit, intlCurrency, radarLocale, rateState.snapshot)})</span>
                       </div>
                     </div>
-                    <input type="range" aria-label="اسلایدر مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-slate-600 dark:text-slate-300">اجاره ماهانه (رهن کامل معادل: {toPersianNum(deposit + Math.round(monthlyRent / 0.03))} م):</span>
+                      <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">اجاره ماهانه (رهن کامل معادل: {toPersianNum(deposit + Math.round(monthlyRent / 0.03))} م):</span>
                       <div className="flex items-center gap-1.5">
-                        <input type="number" aria-label="اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                        <input type="number" aria-label="اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                         <span className="text-xs text-[var(--color-text-muted)]">میلیون</span>
                       </div>
                     </div>
-                    <input type="range" aria-label="اسلایدر اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                   </div>
                 </>
               ) : ( <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-slate-600 dark:text-slate-300">بودجه کل خرید:</span>
+                    <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">بودجه کل خرید:</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" aria-label="بودجه کل خرید" min={1000} max={100000} step={250} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Math.max(500, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-24 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                      <input type="number" aria-label="بودجه کل خرید" min={1000} max={100000} step={250} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Math.max(500, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-24 px-2 py-0.5 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                       <span className="text-xs text-[var(--color-text-muted)]">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(buyTotalBudget) : formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale, rateState.snapshot)})</span>
                     </div>
                   </div>
-                  <input type="range" aria-label="اسلایدر بودجه کل خرید" min={1000} max={100000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                  <input type="range" aria-label="اسلایدر بودجه کل خرید" min={1000} max={100000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                 </div> )}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-slate-600 dark:text-slate-300">متراژ مورد نظر ({mode === 'rent' ? 'اجاره' : 'خرید'} · {formatAreaShort(targetSqm, areaUnit)}):</span>
+                  <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">متراژ مورد نظر ({mode === 'rent' ? 'اجاره' : 'خرید'} · {formatAreaShort(targetSqm, areaUnit)}):</span>
                   <div className="flex items-center gap-1.5">
-                    <input type="number" aria-label="متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Math.max(25, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-16 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                    <input type="number" aria-label="متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Math.max(25, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-16 px-2 py-0.5 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                     <span className="text-xs text-[var(--color-text-muted)] font-bold tabular-nums">{areaUnit === 'sqft' ? `≈ ${toPersianNum(convertAreaFromSqm(targetSqm, 'sqft'))} ft²` : formatAreaUnitLabel('sqm')}</span>
                   </div>
                 </div>
-                <input type="range" aria-label="اسلایدر متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                <input type="range" aria-label="اسلایدر متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
               </div>
-              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">سن بنای هدف:</div>
+              <div className="pt-2 border-t border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+                <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)] mb-1.5">سن بنای هدف:</div>
                 <div className="grid grid-cols-3 gap-1">
                   {[
                     { id: 'new' as const, label: 'نوساز (۰ تا ۵ سال)' },
                     { id: 'mid' as const, label: `۶ تا ۱۵ سال (${mode === 'rent' ? '-۱۰٪' : '-۱۲٪'})` },
                     { id: 'older' as const, label: `۱۵+ سال (${mode === 'rent' ? '-۲۰٪' : '-۲۴٪'})` },
                   ].map((seg) => (
-                    <button key={seg.id} type="button" onClick={() => setBuildingAgeSegment(seg.id)} className={`min-h-[38px] py-1 px-1 rounded-lg text-xs font-bold transition cursor-pointer text-center ${buildingAgeSegment === seg.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700'}`}>{seg.label}</button>
+                    <button key={seg.id} type="button" onClick={() => setBuildingAgeSegment(seg.id)} className={`min-h-[38px] py-1 px-1 rounded-lg text-xs font-bold transition cursor-pointer text-center ${buildingAgeSegment === seg.id ? 'bg-[var(--color-brand-600)] text-white shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)]'}`}>{seg.label}</button>
                   ))}
                 </div>
               </div>
-              {mode === 'buy' && ( <label className="flex items-start gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 cursor-pointer">
+              {mode === 'buy' && ( <label className="flex items-start gap-2 pt-2 border-t border-slate-200/80 dark:border-[var(--color-border-subtle)] cursor-pointer">
                   <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند" className="mt-0.5 rounded text-[var(--color-brand-600)] focus:ring-emerald-500 cursor-pointer" />
                   <div className="text-xs leading-snug">
                     <span className="font-bold text-slate-900 dark:text-white">کسر خودکار رهن مستأجر + ۱۰٪ تنفس سند</span>
@@ -223,31 +223,31 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
             </div>
             {mode === 'buy' && <BuyingPowerSummaryCard buyTotalBudget={buyTotalBudget} targetSqm={targetSqm} useLoanBooster={useLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy} buildingAgeSegment={buildingAgeSegment} selectedHood={selectedHood} />}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button type="button" onClick={() => setUseLoanBooster((prev) => !prev)} className={`min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${useLoanBooster ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-800 dark:text-emerald-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <button type="button" onClick={() => setUseLoanBooster((prev) => !prev)} className={`min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${useLoanBooster ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-800 dark:text-emerald-300' : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-secondary)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'}`}>
                 <span>افزودن وام مسکن</span>
                 <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)]/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold tabular-nums">+{toPersianNum(extraGreenWithLoan)} محله</span>
               </button>
-              <select value={workHubId} onChange={(e) => setWorkHubId(e.target.value)} aria-label="منطقه محل کار" className="min-h-[44px] md:min-h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-xl px-2.5 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-600 cursor-pointer">
+              <select value={workHubId} onChange={(e) => setWorkHubId(e.target.value)} aria-label="منطقه محل کار" className="min-h-[44px] md:min-h-[38px] bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-xs rounded-xl px-2.5 py-2 text-slate-800 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600 cursor-pointer">
                 {activeCityWorkHubs.map((hub) => <option key={hub.id} value={hub.id}>محل کار: {hub.name}</option>)}
               </select>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              {activeCity === 'tehran' && ( <button type="button" aria-pressed={onlyOutsideTrafficZone} onClick={() => setOnlyOutsideTrafficZone((value) => !value)} className={`min-h-[44px] md:min-h-[36px] flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer inline-flex items-center justify-center gap-1 ${onlyOutsideTrafficZone ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}><TrafficCone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>فقط خارج از طرح ترافیک</span></button> )}
-              <button type="button" aria-pressed={onlyHighMetro} onClick={() => setOnlyHighMetro((value) => !value)} className={`min-h-[44px] md:min-h-[36px] flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer inline-flex items-center justify-center gap-1 ${onlyHighMetro ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}><TrainFront className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>فقط دسترسی عالی مترو (امتیاز ۸+)</span></button>
+              {activeCity === 'tehran' && ( <button type="button" aria-pressed={onlyOutsideTrafficZone} onClick={() => setOnlyOutsideTrafficZone((value) => !value)} className={`min-h-[44px] md:min-h-[36px] flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer inline-flex items-center justify-center gap-1 ${onlyOutsideTrafficZone ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50'}`}><TrafficCone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>فقط خارج از طرح ترافیک</span></button> )}
+              <button type="button" aria-pressed={onlyHighMetro} onClick={() => setOnlyHighMetro((value) => !value)} className={`min-h-[44px] md:min-h-[36px] flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border transition cursor-pointer inline-flex items-center justify-center gap-1 ${onlyHighMetro ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50'}`}><TrainFront className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span>فقط دسترسی عالی مترو (امتیاز ۸+)</span></button>
             </div>
-            <div className="flex items-center justify-between gap-1 apple-segmented bg-slate-100 dark:bg-slate-800 p-1 rounded-[10px] text-xs">
+            <div className="flex items-center justify-between gap-1 apple-segmented bg-slate-100 dark:bg-[var(--color-bg-muted)] p-1 rounded-[10px] text-xs">
               {[
                 { id: 'all' as const, label: `همه (${toPersianNum(evaluatedNeighborhoods.length)})` },
                 { id: 'green' as const, label: `مناسب (${toPersianNum(counts.green)})` },
                 { id: 'yellow' as const, label: `مرزی (${toPersianNum(counts.yellow)})` },
                 { id: 'red' as const, label: `فراتر (${toPersianNum(counts.red)})` },
               ].map((st) => (
-                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
+                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
               ))}
             </div>
-            <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex flex-col gap-2">
+            <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="flex-1 py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer disabled:opacity-50">
+                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="flex-1 py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition cursor-pointer disabled:opacity-50">
                   {savingPrefs ? 'در حال ذخیره...' : currentUser ? 'ذخیره در حساب ابری' : 'ورود با گوگل و ذخیره'}
                 </button>
                 <button type="button" onClick={onCopyBudgetShareLink} className="px-3 py-2 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer whitespace-nowrap">ارسال لینک این بودجه برای خانواده</button>

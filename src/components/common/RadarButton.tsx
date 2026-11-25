@@ -20,12 +20,12 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary:
     'bg-[var(--color-brand-50)] hover:bg-[var(--color-brand-100)] active:bg-[var(--color-brand-100)] text-[var(--color-brand-900)] dark:bg-emerald-950/60 dark:text-emerald-200 dark:hover:bg-emerald-900/70 border border-[var(--color-border-strong)] dark:border-emerald-800/70',
   tertiary:
-    'bg-transparent hover:bg-[var(--color-bg-muted)] active:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] dark:text-slate-300 dark:hover:bg-slate-800 border border-transparent',
+    'bg-transparent hover:bg-[var(--color-bg-muted)] active:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] dark:hover:bg-[var(--color-bg-elevated)] border border-transparent',
   outline:
-    'bg-[var(--color-bg-surface)] dark:bg-slate-900 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 text-[var(--color-text-primary)] dark:text-slate-100 border border-[var(--color-border-strong)] dark:border-slate-700',
+    'bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)]',
   destructive: 'bg-[#A61B1B] hover:bg-[#8E1515] active:bg-[#751010] text-white border border-transparent shadow-xs',
   icon:
-    'bg-[var(--color-bg-surface)] dark:bg-slate-900 hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800 text-[var(--color-text-secondary)] dark:text-slate-200 border border-[var(--color-border-subtle)] dark:border-slate-700 aspect-square !px-0',
+    'bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] dark:hover:bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] dark:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] aspect-square !px-0',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

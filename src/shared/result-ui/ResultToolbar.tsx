@@ -32,7 +32,7 @@ export const ResultToolbar: React.FC<ResultToolbarProps> = ({
     <div
       dir="rtl"
       aria-label="نوار ابزار نمایش و مرتب‌سازی نتایج"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]"
     >
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="قالب نمایش نتایج">
         {STANDARD_RESULT_RENDERERS.map((renderer) => {
@@ -45,8 +45,8 @@ export const ResultToolbar: React.FC<ResultToolbarProps> = ({
               onClick={() => onChangeMode(renderer.id)}
               className={`min-h-[44px] rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors ${
                 isActive
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                  ? 'bg-slate-900 text-white dark:bg-[var(--color-brand-600)] dark:text-white'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-[var(--color-text-secondary)] dark:hover:bg-[var(--color-bg-elevated)]'
               }`}
             >
               {renderer.titleFa}
@@ -57,7 +57,7 @@ export const ResultToolbar: React.FC<ResultToolbarProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-xs text-slate-500 dark:text-slate-400">مرتب‌سازی:</label>
+        <label className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">مرتب‌سازی:</label>
         <select
           value={`${sortField}:${sortDirection}`}
           aria-label="مرتب‌سازی نتایج"
@@ -65,7 +65,7 @@ export const ResultToolbar: React.FC<ResultToolbarProps> = ({
             const [f, d] = e.target.value.split(':') as [ResultSortField, ResultSortDirection];
             onChangeSort(f, d);
           }}
-          className="min-h-[44px] rounded-xl border border-slate-300 bg-transparent px-3 text-xs dark:border-slate-700"
+          className="min-h-[44px] rounded-xl border border-slate-300 bg-transparent px-3 text-xs dark:border-[var(--color-border-strong)]"
         >
           <option value="totalPrice:asc">قیمت کل (ارزان‌ترین به گران‌ترین)</option>
           <option value="totalPrice:desc">قیمت کل (گران‌ترین به ارزان‌ترین)</option>

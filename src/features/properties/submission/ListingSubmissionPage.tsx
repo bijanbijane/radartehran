@@ -187,16 +187,16 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-5" data-testid="listing-submission-wizard">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3.5">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 rounded-[16px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-5" data-testid="listing-submission-wizard">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-3.5">
         <div>
           <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] dark:text-white">ثبت ساختاریافته فایل ملکی (گام {toPersianNum(step)} از ۷)</h2>
-          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
             پیش‌نویس شما به‌صورت خودکار ذخیره می‌شود · {savedNotice || `آخرین ذخیره: ${new Date(draft.lastSavedAtIso).toLocaleTimeString('fa-IR')}`}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          <button type="button" onClick={handleManualDraftSave} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer">
+          <button type="button" onClick={handleManualDraftSave} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1 cursor-pointer">
             <Save className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>ذخیره پیش‌نویس</span>
           </button>
@@ -227,7 +227,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                 ? 'bg-[var(--color-brand-600)] text-white'
                 : s.id < step
                 ? 'bg-[#EAF5EE] text-[#176B4C]'
-                : 'bg-[var(--color-bg-muted)] dark:bg-slate-800 text-[var(--color-text-muted)]'
+                : 'bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]'
             }`}
           >
             {s.label}
@@ -255,7 +255,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                   type="button"
                   onClick={() => update({ transactionType: tx })}
                   className={`w-full p-2.5 rounded-[9px] border text-right font-bold cursor-pointer ${
-                    draft.transactionType === tx ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700'
+                    draft.transactionType === tx ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
                   }`}
                 >
                   {TRANSACTION_TYPE_LABELS_FA[tx]}
@@ -270,7 +270,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                   type="button"
                   onClick={() => update({ propertyType: pt })}
                   className={`w-full p-2.5 rounded-[9px] border text-right font-bold cursor-pointer ${
-                    draft.propertyType === pt ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700'
+                    draft.propertyType === pt ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
                   }`}
                 >
                   {PROPERTY_TYPE_LABELS_FA[pt]}
@@ -287,7 +287,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
               <select
                 value={draft.hoodId}
                 onChange={(e) => update({ hoodId: Number(e.target.value) })}
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
+                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold"
               >
                 {evaluatedNeighborhoods.map((h) => (
                   <option key={h.id} value={h.id}>محله {h.name} ({h.zone})</option>
@@ -303,7 +303,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                 value={draft.street}
                 onChange={(e) => update({ street: e.target.value })}
                 placeholder="مثال: بلوار ۲۴ متری، فرعی دنج..."
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               />
               {errors.street && <span role="alert" className="text-[#B3261E] text-[11px] block mt-1">{errors.street}</span>}
             </div>
@@ -312,7 +312,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
               <select
                 value={draft.locationPrecision}
                 onChange={(e) => update({ locationPrecision: e.target.value as LocationPrecision })}
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               >
                 <option value="approximate">محدوده تقریبی خیابان (پیشنهادی برای حفظ حریم خصوصی)</option>
                 <option value="neighborhood">فقط در سطح محله</option>
@@ -327,30 +327,30 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 tabular-nums">
             <div>
               <label className="font-bold block mb-1">متراژ (متر مربع)</label>
-              <input type="text" data-testid="submit-area-input" aria-invalid={Boolean(errors.areaSqm)} value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+              <input type="text" data-testid="submit-area-input" aria-invalid={Boolean(errors.areaSqm)} value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
               {errors.areaSqm && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.areaSqm}</span>}
             </div>
             {draft.propertyType !== 'land' && (
               <>
                 <div>
                   <label className="font-bold block mb-1">سال ساخت (شمسی)</label>
-                  <input type="text" aria-invalid={Boolean(errors.buildYearJalali)} value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+                  <input type="text" aria-invalid={Boolean(errors.buildYearJalali)} value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
                   {errors.buildYearJalali && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.buildYearJalali}</span>}
                 </div>
                 <div>
                   <label className="font-bold block mb-1">تعداد اتاق خواب</label>
-                  <input type="text" aria-invalid={Boolean(errors.roomsCount)} value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+                  <input type="text" aria-invalid={Boolean(errors.roomsCount)} value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
                   {errors.roomsCount && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.roomsCount}</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="font-bold block mb-1">طبقه</label>
-                    <input type="text" aria-invalid={Boolean(errors.floorNumber)} value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+                    <input type="text" aria-invalid={Boolean(errors.floorNumber)} value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
                     {errors.floorNumber && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.floorNumber}</span>}
                   </div>
                   <div>
                     <label className="font-bold block mb-1">کل طبقات</label>
-                    <input type="text" aria-invalid={Boolean(errors.totalFloors)} value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+                    <input type="text" aria-invalid={Boolean(errors.totalFloors)} value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
                     {errors.totalFloors && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.totalFloors}</span>}
                   </div>
                 </div>
@@ -371,8 +371,8 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
-        <button type="button" disabled={step === 1} onClick={() => { setErrors({}); setStep((s) => Math.max(1, s - 1)); }} className="px-3.5 py-2 rounded-[9px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40">
+      <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
+        <button type="button" disabled={step === 1} onClick={() => { setErrors({}); setStep((s) => Math.max(1, s - 1)); }} className="px-3.5 py-2 rounded-[9px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40">
           <ArrowRight className="w-3.5 h-3.5" />
           <span>گام قبل</span>
         </button>

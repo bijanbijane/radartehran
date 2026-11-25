@@ -62,7 +62,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
 
   const renderTriState = (label: string, key: 'parking' | 'elevator' | 'storage') => (
     <div className="space-y-1.5">
-      <span className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 block">{label}</span>
+      <span className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] block">{label}</span>
       <div className="grid grid-cols-4 gap-1">
         {TRI_STATE_OPTS.map((opt) => (
           <button
@@ -72,7 +72,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
             className={`py-1.5 rounded-[7px] border text-[11px] font-bold cursor-pointer transition ${
               draft[key] === opt.id
                 ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                : 'bg-[#F8F9FA] dark:bg-slate-800 border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                : 'bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[#48534F] dark:text-[var(--color-text-secondary)]'
             }`}
           >
             {opt.label}
@@ -95,15 +95,15 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
         tabIndex={-1}
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-xl bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl border border-[var(--color-border-subtle)] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full sm:max-w-xl bg-white dark:bg-[var(--color-bg-surface)] rounded-t-2xl sm:rounded-2xl border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
       >
-        <div className="px-4 py-3.5 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between">
+        <div className="px-4 py-3.5 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex items-center justify-between">
           <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">فیلترهای دقیق جست‌وجوی ملک</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="بستن پنل فیلترها"
-            className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-slate-800 flex items-center justify-center text-[var(--color-text-muted)] cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] flex items-center justify-center text-[var(--color-text-muted)] cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -125,7 +125,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
         >
         <div className="p-4 space-y-4 overflow-y-auto text-xs flex-1">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 block">نوع ملک (فیلترهای مرتبط پویا نمایش داده می‌شوند)</label>
+            <label className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] block">نوع ملک (فیلترهای مرتبط پویا نمایش داده می‌شوند)</label>
             <div className="flex flex-wrap gap-1.5">
               {(['all', 'apartment', 'villa_house', 'commercial', 'office', 'land'] as const).map((pt) => (
                 <button
@@ -138,7 +138,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                   className={`px-2.5 py-1.5 rounded-[8px] border text-[11px] font-bold cursor-pointer ${
                     draft.propertyType === pt
                       ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                      : 'bg-[#F8F9FA] dark:bg-slate-800 border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                      : 'bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[#48534F] dark:text-[var(--color-text-secondary)]'
                   }`}
                 >
                   {pt === 'all' ? 'همه' : PROPERTY_TYPE_LABELS_FA[pt as PropertyType]}
@@ -157,7 +157,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 value={draft.areaMin}
                 onChange={(e) => patch({ areaMin: e.target.value })}
                 placeholder="مثلاً ۶۰"
-                className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
               />
             </div>
             <div className="space-y-1">
@@ -169,7 +169,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 value={draft.areaMax}
                 onChange={(e) => patch({ areaMax: e.target.value })}
                 placeholder="مثلاً ۱۵۰"
-                className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                   value={draft.priceMinMillion}
                   onChange={(e) => patch({ priceMinMillion: e.target.value })}
                   placeholder="مثلاً ۵۰۰۰"
-                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
                 />
               </div>
               <div className="space-y-1">
@@ -197,7 +197,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                   value={draft.priceMaxMillion}
                   onChange={(e) => patch({ priceMaxMillion: e.target.value })}
                   placeholder="مثلاً ۵۰۰۰۰"
-                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
                 />
               </div>
             </div>
@@ -212,7 +212,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                   value={draft.depositMaxMillion}
                   onChange={(e) => patch({ depositMaxMillion: e.target.value })}
                   placeholder="مثلاً ۴۰۰۰"
-                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
                 />
               </div>
               <div className="space-y-1">
@@ -224,7 +224,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                   value={draft.rentMaxMillion}
                   onChange={(e) => patch({ rentMaxMillion: e.target.value })}
                   placeholder="مثلاً ۸۰"
-                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white tabular-nums"
+                  className="w-full px-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white tabular-nums"
                 />
               </div>
             </div>
@@ -232,7 +232,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
 
           {showRooms && (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 block">حداقل تعداد خواب</span>
+              <span className="text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] block">حداقل تعداد خواب</span>
               <div className="flex gap-1.5">
                 {[null, 1, 2, 3, 4].map((r) => (
                   <button
@@ -242,7 +242,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                     className={`px-3 py-1.5 rounded-[7px] border text-[11px] font-bold cursor-pointer ${
                       draft.roomsMin === r
                         ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                        : 'bg-[#F8F9FA] dark:bg-slate-800 border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                        : 'bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[#48534F] dark:text-[var(--color-text-secondary)]'
                     }`}
                   >
                     {r === null ? 'مهم نیست' : `${r}+ خواب`}
@@ -256,8 +256,8 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
           {showElevator && renderTriState('آسانسور', 'elevator')}
           {renderTriState('انباری', 'storage')}
 
-          <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-[var(--color-text-primary)] dark:text-slate-200">
+          <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
               <input
                 type="checkbox"
                 checked={draft.onlySelectedHood}
@@ -266,7 +266,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
               />
               <span>فقط فایل‌های محله انتخاب‌شده ({selectedHoodName})</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer font-bold text-[var(--color-text-primary)] dark:text-slate-200">
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
               <input
                 type="checkbox"
                 checked={draft.verifiedOnly}
@@ -293,11 +293,11 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800 bg-[#F8F9FA] dark:bg-slate-950 flex items-center justify-between gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <div className="px-4 py-3 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[#F8F9FA] dark:bg-[var(--color-bg-canvas)] flex items-center justify-between gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => { setAttemptedApply(false); onReset(); onClose(); }}
-            className="min-h-[42px] px-3.5 rounded-[9px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1.5 cursor-pointer"
+            className="min-h-[42px] px-3.5 rounded-[9px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs font-bold text-[#48534F] dark:text-[var(--color-text-secondary)] flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>بازنشانی</span>

@@ -74,7 +74,7 @@ const StageLoadingSkeleton: React.FC = () => (
     role="status"
     aria-live="polite"
     data-testid="onboarding-stage-suspense-fallback"
-    className="p-6 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 bg-[#F6F8F6] dark:bg-slate-800/50 text-xs text-[#586760] dark:text-slate-300 animate-pulse"
+    className="p-6 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] text-xs text-[#586760] dark:text-[var(--color-text-secondary)] animate-pulse"
   >
     در حال بارگذاری ماژول تخصصی مرحله انتخاب‌شده...
   </div>

@@ -135,9 +135,9 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs" data-testid="service-provider-portal">
       <form
         onSubmit={handleSubmit}
-        className="lg:col-span-7 p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3.5"
+        className="lg:col-span-7 p-5 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3.5"
       >
-        <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
+        <div className="border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-3">
           <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Award className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ثبت پروفایل متخصص / ارائه‌دهنده خدمات ملکی</span>
@@ -150,11 +150,11 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="font-bold block mb-1">نام متخصص یا شرکت</label>
-            <input type="text" aria-invalid={invalidField === 'displayName'} value={displayName} onChange={(e) => { setDisplayName(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" placeholder="مثال: گروه مهندسی و بازرسی پارس" />
+            <input type="text" aria-invalid={invalidField === 'displayName'} value={displayName} onChange={(e) => { setDisplayName(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" placeholder="مثال: گروه مهندسی و بازرسی پارس" />
           </div>
           <div>
             <label className="font-bold block mb-1">نوع شخصیت</label>
-            <select value={entityKind} onChange={(e) => { setEntityKind(e.target.value as 'specialist' | 'agency' | 'company'); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+            <select value={entityKind} onChange={(e) => { setEntityKind(e.target.value as 'specialist' | 'agency' | 'company'); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
               <option value="specialist">متخصص مستقل</option>
               <option value="company">شرکت / دفتر فنی یا حقوقی</option>
               <option value="agency">دفتر مشاوره املاک</option>
@@ -162,7 +162,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           </div>
           <div>
             <label className="font-bold block mb-1">رسته تخصصی</label>
-            <select value={canonicalCategory} onChange={(e) => { setCanonicalCategory(e.target.value as ServiceCanonicalCategory); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+            <select value={canonicalCategory} onChange={(e) => { setCanonicalCategory(e.target.value as ServiceCanonicalCategory); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
               {(Object.keys(CANONICAL_CATEGORY_LABELS_FA) as Array<ServiceCanonicalCategory | 'all'>)
                 .filter((k): k is ServiceCanonicalCategory => k !== 'all')
                 .map((cat) => (
@@ -172,7 +172,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           </div>
           <div>
             <label className="font-bold block mb-1">محله استقرار دفتر</label>
-            <select value={neighborhoodId} onChange={(e) => { setNeighborhoodId(Number(e.target.value)); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+            <select value={neighborhoodId} onChange={(e) => { setNeighborhoodId(Number(e.target.value)); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
               {evaluatedNeighborhoods.map((h) => (
                 <option key={h.id} value={h.id}>محله {h.name}</option>
               ))}
@@ -180,11 +180,11 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           </div>
           <div>
             <label className="font-bold block mb-1">شماره تماس پاسخ‌گو</label>
-            <input type="text" aria-invalid={invalidField === 'phone'} value={phone} onChange={(e) => { setPhone(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums" placeholder="09120000000" />
+            <input type="text" aria-invalid={invalidField === 'phone'} value={phone} onChange={(e) => { setPhone(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums" placeholder="09120000000" />
           </div>
           <div>
             <label className="font-bold block mb-1">گستره پوشش خدمت</label>
-            <select value={coverageScope} onChange={(e) => { setCoverageScope(e.target.value as ServiceCoverageScope); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+            <select value={coverageScope} onChange={(e) => { setCoverageScope(e.target.value as ServiceCoverageScope); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
               <option value="local">محله‌ای</option>
               <option value="citywide">کل شهر</option>
               <option value="remote">غیرحضوری / سراسری</option>
@@ -193,7 +193,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           </div>
           <div>
             <label className="font-bold block mb-1">مدل تعرفه</label>
-            <select value={pricingMode} onChange={(e) => { setPricingMode(e.target.value as ServicePricingMode); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+            <select value={pricingMode} onChange={(e) => { setPricingMode(e.target.value as ServicePricingMode); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
               <option value="fixed">قیمت مقطوع</option>
               <option value="starting_from">شروع قیمت از</option>
               <option value="per_unit">بر اساس متراژ/واحد</option>
@@ -203,23 +203,23 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           </div>
           <div>
             <label className="font-bold block mb-1">عنوان تعرفه نمایشی</label>
-            <input type="text" aria-invalid={invalidField === 'priceDisplayFa'} value={priceDisplayFa} onChange={(e) => { setPriceDisplayFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+            <input type="text" aria-invalid={invalidField === 'priceDisplayFa'} value={priceDisplayFa} onChange={(e) => { setPriceDisplayFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
           </div>
         </div>
 
         <div>
           <label className="font-bold block mb-1">شرح خدمت قابل ارائه و دامنه تخصص</label>
-          <textarea rows={2} aria-invalid={invalidField === 'specialtyFa'} value={specialtyFa} onChange={(e) => { setSpecialtyFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" placeholder="مثال: بازبینی قراردادهای خرید و پیش‌فروش به همراه چک‌لیست تعهدات سند..." />
+          <textarea rows={2} aria-invalid={invalidField === 'specialtyFa'} value={specialtyFa} onChange={(e) => { setSpecialtyFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" placeholder="مثال: بازبینی قراردادهای خرید و پیش‌فروش به همراه چک‌لیست تعهدات سند..." />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="font-bold block mb-1">شماره پروانه / کانون / نظام مهندسی (اختیاری)</label>
-            <input type="text" value={licenseClaimedFa} onChange={(e) => { setLicenseClaimedFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums" placeholder="فقط پس از بررسی نمایش داده می‌شود" />
+            <input type="text" value={licenseClaimedFa} onChange={(e) => { setLicenseClaimedFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums" placeholder="فقط پس از بررسی نمایش داده می‌شود" />
           </div>
           <div>
             <label className="font-bold block mb-1">خلاصه نمونه‌کار یا سوابق قابل استناد</label>
-            <input type="text" value={portfolioSummaryFa} onChange={(e) => { setPortfolioSummaryFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+            <input type="text" value={portfolioSummaryFa} onChange={(e) => { setPortfolioSummaryFa(e.target.value); clearStatus(); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
           </div>
         </div>
 
@@ -236,7 +236,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
       </form>
 
       <aside className="lg:col-span-5 space-y-3">
-        <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
+        <div className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2">
           <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>پرونده‌های ثبت‌شده شما ({submissions.length})</span>
@@ -246,7 +246,7 @@ export const ServiceProviderPortalTab: React.FC<ServiceProviderPortalTabProps> =
           ) : (
             <div className="space-y-2">
               {submissions.map((s) => (
-                <div key={s.submissionId} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1">
+                <div key={s.submissionId} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-1">
                   <div className="flex items-center justify-between font-bold text-[var(--color-text-primary)] dark:text-white">
                     <span>{s.displayName}</span>
                     <span className="text-[var(--color-brand-600)]">{MODERATION_STATUS_FA[s.moderationStatus]}</span>

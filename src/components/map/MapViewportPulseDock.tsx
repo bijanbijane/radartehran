@@ -245,7 +245,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
           type="button"
           data-testid="pulse-dock-toggle"
           onClick={() => setCollapsed(false)}
-          className="apple-vibrancy-bar border border-slate-200/90 dark:border-slate-700/90 rounded-full px-3 py-1.5 shadow-lg flex items-center gap-2 text-[11px] font-bold text-slate-800 dark:text-slate-100 cursor-pointer hover:bg-white dark:hover:bg-slate-800 transition whitespace-nowrap"
+          className="apple-vibrancy-bar border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-full px-3 py-1.5 shadow-lg flex items-center gap-2 text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] cursor-pointer hover:bg-white dark:hover:bg-[var(--color-bg-elevated)] transition whitespace-nowrap"
         >
           <Radar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
           <span className="tabular-nums truncate">
@@ -262,7 +262,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
       data-testid="map-viewport-pulse-dock"
       data-collapsed="false"
       aria-label={isEn ? 'Live map viewport radar' : 'رادار زنده کادر دید نقشه'}
-      className="pointer-events-auto fixed z-[28] lg:z-[26] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-3 lg:inset-x-auto lg:left-[23.5rem] lg:right-[22.5rem] xl:right-[33.5rem] max-w-[520px] mx-auto apple-vibrancy-bar bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/90 rounded-2xl shadow-xl p-2.5 space-y-2 text-[11px]"
+      className="pointer-events-auto fixed z-[28] lg:z-[26] bottom-[calc(4.75rem+env(safe-area-inset-bottom))] lg:bottom-4 inset-x-3 lg:inset-x-auto lg:left-[23.5rem] lg:right-[22.5rem] xl:right-[33.5rem] max-w-[520px] mx-auto apple-vibrancy-bar bg-white/95 dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-2xl shadow-xl p-2.5 space-y-2 text-[11px]"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
@@ -270,7 +270,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
             <Radar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
             <span>{isEn ? 'Viewport Radar' : 'رادار کادر دید'}</span>
           </span>
-          <span className="text-slate-600 dark:text-slate-300 font-semibold tabular-nums whitespace-nowrap">
+          <span className="text-slate-600 dark:text-[var(--color-text-secondary)] font-semibold tabular-nums whitespace-nowrap">
             {toPersianNum(snapshot.inViewportCount)} محله
             <span className="text-emerald-700 dark:text-emerald-400 font-bold"> ({toPersianNum(snapshot.affordableCount)} مناسب بودجه)</span>
           </span>
@@ -305,8 +305,8 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
             onClick={() => updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport })}
             className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               filterRankingByViewport
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[var(--color-brand-600)] text-white border-transparent'
+                : 'border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)]'
             }`}
           >
             {filterRankingByViewport ? <Lock className="w-3 h-3" aria-hidden="true" /> : <Unlock className="w-3 h-3" aria-hidden="true" />}
@@ -317,7 +317,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
             data-testid="pulse-dock-toggle"
             aria-label={isEn ? 'Collapse viewport radar' : 'جمع‌کردن نوار رادار کادر دید'}
             onClick={() => setCollapsed(true)}
-            className="p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            className="p-1 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
           >
             <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
@@ -352,7 +352,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
               className={`flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl border transition min-w-0 ${
                 isSelected
                   ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40'
-                  : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600'
+                  : 'border-slate-200/80 dark:border-[var(--color-border-strong)] bg-slate-50/70 dark:bg-[var(--color-bg-muted)] hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
               <button
@@ -363,7 +363,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
                 <div className="font-bold text-slate-900 dark:text-white truncate text-[11px]">
                   {hood.name}
                 </div>
-                <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tabular-nums truncate">
+                <div className="text-[10px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums truncate">
                   {hoodMetric}
                 </div>
               </button>
@@ -380,7 +380,7 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
                     ? 'opacity-35 cursor-not-allowed border-transparent text-slate-400'
                     : isArcTarget
                       ? 'bg-indigo-600 text-white border-indigo-600 cursor-pointer'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 cursor-pointer'
+                      : 'border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-700 cursor-pointer'
                 }`}
               >
                 <ArrowLeftRight className="w-3 h-3" aria-hidden="true" />

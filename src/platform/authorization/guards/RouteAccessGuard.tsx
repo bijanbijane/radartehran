@@ -147,7 +147,7 @@ export const RouteAccessGuard: React.FC<RouteAccessGuardProps> = ({
         role="alert"
         aria-live="polite"
         dir="rtl"
-        className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-right text-sm text-slate-800 dark:text-slate-100"
+        className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-right text-sm text-slate-800 dark:text-[var(--color-text-primary)]"
       >
         <h3 className="font-bold text-amber-700 dark:text-amber-300">
           {meta ? `محدودیت دسترسی به «${meta.titleFa}»` : 'مسیر درخواستی در دسترس نیست'}

@@ -38,7 +38,7 @@ export const PriceDistributionChart: React.FC<PriceDistributionChartProps> = ({
     >
       <div className="space-y-3">
         {/* Statistical summary row */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs tabular-nums bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs tabular-nums bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)]">
           <div><span className="text-[var(--color-text-muted)] block">P10 (کف)</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p10 !== null ? toPersianNum(stats.p10) : '—'}</strong></div>
           <div><span className="text-[var(--color-text-muted)] block">P25</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p25 !== null ? toPersianNum(stats.p25) : '—'}</strong></div>
           <div><span className="text-[var(--color-brand-600)] dark:text-emerald-400 block font-bold">میانه (P50)</span><strong className="font-bold text-[var(--color-brand-600)] dark:text-emerald-300">{stats.median !== null ? toPersianNum(stats.median) : '—'}</strong></div>

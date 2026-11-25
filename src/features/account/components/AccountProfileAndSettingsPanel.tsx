@@ -11,6 +11,7 @@ import {
   type UserRoleCapability,
   type UserSessionDevice,
 } from '../types/account.types';
+import { AreaUnitToggle, ExperienceModeToggle } from '../../../components/AreaUnitToggle';
 
 export interface AccountProfileAndSettingsPanelProps {
   modeTab: 'profile' | 'settings';
@@ -64,7 +65,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
     };
 
     return (
-      <div className="space-y-4 text-xs" data-testid="account-profile-panel">
+      <div className="space-y-4 text-sm" data-testid="account-profile-panel">
         <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-4">
           <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-[var(--color-brand-fg)]" />
@@ -171,7 +172,21 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
   }
 
   return (
-    <div className="space-y-4 text-xs" data-testid="account-settings-panel">
+    <div className="space-y-4 text-sm" data-testid="account-settings-panel">
+      <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3" data-testid="account-display-preferences-card">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)]">تنظیمات نمایش و سطح جزئیات تحلیلی</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          حالت نمایش رابط کاربری را انتخاب کنید: «ساده» برای تصمیم‌گیری سریع و خلوت، یا «تخصصی» برای نمایش جزئیات آماری و ابزارهای پیشرفته.
+        </p>
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-[var(--color-text-secondary)]">حالت نمایش:</span>
+            <ExperienceModeToggle />
+          </div>
+          <AreaUnitToggle showIntlControls />
+        </div>
+      </div>
+
       <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
         <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
           <Lock className="w-4 h-4 text-[var(--color-brand-fg)]" />

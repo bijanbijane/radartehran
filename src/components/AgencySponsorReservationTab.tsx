@@ -78,18 +78,18 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
   const isErrorMsg = Boolean(localPhoneError) || classifyFeedbackTone(effectiveMessage) === 'error';
   return (
     <div className="space-y-4 text-xs">
-      <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3 text-slate-700 dark:text-slate-300 leading-relaxed">
+      <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-2xl p-3 text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed">
         در هر یک از محله‌ها، <strong>فقط یک دفتر مشاور املاک معتبر</strong> به عنوان «کارشناس
         رسمی محله» در پایین کارنامه همان محله نمایش داده می‌شود.
       </div>
       <form noValidate onSubmit={handleFormSubmit} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1">انتخاب محله جهت رزرو:</label>
+            <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1">انتخاب محله جهت رزرو:</label>
             <select
               aria-label="انتخاب محله جهت رزرو" value={sponsorHoodId}
               onChange={(e) => { setLocalPhoneError(''); setSponsorSubmitMsg?.(''); setSponsorHoodId(Number(e.target.value)); }}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-emerald-600"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-[var(--color-text-primary)] font-bold focus:outline-none focus:border-emerald-600"
             >
               {safeNeighborhoods.map((n) => (
                 <option key={n.id} value={n.id}>
@@ -100,7 +100,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             </select>
           </div>
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1">نام دفتر مشاور املاک:</label>
+            <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1">نام دفتر مشاور املاک:</label>
             <input
               type="text" aria-label="نام دفتر مشاور املاک"
               aria-invalid={Boolean(localPhoneError && sanitizeInput(sponsorAgencyName, 90).length < 2)}
@@ -113,13 +113,13 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 setSponsorAgencyName(sanitizeLiveText(e.target.value, 90));
               }}
               placeholder="مثلاً: دپارتمان املاک بزرگ پونک"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600"
             />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 flex items-center justify-between">
+            <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1 flex items-center justify-between">
               <span>شماره تماس مستقیم:</span>
               {!phoneIsValid && (
                 <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold">فرمت شماره نامعتبر</span>
@@ -138,28 +138,28 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                   setSponsorPhone(sanitizeLiveText(e.target.value, 30));
                 }}
                 placeholder="021-4444xxxx"
-                className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 tabular-nums focus:outline-none ${
+                className={`w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border rounded-xl px-3 py-2.5 text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums focus:outline-none ${
                   !phoneIsValid
                     ? 'border-rose-400 focus:border-rose-600'
-                    : 'border-slate-200 dark:border-slate-700 focus:border-emerald-600'
+                    : 'border-slate-200 dark:border-[var(--color-border-strong)] focus:border-emerald-600'
                 }`}
               />
               <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1">تخصص دفتر در محله:</label>
+            <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1">تخصص دفتر در محله:</label>
             <input
               type="text" aria-label="تخصص دفتر در محله"
               maxLength={110}
               value={sponsorSpecialty}
               onChange={(e) => { setSponsorSubmitMsg?.(''); setSponsorSpecialty(sanitizeLiveText(e.target.value, 110)); }}
               placeholder="مثلاً: فایل‌های شخصی و نوساز"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600"
             />
           </div>
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1">سابقه فعالیت (سال):</label>
+            <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1">سابقه فعالیت (سال):</label>
             <NumericDraftInput
               aria-label="سابقه فعالیت به سال"
               min={1}
@@ -167,7 +167,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
               fallback={10}
               value={sponsorExpYears}
               onValueChange={(v) => { setSponsorSubmitMsg?.(''); setSponsorExpYears(v); }}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 tabular-nums focus:outline-none focus:border-emerald-600"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:border-emerald-600"
             />
           </div>
         </div>
@@ -189,8 +189,8 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 onClick={() => setSponsorPlanMonths && setSponsorPlanMonths(1)}
                 className={`p-2.5 rounded-xl border text-right transition cursor-pointer ${
                   sponsorPlanMonths === 1
-                    ? 'bg-white dark:bg-slate-800 border-emerald-600 dark:border-emerald-500 text-slate-900 dark:text-slate-100 shadow-xs'
-                    : 'bg-white/60 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
+                    ? 'bg-white dark:bg-[var(--color-bg-muted)] border-emerald-600 dark:border-emerald-500 text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs'
+                    : 'bg-white/60 dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-muted)] hover:bg-white dark:hover:bg-[var(--color-bg-elevated)]'
                 }`}
               >
                 <div className="font-bold">طرح ۱ ماهه (۳۰ روز اعتبار)</div>
@@ -203,8 +203,8 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 onClick={() => setSponsorPlanMonths && setSponsorPlanMonths(3)}
                 className={`p-2.5 rounded-xl border text-right transition cursor-pointer ${
                   sponsorPlanMonths === 3
-                    ? 'bg-white dark:bg-slate-800 border-emerald-600 dark:border-emerald-500 text-slate-900 dark:text-slate-100 shadow-xs'
-                    : 'bg-white/60 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
+                    ? 'bg-white dark:bg-[var(--color-bg-muted)] border-emerald-600 dark:border-emerald-500 text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs'
+                    : 'bg-white/60 dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-muted)] hover:bg-white dark:hover:bg-[var(--color-bg-elevated)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -218,9 +218,9 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 </div>
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-white dark:bg-slate-900/80 border border-emerald-200/80 dark:border-emerald-800/70 rounded-xl p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-white dark:bg-[var(--color-bg-surface)] border border-emerald-200/80 dark:border-emerald-800/70 rounded-xl p-3">
               <div className="space-y-1">
-                <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">
                   مبلغ نهایی قابل پرداخت ({toPersianNum(billingSummary.validMonths * 30)} روز نمایش انحصاری):
                 </div>
                 <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
@@ -228,7 +228,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                 </div>
               </div>
               <div>
-                <label className="block text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                <label className="block text-slate-600 dark:text-[var(--color-text-muted)] mb-1 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>کد پیگیری واریز بانکی:</span>
                 </label>
@@ -242,7 +242,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                   }
                   placeholder="مثلاً: TR-8849201"
                   dir="ltr"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-slate-900 dark:text-slate-100 font-mono text-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-1.5 text-slate-900 dark:text-[var(--color-text-primary)] font-mono text-xs"
                 />
               </div>
             </div>
@@ -271,8 +271,8 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           ثبت و جایگزینی در کارت کارشناس رسمی محله
         </button>
       </form>
-      <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden max-h-44 overflow-y-auto">
-        <div className="grid grid-cols-3 bg-slate-50 dark:bg-slate-800/80 py-2 px-3 font-bold text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+      <div className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl overflow-hidden max-h-44 overflow-y-auto">
+        <div className="grid grid-cols-3 bg-slate-50 dark:bg-[var(--color-bg-muted)] py-2 px-3 font-bold text-slate-600 dark:text-[var(--color-text-muted)] border-b border-slate-200 dark:border-[var(--color-border-strong)]">
           <div>محله</div>
           <div>کارشناس فعلی</div>
           <div className="text-left">تعرفه ماهانه</div>
@@ -283,10 +283,10 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             <button
               key={n.id} type="button"
               onClick={() => setSponsorHoodId(n.id)}
-              className="w-full text-right grid grid-cols-3 items-center py-2 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+              className="w-full text-right grid grid-cols-3 items-center py-2 px-3 border-b border-slate-100 dark:border-[var(--color-border-subtle)] last:border-none hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
             >
-              <div className="font-bold text-slate-900 dark:text-slate-100">{n.name} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) · سناریو مذاکره: {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م</span></div>
-              <div className="text-slate-500 dark:text-slate-400 truncate">
+              <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{n.name} <span className="text-[10px] font-normal text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) · سناریو مذاکره: {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م</span></div>
+              <div className="text-slate-500 dark:text-[var(--color-text-muted)] truncate">
                 {active ? n.sponsor?.name : 'تابلوی کارشناس رسمی محله آزاد است'}
               </div>
               <div className="text-left font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">

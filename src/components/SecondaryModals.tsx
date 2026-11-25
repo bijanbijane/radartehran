@@ -66,8 +66,8 @@ export function SecondaryModals({
     <>
       {showPulseModal && (
         <div role="dialog" aria-modal="true" aria-label={`نبض زنده بازار مسکن و شاخص هوای ${activeCityNameFa}`} onClick={() => setShowPulseModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-2xl w-full p-5 space-y-3.5 text-xs max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3">
+          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-2xl w-full p-5 space-y-3.5 text-xs max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Wind className="w-4 h-4 stroke-[1.75]" />
@@ -78,26 +78,26 @@ export function SecondaryModals({
               </div>
               <div className="flex items-center gap-1.5">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" aria-label="بستن نبض بازار" onClick={() => setShowPulseModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+                <button type="button" aria-label="بستن نبض بازار" onClick={() => setShowPulseModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
                   <X className="w-4 h-4 stroke-[1.75]" />
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
-                <div className="text-slate-500 dark:text-slate-400">شاخص آلودگی هوای ایستگاه‌های {activeCityNameFa} (AQI):</div>
+              <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-1.5">
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)]">شاخص آلودگی هوای ایستگاه‌های {activeCityNameFa} (AQI):</div>
                 <div className="text-base font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
                   {toPersianNum(marketPulse?.airQuality?.tehranAverageAqi ?? 92)} ({marketPulse?.airQuality?.statusLabel || 'قابل قبول'})
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                   غلظت ذرات PM2.5: {toPersianNum(marketPulse?.airQuality?.tehranPm25 ?? marketPulse?.airQuality?.tehranAveragePm25 ?? 31)} میکروگرم
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
                   {marketPulse?.airQuality?.dataStatus === 'live' ? 'منبع: داده دریافت‌شده از Open-Meteo' : 'وضعیت: ترکیبی از داده جدید و ذخیره‌شده'}
                 </div>
               </div>
-              <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
-                <div className="text-slate-500 dark:text-slate-400">میانگین وزنی قیمت مسکن کل {activeCityNameFa}:</div>
+              <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-1.5">
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)]">میانگین وزنی قیمت مسکن کل {activeCityNameFa}:</div>
                 <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums">
                   {fmtUnitBuy(marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138)}
                 </div>
@@ -115,9 +115,9 @@ export function SecondaryModals({
                   if (h) { recordDiagnosticEvent('SecondaryModals', `selectCheapestHood:${h.id}`, 'success'); onSelectNeighborhood(h); }
                   setShowPulseModal(false);
                 }}
-                className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 text-right transition cursor-pointer"
+                className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3 text-right transition cursor-pointer"
               >
-                <div className="text-slate-500 dark:text-slate-400 text-[11px]">ارزان‌ترین محله امروز:</div>
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">ارزان‌ترین محله امروز:</div>
                 <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 tabular-nums">
                   {marketPulse?.marketSummary?.cheapestNeighborhood?.name || 'شهرری'} ({fmtUnitBuy(marketPulse?.marketSummary?.cheapestNeighborhood?.buyPerSqm || 62)})
                 </div>
@@ -130,9 +130,9 @@ export function SecondaryModals({
                   if (h) { recordDiagnosticEvent('SecondaryModals', `selectMostExpensiveHood:${h.id}`, 'success'); onSelectNeighborhood(h); }
                   setShowPulseModal(false);
                 }}
-                className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 text-right transition cursor-pointer"
+                className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3 text-right transition cursor-pointer"
               >
-                <div className="text-slate-500 dark:text-slate-400 text-[11px]">گران‌ترین محله امروز:</div>
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">گران‌ترین محله امروز:</div>
                 <div className="font-bold text-slate-900 dark:text-white mt-0.5 tabular-nums">
                   {marketPulse?.marketSummary?.mostExpensiveNeighborhood?.name || 'زعفرانیه'} ({fmtUnitBuy(marketPulse?.marketSummary?.mostExpensiveNeighborhood?.buyPerSqm || 310)})
                 </div>
@@ -159,7 +159,7 @@ export function SecondaryModals({
                 <span>ترسیم کمان شکاف قیمتی شهر (ارزان‌ترین ⇄ گران‌ترین محله) روی نقشه</span>
               </button>
             )}
-            <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+            <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-1.5 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>زمان‌بند خودکار هر ۲ ساعت (۸ صبح تا ۸ شب به وقت تهران)</span>
@@ -170,12 +170,12 @@ export function SecondaryModals({
               </div>
               {lastSyncNotice && <div className="text-emerald-700 dark:text-emerald-400 pt-1">{lastSyncNotice}</div>}
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)]">
               <button
                 type="button" onClick={() => onFetchMarketPulse(true)} disabled={syncingPulse}
-                className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                className="px-3 py-2 rounded-xl bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-800 dark:text-[var(--color-text-primary)] font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 stroke-[1.75] text-slate-600 dark:text-slate-300 ${syncingPulse ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 stroke-[1.75] text-slate-600 dark:text-[var(--color-text-secondary)] ${syncingPulse ? 'animate-spin' : ''}`} />
                 <span>همگام‌سازی زنده</span>
               </button>
               <button
@@ -191,8 +191,8 @@ export function SecondaryModals({
       )}
       {showSeoDrawer && (
         <div role="dialog" aria-modal="true" aria-label="فهرست سئو و صفحات اختصاصی محله‌ها" onClick={() => setShowSeoDrawer(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-4xl w-full p-5 max-h-[88vh] overflow-y-auto space-y-4 text-xs focus:outline-none shadow-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3">
+          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-4xl w-full p-5 max-h-[88vh] overflow-y-auto space-y-4 text-xs focus:outline-none shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Globe className="w-4 h-4 stroke-[1.75]" />
@@ -203,21 +203,21 @@ export function SecondaryModals({
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" onClick={() => { setShowSeoDrawer(false); setShowLegalModal(true); }} className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center gap-1 cursor-pointer transition">
+                <button type="button" onClick={() => { setShowSeoDrawer(false); setShowLegalModal(true); }} className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold flex items-center gap-1 cursor-pointer transition">
                   <ShieldAlert className="w-3.5 h-3.5 stroke-[1.75]" />
                   <span>قوانین حقوقی</span>
                 </button>
-                <button type="button" onClick={() => { setShowSeoDrawer(false); onTriggerPwaInstall(); }} className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center gap-1 cursor-pointer transition">
+                <button type="button" onClick={() => { setShowSeoDrawer(false); onTriggerPwaInstall(); }} className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold flex items-center gap-1 cursor-pointer transition">
                   <Smartphone className="w-3.5 h-3.5 stroke-[1.75]" />
                   <span>نصب وب‌اپ</span>
                 </button>
-                <button type="button" aria-label="بستن فهرست سئو" onClick={() => setShowSeoDrawer(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+                <button type="button" aria-label="بستن فهرست سئو" onClick={() => setShowSeoDrawer(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
                   <X className="w-4 h-4 stroke-[1.75]" />
                 </button>
               </div>
             </div>
-            <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5">
-              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-1.5">
+            <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] mb-2.5 flex items-center gap-1.5">
                 <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>{activeCityNameFa === 'تهران' ? 'مقایسه‌های پرطرفدار محله‌های تهران:' : `مقایسه سریع محله‌های ${activeCityNameFa}:`}</span>
               </h4>
@@ -233,7 +233,7 @@ export function SecondaryModals({
                 })()).map((pair, idx) => {
                   const cityQuery = activeCityNameFa === 'تهران' ? '' : `city=${activeCityNameFa === 'کرج' ? 'karaj' : activeCityNameFa === 'مشهد' ? 'mashhad' : activeCityNameFa === 'اصفهان' ? 'isfahan' : 'shiraz'}&`;
                   return (
-                    <a key={idx} href={`/?${cityQuery}compare=${pair.id1}-${pair.id2}${intlQuerySuffix}`} onClick={(e) => { e.preventDefault(); setShowSeoDrawer(false); onOpenSeoComparison(pair.id1, pair.id2); }} className="bg-white dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-emerald-300 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 font-semibold transition flex items-center justify-between">
+                    <a key={idx} href={`/?${cityQuery}compare=${pair.id1}-${pair.id2}${intlQuerySuffix}`} onClick={(e) => { e.preventDefault(); setShowSeoDrawer(false); onOpenSeoComparison(pair.id1, pair.id2); }} className="bg-white dark:bg-[var(--color-bg-muted)] hover:bg-emerald-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] hover:border-emerald-300 rounded-xl px-3 py-2 text-slate-800 dark:text-[var(--color-text-primary)] font-semibold transition flex items-center justify-between">
                       <span>{pair.title}</span>
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">مقایسه</span>
                     </a>
@@ -241,19 +241,19 @@ export function SecondaryModals({
                 })}
               </div>
             </div>
-            <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-2.5">
+            <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>صفحات اختصاصی قیمت مسکن محله‌های {activeCityNameFa}:</span>
                 </h4>
-                <div className="flex flex-wrap items-center gap-1 bg-slate-200/60 dark:bg-slate-800 p-0.5 rounded-lg">
+                <div className="flex flex-wrap items-center gap-1 bg-slate-200/60 dark:bg-[var(--color-bg-muted)] p-0.5 rounded-lg">
                   {[
                     { id: 'default' as const, label: 'ترتیب منطقه' }, { id: 'cheapest_buy' as const, label: 'ارزان‌ترین خرید' },
                     { id: 'cheapest_rent' as const, label: 'ارزان‌ترین رهن' }, { id: 'highest_score' as const, label: 'بالاترین کیفیت' },
                     { id: 'nearest_metro' as const, label: '🚇 نزدیک‌ترین به مترو' },
                   ].map((mode) => (
-                    <button key={mode.id} type="button" onClick={() => setSeoSortBy(mode.id)} className={`px-2 py-1 text-[10px] font-bold rounded-md cursor-pointer transition ${seoSortBy === mode.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}>
+                    <button key={mode.id} type="button" onClick={() => setSeoSortBy(mode.id)} className={`px-2 py-1 text-[10px] font-bold rounded-md cursor-pointer transition ${seoSortBy === mode.id ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-[var(--color-text-muted)]'}`}>
                       {mode.label}
                     </button>
                   ))}
@@ -263,9 +263,9 @@ export function SecondaryModals({
                 {sortedSeoNeighborhoods.map((n) => {
                   const metroDist = seoSortBy === 'nearest_metro' ? computeSpatialProximityReport(n, resolveCityIdForNeighborhood(n.id)).nearestMetroDistKm : null;
                   return (
-                    <a key={n.id} href={`${activeCityNameFa === 'تهران' ? `/?hood=${n.id}` : `/?city=${activeCityNameFa === 'کرج' ? 'karaj' : activeCityNameFa === 'مشهد' ? 'mashhad' : activeCityNameFa === 'اصفهان' ? 'isfahan' : 'shiraz'}&hood=${n.id}`}${intlQuerySuffix}`} onClick={(e) => { e.preventDefault(); onSelectNeighborhood(n); setShowSeoDrawer(false); }} className={`border rounded-xl px-3 py-2 transition flex items-center justify-between gap-1 ${selectedHoodId === n.id ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-600 text-emerald-800 dark:text-emerald-300 font-bold' : 'bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+                    <a key={n.id} href={`${activeCityNameFa === 'تهران' ? `/?hood=${n.id}` : `/?city=${activeCityNameFa === 'کرج' ? 'karaj' : activeCityNameFa === 'مشهد' ? 'mashhad' : activeCityNameFa === 'اصفهان' ? 'isfahan' : 'shiraz'}&hood=${n.id}`}${intlQuerySuffix}`} onClick={(e) => { e.preventDefault(); onSelectNeighborhood(n); setShowSeoDrawer(false); }} className={`border rounded-xl px-3 py-2 transition flex items-center justify-between gap-1 ${selectedHoodId === n.id ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-600 text-emerald-800 dark:text-emerald-300 font-bold' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
                       <span className="truncate font-semibold">{n.name}</span>
-                      <span className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
+                      <span className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums shrink-0">
                         {metroDist !== null ? <span className="text-indigo-700 dark:text-indigo-400 font-bold">🚇 ~{toPersianNum(metroDist)}کم</span> : <span>{seoSortBy === 'cheapest_rent' ? fmtUnitRent(n.rahn80m) : fmtUnitBuy(n.baseBuyPerSqm ?? n.buyPerSqm)}</span>}
                         <span className="text-emerald-700 dark:text-emerald-400 font-bold">★ {toPersianNum(n.overallScore)}/۱۰</span>
                       </span>

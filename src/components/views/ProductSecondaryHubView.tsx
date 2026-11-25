@@ -77,6 +77,7 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
         selectedHood={p.selectedHood}
         unitPrice={unitPrice}
         fxSample={fxSample}
+        onNavigateView={p.onNavigateView}
         onOpenHedonic={p.onOpenHedonic}
         onOpenListingVerifier={p.onOpenListingVerifier}
         onOpenExpansionModal={p.onOpenExpansionModal}

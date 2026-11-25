@@ -332,12 +332,15 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | ${brandWithCity}`;
         const desc = datedHood?.description ?? `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
         const viewId = (primaryView || 'home') as RouteDestinationId;
+        const isAreaDetailPath =
+          viewId === 'discover' &&
+          ((currentPath.startsWith('/areas/') && currentPath !== '/areas/registry') || currentPath.startsWith('/neighborhoods/'));
         const routeMeta = resolveRoutePageMeta({
           viewId,
           subTab: activeSubTab,
           cityNameFa,
           brandFa: CANONICAL_BRAND_FA,
-          selectedHoodName: viewId === 'map' ? selectedHood.name : undefined,
+          selectedHoodName: (viewId === 'map' || isAreaDetailPath) ? selectedHood.name : undefined,
         });
 
         if (viewId === 'not_found') {
@@ -356,15 +359,15 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
             (viewId === 'properties' && currentPath.startsWith('/properties/') && !['/properties/buy', '/properties/rent', '/properties/commercial', '/properties/office'].includes(currentPath)) ||
             (viewId === 'knowledge' && currentPath.startsWith('/knowledge/articles/') && currentPath.length > '/knowledge/articles/'.length) ||
             (viewId === 'services' && currentPath.startsWith('/services/providers/') && currentPath.length > '/services/providers/'.length) ||
-            (viewId === 'discover' && ((currentPath.startsWith('/areas/') && currentPath !== '/areas/registry') || currentPath.startsWith('/neighborhoods/')));
+            isAreaDetailPath;
           const canonicalPath = preserveDynamicPath
             ? currentPath
             : buildCanonicalPathForDestination(viewId, activeSubTab);
+          const hasExplicitHoodQuery = !isRouteChange && new URLSearchParams(currentSearch).has('hood');
           const isNeighborhoodScoped =
-            (viewId === 'discover' && canonicalPath !== '/areas/registry' && activeSubTab !== 'registry') ||
-            viewId === 'intelligence' ||
-            viewId === 'properties' ||
-            (viewId === 'tools' && activeSubTab !== 'calculators' && activeSubTab !== 'compare_props');
+            !isAreaDetailPath &&
+            hasExplicitHoodQuery &&
+            (viewId === 'intelligence' || viewId === 'properties' || (viewId === 'tools' && activeSubTab !== 'calculators' && activeSubTab !== 'compare_props'));
           const nextUrl = buildSynchronizedNavigationUrl({
             canonicalPath,
             currentSearch,

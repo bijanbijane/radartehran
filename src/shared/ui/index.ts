@@ -21,7 +21,7 @@ export const SharedStatusNotice: React.FC<SharedStatusNoticeProps> = ({
         ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100'
         : tone === 'success'
           ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100'
-          : 'border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100';
+          : 'border-slate-200 bg-slate-50 text-slate-800 dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)] dark:text-[var(--color-text-primary)]';
   return React.createElement(
     'div',
     {

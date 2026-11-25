@@ -67,15 +67,15 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
   return (
     <div
       data-testid="smart-price-forecast-card"
-      className="apple-grouped-card dark:bg-slate-900 p-3.5 mb-3.5 space-y-2.5 text-xs border border-slate-200/80 dark:border-slate-800"
+      className="apple-grouped-card dark:bg-[var(--color-bg-surface)] p-3.5 mb-3.5 space-y-2.5 text-xs border border-slate-200/80 dark:border-[var(--color-border-subtle)]"
     >
-      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-2">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
             <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>پیش‌بینی هوشمند ۳ ماهه ({effectiveName})</span>
           </div>
-          <span data-testid="forecast-epistemic-badge" className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400">
+          <span data-testid="forecast-epistemic-badge" className="text-[9.5px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)]">
             برون‌یابی قاعده‌محور روند ۶ ماهه و P/R (سناریوی تحلیلی · غیرپیش‌بینی اقتصادسنجی)
           </span>
         </div>
@@ -106,7 +106,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         <svg
           viewBox="0 0 100 6"
           preserveAspectRatio="none"
-          className="h-2.5 w-full rounded-full overflow-hidden border border-slate-200/60 dark:border-slate-800 bg-rose-500"
+          className="h-2.5 w-full rounded-full overflow-hidden border border-slate-200/60 dark:border-[var(--color-border-subtle)] bg-rose-500"
           role="img"
           aria-label={`شاخص سوگیری افزایش ${toPersianNum(forecast.increaseBiasScore)} در برابر کاهش ${toPersianNum(forecast.decreaseBiasScore)}`}
         >
@@ -120,9 +120,9 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         </svg>
       </div>
       {/* 3-Month Target Price & Expected Return */}
-      <div className="grid grid-cols-2 gap-2 pt-0.5 text-center bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2 tabular-nums">
+      <div className="grid grid-cols-2 gap-2 pt-0.5 text-center bg-slate-50/90 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] p-2 tabular-nums">
         <div>
-          <div className="text-[10.5px] text-slate-500 dark:text-slate-400">تغییر تخمینی ۳ ماهه</div>
+          <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">تغییر تخمینی ۳ ماهه</div>
           <div
             className={`font-bold text-xs mt-0.5 flex items-center justify-center gap-0.5 ${
               isPositiveChange ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -132,10 +132,10 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
             <span>{isPositiveChange ? '+' : ''}{toPersianNum(forecast.expectedChange3mPercent)}٪</span>
           </div>
         </div>
-        <div className="border-r border-slate-200/70 dark:border-slate-800 pr-2">
-          <div className="text-[10.5px] text-slate-500 dark:text-slate-400">قیمت تخمینی ({areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})</div>
+        <div className="border-r border-slate-200/70 dark:border-[var(--color-border-subtle)] pr-2">
+          <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">قیمت تخمینی ({areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})</div>
           <div className="font-bold text-slate-900 dark:text-white text-xs mt-0.5">
-            {toPersianNum(projectedUnitPrice)} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">م (سناریوی v6.4: {toPersianNum(projectedDealUnitPrice)} م)</span>
+            {toPersianNum(projectedUnitPrice)} <span className="text-[10px] font-normal text-slate-500 dark:text-[var(--color-text-muted)]">م (سناریوی v6.4: {toPersianNum(projectedDealUnitPrice)} م)</span>
             {intlCurrency !== 'IRT' && (
               <span className="mr-1 text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">
                 ({formatMillionTomanAsIntlCurrency(projectedUnitPrice, intlCurrency, radarLocale)})
@@ -143,7 +143,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
             )}
           </div>
         </div>
-        <div className="col-span-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-400 px-1">
+        <div className="col-span-2 pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)] flex items-center justify-between text-[10px] text-slate-600 dark:text-[var(--color-text-muted)] px-1">
           <span>ارزش ۳ ماه آینده ({formatAreaShort(80, areaUnit)}): <strong className="text-slate-900 dark:text-white">{toPersianNum(((forecast.projectedBuyPerSqm * 80) / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(forecast.projectedBuyPerSqm * 80, intlCurrency, radarLocale)})` : ''}</strong></span>
           <span className={isPositiveChange ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
             {isPositiveChange ? '+' : ''}{toPersianNum(Math.round((forecast.projectedBuyPerSqm - effectiveBuySqm) * 80))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(Math.round((forecast.projectedBuyPerSqm - effectiveBuySqm) * 80)), intlCurrency, radarLocale)})` : ''}
@@ -151,11 +151,11 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         </div>
       </div>
       {financialAuditSummary && (
-        <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+        <div className="pt-1 border-t border-slate-100 dark:border-[var(--color-border-subtle)]">
           <button
             type="button"
             onClick={() => setShowAuditBreakdown((prev) => !prev)}
-            className="w-full flex items-center justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white py-1 cursor-pointer transition"
+            className="w-full flex items-center justify-between text-[10.5px] font-bold text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white py-1 cursor-pointer transition"
           >
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
@@ -164,17 +164,17 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
             {showAuditBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {showAuditBreakdown && (
-            <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[10px] bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[9px] p-2 tabular-nums text-center">
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[10px] bg-slate-50/90 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[9px] p-2 tabular-nums text-center">
               <div>
-                <div className="text-slate-500 dark:text-slate-400">کمیسیون + ۱۰٪ مالیات</div>
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)]">کمیسیون + ۱۰٪ مالیات</div>
                 <div className="font-bold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.buyerCommissionWithVat)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.buyerCommissionWithVat, intlCurrency, radarLocale)})` : ''}</div>
               </div>
-              <div className="border-x border-slate-200/70 dark:border-slate-800 px-1">
-                <div className="text-slate-500 dark:text-slate-400">سهم زمین (بدون استهلاک)</div>
+              <div className="border-x border-slate-200/70 dark:border-[var(--color-border-subtle)] px-1">
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)]">سهم زمین (بدون استهلاک)</div>
                 <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum((financialAuditSummary.landValueMillion / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.landValueMillion, intlCurrency, radarLocale)})` : ''}</div>
               </div>
               <div>
-                <div className="text-slate-500 dark:text-slate-400">تبدیل ۵۰٪ رهن (نرخ ۳٪)</div>
+                <div className="text-slate-500 dark:text-[var(--color-text-muted)]">تبدیل ۵۰٪ رهن (نرخ ۳٪)</div>
                 <div className="font-bold text-slate-900 dark:text-white mt-0.5">{toPersianNum(financialAuditSummary.sampleDeposit)}م + {toPersianNum(financialAuditSummary.sampleMonthlyRent)}م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleDeposit, intlCurrency, radarLocale)} + ${formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleMonthlyRent, intlCurrency, radarLocale)})` : ''}</div>
               </div>
             </div>
@@ -184,7 +184,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
       {!compact && (
         <div className="space-y-1 pt-0.5">
           {forecast.drivers.map((driver, idx) => (
-            <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] leading-relaxed">
               <span className="text-[var(--color-brand-600)] dark:text-emerald-400 mt-0.5 shrink-0">•</span>
               <span>{driver}</span>
             </div>
@@ -224,8 +224,8 @@ export function InspectorSponsorFooter({
   const [intlCurrency] = useIntlCurrency();
   const sponsorMonthlyRent80m = Math.round(selectedHood.rahn80m * 0.03);
   return (
-    <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-slate-800">
-      <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3 space-y-2">
+    <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)]">
+      <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3 space-y-2">
         {isSponsorActiveFn(selectedHood.sponsor, enableSponsorBilling) && selectedHood.sponsor ? (
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -241,7 +241,7 @@ export function InspectorSponsorFooter({
                 )}
               </div>
               <div className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 truncate">{selectedHood.sponsor.name}</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] truncate">
                 {selectedHood.sponsor.specialty} · {toPersianNum(selectedHood.sponsor.experienceYears)} سال سابقه
               </div>
             </div>
@@ -264,7 +264,7 @@ export function InspectorSponsorFooter({
               </a>
               <a
                 href={`tel:${selectedHood.sponsor.phone}`}
-                onClick={() => { if (onTrackSponsorCall && selectedHood.sponsor) { onTrackSponsorCall(selectedHood, selectedHood.sponsor); } }} className="px-3 py-2 rounded-[10px] bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                onClick={() => { if (onTrackSponsorCall && selectedHood.sponsor) { onTrackSponsorCall(selectedHood, selectedHood.sponsor); } }} className="px-3 py-2 rounded-[10px] bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <PhoneIcon className="w-3.5 h-3.5 stroke-[1.75]" />
                 <span className="tabular-nums">{toPersianNum(selectedHood.sponsor.phone)}</span>
@@ -277,7 +277,7 @@ export function InspectorSponsorFooter({
           </div>
         )} <button
           type="button"
-          onClick={onReserveSponsorClick} className="w-full py-1.5 rounded-[9px] bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300 font-medium transition cursor-pointer"
+          onClick={onReserveSponsorClick} className="w-full py-1.5 rounded-[9px] bg-slate-50 dark:bg-[var(--color-bg-muted)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] font-medium transition cursor-pointer"
         >
           رزرو تابلوی کارشناس رسمی محله {selectedHood.name} </button>
       </div>

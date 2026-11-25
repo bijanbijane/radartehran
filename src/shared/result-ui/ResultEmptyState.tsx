@@ -25,10 +25,10 @@ export const ResultEmptyState: React.FC<ResultEmptyStateProps> = ({
       dir="rtl"
       role={state === 'Error' || state === 'Restricted' ? 'alert' : 'status'}
       aria-live="polite"
-      className="rounded-2xl border border-slate-200 bg-white p-6 text-right text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+      className="rounded-2xl border border-slate-200 bg-white p-6 text-right text-slate-900 dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)] dark:text-[var(--color-text-primary)]"
     >
       <h3 className="text-sm font-bold">{DATA_STATE_LABELS_FA[state]}</h3>
-      <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+      <p className="mt-1 text-xs text-slate-600 dark:text-[var(--color-text-secondary)]">
         {messageFa ||
           (state === 'Partial'
             ? `تعداد واقعی نتایج دریافت‌شده: ${formatAsciiToPersianDigits(receivedCount)} مورد.`
@@ -39,7 +39,7 @@ export const ResultEmptyState: React.FC<ResultEmptyStateProps> = ({
           type="button"
           onClick={onRetry}
           aria-label="تلاش مجدد برای دریافت نتایج"
-          className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
+          className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white dark:bg-[var(--color-brand-600)] dark:text-white"
         >
           تلاش مجدد
         </button>

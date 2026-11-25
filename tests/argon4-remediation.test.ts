@@ -98,7 +98,7 @@ async function runArgon4Verification(): Promise<void> {
   });
 
   await verify('[RULE-05], [RULE-06], [RULE-10], [RULE-15] CSS Design Tokens, Z-index scale, Tabular Numerals & Leaflet Viscosity', () => {
-    const tokensCss = fs.readFileSync(path.join(rootDir, 'src/styles/tokens.css'), 'utf8');
+    const tokensCss = fs.readFileSync(path.join(rootDir, 'src/styles/layers/tokens.css'), 'utf8');
     assert.ok(tokensCss.includes('--z-map-canvas: 0;'));
     assert.ok(tokensCss.includes('--z-critical-error-banner: 80;'));
     assert.ok(tokensCss.includes('.radar-tabular-num'));

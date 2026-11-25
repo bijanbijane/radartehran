@@ -122,13 +122,13 @@ export const ValidationAndImplementLabTab: React.FC = () => {
             return (
               <div
                 key={iss.id}
-                className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-[12px]"
+                className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-[12px]"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`px-1.5 py-0.5 rounded-[4px] font-bold text-[11px] ${iss.status === 'open' ? 'bg-[#FDECEC] text-[#A61B1B]' : 'bg-[#EAF5EE] text-[#176B4C]'}`}>
                     {iss.severity} · اولویت {score}
                   </span>
-                  <span className="font-medium text-[var(--color-text-primary)] dark:text-slate-100 truncate">{iss.descriptionFa}</span>
+                  <span className="font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] truncate">{iss.descriptionFa}</span>
                 </div>
                 <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
                   {iss.pageId} · {iss.status === 'open' ? 'باز (مانع انتشار)' : 'تایید و بسته‌شده'}
@@ -151,10 +151,10 @@ export const ValidationAndImplementLabTab: React.FC = () => {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-[12px] mb-3 tabular-nums">
-            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">LCP: <strong>{cwvSample.lcpMs}ms</strong> (≤ 2500ms)</div>
-            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">INP: <strong>{cwvSample.inpMs}ms</strong> (≤ 200ms)</div>
-            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">CLS: <strong>{cwvSample.cls}</strong> (≤ 0.1)</div>
-            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">MAP-P06: <strong>{cwvSample.selectionLatencyMs}ms</strong> (≤ 300ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)]">LCP: <strong>{cwvSample.lcpMs}ms</strong> (≤ 2500ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)]">INP: <strong>{cwvSample.inpMs}ms</strong> (≤ 200ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)]">CLS: <strong>{cwvSample.cls}</strong> (≤ 0.1)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)]">MAP-P06: <strong>{cwvSample.selectionLatencyMs}ms</strong> (≤ 300ms)</div>
           </div>
           <div className="flex items-center gap-2">
             <RadarButton variant="outline" size="sm" onClick={() => setCwvSample({ lcpMs: 3100, inpMs: 240, cls: 0.08, selectionLatencyMs: 360 })}>
@@ -176,7 +176,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto text-[11.5px]">
             {PILOT_MAP_SCOPE_ITEMS.map((item) => (
-              <div key={item.key} className="p-1.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-1">
+              <div key={item.key} className="p-1.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex items-center justify-between gap-1">
                 <span className="truncate font-medium">{item.titleFa}</span>
                 {item.status === 'required' ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#176B4C] shrink-0" />
@@ -208,7 +208,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
           {flags.map((flag) => (
             <label
               key={flag.key}
-              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 cursor-pointer text-[12px]"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] flex items-center justify-between gap-2 cursor-pointer text-[12px]"
             >
               <div className="min-w-0">
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{flag.titleFa}</div>

@@ -154,8 +154,8 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
   const handlePrev = () => setActiveIndex((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
 
   return (
-    <div className="my-3 apple-grouped-card overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs rounded-2xl">
-      <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+    <div className="my-3 apple-grouped-card overflow-hidden border border-slate-200/90 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] shadow-xs rounded-2xl">
+      <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] bg-slate-50/80 dark:bg-[var(--color-bg-muted)]">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50">
             <Camera className="w-4 h-4 stroke-[1.75]" />
@@ -164,12 +164,12 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             <div className="text-xs font-bold text-slate-900 dark:text-white">
               {isEn ? 'Neighborhood Photos & Landmarks' : 'گالری تصاویر و نمادهای محله'}
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">
               {selectedHood.name} · {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م
             </div>
           </div>
         </div>
-        <span className="px-2 py-0.5 rounded-[7px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10.5px] font-bold tabular-nums">
+        <span className="px-2 py-0.5 rounded-[7px] bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] text-[10.5px] font-bold tabular-nums">
           {toPersianNum(galleryItems.length)} {isEn ? 'Photos' : 'تصویر'}
         </span>
       </div>
@@ -218,7 +218,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
                 <Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2] shrink-0" />
                 <span className="truncate">{isEn ? 'Focus on map' : 'تمرکز و مسیریابی روی نقشه'}</span>
               </span>
-              <span className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 text-[10px] font-bold text-emerald-900 dark:text-emerald-300 tabular-nums shrink-0">
+              <span className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-[var(--color-bg-muted)] border border-emerald-200 dark:border-emerald-700 text-[10px] font-bold text-emerald-900 dark:text-emerald-300 tabular-nums shrink-0">
                 ~{toPersianNum(distKm)} km ({toPersianNum(walkMin)} {isEn ? 'min walk' : 'دقیقه پیاده'})
               </span>
             </button>
@@ -230,7 +230,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
             <button
               key={item.id} type="button" onClick={() => setActiveIndex(idx)} aria-label={item.title} aria-pressed={activeIndex === idx}
               className={`relative rounded-[9px] overflow-hidden shrink-0 w-16 h-11 border-2 transition-all cursor-pointer ${
-                activeIndex === idx ? 'border-emerald-600 scale-105 shadow-xs' : 'border-slate-200 dark:border-slate-700 opacity-65 hover:opacity-100 hover:border-slate-400'
+                activeIndex === idx ? 'border-emerald-600 scale-105 shadow-xs' : 'border-slate-200 dark:border-[var(--color-border-strong)] opacity-65 hover:opacity-100 hover:border-slate-400'
               }`}
             >
               <img src={item.svgDataUri} alt={item.title} className="w-full h-full object-cover" />

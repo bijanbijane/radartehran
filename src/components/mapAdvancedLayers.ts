@@ -3,6 +3,7 @@ import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum, WorkHub } from '..
 import { CityId } from '../data/multiCityData';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale, type AreaUnit, type IntlCurrencyCode, type RadarLocale } from '../utils/areaUnit'; void formatMillionTomanAsIntlCurrency;
 import { escapeHtmlAttr } from '../utils/security';
+import { formatPersianDeltaPercent, normalizeMapPinPriceText } from '../utils/persianBidiFormat';
 import { detectClientLowBandwidthOrMobileMode, filterPointsInGeoBoundingBox, isGeometryIntersectingGeoBoundingBox, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine';
 import {
   buildComparisonArcGroup, buildRadialDistanceRingSpecs, reconcileCommuteIsochronesLayer,
@@ -61,9 +62,14 @@ export function isCoordInsideStoredViewport(lat: number, lng: number, bounds: Ma
 export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighborhood; zoom: number; isSelected: boolean; hasSponsor: boolean; isDarkMap: boolean; pillBg: string; priceLabel: string; }): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
   const { hood, zoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel } = params; const areaUnit = getStoredAreaUnit();
   const conciseHoodName = isSelected || zoom >= 13 ? hood.name : hood.name.replace(/\s*\([^)]*\)/g, '').trim();
-  const normalizedPrice = priceLabel.replace('متر مربع (m²)', isSelected ? 'متری' : '').replace('فوت مربع (ft²)', 'ft²').trim();
+  const normalizedPrice = priceLabel
+    .replace('متر مربع (m²)', isSelected ? 'متری' : '')
+    .replace('متر مربع', isSelected ? 'متری' : '')
+    .replace('فوت مربع (ft²)', 'فوت')
+    .replace('فوت مربع', 'فوت')
+    .trim();
   const concisePriceLabel = isSelected || zoom >= 13 ? normalizedPrice : normalizedPrice.replace(/\s*\|\s*معامله:.*$/, '').replace(/\s*رهن$/, '').trim();
-  const safeHoodName = escapeHtmlAttr(conciseHoodName); const safePriceLabel = escapeHtmlAttr(concisePriceLabel); const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || ''); const sponsorStar = hasSponsor && (isSelected || zoom >= 13)
+  const safeHoodName = escapeHtmlAttr(conciseHoodName); const safePriceLabel = escapeHtmlAttr(normalizeMapPinPriceText(concisePriceLabel)); const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || ''); const sponsorStar = hasSponsor && (isSelected || zoom >= 13)
     ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fbbf24;margin-left:3px;font-size:11px;">★</span>`
     : ''; const borderRule = isSelected
     ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
@@ -71,29 +77,29 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
     : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)'; const shadowRule = isSelected
     ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)'
     : '0 2px 6px rgba(0,0,0,0.28)'; if (zoom <= 11 && !isSelected) {
-    const compactText = escapeHtmlAttr(`${toPersianNum(convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit))}م`);
+    const compactText = escapeHtmlAttr(`${toPersianNum(convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit))} م`);
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:2.5px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"><span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:2.5px;">${safePriceLabel || compactText}</span>
+      html: `<div dir="rtl" style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;direction:rtl;">
+        <span data-hood-pill="${hood.id}" dir="rtl" style="direction:rtl;unicode-bidi:isolate;white-space:nowrap;display:inline-flex;align-items:center;gap:2.5px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"><span>${safeHoodName}</span><span dir="rtl" style="unicode-bidi:isolate;opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:2.5px;">${safePriceLabel || compactText}</span>
         </span>
       </div>`,
       iconSize: [54, 22], iconAnchor: [27, 11], }; }
   if (zoom >= 14) { const growth6m = hood.marketReport?.hoodGrowth6mPercent ?? 12;
-    const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
+    const safeGrowth = escapeHtmlAttr(formatPersianDeltaPercent(growth6m));
     const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3.5px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span>
-          <span style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safePriceLabel}</span> <span style="font-size:9.5px;background:rgba(0,0,0,0.22);padding:1px 5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span>
+      html: `<div dir="rtl" style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;direction:rtl;">
+        <span data-hood-pill="${hood.id}" dir="rtl" style="direction:rtl;unicode-bidi:isolate;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3.5px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span>
+          <span dir="rtl" style="unicode-bidi:isolate;opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safePriceLabel}</span> <span style="font-size:9.5px;background:rgba(0,0,0,0.22);padding:1px 5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span>
         </span>
       </div>`,
       iconSize: [165, 28], iconAnchor: [82, 14], }; }
   const isCompactZoom12 = zoom <= 12 && !isSelected;
   return {
-    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-      <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:${isCompactZoom12 ? '3px' : '4px'};padding:${isCompactZoom12 ? '2px 7px' : '3px 9px'};border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:${isCompactZoom12 ? '10px' : '11px'};font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
+    html: `<div dir="rtl" style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;direction:rtl;">
+      <span data-hood-pill="${hood.id}" dir="rtl" style="direction:rtl;unicode-bidi:isolate;white-space:nowrap;display:inline-flex;align-items:center;gap:${isCompactZoom12 ? '3px' : '4px'};padding:${isCompactZoom12 ? '2px 7px' : '3px 9px'};border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:${isCompactZoom12 ? '10px' : '11px'};font-weight:700;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
         ${sponsorStar}<span>${safeHoodName}</span>
-        <span style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:${isCompactZoom12 ? '3px' : '4px'};">${safePriceLabel}</span>
+        <span dir="rtl" style="unicode-bidi:isolate;opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:${isCompactZoom12 ? '3px' : '4px'};">${safePriceLabel}</span>
       </span>
     </div>`,
     iconSize: [110, 26], iconAnchor: [55, 13],

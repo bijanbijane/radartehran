@@ -32,7 +32,7 @@ import {
 import { KnowledgeArticleReader } from '../components/KnowledgeArticleReader';
 import { KnowledgeGlossaryView } from '../components/KnowledgeGlossaryView';
 import { KnowledgeMethodologyView } from '../components/KnowledgeMethodologyView';
-import { OnboardingAndResponsiveHelpCenter } from '../../onboarding/components/OnboardingAndResponsiveHelpCenter';
+import { ConsumerHousingGuideView } from '../components/ConsumerHousingGuideView';
 
 export interface KnowledgeCenterPageProps {
   activeSubTab?: KnowledgeSubTabId;
@@ -245,7 +245,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
       </div>
 
       {/* Mandatory Epistemic Principle Banner */}
-      <div className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-xs text-[var(--color-brand-fg)] flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3.5 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] text-sm text-[var(--color-brand-fg)] flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
@@ -267,13 +267,13 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
       </div>
 
       {bookmarkFeedbackFa && (
-        <div className="p-3 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold flex flex-wrap items-center justify-between gap-2">
+        <div className="p-3 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-sm font-bold flex flex-wrap items-center justify-between gap-2">
           <span>{bookmarkFeedbackFa}</span>
           {!currentUser && (
             <RadarLink
               href="/account"
               onNavigate={() => onNavigateView('userspace', 'overview')}
-              className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[8px] bg-[var(--color-brand-600)] text-white text-xs font-bold"
+              className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[8px] bg-[var(--color-brand-600)] text-white text-sm font-bold"
             >
               ورود به حساب کاربری
             </RadarLink>
@@ -299,7 +299,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
       ) : currentTab === 'guide' || currentTab === 'methodology' ? (
         <div className="space-y-5">
           {currentTab === 'guide' ? (
-            <OnboardingAndResponsiveHelpCenter evaluatedNeighborhoods={evaluatedNeighborhoods} onNavigateView={onNavigateView} />
+            <ConsumerHousingGuideView evaluatedNeighborhoods={evaluatedNeighborhoods} onNavigateView={onNavigateView} />
           ) : (
             <KnowledgeMethodologyView
               selectedHood={selectedHood}
@@ -314,16 +314,16 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           {relatedPublications.length > 0 && (
             <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)]" aria-label="مطالب مرتبط پایگاه دانش">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-[var(--color-text-primary)]">مطالب مرتبط در پایگاه دانش</h2>
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">مطالب مرتبط در پایگاه دانش</h2>
                 <RadarLink
                   href="/knowledge"
                   onNavigate={() => onNavigateView('knowledge', 'reports')}
-                  className="min-h-[44px] md:min-h-[36px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
+                  className="min-h-[44px] md:min-h-[36px] text-sm font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
                 >
                   مشاهده همه گزارش‌ها ←
                 </RadarLink>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 {relatedPublications.map((pub) => {
                   const articleHref = `/knowledge/articles/${encodeURIComponent(pub.slug || pub.id)}`;
                   return (
@@ -334,12 +334,12 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                       <div className="space-y-1.5">
                         <span className="text-xs font-bold text-[var(--color-brand-fg)]">{pub.categoryLabelFa}</span>
                         <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-snug line-clamp-2">{pub.titleFa}</h3>
-                        <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{pub.summaryFa}</p>
+                        <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{pub.summaryFa}</p>
                       </div>
                       <RadarLink
                         href={articleHref}
                         onNavigate={() => handleOpenPublication(pub)}
-                        className="min-h-[44px] md:min-h-[36px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
+                        className="min-h-[44px] md:min-h-[36px] text-sm font-bold text-[var(--color-brand-fg)] hover:underline inline-flex items-center"
                       >
                         مطالعه مقاله ←
                       </RadarLink>
@@ -352,7 +352,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" data-testid="knowledge-data-briefs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm" data-testid="knowledge-data-briefs">
             {dataBriefs.map((b) => (
               <div key={b.briefId} className="p-3.5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex items-center justify-between gap-3">
                 <div className="space-y-0.5 min-w-0">
@@ -370,7 +370,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                       const p = serverPubs.find((x) => x.id === b.linkedReportId) || KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId);
                       if (p && (p.status === 'published' || p.status === 'archived')) handleOpenPublication(p);
                     }}
-                    className="min-h-[44px] md:min-h-[36px] text-xs font-bold underline text-[var(--color-text-primary)] cursor-pointer"
+                    className="min-h-[44px] md:min-h-[36px] text-sm font-bold underline text-[var(--color-text-primary)] cursor-pointer"
                   >
                     گزارش کامل ←
                   </button>
@@ -380,7 +380,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           </div>
 
           {/* Filter & Search Bar */}
-          <div className="p-3.5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="p-3.5 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
             <div className="relative lg:col-span-2">
               <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -417,14 +417,14 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           </div>
 
           {catalogErrorFa && (
-            <div className="p-3 rounded-[10px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-bold flex items-center justify-between">
+            <div className="p-3 rounded-[10px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-sm font-bold flex items-center justify-between">
               <span>{catalogErrorFa}</span>
               <RefreshCw className="w-4 h-4" />
             </div>
           )}
 
           {visiblePublications.length === 0 ? (
-            <div className="p-6 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-xs">
+            <div className="p-6 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-sm">
               <p className="font-bold text-[var(--color-text-primary)]">
                 {catalogState === 'loading' ? 'در حال دریافت گزارش‌ها از سرور مرکز دانش...' : 'مطلبی با فیلترهای انتخاب‌شده یافت نشد.'}
               </p>
@@ -437,7 +437,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" data-testid="knowledge-publications-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" data-testid="knowledge-publications-grid">
               {visiblePublications.map((pub) => {
                 const fr = KNOWLEDGE_FRESHNESS_LABELS_FA[pub.freshnessStatus];
                 const articleHref = `/knowledge/articles/${encodeURIComponent(pub.slug || pub.id)}`;
@@ -466,7 +466,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                         href={articleHref}
                         data-testid={`knowledge-open-${pub.id}`}
                         onNavigate={() => handleOpenPublication(pub)}
-                        className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold"
+                        className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-bold"
                       >
                         مطالعه کامل و شاخص‌ها
                       </RadarLink>

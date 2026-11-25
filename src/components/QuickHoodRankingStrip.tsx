@@ -91,17 +91,17 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
     return priceTag;
   };
   return (
-    <div className="mb-3.5 pb-3 border-b border-slate-200/70 dark:border-slate-800 space-y-2">
+    <div className="mb-3.5 pb-3 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] space-y-2">
       {cityMarketStats.medianPricePerSqm !== null && (
-        <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-[9px] bg-slate-100/80 dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 tabular-nums">
-          <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5 font-bold text-slate-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-[9px] bg-slate-100/80 dark:bg-[var(--color-bg-surface)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] text-[10px] text-slate-600 dark:text-[var(--color-text-muted)] tabular-nums">
+          <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5 font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
             <BarChart3 className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>میانه {mode === 'rent' ? 'رهن ' : 'خرید '}{filterRankingByViewport ? 'کادر نقشه' : 'شهر'} ({areaUnit === 'sqft' ? 'ft²' : 'متر'}):</span>
             <strong className="text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(cityMarketStats.medianPricePerSqm, areaUnit).toFixed(1)))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(cityMarketStats.medianPricePerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong>
             <span className="text-slate-400">·</span>
             <span>IQR: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(Number(convertPricePerSqmToUnit(cityMarketStats.iqrPricePerSqm ?? 0, areaUnit).toFixed(1)))}م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(cityMarketStats.iqrPricePerSqm ?? 0, areaUnit), intlCurrency, radarLocale)})` : ''}</strong></span>
             <span className="text-slate-400">·</span>
-            <span className="dark:text-slate-200">{mode === 'rent' ? 'رهن ' : ''}واحد {formatAreaShort(80, areaUnit)}: <strong className="text-slate-800">{toPersianNum(((cityMarketStats.medianPricePerSqm * 80) / 1000).toFixed(1))} میلیارد</strong></span>
+            <span className="dark:text-[var(--color-text-primary)]">{mode === 'rent' ? 'رهن ' : ''}واحد {formatAreaShort(80, areaUnit)}: <strong className="text-slate-800">{toPersianNum(((cityMarketStats.medianPricePerSqm * 80) / 1000).toFixed(1))} میلیارد</strong></span>
           </span>
           <button
             type="button"
@@ -109,8 +109,8 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             onClick={() => updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport })}
             className={`px-2 py-0.5 rounded-[6px] text-[9.5px] font-bold border transition cursor-pointer shrink-0 ${
               filterRankingByViewport
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                ? 'bg-[var(--color-brand-600)] text-white border-transparent'
+                : 'bg-white dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50'
             }`}
             title="محاسبه میانه قیمت و رتبه‌بندی فقط برای محلات داخل کادر فعلی نقشه"
           >
@@ -127,7 +127,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             const found = evaluatedNeighborhoods.find((h) => h.id === targetId);
             if (found) onSelectNeighborhood(found);
           }}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-[9px] px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-600 cursor-pointer"
+          className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-[9px] px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600 cursor-pointer"
         >
           {evaluatedNeighborhoods.map((h, i) => {
             const uBuy = Number(convertPricePerSqmToUnit(h.buyPerSqm, areaUnit).toFixed(1));
@@ -154,7 +154,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             }
             onSelectNeighborhood(found as EvaluatedNeighborhood);
           }}
-          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-[9px] px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-600 cursor-pointer"
+          className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-[9px] px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600 cursor-pointer"
         >
           {(Object.keys(MULTI_CITY_CONFIGS) as CityId[]).map((cId) => {
             const cfg = MULTI_CITY_CONFIGS[cId];
@@ -174,7 +174,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
           })}
         </select>
       </div>
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar apple-segmented dark:bg-slate-800 p-1 rounded-[10px]">
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar apple-segmented dark:bg-[var(--color-bg-muted)] p-1 rounded-[10px]">
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const active = criterion === tab.id;
@@ -185,8 +185,8 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
               onClick={() => setCriterion(tab.id)}
               className={`px-2.5 py-1 rounded-[8px] text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0 transition cursor-pointer ${
                 active
-                  ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold'
+                  : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Icon className="w-3 h-3 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
@@ -212,7 +212,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
               className={`rounded-[10px] border text-[11px] font-bold flex items-center whitespace-nowrap shrink-0 transition ${
                 isSelected
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-900 dark:text-emerald-200 shadow-2xs ring-1 ring-emerald-500/30'
-                  : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200/80 dark:border-[var(--color-border-subtle)] text-slate-800 dark:text-[var(--color-text-primary)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'
               }`}
             >
               <button
@@ -245,8 +245,8 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
                   title={`ترسیم کمان مقایسه زنده بین ${currentSelectedHood.name} و ${hood.name} روی نقشه`}
                   className={`px-1.5 py-1.5 border-r text-[10px] transition cursor-pointer rounded-l-[10px] ${
                     isArcTarget
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                      : 'border-slate-200/70 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-[var(--color-brand-600)] text-white border-transparent'
+                      : 'border-slate-200/70 dark:border-[var(--color-border-subtle)] text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)]'
                   }`}
                 >
                   <Scale className="w-3 h-3" />

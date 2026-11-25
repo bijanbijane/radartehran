@@ -116,7 +116,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
               </h2>
               {isVerifiedAdmin && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                   نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م
                   {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitEditBuy, intlCurrency, locale)})` : ''} · {formatAreaShort(80, areaUnit)}: {toPersianNum((adminEditBuySqm || 120) * 80)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((adminEditBuySqm || 120) * 80, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(Math.round((adminEditRahn80m || 1500) * 0.03))} م
                 </p>
@@ -139,7 +139,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 type="button"
                 aria-label="بستن پنل مدیریت"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4 stroke-[2]" />
               </button>
@@ -197,7 +197,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                     value={adminPassInput}
                     onChange={(e) => { setAdminPassError?.(''); setAdminPassInput(e.target.value); }}
                     placeholder="رمز قفل جلسه (اختیاری در صورت تنظیم)..."
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
+                    className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[10px] px-3 py-2 text-slate-900 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600"
                   />
                 </div>
               )}
@@ -235,8 +235,8 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                   }}
                   className={`py-2 px-2.5 rounded-[9px] transition cursor-pointer ${
                     adminTab === t.id
-                      ? `apple-segmented-pill-active ${t.isEm ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                      ? `apple-segmented-pill-active ${t.isEm ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-[var(--color-text-primary)]'}`
+                      : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
                   }`}
                 >
                   {t.label}

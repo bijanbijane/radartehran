@@ -102,9 +102,9 @@ export const SystemHealthDashboardCard: React.FC = () => {
       dir="rtl"
       data-testid="system-health-dashboard"
       aria-label="داشبورد سلامت سیستم و وضعیت اتصال سرویس‌های ابری"
-      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4"
+      className="bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-slate-200/90 dark:border-[var(--color-border-subtle)] p-4 sm:p-5 shadow-xs space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-3.5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200/70 dark:border-teal-800 flex items-center justify-center text-teal-700 dark:text-teal-300">
             <Activity className="w-5 h-5" />
@@ -128,14 +128,14 @@ export const SystemHealthDashboardCard: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
               پایش زنده وضعیت اتصال و زمان پاسخ‌دهی (Latency) برای Firebase و دیتابیس‌های ابری
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer select-none bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg">
+          <label className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer select-none bg-slate-100 dark:bg-[var(--color-bg-muted)] px-2.5 py-1.5 rounded-lg">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -159,24 +159,24 @@ export const SystemHealthDashboardCard: React.FC = () => {
 
       {/* Summary KPI Strip */}
       {snapshot && (
-        <div className="grid grid-cols-3 gap-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 border border-slate-200/60 dark:border-slate-800 text-xs">
+        <div className="grid grid-cols-3 gap-2.5 bg-slate-50 dark:bg-[var(--color-bg-muted)] rounded-xl p-2.5 border border-slate-200/60 dark:border-[var(--color-border-subtle)] text-xs">
           <div className="flex items-center justify-between px-2">
-            <span className="text-slate-500 dark:text-slate-400 font-bold">امتیاز پایداری شبکه:</span>
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)] font-bold">امتیاز پایداری شبکه:</span>
             <span className="font-bold text-slate-900 dark:text-white" data-testid="system-health-score">
               {snapshot.overallScorePct.toLocaleString('fa-IR')}٪
             </span>
           </div>
-          <div className="flex items-center justify-between px-2 border-r border-slate-200 dark:border-slate-700">
-            <span className="text-slate-500 dark:text-slate-400 font-bold">میانگین زمان پاسخ:</span>
+          <div className="flex items-center justify-between px-2 border-r border-slate-200 dark:border-[var(--color-border-strong)]">
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)] font-bold">میانگین زمان پاسخ:</span>
             <span className="font-bold font-mono text-teal-700 dark:text-teal-300" data-testid="system-health-avg-latency">
               {snapshot.averageLatencyMs !== null ? `${snapshot.averageLatencyMs} ms` : '—'}
             </span>
           </div>
-          <div className="flex items-center justify-between px-2 border-r border-slate-200 dark:border-slate-700">
-            <span className="text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1">
+          <div className="flex items-center justify-between px-2 border-r border-slate-200 dark:border-[var(--color-border-strong)]">
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)] font-bold flex items-center gap-1">
               <Clock className="w-3 h-3" /> آخرین بررسی:
             </span>
-            <span className="font-bold text-slate-700 dark:text-slate-200">{snapshot.checkedAtFa}</span>
+            <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">{snapshot.checkedAtFa}</span>
           </div>
         </div>
       )}
@@ -187,17 +187,17 @@ export const SystemHealthDashboardCard: React.FC = () => {
           <div
             key={srv.id}
             data-testid={`health-service-card-${srv.id}`}
-            className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 p-3.5 flex flex-col justify-between gap-2.5"
+            className="rounded-xl border border-slate-200/80 dark:border-[var(--color-border-subtle)] bg-slate-50/60 dark:bg-[var(--color-bg-muted)] p-3.5 flex flex-col justify-between gap-2.5"
           >
             <div className="space-y-1.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-center shrink-0">
                     {getServiceIcon(srv.id)}
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{srv.titleFa}</h4>
-                    <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{srv.subtitleEn}</p>
+                    <p className="text-[10px] font-mono text-slate-400 dark:text-[var(--color-text-muted)]">{srv.subtitleEn}</p>
                   </div>
                 </div>
                 <span
@@ -215,29 +215,29 @@ export const SystemHealthDashboardCard: React.FC = () => {
                 </span>
               </div>
 
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{srv.detailFa}</p>
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">{srv.detailFa}</p>
             </div>
 
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+            <div className="pt-2 border-t border-slate-200/60 dark:border-[var(--color-border-strong)] space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 dark:text-slate-400 font-bold">زمان پاسخ (Latency):</span>
+                <span className="text-slate-500 dark:text-[var(--color-text-muted)] font-bold">زمان پاسخ (Latency):</span>
                 <div className="flex items-center gap-1.5">
                   <span
                     data-testid={`health-latency-${srv.id}`}
-                    className="font-mono font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700"
+                    className="font-mono font-bold text-slate-900 dark:text-white bg-white dark:bg-[var(--color-bg-muted)] px-1.5 py-0.5 rounded border border-slate-200 dark:border-[var(--color-border-strong)]"
                   >
                     {srv.latencyMs !== null ? `${srv.latencyMs} ms` : 'آفلاین'}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">({srv.latencyBadgeFa})</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-[var(--color-text-muted)]">({srv.latencyBadgeFa})</span>
                 </div>
               </div>
-              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-slate-200 dark:bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${getDotColor(srv.status)}`}
                   style={{ width: getLatencyBarWidth(srv.latencyMs) }}
                 />
               </div>
-              <div className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate" title={srv.endpointLabel}>
+              <div className="text-[10px] font-mono text-slate-400 dark:text-[var(--color-text-muted)] truncate" title={srv.endpointLabel}>
                 {srv.endpointLabel}
               </div>
             </div>

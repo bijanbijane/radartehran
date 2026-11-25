@@ -107,22 +107,22 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
 
   return (
     <div role="dialog" aria-modal="true" aria-label="ابرماژول‌ها و جعبه ابزار جامع مسکن" onClick={onClose} className="fixed inset-0 bg-black/30 backdrop-blur-[3px] flex items-center justify-center p-2 sm:p-4 z-50 animate-in fade-in duration-200">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet dark:bg-slate-900 dark:border-slate-700/80 max-w-5xl w-full p-4 sm:p-6 max-h-[94vh] flex flex-col overflow-hidden text-xs focus:outline-none">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 dark:border-slate-700/70 pb-3 mb-3 shrink-0">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-strong)] max-w-5xl w-full p-4 sm:p-6 max-h-[94vh] flex flex-col overflow-hidden text-xs focus:outline-none">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 dark:border-[var(--color-border-strong)] pb-3 mb-3 shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
                   جعبه ابزار جامع ۵۲گانه پراپ‌تک مسکن (رادارتهران | {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'})
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
                   نسخه جامع سازمانی
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
                 کارشناسی واحد {formatAreaValue(valSqm, areaUnit, true)}: {toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fairTotalMillion, intlCurrency, locale)})` : ''} · رهن: {toPersianNum(valuationResult.fullRahnMillion)} م (اجاره: {toPersianNum(Math.round(valuationResult.fullRahnMillion * 0.03))} م/ماه)
               </p>
             </div>
@@ -130,7 +130,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
 
           <div className="flex flex-wrap items-center gap-2">
             <AreaUnitToggle compact showIntlControls />
-            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">محله فعال:</label>
+            <label className="text-[11px] font-bold text-slate-500 dark:text-[var(--color-text-muted)] hidden sm:inline">محله فعال:</label>
             <select
               aria-label="انتخاب محله فعال در ابرماژول‌ها"
               value={activeHood.id}
@@ -142,21 +142,21 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
                   onSelectNeighborhood(found);
                 }
               }}
-              className="max-w-[185px] sm:max-w-[280px] truncate bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-2.5 py-1.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-600 cursor-pointer"
+              className="max-w-[185px] sm:max-w-[280px] truncate bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[10px] px-2.5 py-1.5 font-bold text-slate-800 dark:text-[var(--color-text-primary)] focus:outline-none focus:border-emerald-600 cursor-pointer"
             >
               {neighborhoods.map((n) => { const unitPrice = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit); const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, buildNeighborhoodListingSamples(n)).estimatedDealPricePerSqm, areaUnit); return (
                   <option key={n.id} value={n.id}>{n.name} ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(unitPrice)} م · سناریو مذاکره: {toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, locale)}` : ''})</option>
                 ); })}
             </select>
 
-            <button type="button" aria-label="بستن پنجره ابرماژول‌ها" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
+            <button type="button" aria-label="بستن پنجره ابرماژول‌ها" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
           </div>
         </div>
 
         <div
           role="tablist"
           aria-label="تب‌های ابرماژول‌های مسکن"
-          className="flex items-center gap-1 overflow-x-auto p-1 mb-3 apple-segmented dark:bg-slate-950/80 rounded-[11px] shrink-0 no-scrollbar"
+          className="flex items-center gap-1 overflow-x-auto p-1 mb-3 apple-segmented dark:bg-[var(--color-bg-canvas)] rounded-[11px] shrink-0 no-scrollbar"
         >
           {availableTabs.map((tab) => {
             const isSelected = activeTab === tab.id;
@@ -165,7 +165,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
               <button
                 key={tab.id} role="tab" aria-selected={isSelected} type="button" onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                  isSelected ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  isSelected ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-muted)] text-slate-900 dark:text-[var(--color-text-primary)] font-bold' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 <TabIcon className="w-3.5 h-3.5 stroke-[1.75]" />

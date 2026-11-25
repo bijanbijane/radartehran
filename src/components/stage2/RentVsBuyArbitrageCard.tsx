@@ -88,9 +88,9 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
     : '';
 
   return (
-    <div className="rounded-xl border border-indigo-200/90 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-4 text-slate-800 dark:text-slate-200" dir="rtl">
+    <div className="rounded-xl border border-indigo-200/90 dark:border-indigo-900/60 bg-white dark:bg-[var(--color-bg-surface)] p-4 shadow-xs space-y-4 text-slate-800 dark:text-[var(--color-text-primary)]" dir="rtl">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
             <Scale className="w-4 h-4" />
@@ -100,7 +100,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
               <span>مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد»</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{dossier.hoodName}</span>
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">نقد دوگانه باور سنتی «اجاره‌نشینی هدر دادن پول است» و «توهم پولی فیشر در اعداد اسمی»</p>
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">نقد دوگانه باور سنتی «اجاره‌نشینی هدر دادن پول است» و «توهم پولی فیشر در اعداد اسمی»</p>
           </div>
         </div>
 
@@ -113,12 +113,12 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${
               showRealPurchasingPower
                 ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)]'
             }`}
           >
             {showRealPurchasingPower ? '✓ قدرت خرید واقعی (به قیمت امروز)' : 'نمایش اسمی (تورمی)'}
           </button>
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--color-bg-muted)] p-1 rounded-lg">
             {[65, 85, 110, 135].map((sqm) => (
               <button
                 key={sqm}
@@ -132,7 +132,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--color-bg-muted)] p-1 rounded-lg">
             {[
               { years: 3, label: 'افق ۳ ساله' },
               { years: 5, label: 'افق ۵ ساله' },
@@ -143,7 +143,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
                 type="button"
                 onClick={() => setHorizonYears(h.years)}
                 className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                  horizonYears === h.years ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  horizonYears === h.years ? 'bg-white dark:bg-[var(--color-bg-surface)] text-indigo-700 dark:text-indigo-300 shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {h.label}
@@ -154,12 +154,12 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
       </div>
 
       {/* Alternative Yield Controller + Exact Break-Even Solver Button */}
-      <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+      <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-indigo-600 shrink-0" />
           <div>
-            <span className="font-bold text-slate-800 dark:text-slate-200 block">نرخ بازده سبد سرمایه‌گذاری جایگزین:</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها (تامین‌کننده مابه‌التفاوت تمدید سالانه ودیعه)</span>
+            <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] block">نرخ بازده سبد سرمایه‌گذاری جایگزین:</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها (تامین‌کننده مابه‌التفاوت تمدید سالانه ودیعه)</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -191,7 +191,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
         <div className={`p-3.5 rounded-xl border transition-all ${
           isBuyWinner
             ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 ring-1 ring-emerald-500/20'
-            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+            : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-subtle)]'
         }`}>
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -202,15 +202,15 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           </div>
 
           <div className="space-y-1.5 text-[11px]">
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>خواب اولیه سرمایه:</span>
-              <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(analysis.buyScenario.initialOutlayMillion)} م.ت</strong>
+              <strong className="text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">{toPersianNum(analysis.buyScenario.initialOutlayMillion)} م.ت</strong>
             </div>
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>هزینه استهلاک و اصطکاک معاملات:</span>
               <span className="text-rose-600 dark:text-rose-400 tabular-nums">-{toPersianNum(analysis.buyScenario.transactionCostsMillion + analysis.buyScenario.maintenanceCumulativeMillion)} م.ت</span>
             </div>
-            <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)] border-t border-slate-100 dark:border-[var(--color-border-subtle)] pt-1.5">
               <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
               <strong className="text-base font-bold text-indigo-700 dark:text-indigo-400 tabular-nums">{toPersianNum(displayedBuyWealth)} م.ت</strong>
             </div>
@@ -225,7 +225,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
         <div className={`p-3.5 rounded-xl border transition-all ${
           isRentWinner
             ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 ring-1 ring-amber-500/20'
-            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+            : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-subtle)]'
         }`}>
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -236,15 +236,15 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           </div>
 
           <div className="space-y-1.5 text-[11px]">
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>ودیعه رهن اولیه ({toPersianNum(Math.round((scaledRahnMillion / Math.max(1, totalUnitCostMillion)) * 100))}٪ ارزش) + مازاد نقد:</span>
-              <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(analysis.rentScenario.initialRahnOutlayMillion)} + {toPersianNum(analysis.rentScenario.initialInvestedSurplusMillion)} م.ت</strong>
+              <strong className="text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">{toPersianNum(analysis.rentScenario.initialRahnOutlayMillion)} + {toPersianNum(analysis.rentScenario.initialInvestedSurplusMillion)} م.ت</strong>
             </div>
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>تزریق تمدید سالانه ودیعه + اصطکاک جابه‌جایی:</span>
               <span className="text-amber-700 dark:text-amber-400 tabular-nums">-{toPersianNum(analysis.rentScenario.cumulativeRahnTopUpsMillion + analysis.rentScenario.movingAndRenewalFrictionMillion)} م.ت</span>
             </div>
-            <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
+            <div className="flex justify-between text-slate-500 dark:text-[var(--color-text-muted)] border-t border-slate-100 dark:border-[var(--color-border-subtle)] pt-1.5">
               <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
               <strong className="text-base font-bold text-amber-700 dark:text-amber-400 tabular-nums">{toPersianNum(displayedRentWealth)} م.ت</strong>
             </div>
@@ -267,7 +267,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             {showRealPurchasingPower ? 'شکاف ثروت حقیقی:' : 'شکاف ثروت اسمی:'} {toPersianNum(Math.abs(displayedDiff))} م.ت{wealthGapFx}
           </span>
         </div>
-        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
           {analysis.strategicExplanationFa} <strong>نرخ سربه‌سر اجاره‌داری:</strong> در صورتی که نسبت اجاره سالانه به قیمت ملک بالاتر از ٪{toPersianNum(analysis.indifferenceCapRatePct)} باشد، خرید ملک در این افق زمانی به صرفه‌تر خواهد بود.
         </p>
       </div>

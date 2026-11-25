@@ -299,7 +299,7 @@ export const KNOWLEDGE_FRESHNESS_LABELS_FA: Record<KnowledgeFreshnessStatus, { l
   },
   archived: {
     labelFa: 'آرشیوی (مرجع تاریخی)',
-    badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700',
+    badgeClass: 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-300 dark:border-[var(--color-border-strong)]',
   },
 };
 

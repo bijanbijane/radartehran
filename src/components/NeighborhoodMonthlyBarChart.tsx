@@ -86,28 +86,28 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
   const totalPriceDelta6m = Math.round((latestUnitPrice - firstUnitPrice) * 10) / 10;
 
   return (
-    <div className="apple-grouped-card dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 mb-3.5 space-y-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
+    <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] p-3.5 mb-3.5 space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
           <BarChart3 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div className="min-w-0">
-            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate block">
+            <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-xs truncate block">
               {isEn ? `Monthly Price Bar Chart (${hoodName})` : `نمودار میله‌ای تغییرات قیمت ماهانه (${hoodName})`}
             </span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+            <span className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] font-medium">
               {isEn ? `6-Month Trend ${formatUnitBuyPriceTitle(areaUnit)}` : `روند ۶ ماهه ${formatUnitBuyPriceTitle(areaUnit)}`}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-[8px] text-[10.5px] font-bold shrink-0 border border-slate-200/60 dark:border-slate-700">
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--color-bg-muted)] p-0.5 rounded-[8px] text-[10.5px] font-bold shrink-0 border border-slate-200/60 dark:border-[var(--color-border-strong)]">
           <button
             type="button"
             onClick={() => setViewMode('price')}
             className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${
               viewMode === 'price'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs font-bold'
+                : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
             }`}
           >
             {isEn ? `Price / ${unitLabel}` : `قیمت هر ${unitLabel}`}
@@ -117,8 +117,8 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
             onClick={() => setViewMode('change')}
             className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${
               viewMode === 'change'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-[var(--color-text-primary)] shadow-xs font-bold'
+                : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-[var(--color-text-primary)]'
             }`}
           >
             {isEn ? 'MoM Change' : 'تغییر ماه به ماه'}
@@ -126,7 +126,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-[6px] border ${
             totalGrowth6m >= 0
@@ -136,11 +136,11 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
             {totalGrowth6m >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
             <span>{isEn ? '6M Growth: ' : 'رشد ۶ ماهه: '}{totalGrowth6m > 0 ? `+${toPersianNum(totalGrowth6m)}` : toPersianNum(totalGrowth6m)}٪</span>
           </span>
-          <span className="text-slate-500 dark:text-slate-400 text-[10.5px] tabular-nums">
+          <span className="text-slate-500 dark:text-[var(--color-text-muted)] text-[10.5px] tabular-nums">
             {isEn ? `Avg (${unitLabel}): ` : `میانگین (${unitLabel}): `}{avgMonthlyIncreaseMillion >= 0 ? `+${toPersianNum(avgMonthlyIncreaseMillion)}` : toPersianNum(avgMonthlyIncreaseMillion)} م/ماه{avgMonthlyIncreaseMillion !== 0 && intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(avgMonthlyIncreaseMillion), intlCurrency, radarLocale)})` : ''}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500">
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-[var(--color-text-muted)]">
           <Calendar className="w-3 h-3" />
           <span>{isEn ? 'Trailing 6 Months' : 'بازه ۶ ماه اخیر'}</span>
         </div>
@@ -178,9 +178,9 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
                 return (
                   <div
                     dir={isEn ? 'ltr' : 'rtl'}
-                    className="apple-grouped-card bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700 rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[180px]"
+                    className="apple-grouped-card bg-white/95 dark:bg-[var(--color-bg-surface)] backdrop-blur-md border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-[12px] p-2.5 text-xs shadow-xl space-y-1.5 min-w-[180px]"
                   >
-                    <div className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1 flex items-center justify-between">
+                    <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-1 flex items-center justify-between">
                       <span>{isEn ? `Month: ${point.month}` : `ماه ${point.month}`}</span>
                       {point.isLatest && (
                         <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[9.5px] font-bold border border-emerald-200 dark:border-emerald-800">
@@ -195,22 +195,22 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
                         {intlCurrency !== 'IRT' && ` (${formatMillionTomanAsIntlCurrency(unitPriceVal, intlCurrency, radarLocale)})`}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 text-slate-700 dark:text-slate-300 text-[10.5px]">
+                    <div className="flex items-center justify-between gap-3 text-slate-700 dark:text-[var(--color-text-secondary)] text-[10.5px]">
                       <span>{isEn ? `80m² Unit Value:` : `ارزش واحد (${formatAreaShort(80, areaUnit)}):`}</span>
                       <span className="font-bold tabular-nums">
                         {toPersianNum((total80Buy / 1000).toFixed(2))} {isEn ? 'B Toman' : 'میلیارد'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(total80Buy, intlCurrency, radarLocale)})` : ''}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 text-slate-600 dark:text-slate-400 text-[11px]">
+                    <div className="flex items-center justify-between gap-3 text-slate-600 dark:text-[var(--color-text-muted)] text-[11px]">
                       <span>{isEn ? 'MoM Change:' : 'تغییر نسبت به ماه قبل:'}</span>
                       <span className={`font-bold tabular-nums ${unitChangeVal >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {unitChangeVal > 0 ? `+${toPersianNum(unitChangeVal)} م` : unitChangeVal < 0 ? `${toPersianNum(unitChangeVal)} م` : (isEn ? 'No change' : 'بدون تغییر')}{unitChangeVal !== 0 && intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(unitChangeVal), intlCurrency, radarLocale)})` : ''}
                         {point.changePercent !== 0 && ` (${toPersianNum(point.changePercent)}٪)`}
                       </span>
                     </div>
-                    <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400">
+                    <div className="pt-1 border-t border-slate-100 dark:border-[var(--color-border-subtle)] flex items-center justify-between text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">
                       <span>{isEn ? `City Avg (${cityNameFa}):` : `میانگین ${cityNameFa}:`}</span>
-                      <span className="tabular-nums font-semibold text-slate-700 dark:text-slate-300">
+                      <span className="tabular-nums font-semibold text-slate-700 dark:text-[var(--color-text-secondary)]">
                         {toPersianNum(unitCityVal)} {isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitCityVal, intlCurrency, radarLocale)})` : ''}
                       </span>
                     </div>
@@ -232,22 +232,22 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-3 gap-1.5 pt-1 text-center bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/80 rounded-[10px] p-2 text-[10.5px] tabular-nums">
+      <div className="grid grid-cols-3 gap-1.5 pt-1 text-center bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)] rounded-[10px] p-2 text-[10.5px] tabular-nums">
         <div>
-          <span className="text-slate-400 dark:text-slate-400 block text-[10px]">{isEn ? 'First Month' : 'نخستین ماه'} ({unitLabel})</span>
-          <strong className="text-slate-800 dark:text-slate-200 font-bold">
+          <span className="text-slate-400 dark:text-[var(--color-text-muted)] block text-[10px]">{isEn ? 'First Month' : 'نخستین ماه'} ({unitLabel})</span>
+          <strong className="text-slate-800 dark:text-[var(--color-text-primary)] font-bold">
             {toPersianNum(firstUnitPrice)} م{intlCurrency !== 'IRT' && <span className="block text-[9.5px] font-bold" dir="ltr">{formatMillionTomanAsIntlCurrency(firstUnitPrice, intlCurrency, radarLocale)}</span>}
           </strong>
         </div>
-        <div className="border-x border-slate-200/60 dark:border-slate-700">
-          <span className="text-slate-400 dark:text-slate-400 block text-[10px]">{isEn ? 'Latest / Deal v6.4' : 'آخرین / سناریو v6.4 (غیرثبتی)'} ({unitLabel})</span>
+        <div className="border-x border-slate-200/60 dark:border-[var(--color-border-strong)]">
+          <span className="text-slate-400 dark:text-[var(--color-text-muted)] block text-[10px]">{isEn ? 'Latest / Deal v6.4' : 'آخرین / سناریو v6.4 (غیرثبتی)'} ({unitLabel})</span>
           <strong className="text-emerald-700 dark:text-emerald-400 font-bold">
             {toPersianNum(latestUnitPrice)} م (سناریو v6.4 (غیرثبتی): {toPersianNum(latestDealUnitPrice)} م)
             {intlCurrency !== 'IRT' && <span className="block text-[9.5px] font-bold" dir="ltr">{formatMillionTomanAsIntlCurrency(latestDealUnitPrice, intlCurrency, radarLocale)}</span>}
           </strong>
         </div>
         <div>
-          <span className="text-slate-400 dark:text-slate-400 block text-[10px]">{isEn ? '6M Total Change' : 'تغییر کل ۶ ماهه'} ({unitLabel})</span>
+          <span className="text-slate-400 dark:text-[var(--color-text-muted)] block text-[10px]">{isEn ? '6M Total Change' : 'تغییر کل ۶ ماهه'} ({unitLabel})</span>
           <strong className={`font-bold ${totalPriceDelta6m >= 0 ? 'text-emerald-800 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-400'}`}>
             {totalPriceDelta6m > 0 ? `+${toPersianNum(totalPriceDelta6m)}` : toPersianNum(totalPriceDelta6m)} م
             {intlCurrency !== 'IRT' && <span className="block text-[9.5px] font-bold" dir="ltr">{formatMillionTomanAsIntlCurrency(Math.abs(totalPriceDelta6m), intlCurrency, radarLocale)}</span>}

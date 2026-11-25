@@ -28,7 +28,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
   return (
     <div className="space-y-4 text-xs" data-testid="account-comms-preferences">
       {/* Global Channels & Mandatory Security Guard */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white">کانال‌های دریافت اعلان</h3>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
@@ -44,8 +44,8 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
             { key: 'sms' as const, label: 'پیامک وضعیت و پیشنهاد' },
             { key: 'push' as const, label: 'اعلان مرورگر / موبایل' },
           ].map((item) => (
-            <label key={item.key} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 cursor-pointer">
-              <span className="font-bold text-slate-800 dark:text-slate-200">{item.label}</span>
+            <label key={item.key} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] cursor-pointer">
+              <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{item.label}</span>
               <input
                 type="checkbox"
                 checked={preferences.channels[item.key]}
@@ -64,7 +64,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       </div>
 
       {/* Quiet Hours (Asia/Tehran) + Digest Cadence */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <BellOff className="w-4 h-4 text-amber-600" />
@@ -101,7 +101,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
                 );
                 onChanged();
               }}
-              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold tabular-nums"
+              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold tabular-nums"
             >
               {[21, 22, 23, 0].map((h) => (
                 <option key={h} value={h}>ساعت {toPersianNum(h)}:۰۰</option>
@@ -120,7 +120,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
                 );
                 onChanged();
               }}
-              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold tabular-nums"
+              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold tabular-nums"
             >
               {[6, 7, 8, 9].map((h) => (
                 <option key={h} value={h}>ساعت {toPersianNum(h)}:۰۰</option>
@@ -139,7 +139,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
                 );
                 onChanged();
               }}
-              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold"
             >
               <option value="instant">فوری (غیرحساس)</option>
               <option value="daily_evening">خلاصه روزانه</option>
@@ -153,11 +153,11 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       </div>
 
       {/* Granular Category x Channel Matrix */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 overflow-x-auto">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3 overflow-x-auto">
         <h3 className="font-bold text-sm text-slate-900 dark:text-white">ماتریس تنظیمات هر دسته</h3>
         <table className="w-full text-start border-collapse min-w-[460px]">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+            <tr className="border-b border-slate-200 dark:border-[var(--color-border-subtle)] text-[11px] text-slate-500">
               <th className="py-2 text-start font-bold">دسته رویداد</th>
               <th className="py-2 text-center font-bold">داخل سامانه</th>
               <th className="py-2 text-center font-bold">ایمیل</th>
@@ -165,13 +165,13 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
               <th className="py-2 text-center font-bold">Push</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
             {preferences.categoryRules.map((rule) => {
               const meta = COMMS_CATEGORY_META.find((c) => c.code === rule.category);
               const locked = Boolean(rule.lockedMandatory);
               return (
                 <tr key={rule.category}>
-                  <td className="py-2.5 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <td className="py-2.5 font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
                     <span>{meta?.labelFa || rule.category}</span>
                     {locked && <Lock className="w-3 h-3 text-rose-600" aria-label="الزامی امنیتی" />}
                   </td>
@@ -198,7 +198,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       </div>
 
       {/* Registered Push Devices */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
           <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>دستگاه‌های ثبت‌شده اعلان (Push)</span>
@@ -209,7 +209,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
             value={newDeviceLabel}
             onChange={(e) => setNewDeviceLabel(e.target.value)}
             placeholder="نام دستگاه جدید (مثلاً مرورگر دفتر کار)..."
-            className="flex-1 min-w-[180px] p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+            className="flex-1 min-w-[180px] p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]"
           />
           <button
             type="button"
@@ -218,12 +218,12 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
               setNewDeviceLabel('');
               onChanged();
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
           >
             ثبت دستگاه فعلی
           </button>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
           {devices.map((d) => (
             <div key={d.deviceId} className="py-2.5 flex flex-wrap items-center justify-between gap-2">
               <div>

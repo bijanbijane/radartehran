@@ -31,15 +31,15 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
   return (
     <section
       aria-label="ارتباط هم‌زمان تحلیل بازار با نقشه"
-      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4"
+      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="space-y-0.5">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>همگام‌سازی فضایی با نقشه زنده ({geoScopeFa})</span>
           </h3>
-          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
             انتخاب محدوده یا تغییر لایه نقشه بلافاصله هر دو پنل را هم‌سو می‌کند.
           </p>
         </div>
@@ -48,14 +48,14 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
           <button
             type="button"
             onClick={() => onSyncMapLens?.('heatmap')}
-            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] cursor-pointer"
           >
             لنز هیت‌مپ قیمت
           </button>
           <button
             type="button"
             onClick={() => onSyncMapLens?.('bubble')}
-            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] cursor-pointer"
           >
             لنز حباب قیمتی
           </button>
@@ -71,11 +71,11 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
       </div>
 
       {/* Explicit Spatial Legend with Sparse / Insufficient Data separation */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--color-text-secondary)] dark:text-slate-300 bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)]">
         <span className="font-bold text-[var(--color-text-primary)] dark:text-white">راهنمای نقشه:</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[var(--color-brand-600)] inline-block" />متعادل / زیر ارزش</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#D97706] inline-block" />پرنوسان / نیاز به مذاکره</span>
-        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#CBD5E1] dark:bg-slate-600 inline-block" />بدون داده زنده کافی (به‌عنوان ارزان رنگی نمی‌شود)</span>
+        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#CBD5E1] dark:bg-[var(--color-border-strong)] inline-block" />بدون داده زنده کافی (به‌عنوان ارزان رنگی نمی‌شود)</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs tabular-nums">
@@ -105,12 +105,12 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
               className={`p-3 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
                 isCurrent
                   ? 'border-[var(--color-brand-600)] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 dark:border-emerald-500'
-                  : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-text-primary)] dark:hover:border-slate-600'
+                  : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] hover:border-[var(--color-text-primary)] dark:hover:border-slate-600'
               }`}
             >
               <div className="min-w-0">
                 <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{h.name}</div>
-                <div className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
+                <div className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                   {agg.observedSampleCount === 0 ? 'مرجع داخلی (۰ آگهی زنده)' : `${toPersianNum(agg.observedSampleCount)} آگهی زنده`}
                 </div>
               </div>

@@ -52,10 +52,10 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
     <section
       dir="rtl"
       aria-label="پنل فیلترهای جست‌وجو"
-      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-right dark:border-slate-800 dark:bg-slate-900"
+      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-right dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">فیلترهای دقیق</h3>
+        <h3 className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">فیلترهای دقیق</h3>
         <button
           type="button"
           onClick={() => {
@@ -68,7 +68,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
             onResetFilters();
           }}
           aria-label="بازنشانی فیلترهای این بخش"
-          className="min-h-[44px] px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer"
+          className="min-h-[44px] px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-[var(--color-text-muted)] dark:hover:text-[var(--color-text-primary)] cursor-pointer"
         >
           بازنشانی فیلترها ({filters.length})
         </button>
@@ -76,7 +76,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-[var(--color-text-secondary)]">
             نوع معامله
           </label>
           <select
@@ -94,7 +94,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                 cityScoped: cityId,
               });
             }}
-            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 text-xs dark:border-slate-700"
+            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 text-xs dark:border-[var(--color-border-strong)]"
           >
             <option value="">همه معاملات (خرید، رهن و اجاره)</option>
             <option value="buy">خرید و فروش قطعی</option>
@@ -104,7 +104,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-[var(--color-text-secondary)]">
             سقف بودجه خرید (میلیون تومان)
           </label>
           <input
@@ -130,12 +130,12 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                 });
               }
             }}
-            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 font-mono text-xs tabular-nums dark:border-slate-700"
+            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 font-mono text-xs tabular-nums dark:border-[var(--color-border-strong)]"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+          <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-[var(--color-text-secondary)]">
             حداقل متراژ ({areaUnit === 'sqm' ? 'مترمربع' : 'فوت‌مربع'})
           </label>
           <input
@@ -161,7 +161,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                 });
               }
             }}
-            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 font-mono text-xs tabular-nums dark:border-slate-700"
+            className="min-h-[44px] w-full rounded-xl border border-slate-300 bg-transparent px-3 font-mono text-xs tabular-nums dark:border-[var(--color-border-strong)]"
           />
         </div>
       </div>

@@ -113,13 +113,13 @@ export function SmartNaturalSearchMatchesSection({
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-800 dark:group-hover:text-emerald-300">{n.name}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
+                <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] group-hover:text-emerald-800 dark:group-hover:text-emerald-300">{n.name}</span>
+                <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                   ({n.zone}{typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? (n.distKm * 0.621371).toFixed(1) : n.distKm.toFixed(1))} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : ''})
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold tabular-nums border border-emerald-200 dark:border-emerald-800">
+                <span className="px-1.5 py-0.5 rounded bg-white/80 dark:bg-[var(--color-bg-muted)] text-emerald-800 dark:text-emerald-300 text-[10px] font-bold tabular-nums border border-emerald-200 dark:border-emerald-800">
                   امتیاز {toPersianNum(n.overallScore)}/۱۰
                 </span>
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">

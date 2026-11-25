@@ -17,7 +17,7 @@ const CREDIBILITY_STYLES: Record<DataCredibilityStatus, { cls: string; Icon: Rea
     Icon: AlertTriangle,
   },
   stale: {
-    cls: 'bg-[var(--color-bg-muted)] text-[var(--color-text-muted)] border-[var(--color-border-subtle)] dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+    cls: 'bg-[var(--color-bg-muted)] text-[var(--color-text-muted)] border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-secondary)] dark:border-[var(--color-border-strong)]',
     Icon: Clock,
   },
 };
@@ -43,16 +43,16 @@ export const DataProvenanceBar: React.FC<{
   credibility: DataCredibilityStatus;
   limitationNote?: string;
 }> = ({ sourceLabel, updatedAtLabel, methodLabel, credibility, limitationNote }) => (
-  <div className="rounded-[12px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-[var(--color-bg-canvas)] dark:bg-slate-900/70 p-3 space-y-1.5 text-[13px] text-[var(--color-text-secondary)] dark:text-slate-300">
+  <div className="rounded-[12px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-surface)] p-3 space-y-1.5 text-[13px] text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <DataCredibilityBadge status={credibility} />
-      <span className="text-[var(--color-text-muted)] dark:text-slate-400">به‌روزرسانی: {updatedAtLabel}</span>
+      <span className="text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">به‌روزرسانی: {updatedAtLabel}</span>
     </div>
     <div className="flex flex-wrap gap-x-4 gap-y-1">
       <span><strong>منبع:</strong> {sourceLabel}</span>
       <span><strong>روش تولید:</strong> {methodLabel}</span>
     </div>
-    {limitationNote && <p className="text-[var(--color-text-muted)] dark:text-slate-400 leading-[1.6]">{limitationNote}</p>}
+    {limitationNote && <p className="text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] leading-[1.6]">{limitationNote}</p>}
   </div>
 );
 
@@ -64,7 +64,7 @@ export const RadarCard: React.FC<{
 }> = ({ padding = 'standard', elevated = false, className = '', children }) => {
   const pad = padding === 'compact' ? 'p-3' : padding === 'large' ? 'p-5' : 'p-4';
   return (
-    <div className={`rounded-[12px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 ${elevated ? 'shadow-xs' : ''} ${pad} ${className}`}>
+    <div className={`rounded-[12px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] ${elevated ? 'shadow-xs' : ''} ${pad} ${className}`}>
       {children}
     </div>
   );
@@ -79,11 +79,11 @@ export const RadarMetricCard: React.FC<{
 }> = ({ title, valueText, unitText, periodAndSource, credibility = 'verified' }) => (
   <RadarCard padding="standard" elevated>
     <div className="flex items-center justify-between gap-2 mb-2">
-      <span className="text-[13px] font-medium text-[var(--color-text-muted)] dark:text-slate-400">{title}</span>
+      <span className="text-[13px] font-medium text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">{title}</span>
       <DataCredibilityBadge status={credibility} />
     </div>
     <div className="data-value text-[var(--color-text-primary)] dark:text-white tabular-nums">{valueText}</div>
-    <div className="text-[13px] font-medium text-[var(--color-text-secondary)] dark:text-slate-300 mt-1">{unitText}</div>
-    <div className="text-[13px] text-[var(--color-text-muted)] dark:text-slate-400 mt-2 pt-2 border-t border-[var(--color-border-subtle)]/80 dark:border-slate-800">{periodAndSource}</div>
+    <div className="text-[13px] font-medium text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] mt-1">{unitText}</div>
+    <div className="text-[13px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-2 pt-2 border-t border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)]">{periodAndSource}</div>
   </RadarCard>
 );

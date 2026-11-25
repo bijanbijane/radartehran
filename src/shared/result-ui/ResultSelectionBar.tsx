@@ -31,7 +31,7 @@ export const ResultSelectionBar: React.FC<ResultSelectionBarProps> = ({
       dir="rtl"
       role="region"
       aria-label="نوار عملیات گروهی موارد انتخاب‌شده"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-3 text-xs text-white dark:border-slate-200 dark:bg-slate-100 dark:text-slate-900"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-3 text-xs text-white dark:border-[var(--color-border-strong)] dark:bg-[var(--color-brand-600)] dark:text-white"
     >
       <div className="font-semibold">
         <span className="font-mono tabular-nums">{formatAsciiToPersianDigits(selectedCount)}</span> مورد انتخاب شده است
@@ -43,7 +43,7 @@ export const ResultSelectionBar: React.FC<ResultSelectionBarProps> = ({
             type="button"
             onClick={() => onExecuteBulkAction('add-to-compare')}
             aria-label="مقایسه موارد انتخاب‌شده"
-            className="min-h-[44px] rounded-xl bg-white/15 px-3 font-semibold hover:bg-white/25 dark:bg-slate-900/10 dark:hover:bg-slate-900/20"
+            className="min-h-[44px] rounded-xl bg-white/15 px-3 font-semibold hover:bg-white/25 dark:bg-[var(--color-bg-surface)] dark:hover:bg-[var(--color-bg-surface)]"
           >
             مقایسه موارد انتخاب‌شده
           </button>
@@ -54,7 +54,7 @@ export const ResultSelectionBar: React.FC<ResultSelectionBarProps> = ({
             type="button"
             onClick={() => onExecuteBulkAction('export-selected')}
             aria-label="خروجی موارد انتخاب‌شده"
-            className="min-h-[44px] rounded-xl bg-white/15 px-3 font-semibold hover:bg-white/25 dark:bg-slate-900/10 dark:hover:bg-slate-900/20"
+            className="min-h-[44px] rounded-xl bg-white/15 px-3 font-semibold hover:bg-white/25 dark:bg-[var(--color-bg-surface)] dark:hover:bg-[var(--color-bg-surface)]"
           >
             دریافت خروجی
           </button>

@@ -51,10 +51,10 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
   contextTransitionBannerFa,
   savedBannerFa,
 }) => (
-  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+        <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1">
           <Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>فیلترها ({filterStatus}):</span>
         </span>
@@ -66,7 +66,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
             setDraftFilters({ ...draftFilters, neighborhoodId: e.target.value || undefined });
             setFilterStatus('DRAFT');
           }}
-          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold"
+          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold"
         >
           <option value="">همه محله‌های {cityNameFa}</option>
           {cityPlaces.map((p) => (
@@ -80,7 +80,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           data-testid="search-filter-transaction"
           value={draftFilters.transactionType || ''}
           onChange={(e) => handleTransactionChange((e.target.value || undefined) as SearchFilterSet['transactionType'])}
-          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold"
+          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold"
         >
           <option value="">همه انواع معامله</option>
           <option value="BUY">خرید و فروش</option>
@@ -95,7 +95,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
             setDraftFilters({ ...draftFilters, bedrooms: e.target.value ? Number(e.target.value) : undefined });
             setFilterStatus('DRAFT');
           }}
-          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold"
+          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold"
         >
           <option value="">همه تعداد اتاق</option>
           <option value="1">۱ خوابه</option>
@@ -147,7 +147,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           data-testid="search-sort-select"
           value={sort}
           onChange={(e) => setSort(e.target.value as SearchSortOption)}
-          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold"
+          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold"
         >
           <option value="RELEVANCE">مرتبط‌ترین</option>
           <option value="NEWEST">جدیدترین</option>
@@ -159,7 +159,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           aria-label="تنظیم اعلان جست‌وجوی ذخیره‌شده"
           value={saveAlertFreq}
           onChange={(e) => setSaveAlertFreq(e.target.value as SavedSearchAlertFrequency)}
-          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300"
+          className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300"
         >
           <option value="OFF">ذخیره بدون اعلان</option>
           <option value="INSTANT">درخواست اعلان فوری</option>

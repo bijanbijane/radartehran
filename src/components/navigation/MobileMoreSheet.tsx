@@ -7,7 +7,7 @@ import {
 import type { CityId } from '../../data/multiCityData';
 import type { PrimaryViewId, RadarLocale } from '../../utils/areaUnit';
 import { buildCanonicalPathForDestination } from '../../navigation/url/navigationUrlContract';
-import { AreaUnitToggle, ExperienceModeToggle } from '../AreaUnitToggle';
+import { AreaUnitToggle } from '../AreaUnitToggle';
 import { RadarLink } from '../ui/RadarPrimitives';
 
 export interface MobileMoreSheetProps {
@@ -114,14 +114,14 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
                 }}
                 className={`min-h-[52px] flex items-center gap-2.5 rounded-[12px] px-3 py-2 text-start border transition cursor-pointer ${
                   isActive
-                    ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-200)] text-[var(--color-brand-fg)] dark:bg-[#173530] dark:border-[#244f48]'
+                    ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-soft-border)] text-[var(--color-brand-fg)]'
                     : 'bg-[var(--color-bg-muted)]/70 border-[var(--color-border-subtle)] text-[var(--color-text-primary)]'
                 }`}
               >
                 <Icon className="h-4 w-4 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold leading-snug">{isEn ? item.labelEn : item.labelFa}</div>
-                  <div className="text-xs text-[var(--color-text-muted)] leading-snug">{isEn ? item.descEn : item.descFa}</div>
+                  <div className="text-sm font-bold leading-snug">{isEn ? item.labelEn : item.labelFa}</div>
+                  <div className="text-[13px] text-[var(--color-text-muted)] leading-snug">{isEn ? item.descEn : item.descFa}</div>
                 </div>
               </RadarLink>
             );
@@ -130,15 +130,14 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
 
         <div className="pt-2 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" onClick={() => { onClose(); onOpenVisitedLog(); }} className="min-h-[44px] px-3 py-1.5 rounded-[8px] bg-[var(--color-bg-muted)] text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer">
-              <Bookmark className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" aria-hidden="true" /><span>{isEn ? 'Visits Log' : 'دفترچه بازدید'}</span>
+            <button type="button" onClick={() => { onClose(); onOpenVisitedLog(); }} className="min-h-[44px] px-3 py-1.5 rounded-[8px] bg-[var(--color-bg-muted)] text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer">
+              <Bookmark className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" /><span>{isEn ? 'Visits Log' : 'دفترچه بازدید'}</span>
             </button>
-            <button type="button" onClick={() => { onClose(); onOpenOnboarding(); }} className="min-h-[44px] px-3 py-1.5 rounded-[8px] bg-[var(--color-bg-muted)] text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer">
-              <Compass className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" aria-hidden="true" /><span>{isEn ? 'Guide' : 'راهنما'}</span>
+            <button type="button" onClick={() => { onClose(); onOpenOnboarding(); }} className="min-h-[44px] px-3 py-1.5 rounded-[8px] bg-[var(--color-bg-muted)] text-sm font-semibold text-[var(--color-text-primary)] flex items-center gap-1.5 cursor-pointer">
+              <Compass className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" /><span>{isEn ? 'Guide' : 'راهنما'}</span>
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <ExperienceModeToggle compact />
             <AreaUnitToggle compact showIntlControls />
           </div>
         </div>

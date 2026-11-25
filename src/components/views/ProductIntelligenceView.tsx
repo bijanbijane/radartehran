@@ -81,7 +81,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         onChangeSubTab={p.onChangeSubTab}
       />
       <div className="w-full max-w-[1320px] mx-auto px-4 pb-6 space-y-4">
-        <details className="rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-[var(--color-bg-surface)] p-3 text-xs">
+        <details className="rounded-xl border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-3 text-xs">
           <summary className="cursor-pointer font-bold text-[var(--color-text-secondary)] select-none">
             کیفیت داده، پوشش نمونه و روش‌شناسی برآورد محله {p.selectedHood.name} ⓘ
           </summary>
@@ -105,7 +105,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             observedValues={observedPerSqm}
           />
         )}
-        <div className="p-3 rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="p-3 rounded-xl border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-[var(--color-text-muted)]">دسترسی سریع محله:</span>
             {quickSwitchHoods.map((hood) => (

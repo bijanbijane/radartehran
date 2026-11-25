@@ -31,8 +31,8 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
   if (!isOpen) return null;
   return (
     <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="bundle-112-studio-title" dir="rtl">
-      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 dark:border-slate-700 bg-slate-900 dark:bg-slate-900 text-slate-100 dark:text-slate-100 shadow-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 dark:border-slate-800 px-6 py-4">
+      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 dark:border-[var(--color-border-strong)] bg-slate-900 dark:bg-[var(--color-bg-surface)] text-slate-100 dark:text-[var(--color-text-primary)] shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 dark:border-[var(--color-border-subtle)] px-6 py-4">
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-emerald-400" />
             <div>

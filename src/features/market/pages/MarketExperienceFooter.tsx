@@ -33,11 +33,11 @@ export const MarketExperienceFooter: React.FC<MarketExperienceFooterProps> = ({
     <>
       <div
         data-testid="intelligence-experience-mode-bar"
-        className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] dark:bg-slate-800/70 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs"
+        className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2 text-xs"
       >
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
-          <span className="font-bold text-[var(--color-text-primary)] dark:text-slate-100">
+          <span className="font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
             {experienceMode === 'simple'
               ? 'حالت تحلیلی استاندارد (متمرکز بر شاخص‌های مرجع و کیفیت داده)'
               : 'حالت حرفه‌ای (۱۲ آزمایشگاه اقتصادسنجی و راستی‌آزمایی جمعی فعال است)'}
@@ -47,7 +47,7 @@ export const MarketExperienceFooter: React.FC<MarketExperienceFooterProps> = ({
           <button
             type="button"
             onClick={() => onOpenInspector(selectedHood)}
-            className="px-2.5 py-1.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-600 bg-white dark:bg-slate-900 font-bold flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-lg border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] font-bold flex items-center gap-1 cursor-pointer"
           >
             <span>کارنامه محله {selectedHood.name}</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -67,7 +67,7 @@ export const MarketExperienceFooter: React.FC<MarketExperienceFooterProps> = ({
           <button
             type="button"
             onClick={() => onSetExperienceMode(experienceMode === 'pro' ? 'simple' : 'pro')}
-            className="px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-600 bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-slate-200 font-bold cursor-pointer"
+            className="px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] font-bold cursor-pointer"
           >
             {experienceMode === 'pro' ? 'بازگشت به نمای استاندارد' : 'آزمایشگاه‌های حرفه‌ای'}
           </button>

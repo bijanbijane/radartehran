@@ -34,7 +34,7 @@ export const HOME_DATA_QUALITY_BADGES: Record<DataQuality, { code: DataQuality; 
   estimated: { code: 'estimated', labelFa: 'برآوردی', symbol: '≈', meaningFa: 'برآورد آماری بر پایه مدل هدونیک یا سناریوی مذاکره غیرثبتی', badgeClass: 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800' },
   incomplete: { code: 'incomplete', labelFa: 'ناقص', symbol: '◐', meaningFa: 'تعداد نمونه در محدوده کمتر از حد نصاب آماری است', badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
   stale: { code: 'stale', labelFa: 'قدیمی', symbol: '◷', meaningFa: 'تأخیر در به‌روزرسانی منبع؛ نیازمند احتیاط در تصمیم‌گیری', badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800' },
-  unavailable: { code: 'unavailable', labelFa: 'ناموجود', symbol: '—', meaningFa: 'داده‌ای برای نمایش معتبر و به‌روز در این شاخص ثبت نشده است', badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700' },
+  unavailable: { code: 'unavailable', labelFa: 'ناموجود', symbol: '—', meaningFa: 'داده‌ای برای نمایش معتبر و به‌روز در این شاخص ثبت نشده است', badgeClass: 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-300 dark:border-[var(--color-border-strong)]' },
 };
 
 export const HOME_RESEARCH_REPORTS: readonly HomeResearchReportItem[] = [
@@ -90,14 +90,14 @@ export function buildHomeMarketSnapshotMetrics(
 
   return [
     {
-      id: 'asking_price_sqm', title: 'قیمت پیشنهادی هر متر مربع', value: medianAskingSqm, unit: 'م.ت / متر مربع',
+      id: 'asking_price_sqm', title: 'میانه قیمت پیشنهادی کل شهر', value: medianAskingSqm, unit: 'م.ت / متر مربع',
       formattedValue: `${toPersianNum(medianAskingSqm)} م.ت`,
-      geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
-      dataType: 'asking_price', dataTypeLabelFa: 'قیمت پیشنهادی (پروفایل مرجع و آگهی‌های پایش‌شده)',
+      geography: { cityId, cityLabelFa: `کل شهر ${cityLabelFa} (میانه محله‌ها)` }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
+      dataType: 'asking_price', dataTypeLabelFa: 'میانه نرخ اعلامی همه محله‌ها (در تحلیل بازار قابل تفکیک به تک‌محله)',
       sourceLabels: ['پایش آگهی‌های عمومی پس از حذف پرت'], methodologyId: 'median-asking-v1',
       methodologyLabelFa: 'میانه آماری قیمت پیشنهادی محلات (بدون ترکیب با معامله قطعی)',
       updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: cityScopedHoods.length,
-      limitationNote: 'صرفاً بیانگر میانه قیمت پیشنهادی فروشندگان است، نه قیمت قطعی ثبت‌شده در دفاتر اسناد.',
+      limitationNote: 'میانه نرخ پیشنهادی کل محله‌های شهر است؛ در صفحه «تحلیل بازار» می‌توانید نرخ هر محله یا میانگین شهر را جداگانه ببینید.',
     },
     {
       id: 'supply_status',
@@ -135,14 +135,14 @@ export function buildHomeMarketSnapshotMetrics(
       limitationNote: 'برآورد آماری جهت مذاکره است و معامله ثبتی محسوب نمی‌شود.',
     },
     {
-      id: 'rent_benchmark', title: 'اجاره‌بها (رهن کامل معادل ۸۰ متر)', value: medianRahn80m, unit: 'میلیون تومان',
+      id: 'rent_benchmark', title: 'میانه رهن کامل ۸۰ متری شهر', value: medianRahn80m, unit: 'میلیون تومان',
       formattedValue: `${toPersianNum(medianRahn80m)} م.ت`,
-      geography: { cityId, cityLabelFa }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
-      dataType: 'rent', dataTypeLabelFa: 'پیشنهادی رهن کامل آپارتمان مسکونی ۸۰ متری',
+      geography: { cityId, cityLabelFa: `کل شهر ${cityLabelFa} (میانه محله‌ها)` }, period: { from: '1405-08-01', to: '1405-08-24', labelFa: periodLabel },
+      dataType: 'rent', dataTypeLabelFa: 'میانه رهن کامل آپارتمان مسکونی ۸۰ متری در سطح شهر',
       sourceLabels: ['پایش فایل‌های رهن و اجاره مسکونی'], methodologyId: 'median-rent-80m',
       methodologyLabelFa: 'میانه رهن کامل استانداردشده برای واحد ۸۰ متر مربع',
       updatedAt: updatedLabel, quality: isStale ? 'stale' : 'verified', sampleCount: cityScopedHoods.length,
-      limitationNote: 'مبنای واحد مسکونی متعارف؛ واحدهای تجاری و اداری تفکیک شده‌اند.',
+      limitationNote: 'میانه سطح شهر برای واحد مسکونی متعارف؛ در صفحه تحلیل بازار به تفکیک محله نمایش داده می‌شود.',
     },
   ];
 }

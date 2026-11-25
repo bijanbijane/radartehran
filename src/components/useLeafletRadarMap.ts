@@ -29,6 +29,7 @@ declare global { interface Window { L: any; } }
 export type MapNavigationIntent = 'initial_mount' | 'explicit_city_select' | 'manual_map_pan' | 'programmatic_hood_jump' | 'history_restore';
 
 export interface UseLeafletRadarMapParams {
+  shouldMountMap?: boolean;
   activeCity: CityId; mapTileStyle: MapTileServerId; setMapTileStyle: React.Dispatch<React.SetStateAction<MapTileServerId>>;
   deferredMapNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; selectedHood: EvaluatedNeighborhood;
   mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; selectedWorkHub: WorkHub;
@@ -41,11 +42,11 @@ export interface UseLeafletRadarMapParams {
   onGeoContextStatusChange?: (resolution: CityResolutionResult) => void;
 }
 
-const readDomDarkClass = (): boolean => typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark');
+const readDomDarkClass = (): boolean => typeof document !== 'undefined' && (document.documentElement.classList.contains('apple-dark') || document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-radar-theme') === 'dark');
 const getIsDarkMap = (mapTileStyle: MapTileServerId, domDark: boolean): boolean => mapTileStyle === 'carto_dark' || mapTileStyle === 'satellite' || domDark;
 
 export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
-  const { activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick, navigationIntentRef, onMapAutoSwitchCity, onGeoContextStatusChange } = params;
+  const { shouldMountMap = true, activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick, navigationIntentRef, onMapAutoSwitchCity, onGeoContextStatusChange } = params;
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [locale] = useRadarLocale();
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -124,7 +125,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   useEffect(() => {
     if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return undefined;
     const themeObs = new MutationObserver(() => setIsDarkTheme(readDomDarkClass()));
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-apple-theme'] });
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-apple-theme', 'data-radar-theme'] });
     return () => themeObs.disconnect();
   }, []);
 
@@ -140,13 +141,18 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   }, []);
 
   useEffect(() => {
+    if (!shouldMountMap) {
+      setIsMapLoaded(false);
+      return undefined;
+    }
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const hasUrlHood = Boolean(urlParams && (urlParams.has('hood') || urlParams.has('compare')));
-    const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
+    const cityCfg = MULTI_CITY_CONFIGS[activeCityRef.current] || MULTI_CITY_CONFIGS.tehran;
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-    const rawCenter: [number, number] = selectedHood && (hasUrlHood || activeCityHoodIds.has(selectedHood.id)) ? [selectedHood.lat, selectedHood.lng] : cityCfg.center;
+    const curHood = selectedHoodRef.current;
+    const rawCenter: [number, number] = curHood && (hasUrlHood || activeCityHoodIds.has(curHood.id)) ? [curHood.lat, curHood.lng] : cityCfg.center;
     const initCenter: [number, number] = [rawCenter[0], rawCenter[1] + (isDesktop ? 0.055 : 0)];
-    const initZoom = selectedHood && hasUrlHood ? 13 : cityCfg.defaultZoom;
+    const initZoom = curHood && hasUrlHood ? 13 : cityCfg.defaultZoom;
 
     return mountLeafletMapLifecycle({
       mapContainerRef, mapInstanceRef, tileLayerRef, initCenter, initZoom, initialTileStyle: mapTileStyle,
@@ -180,7 +186,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
         comparisonArcSigRef.current = null;
       },
     });
-  }, []);
+  }, [shouldMountMap]);
 
   const mountedCityRef = useRef(activeCity);
   useEffect(() => {

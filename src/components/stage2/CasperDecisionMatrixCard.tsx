@@ -109,21 +109,21 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
   const intlDealFormatted = formatMillionTomanAsIntlCurrency(evaluation.targetOfferPerSqm, intlCurrency, 'fa');
 
   return (
-    <div dir="rtl" className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4 text-right" data-testid="casper-decision-matrix-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+    <div dir="rtl" className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] p-4 shadow-sm space-y-4 text-right" data-testid="casper-decision-matrix-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <BrainCircuit className="h-5 w-5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               موتور تصمیم‌گیری چندمعیاره و تفکیک اعتبار داده — {hoodName}
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               تفکیک صریح «داده مشاهده‌شده»، «ادعای آگهی»، «تخمین مدل v6.4» و «متغیرهای نامعلوم میدانی» + سپر ضدسوگیری شناختی
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 tabular-nums">
-          <span className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1 text-xs font-bold text-white dark:text-slate-900">
+          <span className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1 text-xs font-bold text-white">
             مطلوبیت تعدیل‌شده با ریسک: {toPersianNum(evaluation.riskAdjustedUtilityScore)} از ۱۰۰
           </span>
         </div>
@@ -131,23 +131,23 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
       {/* Section 1: 4-Layer Epistemic Data Matrix */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
           <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           <span>ماتریس ۴ لایه معرفتی داده و عدم قطعیت</span>
         </div>
         <div className={`grid grid-cols-1 ${compact ? '' : 'sm:grid-cols-2'} gap-2.5`}>
           {evaluation.epistemicLayers.map((layer) => (
-            <div key={layer.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3 space-y-1">
+            <div key={layer.id} className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/70 dark:bg-[var(--color-bg-muted)] p-3 space-y-1">
               <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <span className="text-xs font-bold text-slate-900 dark:text-white">{layer.titleFa}</span>
-                <span className="rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                <span className="rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                   {layer.badgeTextFa}
                 </span>
               </div>
               <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
                 {toPersianNum(layer.primaryMetricFa)}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] leading-relaxed">
                 {toPersianNum(layer.secondaryDetailFa)}
               </div>
             </div>
@@ -156,9 +156,9 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
       </div>
 
       {/* Section 2: Interactive Multi-Criteria Decision Simulator (MCDA) */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
+      <div className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-[var(--color-bg-muted)] p-3.5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
             <SlidersHorizontal className="h-4 w-4 text-[var(--color-brand-600)]" />
             <span>شبیه‌ساز وزن‌دهی اولویت‌های تصمیم‌گیری شما (MCDA)</span>
           </div>
@@ -177,7 +177,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                   activePreset === p.id
                     ? 'bg-[var(--color-brand-600)] text-white'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                    : 'bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-slate-100'
                 }`}
               >
                 {p.label}
@@ -196,8 +196,8 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           ].map((item) => {
             const normalizedSharePct = Math.round((weights[item.key] / totalWeightSum) * 100);
             return (
-              <label key={item.key} className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-1 font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+              <label key={item.key} className="rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] p-2.5 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-1 font-bold text-slate-700 dark:text-[var(--color-text-primary)] whitespace-nowrap">
                   <span>{item.label}</span>
                   <span className="text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">
                     {toPersianNum(normalizedSharePct)}٪ (وزن {toPersianNum(weights[item.key])})
@@ -244,7 +244,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
       {/* Section 3: Behavioral & Cognitive Bias Guardrails */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
           <ShieldAlert className="h-4 w-4 text-amber-600" />
           <span>سپر محافظت در برابر خطاهای شناختی و تله‌های روانی بازار</span>
         </div>
@@ -260,7 +260,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
                   {b.severity === 'HIGH' ? 'ریسک بالا' : b.severity === 'MEDIUM' ? 'ریسک متوسط' : 'هشدار پایه'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{toPersianNum(b.explanationFa)}</p>
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">{toPersianNum(b.explanationFa)}</p>
               <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 leading-relaxed">
                 راهکار ضدسوگیری: {toPersianNum(b.countermeasureFa)}
               </p>

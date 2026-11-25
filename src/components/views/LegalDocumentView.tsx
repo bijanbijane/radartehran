@@ -33,20 +33,20 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
     <article
       dir={isEn ? 'ltr' : 'rtl'}
       data-testid={isPrivacy ? 'legal-privacy-page' : 'legal-terms-page'}
-      className="w-full max-w-[1320px] mx-auto px-4 sm:px-6 py-8 space-y-6 animate-fadeIn"
+      className="w-full max-w-[72ch] mx-auto px-4 sm:px-6 py-8 space-y-6 animate-fadeIn"
     >
-      <header className="space-y-4 border-b border-[var(--color-border-subtle)] pb-6">
+      <div className="space-y-4 border-b border-[var(--color-border-subtle)] pb-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 text-xs font-bold text-[var(--color-brand-fg)]">
+          <div className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-brand-fg)]">
             {isPrivacy ? <ShieldCheck className="w-4 h-4" aria-hidden="true" /> : <Scale className="w-4 h-4" aria-hidden="true" />}
             <span>{isEn ? 'Transparency & Legal Center' : 'مرکز شفافیت و اسناد حقوقی'}</span>
           </div>
-          <nav aria-label={isEn ? 'Legal documents' : 'اسناد حقوقی'} className="flex items-center gap-2">
+          <div role="group" aria-label={isEn ? 'Legal documents' : 'اسناد حقوقی'} className="flex items-center gap-2">
             <RadarLink
               href="/legal/privacy"
               aria-current={isPrivacy ? 'page' : undefined}
               onNavigate={() => navigateLegal('privacy')}
-              className={`min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer ${
+              className={`min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center ${
                 isPrivacy
                   ? 'bg-[var(--color-brand-600)] text-white'
                   : 'border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
@@ -58,7 +58,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               href="/legal/terms"
               aria-current={!isPrivacy ? 'page' : undefined}
               onNavigate={() => navigateLegal('terms')}
-              className={`min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition cursor-pointer ${
+              className={`min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-[8px] text-sm font-bold transition cursor-pointer inline-flex items-center ${
                 !isPrivacy
                   ? 'bg-[var(--color-brand-600)] text-white'
                   : 'border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
@@ -66,7 +66,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
             >
               {isEn ? 'Terms of Use' : 'قوانین و شرایط استفاده'}
             </RadarLink>
-          </nav>
+          </div>
         </div>
 
         <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
@@ -74,7 +74,7 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
             ? (isEn ? 'Privacy Policy & Data Protection' : 'سیاست حریم خصوصی و حفاظت از داده‌ها')
             : (isEn ? 'Terms of Use & Analytical Disclaimer' : 'قوانین استفاده و سلب مسئولیت تحلیلی')}
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] max-w-3xl leading-7">
+        <p className="text-sm text-[var(--color-text-secondary)] leading-8">
           {isPrivacy
             ? (isEn
               ? 'RadarTehran collects only the minimum data needed to remember your saved neighborhoods, search filters, and optional account preferences.'
@@ -83,9 +83,9 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
               ? 'By accessing RadarTehran maps, market indices, and valuation calculators, you agree to treat displayed figures as analytical estimates rather than official legal appraisals.'
               : 'استفاده از نقشه، شاخص‌های بازار و ابزارهای ارزش‌گذاری رادارتهران به معنای پذیرش ماهیت تحلیلی و غیراسنادی برآوردهای نمایش‌داده‌شده است.')}
         </p>
-      </header>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="space-y-4">
         {isPrivacy ? (
           <>
             <section className="rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-5 space-y-2.5">
@@ -175,11 +175,11 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[var(--color-border-subtle)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[var(--color-border-subtle)]">
         <RadarLink
           href="/knowledge/methodology"
           onNavigate={() => onNavigateView('knowledge', 'methodology')}
-          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-[10px] border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"
+          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-[10px] border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-sm font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"
         >
           <FileText className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" />
           <span>{isEn ? 'Read Data Methodology' : 'مطالعه روش‌شناسی داده'}</span>
@@ -187,12 +187,12 @@ export const LegalDocumentView: React.FC<LegalDocumentViewProps> = ({
         <RadarLink
           href="/"
           onNavigate={() => onNavigateView('home')}
-          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] text-white text-xs font-bold hover:opacity-95 cursor-pointer"
+          className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] text-white text-sm font-bold hover:opacity-95 cursor-pointer"
         >
           <BackIcon className="w-4 h-4" aria-hidden="true" />
           <span>{isEn ? 'Back to Home' : 'بازگشت به صفحه نخست'}</span>
         </RadarLink>
-      </footer>
+      </div>
     </article>
   );
 };

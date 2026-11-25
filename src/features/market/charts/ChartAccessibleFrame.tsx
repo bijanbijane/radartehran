@@ -36,11 +36,11 @@ export const ChartAccessibleFrame: React.FC<ChartAccessibleFrameProps> = ({
   const hasRows = tableRows.length > 0;
 
   return (
-    <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-2.5">
+    <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-2.5">
         <div>
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{titleFa}</h3>
-          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5 tabular-nums">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-0.5 tabular-nums">
             واحد: {unitLabelFa} · {provenanceLineFa} · {INDICATOR_STATUS_LABELS_FA[status]}
           </p>
         </div>
@@ -56,20 +56,20 @@ export const ChartAccessibleFrame: React.FC<ChartAccessibleFrameProps> = ({
             <button
               type="button"
               onClick={onRetry}
-              className="px-2.5 py-1 rounded bg-white dark:bg-slate-900 border border-[#F4D3A1] text-xs font-bold cursor-pointer"
+              className="px-2.5 py-1 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-[#F4D3A1] text-xs font-bold cursor-pointer"
             >
               تلاش مجدد
             </button>
           )}
         </div>
       ) : status === 'unavailable' || !hasRows ? (
-        <div className="py-8 px-4 text-center text-xs text-[var(--color-text-muted)] dark:text-slate-400 bg-[var(--color-bg-canvas)] dark:bg-slate-800/40 rounded-lg border border-dashed border-[var(--color-border-strong)] dark:border-slate-700">
+        <div className="py-8 px-4 text-center text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] rounded-lg border border-dashed border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)]">
           {emptyReasonFa || 'برای این ترکیب از نوع بازار و فیلترها، داده معتبر کافی در دسترس نیست.'}
         </div>
       ) : (
         <>
           <div className="w-full">{children}</div>
-          <details className="pt-1 border-t border-[var(--color-border-subtle)]/70 dark:border-slate-800 text-xs">
+          <details className="pt-1 border-t border-[var(--color-border-subtle)]/70 dark:border-[var(--color-border-subtle)] text-xs">
             <summary className="cursor-pointer font-bold text-[var(--color-brand-600)] dark:text-emerald-400 inline-flex items-center gap-1.5 py-1 select-none">
               <Table className="w-3.5 h-3.5" aria-hidden="true" />
               <span>مشاهده جدول دسترس‌پذیر داده‌ها ({tableRows.length} ردیف)</span>
@@ -77,7 +77,7 @@ export const ChartAccessibleFrame: React.FC<ChartAccessibleFrameProps> = ({
             <div className="mt-2 overflow-x-auto">
               <table className="w-full text-xs border-collapse tabular-nums">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-muted)] dark:text-slate-400">
+                  <tr className="border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                     {tableColumns.map((col) => (
                       <th key={col.key} className="text-right py-1.5 px-2 font-bold">
                         {col.headerFa}
@@ -87,9 +87,9 @@ export const ChartAccessibleFrame: React.FC<ChartAccessibleFrameProps> = ({
                 </thead>
                 <tbody>
                   {tableRows.map((row, idx) => (
-                    <tr key={idx} className="border-b border-[var(--color-border-subtle)]/60 dark:border-slate-800">
+                    <tr key={idx} className="border-b border-[var(--color-border-subtle)]/60 dark:border-[var(--color-border-subtle)]">
                       {tableColumns.map((col) => (
-                        <td key={col.key} className="py-1.5 px-2 text-[var(--color-text-primary)] dark:text-slate-200">
+                        <td key={col.key} className="py-1.5 px-2 text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
                           {row[col.key]}
                         </td>
                       ))}

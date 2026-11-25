@@ -4,13 +4,10 @@ import { ArrowUpDown, Columns2, List, Map as MapIcon, Search, SlidersHorizontal,
 import { toPersianNum } from '../../../data/neighborhoods';
 import {
   buildActiveFilterChips,
-  normalizeFiltersForPropertyType,
   type AppliedPropertyFilters,
   type PropertyFilterDraft,
   type PropertySortKey,
 } from './PropertyFilterDraft';
-import { PROPERTY_TYPE_LABELS_FA, type PropertyType } from '../types/property.types';
-import type { TransactionType } from '../types/listing.types';
 import type { PropertiesSubTabId } from '../../../navigation/registry/route.types';
 
 export type PropertyExplorerViewMode = 'split' | 'list' | 'map';
@@ -31,14 +28,6 @@ export interface PropertyFilterBarProps {
   onOpenFilterDrawer: () => void;
 }
 
-const TX_OPTIONS: Array<{ id: 'all' | TransactionType; label: string }> = [
-  { id: 'all', label: 'همه معاملات' },
-  { id: 'sale', label: 'فروش' },
-  { id: 'rent', label: 'رهن و اجاره' },
-  { id: 'full_deposit', label: 'رهن کامل' },
-  { id: 'presale', label: 'پیش‌فروش' },
-];
-
 const SORT_OPTIONS: Array<{ id: PropertySortKey; label: string }> = [
   { id: 'relevance', label: 'مرتب‌سازی: مرتبط‌ترین' },
   { id: 'discount_desc', label: 'بیشترین شکاف زیر عرف' },
@@ -56,7 +45,6 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   totalResults,
   selectedHoodName,
   viewMode,
-  activeSubTab,
   splitMapMode,
   onChangeViewMode,
   onUpdateDraft,
@@ -65,20 +53,6 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   onOpenFilterDrawer,
 }) => {
   const chips = buildActiveFilterChips(applied, selectedHoodName);
-  const showTxSelector = !activeSubTab || (activeSubTab !== 'buy' && activeSubTab !== 'rent');
-  const showTypeSelect = !activeSubTab || (activeSubTab !== 'commercial' && activeSubTab !== 'office');
-
-  const handleTxQuickSelect = (tx: 'all' | TransactionType) => {
-    const next = { ...draft, transactionType: tx };
-    onUpdateDraft({ transactionType: tx });
-    onApply(next);
-  };
-
-  const handlePropertyTypeQuickSelect = (pt: 'all' | PropertyType) => {
-    const next = normalizeFiltersForPropertyType(draft, pt);
-    onUpdateDraft(next);
-    onApply(next);
-  };
 
   return (
     <div className="p-3.5 rounded-[14px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3" data-testid="property-filter-bar">
@@ -96,7 +70,7 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
               onApply(next);
             }}
             placeholder="جست‌وجو بر اساس محله، خیابان، عنوان ملک..."
-            className="w-full min-h-[44px] md:min-h-[38px] ps-9 pe-8 py-2 rounded-[9px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-600)]"
+            className="w-full min-h-[44px] md:min-h-[40px] ps-9 pe-9 py-2 rounded-[9px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-600)]"
           />
           {draft.searchQuery && (
             <button
@@ -107,64 +81,29 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
                 onApply(next);
               }}
               aria-label="پاک کردن جست‌وجو"
-              className="absolute end-2 top-1/2 -translate-y-1/2 min-h-[36px] min-w-[36px] inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+              className="absolute end-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {showTxSelector && (
-            <div className="flex items-center gap-1 rounded-[9px] bg-[var(--color-bg-muted)] p-1 overflow-x-auto max-w-full">
-              {TX_OPTIONS.map((tx) => (
-                <button
-                  key={tx.id}
-                  type="button"
-                  data-testid={`property-tx-${tx.id}`}
-                  onClick={() => handleTxQuickSelect(tx.id)}
-                  className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[7px] text-xs font-bold whitespace-nowrap transition cursor-pointer ${
-                    applied.transactionType === tx.id
-                      ? 'bg-[var(--color-brand-600)] text-white'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]'
-                  }`}
-                >
-                  {tx.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {showTypeSelect && (
-            <select
-              aria-label="نوع ملک"
-              data-testid="property-type-select"
-              value={applied.propertyType}
-              onChange={(e) => handlePropertyTypeQuickSelect(e.target.value as 'all' | PropertyType)}
-              className="min-h-[44px] md:min-h-[38px] px-2.5 py-2 rounded-[9px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] cursor-pointer"
-            >
-              <option value="all">همه کاربری‌ها</option>
-              {(Object.keys(PROPERTY_TYPE_LABELS_FA) as PropertyType[]).map((pt) => (
-                <option key={pt} value={pt}>{PROPERTY_TYPE_LABELS_FA[pt]}</option>
-              ))}
-            </select>
-          )}
-
           <button
             type="button"
             data-testid="open-property-filters-btn"
             onClick={onOpenFilterDrawer}
-            className="min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-[9px] border border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+            className="min-h-[44px] md:min-h-[40px] px-3.5 py-1.5 rounded-[9px] border border-[var(--color-border-subtle)] text-sm font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
+            <SlidersHorizontal className="w-4 h-4 text-[var(--color-brand-fg)]" />
             <span>فیلترهای پیشرفته{chips.length > 0 ? ` (${toPersianNum(chips.length)})` : ''}</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-[var(--color-border-subtle)] text-sm">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-bold text-[var(--color-text-muted)] tabular-nums">
+          <span className="font-bold text-[var(--color-text-secondary)] tabular-nums">
             {toPersianNum(totalResults)} فایل منطبق
           </span>
           {chips.map((c) => (
@@ -176,17 +115,17 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
                 onUpdateDraft(c.clearPatch);
                 onApply(next);
               }}
-              className="min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[7px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold hover:opacity-80 cursor-pointer"
+              className="min-h-[44px] md:min-h-[34px] inline-flex items-center gap-1 px-2.5 py-1 rounded-[7px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-sm font-bold hover:opacity-80 cursor-pointer"
             >
               <span>{c.label}</span>
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </button>
           ))}
           {chips.length > 0 && (
             <button
               type="button"
               onClick={onReset}
-              className="text-[#B3261E] dark:text-rose-400 font-bold hover:underline px-1 cursor-pointer"
+              className="min-h-[44px] md:min-h-[34px] text-[#B3261E] dark:text-rose-400 font-bold hover:underline px-2 cursor-pointer"
             >
               پاک‌کردن همه
             </button>
@@ -195,7 +134,7 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
             <button
               type="button"
               onClick={() => onApply()}
-              className="min-h-[36px] px-2.5 py-0.5 rounded-[7px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
+              className="min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-[7px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
             >
               اعمال تغییرات پیش‌نویس
             </button>
@@ -204,7 +143,7 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+            <ArrowUpDown className="w-4 h-4 text-[var(--color-text-muted)]" />
             <select
               aria-label="مرتب‌سازی فایل‌ها"
               data-testid="property-sort-select"
@@ -215,7 +154,7 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
                 onUpdateDraft({ sortBy });
                 onApply(next);
               }}
-              className="min-h-[40px] md:min-h-[34px] bg-transparent text-xs font-bold text-[var(--color-text-primary)] focus:outline-none cursor-pointer"
+              className="min-h-[44px] md:min-h-[36px] bg-transparent text-sm font-bold text-[var(--color-text-primary)] focus:outline-none cursor-pointer"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.id} value={o.id}>{o.label}</option>
@@ -242,13 +181,13 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
                     aria-pressed={viewMode === m.id}
                     data-testid={`property-viewmode-${m.id}`}
                     onClick={() => onChangeViewMode(m.id)}
-                    className={`min-h-[40px] md:min-h-[32px] px-2.5 py-1 rounded-[6px] flex items-center gap-1 text-xs font-bold transition cursor-pointer ${
+                    className={`min-h-[44px] md:min-h-[34px] px-2.5 py-1 rounded-[6px] flex items-center gap-1 text-sm font-bold transition cursor-pointer ${
                       viewMode === m.id
                         ? 'bg-[var(--color-brand-600)] text-white'
                         : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
                     }`}
                   >
-                    <IconC className="w-3.5 h-3.5" />
+                    <IconC className="w-4 h-4" />
                     <span>{m.label}</span>
                   </button>
                 );

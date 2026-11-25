@@ -58,7 +58,7 @@ export const MARKET_TYPE_CAPABILITIES: Record<MarketType, FilterCapabilityMatrix
 
 export function createDefaultMarketDraft(
   transactionType: MarketTransactionType = 'sale',
-  geoLevel: MarketGeoLevel = 'neighborhood',
+  geoLevel: MarketGeoLevel = 'city',
   zoneName = '',
 ): MarketFilterDraft {
   return {
@@ -128,7 +128,7 @@ export function resetMarketFiltersToDefault(zoneName = ''): {
   draft: MarketFilterDraft;
   applied: AppliedMarketFilters;
 } {
-  const draft = createDefaultMarketDraft('sale', 'neighborhood', zoneName);
+  const draft = createDefaultMarketDraft('sale', 'city', zoneName);
   return { draft, applied: commitMarketDraft(draft) };
 }
 

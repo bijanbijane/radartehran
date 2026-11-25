@@ -87,7 +87,7 @@ export function ListingVerdictHero({
         </div>
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">حکم آگهی — مقایسه با فایل‌های مشابه</h2>
-          <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">متن یا لینک آگهی را بگذارید. خروجی قابل‌چک است؛ آگهی ≠ معاملهٔ ثبت‌شده.</p>
+          <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] mt-0.5">متن یا لینک آگهی را بگذارید. خروجی قابل‌چک است؛ آگهی ≠ معاملهٔ ثبت‌شده.</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2 items-center text-[10px]">
@@ -97,7 +97,7 @@ export function ListingVerdictHero({
           aria-label="محله برای مقایسه آگهی"
           value={hoodName}
           onChange={(e) => setHoodName(e.target.value)}
-          className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 font-bold text-xs"
+          className="rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] px-2 py-1 font-bold text-xs"
         >
           {hoodOptions.length > 0
             ? hoodOptions.map((h) => <option key={h.id} value={h.name}>{h.name}</option>)
@@ -109,7 +109,7 @@ export function ListingVerdictHero({
         onChange={(e) => setText(e.target.value)}
         rows={3}
         placeholder="لینک divar.ir یا متن آگهی: متراژ، قیمت، محله..."
-        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-3 text-xs"
+        className="w-full rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-canvas)] p-3 text-xs"
         aria-label="متن یا لینک آگهی"
       />
       <div className="flex flex-wrap gap-2">
@@ -125,7 +125,7 @@ export function ListingVerdictHero({
           <button
             type="button"
             onClick={onOpenFullModal}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold cursor-pointer"
+            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] text-xs font-bold cursor-pointer"
           >
             کارشناسی کامل + تله‌ها
           </button>
@@ -142,7 +142,7 @@ export function ListingVerdictHero({
               {verdict.hoodMismatchWarningFa}
             </p>
           )}
-          <p className="font-bold text-slate-800 dark:text-slate-100">{d.verdictLabelFa}</p>
+          <p className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{d.verdictLabelFa}</p>
           <p>
             آگهی ({formatAreaShort(d.parsed.areaSqm, areaUnit)}): {toPersianNum(unitAsk)} {uSuffix}{fxTag(unitAsk)} · جمع {toPersianNum(d.parsed.askingPriceTotalMillion)} م{fxTag(d.parsed.askingPriceTotalMillion)}
             {' · '}
@@ -153,7 +153,7 @@ export function ListingVerdictHero({
               {d.comparables.slice(0, 8).map((c) => {
                 const cUnit = Math.round(convertPricePerSqmToUnitRaw(c.perSqmMillion, areaUnit) * 10) / 10;
                 return (
-                  <li key={c.token || c.title} className="flex justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+                  <li key={c.token || c.title} className="flex justify-between gap-2 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-1">
                     <span className="truncate">{c.title.slice(0, 48)} · {formatAreaShort(c.sqm, areaUnit)} · {toPersianNum(cUnit)} {uSuffix}</span>
                     <a href={c.divarUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-emerald-700 font-bold flex items-center gap-0.5">
                       دیوار <ExternalLink className="w-3 h-3" />

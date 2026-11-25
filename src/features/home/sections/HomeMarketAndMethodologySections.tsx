@@ -86,16 +86,16 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
       <section aria-labelledby="home-market-snapshot-heading" data-testid="home-market-snapshot-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="home-market-snapshot-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
+            <h2 id="home-market-snapshot-heading" className="text-xl font-bold text-[var(--color-text-primary)]">
               نمایی از بازار املاک {activeCityNameFa}
             </h2>
-            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
               شاخص‌های منتخب بازار با تفکیک قیمت پیشنهادی، برآورد معامله و تاریخ به‌روزرسانی.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {showQaSimulator && (
-              <div role="group" aria-label="شبیه‌ساز وضعیت داده بازار" className="flex flex-wrap items-center gap-1 bg-[var(--color-bg-muted)] p-1 rounded-[8px] border border-[var(--color-border-subtle)] text-xs">
+              <div role="group" aria-label="شبیه‌ساز وضعیت داده بازار" className="flex flex-wrap items-center gap-1 bg-[var(--color-bg-muted)] p-1 rounded-[8px] border border-[var(--color-border-subtle)] text-sm">
                 {([
                   { id: 'normal', label: 'وضعیت عادی' },
                   { id: 'partial_data', label: 'داده ناقص' },
@@ -120,10 +120,10 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
             <RadarLink
               href="/market"
               onNavigate={() => p.onNavigateView('intelligence', 'overview')}
-              className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 text-xs font-bold text-[var(--color-brand-fg)] hover:underline gap-1"
+              className="min-h-[44px] md:min-h-[34px] inline-flex items-center px-1 text-sm font-bold text-[var(--color-brand-fg)] hover:underline gap-1"
             >
               <span>تحلیل کامل بازار</span>
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             </RadarLink>
           </div>
         </div>
@@ -140,17 +140,17 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)]">{m.title}</h3>
+                    <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{m.title}</h3>
                     <span className={`px-2 py-0.5 rounded-[6px] border text-xs font-bold whitespace-nowrap shrink-0 ${qBadge.badgeClass}`}>
                       <span aria-hidden="true">{qBadge.symbol} </span>
                       <span>{qBadge.labelFa}</span>
                     </span>
                   </div>
                   <div className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">{isMissing ? '—' : m.formattedValue}</div>
-                  {!isMissing && <div className="text-xs text-[var(--color-text-secondary)]">{m.unit} · {m.dataTypeLabelFa}</div>}
-                  {m.limitationNote && <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{m.limitationNote}</p>}
+                  {!isMissing && <div className="text-sm text-[var(--color-text-secondary)]">{m.unit} · {m.dataTypeLabelFa}</div>}
+                  {m.limitationNote && <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{m.limitationNote}</p>}
                 </div>
-                <dl className="pt-2.5 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] space-y-1 tabular-nums">
+                <dl className="pt-2.5 border-t border-[var(--color-border-subtle)] text-sm text-[var(--color-text-muted)] space-y-1 tabular-nums">
                   <div className="flex justify-between gap-2">
                     <dt>پوشش:</dt>
                     <dd className="font-semibold text-[var(--color-text-primary)]">{m.geography.cityLabelFa}</dd>
@@ -173,20 +173,20 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
       <section aria-labelledby="home-quick-access-heading" data-testid="home-quick-access-section" className="space-y-3.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 id="home-quick-access-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
+            <h2 id="home-quick-access-heading" className="text-xl font-bold text-[var(--color-text-primary)]">
               ابزارهای تصمیم‌گیری سریع
             </h2>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               ورود مستقیم به موتورهای محاسبه، تطبیق بودجه و راستی‌آزمایی قیمت
             </p>
           </div>
           <RadarLink
             href="/tools"
             onNavigate={() => p.onNavigateView('tools', 'overview')}
-            className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 text-xs font-bold text-[var(--color-brand-fg)] hover:underline gap-1 shrink-0"
+            className="min-h-[44px] md:min-h-[34px] inline-flex items-center px-1 text-sm font-bold text-[var(--color-brand-fg)] hover:underline gap-1 shrink-0"
           >
             <span>همه ابزارها</span>
-            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           </RadarLink>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
@@ -211,8 +211,8 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
                 <ArrowLeft className="w-4 h-4 text-[var(--color-text-muted)]" aria-hidden="true" />
               </div>
               <div className="space-y-1">
-                <div className="text-sm font-bold text-[var(--color-text-primary)]">{card.titleFa}</div>
-                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{card.descFa}</p>
+                <div className="text-base font-bold text-[var(--color-text-primary)]">{card.titleFa}</div>
+                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{card.descFa}</p>
               </div>
             </RadarLink>
           ))}
@@ -228,17 +228,17 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
       <section aria-labelledby="home-research-heading" data-testid="home-research-section" className="space-y-3.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 id="home-research-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
+            <h2 id="home-research-heading" className="text-xl font-bold text-[var(--color-text-primary)]">
               پژوهش‌ها، فایل‌ها و خدمات تخصصی
             </h2>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               گزارش‌های تحلیلی مستقل با منبع و تاریخ انتشار، در کنار دسترسی مستقیم به املاک و خدمات
             </p>
           </div>
           <RadarLink
             href="/knowledge"
             onNavigate={() => p.onNavigateView('knowledge', 'reports')}
-            className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 text-xs font-bold text-[var(--color-brand-fg)] hover:underline shrink-0"
+            className="min-h-[44px] md:min-h-[34px] inline-flex items-center px-1 text-sm font-bold text-[var(--color-brand-fg)] hover:underline shrink-0"
           >
             مرکز پژوهش ←
           </RadarLink>
@@ -252,14 +252,14 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
               className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-col justify-between space-y-3"
             >
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-text-muted)]">
+                <div className="flex items-center justify-between gap-2 text-sm text-[var(--color-text-muted)]">
                   <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">{rep.categoryLabelFa}</span>
                   <span>{rep.publishedAtFa || 'تحلیلی'}</span>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-snug">{rep.titleFa}</h3>
-                <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{rep.summaryFa}</p>
+                <h3 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">{rep.titleFa}</h3>
+                <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">{rep.summaryFa}</p>
               </div>
-              <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-2 text-xs">
+              <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-2 text-sm">
                 <span className="text-[var(--color-text-muted)] truncate">{rep.geographyScopeFa}</span>
                 <RadarLink
                   href="/knowledge"
@@ -267,7 +267,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
                     p.onRecordTelemetry?.(buildPrivacySafeHomeTelemetry('home_report_open', { cityId: p.activeCity, targetDestination: rep.id }));
                     p.onNavigateView(rep.targetView, rep.targetSubTab);
                   }}
-                  className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 font-bold text-[var(--color-brand-fg)] hover:underline shrink-0"
+                  className="min-h-[44px] md:min-h-[34px] inline-flex items-center px-1 font-bold text-[var(--color-brand-fg)] hover:underline shrink-0"
                 >
                   مطالعه ←
                 </RadarLink>
@@ -278,9 +278,9 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
 
         <div data-testid="home-property-services-section" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
           <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-bold text-[var(--color-text-primary)]">کاوشگر املاک و فایل‌ها</h3>
-              <p className="text-xs text-[var(--color-text-secondary)]">فایل‌های خرید، اجاره، تجاری و اداری با ارزیابی قیمت.</p>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-[var(--color-text-primary)]">کاوشگر املاک و فایل‌ها</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">فایل‌های خرید، اجاره، تجاری و اداری با ارزیابی قیمت.</p>
             </div>
             <RadarLink
               href="/properties"
@@ -289,21 +289,21 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
                 p.onRecordTelemetry?.(buildPrivacySafeHomeTelemetry('home_property_open', { cityId: p.activeCity, targetDestination: '/properties' }));
                 p.onNavigateView('properties', 'all');
               }}
-              className="min-h-[44px] px-3.5 py-2 rounded-[8px] bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] shrink-0"
+              className="min-h-[44px] px-3.5 py-2 rounded-[8px] bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-sm font-bold text-[var(--color-text-primary)] shrink-0"
             >
               مشاهده املاک ←
             </RadarLink>
           </div>
           <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-bold text-[var(--color-text-primary)]">خدمات تخصصی و کارشناسی</h3>
-              <p className="text-xs text-[var(--color-text-secondary)]">کارشناسی ارزش‌گذاری، بازرسی فنی و مشاوره حقوقی ملک.</p>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-[var(--color-text-primary)]">خدمات تخصصی و کارشناسی</h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">کارشناسی ارزش‌گذاری، بازرسی فنی و مشاوره حقوقی ملک.</p>
             </div>
             <RadarLink
               href="/services"
               data-testid="home-open-services-btn"
               onNavigate={() => p.onNavigateView('services', 'all')}
-              className="min-h-[44px] px-3.5 py-2 rounded-[8px] bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-primary)] shrink-0"
+              className="min-h-[44px] px-3.5 py-2 rounded-[8px] bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-sm font-bold text-[var(--color-text-primary)] shrink-0"
             >
               مشاهده خدمات ←
             </RadarLink>
@@ -319,23 +319,23 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" aria-hidden="true" />
-            <h2 id="home-methodology-heading" className="text-sm sm:text-base font-bold text-[var(--color-text-primary)]">
+            <h2 id="home-methodology-heading" className="text-base font-bold text-[var(--color-text-primary)]">
               شفافیت منبع و روش‌شناسی داده‌های رادارتهران
             </h2>
           </div>
           <RadarLink
             href="/knowledge/methodology"
             onNavigate={() => p.onNavigateView('knowledge', 'methodology')}
-            className="min-h-[44px] md:min-h-[32px] inline-flex items-center px-1 text-xs font-bold text-[var(--color-brand-fg)] hover:underline self-start sm:self-auto"
+            className="min-h-[44px] md:min-h-[34px] inline-flex items-center px-1 text-sm font-bold text-[var(--color-brand-fg)] hover:underline self-start sm:self-auto"
           >
             مطالعه روش‌شناسی ←
           </RadarLink>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {HOME_METHODOLOGY_PILLARS.map((pil) => (
-            <div key={pil.id} className="p-3 rounded-[10px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
-              <div className="text-xs font-bold text-[var(--color-text-primary)]">{pil.titleFa}</div>
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{pil.explanationFa}</p>
+            <div key={pil.id} className="p-3.5 rounded-[10px] bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
+              <div className="text-sm font-bold text-[var(--color-text-primary)]">{pil.titleFa}</div>
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{pil.explanationFa}</p>
             </div>
           ))}
         </div>

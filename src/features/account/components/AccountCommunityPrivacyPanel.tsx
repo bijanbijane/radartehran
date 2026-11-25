@@ -69,14 +69,14 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
 
   if (!currentUser?.uid) {
     return (
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs" data-testid="account-community-privacy-panel">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3 text-xs" data-testid="account-community-privacy-panel">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-1">
               {COMMUNITY_AUTH_REQUIRED_FA}
             </p>
           </div>
@@ -150,14 +150,14 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
 
   return (
     <div className="space-y-4 text-xs" data-testid="account-community-privacy-panel">
-      <section className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <section className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
               اطلاعات تماس، ایمیل و پیش‌نویس‌های شما هرگز در نمایه عمومی جامعه نمایش داده نمی‌شوند.
             </p>
           </div>
@@ -180,7 +180,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
               className={`p-2.5 rounded-xl border text-start font-bold cursor-pointer transition ${
                 visibility === opt.id
                   ? 'border-[var(--color-brand-600)] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[var(--color-brand-700)] dark:text-emerald-200'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  : 'border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-secondary)]'
               }`}
             >
               <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" />{opt.label}</span>
@@ -194,7 +194,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
             { key: 'showContributions', label: 'نمایش خلاصه مشارکت‌های عمومی' },
             { key: 'showFollowedTopics', label: 'نمایش موضوعات دنبال‌شده' },
           ] as const).map((t) => (
-            <label key={t.key} className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
+            <label key={t.key} className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-[var(--color-text-secondary)] font-medium">
               <input
                 type="checkbox"
                 checked={profile ? profile[t.key] : true}
@@ -222,7 +222,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+        <section className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>وضعیت اعتبار ۵ محوری و مشارکت‌های ثبت‌شده ({toPersianNum(myContributions.length)})</span>
@@ -230,8 +230,8 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
           {profile && (
             <div className="grid grid-cols-2 gap-2">
               {(['data', 'community', 'research', 'sources', 'professional'] as const).map((axis) => (
-                <div key={axis} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-slate-600 dark:text-slate-300">{REPUTATION_AXIS_LABELS_FA[axis]}</span>
+                <div key={axis} className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">{REPUTATION_AXIS_LABELS_FA[axis]}</span>
                   <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{toPersianNum(profile.reputation[axis])}</span>
                 </div>
               ))}
@@ -247,14 +247,14 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
           </div>
         </section>
 
-        <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+        <section className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <Scale className="w-4 h-4 text-sky-600" />
             <span>ثبت اعتراض و پیگیری تصمیمات نظارت</span>
           </h3>
           <form onSubmit={handleAppealSubmit} className="space-y-2">
-            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => { setAppealTargetId(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="شناسه مطلب (اختیاری)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-            <textarea rows={2} aria-label="دلیل درخواست بازبینی" value={appealReasonFa} onChange={(e) => { setAppealReasonFa(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="دلایل و شواهد خود را برای بازبینی تصمیم ناظر بنویسید..." className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => { setAppealTargetId(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="شناسه مطلب (اختیاری)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]" />
+            <textarea rows={2} aria-label="دلیل درخواست بازبینی" value={appealReasonFa} onChange={(e) => { setAppealReasonFa(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="دلایل و شواهد خود را برای بازبینی تصمیم ناظر بنویسید..." className="w-full p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]" />
             {appealFeedback && (
               <div
                 role={appealFeedback.tone === 'error' ? 'alert' : 'status'}
@@ -267,15 +267,15 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
                 {appealFeedback.text}
               </div>
             )}
-            <button type="submit" disabled={submittingAppeal} data-testid="submit-community-appeal-btn" className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer disabled:opacity-50">
+            <button type="submit" disabled={submittingAppeal} data-testid="submit-community-appeal-btn" className="px-3.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">
               {submittingAppeal ? 'در حال ارسال...' : 'ارسال درخواست بازبینی'}
             </button>
           </form>
           {appeals.length > 0 && (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 pt-1">
+            <div className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)] pt-1">
               {appeals.slice(0, 3).map((a) => (
                 <div key={a.id} className="py-1.5 text-[11px] flex items-center justify-between gap-2">
-                  <span className="truncate text-slate-700 dark:text-slate-300">{a.argumentFa}</span>
+                  <span className="truncate text-slate-700 dark:text-[var(--color-text-secondary)]">{a.argumentFa}</span>
                   <span className="font-bold shrink-0">{a.status === 'overturned' ? 'لغو تصمیم قبلی' : a.status === 'upheld' ? 'تأیید تصمیم قبلی' : 'در صف بررسی'}</span>
                 </div>
               ))}

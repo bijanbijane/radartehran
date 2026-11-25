@@ -32,7 +32,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
   ];
 
   return (
-    <div data-testid="admin-operations-overview-card" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
+    <div data-testid="admin-operations-overview-card" className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -47,7 +47,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
             id="admin-role-preview-select"
             value={p.activeRole}
             onChange={(e) => p.onChangeRole(e.target.value as AdminGovernanceRole)}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold text-slate-800 dark:text-[var(--color-text-primary)]"
           >
             {ADMIN_ROLE_DEFINITIONS.map((r) => (
               <option key={r.role} value={r.role}>{r.labelFa}</option>
@@ -65,11 +65,11 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
             className={`p-3.5 rounded-xl border text-start transition cursor-pointer flex items-center justify-between gap-2 ${
               q.urgent
                 ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:border-amber-400'
-                : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                : 'bg-slate-50 dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)] hover:border-emerald-500'
             }`}
           >
             <div className="min-w-0">
-              <div className="font-bold text-slate-700 dark:text-slate-200 truncate">{q.label}</div>
+              <div className="font-bold text-slate-700 dark:text-[var(--color-text-primary)] truncate">{q.label}</div>
               <div className="text-[10.5px] text-slate-500 mt-0.5">{q.urgent ? 'نیازمند بررسی ممیز' : 'صف پایدار'}</div>
             </div>
             <strong className="text-base font-bold text-slate-900 dark:text-white tabular-nums shrink-0">
@@ -79,8 +79,8 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
-        <span className="inline-flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)] text-[11px]">
+        <span className="inline-flex items-center gap-1.5 font-bold text-slate-600 dark:text-[var(--color-text-secondary)]">
           {p.isVerifiedAdmin ? (
             <>
               <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />

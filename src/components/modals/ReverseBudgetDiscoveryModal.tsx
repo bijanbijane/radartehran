@@ -129,9 +129,9 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl outline-none"
+        className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl outline-none"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-subtle)] pb-4">
           <div>
             <span className="text-[11px] font-bold tracking-widest text-[var(--color-brand-600)] dark:text-emerald-400 uppercase block mb-0.5">
               {isEn ? 'Budget-to-Map Geospatial Match' : 'تطبیق توان مالی با نقشه شهر'}
@@ -145,7 +145,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               type="button"
               onClick={onClose}
               aria-label={isEn ? 'Close' : 'بستن'}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
             >
               ✕
             </button>
@@ -154,7 +154,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
 
         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div className="sm:col-span-2 space-y-2">
-            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+            <label className="block text-xs font-bold text-slate-600 dark:text-[var(--color-text-secondary)]">
               {isEn ? 'Total Buy Budget (Million Toman):' : 'بودجه کل خرید شما (میلیون تومان):'}
             </label>
             <NumericDraftInput
@@ -166,7 +166,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               fallback={initialBudgetMillion || 5000}
               value={totalBudgetMillion}
               onValueChange={(next) => setBudgetFilter({ totalBudgetMillion: next })}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
+              className="w-full rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3.5 py-2.5 text-base font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
@@ -180,8 +180,8 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                     onClick={() => setBudgetFilter({ totalBudgetMillion: preset.value })}
                     className={`rounded-lg px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
                       totalBudgetMillion === preset.value
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                        : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
+                        ? 'bg-[var(--color-brand-600)] text-white'
+                        : 'border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-muted)] hover:border-slate-400 dark:hover:border-slate-500'
                     }`}
                   >
                     {isEn ? preset.labelEn : preset.labelFa}
@@ -205,7 +205,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
 
           <div className="space-y-3">
             <div>
-              <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">
                 <span>{isEn ? 'Area:' : 'متراژ:'}</span>
                 <span className="tabular-nums">{formatAreaShort(desiredAreaSqm, areaUnit)}</span>
               </div>
@@ -216,7 +216,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               />
             </div>
             <div>
-              <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+              <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">
                 <span>{isEn ? 'Building Age:' : 'سن بنا:'}</span>
                 <span className="tabular-nums">{isEn ? `Up to ${fmt.format(maxBuildingAgeYears)} yrs` : `تا ${fmt.format(maxBuildingAgeYears)} سال`}</span>
               </div>
@@ -232,7 +232,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
         {/* Matches list with zero-pill discipline */}
         <div className="mt-5 max-h-72 space-y-2 overflow-y-auto pr-1">
           {rankedMatches.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+            <div className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] p-6 text-center text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
               {isEn ? 'No neighborhoods found within average price range for this budget. Try adjusting area or building age.' : 'با این بودجه و متراژ، محله‌ای در محدوده قیمت میانگین یافت نشد. متراژ را کاهش دهید یا سن بنا را افزایش دهید.'}
             </div>
           ) : (
@@ -243,7 +243,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               return (
                 <div
                   key={hood.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5 hover:border-slate-900 dark:hover:border-white transition"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-[var(--color-bg-muted)] p-3.5 hover:border-slate-900 dark:hover:border-white transition"
                 >
                   <div>
                     <div className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                         )}
                       </span>
                     </div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                    <div className="mt-1 text-xs text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                       {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-[var(--color-brand-600)] dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `سناریو v6.4 (غیرثبتی): ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
                     </div>
                   </div>
@@ -270,7 +270,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       onClose();
                     }}
                     aria-label={isEn ? `Inspect ${hood.nameFa}` : `بررسی محله ${hood.nameFa}`}
-                    className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1.5 text-xs font-bold text-white dark:text-slate-900 hover:opacity-90 cursor-pointer transition shrink-0"
+                    className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1.5 text-xs font-bold text-white dark:text-[var(--color-bg-canvas)] hover:opacity-90 cursor-pointer transition shrink-0"
                   >
                     {isEn ? 'Inspect' : 'بررسی'}
                   </button>

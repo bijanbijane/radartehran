@@ -30,7 +30,7 @@ test('Stage 44.5: Real sqm <-> sqft conversion and unit price conversion', () =>
   const areaSqft = formatAreaShort(100, 'sqft', false);
   assert.ok(areaSqft.includes('ft²'));
   assert.equal(formatAreaUnitLabel('sqft', 'en'), 'Square Feet (ft²)');
-  assert.equal(formatAreaUnitLabel('sqm', 'fa'), 'متر مربع (m²)');
+  assert.equal(formatAreaUnitLabel('sqm', 'fa'), 'متر مربع');
 });
 
 test('Stage 44.6: Reactive areaUnit, intlCurrency, and locale state transitions', () => {

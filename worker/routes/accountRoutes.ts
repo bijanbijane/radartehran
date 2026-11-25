@@ -8,6 +8,7 @@ import {
   createUserDataRequestInD1,
   getUserPrivacyConsentFromD1,
   getUserProfileFromD1,
+  listPendingResearchConsentRevocationsFromD1,
   listUserDataRequestsFromD1,
   listUserFavoritesFromD1,
   listUserSessionsFromD1,
@@ -24,6 +25,10 @@ import {
 import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
+import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../research/researchService';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
@@ -40,6 +45,7 @@ async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRou
 function isHandledAccountWorkerRoute(method: string, pathname: string): boolean {
   if (pathname === '/api/account/profile' && (method === 'GET' || method === 'PATCH')) return true;
   if (pathname === '/api/account/privacy' && (method === 'GET' || method === 'PATCH')) return true;
+  if (pathname === '/api/account/privacy/reconcile' && method === 'POST') return true;
   if (pathname === '/api/account/sessions' && method === 'GET') return true;
   if (method === 'POST' && pathname.startsWith('/api/account/sessions/') && pathname.endsWith('/revoke')) return true;
   if (pathname === '/api/account/favorites' && (method === 'GET' || method === 'PUT' || method === 'POST' || method === 'DELETE')) {
@@ -121,7 +127,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       }
     }
 
-    // 2. GET / PATCH /api/account/privacy
+    // 2. GET / PATCH /api/account/privacy & POST /api/account/privacy/reconcile
     if (pathname === '/api/account/privacy') {
       if (method === 'GET') {
         const privacy = await getUserPrivacyConsentFromD1(userDb, uid);
@@ -145,6 +151,25 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
             : typeof b.receiveMarketingUpdates === 'boolean'
               ? b.receiveMarketingUpdates
               : undefined;
+
+        if (b.researchAnalyticsConsent === false) {
+          const outcome = await revokeUserResearchConsentWithBarrier({
+            env,
+            uid,
+            actorUid: uid,
+            behavioralTelemetryConsent: behavioralTelemetryInput,
+            marketingCommunicationsConsent: marketingInput,
+            consentVersion: typeof b.consentVersion === 'string' ? b.consentVersion : undefined,
+            consentSource: 'account_privacy_api',
+          });
+          const statusCode = outcome.revocation ? outcome.revocation.statusCode : 200;
+          return jsonWorkerResponse(ctx, statusCode, {
+            status: statusCode === 200 ? 'ok' : 'pending',
+            privacy: outcome.privacy,
+            revocation: outcome.revocation,
+          });
+        }
+
         const privacy = await updateUserPrivacyConsentInD1(userDb, {
           uid,
           actorUid: uid,
@@ -157,6 +182,20 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         });
         return jsonWorkerResponse(ctx, 200, { status: 'ok', privacy });
       }
+    }
+
+    if (pathname === '/api/account/privacy/reconcile' && method === 'POST') {
+      const pendingJobs = await listPendingResearchConsentRevocationsFromD1(userDb, auth.isAdmin ? undefined : uid);
+      const results = [];
+      for (const job of pendingJobs) {
+        results.push(await reconcileResearchConsentRevocation({ env, revocationId: job.revocationId }));
+      }
+      const allCompleted = results.every((r) => r.completed);
+      return jsonWorkerResponse(ctx, allCompleted ? 200 : 202, {
+        status: allCompleted ? 'ok' : 'pending',
+        reconciledCount: results.length,
+        results,
+      });
     }
 
     // 3. GET /api/account/sessions & POST /api/account/sessions/:sessionId/revoke

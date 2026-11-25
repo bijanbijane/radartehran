@@ -275,7 +275,7 @@ export function MapProviderStatusBadge(props: { onRetryNeshan?: () => void; clas
   const badgeClass = `inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-medium border shadow-xs transition-all ${
     isFallback ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
       : isNeshan ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
-      : 'bg-slate-500/10 border-slate-500/20 text-slate-700 dark:text-slate-300'
+      : 'bg-slate-500/10 border-slate-500/20 text-slate-700 dark:text-[var(--color-text-secondary)]'
   } ${props.className || ''}`;
   const dotClass = `w-2 h-2 rounded-full ${isFallback ? 'bg-amber-500 animate-pulse' : isNeshan ? 'bg-emerald-500' : 'bg-slate-400'}`;
   return React.createElement(

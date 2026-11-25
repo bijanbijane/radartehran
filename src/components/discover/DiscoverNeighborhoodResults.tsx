@@ -82,7 +82,7 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
           const isArcActive = checkArc(hood.id);
 
           return (
-            <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900/90 ring-1 transition-all flex flex-col justify-between ${isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400 shadow-md' : 'ring-slate-900/5 dark:ring-white/10 shadow-xs hover:shadow-sm hover:ring-slate-900/15 dark:hover:ring-white/20'}`}>
+            <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] ring-1 transition-all flex flex-col justify-between ${isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400 shadow-md' : 'ring-slate-900/5 dark:ring-white/10 shadow-xs hover:shadow-sm hover:ring-slate-900/15 dark:hover:ring-white/20'}`}>
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <button
@@ -93,21 +93,21 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
                     className={`flex-1 min-w-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-emerald-600 ${copy.dir === 'rtl' ? 'text-right' : 'text-left'}`}
                   >
                     <div className="text-xs text-[var(--color-text-muted)] font-medium">{hood.zone} · {copy.scoreLabel(hood.overallScore)} {isTiedTop && <span className="text-indigo-700 dark:text-indigo-400 font-bold">{copy.tiedTopNote}</span>}</div>
-                    <h3 className="text-base font-bold text-[var(--color-text-primary)] mt-0.5 flex flex-wrap items-center gap-1.5">
+                    <h2 className="text-base font-bold text-[var(--color-text-primary)] mt-0.5 flex flex-wrap items-center gap-1.5">
                       <span>{copy.neighborhoodPrefix ? `${copy.neighborhoodPrefix} ${hood.name}` : hood.name}</span>
                       {topFilteredScore !== undefined && Math.abs(hood.overallScore - topFilteredScore) < 0.05 && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold ring-1 ring-amber-500/25">{copy.topOpportunityBadge}</span>
                       )}
                       {isSelected && <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">{copy.selectedOnMapBadge}</span>}
-                    </h3>
+                    </h2>
                     <div className="mt-1 text-xs font-medium">
                       {hood.status === 'green'
                         ? <span className="inline-flex items-center gap-1 text-[var(--color-brand-600)] dark:text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{copy.inBudgetBadge}</span>
                         : <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{copy.aboveBudgetBadge(hood.diffPercent)}</span>}
                     </div>
                   </button>
-                  <button type="button" onClick={() => onToggleFavorite(hood.id)} aria-pressed={isFav} aria-label={isFav ? copy.favoriteRemoveAria(hood.name) : copy.favoriteAddAria(hood.name)} className={`p-2 rounded-lg border transition cursor-pointer shrink-0 ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}>
-                    <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <button type="button" onClick={() => onToggleFavorite(hood.id)} aria-pressed={isFav} aria-label={isFav ? copy.favoriteRemoveAria(hood.name) : copy.favoriteAddAria(hood.name)} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg border transition cursor-pointer shrink-0 ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}>
+                    <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
                   </button>
                 </div>
 
@@ -120,16 +120,16 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
               </div>
 
               <div className="pt-3.5 mt-3.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-1.5">
-                <button type="button" onClick={() => onOpenInspector(hood)} className="flex-1 min-h-[40px] py-2 px-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer hover:opacity-90">
+                <button type="button" onClick={() => onOpenInspector(hood)} className="flex-1 min-h-[44px] md:min-h-[38px] py-2 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
                   <span>{copy.inspectCardBtn}</span><ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
                 {!isSelected && (
-                  <button type="button" onClick={() => onToggleComparisonArc(hood)} aria-pressed={isArcActive} title={copy.mapArcTitle(selectedHood.name)} aria-label={copy.mapArcAria(hood.name)} className={`min-h-[40px] px-2.5 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-[var(--color-border-strong)] hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400'}`}>
-                    <Scale className="w-3.5 h-3.5" />
+                  <button type="button" onClick={() => onToggleComparisonArc(hood)} aria-pressed={isArcActive} title={copy.mapArcTitle(selectedHood.name)} aria-label={copy.mapArcAria(hood.name)} className={`min-w-[44px] min-h-[44px] md:min-w-[38px] md:min-h-[38px] inline-flex items-center justify-center rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-strong)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]'}`}>
+                    <Scale className="w-4 h-4" />
                   </button>
                 )}
-                <button type="button" onClick={() => onOpenCompare(selectedHood.id, hood.id)} title={copy.compareMatrixTitle} aria-label={copy.compareMatrixAria(hood.name, selectedHood.name)} className="min-h-[40px] px-2.5 rounded-xl border border-[var(--color-border-strong)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] text-xs transition cursor-pointer">
-                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                <button type="button" onClick={() => onOpenCompare(selectedHood.id, hood.id)} title={copy.compareMatrixTitle} aria-label={copy.compareMatrixAria(hood.name, selectedHood.name)} className="min-w-[44px] min-h-[44px] md:min-w-[38px] md:min-h-[38px] inline-flex items-center justify-center rounded-xl border border-[var(--color-border-strong)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] text-xs transition cursor-pointer">
+                  <ArrowLeftRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -169,10 +169,10 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
             </button>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 tabular-nums">
               <DiscoverPriceSummary buyPerSqm={hood.buyPerSqm} dealPerSqm={dealPerSqm} rahn80m={hood.rahn80m} targetSqm={targetSqm} areaUnit={areaUnit} intlCurrency={intlCurrency} radarLocale={radarLocale} mode={mode} exchangeRateRef={exchangeRateRef} freshness={freshness} layout="list" />
-              <button type="button" onClick={() => onToggleFavorite(hood.id)} aria-pressed={isFav} aria-label={isFav ? copy.favoriteRemoveAria(hood.name) : copy.favoriteAddAria(hood.name)} className={`p-2 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} /></button>
-              {!isSelected && <button type="button" onClick={() => onToggleComparisonArc(hood)} aria-pressed={isArcActive} title={copy.mapArcTitle(selectedHood.name)} aria-label={copy.mapArcAria(hood.name)} className={`p-2 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-[var(--color-border-strong)] text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}><Scale className="w-3.5 h-3.5" /></button>}
-              <button type="button" onClick={() => onOpenCompare(selectedHood.id, hood.id)} title={copy.compareMatrixTitle} aria-label={copy.compareMatrixAria(hood.name, selectedHood.name)} className="p-2 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"><ArrowLeftRight className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={() => onOpenInspector(hood)} aria-label={copy.inspectRowAria(hood.name)} className="min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition font-bold cursor-pointer">{copy.inspectRowBtn}</button>
+              <button type="button" onClick={() => onToggleFavorite(hood.id)} aria-pressed={isFav} aria-label={isFav ? copy.favoriteRemoveAria(hood.name) : copy.favoriteAddAria(hood.name)} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} /></button>
+              {!isSelected && <button type="button" onClick={() => onToggleComparisonArc(hood)} aria-pressed={isArcActive} title={copy.mapArcTitle(selectedHood.name)} aria-label={copy.mapArcAria(hood.name)} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}><Scale className="w-4 h-4" /></button>}
+              <button type="button" onClick={() => onOpenCompare(selectedHood.id, hood.id)} title={copy.compareMatrixTitle} aria-label={copy.compareMatrixAria(hood.name, selectedHood.name)} className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] cursor-pointer"><ArrowLeftRight className="w-4 h-4" /></button>
+              <button type="button" onClick={() => onOpenInspector(hood)} aria-label={copy.inspectRowAria(hood.name)} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] hover:bg-[var(--color-brand-600)] hover:text-white hover:border-transparent transition font-bold cursor-pointer">{copy.inspectRowBtn}</button>
             </div>
           </div>
         );

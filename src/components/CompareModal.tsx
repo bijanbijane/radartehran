@@ -83,14 +83,14 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
   };
   return (
     <div role="dialog" aria-modal="true" aria-label={compareCopy.modalTitle} onClick={onClose} className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 text-slate-900 dark:text-slate-100 max-w-3xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl rounded-3xl">
-        <div className="space-y-2.5 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] ring-1 ring-slate-900/5 dark:ring-white/10 text-slate-900 dark:text-[var(--color-text-primary)] max-w-3xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl rounded-3xl">
+        <div className="space-y-2.5 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5 mb-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-xs shrink-0"><ArrowLeftRight className="w-4 h-4 stroke-[1.75]" /></span>
+              <span className="w-8 h-8 rounded-xl bg-[var(--color-brand-600)] text-white flex items-center justify-center shadow-xs shrink-0"><ArrowLeftRight className="w-4 h-4 stroke-[1.75]" /></span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">{compareCopy.modalTitle}</h3>
             </div>
-            <button type="button" aria-label="بستن پنجره مقایسه" onClick={onClose} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition shrink-0">
+            <button type="button" aria-label="بستن پنجره مقایسه" onClick={onClose} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-[var(--color-bg-muted)] hover:bg-slate-300 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition shrink-0">
               <X className="w-4 h-4 stroke-[1.75]" />
             </button>
           </div>
@@ -112,40 +112,40 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <MapPin className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{isArcPinned ? 'کمان نقشه پین شد' : 'پین کمان روی نقشه'}</span>
             </button>
-            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
               {copied ? <Check className="w-3.5 h-3.5 stroke-[2]" /> : <Copy className="w-3.5 h-3.5 stroke-[1.75]" />}
               <span>{copied ? 'کپی شد' : 'کپی خلاصه'}</span>
             </button>
-            <button type="button" onClick={() => window.print()} aria-label={compareCopy.printBtnLabel} title="چاپ یا ذخیره PDF جدول مقایسه" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
+            <button type="button" onClick={() => window.print()} aria-label={compareCopy.printBtnLabel} title="چاپ یا ذخیره PDF جدول مقایسه" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
               <Printer className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.printBtnLabel}</span>
             </button>
-            <button type="button" onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
+            <button type="button" onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
               <RefreshCw className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.swapBtnLabel}</span>
             </button>
           </div>
         </div>
         {safeNeighborhoods.length === 0 || !compHood1 || !compHood2 ? (
-          <div className="apple-grouped-card dark:bg-slate-800/80 p-6 text-center space-y-3">
+          <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] p-6 text-center space-y-3">
             <AlertCircle className="w-6 h-6 stroke-[1.75] text-amber-600 mx-auto" />
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">اطلاعات محلات برای مقایسه در دسترس نیست.</p>
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold cursor-pointer">بازگشت به نقشه</button>
+            <p className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">اطلاعات محلات برای مقایسه در دسترس نیست.</p>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold cursor-pointer">بازگشت به نقشه</button>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              <div className="apple-grouped-card dark:bg-slate-800/70 dark:border-slate-800 p-3">
-                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">انتخاب محله اول:</label>
-                <select aria-label="انتخاب محله اول" value={compareId1} onChange={(e) => handleSelectHood1(e.target.value)} className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg ps-3 pe-7 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-slate-500 truncate">
+              <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-3">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)] mb-1.5">انتخاب محله اول:</label>
+                <select aria-label="انتخاب محله اول" value={compareId1} onChange={(e) => handleSelectHood1(e.target.value)} className="w-full bg-slate-100/80 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg ps-3 pe-7 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-slate-500 truncate">
                   {safeNeighborhoods.map((n) => (
                     <option key={n.id} value={n.id}>{formatHoodOption(n, compareId2)}</option>
                   ))}
                 </select>
               </div>
-              <div className="apple-grouped-card dark:bg-slate-800/70 dark:border-slate-800 p-3">
-                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">انتخاب محله دوم:</label>
-                <select aria-label="انتخاب محله دوم" value={compareId2} onChange={(e) => handleSelectHood2(e.target.value)} className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg ps-3 pe-7 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-slate-500 truncate">
+              <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-3">
+                <label className="block text-[11px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)] mb-1.5">انتخاب محله دوم:</label>
+                <select aria-label="انتخاب محله دوم" value={compareId2} onChange={(e) => handleSelectHood2(e.target.value)} className="w-full bg-slate-100/80 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg ps-3 pe-7 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-slate-500 truncate">
                   {safeNeighborhoods.map((n) => (
                     <option key={n.id} value={n.id}>{formatHoodOption(n, compareId1)}</option>
                   ))}
@@ -174,7 +174,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                   وجود دارد (اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong> · اختلاف هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: <strong className="tabular-nums">{toPersianNum(summaryStats.uSpread)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(summaryStats.uSpread, intlCurrency, radarLocale)})` : ''}</strong>).
                 </div>
               </div>
-              <div className="apple-grouped-card dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 p-3.5 text-slate-900 dark:text-slate-100 space-y-2.5 shadow-xs">
+              <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] ring-1 ring-slate-900/5 dark:ring-white/10 p-3.5 text-slate-900 dark:text-[var(--color-text-primary)] space-y-2.5 shadow-xs">
                 {(() => {
                   const p1 = compHood1.buyPerSqm, p2 = compHood2.buyPerSqm;
                   const priceRatio = Math.max(p1, p2) / Math.max(1, Math.min(p1, p2));
@@ -194,7 +194,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                             نبرد تن‌به‌تن: محله {compHood1.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و محله {compHood2.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span> برتر است.
                           </span>
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[var(--color-brand-600)] text-white text-[11px] font-bold">
                           {summaryStats.win1 > summaryStats.win2 ? `برتری کلی با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری کلی با ${compHood2.name}` : 'رقابت کاملاً برابر'}
                         </span>
                       </div>
@@ -202,23 +202,23 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                   );
                 })()}
                 {explain1 && explain2 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-700 text-[10.5px] text-slate-600 dark:text-slate-300">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-strong)] text-[10.5px] text-slate-600 dark:text-[var(--color-text-secondary)]">
                     <div><strong className="text-slate-900 dark:text-white">{compHood1.name} ({explain1.budgetFitSemanticsLabelFa}):</strong> {explain1.tradeOffSummaryFa}{explain1.nonCompensatoryWarningsFa[0] ? ` · ⚠️ ${explain1.nonCompensatoryWarningsFa[0]}` : ''}</div>
                     <div><strong className="text-slate-900 dark:text-white">{compHood2.name} ({explain2.budgetFitSemanticsLabelFa}):</strong> {explain2.tradeOffSummaryFa}{explain2.nonCompensatoryWarningsFa[0] ? ` · ⚠️ ${explain2.nonCompensatoryWarningsFa[0]}` : ''}</div>
                   </div>
                 )}
               </div>
             </div>
-            <div className="apple-grouped-card dark:bg-slate-800/50 dark:border-slate-800 overflow-hidden text-xs">
-              <div className="grid grid-cols-3 bg-slate-50/90 dark:bg-slate-800 py-3 px-4 font-bold text-slate-900 dark:text-white border-b border-slate-200/70 dark:border-slate-700">
+            <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] overflow-hidden text-xs">
+              <div className="grid grid-cols-3 bg-slate-50/90 dark:bg-[var(--color-bg-muted)] py-3 px-4 font-bold text-slate-900 dark:text-white border-b border-slate-200/70 dark:border-[var(--color-border-strong)]">
                 <div className="text-center text-sm truncate">{compHood1.name}</div>
-                <div className="text-center text-slate-500 dark:text-slate-400">{compareCopy.metricHeader}</div>
+                <div className="text-center text-slate-500 dark:text-[var(--color-text-muted)]">{compareCopy.metricHeader}</div>
                 <div className="text-center text-sm truncate">{compHood2.name}</div>
               </div>
               <div className="grid grid-cols-3 items-center py-2.5 px-4 border-b border-amber-200/80 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20">
                 <div
                   className={`text-center font-bold tabular-nums py-1 rounded-lg ${
-                    summaryStats.sqm1 > summaryStats.sqm2 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'text-amber-800 dark:text-amber-300'
+                    summaryStats.sqm1 > summaryStats.sqm2 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border border-slate-200 dark:border-[var(--color-border-strong)]' : 'text-amber-800 dark:text-amber-300'
                   }`}
                 >
                   {formatAreaValue(summaryStats.sqm1, areaUnit)}
@@ -228,7 +228,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                 </div>
                 <div
                   className={`text-center font-bold tabular-nums py-1 rounded-lg ${
-                    summaryStats.sqm2 > summaryStats.sqm1 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'text-amber-800 dark:text-amber-300'
+                    summaryStats.sqm2 > summaryStats.sqm1 ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800' : summaryStats.sqm1 === summaryStats.sqm2 ? 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border border-slate-200 dark:border-[var(--color-border-strong)]' : 'text-amber-800 dark:text-amber-300'
                   }`}
                 >
                   {formatAreaValue(summaryStats.sqm2, areaUnit)}
@@ -237,27 +237,27 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               {rows.map((row, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-3 items-center py-2.5 px-4 border-b border-slate-100 dark:border-slate-800/80 last:border-none bg-white dark:bg-slate-900"
+                  className="grid grid-cols-3 items-center py-2.5 px-4 border-b border-slate-100 dark:border-[var(--color-border-subtle)] last:border-none bg-white dark:bg-[var(--color-bg-surface)]"
                 >
                   <div
                     className={`text-center font-bold tabular-nums py-1 rounded-lg ${
                       row.win === 1
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60'
                         : row.win === 0
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                          : 'text-slate-600 dark:text-slate-400'
+                          ? 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border border-slate-200 dark:border-[var(--color-border-strong)]'
+                          : 'text-slate-600 dark:text-[var(--color-text-muted)]'
                     }`}
                   >
                     {row.v1}
                   </div>
-                  <div className="text-center text-slate-500 dark:text-slate-400 px-2">{row.label}</div>
+                  <div className="text-center text-slate-500 dark:text-[var(--color-text-muted)] px-2">{row.label}</div>
                   <div
                     className={`text-center font-bold tabular-nums py-1 rounded-lg ${
                       row.win === 2
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60'
                         : row.win === 0
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                          : 'text-slate-600 dark:text-slate-400'
+                          ? 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border border-slate-200 dark:border-[var(--color-border-strong)]'
+                          : 'text-slate-600 dark:text-[var(--color-text-muted)]'
                     }`}
                   >
                     {row.v2}
@@ -274,7 +274,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                     onClose();
                   }}
                   aria-label={`انتخاب محله ${compHood1.name}`}
-                  className="py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                  className="py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
                 >
                   <MapPin className="w-4 h-4 stroke-[1.75]" />
                   <span>انتخاب محله {compHood1.name}</span>
@@ -286,7 +286,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                     onClose();
                   }}
                   aria-label={`انتخاب محله ${compHood2.name}`}
-                  className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs border border-slate-200 dark:border-slate-700"
+                  className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-900 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs border border-slate-200 dark:border-[var(--color-border-strong)]"
                 >
                   <MapPin className="w-4 h-4 stroke-[1.75]" />
                   <span>انتخاب محله {compHood2.name}</span>

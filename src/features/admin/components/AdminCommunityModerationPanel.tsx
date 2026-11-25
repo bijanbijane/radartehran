@@ -107,8 +107,8 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
     });
 
   return (
-    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3 text-xs" data-testid="admin-community-moderation-queue">
-      <strong className="font-bold text-slate-800 dark:text-slate-100 block">
+    <div className="pt-3 border-t border-slate-100 dark:border-[var(--color-border-subtle)] space-y-3 text-xs" data-testid="admin-community-moderation-queue">
+      <strong className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] block">
         پیشنهادهای اصلاح داده محله ({toPersianNum(corrections.length)})
       </strong>
       {loadErrorFa && (
@@ -117,7 +117,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
         </div>
       )}
       {corrections.slice(0, 5).map((c) => (
-        <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+        <div key={c.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="font-bold text-slate-900 dark:text-white truncate">{c.titleFa} · محله {c.neighborhoodNameFa}</div>
             <div className="text-[10.5px] text-slate-500">
@@ -195,7 +195,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     await reloadQueue();
                     onFeedback('گزارش تخلف رد و مختومه شد.');
                   })}
-                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
+                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-[var(--color-border-strong)] font-bold cursor-pointer disabled:opacity-50"
                 >
                   رد گزارش
                 </button>
@@ -243,7 +243,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     await reloadQueue();
                     onFeedback(`تصمیم نظارتی در مورد ${ap.id} ابقا شد.`);
                   })}
-                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
+                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-[var(--color-border-strong)] font-bold cursor-pointer disabled:opacity-50"
                 >
                   ابقای تصمیم
                 </button>
@@ -290,7 +290,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                       onFeedback(out.ok ? `تصمیم ${dec} ثبت شد.` : (out.errorFa || 'خطا'));
                       if (out.ok) await reloadQueue();
                     })}
-                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
+                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-[var(--color-border-strong)] font-bold cursor-pointer disabled:opacity-50"
                   >
                     {dec}
                   </button>

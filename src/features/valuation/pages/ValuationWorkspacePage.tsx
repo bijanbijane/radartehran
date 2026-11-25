@@ -179,7 +179,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
 
   return (
     <section className="space-y-4 animate-fadeIn" data-testid="valuation-workspace-page">
-      <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-3">
         <div>
           <span className="text-xs font-bold text-[var(--color-brand-fg)]">
             ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع · شهر {cityNameFa})
@@ -193,7 +193,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
           <button
             type="button"
             onClick={() => setInput(createDefaultValuationInput(selectedHood.id, {}, resolvedCity))}
-            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold text-[#48534F] dark:text-[var(--color-text-secondary)] flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>ملک جدید</span>

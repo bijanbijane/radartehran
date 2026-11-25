@@ -88,14 +88,14 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
   const wrapperClass =
     layout === 'list'
       ? 'flex flex-wrap items-center gap-3 tabular-nums text-xs'
-      : 'my-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3 tabular-nums';
+      : 'my-3.5 pt-3 border-t border-slate-100 dark:border-[var(--color-border-subtle)] grid grid-cols-2 gap-3 tabular-nums';
 
   const depositBorderClass =
     layout === 'list'
       ? ''
       : copy.dir === 'rtl'
-        ? 'border-r border-slate-100 dark:border-slate-800 pr-3'
-        : 'border-l border-slate-100 dark:border-slate-800 pl-3';
+        ? 'border-r border-slate-100 dark:border-[var(--color-border-subtle)] pr-3'
+        : 'border-l border-slate-100 dark:border-[var(--color-border-subtle)] pl-3';
 
   return (
     <div className={wrapperClass} dir={copy.dir}>

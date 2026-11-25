@@ -29,10 +29,10 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-md w-full p-5 text-center space-y-3"
+          className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] max-w-md w-full p-5 text-center space-y-3"
         >
           <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
             اطلاعات محله‌ها جهت ثبت آگهی در دسترس نیست
           </h3>
           <button
@@ -47,8 +47,8 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
     ); }
   return (
     <div role="dialog" aria-modal="true" aria-label="ثبت ملک زیر قیمت و رزرو کارشناس رسمی محله" onClick={onClose} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-[var(--color-text-primary)] rounded-2xl max-w-2xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0"><Award className="w-4 h-4 stroke-[1.75]" /></span>
             <div>
@@ -62,20 +62,20 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           </div>
           <div className="flex items-center gap-2">
             <AreaUnitToggle compact showIntlControls />
-            <button type="button" aria-label="بستن پنجره ثبت ملک" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors">
+            <button type="button" aria-label="بستن پنجره ثبت ملک" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors">
               <X className="w-4 h-4 stroke-[2]" />
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-slate-800/80 p-1 rounded-[10px] mb-4 text-xs font-bold">
+        <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-[var(--color-bg-muted)] p-1 rounded-[10px] mb-4 text-xs font-bold">
           <button
             type="button"
             onClick={() => { recordDiagnosticEvent('AgencyModal', 'switchTab:submit_bargain', 'success');
               setSponsorSubmitMsg?.(''); setAgencyModalTab('submit_bargain'); }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'submit_bargain'
-                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold'
+                : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             ثبت رایگان ملک زیر قیمت
@@ -87,8 +87,8 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'reserve_sponsor'
-                ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold'
+                : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             رزرو کارشناس رسمی محله (ویژه املاک)
@@ -104,9 +104,9 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                 می‌شوند.
               </div>
             </div>
-            <div className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-800 rounded-[12px] p-2.5 space-y-2">
+            <div className="bg-slate-50/90 dark:bg-[var(--color-bg-muted)] border border-slate-200/90 dark:border-[var(--color-border-subtle)] rounded-[12px] p-2.5 space-y-2">
               <div className="flex items-center justify-between gap-1 text-[11px]">
-                <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-slate-200">
+                <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   استخراج هوشمند از متن آگهی دیوار / شیپور:
                 </span>
@@ -125,7 +125,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                   value={adRawText}
                   onChange={(e) => { setNlpMsg(''); setAdRawText(e.target.value); }}
                   placeholder="متن آگهی را پیست کنید (مثلاً: ۷۵ متر طبقه ۲ با پارکینگ متری ۱۱۰ م...)"
-                  className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-600"
+                  className="flex-1 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-[8px] px-2.5 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-600"
                 />
                 <button
                   type="button"
@@ -138,18 +138,18 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               {extractedSpecs && (
                 <div className="flex flex-wrap items-center gap-1 text-[10.5px]">
-                  <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold">متراژ: {toPersianNum(extractedSpecs.sqm)} متر</span>
-                  <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold">ط {toPersianNum(extractedSpecs.floor)} از {toPersianNum(extractedSpecs.totalFloors)}</span>
-                  <span className={`px-1.5 py-0.5 rounded font-bold ${extractedSpecs.hasParking ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{extractedSpecs.hasParking ? 'پارکینگ' : 'بدون پارکینگ'}</span>
-                  <span className={`px-1.5 py-0.5 rounded font-bold ${extractedSpecs.hasElevator ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{extractedSpecs.hasElevator ? 'آسانسور' : 'بدون آسانسور'}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold">متراژ: {toPersianNum(extractedSpecs.sqm)} متر</span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold">ط {toPersianNum(extractedSpecs.floor)} از {toPersianNum(extractedSpecs.totalFloors)}</span>
+                  <span className={`px-1.5 py-0.5 rounded font-bold ${extractedSpecs.hasParking ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200/70 dark:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)]'}`}>{extractedSpecs.hasParking ? 'پارکینگ' : 'بدون پارکینگ'}</span>
+                  <span className={`px-1.5 py-0.5 rounded font-bold ${extractedSpecs.hasElevator ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200/70 dark:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)]'}`}>{extractedSpecs.hasElevator ? 'آسانسور' : 'بدون آسانسور'}</span>
                   {extractedSpecs.detectedSignals.hasLegalRisk && <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 font-bold">ریسک سند/حقوقی</span>}
                 </div>
               )}
             </div>
-            <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 mb-1">انتخاب محله:</label>
-                <select aria-label="انتخاب محله" value={bargainHoodId} onChange={(e) => { const nextId = Number(e.target.value); setBargainSubmitMsg?.(null); setBargainHoodId(nextId); const foundHood = safeNeighborhoods.find((n) => n.id === nextId); if (foundHood) { setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: foundHood.buyPerSqm, rentPerMonth: foundHood.rahn80m ? foundHood.rahn80m / 100 : undefined }, bargainType).proposedPrice); } }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">انتخاب محله:</label>
+                <select aria-label="انتخاب محله" value={bargainHoodId} onChange={(e) => { const nextId = Number(e.target.value); setBargainSubmitMsg?.(null); setBargainHoodId(nextId); const foundHood = safeNeighborhoods.find((n) => n.id === nextId); if (foundHood) { setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: foundHood.buyPerSqm, rentPerMonth: foundHood.rahn80m ? foundHood.rahn80m / 100 : undefined }, bargainType).proposedPrice); } }} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   {safeNeighborhoods.map((n) => {
                     const uVal = bargainType === 'اجاره' ? n.rahn80m : Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
                     const fx = showIntl ? ` · ${formatMillionTomanAsIntlCurrency(uVal, currency, locale)}` : '';
@@ -162,20 +162,20 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                 </select>
               </div>
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
-                <select aria-label="نوع معامله" value={bargainType} onChange={(e) => { const nextType = e.target.value === 'اجاره' ? 'اجاره' : 'خرید'; setBargainSubmitMsg?.(null); setBargainType(nextType); setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, nextType).proposedPrice); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نوع معامله:</label>
+                <select aria-label="نوع معامله" value={bargainType} onChange={(e) => { const nextType = e.target.value === 'اجاره' ? 'اجاره' : 'خرید'; setBargainSubmitMsg?.(null); setBargainType(nextType); setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, nextType).proposedPrice); }} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   <option value="خرید">فروش ملک (خرید)</option>
                   <option value="اجاره">رهن و اجاره</option>
                 </select>
               </div>
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ واحد (متر مربع — معادل {formatAreaShort(bargainSqm, areaUnit)}):</label>
-                <NumericDraftInput aria-label="متراژ واحد" min={30} max={500} fallback={80} value={bargainSqm} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainSqm(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">متراژ واحد (متر مربع — معادل {formatAreaShort(bargainSqm, areaUnit)}):</label>
+                <NumericDraftInput aria-label="متراژ واحد" min={30} max={500} fallback={80} value={bargainSqm} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainSqm(v); }} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 mb-1">
+                <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">
                   {bargainType === 'خرید'
                     ? (() => {
                         const rawBench = (targetBargainHood as { baseBuyPerSqm?: number }).baseBuyPerSqm ?? targetBargainHood.buyPerSqm;
@@ -188,35 +188,35 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                         return `مبلغ رهن کامل پیشنهادی (میانگین ${formatAreaShort(bargainSqm, areaUnit)} ${targetBargainHood.name}: ${toPersianNum(scaledRahn)} میلیون · اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahn, currency, locale)}` : ''}):`;
                       })()}
                 </label>
-                <NumericDraftInput aria-label="قیمت پیشنهادی" min={10} max={bargainType === 'اجاره' ? 200000 : 10000} fallback={computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, bargainType).proposedPrice} value={bargainProposedPrice} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainProposedPrice(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <NumericDraftInput aria-label="قیمت پیشنهادی" min={10} max={bargainType === 'اجاره' ? 200000 : 10000} fallback={computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, bargainType).proposedPrice} value={bargainProposedPrice} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainProposedPrice(v); }} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
                 <div className="flex flex-wrap items-center justify-between gap-1.5 mt-1.5 text-[11px]">
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(liveBargainCheck.maxAllowedFor10Percent); }} className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold transition cursor-pointer">
                       اعمال ۱۰٪ تخفیف ({toPersianNum(liveBargainCheck.maxAllowedFor10Percent)} م{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(liveBargainCheck.maxAllowedFor10Percent, currency, locale)}` : ''})
                     </button>
-                    <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85))); }} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer">
+                    <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85))); }} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-secondary)] font-bold transition cursor-pointer">
                       اعمال ۱۵٪ تخفیف ({toPersianNum(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)))} م{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)), currency, locale)}` : ''})
                     </button>
                   </div>
                   {bargainType === 'خرید' ? (
-                    <span className="text-slate-600 dark:text-slate-300 font-bold tabular-nums">
+                    <span className="text-slate-600 dark:text-[var(--color-text-secondary)] font-bold tabular-nums">
                       کل واحد: {toPersianNum(((bargainProposedPrice * bargainSqm) / 1000).toFixed(2))} میلیارد{showIntl ? ` (${formatMillionTomanAsIntlCurrency(bargainProposedPrice * bargainSqm, currency, locale)})` : ''}{areaUnit === 'sqft' ? ` · معادل هر ft²: ${toPersianNum(convertPricePerSqmToUnit(bargainProposedPrice, areaUnit))} م` : ''}
                     </span>
                   ) : (
-                    <span className="text-slate-600 dark:text-slate-300 font-bold tabular-nums">
+                    <span className="text-slate-600 dark:text-[var(--color-text-secondary)] font-bold tabular-nums">
                       اجاره ماهانه معادل: {toPersianNum(Math.round(bargainProposedPrice * 0.03))} م{showIntl ? ` (${formatMillionTomanAsIntlCurrency(Math.round(bargainProposedPrice * 0.03), currency, locale)})` : ''}
                     </span>
                   )}
                 </div>
               </div>
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 mb-1">نام خیابان یا فرعی در محله:</label>
-                <input type="text" aria-label="نام خیابان یا فرعی در محله" maxLength={100} value={bargainStreet} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainStreet(sanitizeLiveText(e.target.value, 100)); }} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+                <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نام خیابان یا فرعی در محله:</label>
+                <input type="text" aria-label="نام خیابان یا فرعی در محله" maxLength={100} value={bargainStreet} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainStreet(sanitizeLiveText(e.target.value, 100)); }} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div>
-              <label className="block text-slate-600 dark:text-slate-300 mb-1">عنوان و مشخصات ملک:</label>
-              <input type="text" aria-label="عنوان و مشخصات ملک" maxLength={140} value={bargainTitle} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainTitle(sanitizeLiveText(e.target.value, 140)); }} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+              <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">عنوان و مشخصات ملک:</label>
+              <input type="text" aria-label="عنوان و مشخصات ملک" maxLength={140} value={bargainTitle} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainTitle(sanitizeLiveText(e.target.value, 140)); }} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
             </div>
             <ListingMediaStorageUploader hoodId={bargainHoodId} hoodName={targetBargainHood.name} sqm={bargainSqm} city={activeCity} uploadedMedia={mediaList} onChangeMedia={setMediaList} />
             <div

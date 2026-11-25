@@ -70,15 +70,15 @@ export function NeighborhoodPriceTrendModal({
 
   const modalContent = (
     <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-labelledby="neighborhood-price-trend-modal-title" className="fixed inset-0 z-[9500] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
-      <div ref={dialogRef} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-[20px] shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div ref={dialogRef} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-[var(--color-text-primary)] rounded-[20px] shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-b border-slate-200/80 dark:border-[var(--color-border-subtle)] bg-slate-50/80 dark:bg-[var(--color-bg-muted)] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shrink-0 shadow-xs"><LineChartIcon className="w-4 h-4 stroke-[2]" /></div>
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0 shadow-xs"><LineChartIcon className="w-4 h-4 stroke-[2]" /></div>
             <div className="min-w-0">
               <h2 id="neighborhood-price-trend-modal-title" className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
                 {isEn ? `12-Month Price Trend — ${selectedHood.name}` : `روند تاریخی ۱۲ ماهه قیمت خرید و اجاره — ${selectedHood.name}`}
               </h2>
-              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+              <p className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-2 mt-0.5">
                 <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>{summaryStats.firstMonth} {isEn ? 'to' : 'تا'} {summaryStats.lastMonth}</span></span>
                 <span>·</span><span>{cityNameFa} ({selectedHood.zone})</span>
               </p>
@@ -87,14 +87,14 @@ export function NeighborhoodPriceTrendModal({
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <AreaUnitToggle compact showIntlControls />
             {evaluatedNeighborhoods.length > 1 && onSelectNeighborhood && (
-              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs">
+              <div className="flex items-center gap-1.5 bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2.5 py-1 text-xs">
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <select aria-label={isEn ? 'Select neighborhood' : 'انتخاب محله'} value={selectedHood.id} onChange={(e) => { const f = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (f) onSelectNeighborhood(f); }} className="bg-transparent font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer max-w-[140px] truncate">
+                <select aria-label={isEn ? 'Select neighborhood' : 'انتخاب محله'} value={selectedHood.id} onChange={(e) => { const f = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (f) onSelectNeighborhood(f); }} className="bg-transparent font-bold text-slate-800 dark:text-[var(--color-text-primary)] focus:outline-none cursor-pointer max-w-[140px] truncate">
                   {evaluatedNeighborhoods.map((h) => <option key={h.id} value={h.id}>{h.name} ({h.zone}) — {toPersianNum(Number(convertPricePerSqmToUnit(h.buyPerSqm, areaUnit).toFixed(1)))} م</option>)}
                 </select>
               </div>
             )}
-            <button type="button" onClick={onClose} aria-label={isEn ? 'Close' : 'بستن'} className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition cursor-pointer">
+            <button type="button" onClick={onClose} aria-label={isEn ? 'Close' : 'بستن'} className="w-7 h-7 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center transition cursor-pointer">
               <X className="w-4 h-4 stroke-[2]" />
             </button>
           </div>
@@ -109,8 +109,8 @@ export function NeighborhoodPriceTrendModal({
                   {summaryStats.buyGrowth12m >= 0 ? <ArrowUpRight className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />}{summaryStats.buyGrowth12m > 0 ? '+' : ''}{toPersianNum(summaryStats.buyGrowth12m)}٪
                 </span>
               </div>
-              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.endBuy, areaUnit).toFixed(1)))} <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">12M: {toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.startBuy, areaUnit).toFixed(1)))} م · قطعی سناریو v6.4 (غیرثبتی): {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م</div>
+              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.endBuy, areaUnit).toFixed(1)))} <span className="text-xs font-bold text-slate-600 dark:text-[var(--color-text-muted)]">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">12M: {toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.startBuy, areaUnit).toFixed(1)))} م · قطعی سناریو v6.4 (غیرثبتی): {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م</div>
             </div>
 
             <div className="bg-sky-50/70 dark:bg-sky-950/25 border border-sky-200/80 dark:border-sky-900/40 rounded-xl p-3 space-y-1">
@@ -120,52 +120,52 @@ export function NeighborhoodPriceTrendModal({
                   {summaryStats.rentGrowth12m >= 0 ? <ArrowUpRight className="w-3 h-3 text-sky-600 dark:text-sky-400" /> : <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />}{summaryStats.rentGrowth12m > 0 ? '+' : ''}{toPersianNum(summaryStats.rentGrowth12m)}٪
                 </span>
               </div>
-              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.endRahn)} <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">{isEn ? `Monthly Rent: ${toPersianNum(summaryStats.endMonthlyRent)}M` : `اجاره ماهانه: ${toPersianNum(summaryStats.endMonthlyRent)} م`}</div>
+              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.endRahn)} <span className="text-xs font-bold text-slate-600 dark:text-[var(--color-text-muted)]">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? `Monthly Rent: ${toPersianNum(summaryStats.endMonthlyRent)}M` : `اجاره ماهانه: ${toPersianNum(summaryStats.endMonthlyRent)} م`}</div>
             </div>
 
             <div className="bg-violet-50/70 dark:bg-violet-950/25 border border-violet-200/80 dark:border-violet-900/40 rounded-xl p-3 space-y-1">
               <div className="text-[11px] text-violet-900 dark:text-violet-300 font-semibold">{isEn ? 'Monthly Rent Equiv' : 'معادل اجاره ماهانه'}</div>
-              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.endMonthlyRent)} <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'M/mo' : 'میلیون/ماه'}</span></div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">{isEn ? '3% monthly conversion' : 'نرخ تبدیل عرف بازار: ۳٪ ماهانه'}</div>
+              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.endMonthlyRent)} <span className="text-xs font-bold text-slate-600 dark:text-[var(--color-text-muted)]">{isEn ? 'M/mo' : 'میلیون/ماه'}</span></div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? '3% monthly conversion' : 'نرخ تبدیل عرف بازار: ۳٪ ماهانه'}</div>
             </div>
 
             <div className="bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-3 space-y-1">
               <div className="text-[11px] text-amber-900 dark:text-amber-300 font-semibold">{isEn ? 'Yield & P/R Ratio' : 'بازده اجاره و نسبت P/R'}</div>
-              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.annualRentYield)}٪ <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'Annual Yield' : 'بازده سالانه'}</span></div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">{isEn ? `P/R: ${toPersianNum(summaryStats.prRatioYears)} yrs` : `بازگشت: ${toPersianNum(summaryStats.prRatioYears)} سال`}</div>
+              <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{toPersianNum(summaryStats.annualRentYield)}٪ <span className="text-xs font-bold text-slate-600 dark:text-[var(--color-text-muted)]">{isEn ? 'Annual Yield' : 'بازده سالانه'}</span></div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">{isEn ? `P/R: ${toPersianNum(summaryStats.prRatioYears)} yrs` : `بازگشت: ${toPersianNum(summaryStats.prRatioYears)} سال`}</div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl p-2">
-            <div className="flex flex-wrap items-center gap-1 bg-slate-200/70 dark:bg-slate-900 p-0.5 rounded-lg text-[11px] font-bold">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-xl p-2">
+            <div className="flex flex-wrap items-center gap-1 bg-slate-200/70 dark:bg-[var(--color-bg-surface)] p-0.5 rounded-lg text-[11px] font-bold">
               {[
                 { id: 'dual_buy_rent' as const, labelFa: 'روند همزمان خرید و اجاره', labelEn: 'Buy & Rent Dual' },
                 { id: 'buy_vs_city' as const, labelFa: `خرید در برابر میانگین شهر`, labelEn: `Neighborhood vs City Avg` },
                 { id: 'rent_rahn_detail' as const, labelFa: 'رهن کامل و اجاره ماهانه', labelEn: 'Deposit & Rent Detail' },
               ].map((tab) => (
-                <button key={tab.id} type="button" onClick={() => setChartMode(tab.id)} className={`px-2.5 py-1 rounded-md transition cursor-pointer ${chartMode === tab.id ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                <button key={tab.id} type="button" onClick={() => setChartMode(tab.id)} className={`px-2.5 py-1 rounded-md transition cursor-pointer ${chartMode === tab.id ? 'bg-white dark:bg-[var(--color-bg-muted)] text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-600 dark:text-[var(--color-text-muted)]'}`}>
                   {isEn ? tab.labelEn : tab.labelFa}
                 </button>
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg p-0.5 text-[11px]">
-                <span className="text-slate-500 dark:text-slate-400 px-1 font-medium">{isEn ? 'Area:' : 'متراژ:'}</span>
+              <div className="flex items-center gap-1 bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg p-0.5 text-[11px]">
+                <span className="text-slate-500 dark:text-[var(--color-text-muted)] px-1 font-medium">{isEn ? 'Area:' : 'متراژ:'}</span>
                 {SQM_PRESETS.map((sqm) => (
-                  <button key={sqm} type="button" onClick={() => setCustomSqm(sqm)} className={`px-1.5 py-0.5 rounded font-bold tabular-nums transition cursor-pointer ${effectiveSqm === sqm ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-700 dark:text-slate-300'}`}>
+                  <button key={sqm} type="button" onClick={() => setCustomSqm(sqm)} className={`px-1.5 py-0.5 rounded font-bold tabular-nums transition cursor-pointer ${effectiveSqm === sqm ? 'bg-[var(--color-brand-600)] text-white' : 'text-slate-700 dark:text-[var(--color-text-secondary)]'}`}>
                     {areaUnit === 'sqft' ? `${toPersianNum(Math.round(convertAreaFromSqm(sqm, 'sqft')))}ft²` : `${toPersianNum(sqm)}م`}
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setShowDataTable((prev) => !prev)} className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${showDataTable ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
+              <button type="button" onClick={() => setShowDataTable((prev) => !prev)} className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer ${showDataTable ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)]'}`}>
                 <Table2 className="w-3.5 h-3.5" /><span>{showDataTable ? (isEn ? 'Hide Table' : 'پنهان‌کردن جدول') : (isEn ? '12M Table' : 'جدول ۱۲ ماهه')}</span>
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-bold">
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] font-bold">
               <div className="flex items-center gap-1 text-slate-800 dark:text-white"><TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>روند تاریخی ۱۲ ماهه قیمت — {selectedHood.name}</span></div>
               <span className="text-[10px] text-slate-400">نشانگر را روی نقاط ببرید</span>
             </div>
@@ -182,8 +182,8 @@ export function NeighborhoodPriceTrendModal({
                     if (!pt) return null;
                     const uBuy = Number(convertPricePerSqmToUnit(pt.buyPerSqm, areaUnit).toFixed(1));
                     return (
-                      <div dir="rtl" className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs shadow-xl space-y-1 tabular-nums">
-                        <div className="font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 flex justify-between gap-2"><span>{label}</span><span className="text-slate-400">{selectedHood.name}</span></div>
+                      <div dir="rtl" className="bg-white/95 dark:bg-[var(--color-bg-surface)] backdrop-blur-md border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5 text-xs shadow-xl space-y-1 tabular-nums">
+                        <div className="font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-1 flex justify-between gap-2"><span>{label}</span><span className="text-slate-400">{selectedHood.name}</span></div>
                         <div className="text-emerald-700 dark:text-emerald-400 font-bold">خرید: {toPersianNum(uBuy)} میلیون تومان</div>
                         <div className="text-sky-700 dark:text-sky-400 font-bold">رهن: {toPersianNum(pt.scaledRahn)} میلیون تومان</div>
                       </div>
@@ -215,19 +215,19 @@ export function NeighborhoodPriceTrendModal({
           </div>
 
           {showDataTable && (
-            <div className="border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+            <div className="border border-slate-200/90 dark:border-[var(--color-border-subtle)] rounded-xl overflow-hidden bg-white dark:bg-[var(--color-bg-surface)]">
               <div className="overflow-x-auto max-h-52">
                 <table className="w-full text-right border-collapse text-[11px] tabular-nums">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    <tr className="bg-slate-50 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-muted)]">
                       <th className="py-1.5 px-3 font-bold">Month</th><th className="py-1.5 px-3 font-bold">Buy</th><th className="py-1.5 px-3 font-bold">Deposit</th><th className="py-1.5 px-3 font-bold">Growth</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
                     {enrichedSeries12m.map((row) => {
                       const uRowBuy = Number(convertPricePerSqmToUnit(row.buyPerSqm, areaUnit).toFixed(1));
                       return (
-                        <tr key={`${row.monthIndex}-${row.month}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <tr key={`${row.monthIndex}-${row.month}`} className="hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]">
                           <td className="py-1.5 px-3 font-bold text-slate-900 dark:text-white">{row.month}</td>
                           <td className="py-1.5 px-3 text-emerald-700 dark:text-emerald-400 font-bold">{toPersianNum(uRowBuy)} M</td>
                           <td className="py-1.5 px-3 text-sky-700 dark:text-sky-400 font-bold">{toPersianNum(row.scaledRahn)} M</td>
@@ -242,12 +242,12 @@ export function NeighborhoodPriceTrendModal({
           )}
         </div>
 
-        <div className="px-4 py-2.5 sm:px-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-slate-500 dark:text-slate-400 shrink-0">
+        <div className="px-4 py-2.5 sm:px-6 bg-slate-50 dark:bg-[var(--color-bg-muted)] border-t border-slate-200/80 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)] shrink-0">
           <div className="flex items-center gap-1.5">
             <Maximize2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>{isEn ? '12-month synthesized closing price and market rent trends.' : 'سری زمانی ۱۲ ماهه بر اساس قیمت فعلی محله، داده‌های ۶ ماهه و ضرایب فصلی استخراج شده است.'}</span>
           </div>
-          <button type="button" onClick={onClose} className="px-3.5 py-1 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-slate-900 font-bold transition cursor-pointer">
+          <button type="button" onClick={onClose} className="px-3.5 py-1 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] font-bold transition cursor-pointer">
             {isEn ? 'Close' : 'بستن نمودار'}
           </button>
         </div>

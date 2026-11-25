@@ -44,19 +44,34 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
     nlpTimerRef.current = window.setTimeout(() => { nlpTimerRef.current = null; setNlpFeedback(''); }, 4000);
   }; return (
     <div role="dialog" aria-modal="true" aria-labelledby="hedonic-modal-title" className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[3px] flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={onClose}>
-      <div ref={dialogRef} tabIndex={-1} dir="rtl" onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 rounded-3xl max-w-3xl w-full p-5 sm:p-6 space-y-5 my-auto max-h-[92vh] overflow-y-auto text-slate-900 dark:text-slate-100 focus:outline-none shadow-2xl">
+      <div ref={dialogRef} tabIndex={-1} dir="rtl" onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] ring-1 ring-slate-900/5 dark:ring-white/10 rounded-3xl max-w-3xl w-full p-5 sm:p-6 space-y-5 my-auto max-h-[92vh] overflow-y-auto text-slate-900 dark:text-[var(--color-text-primary)] focus:outline-none shadow-2xl">
         {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/70 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[12px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shrink-0"><Calculator className="w-5 h-5 stroke-[1.75]" /></div>
+            <div className="w-10 h-10 rounded-[12px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0"><Calculator className="w-5 h-5 stroke-[1.75]" /></div>
             <div>
               <h2 id="hedonic-modal-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">ماشین‌حساب هوشمند قیمت‌گذاری ملک (الگوریتم Hedonic)</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ارزش‌گذاری کارشناسی بر اساس متراژ ({formatAreaShort(sqm, areaUnit)})، سال ساخت، وضعیت نوسازی و طبقه در مقایسه با میانگین محله</p>
+              <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">ارزش‌گذاری کارشناسی بر اساس متراژ ({formatAreaShort(sqm, areaUnit)})، سال ساخت، وضعیت نوسازی و طبقه در مقایسه با میانگین محله</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <a
+              href="/tools/valuation"
+              onClick={(e) => {
+                if (typeof window !== 'undefined' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                  e.preventDefault();
+                  onClose();
+                  window.history.pushState({}, '', '/tools/valuation');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }
+              }}
+              data-testid="hedonic-modal-open-workspace-link"
+              className="min-h-[36px] px-2.5 py-1 rounded-[8px] border border-[var(--color-border-strong)] text-[11px] font-bold text-[var(--color-brand-fg)] hover:bg-[var(--color-brand-soft)] inline-flex items-center gap-1 transition"
+            >
+              <span>ورک‌اسپیس کامل ارزش‌گذاری ↗</span>
+            </a>
             <AreaUnitToggle compact showIntlControls />
-            <button type="button" onClick={onClose} aria-label="بستن ماشین‌حساب هدونیک" className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"><X className="w-4 h-4 stroke-[2]" /></button>
+            <button type="button" onClick={onClose} aria-label="بستن ماشین‌حساب هدونیک" className="min-w-[36px] min-h-[36px] rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center transition-colors cursor-pointer"><X className="w-4 h-4 stroke-[2]" /></button>
           </div>
         </div>
         {/* Main 2-Column Responsive Layout */}
@@ -64,29 +79,29 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
           {/* RIGHT COLUMN: Hedonic Input Parameters (7 cols on lg) */}
           <div className="lg:col-span-7 space-y-4">
             {/* Neighborhood Selection */}
-            <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2">
+            <div className="apple-grouped-card dark:bg-[var(--color-bg-canvas)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <label htmlFor="hedonic-hood-select" className="font-bold text-slate-800 dark:text-slate-200">محله انتخابی جهت کارشناسی:</label>
-                <span className="text-slate-500 dark:text-slate-400 tabular-nums">
+                <label htmlFor="hedonic-hood-select" className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">محله انتخابی جهت کارشناسی:</label>
+                <span className="text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                   میانگین پایه: <strong className="text-slate-900 dark:text-white">{toPersianNum(convertPricePerSqmToUnit(valuation.hoodBasePerSqm, areaUnit))} م/{unitLabel}</strong> (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(hoodDealPerSqm, areaUnit))} م)
                   {intlCurrency !== 'IRT' && <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold mr-1" dir="ltr">({formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(valuation.hoodBasePerSqm, areaUnit), intlCurrency, radarLocale)})</span>}
                 </span>
               </div>
-              <select id="hedonic-hood-select" aria-label="انتخاب محله جهت کارشناسی هوشمند" value={activeHood.id} onChange={(e) => handleHoodChange(Number(e.target.value))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none cursor-pointer">
+              <select id="hedonic-hood-select" aria-label="انتخاب محله جهت کارشناسی هوشمند" value={activeHood.id} onChange={(e) => handleHoodChange(Number(e.target.value))} className="w-full bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[10px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none cursor-pointer">
                 {allNeighborhoods.map((n) => (
                   <option key={n.id} value={n.id}>
                     محله {n.name} ({n.zone}{typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? Number((n.distKm * 0.621371).toFixed(1)) : n.distKm)} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : ''}) — پایه هر {unitLabel} {toPersianNum(convertPricePerSqmToUnit(n.baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(n.baseBuyPerSqm ?? n.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · واحد {formatAreaShort(80, areaUnit)}: {toPersianNum((((n.baseBuyPerSqm ?? n.buyPerSqm) * 80) / 1000).toFixed(1))} میلیارد · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.baseBuyPerSqm ?? n.buyPerSqm, buildNeighborhoodListingSamples(n)).estimatedDealPricePerSqm, areaUnit))} م
                   </option>
                 ))}
               </select>
-              <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5" data-testid="hedonic-street-tier-selector">
+              <div className="pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)] space-y-1.5" data-testid="hedonic-street-tier-selector">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-slate-700 dark:text-slate-300">کالیبراسیون پهنه خیابانی (Micro-Hood):</span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[230px]">{activeMicroTier?.streets}</span>
+                  <span className="font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">کالیبراسیون پهنه خیابانی (Micro-Hood):</span>
+                  <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] truncate max-w-[230px]">{activeMicroTier?.streets}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {microHoods.map((m) => (
-                    <button key={m.tier} type="button" data-testid={`hedonic-street-tier-${m.tier}`} onClick={() => setStreetTier(m.tier)} className={`px-2 py-1.5 rounded-lg border text-[10.5px] font-bold transition cursor-pointer flex items-center justify-between ${streetTier === m.tier ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-600 text-emerald-900 dark:text-emerald-200' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                    <button key={m.tier} type="button" data-testid={`hedonic-street-tier-${m.tier}`} onClick={() => setStreetTier(m.tier)} className={`px-2 py-1.5 rounded-lg border text-[10.5px] font-bold transition cursor-pointer flex items-center justify-between ${streetTier === m.tier ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-600 text-emerald-900 dark:text-emerald-200' : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-600 dark:text-[var(--color-text-secondary)]'}`}>
                       <span className="truncate">{m.tier === 'luxury' ? 'پهنه اعیانی' : m.tier === 'balanced' ? 'بافت میانی' : 'پهنه اقتصادی'}</span>
                       <span className="tabular-nums text-[10px] opacity-80">{m.priceMultiplier > 1 ? `+${toPersianNum(Math.round((m.priceMultiplier - 1) * 100))}٪` : m.priceMultiplier < 1 ? `-${toPersianNum(Math.round((1 - m.priceMultiplier) * 100))}٪` : 'مبنا'}</span>
                     </button>
@@ -101,99 +116,99 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
                 {nlpFeedback && <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold">{nlpFeedback}</span>}
               </div>
               <div className="flex gap-1.5">
-                <input type="text" aria-label="متن آگهی جهت استخراج هوشمند" value={adRawText} onChange={(e) => setAdRawText(e.target.value)} placeholder="متن آگهی را اینجا پیست کنید (مثال: ۱۰۰ متر طبقه ۳ از ۵ با پارکینگ و آسانسور ساخت ۱۳۹۸...)" className="flex-1 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-[8px] px-2.5 py-1 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
-                <button type="button" onClick={handleNlpExtract} className="px-3 py-1 bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold rounded-[8px] transition cursor-pointer shrink-0">استخراج</button>
+                <input type="text" aria-label="متن آگهی جهت استخراج هوشمند" value={adRawText} onChange={(e) => setAdRawText(e.target.value)} placeholder="متن آگهی را اینجا پیست کنید (مثال: ۱۰۰ متر طبقه ۳ از ۵ با پارکینگ و آسانسور ساخت ۱۳۹۸...)" className="flex-1 bg-white dark:bg-[var(--color-bg-surface)] border border-emerald-200 dark:border-emerald-800 rounded-[8px] px-2.5 py-1 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
+                <button type="button" onClick={handleNlpExtract} className="px-3 py-1 bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold rounded-[8px] transition cursor-pointer shrink-0">استخراج</button>
               </div>
             </div>
             {/* 1. Area (Sqm) & 2. Build Year */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
+              <div className="apple-grouped-card dark:bg-[var(--color-bg-canvas)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
                   <div className="flex items-center gap-1">
-                    <NumericDraftInput min={30} max={500} fallback={85} aria-label="متراژ ملک" value={sqm} onValueChange={setSqm} className="w-16 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">متر</span>
+                    <NumericDraftInput min={30} max={500} fallback={85} aria-label="متراژ ملک" value={sqm} onValueChange={setSqm} className="w-16 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                    <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">متر</span>
                   </div>
                 </div>
-                <input type="range" aria-label="اسلایدر متراژ ملک" min={35} max={300} step={5} value={Math.min(300, sqm)} onChange={(e) => setSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                <input type="range" aria-label="اسلایدر متراژ ملک" min={35} max={300} step={5} value={Math.min(300, sqm)} onChange={(e) => setSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                 <div className="flex justify-between text-[10px] text-slate-400 tabular-nums"><span>{formatAreaShort(35, areaUnit)}</span><span>{formatAreaShort(100, areaUnit)}</span><span>{formatAreaShort(300, areaUnit)}</span></div>
               </div>
-              <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
+              <div className="apple-grouped-card dark:bg-[var(--color-bg-canvas)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
                   <div className="flex items-center gap-1">
-                    <NumericDraftInput min={1370} max={1405} fallback={1398} aria-label="سال ساخت ملک" value={buildYear} onValueChange={setBuildYear} className="w-18 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                    <NumericDraftInput min={1370} max={1405} fallback={1398} aria-label="سال ساخت ملک" value={buildYear} onValueChange={setBuildYear} className="w-18 px-2 py-1 text-center font-bold text-xs bg-slate-50 dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                     <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">({valuation.buildingAgeYears === 0 ? 'نوساز' : `${toPersianNum(valuation.buildingAgeYears)} ساله`})</span>
                   </div>
                 </div>
-                <input type="range" aria-label="اسلایدر سال ساخت ملک" min={1370} max={1405} step={1} value={buildYear} onChange={(e) => setBuildYear(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                <input type="range" aria-label="اسلایدر سال ساخت ملک" min={1370} max={1405} step={1} value={buildYear} onChange={(e) => setBuildYear(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                 <div className="flex justify-between text-[10px] text-slate-400 tabular-nums"><span>۱۳۷۰ (قدیمی)</span><span>۱۳۹۰</span><span>۱۴۰۵ (نوساز)</span></div>
               </div>
             </div>
             {/* 3. Renovation Status */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-2.5">
+            <div className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-2xl p-3.5 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">اثر مستقیم و جبران استهلاک سنی</span>
+                <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5"><Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
+                <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">اثر مستقیم و جبران استهلاک سنی</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {HEDONIC_RENOVATION_OPTIONS.map((opt) => {
                   const isSelected = renovationStatus === opt.id;
                   return (
-                    <button key={opt.id} type="button" onClick={() => setRenovationStatus(opt.id)} className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-600 text-emerald-950 dark:text-emerald-200 shadow-xs' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'}`}>
+                    <button key={opt.id} type="button" onClick={() => setRenovationStatus(opt.id)} className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-600 text-emerald-950 dark:text-emerald-200 shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-700 dark:text-[var(--color-text-secondary)] hover:border-slate-300 dark:hover:border-slate-700'}`}>
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-bold">{opt.shortLabel}</span>
                         <span className={`text-[10.5px] font-bold tabular-nums ${opt.baseImpactPercent > 0 ? 'text-emerald-700 dark:text-emerald-400' : opt.baseImpactPercent < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'}`}>{opt.baseImpactPercent > 0 ? `+${toPersianNum(opt.baseImpactPercent)}٪` : `${toPersianNum(opt.baseImpactPercent)}٪`}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{opt.label}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] mt-1 line-clamp-1">{opt.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
             {/* 4. Floor & Total Floors + Amenities */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-3">
+            <div className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-2xl p-3.5 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
                     <div className="flex items-center gap-1">
-                      <NumericDraftInput min={-1} max={25} fallback={3} aria-label="طبقه واحد" value={floor} onValueChange={(nextFloor) => { setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-14 px-2 py-0.5 text-center font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400 font-bold">{floor === 0 ? '(همکف)' : floor < 0 ? '(زیرهمکف)' : `از ${toPersianNum(totalFloors)}`}</span>
+                      <NumericDraftInput min={-1} max={25} fallback={3} aria-label="طبقه واحد" value={floor} onValueChange={(nextFloor) => { setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-14 px-2 py-0.5 text-center font-bold text-xs bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 dark:border-[var(--color-border-strong)] rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                      <span className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] font-bold">{floor === 0 ? '(همکف)' : floor < 0 ? '(زیرهمکف)' : `از ${toPersianNum(totalFloors)}`}</span>
                     </div>
                   </div>
-                  <input type="range" aria-label="اسلایدر طبقه واحد" min={0} max={15} step={1} value={Math.max(0, Math.min(15, floor))} onChange={(e) => { const nextFloor = Number(e.target.value); setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                  <input type="range" aria-label="اسلایدر طبقه واحد" min={0} max={15} step={1} value={Math.max(0, Math.min(15, floor))} onChange={(e) => { const nextFloor = Number(e.target.value); setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">تعداد کل طبقات ساختمان:</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">تعداد کل طبقات ساختمان:</span>
                     <strong className="text-xs text-slate-900 dark:text-white tabular-nums">{toPersianNum(totalFloors)} طبقه</strong>
                   </div>
-                  <input type="range" aria-label="تعداد کل طبقات ساختمان" min={1} max={25} step={1} value={totalFloors} onChange={(e) => { const tf = Number(e.target.value); setTotalFloors(tf); if (floor > tf) setFloor(tf); }} className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                  <input type="range" aria-label="تعداد کل طبقات ساختمان" min={1} max={25} step={1} value={totalFloors} onChange={(e) => { const tf = Number(e.target.value); setTotalFloors(tf); if (floor > tf) setFloor(tf); }} className="w-full accent-slate-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
                 </div>
               </div>
-              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs">
-                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
+              <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center gap-4 text-xs">
+                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                   <input type="checkbox" aria-label="پارکینگ سندی" checked={hasParking} onChange={(e) => setHasParking(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>پارکینگ سندی</span>
                 </label>
-                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
+                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                   <input type="checkbox" aria-label="آسانسور" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>آسانسور</span>
                 </label>
-                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
+                <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                   <input type="checkbox" aria-label="انباری سندی" checked={hasStorage} onChange={(e) => setHasStorage(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>انباری سندی</span>
                 </label>
               </div>
             </div>
             {/* 5. Asking Price & Verification */}
-            <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-2">
+            <div className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-2xl p-3.5 space-y-2">
               <div className="flex items-center justify-between gap-2 text-xs">
-                <label htmlFor="hedonic-asking-input" className="font-bold text-slate-700 dark:text-slate-300">قیمت اعلامی فروشنده (اختیاری):</label>
+                <label htmlFor="hedonic-asking-input" className="font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">قیمت اعلامی فروشنده (اختیاری):</label>
                 <div className="flex items-center gap-1.5">
-                  <input id="hedonic-asking-input" type="text" inputMode="decimal" dir="ltr" aria-label="قیمت اعلامی فروشنده به میلیارد تومان" placeholder={`مثلاً ${(valuation.hedonicTotalMillion / 1000).toFixed(1)}`} value={sellerAskingBillion} onChange={(e) => setSellerAskingBillion(e.target.value)} className="w-24 px-2.5 py-1 text-center font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">میلیارد تومان{sellerAskingMillion && intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sellerAskingMillion, intlCurrency, radarLocale)})` : ''}</span>
+                  <input id="hedonic-asking-input" type="text" inputMode="decimal" dir="ltr" aria-label="قیمت اعلامی فروشنده به میلیارد تومان" placeholder={`مثلاً ${(valuation.hedonicTotalMillion / 1000).toFixed(1)}`} value={sellerAskingBillion} onChange={(e) => setSellerAskingBillion(e.target.value)} className="w-24 px-2.5 py-1 text-center font-bold text-xs bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 dark:border-[var(--color-border-strong)] rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
+                  <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">میلیارد تومان{sellerAskingMillion && intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sellerAskingMillion, intlCurrency, radarLocale)})` : ''}</span>
                 </div>
               </div>
               {valuation.sellerPriceEvaluation && (
@@ -206,12 +221,12 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
                 </div>
               )}
               {/* Recent Calculations History */}
-              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 text-xs space-y-1" data-testid="hedonic-recent-presets">
-                <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400">پیش‌تنظیم‌های پرکاربرد کارشناسی:</span>
+              <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] text-xs space-y-1" data-testid="hedonic-recent-presets">
+                <span className="text-[10.5px] font-bold text-slate-500 dark:text-[var(--color-text-muted)]">پیش‌تنظیم‌های پرکاربرد کارشناسی:</span>
                 <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => { setSqm(65); setBuildYear(1402); setFloor(2); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:border-emerald-500 cursor-pointer">۶۵ متری نوساز</button>
-                  <button type="button" onClick={() => { setSqm(85); setBuildYear(1395); setFloor(3); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:border-emerald-500 cursor-pointer">۸۵ متری ۱۰ ساله</button>
-                  <button type="button" onClick={() => { setSqm(120); setBuildYear(1385); setFloor(1); setTotalFloors(3); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300 hover:border-emerald-500 cursor-pointer">۱۲۰ متری کم‌واحد قدیمی (قدرالسهم)</button>
+                  <button type="button" onClick={() => { setSqm(65); setBuildYear(1402); setFloor(2); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[10px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)] hover:border-emerald-500 cursor-pointer">۶۵ متری نوساز</button>
+                  <button type="button" onClick={() => { setSqm(85); setBuildYear(1395); setFloor(3); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[10px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)] hover:border-emerald-500 cursor-pointer">۸۵ متری ۱۰ ساله</button>
+                  <button type="button" onClick={() => { setSqm(120); setBuildYear(1385); setFloor(1); setTotalFloors(3); }} className="px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[10px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)] hover:border-emerald-500 cursor-pointer">۱۲۰ متری کم‌واحد قدیمی (قدرالسهم)</button>
                 </div>
               </div>
             </div>

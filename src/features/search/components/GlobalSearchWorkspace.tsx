@@ -269,7 +269,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     <section
       data-testid="global-search-workspace"
       data-active-city={activeCity}
-      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs"
+      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-4 text-xs"
       dir="rtl"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -289,7 +289,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
               type="button"
               data-testid={`search-view-mode-${m.toLowerCase()}`}
               onClick={() => { pendingHistoryModeRef.current = 'push'; setViewMode(m); }}
-              className={`min-h-[38px] px-2.5 py-1 rounded-lg font-bold cursor-pointer ${viewMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`min-h-[38px] px-2.5 py-1 rounded-lg font-bold cursor-pointer ${viewMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}
             >
               {m === 'LIST' ? 'فهرست' : m === 'MAP' ? 'نقشه' : 'ترکیبی (فهرست + نقشه)'}
             </button>
@@ -300,7 +300,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       {searchLoadErrorFa ? <GlobalSearchLoadErrorBanner messageFa={searchLoadErrorFa} /> : null}
 
       <div ref={searchBoxRef} className="relative">
-        <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus-within:border-[var(--color-brand-600)]">
+        <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-300 dark:border-[var(--color-border-strong)] focus-within:border-[var(--color-brand-600)]">
           <Search className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
           <input
             type="text"
@@ -342,7 +342,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
         </div>
 
         {suggestOpen && suggestions.length > 0 && (
-          <div id="global-search-suggestions-listbox" role="listbox" data-testid="global-search-suggestions-popover" className="mt-1 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg space-y-1 z-20">
+          <div id="global-search-suggestions-listbox" role="listbox" data-testid="global-search-suggestions-popover" className="mt-1 p-2 rounded-xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] shadow-lg space-y-1 z-20">
             <div className="flex items-center justify-between px-2 py-1 text-[10.5px] text-slate-400">
               <span>پیشنهادهای دسته‌بندی‌شده ({cityNameFa} · جهت‌نما و Enter)</span>
               <button type="button" onClick={() => setSuggestOpen(false)} className="text-slate-500 hover:underline cursor-pointer">بستن</button>
@@ -365,13 +365,13 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
                   setSuggestOpen(false);
                   runCommittedSearch(sug.queryText, activeScope, appliedFilters, sort, viewMode, degradedScopes, 'push');
                 }}
-                className={`p-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer ${highlightedIdx === idx ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'}`}
+                className={`p-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer ${highlightedIdx === idx ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300' : 'hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'}`}
               >
                 <div>
                   <div className="font-bold text-slate-900 dark:text-white">{sug.titleFa}</div>
                   <div className="text-[10.5px] text-slate-500">{sug.subtitleFa}</div>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold">{sug.scope}</span>
+                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)] text-[10px] font-bold">{sug.scope}</span>
               </div>
             ))}
           </div>
@@ -388,7 +388,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       )}
 
       {rawQuery.trim().length > 0 && (
-        <div data-testid="search-plan-summary-bar" className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+        <div data-testid="search-plan-summary-bar" className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2 text-[11px]">
           <div className="flex flex-wrap items-center gap-2">
             <span>عبارت نرمال‌شده: <strong>{searchResponse.plan.normalizedQuery}</strong></span>
             <span>· نیت: <strong>{searchResponse.plan.primaryIntent}</strong></span>
@@ -407,7 +407,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             aria-selected={activeScope === tab.id}
             data-testid={`search-scope-tab-${tab.id.toLowerCase()}`}
             onClick={() => { pendingHistoryModeRef.current = 'push'; setActiveScope(tab.id); }}
-            className={`min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer ${activeScope === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+            className={`min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer ${activeScope === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}
           >
             <span>{tab.labelFa}</span>
             <span className="tabular-nums opacity-85">({toPersianNum(searchResponse.groupedCounts[tab.id] ?? 0)})</span>
@@ -415,20 +415,20 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
         ))}
       </div>
 
-      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1"><Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>فیلترها ({filterStatus}):</span></span>
-            <select aria-label="فیلتر محله" data-testid="search-filter-neighborhood" value={draftFilters.neighborhoodId || ''} onChange={(e) => { setDraftFilters({ ...draftFilters, neighborhoodId: e.target.value || undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
+            <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1"><Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>فیلترها ({filterStatus}):</span></span>
+            <select aria-label="فیلتر محله" data-testid="search-filter-neighborhood" value={draftFilters.neighborhoodId || ''} onChange={(e) => { setDraftFilters({ ...draftFilters, neighborhoodId: e.target.value || undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold">
               <option value="">همه محله‌های {cityNameFa}</option>
               {cityPlaces.map((p) => (
                 <option key={p.id} value={p.id}>{p.canonicalName}{p.district !== undefined ? ` (منطقه ${toPersianNum(p.district)})` : ''}</option>
               ))}
             </select>
-            <select aria-label="نوع معامله" data-testid="search-filter-transaction" value={draftFilters.transactionType || ''} onChange={(e) => handleTransactionChange((e.target.value || undefined) as SearchFilterSet['transactionType'])} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
+            <select aria-label="نوع معامله" data-testid="search-filter-transaction" value={draftFilters.transactionType || ''} onChange={(e) => handleTransactionChange((e.target.value || undefined) as SearchFilterSet['transactionType'])} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold">
               <option value="">همه انواع معامله</option><option value="BUY">خرید و فروش</option><option value="RENT">رهن و اجاره</option><option value="FULL_MORTGAGE">رهن کامل</option>
             </select>
-            <select aria-label="تعداد اتاق خواب" data-testid="search-filter-bedrooms" value={draftFilters.bedrooms ? String(draftFilters.bedrooms) : ''} onChange={(e) => { setDraftFilters({ ...draftFilters, bedrooms: e.target.value ? Number(e.target.value) : undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
+            <select aria-label="تعداد اتاق خواب" data-testid="search-filter-bedrooms" value={draftFilters.bedrooms ? String(draftFilters.bedrooms) : ''} onChange={(e) => { setDraftFilters({ ...draftFilters, bedrooms: e.target.value ? Number(e.target.value) : undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold">
               <option value="">همه تعداد اتاق</option><option value="1">۱ خوابه</option><option value="2">۲ خوابه</option><option value="3">۳ خوابه</option>
             </select>
             <button type="button" data-testid="btn-apply-search-filters" onClick={() => { pendingHistoryModeRef.current = 'push'; const nextF = { ...draftFilters, cityId: activeCity }; setAppliedFilters(nextF); setFilterStatus('APPLIED'); runCommittedSearch(rawQuery, activeScope, nextF, sort, viewMode, degradedScopes, 'push'); }} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">اعمال فیلتر</button>
@@ -451,10 +451,10 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             <button type="button" data-testid="btn-reset-full-search" onClick={handleResetFullSearch} className="min-h-[38px] px-2 py-1.5 rounded-lg border border-rose-200 text-rose-700 flex items-center gap-1 cursor-pointer"><span>پاک‌کردن جست‌وجوی کامل</span></button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select aria-label="مرتب‌سازی نتایج" data-testid="search-sort-select" value={sort} onChange={(e) => { pendingHistoryModeRef.current = 'push'; setSort(e.target.value as SearchSortOption); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
+            <select aria-label="مرتب‌سازی نتایج" data-testid="search-sort-select" value={sort} onChange={(e) => { pendingHistoryModeRef.current = 'push'; setSort(e.target.value as SearchSortOption); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 font-bold">
               <option value="RELEVANCE">مرتبط‌ترین</option><option value="NEWEST">جدیدترین</option><option value="PRICE_ASC">کمترین قیمت پیشنهادی</option><option value="PRICE_DESC">بیشترین قیمت پیشنهادی</option><option value="QUALITY_SCORE_DESC">بالاترین کیفیت مستندات</option>
             </select>
-            <select aria-label="تنظیم اعلان جست‌وجوی ذخیره‌شده" value={saveAlertFreq} onChange={(e) => setSaveAlertFreq(e.target.value as SavedSearchAlertFrequency)} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300">
+            <select aria-label="تنظیم اعلان جست‌وجوی ذخیره‌شده" value={saveAlertFreq} onChange={(e) => setSaveAlertFreq(e.target.value as SavedSearchAlertFrequency)} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300">
               <option value="OFF">ذخیره بدون اعلان</option><option value="INSTANT">درخواست اعلان فوری</option><option value="DAILY">درخواست خلاصه روزانه</option><option value="WEEKLY">درخواست خلاصه هفتگی</option>
             </select>
             <button type="button" data-testid="btn-save-current-search" onClick={handleSaveCurrentSearch} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"><BookmarkPlus className="w-3.5 h-3.5" /><span>ذخیره جست‌وجو</span></button>

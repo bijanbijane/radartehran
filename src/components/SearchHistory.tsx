@@ -141,8 +141,8 @@ export function SearchHistory({
   if (recentSearches.length === 0) {
     if (variant === 'chips') return <></>;
     return (
-      <div className={`p-4 text-center text-xs text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-1.5 ${className}`}>
-        <History className="w-5 h-5 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
+      <div className={`p-4 text-center text-xs text-slate-400 dark:text-[var(--color-text-muted)] flex flex-col items-center justify-center gap-1.5 ${className}`}>
+        <History className="w-5 h-5 text-slate-300 dark:text-[var(--color-text-muted)] stroke-[1.5]" />
         <span>{emptyMessage}</span>
       </div>
     );
@@ -151,12 +151,12 @@ export function SearchHistory({
   if (variant === 'chips') {
     return (
       <div role="region" aria-label={title} className={`flex flex-wrap items-center gap-1.5 ${className}`}>
-        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 ml-1">
+        <span className="text-[11px] font-bold text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-1 ml-1">
           <Clock className="w-3 h-3 text-slate-400" />
           <span>{title}:</span>
         </span>
         {recentSearches.map((name) => (
-          <span key={name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200/80 dark:hover:bg-slate-700 transition">
+          <span key={name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-semibold hover:bg-slate-200/80 dark:hover:bg-[var(--color-bg-elevated)] transition">
             <button type="button" onClick={(e) => handleItemClick(e, name)} className="hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 cursor-pointer">{name}</button>
             {showIndividualRemove && (
               <button type="button" aria-label={`حذف ${name} از تاریخچه`} onClick={(e) => { e.stopPropagation(); removeSearch(name); }} className="text-slate-400 hover:text-rose-500 rounded-full p-0.5 cursor-pointer">
@@ -176,11 +176,11 @@ export function SearchHistory({
 
   return (
     <div role="region" aria-label={title} className={`w-full ${className}`}>
-      <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
+      <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-[var(--color-text-muted)] bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border-b border-slate-100 dark:border-[var(--color-border-subtle)]">
         <span className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-slate-400 stroke-[2]" />
           <span>{title}</span>
-          <span className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-700 text-[9.5px] font-bold tabular-nums">{toPersianNum(recentSearches.length)}</span>
+          <span className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-[var(--color-bg-elevated)] text-[9.5px] font-bold tabular-nums">{toPersianNum(recentSearches.length)}</span>
         </span>
         {showClearAll && (
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); clearHistory(); }} className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer" aria-label="پاک کردن همه تاریخچه جست‌وجو">
@@ -189,20 +189,20 @@ export function SearchHistory({
           </button>
         )}
       </div>
-      <div role="list" className="divide-y divide-slate-100 dark:divide-slate-800">
+      <div role="list" className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
         {recentSearches.map((name, idx) => {
           const matchedHood = findMatchedHood(name);
           return (
-            <div key={name} role="listitem" style={{ animationDelay: `${idx * 40}ms` }} className="w-full text-right px-3.5 py-2 hover:bg-slate-50/90 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs group ios-stagger-item">
+            <div key={name} role="listitem" style={{ animationDelay: `${idx * 40}ms` }} className="w-full text-right px-3.5 py-2 hover:bg-slate-50/90 dark:hover:bg-[var(--color-bg-elevated)] transition flex items-center justify-between text-xs group ios-stagger-item">
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={(e) => handleItemClick(e, name)} className="flex items-center gap-2 flex-1 min-w-0 text-right cursor-pointer">
                 <Clock className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 shrink-0 transition stroke-[1.75]" />
-                <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition truncate">{name}</span>
+                <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition truncate">{name}</span>
                 {matchedHood?.zone && <span className="text-[10px] text-slate-400 shrink-0">({matchedHood.zone})</span>}
               </button>
               <div className="flex items-center gap-2 shrink-0">
                 {showPriceTag && matchedHood && <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPrice(matchedHood)}</span>}
                 {showIndividualRemove && (
-                  <button type="button" aria-label={`حذف ${name} از تاریخچه`} onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); removeSearch(name); }} className="p-1 rounded-md text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 focus:opacity-100 transition cursor-pointer">
+                  <button type="button" aria-label={`حذف ${name} از تاریخچه`} onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); removeSearch(name); }} className="p-1 rounded-md text-slate-300 dark:text-[var(--color-text-muted)] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 focus:opacity-100 transition cursor-pointer">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}

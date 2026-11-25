@@ -87,9 +87,9 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 p-5 space-y-4 text-xs"
+        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] p-5 space-y-4 text-xs"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-3">
           <div>
             <span className="text-[10.5px] font-bold text-[var(--color-brand-600)]">
               {CANONICAL_CATEGORY_LABELS_FA[provider.canonicalCategory]} · {provider.identity.primaryNeighborhoodName}
@@ -98,15 +98,15 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
               {provider.identity.displayName}
             </h3>
           </div>
-          <button type="button" aria-label="بستن جزئیات" onClick={onClose} className="p-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 cursor-pointer">
+          <button type="button" aria-label="بستن جزئیات" onClick={onClose} className="p-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="space-y-3">
-          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-1.5">
+          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] space-y-1.5">
             <strong className="text-[var(--color-text-primary)] dark:text-white block">۱. هویت، موقعیت دفتر و محدوده پوشش</strong>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[var(--color-text-secondary)] dark:text-slate-300 tabular-nums">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] tabular-nums">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
                 <span>{provider.coverage.officeAddressSummaryFa} · پوشش: {provider.coverage.coveredAreaNames.join('، ')}</span>
@@ -125,23 +125,23 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             </strong>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {provider.credential.tracks.map((tr) => (
-                <div key={tr.track} className="p-2 rounded-[8px] bg-white/80 dark:bg-slate-900/80 border border-[#F4D3A1]/70 dark:border-amber-900/50 space-y-0.5">
+                <div key={tr.track} className="p-2 rounded-[8px] bg-white/80 dark:bg-[var(--color-bg-surface)] border border-[#F4D3A1]/70 dark:border-amber-900/50 space-y-0.5">
                   <div className="flex items-center justify-between font-bold text-[var(--color-text-primary)] dark:text-white">
                     <span>{tr.labelFa}</span>
                     <span className={tr.status === 'verified' ? 'text-[var(--color-brand-600)]' : tr.status === 'expired' ? 'text-[#B3261E]' : 'text-[#875000]'}>
                       {tr.badgeTextFa}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[var(--color-text-muted)] dark:text-slate-400">{tr.noteFa}</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">{tr.noteFa}</p>
                 </div>
               ))}
             </div>
             <p className="text-[10.5px] opacity-90">{provider.credential.separationNoteFa}</p>
           </div>
 
-          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-1.5">
+          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] space-y-1.5">
             <strong className="text-[var(--color-text-primary)] dark:text-white block">۳. خدمات، اقلام شامل‌شده و تعرفه شفاف</strong>
-            <p className="text-[var(--color-text-secondary)] dark:text-slate-300">{provider.specialtyFa}</p>
+            <p className="text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">{provider.specialtyFa}</p>
             <p className="text-[10.5px] text-[var(--color-text-muted)]">
               {provider.pricingModelFa} · سابقه اظهارشده: {toPersianNum(provider.activity.experienceYearsDeclared)} سال · زمان پاسخ: {provider.activity.responseTimeLabelFa}
             </p>
@@ -150,14 +150,14 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
                 <div className="text-[var(--color-brand-700)] dark:text-emerald-300">
                   <strong>شامل خدمت:</strong> {primaryOffering.pricing.includesListFa.join('، ')}
                 </div>
-                <div className="text-[var(--color-text-muted)] dark:text-slate-400">
+                <div className="text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                   <strong>خارج از تعرفه پایه:</strong> {primaryOffering.pricing.excludesListFa.join('، ')}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-2 text-[var(--color-text-muted)]">
+          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] space-y-2 text-[var(--color-text-muted)]">
             <strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
               <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               <span>۴. بازخوردهای متصل به درخواست معتبر ({toPersianNum(publishedReviews.length)} مورد)</span>
@@ -167,7 +167,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             ) : (
               <div className="space-y-1.5">
                 {publishedReviews.slice(0, 4).map((rev) => (
-                  <div key={rev.reviewId} className="p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200">
+                  <div key={rev.reviewId} className="p-2 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
                     <div className="flex items-center justify-between text-[10.5px] font-bold">
                       <span>{rev.reviewerLabelFa} · درخواست تأییدشده</span>
                       <span className="tabular-nums text-[var(--color-brand-600)]">امتیاز {toPersianNum(rev.overallScore)} از ۵</span>
@@ -194,7 +194,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             e.preventDefault();
             handleDispute();
           }}
-          className="pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2"
+          className="pt-3 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2"
         >
           <div className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-[#B3261E]" />
@@ -209,7 +209,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
                 if (disputeError) setDisputeError('');
                 if (disputeSent) setDisputeSent(false);
               }}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
             >
               <option value="misleading_credential">ادعای نادرست صلاحیت/پروانه</option>
               <option value="fee_dispute">اختلاف در حق‌الزحمه/کمیسیون</option>
@@ -226,7 +226,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
                 if (disputeSent) setDisputeSent(false);
               }}
               placeholder="توضیح کوتاه مغایرت (حداقل ۸ حرف)..."
-              className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+              className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
             />
           </div>
           <div className="flex items-center justify-between gap-2">

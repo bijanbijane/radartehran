@@ -21,11 +21,11 @@ export const ServiceProviderCard: React.FC<ServiceProviderCardProps> = ({
   return (
     <article
       data-testid={`service-provider-card-${identity.id}`}
-      className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] transition flex flex-col justify-between gap-3 text-xs"
+      className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-600)] transition flex flex-col justify-between gap-3 text-sm"
     >
       <div className="space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-1.5">
-          <span className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
+          <span className="text-xs font-bold text-[var(--color-brand-fg)]">
             {CANONICAL_CATEGORY_LABELS_FA[provider.canonicalCategory]}
           </span>
           {listingTier === 'sponsored_ad' ? (
@@ -41,47 +41,47 @@ export const ServiceProviderCard: React.FC<ServiceProviderCardProps> = ({
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{identity.displayName}</h3>
-          <p className="text-xs text-[var(--color-text-muted)] flex flex-wrap items-center gap-1 mt-0.5">
-            <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0" />
+          <h2 className="text-base font-bold text-[var(--color-text-primary)]">{identity.displayName}</h2>
+          <p className="text-sm text-[var(--color-text-muted)] flex flex-wrap items-center gap-1 mt-0.5">
+            <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-fg)] shrink-0" />
             <span>دفتر: {coverage.officeNeighborhoodName} ({identity.zone})</span>
             <span>·</span>
             <span>پوشش: {coverage.coveredAreaNames.join('، ')}</span>
           </p>
         </div>
 
-        <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed line-clamp-2">
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed line-clamp-2">
           {provider.specialtyFa}
         </p>
 
-        <div className="p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] space-y-1.5 text-xs text-[var(--color-text-muted)]">
+        <div className="p-3 rounded-[8px] bg-[var(--color-bg-muted)] space-y-1.5 text-sm text-[var(--color-text-muted)]">
           <div className="flex flex-wrap items-center justify-between gap-1 tabular-nums">
             <span className="flex items-center gap-1">
-              <Briefcase className="w-3 h-3" />
+              <Briefcase className="w-3.5 h-3.5" />
               <span>سابقه اظهارشده: {toPersianNum(activity.experienceYearsDeclared)} سال</span>
             </span>
             <span>
               {feedback.verifiedReviewsCount > 0 && feedback.averageScore !== null
-                ? `امتیاز واقعی: ${toPersianNum(feedback.averageScore)}/۵ (${toPersianNum(feedback.verifiedReviewsCount)} نظر)`
+                ? `امتیاز واقعی: ${toPersianNum(feedback.averageScore)} از ۵ (${toPersianNum(feedback.verifiedReviewsCount)} نظر)`
                 : 'بدون نظر راستی‌آزمایی‌شده'}
             </span>
           </div>
-          <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center justify-between gap-2 text-sm">
             <span className="truncate font-bold text-[var(--color-text-secondary)]">
               تعرفه: {provider.pricingModelFa}
             </span>
           </div>
           <div
-            className={`flex items-center gap-1 font-bold ${
+            className={`flex items-center gap-1 text-xs font-bold ${
               verifiedTracksCount > 0
-                ? 'text-[var(--color-brand-600)] dark:text-emerald-300'
+                ? 'text-[var(--color-brand-fg)]'
                 : 'text-[#875000] dark:text-amber-300'
             }`}
           >
             {verifiedTracksCount > 0 ? (
-              <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             ) : (
-              <ShieldAlert className="w-3 h-3 shrink-0" />
+              <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
             )}
             <span className="truncate">
               {credential.statusLabelFa} ({toPersianNum(verifiedTracksCount)} از ۴ مسیر تأیید)
@@ -95,16 +95,16 @@ export const ServiceProviderCard: React.FC<ServiceProviderCardProps> = ({
           type="button"
           data-testid={`service-request-btn-${identity.id}`}
           onClick={() => onRequestQuote(provider)}
-          className="flex-1 min-h-[44px] md:min-h-[36px] py-2 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer whitespace-nowrap"
+          className="flex-1 min-h-[44px] md:min-h-[38px] py-2 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-bold cursor-pointer whitespace-nowrap"
         >
           درخواست مشاوره / کارشناسی
         </button>
         <button
           type="button"
           onClick={() => onOpenDetail(provider)}
-          className="min-h-[44px] md:min-h-[36px] px-3 py-2 rounded-[8px] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+          className="min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-[8px] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-sm font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
         >
-          <Phone className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
+          <Phone className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" />
           <span>جزئیات</span>
         </button>
       </div>

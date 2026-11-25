@@ -12,6 +12,7 @@ import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle'
 import { matchesPersianSearch } from '../../utils/security';
 import { type MapViewportBoundsState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { listNeighborhoodsInMapViewport, resolveMapExplorerNeighborhoodList } from './mapViewportHoodFilter';
+import { formatPersianScore } from '../../utils/persianBidiFormat';
 import { resolveInitialSidebarOpen, type DesktopMapPanelMode } from './mapSheetCoordinator';
 
 const SIDEBAR_STORAGE_KEY = 'radar_map_explorer_sidebar_open_v1';
@@ -115,7 +116,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-[8px] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
               aria-label={isEn ? 'Close' : 'بستن'}
             >
               <X className="w-4 h-4" />
@@ -124,7 +125,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              className="p-2 rounded-[8px] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
               aria-label={isEn ? 'Collapse' : 'جمع کردن'}
               title={isEn ? 'Collapse sidebar' : 'جمع کردن پنل'}
             >
@@ -202,11 +203,20 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                       <span className="text-xs font-bold text-[var(--color-text-primary)] truncate">
                         {hood.name}
                       </span>
-                      <RadarBadge tone={STATUS_BADGE[hood.status] || 'neutral'} className="shrink-0 text-xs">
-                        {toPersianNum(hood.overallScore)}
+                      <RadarBadge tone="brand" className="shrink-0 text-xs tabular-nums">
+                        {isEn ? `${hood.overallScore.toFixed(1)} / 10` : formatPersianScore(hood.overallScore)}
                       </RadarBadge>
                     </div>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-1">{hood.zone}</p>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="text-xs text-[var(--color-text-muted)] line-clamp-1">{hood.zone}</p>
+                      <RadarBadge tone={STATUS_BADGE[hood.status] || 'neutral'} className="shrink-0 text-[11px]">
+                        {hood.status === 'green'
+                          ? (isEn ? 'In Budget' : 'هم‌تراز بودجه')
+                          : hood.status === 'yellow'
+                            ? (isEn ? 'Near Budget' : 'نزدیک بودجه')
+                            : (isEn ? 'Above Budget' : 'بالاتر از بودجه')}
+                      </RadarBadge>
+                    </div>
                   </button>
                   <div className="flex items-center justify-between gap-2 mt-1.5">
                     <p className="text-xs font-bold tabular-nums text-[var(--color-text-secondary)]">
@@ -222,7 +232,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                       <button
                         type="button"
                         onClick={onOpenInspector}
-                        className="text-xs font-bold text-[var(--color-brand-fg)] hover:underline cursor-pointer shrink-0"
+                        className="min-h-[44px] lg:min-h-[28px] inline-flex items-center text-xs font-bold text-[var(--color-brand-fg)] hover:underline cursor-pointer shrink-0"
                       >
                         {isEn ? 'Details ←' : 'جزئیات ←'}
                       </button>
@@ -427,7 +437,7 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
                   ? `${toPersianNum(convertPricePerSqmToUnit(resolvedSelectedHood.buyPerSqm, areaUnit))} م`
                   : `رهن ${toPersianNum(resolvedSelectedHood.rahn80m)} م`}
                 {' · '}
-                {toPersianNum(resolvedSelectedHood.overallScore)}/۱۰
+                {isEn ? `${resolvedSelectedHood.overallScore.toFixed(1)} / 10` : formatPersianScore(resolvedSelectedHood.overallScore)}
               </span>
             )}
           </button>

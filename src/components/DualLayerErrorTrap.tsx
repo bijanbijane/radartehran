@@ -136,16 +136,16 @@ class RenderPhaseErrorBoundary extends React.Component<
           dir="rtl"
           role="alert"
           aria-live="assertive"
-          className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center p-6"
+          className="min-h-screen bg-slate-50 dark:bg-[var(--color-bg-canvas)] text-slate-900 dark:text-[var(--color-text-primary)] flex items-center justify-center p-6"
         >
-          <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-xl">
+          <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-rose-200 dark:border-rose-800 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-xl">
             <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 flex items-center justify-center mx-auto font-bold text-lg">
               !
             </div>
             <h2 className="text-lg font-bold text-rose-700 dark:text-rose-400">
               محافظ خطای رندر (رادارتهران)
             </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
               واحد فعال: {formatAreaUnitLabel(activeUnit)} ({toPersianNum(refUnitBuy)} م) · ارز: {activeCurrency}
               {activeCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(refUnitBuy, activeCurrency, activeLocale)})` : ''} · معیار {formatAreaShort(80, activeUnit)}: {toPersianNum(sample80mTotalMillions)} م{activeCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample80mTotalMillions, activeCurrency, activeLocale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م
             </p>
@@ -178,7 +178,7 @@ class RenderPhaseErrorBoundary extends React.Component<
               <button
                 type="button"
                 onClick={this.handleFullCacheReset}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold text-xs cursor-pointer transition"
               >
                 بازنشانی حافظه موقت و بارگذاری مجدد
               </button>

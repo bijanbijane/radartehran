@@ -1,6 +1,6 @@
 /** @file src/features/properties/results/PropertyCard.tsx — Fixed-Aspect Non-Inflated Property Discovery Card */
 import React from 'react';
-import { Bookmark, Building2, Calculator, GitCompare, MapPin, ShieldCheck } from 'lucide-react';
+import { Bookmark, Building2, MapPin, ShieldCheck } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import {
   convertPricePerSqmToUnit,
@@ -10,9 +10,7 @@ import {
   type IntlCurrencyCode,
   type RadarLocale,
 } from '../../../utils/areaUnit';
-import {
-  PROPERTY_TYPE_LABELS_FA,
-} from '../types/property.types';
+import { PROPERTY_TYPE_LABELS_FA } from '../types/property.types';
 import {
   TRANSACTION_TYPE_LABELS_FA,
   type PropertyListingRecord,
@@ -41,14 +39,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   intlCurrency,
   radarLocale,
   isSaved,
-  isCompared,
   isHighlighted,
   onHoverChange,
   onOpenDetail,
   onToggleSave,
-  onToggleCompare,
-  onLocateOnMap,
-  onOpenValuation,
 }) => {
   const { property, listing } = record;
   const verified = isVerifiedListing(record);
@@ -79,6 +73,12 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   const priceText = priceBlock();
 
+  const knownSpecs: string[] = [];
+  if (property.areaSqm) knownSpecs.push(formatAreaShort(property.areaSqm, areaUnit));
+  if (property.roomsCount !== null) knownSpecs.push(`${toPersianNum(property.roomsCount)} خواب`);
+  if (property.unitFeatures.parking === 'has') knownSpecs.push('دارای پارکینگ');
+  else if (property.unitFeatures.parking === 'lacks') knownSpecs.push('بدون پارکینگ');
+
   return (
     <article
       data-testid={`property-card-${listing.listingId}`}
@@ -90,125 +90,122 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           : 'border-[var(--color-border-subtle)] hover:border-[var(--color-brand-600)]/60'
       }`}
     >
-      {/* Media frame if valid photo exists, otherwise compact typographic header (zero empty grey placeholder boxes) */}
+      {/* Visual media frame: real photo when available, or crisp architectural zone map illustration */}
       {firstValidImage ? (
         <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] relative overflow-hidden border-b border-[var(--color-border-subtle)]">
           <img src={firstValidImage} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-            <span className="px-2 py-0.5 rounded-[7px] bg-slate-900/85 text-white text-xs font-bold">
+          <div className="absolute top-2.5 right-2.5">
+            <span className="px-2.5 py-1 rounded-[7px] bg-slate-900/85 text-white text-xs font-bold">
               {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
             </span>
           </div>
           {verified && (
-            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-[7px] bg-[#EAF5EE] text-[#176B4C] text-xs font-bold flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" />
+            <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-[7px] bg-[#EAF5EE] text-[#176B4C] text-xs font-bold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
               <span>راستی‌آزمایی‌شده</span>
             </div>
           )}
         </div>
       ) : (
-        <div className="px-4 py-2.5 bg-[var(--color-bg-subtle)] border-b border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Building2 className="w-3.5 h-3.5 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
-            <span className="font-bold text-[var(--color-text-primary)] truncate">
-              {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0 text-[var(--color-text-muted)]">
-            {verified && (
-              <span className="text-[var(--color-brand-fg)] font-bold inline-flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>راستی‌آزمایی‌شده</span>
+        <div className="relative h-[126px] w-full bg-[var(--color-bg-subtle)] border-b border-[var(--color-border-subtle)] overflow-hidden">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 320 126"
+            className="w-full h-full opacity-55 text-[var(--color-brand-600)]"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <defs>
+              <pattern id={`rt-grid-${listing.listingId}`} width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="currentColor" strokeOpacity="0.14" strokeWidth="0.8" />
+              </pattern>
+            </defs>
+            <rect width="320" height="126" fill={`url(#rt-grid-${listing.listingId})`} />
+            <path d="M0 98 Q85 62 168 78 T320 44" fill="none" stroke="currentColor" strokeOpacity="0.28" strokeWidth="1.6" />
+            <circle cx="160" cy="64" r="26" fill="currentColor" fillOpacity="0.08" />
+            <circle cx="160" cy="64" r="7" fill="currentColor" fillOpacity="0.32" />
+          </svg>
+          <div className="absolute inset-0 p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-2">
+              <span className="px-2.5 py-1 rounded-[7px] bg-[var(--color-bg-surface)]/95 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-bold inline-flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" aria-hidden="true" />
+                <span>{TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]}</span>
               </span>
-            )}
-            {verified && <span aria-hidden="true">·</span>}
-            <span>{property.locationPrecision === 'approximate' ? 'موقعیت تقریبی' : 'سطح محله'}</span>
+              {verified && (
+                <span className="px-2.5 py-1 rounded-[7px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-xs font-bold inline-flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>راستی‌آزمایی‌شده</span>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-primary)]">
+              <MapPin className="w-4 h-4 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
+              <span className="truncate">{property.hoodName} · {property.street}</span>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-        <div className="space-y-1.5">
-          <div className="text-xs text-[var(--color-text-muted)] font-medium flex items-center justify-between gap-2">
-            <span className="truncate">
+      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div className="space-y-2">
+          {firstValidImage && (
+            <div className="text-sm text-[var(--color-text-muted)] font-medium truncate">
               {property.hoodName} · {property.street}
-            </span>
-            <span className="shrink-0 tabular-nums">
-              {listing.sourceKind === 'curated_bargain' ? 'فایل زیر عرف' : listing.sourceKind === 'user_submitted' ? 'ثبت مستقیم' : 'شاخص محله'}
-            </span>
-          </div>
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => onOpenDetail(listing.listingId)}
-            className="text-start text-sm font-bold text-[var(--color-text-primary)] hover:text-[var(--color-brand-fg)] transition line-clamp-2 cursor-pointer"
-          >
-            {listing.title}
-          </button>
+          <h2 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">
+            <button
+              type="button"
+              onClick={() => onOpenDetail(listing.listingId)}
+              className="w-full min-h-[44px] md:min-h-0 flex items-center text-start hover:text-[var(--color-brand-fg)] transition line-clamp-2 cursor-pointer"
+            >
+              {listing.title}
+            </button>
+          </h2>
 
-          <div className="text-xs text-[var(--color-text-secondary)] tabular-nums flex flex-wrap gap-x-2">
-            <span>{property.areaSqm ? formatAreaShort(property.areaSqm, areaUnit) : 'متراژ نامشخص'}</span>
-            <span aria-hidden="true">·</span>
-            <span>{property.roomsCount !== null ? `${toPersianNum(property.roomsCount)} خواب` : 'تعداد خواب نامشخص'}</span>
-            <span aria-hidden="true">·</span>
-            <span>پارکینگ: {property.unitFeatures.parking === 'has' ? 'دارد' : property.unitFeatures.parking === 'lacks' ? 'ندارد' : 'نامشخص'}</span>
-          </div>
+          {knownSpecs.length > 0 && (
+            <div className="text-sm text-[var(--color-text-secondary)] tabular-nums flex flex-wrap items-center gap-x-2 gap-y-1">
+              {knownSpecs.map((spec, idx) => (
+                <React.Fragment key={spec}>
+                  {idx > 0 && <span aria-hidden="true">·</span>}
+                  <span>{spec}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="pt-2.5 border-t border-[var(--color-border-subtle)] space-y-2.5">
+        <div className="pt-3 border-t border-[var(--color-border-subtle)] space-y-3">
           <div className="flex items-baseline justify-between gap-2 tabular-nums">
             <div>
-              <div className="text-sm font-bold text-[var(--color-text-primary)]">{priceText.main}</div>
-              <div className="text-xs text-[var(--color-text-muted)]">{priceText.sub}</div>
+              <div className="text-base font-bold text-[var(--color-text-primary)]">{priceText.main}</div>
+              <div className="text-sm text-[var(--color-text-muted)]">{priceText.sub}</div>
             </div>
             {listing.marketContext.gapPercentFromV64 !== null && (
               <span
-                className={`text-xs font-bold shrink-0 ${
-                  listing.marketContext.gapPercentFromV64 <= 0 ? 'text-[var(--color-brand-fg)]' : 'text-[#875000] dark:text-amber-300'
+                className={`text-xs font-bold shrink-0 px-2 py-0.5 rounded-[7px] ${
+                  listing.marketContext.gapPercentFromV64 <= 0
+                    ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]'
+                    : 'bg-amber-500/15 text-[#875000] dark:text-amber-300'
                 }`}
               >
                 {listing.marketContext.gapPercentFromV64 < 0
-                  ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از میانگین محله`
+                  ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ زیر میانگین`
                   : listing.marketContext.gapPercentFromV64 > 0
-                    ? `${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از میانگین محله`
-                    : 'هم‌سطح میانگین محله'}
+                    ? `${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالای میانگین`
+                    : 'هم‌سطح میانگین'}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-2 text-sm">
             <button
               type="button"
               data-testid={`open-detail-${listing.listingId}`}
               onClick={() => onOpenDetail(listing.listingId)}
-              className="flex-1 min-h-[44px] md:min-h-[36px] px-2.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
+              className="flex-1 min-h-[44px] md:min-h-[40px] px-3 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
             >
               جزئیات کامل ملک
-            </button>
-            {onOpenValuation && (
-              <button
-                type="button"
-                onClick={() => onOpenValuation(record)}
-                aria-label="ارزش‌گذاری این ملک"
-                title="ارزش‌گذاری هدونیک این ملک"
-                className="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer flex items-center justify-center"
-              >
-                <Calculator className="w-4 h-4 text-[var(--color-brand-fg)]" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => onToggleCompare(listing.listingId)}
-              aria-pressed={isCompared}
-              aria-label="افزودن به مقایسه"
-              title="مقایسه ملک"
-              className={`min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border cursor-pointer flex items-center justify-center ${
-                isCompared
-                  ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
-                  : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
-              }`}
-            >
-              <GitCompare className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -216,22 +213,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               aria-pressed={isSaved}
               aria-label="ذخیره ملک"
               title="ذخیره فایل"
-              className={`min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border cursor-pointer flex items-center justify-center ${
+              className={`min-h-[44px] min-w-[44px] md:min-h-[40px] md:min-w-[40px] px-2.5 rounded-[9px] border cursor-pointer flex items-center justify-center transition ${
                 isSaved
                   ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-600)] text-[var(--color-brand-fg)]'
                   : 'border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
               }`}
             >
               <Bookmark className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onLocateOnMap(record)}
-              aria-label="نمایش روی نقشه"
-              title="نمایش موقعیت"
-              className="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] px-2 rounded-[8px] border border-[var(--color-border-subtle)] text-[var(--color-brand-fg)] hover:bg-[var(--color-bg-muted)] cursor-pointer flex items-center justify-center"
-            >
-              <MapPin className="w-4 h-4" />
             </button>
           </div>
         </div>

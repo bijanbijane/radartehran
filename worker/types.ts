@@ -28,7 +28,7 @@ export interface D1Database {
   prepare(query: string): D1PreparedStatement;
   batch<T = unknown>(
     statements: D1PreparedStatement[]
-  ): Promise<Array<{ results?: T[]; success: boolean }>>;
+  ): Promise<Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }>>;
   exec(query: string): Promise<{ count: number; duration: number }>;
   dump?(): Promise<ArrayBuffer>;
 }

@@ -6,7 +6,6 @@ import type { ModuleSubTabId } from '../../navigation/registry/route.types';
 import type { PrimaryViewId, RadarLocale } from '../../utils/areaUnit';
 import { focusMainDestinationAfterMegaMenuClose } from './useMegaMenuLifecycle';
 import { RadarLink } from '../ui/RadarPrimitives';
-import { ExperienceModeToggle } from '../AreaUnitToggle';
 import { buildCanonicalPathForDestination } from '../../navigation/url/navigationUrlContract';
 
 export interface DesktopMegaMenuProps {
@@ -96,24 +95,24 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
           const groupTitleId = `${headingBaseId}-${group.id}`;
           return (
             <section key={group.id} aria-labelledby={groupTitleId} className="space-y-2 min-w-0">
-              <div className="flex items-center gap-1.5 px-2 pb-1.5 border-b border-[var(--color-border-subtle)] text-xs font-bold text-[var(--color-text-muted)]">
+              <div className="flex items-center gap-1.5 px-2 pb-1.5 border-b border-[var(--color-border-subtle)] text-sm font-bold text-[var(--color-text-muted)]">
                 <GroupIcon className="w-4 h-4 text-[var(--color-brand-fg)] shrink-0" aria-hidden="true" />
-                <h3 id={groupTitleId} className="leading-snug">
+                <p id={groupTitleId} role="presentation" className="leading-snug m-0">
                   {isEn ? group.titleEn : group.titleFa}
-                </h3>
+                </p>
               </div>
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const isActive = Boolean(item.viewId && activeView === item.viewId && (!item.subTab || activeSubTab === item.subTab));
                   const itemClasses = `w-full text-start px-2.5 py-2 rounded-[8px] transition cursor-pointer flex flex-col gap-0.5 group ${
                     isActive
-                      ? 'bg-[var(--color-brand-soft)] dark:bg-[#173530] text-[var(--color-brand-fg)]'
+                      ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]'
                       : 'hover:bg-[var(--color-bg-muted)] text-[var(--color-text-primary)]'
                   }`;
                   const innerContent = (
                     <>
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-bold leading-snug min-w-0 flex-1 group-hover:text-[var(--color-brand-fg)] transition">
+                        <span className="text-sm font-bold leading-snug min-w-0 flex-1 group-hover:text-[var(--color-brand-fg)] transition">
                           {isEn ? item.labelEn : item.labelFa}
                         </span>
                         {item.status === 'beta' && (
@@ -130,7 +129,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
                           </>
                         )}
                       </div>
-                      <span className="text-xs text-[var(--color-text-muted)] leading-snug line-clamp-2">
+                      <span className="text-[13px] text-[var(--color-text-muted)] leading-snug line-clamp-2">
                         {isEn ? item.descEn : item.descFa}
                       </span>
                     </>
@@ -172,7 +171,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
           );
         })}
       </div>
-      <div className="mt-3 pt-2.5 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-muted)]">
+      <div className="mt-3 pt-2.5 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--color-text-muted)]">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <RadarLink
             href="/"
@@ -182,22 +181,27 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
               onSelectDestination('home');
               focusMainDestinationAfterMegaMenuClose();
             }}
-            className="inline-flex items-center gap-1.5 min-h-[36px] px-2.5 py-1 rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)]/60 hover:bg-[var(--color-bg-muted)] font-bold text-[var(--color-text-primary)] cursor-pointer"
+            className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1 rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)]/60 hover:bg-[var(--color-bg-muted)] font-semibold text-[var(--color-text-primary)] cursor-pointer"
           >
-            <Home className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" aria-hidden="true" />
+            <Home className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" />
             <span>{isEn ? 'Home' : 'صفحه نخست'}</span>
           </RadarLink>
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-[var(--color-text-secondary)]">
-              {isEn ? 'Mode:' : 'حالت نمایش:'}
-            </span>
-            <ExperienceModeToggle compact />
-          </div>
+          <RadarLink
+            href="/account/settings"
+            onNavigate={() => {
+              onClose();
+              onSelectDestination('userspace', 'settings');
+              focusMainDestinationAfterMegaMenuClose();
+            }}
+            className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1 rounded-[8px] border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-muted)] font-semibold text-[var(--color-text-secondary)] cursor-pointer"
+          >
+            <span>{isEn ? 'Display & Settings' : 'تنظیمات نمایش و حساب'}</span>
+          </RadarLink>
         </div>
         <button
           type="button"
           onClick={handleCloseViaButton}
-          className="min-h-[36px] px-2.5 py-1 rounded-md hover:bg-[var(--color-bg-muted)] font-bold text-[var(--color-text-secondary)] cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-600"
+          className="min-h-[38px] px-3 py-1 rounded-md hover:bg-[var(--color-bg-muted)] font-semibold text-[var(--color-text-secondary)] cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-600"
         >
           {isEn ? 'Close (Esc)' : 'بستن (Esc)'}
         </button>

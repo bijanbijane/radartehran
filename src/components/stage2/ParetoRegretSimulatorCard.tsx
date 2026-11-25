@@ -56,26 +56,26 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
   const activeRegimeSpec = analysis.regimes.find((r) => r.regimeId === selectedRegime) ?? analysis.regimes[0];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
+    <div className="bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] p-4 shadow-sm space-y-4" dir="rtl">
       {/* Header & Area + Hurwicz Alpha Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
             <Compass className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+            <h4 className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-sm">
               شبیه‌ساز کمترین پشیمانی در ۳ سال آینده و محلات جایگزین ({hoodName})
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               مقایسه «خرید نقدی، خرید با وام یا اجاره» در ۳ سناریوی کلان (مدل ساواج، هورwicz و پارتو)
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/70 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700" data-testid="hurwicz-alpha-controls">
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-[var(--color-bg-muted)] px-2 py-1 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)]" data-testid="hurwicz-alpha-controls">
             <Sliders className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">ضریب خوش‌بینی هورwicz (α):</span>
+            <span className="text-[10px] font-semibold text-slate-600 dark:text-[var(--color-text-secondary)]">ضریب خوش‌بینی هورwicz (α):</span>
             {[
               { val: 0.15, label: 'محافظه‌کار (۱۵٪)' },
               { val: 0.35, label: 'متعادل (۳۵٪)' },
@@ -88,20 +88,20 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                   optimismAlpha === opt.val
                     ? 'bg-amber-600 text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                    : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:bg-slate-200/60 dark:hover:bg-[var(--color-bg-elevated)]'
                 }`}
               >
                 {opt.label}
               </button>
             ))}
           </div>
-          <label htmlFor="pareto-sqm-select" className="text-slate-600 dark:text-slate-300 font-semibold">متراژ هدف:</label>
+          <label htmlFor="pareto-sqm-select" className="text-slate-600 dark:text-[var(--color-text-secondary)] font-semibold">متراژ هدف:</label>
           <select
             id="pareto-sqm-select"
             aria-label="متراژ هدف برای ماتریس پشیمانی ساواج"
             value={targetSqm}
             onChange={(e) => { const v = Number(e.target.value); setTargetSqm(v); onTargetSqmChange?.(v); }}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-100"
+            className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-300 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]"
           >
             {[65, 85, 110, 135].map((sqm) => (
               <option key={sqm} value={sqm}>{toPersianNum(sqm)} مترمربع</option>
@@ -120,7 +120,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
 
       {/* Macroeconomic Regime Selector */}
       <div className="space-y-2">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+        <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
           <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <span>انتخاب سناریوی کلان اقتصادی (آزمون استرس ۳ ساله):</span>
         </div>
@@ -133,24 +133,24 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
               className={`p-2.5 rounded-xl border text-right transition cursor-pointer ${
                 selectedRegime === reg.regimeId
                   ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 dark:border-indigo-400'
-                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-slate-400'
+                  : 'border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-[var(--color-bg-muted)] hover:border-slate-400'
               }`}
             >
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100">{reg.titleFa}</div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+              <div className="text-[11px] font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{reg.titleFa}</div>
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] mt-1">
                 رشد مسکن: {toPersianNum(reg.annualPropertyGrowthPct)}٪/سال • سپر نقدشونده: {toPersianNum(reg.annualLiquidShieldReturnPct)}٪/سال
               </div>
             </button>
           ))}
         </div>
-        <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
+        <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3 py-2 rounded-lg border border-slate-200/70 dark:border-[var(--color-border-strong)]">
           {activeRegimeSpec.descriptionFa}
         </div>
       </div>
 
       {/* 3-Strategy Minimax Regret & Hurwicz Table */}
       <div className="space-y-2">
-        <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+        <div className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
           مقایسه پیامد راهبردها در سناریوی انتخابی، حداکثر پشیمانی (Max Regret) و امتیاز هورwicz:
         </div>
         <div className="space-y-2">
@@ -162,13 +162,13 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                 className={`p-3 rounded-xl border transition ${
                   st.isMinimaxOptimal
                     ? 'border-emerald-500 dark:border-emerald-500/80 bg-emerald-50/30 dark:bg-emerald-950/20'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40'
+                    : 'border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/40 dark:bg-[var(--color-bg-muted)]'
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{st.titleFa}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{st.titleFa}</span>
                       {st.isMinimaxOptimal && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-600)] text-white">
                           <CheckCircle2 className="w-3 h-3" />
@@ -181,7 +181,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{st.subtitleFa}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{st.subtitleFa}</p>
                   </div>
                   <div className="flex items-center gap-3 text-xs tabular-nums">
                     <div className="text-left">
@@ -191,7 +191,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                         <span className="text-[10px] font-normal text-indigo-600 dark:text-indigo-400">({activeCell.terminalWealthIntlText})</span>
                       </div>
                     </div>
-                    <div className="text-left border-r border-slate-200 dark:border-slate-700 pr-3">
+                    <div className="text-left border-r border-slate-200 dark:border-[var(--color-border-strong)] pr-3">
                       <div className="text-[10px] text-slate-400">امتیاز هورwicz / پشیمانی</div>
                       <div className={`font-bold ${st.maxRegretMillion === 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {toPersianNum(st.hurwiczScoreMillion)} م‌ت / {st.maxRegretMillion === 0 ? '۰ پشیمانی' : `-${toPersianNum(st.maxRegretMillion)} م‌ت`}
@@ -206,19 +206,19 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
       </div>
 
       {/* Pareto Spatial Arbitrage Candidates */}
-      <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
+      <div className="border-t border-slate-200 dark:border-[var(--color-border-subtle)] pt-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
             <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>جایگزین‌های بهینه پارتو (محلات هم‌کیفیت بدون گلوگاه بحرانی با قیمت پایین‌تر)</span>
           </div>
-          <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+          <span className="text-[10px] font-semibold text-slate-500 dark:text-[var(--color-text-muted)]">
             مطلوبیت غیرجبرانی {hoodName}: {toPersianNum(analysis.targetUtilityScore)} از ۱۰۰
           </span>
         </div>
 
         {analysis.paretoAlternatives.length === 0 ? (
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] text-xs text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
             <span>محله {hoodName} هم‌اکنون روی مرز کارایی پارتو (Pareto Frontier) در بازه قیمتی خود قرار دارد و محله ارزان‌تر با مطلوبیت بالاتر یافت نشد.</span>
           </div>
@@ -227,7 +227,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
             {analysis.paretoAlternatives.map((cand) => (
               <div
                 key={cand.hoodId}
-                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 flex flex-col justify-between gap-2"
+                className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/60 dark:bg-[var(--color-bg-muted)] flex flex-col justify-between gap-2"
               >
                 <div>
                   <div className="flex items-center justify-between gap-1">
@@ -242,14 +242,14 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                       {toPersianNum(cand.priceSavingsPct)}٪ ارزان‌تر
                     </span>
                   </div>
-                  <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 mt-1">
+                  <div className="text-[11px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-1">
                     سناریو v6.4 (غیرثبتی): متری {toPersianNum(cand.estimatedDealPriceSqm)} م‌ت ({cand.dealPriceIntlText})
                   </div>
-                  <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                  <p className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)] mt-1 leading-relaxed">
                     {cand.rationaleFa}
                   </p>
                 </div>
-                <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                <div className="pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-strong)] flex items-center justify-between text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
                   <span>مطلوبیت: {toPersianNum(cand.utilityScore)}/۱۰۰</span>
                   <span>آزادسازی: +{toPersianNum(cand.capitalFreed85mMillion)} م‌ت</span>
                 </div>

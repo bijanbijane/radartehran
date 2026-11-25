@@ -64,10 +64,10 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
 
   if (validItems.length === 0) {
     return (
-      <div className="aspect-[16/9] max-h-[340px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-slate-800/70 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-col items-center justify-center text-center p-6 space-y-1.5">
+      <div className="aspect-[16/9] max-h-[340px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex flex-col items-center justify-center text-center p-6 space-y-1.5">
         <Building2 className="w-9 h-9 text-[var(--color-text-muted)] opacity-70" />
-        <p className="text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">تصویر تأییدشده‌ای برای این فایل ثبت نشده است</p>
-        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
+        <p className="text-xs font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">تصویر تأییدشده‌ای برای این فایل ثبت نشده است</p>
+        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
           مشخصات و محدوده ({hoodName}) به‌صورت متنی ثبت شده است؛ پیش از بازدید حضوری می‌توانید استعلام تصویر را از ثبت‌کننده درخواست کنید.
         </p>
       </div>
@@ -83,7 +83,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
   return (
     <div className="space-y-2">
       <div
-        className="relative aspect-[16/9] max-h-[380px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-slate-800 overflow-hidden border border-[var(--color-border-subtle)] dark:border-slate-700"
+        className="relative aspect-[16/9] max-h-[380px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] overflow-hidden border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'ArrowLeft') step(1);

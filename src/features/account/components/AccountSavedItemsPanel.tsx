@@ -39,7 +39,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
     return (
       <div className="space-y-4">
         <PersonalizationAndPreferencesHub />
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-xs" data-testid="account-saved-properties">
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-sm" data-testid="account-saved-properties">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Home className="w-4 h-4 text-[var(--color-brand-fg)]" />
@@ -62,10 +62,10 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onClick={() => p.onNavigateView?.('properties')} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold cursor-pointer">
+                    <button type="button" onClick={() => p.onNavigateView?.('properties')} className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold cursor-pointer">
                       مشاهده
                     </button>
-                    <button type="button" onClick={() => p.onRemoveSavedProperty(prop.listingId)} aria-label={`حذف ${prop.titleSnapshot}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
+                    <button type="button" onClick={() => p.onRemoveSavedProperty(prop.listingId)} aria-label={`حذف ${prop.titleSnapshot}`} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -80,15 +80,15 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
 
   if (p.modeTab === 'saved_searches') {
     return (
-      <div className="space-y-4 text-xs" data-testid="account-saved-searches">
+      <div className="space-y-4 text-sm" data-testid="account-saved-searches">
         <PersonalizationAndPreferencesHub />
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>جست‌وجوها و دیدبان‌های ذخیره‌شده ({toPersianNum(p.savedSearches.length)})</span>
             </h2>
-            <button type="button" onClick={p.onOpenBudgetFilter} className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer">
+            <button type="button" onClick={p.onOpenBudgetFilter} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl border border-[var(--color-border-strong)] font-bold flex items-center gap-1 cursor-pointer">
               <SlidersHorizontal className="w-3.5 h-3.5" /><span>ویرایش فیلتر بودجه</span>
             </button>
           </div>
@@ -130,13 +130,13 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                       aria-label={`بازه اعلان ${s.title}`}
                       value={s.alertCadence}
                       onChange={(e) => p.onChangeSearchCadence(s.id, e.target.value as SavedSearchWatchlistItem['alertCadence'])}
-                      className="min-h-[40px] md:min-h-[34px] p-1.5 rounded-lg bg-[var(--color-bg-muted)] text-xs text-[var(--color-text-primary)] font-bold"
+                      className="min-h-[44px] md:min-h-[34px] p-1.5 rounded-lg bg-[var(--color-bg-muted)] text-xs text-[var(--color-text-primary)] font-bold"
                     >
                       <option value="off">بی‌صدا</option>
                       <option value="daily_digest">خلاصه روزانه</option>
                       <option value="instant_important">فوری</option>
                     </select>
-                    <button type="button" onClick={() => p.onDeleteSearchWatchlist(s.id)} aria-label={`حذف ${s.title}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
+                    <button type="button" onClick={() => p.onDeleteSearchWatchlist(s.id)} aria-label={`حذف ${s.title}`} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -163,15 +163,15 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
   }
 
   return (
-    <div className="space-y-4 text-xs" data-testid="account-saved-views-and-reports">
+    <div className="space-y-4 text-sm" data-testid="account-saved-views-and-reports">
       <PersonalizationAndPreferencesHub />
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>نماهای ذخیره‌شده نقشه ({toPersianNum(p.savedMapViews.length)})</span>
           </h2>
-          <button type="button" onClick={() => p.onNavigateView?.('map')} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => p.onNavigateView?.('map')} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             ساخت نمای جدید روی نقشه
           </button>
         </div>
@@ -186,10 +186,10 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                   <div className="text-xs text-[var(--color-text-muted)]">نشانک زنده فیلترها · {v.hoodName} · لنز {v.lens} · {v.mode === 'rent' ? 'رهن/اجاره' : 'خرید'}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => (p.onRestoreSavedView ? p.onRestoreSavedView(v) : p.onNavigateView?.('map'))} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer flex items-center gap-1">
+                  <button type="button" onClick={() => (p.onRestoreSavedView ? p.onRestoreSavedView(v) : p.onNavigateView?.('map'))} className="min-h-[44px] md:min-h-[34px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer flex items-center gap-1">
                     <MapPin className="w-3 h-3" /><span>بازکردن</span>
                   </button>
-                  <button type="button" onClick={() => p.onDeleteSavedMapView(v.id)} aria-label={`حذف ${v.label}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer">
+                  <button type="button" onClick={() => p.onDeleteSavedMapView(v.id)} aria-label={`حذف ${v.label}`} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -220,8 +220,8 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                   <div className="text-xs text-[var(--color-text-muted)]">تصویر لحظه‌ای (Snapshot) · بازار {rep.filters.marketType} · دوره {rep.filters.period}</div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'overview')} className="min-h-[40px] md:min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-bold cursor-pointer">بازکردن</button>
-                  <button type="button" onClick={() => p.onDeleteSavedMarketAnalysis(rep.id)} aria-label={`حذف ${rep.title}`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'overview')} className="min-h-[44px] md:min-h-[34px] px-2.5 py-1 rounded-lg bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] font-bold cursor-pointer">بازکردن</button>
+                  <button type="button" onClick={() => p.onDeleteSavedMarketAnalysis(rep.id)} aria-label={`حذف ${rep.title}`} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}

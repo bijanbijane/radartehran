@@ -1,5 +1,5 @@
-import React from 'react'; import { signInWithPopup } from 'firebase/auth'; import { auth, googleProvider } from '../firebase'; import type { EvaluatedNeighborhood, Neighborhood, SponsorCrmRequestItem, CityId, MapTileServerId, } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import type { FeatureFlags } from '../utils/security'; import type { BubbleReport, SystemHealthData } from '../types/models'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import type { AppUiState } from './useAppUiState'; import { triggerManualNeshanRetry, readPersistedFallbackCircuit, } from './mapBaseTileController'; import { PersistentPriceThresholdMatchBanner, useBuyerPriceThresholdAlerts, } from './buyerPriceThresholdAlerts'; const SmartSuggestModal = React.lazy(() => import('./SmartSuggestModal').then((m) => ({ default: m.SmartSuggestModal }))); const AgencyModal = React.lazy(() => import('./AgencyModal').then((m) => ({ default: m.AgencyModal }))); const CompareModal = React.lazy(() => import('./CompareModal').then((m) => ({ default: m.CompareModal }))); const ShortlistMatrixModal = React.lazy(() => import('./ShortlistMatrixModal').then((m) => ({ default: m.ShortlistMatrixModal })));
-const ShareModal = React.lazy(() => import('./ShareModal').then((m) => ({ default: m.ShareModal }))); const AdminModal = React.lazy(() => import('./AdminModal').then((m) => ({ default: m.AdminModal }))); const SecondaryModals = React.lazy(() => import('./SecondaryModals').then((m) => ({ default: m.SecondaryModals }))); const ExpansionModulesModal = React.lazy(() => import('./ExpansionModulesModal').then((m) => ({ default: m.ExpansionModulesModal }))); const FutureSuperModulesModal = React.lazy(() => import('./FutureSuperModulesModal').then((m) => ({ default: m.FutureSuperModulesModal }))); const OnboardingWizardModal = React.lazy(() => import('./OnboardingWizardModal').then((m) => ({ default: m.OnboardingWizardModal }))); const HedonicValuationModal = React.lazy(() => import('./HedonicValuationModal').then((m) => ({ default: m.HedonicValuationModal }))); const PortfolioModals = React.lazy(() => import('./PortfolioModals').then((m) => ({ default: m.PortfolioModals }))); const NationwideProvinceModal = React.lazy(() => import('./NationwideProvinceModal').then((m) => ({ default: m.NationwideProvinceModal })));
+import React from 'react'; import type { EvaluatedNeighborhood, Neighborhood, SponsorCrmRequestItem, CityId, MapTileServerId, } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import type { FeatureFlags } from '../utils/security'; import type { BubbleReport } from '../types/models'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import type { AppUiState } from './useAppUiState'; import { PersistentPriceThresholdMatchBanner, useBuyerPriceThresholdAlerts, } from './buyerPriceThresholdAlerts'; const SmartSuggestModal = React.lazy(() => import('./SmartSuggestModal').then((m) => ({ default: m.SmartSuggestModal }))); const AgencyModal = React.lazy(() => import('./AgencyModal').then((m) => ({ default: m.AgencyModal }))); const CompareModal = React.lazy(() => import('./CompareModal').then((m) => ({ default: m.CompareModal }))); const ShortlistMatrixModal = React.lazy(() => import('./ShortlistMatrixModal').then((m) => ({ default: m.ShortlistMatrixModal })));
+const ShareModal = React.lazy(() => import('./ShareModal').then((m) => ({ default: m.ShareModal }))); const SecondaryModals = React.lazy(() => import('./SecondaryModals').then((m) => ({ default: m.SecondaryModals }))); const ExpansionModulesModal = React.lazy(() => import('./ExpansionModulesModal').then((m) => ({ default: m.ExpansionModulesModal }))); const FutureSuperModulesModal = React.lazy(() => import('./FutureSuperModulesModal').then((m) => ({ default: m.FutureSuperModulesModal }))); const OnboardingWizardModal = React.lazy(() => import('./OnboardingWizardModal').then((m) => ({ default: m.OnboardingWizardModal }))); const HedonicValuationModal = React.lazy(() => import('./HedonicValuationModal').then((m) => ({ default: m.HedonicValuationModal }))); const PortfolioModals = React.lazy(() => import('./PortfolioModals').then((m) => ({ default: m.PortfolioModals }))); const NationwideProvinceModal = React.lazy(() => import('./NationwideProvinceModal').then((m) => ({ default: m.NationwideProvinceModal })));
 const NeighborhoodPriceTrendModal = React.lazy(() => import('./NeighborhoodPriceTrendModal').then((m) => ({ default: m.NeighborhoodPriceTrendModal })));
 const InstantListingVerifierModal = React.lazy(() => import('./modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
 export interface AppModalsPortalProps { ui: AppUiState; onSwitchCity?: (city: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => void; mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void; totalRahnEquivalent: number; maxAffordablePerSqm: number; smartSuggestedNeighborhoods: EvaluatedNeighborhood[]; handleSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; targetSqm: number; setTargetSqm: (v: number) => void; rentAgeMultiplier: number; evaluatedNeighborhoods: EvaluatedNeighborhood[]; nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[]; allNeighborhoods?: Neighborhood[]; targetBargainHood: Neighborhood; liveBargainCheck: any; handleSubmitBargainListing: (e: React.FormEvent) => void; handleReserveSponsor: (e: React.FormEvent) => void;
@@ -7,12 +7,16 @@ export interface AppModalsPortalProps { ui: AppUiState; onSwitchCity?: (city: Ci
   handleAdminDeleteBargain: (hoodId: number, bId: string) => void; handleAdminApproveBargain?: (hoodId: number, bId: string) => void; handleAdminQuickPriceSave: (e: React.FormEvent) => void; handleDeepWebSync: () => void; handleAdminChangePassword: (e: React.FormEvent) => void; handleToggleFeatureFlag: (key: keyof FeatureFlags) => void; handleDownloadFullBackupJson: () => void; handleRestoreFullBackupJson: (e: React.ChangeEvent<HTMLInputElement>) => void; isVerifiedAdmin: boolean; currentUser: any; handleExtendSponsor30Days: (id: number) => void; handleReleaseHoodSponsor: (id: number) => void; fetchMarketPulse: (force?: boolean, city?: CityId) => void;
   handleRegisterBuyerAlert: (e: React.FormEvent) => void; isSavingBuyerAlert?: boolean; deposit: number; setDeposit: (v: number) => void; monthlyRent: number; setMonthlyRent: (v: number) => void; setDeductTenantRahnInBuy: (v: boolean) => void; tradeUpResults: any; workHubId: string; setWorkHubId: (v: string) => void; buildingAgeSegment: 'new' | 'mid' | 'older'; setBuildingAgeSegment: (v: 'new' | 'mid' | 'older') => void; deductTenantRahnInBuy: boolean; activeCityWorkHubs: any[]; onFlyTo?: (lat: number, lng: number) => void;
   mapTileStyle?: MapTileServerId; setMapTileStyle?: (style: MapTileServerId) => void; }
-export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const thresholdAlerts = useBuyerPriceThresholdAlerts(p.evaluatedNeighborhoods); const effectiveBuyBudget = ui.useLoanBooster ? p.buyTotalBudget + 1200 : p.buyTotalBudget; const unitMaxAffordable = convertPricePerSqmToUnit(p.maxAffordablePerSqm, areaUnit); const portalIntlSummary = `${formatAreaUnitLabel(areaUnit)} | ${formatMillionTomanAsIntlCurrency(unitMaxAffordable, intlCurrency, locale)}`; const fetchSystemHealth = async () => { ui.setLoadingSystemHealth(true);
-    try { if (!p.isVerifiedAdmin || !p.currentUser || !p.currentUser.emailVerified) { ui.setSystemHealth(null); return; }
-      const idToken = await p.currentUser.getIdToken(); const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' }); if (!res.ok) { ui.setSystemHealth(null); return; }
-      const payload: unknown = await res.json(); if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') { ui.setSystemHealth(null); return; }
-      ui.setSystemHealth(payload as SystemHealthData); } catch { ui.setSystemHealth(null);
-    } finally { ui.setLoadingSystemHealth(false); } };
+export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const thresholdAlerts = useBuyerPriceThresholdAlerts(p.evaluatedNeighborhoods); const effectiveBuyBudget = ui.useLoanBooster ? p.buyTotalBudget + 1200 : p.buyTotalBudget; const unitMaxAffordable = convertPricePerSqmToUnit(p.maxAffordablePerSqm, areaUnit); const portalIntlSummary = `${formatAreaUnitLabel(areaUnit)} | ${formatMillionTomanAsIntlCurrency(unitMaxAffordable, intlCurrency, locale)}`;
+  React.useEffect(() => {
+    // F-11 IA consolidation: Admin has one canonical surface at /admin (ProductAdminMonitoringView)
+    if (!ui.showAdminModal || typeof window === 'undefined') return;
+    ui.setShowAdminModal(false);
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState({}, '', '/admin');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, [ui]);
   const handleOpenSeoComparison = (id1: number, id2: number) => {
     ui.setCompareId1(id1); ui.setCompareId2(id2); ui.setSelectedHoodId(id1); ui.setShowCompareModal(true);
     const h1 = p.evaluatedNeighborhoods.find((n) => n.id === id1) || p.allNeighborhoods?.find((n) => n.id === id1);
@@ -122,42 +126,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           activeCityNameFa={MULTI_CITY_CONFIGS[ui.activeCity]?.nameFa || 'تهران'}
         />
       )}
-      {ui.showAdminModal && (
-        <AdminModal
-          open={ui.showAdminModal} onClose={() => ui.setShowAdminModal(false)}
-          adminUnlocked={ui.adminUnlocked} setAdminUnlocked={ui.setAdminUnlocked}
-          adminPassInput={ui.adminPassInput} setAdminPassInput={ui.setAdminPassInput}
-          adminPassError={ui.adminPassError} setAdminPassError={ui.setAdminPassError} onAdminLogin={p.handleAdminLogin}
-          adminTab={ui.adminTab} setAdminTab={ui.setAdminTab}
-          sponsorRequests={ui.sponsorRequests} buyerLeads={ui.buyerLeads}
-          totalLiveBargainsCount={p.totalLiveBargainsCount}
-          neighborhoods={
-            p.allNeighborhoods
-              ? p.allNeighborhoods.map((n) => p.evaluatedNeighborhoods.find((ev) => ev.id === n.id) || n)
-              : p.evaluatedNeighborhoods
-          }
-          activeCity={ui.activeCity} onAdminApproveSponsor={p.handleAdminApproveSponsor}
-          onAdminDeleteSponsorRequest={p.handleAdminDeleteSponsorRequest}
-          onDownloadBuyerLeadsCsv={p.handleDownloadBuyerLeadsCsv} onAdminDeleteBargain={p.handleAdminDeleteBargain}
-          onAdminApproveBargain={p.handleAdminApproveBargain}
-          adminEditHoodId={ui.adminEditHoodId} setAdminEditHoodId={ui.setAdminEditHoodId}
-          adminEditBuySqm={ui.adminEditBuySqm} setAdminEditBuySqm={ui.setAdminEditBuySqm}
-          adminEditRahn80m={ui.adminEditRahn80m} setAdminEditRahn80m={ui.setAdminEditRahn80m}
-          adminPriceSavedMsg={ui.adminPriceSavedMsg} setAdminPriceSavedMsg={ui.setAdminPriceSavedMsg} onAdminQuickPriceSave={p.handleAdminQuickPriceSave}
-          deepSyncing={ui.deepSyncing} onDeepWebSync={p.handleDeepWebSync}
-          newAdminPassword={ui.newAdminPassword} setNewAdminPassword={ui.setNewAdminPassword}
-          adminPassChangeMsg={ui.adminPassChangeMsg} setAdminPassChangeMsg={ui.setAdminPassChangeMsg} onAdminChangePassword={p.handleAdminChangePassword}
-          systemHealth={ui.systemHealth} loadingSystemHealth={ui.loadingSystemHealth}
-          onRefreshSystemHealth={fetchSystemHealth} featureFlags={p.featureFlags}
-          onToggleFeatureFlag={p.handleToggleFeatureFlag} onDownloadFullBackupJson={p.handleDownloadFullBackupJson}
-          onRestoreFullBackupJson={p.handleRestoreFullBackupJson} backupStatusMsg={ui.backupStatusMsg}
-          isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
-          onGoogleSignIn={() => { ui.setAdminPassError(''); signInWithPopup(auth, googleProvider).catch((err) => ui.setAdminPassError(err?.code === 'auth/popup-blocked' ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.' : err?.code === 'auth/popup-closed-by-user' ? 'پنجره ورود گوگل بسته شد.' : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.')); }}
-          onExtendSponsor30Days={p.handleExtendSponsor30Days} onReleaseHoodSponsor={p.handleReleaseHoodSponsor}
-          mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}
-          onRetryNeshan={triggerManualNeshanRetry} isFallbackActive={readPersistedFallbackCircuit()}
-        />
-      )}
+
       {(ui.showPulseModal || ui.showSeoDrawer || ui.showBuyerAlertModal || ui.showPwaModal || ui.showLegalModal) && (
         <SecondaryModals
           showPulseModal={ui.showPulseModal} setShowPulseModal={ui.setShowPulseModal}

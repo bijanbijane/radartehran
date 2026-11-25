@@ -101,15 +101,15 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
   };
 
   return (
-    <div data-testid="admin-casper-hub-monitor-card" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-4 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+    <div data-testid="admin-casper-hub-monitor-card" className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-4 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-[var(--color-border-strong)] pb-3">
         <div className="flex items-center gap-2">
           <Globe className="w-5 h-5 stroke-[1.75] text-indigo-600 dark:text-indigo-400 shrink-0" />
           <div>
-            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+            <h4 className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-sm">
               دیده‌بان اتصال و هماهنگی شبکه ابری CASPER HUB (Cloudflare D1 & Worker)
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               ارتباط سرور-به-سرور امن بدون افشای توکن · پایش آنتروپی شانون، شکاف‌های دنباله و ارسال چک‌پوینت
             </p>
           </div>
@@ -140,65 +140,65 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center justify-between">
             <span>هویت نماینده محلی</span> <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)] mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
           <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center justify-between">
             <span>دیتابیس D1 ابری</span> <Cpu className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : whoami?.database === 'local-ledger-fallback' ? 'دفتر معرفتی محلی (Fallback)' : 'پایدار'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)] mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : whoami?.database === 'local-ledger-fallback' ? 'دفتر معرفتی محلی (Fallback)' : 'پایدار'}</div>
           <div className="text-[10px] text-slate-500 mt-0.5 font-mono">bijanbijane-1.workers.dev</div>
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center justify-between">
             <span>آنتروپی شانون ایجنت‌ها</span> <Activity className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? `${toPersianNum(telemetry.agentContributionEntropyBits)} بیت` : '۱.۰۰ بیت'}</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)] mt-1 tabular-nums">{telemetry ? `${toPersianNum(telemetry.agentContributionEntropyBits)} بیت` : '۱.۰۰ بیت'}</div>
           <div className="text-[10px] text-slate-500 mt-0.5">توزیع تنوع مشارکت معرفتی</div>
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center justify-between">
             <span>سلامت دنباله (Gap Count)</span> <Zap className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
+          <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)] mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
           <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
         </div>
       </div>
 
-      <div data-testid="casper-hub-recent-notes" className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+      <div data-testid="casper-hub-recent-notes" className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-3 bg-slate-50/50 dark:bg-[var(--color-bg-muted)] space-y-2">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
           <span>آخرین یادداشت‌های دریافتی از CASPER HUB:</span>
           <span className="text-[10px] text-slate-500 font-mono">D1 Replicated Feed</span>
         </div>
         {recentNotes.length === 0 ? (
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 py-1">هنوز یادداشتی در پایگاه ابری D1 ثبت نشده است (آماده ارسال چک‌پوینت).</div>
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] py-1">هنوز یادداشتی در پایگاه ابری D1 ثبت نشده است (آماده ارسال چک‌پوینت).</div>
         ) : (
           <div className="space-y-1.5">
             {recentNotes.map((n, idx) => (
-              <div key={n.id || idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs flex flex-col gap-0.5">
+              <div key={n.id || idx} className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg p-2 text-xs flex flex-col gap-0.5">
                 <div className="flex items-center justify-between gap-1 text-[11px]">
                   <span className="font-bold text-indigo-700 dark:text-indigo-400 font-mono">{n.author_agent || 'CASPER-01'}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">{n.note_type || 'checkpoint'} (اهمیت: {toPersianNum(n.importance ?? 3)})</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] font-bold">{n.note_type || 'checkpoint'} (اهمیت: {toPersianNum(n.importance ?? 3)})</span>
                 </div>
-                <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs truncate">{n.title}</div>
-                {n.summary && <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">{n.summary}</div>}
+                <div className="font-semibold text-slate-900 dark:text-[var(--color-text-primary)] text-xs truncate">{n.title}</div>
+                {n.summary && <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] line-clamp-1">{n.summary}</div>}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <form onSubmit={handlePostNote} className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+      <form onSubmit={handlePostNote} className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-3 bg-slate-50/50 dark:bg-[var(--color-bg-muted)] space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
+          <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-xs flex items-center gap-1.5">
             <Send className="w-3.5 h-3.5 text-indigo-600" />
             <span>ارسال چک‌پوینت معرفتی و یادداشت مستقیم به CASPER HUB:</span>
           </span>
@@ -213,7 +213,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
               placeholder="عنوان یادداشت یا چک‌پوینت (حداکثر ۲۴۰ کاراکتر)"
               value={noteTitle}
               onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteTitle(e.target.value); }}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100"
+              className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-[var(--color-text-primary)]"
             />
           </div>
           <div>
@@ -221,7 +221,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
               aria-label="دسته‌بندی نوع یادداشت کسپر هاب"
               value={noteType}
               onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteType(e.target.value); }}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-900 dark:text-slate-100 font-bold"
+              className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1.5 text-xs text-slate-900 dark:text-[var(--color-text-primary)] font-bold"
             >
               <option value="checkpoint">چک‌پوینت (Checkpoint)</option>
               <option value="finding">یافته تحلیلی (Finding)</option>
@@ -238,12 +238,12 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           placeholder="شرح کامل، تصمیم اتخاذشده و شواهد راستی‌آزمایی (حداکثر ۴۰۰۰ کاراکتر)"
           value={noteSummary}
           onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteSummary(e.target.value); }}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-slate-100 leading-relaxed"
+          className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg p-2.5 text-xs text-slate-900 dark:text-[var(--color-text-primary)] leading-relaxed"
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-bold">اهمیت (۱..۵):</span>
+            <span className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] font-bold">اهمیت (۱..۵):</span>
             {[1, 2, 3, 4, 5].map((lvl) => (
               <button
                 key={lvl}
@@ -253,7 +253,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
                 className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition ${
                   noteImportance === lvl
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300'
+                    : 'bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-300'
                 }`}
               >
                 {toPersianNum(lvl)}
@@ -268,7 +268,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
               placeholder="برچسب‌ها (با ویرگول جدا کنید)"
               value={noteTags}
               onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteTags(e.target.value); }}
-              className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200"
+              className="w-48 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-[var(--color-text-primary)]"
             />
             <button
               type="submit"

@@ -189,7 +189,8 @@ test('Stages 201, 203, 206 & 207: ProductGlobalHeader & DesktopMegaMenu render c
   assert.equal(panelFaHtml.includes('py-0.2'), false);
   assert.match(panelFaHtml, /aria-current="page"/);
   assert.match(panelFaHtml, /نسخه آزمایشی/);
-  assert.match(panelFaHtml, /<h3[^>]*>خدمات تخصصی<\/h3>/);
+  assert.match(panelFaHtml, /<p[^>]*role="presentation"[^>]*>خدمات تخصصی<\/p>/);
+  assert.equal(panelFaHtml.includes('<h3'), false, 'Mega-menu inside <header> must not render <h3> headings');
 
   const panelEnHtml = renderToStaticMarkup(
     React.createElement(DesktopMegaMenu, {

@@ -1,5 +1,5 @@
 import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Building2, Calculator, Clock, Compass, MapPin, Mountain, Phone, PlusCircle, ShieldCheck, Sparkles, ThumbsUp, TrainFront, Wifi, Wind, Zap, } from 'lucide-react'; import { BubbleReport, EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, WorkHub, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import type { NeighborhoodDeepInsight, RentVsBuyVerdict, } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { CommuteHubsMatrixCard } from './CommuteHubsMatrixCard'; import { BudgetBridgeAdvisorCard } from './BudgetBridgeAdvisorCard'; import { PurchasingPowerTrendCard } from './PurchasingPowerTrendCard'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useExchangeRateSnapshot, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
-import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { NeighborhoodIntelligenceProfilePanel } from '../features/neighborhoods/components/NeighborhoodIntelligenceProfilePanel'; const NeighborhoodPriceChartLazy = React.lazy(() =>
+import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { formatPersianScore } from '../utils/persianBidiFormat'; const NeighborhoodPriceChartLazy = React.lazy(() =>
   import('./NeighborhoodPriceChart').then((m) => ({ default: m.NeighborhoodPriceChart })) ); const HedonicInlineWidget = React.lazy(() => import('./HedonicInlineWidget').then((m) => ({ default: m.HedonicInlineWidget }))
 ); const NeighborhoodBargainsAndVotesTabs = React.lazy(() => import('./NeighborhoodBargainsAndVotesTabs').then((m) => ({ default: m.NeighborhoodBargainsAndVotesTabs }))
 ); const ResidentReviewsTabLazy = React.lazy(() => import('./inspector/ResidentReviewsTab').then((m) => ({ default: m.ResidentReviewsTab }))); export type InspectorTabId = 'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote'; export interface NeighborhoodInspectorTabsProps { activeTab: InspectorTabId; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; buildingAgeSegment: 'new' | 'mid' | 'older'; workHubId: string; selectedWorkHub: WorkHub; workHubs: WorkHub[]; onSelectWorkHubId: (hubId: string) => void; onChangeTargetSqm: (sqm: number) => void; onChangeBuildingAgeSegment: (seg: 'new' | 'older' | 'mid') => void; useLoanBooster: boolean; onToggleLoanBooster: () => void;
@@ -28,28 +28,27 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
     const minSigningCashM = Math.max(Math.round(realDealTotalM * 0.55), realDealTotalM - deedHoldbackM - rahnDeductM - netLoanM);
     return (
       <div className="space-y-3.5 text-xs">
-        <NeighborhoodIntelligenceProfilePanel hood={selectedHood} dealPricePerSqm={dealSqm} cityId={activeCity} />
-        <div className="p-2.5 rounded-xl bg-gradient-to-l from-indigo-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:to-emerald-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+        <div className="p-3 rounded-[12px] bg-[var(--color-brand-soft)]/70 border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-start gap-2 min-w-0 flex-1">
-            <span className="p-1 rounded-lg bg-indigo-600 text-white shrink-0 mt-0.5"><Sparkles className="w-3.5 h-3.5" /></span>
-            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-snug">جمع‌بندی ارزش محله: <strong className="text-indigo-700 dark:text-indigo-300">نسبت کیفیت به قیمت {toPersianNum(selectedHood.overallScore)}/۱۰</strong> (متری {toPersianNum(selectedHood.buyPerSqm)} م)</div>
+            <span className="p-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white shrink-0 mt-0.5"><Sparkles className="w-3.5 h-3.5" aria-hidden="true" /></span>
+            <div className="text-xs font-bold text-[var(--color-text-primary)] leading-snug">جمع‌بندی ارزش محله: <strong className="text-[var(--color-brand-fg)]">نسبت کیفیت به قیمت {formatPersianScore(selectedHood.overallScore, 10, isEn)}</strong> (متری {toPersianNum(selectedHood.buyPerSqm)} م)</div>
           </div>
-          <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-brand-600)]/15 text-emerald-800 dark:text-emerald-300">{selectedHood.overallScore >= 8 ? 'مازاد رفاه بالا' : 'تعادل بازار'}</span>
+          <span className="shrink-0 text-xs font-bold px-2.5 py-0.5 rounded-[6px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[var(--color-brand-fg)]">{selectedHood.overallScore >= 8 ? 'مازاد رفاه بالا' : 'تعادل بازار'}</span>
         </div>
         <BudgetBridgeAdvisorCard selectedHood={selectedHood} mode={mode} targetSqm={targetSqm} onChangeTargetSqm={onChangeTargetSqm} buildingAgeSegment={buildingAgeSegment} onChangeBuildingAgeSegment={onChangeBuildingAgeSegment} useLoanBooster={useLoanBooster} onToggleLoanBooster={onToggleLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy} onToggleDeductTenantRahn={onToggleDeductTenantRahn} effectiveBuyBudget={effectiveBuyBudget} totalRahnEquivalent={totalRahnEquivalent} />
-        <div className="apple-grouped-card dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 shadow-xs p-3.5 space-y-2.5" data-testid="smart-payment-structurer-card">
-          <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2">
-            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>مهندسی پرداخت ۴ مرحله‌ای پای قرارداد ({formatAreaShort(targetSqm, areaUnit)})</span></span>
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">ثمن سناریو v6.4 (غیرثبتی): {toPersianNum((realDealTotalM / 1000).toFixed(2))} میلیارد</span>
+        <div className="apple-grouped-card bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-xs p-3.5 space-y-2.5" data-testid="smart-payment-structurer-card">
+          <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-2">
+            <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5 text-[var(--color-brand-fg)]" aria-hidden="true" /><span>مهندسی پرداخت ۴ مرحله‌ای پای قرارداد ({formatAreaShort(targetSqm, areaUnit)})</span></span>
+            <span className="text-xs font-bold text-[var(--color-brand-fg)] tabular-nums">ثمن سناریوی مذاکره (غیرثبتی): {toPersianNum((realDealTotalM / 1000).toFixed(2))} میلیارد</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] tabular-nums">
-            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۱. نقد پای امضا (کف ۵۵٪):</span><strong className="text-slate-900 dark:text-white font-bold text-xs">{toPersianNum((minSigningCashM / 1000).toFixed(2))} میلیارد</strong></div>
-            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۲. رهن مستأجر در تحویل:</span><strong className="text-emerald-700 dark:text-emerald-400 font-bold text-xs">{toPersianNum(scaledFullRahn)} م {deductTenantRahnInBuy ? '(فعال)' : '(قابل کسر)'}</strong></div>
-            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۳. خالص وام پس از کسر اوراق:</span><strong className="text-amber-700 dark:text-amber-400 font-bold text-xs">{useLoanBooster ? '۹۱۰ م (قسط ~۳۹م)' : '۹۱۰ م (کسر ۲۹۰م اوراق)'}</strong></div>
-            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۴. تنفس تنظیم سند (۱۰٪):</span><strong className="text-indigo-700 dark:text-indigo-400 font-bold text-xs">{toPersianNum(deedHoldbackM)} میلیون</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-[var(--color-text-muted)] block text-[10px]">۱. نقد پای امضا (کف ۵۵٪):</span><strong className="text-slate-900 dark:text-white font-bold text-xs">{toPersianNum((minSigningCashM / 1000).toFixed(2))} میلیارد</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-[var(--color-text-muted)] block text-[10px]">۲. رهن مستأجر در تحویل:</span><strong className="text-emerald-700 dark:text-emerald-400 font-bold text-xs">{toPersianNum(scaledFullRahn)} م {deductTenantRahnInBuy ? '(فعال)' : '(قابل کسر)'}</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-[var(--color-text-muted)] block text-[10px]">۳. خالص وام پس از کسر اوراق:</span><strong className="text-amber-700 dark:text-amber-400 font-bold text-xs">{useLoanBooster ? '۹۱۰ م (قسط ~۳۹م)' : '۹۱۰ م (کسر ۲۹۰م اوراق)'}</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-[var(--color-bg-canvas)] ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-[var(--color-text-muted)] block text-[10px]">۴. تنفس تنظیم سند (۱۰٪):</span><strong className="text-indigo-700 dark:text-indigo-400 font-bold text-xs">{toPersianNum(deedHoldbackM)} میلیون</strong></div>
           </div>
         </div>
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 divide-y divide-slate-200/70 dark:divide-slate-800 overflow-hidden">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] divide-y divide-slate-200/70 dark:divide-[var(--color-border-subtle)] overflow-hidden">
           {[
             { label: isEn ? 'Air Quality & Green Space' : 'کیفیت هوا و فضای سبز', val: selectedHood?.air ?? 7, icon: Wind, badgeBg: '#059669' },
             { label: isEn ? 'Power & Water Stability' : 'پایداری برق و فشار آب', val: selectedHood?.powerWater ?? 8, icon: Zap, badgeBg: '#d97706' },
@@ -61,90 +60,90 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
             const IconComponent = item.icon;
             const barColor = item.val >= 7.8 ? 'bg-gradient-to-l from-emerald-500 to-teal-400' : item.val >= 6.2 ? 'bg-gradient-to-l from-amber-500 to-yellow-400' : 'bg-gradient-to-l from-rose-500 to-pink-500';
             return (
-              <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
-                <span className="text-slate-800 dark:text-slate-200 flex items-center gap-2.5 font-semibold min-w-0">
+              <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-[var(--color-bg-elevated)] transition">
+                <span className="text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-2.5 font-semibold min-w-0">
                   <span className="ios-squircle-icon shadow-xs" style={{ backgroundColor: item.badgeBg }}><IconComponent className="w-3.5 h-3.5 stroke-[2]" /></span>
                   <span className="truncate">{item.label}</span>
                 </span>
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <div className="w-20 h-2 bg-slate-200/70 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 ring-1 ring-slate-900/5 dark:ring-white/5"><div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} /></div>
-                  <span className="font-bold text-xs text-slate-900 dark:text-white tabular-nums w-9 text-left">{toPersianNum(item.val)}/۱۰</span>
+                  <div className="w-20 h-2 bg-slate-200/70 dark:bg-[var(--color-bg-muted)] rounded-full overflow-hidden p-0.5 ring-1 ring-slate-900/5 dark:ring-white/5"><div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} /></div>
+                  <span className="font-bold text-xs text-[var(--color-text-primary)] tabular-nums shrink-0">{formatPersianScore(item.val, 10, isEn)}</span>
                 </div>
               </div>
             );
           })}
         </div>
         <CommuteHubsMatrixCard selectedHood={selectedHood} workHubs={workHubs} activeCity={activeCity} selectedWorkHubId={workHubId} onSelectWorkHubId={onSelectWorkHubId} />
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 leading-relaxed">
-          <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5 leading-relaxed">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-2">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5"><Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" /><span>الگوی ترافیک ساعتی، فصلی و گلوگاه‌ها (برآورد تحلیلی)</span></span>
-            <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums shrink-0">{toPersianNum(selectedHood?.trafficInfo?.trafficScore ?? 6.5)} / ۱۰</span>
+            <span className="px-2 py-0.5 rounded-[7px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold tabular-nums shrink-0">{formatPersianScore(selectedHood?.trafficInfo?.trafficScore ?? 6.5, 10, isEn)}</span>
           </div>
-          <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] px-3 py-2">
-            <span className="text-slate-500 dark:text-slate-400">وضعیت معمول ترافیک:</span>
-            <strong className="font-bold text-slate-800 dark:text-slate-200">{(selectedHood?.trafficInfo?.liveStatus || 'ترافیک نیمه‌سنگین در شریان‌های اصلی').replace(/^[🟢🟡🔴🟠⚪]+\s*/, '')}</strong>
+          <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] px-3 py-2">
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)]">وضعیت معمول ترافیک:</span>
+            <strong className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{(selectedHood?.trafficInfo?.liveStatus || 'ترافیک نیمه‌سنگین در شریان‌های اصلی').replace(/^[🟢🟡🔴🟠⚪]+\s*/, '')}</strong>
           </div>
-          <div><span className="font-bold text-slate-800 dark:text-slate-200">ساعات اوج شلوغی متداول: </span><span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.peakHours || 'ساعت ۱۷:۳۰ تا ۲۰:۳۰ شب (پیک مراجعت و خرید شبانه)'}</span></div>
-          <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800"><span className="font-bold text-slate-800 dark:text-slate-200">تحلیل فصلی پاییز و زمستان: </span><span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.seasonalAnalysis || 'در نیمه دوم سال با بازگشایی مدارس و تاریکی زودهنگام ساعت ۱۷، پیک ترافیک عصرگاهی تا ساعت ۲۰:۳۰ امتداد می‌یابد.'}</span></div>
-          <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-            <div className="font-bold text-slate-800 dark:text-slate-200 mb-1.5">گلوگاه‌های ترافیکی {selectedHood?.name}:</div>
-            <div className="flex flex-wrap gap-1.5">{String(selectedHood?.trafficInfo?.bottlenecks || 'تقاطع‌ها و میادین اصلی محله').split('،').filter((b) => b && b.trim()).map((b: string, i: number) => (<span key={i} className="px-2.5 py-1 rounded-[8px] bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">{b.trim()}</span>))}</div>
+          <div><span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">ساعات اوج شلوغی متداول: </span><span className="text-slate-600 dark:text-[var(--color-text-muted)]">{selectedHood?.trafficInfo?.peakHours || 'ساعت ۱۷:۳۰ تا ۲۰:۳۰ شب (پیک مراجعت و خرید شبانه)'}</span></div>
+          <div className="pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)]"><span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">تحلیل فصلی پاییز و زمستان: </span><span className="text-slate-600 dark:text-[var(--color-text-muted)]">{selectedHood?.trafficInfo?.seasonalAnalysis || 'در نیمه دوم سال با بازگشایی مدارس و تاریکی زودهنگام ساعت ۱۷، پیک ترافیک عصرگاهی تا ساعت ۲۰:۳۰ امتداد می‌یابد.'}</span></div>
+          <div className="pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)]">
+            <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] mb-1.5">گلوگاه‌های ترافیکی {selectedHood?.name}:</div>
+            <div className="flex flex-wrap gap-1.5">{String(selectedHood?.trafficInfo?.bottlenecks || 'تقاطع‌ها و میادین اصلی محله').split('،').filter((b) => b && b.trim()).map((b: string, i: number) => (<span key={i} className="px-2.5 py-1 rounded-[8px] bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] text-slate-700 dark:text-[var(--color-text-secondary)] text-[11px]">{b.trim()}</span>))}</div>
           </div>
         </div>
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2 leading-relaxed">
-          <div><span className="font-bold text-emerald-700 dark:text-emerald-400">مزایای سکونت در {selectedHood.name}: </span><span className="text-slate-700 dark:text-slate-300">{selectedHood.pros}</span></div>
-          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800"><span className="font-bold text-rose-600 dark:text-rose-400">چالش‌ها و معایب محله: </span><span className="text-slate-700 dark:text-slate-300">{selectedHood.cons}</span></div>
-          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400"><span className="font-bold text-slate-900 dark:text-white">بررسی بودجه شما: </span>{localAnalysis.budgetVerdict}</div>
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2 leading-relaxed">
+          <div><span className="font-bold text-emerald-700 dark:text-emerald-400">مزایای سکونت در {selectedHood.name}: </span><span className="text-slate-700 dark:text-[var(--color-text-secondary)]">{selectedHood.pros}</span></div>
+          <div className="pt-2 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)]"><span className="font-bold text-rose-600 dark:text-rose-400">چالش‌ها و معایب محله: </span><span className="text-slate-700 dark:text-[var(--color-text-secondary)]">{selectedHood.cons}</span></div>
+          <div className="pt-2 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)] text-slate-600 dark:text-[var(--color-text-muted)]"><span className="font-bold text-slate-900 dark:text-white">بررسی بودجه شما: </span>{localAnalysis.budgetVerdict}</div>
         </div>
         {workHubId && workHubId !== 'none' && (
-          <div className={`p-3 rounded-[12px] border text-xs flex items-center justify-between gap-2 ${directMetroCommuteInfo.hasDirectLine ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' : 'apple-grouped-card dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300'}`}>
+          <div className={`p-3 rounded-[12px] border text-xs flex items-center justify-between gap-2 ${directMetroCommuteInfo.hasDirectLine ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' : 'apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}>
             <div className="flex items-center gap-2"><TrainFront className={`w-4 h-4 shrink-0 stroke-[1.75] ${directMetroCommuteInfo.hasDirectLine ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-slate-400'}`} /><span className="font-bold">{directMetroCommuteInfo.badgeText}</span></div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? (isEn ? `Direct distance to ${selectedWorkHub.name}: ${selectedHood.distKm.toFixed(1)} km` : `فاصله مستقیم تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر`) : selectedWorkHub.name}</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? (isEn ? `Direct distance to ${selectedWorkHub.name}: ${selectedHood.distKm.toFixed(1)} km` : `فاصله مستقیم تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر`) : selectedWorkHub.name}</span>
           </div>
         )}
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
-          <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-2">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5"><Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>کالبدشکافی خیابان‌ها (Micro-Hoods)</span></span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">ضریب قیمت واقعی</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">ضریب قیمت واقعی</span>
           </div>
           <div className="space-y-2">
             {deepInsight.microHoods.map((tier, idx) => (
-              <div key={idx} className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 text-xs space-y-1">
+              <div key={idx} className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] p-2.5 text-xs space-y-1">
                 <div className="flex items-center justify-between gap-1">
                   <span className={`font-bold ${tier.tier === 'luxury' ? 'text-amber-700 dark:text-amber-400' : tier.tier === 'balanced' ? 'text-slate-900 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'}`}>{tier.label}</span>
-                  <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10.5px] font-bold tabular-nums">
+                  <span className="px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/70 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-secondary)] text-[10.5px] font-bold tabular-nums">
                     {tier.priceMultiplier > 1 ? `+${toPersianNum(Math.round((tier.priceMultiplier - 1) * 100))}٪` : tier.priceMultiplier < 1 ? `-${toPersianNum(Math.round((1 - tier.priceMultiplier) * 100))}٪` : 'مبنای محله'} · {mode === 'rent' ? `رهن (${formatAreaShort(80, areaUnit)}) ~${toPersianNum(Math.round(selectedHood.rahn80m * tier.priceMultiplier))} م${fxTag(Math.round(selectedHood.rahn80m * tier.priceMultiplier))}` : `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ~${toPersianNum(convertPricePerSqmToUnit(Math.round(selectedHood.buyPerSqm * tier.priceMultiplier), areaUnit))} م${fxTag(convertPricePerSqmToUnit(Math.round(selectedHood.buyPerSqm * tier.priceMultiplier), areaUnit))}`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{tier.streets}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-muted)] leading-relaxed">{tier.streets}</p>
                   <button type="button" data-testid={`micro-hood-hedonic-btn-${tier.tier}`} onClick={() => setShowHedonicModal(true, { sqm: targetSqm, streetTier: tier.tier, streetMultiplier: tier.priceMultiplier, renovationStatus: tier.tier === 'luxury' ? 'luxury_renovated' : tier.tier === 'balanced' ? 'standard' : 'needs_renovation', floor: tier.tier === 'luxury' ? 4 : tier.tier === 'balanced' ? 2 : 1 })} className="shrink-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer">کارشناسی پهنه ↗</button>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-200/70 dark:border-slate-800 pb-2">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-2">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 stroke-[1.75] text-amber-600" /><span>تله‌های پنهان و واقعیت‌های میدانی</span></span>
             <div className="flex flex-wrap items-center gap-1">
-              <span className="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold tabular-nums">پارک شبانه: {toPersianNum(deepInsight.nightParkingScore)} / ۱۰</span>
-              <span className={`px-2 py-0.5 rounded-lg border text-[10.5px] font-bold ${deepInsight.winterSnowRisk === 'HIGH' ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800' : deepInsight.winterSnowRisk === 'MEDIUM' ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
+              <span className="px-2 py-0.5 rounded-lg bg-[var(--color-warning-bg)] text-[var(--color-warning)] text-xs font-bold tabular-nums">پارک شبانه: {formatPersianScore(deepInsight.nightParkingScore, 10, isEn)}</span>
+              <span className={`px-2 py-0.5 rounded-lg border text-[10.5px] font-bold ${deepInsight.winterSnowRisk === 'HIGH' ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800' : deepInsight.winterSnowRisk === 'MEDIUM' ? 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)]' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
                 {deepInsight.winterSnowRisk === 'HIGH' ? 'شیب تند و برف‌گیر در زمستان' : deepInsight.winterSnowRisk === 'MEDIUM' ? 'شیب ملایم در روزهای برفی' : 'معابر هموار بدون ریسک یخبندان'}
               </span>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {deepInsight.vibeTags.map((v, i) => (
-              <span key={i} className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-[11px] font-medium">{v}</span>
+              <span key={i} className="px-2.5 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-canvas)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-800 dark:text-[var(--color-text-primary)] text-[11px] font-medium">{v}</span>
             ))}
           </div>
-          <div className="space-y-1.5 text-slate-700 dark:text-slate-300 text-[11.5px] pt-1">
+          <div className="space-y-1.5 text-slate-700 dark:text-[var(--color-text-secondary)] text-[11.5px] pt-1">
             {deepInsight.hiddenTraps.map((trap, idx) => (
               <div key={idx} className="flex items-start gap-1.5 leading-relaxed"><AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" aria-hidden="true" /><span>{trap}</span></div>
             ))}
           </div>
-          <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+          <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] flex items-center justify-between text-[11px] text-slate-600 dark:text-[var(--color-text-muted)]">
             <span>هزینه زندگی: <strong>{deepInsight.costOfLivingLevel}</strong></span>
             <span>شارژ ماهانه: <strong>~{toPersianNum(deepInsight.monthlyChargeEstimateThousand)} هزار تومان{fxTag(deepInsight.monthlyChargeEstimateThousand / 1000)}</strong></span>
           </div>
@@ -152,13 +151,13 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 rounded-2xl p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5"><Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>تصمیم ملکی: بخرم یا اجاره کنم؟</span></span>
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-slate-900 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 tabular-nums">P/R: {toPersianNum(rentVsBuyVerdict.prRatio)} سال</span>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-[var(--color-bg-surface)] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 tabular-nums">P/R: {toPersianNum(rentVsBuyVerdict.prRatio)} سال</span>
           </div>
           <div className="text-xs font-bold text-slate-900 dark:text-white">{rentVsBuyVerdict.title}</div>
-          <p className="text-[11.5px] text-slate-700 dark:text-slate-300 leading-relaxed">{rentVsBuyVerdict.explanation}</p>
-          <div className="grid grid-cols-2 gap-2 bg-white/85 dark:bg-slate-900/90 border border-emerald-200/80 dark:border-emerald-800/70 rounded-xl p-2 text-[10.5px]">
-            <div><span className="text-slate-500 dark:text-slate-400 block">ثروت ۳ ساله با خرید ملک:</span><strong className="text-emerald-800 dark:text-emerald-400 font-bold tabular-nums">{toPersianNum(rentVsBuyVerdict.buy3YrWealthBillion)} میلیارد تومان{fxTag(rentVsBuyVerdict.buy3YrWealthBillion * 1000)}</strong></div>
-            <div className="border-r border-emerald-200/60 dark:border-emerald-800 pr-2"><span className="text-slate-500 dark:text-slate-400 block">ثروت ۳ ساله رهن + سرمایه‌گذاری:</span><strong className="text-amber-700 dark:text-amber-400 font-bold tabular-nums">{toPersianNum(rentVsBuyVerdict.rentInvest3YrWealthBillion)} میلیارد تومان{fxTag(rentVsBuyVerdict.rentInvest3YrWealthBillion * 1000)}</strong></div>
+          <p className="text-[11.5px] text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed">{rentVsBuyVerdict.explanation}</p>
+          <div className="grid grid-cols-2 gap-2 bg-white/85 dark:bg-[var(--color-bg-surface)] border border-emerald-200/80 dark:border-emerald-800/70 rounded-xl p-2 text-[10.5px]">
+            <div><span className="text-slate-500 dark:text-[var(--color-text-muted)] block">ثروت ۳ ساله با خرید ملک:</span><strong className="text-emerald-800 dark:text-emerald-400 font-bold tabular-nums">{toPersianNum(rentVsBuyVerdict.buy3YrWealthBillion)} میلیارد تومان{fxTag(rentVsBuyVerdict.buy3YrWealthBillion * 1000)}</strong></div>
+            <div className="border-r border-emerald-200/60 dark:border-emerald-800 pr-2"><span className="text-slate-500 dark:text-[var(--color-text-muted)] block">ثروت ۳ ساله رهن + سرمایه‌گذاری:</span><strong className="text-amber-700 dark:text-amber-400 font-bold tabular-nums">{toPersianNum(rentVsBuyVerdict.rentInvest3YrWealthBillion)} میلیارد تومان{fxTag(rentVsBuyVerdict.rentInvest3YrWealthBillion * 1000)}</strong></div>
           </div>
           <div className="pt-2 border-t border-emerald-200/70 dark:border-emerald-800 flex items-center justify-between text-[10.5px] text-emerald-800 dark:text-emerald-300">
             <span>بازدهی اجاره: <strong>{toPersianNum(rentVsBuyVerdict.annualRentYieldPercent)}٪</strong></span>
@@ -174,13 +173,13 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
     return (
       <div className="space-y-3.5 text-xs">
         <EpistemicMarketDisclaimer metrics={agg} />
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
-          <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 tabular-nums">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5">
+          <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] p-2.5 tabular-nums">
             <div>
-              <div className="text-[10.5px] text-slate-500 dark:text-slate-400">میانه قیمت اعلامی (تعدیل‌شده ۵ سال ساخت)</div>
+              <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)]">میانه قیمت اعلامی (تعدیل‌شده ۵ سال ساخت)</div>
               <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{toPersianNum(convertPricePerSqmToUnit(agg.askingPricePerSqm, areaUnit))} میلیون تومان/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.askingPricePerSqm, areaUnit))}</div>
             </div>
-            <div className="border-r border-slate-200/70 dark:border-slate-800 pr-2">
+            <div className="border-r border-slate-200/70 dark:border-[var(--color-border-subtle)] pr-2">
               <div className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold" title="سناریوی فرضی مذاکره بر پایه ضریب مفروض (۲.۵٪، ۷٪ یا ۱۰٪) از قیمت اعلامی؛ مستند به معاملات قطعی ثبتی نیست">سناریوی فرضی مذاکره (ضریب مفروض، غیرثبتی)</div>
               <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))} میلیون تومان/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))}</div>
             </div>
@@ -188,54 +187,54 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
           <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800 rounded-[10px] p-2.5 space-y-1.5 text-[11px]">
             <div className="flex flex-wrap items-center justify-between gap-1">
               {agg.hasSufficientIqrEvidence ? (
-                <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
+                <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
               ) : (
                 <span className="font-bold text-amber-800 dark:text-amber-300 tabular-nums" data-testid="iqr-insufficient-evidence">محاسبه بازه چارکی (IQR) نیازمند حداقل ۳ آگهی معتبر است (تعداد فعلی: {toPersianNum(agg.eligibleObservedCount)} آگهی)</span>
               )}
               <span className="text-emerald-800 dark:text-emerald-300 font-semibold text-[10px]">{regimeNote}</span>
             </div>
-            <div className="text-[10px] text-slate-600 dark:text-slate-400 tabular-nums" data-testid="market-anchor-clamp-disclosure">
+            <div className="text-[10px] text-slate-600 dark:text-[var(--color-text-muted)] tabular-nums" data-testid="market-anchor-clamp-disclosure">
               {agg.isAnchorClamped ? `مهار نوسان روزانه (±۳٪ نسبت به لنگر محله) فعال است · میانگین خام پیش از مهار: ${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م` : `پایداری لنگر روزانه (±۳٪): منطبق با میانگین خام (${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م)`}
             </div>
             {agg.hasSufficientIqrEvidence && (
-              <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
+              <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-[var(--color-bg-elevated)] overflow-hidden" aria-hidden="true">
                 <div className="h-full rounded-full bg-[var(--color-brand-600)] dark:bg-emerald-500" style={{ width: `${Math.min(95, Math.max(10, Math.round(((agg.estimatedDealPricePerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.iqrHighPerSqm - agg.iqrLowPerSqm)) * 100)))}%` }} />
               </div>
             )}
           </div>
           <div className="flex items-center justify-between gap-2 pt-1">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">وضعیت حباب یا جاماندگی:</span>
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)] font-medium">وضعیت حباب یا جاماندگی:</span>
             <span className={`font-bold text-xs px-2.5 py-1 rounded-[8px] ${marketReport.status === 'undervalued' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : marketReport.status === 'balanced' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}`}>
               {marketReport.badgeText.replace(/^[💎⚖️🔥]+\s*/, '')}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-1 text-center bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 tabular-nums">
-            <div><div className="text-[11px] text-slate-500 dark:text-slate-400">رشد ۶ ماهه</div><div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 text-sm">+{toPersianNum(marketReport.hoodGrowth6mPercent)}٪</div></div>
-            <div className="border-x border-slate-200/60 dark:border-slate-800"><div className="text-[11px] text-slate-500 dark:text-slate-400">میانگین {cityNameFa}</div><div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 text-sm">+{toPersianNum(marketReport.tehranGrowth6mPercent)}٪</div></div>
-            <div><div className="text-[11px] text-slate-500 dark:text-slate-400">نسبت P/R</div><div className="font-bold text-amber-600 dark:text-amber-400 mt-0.5 text-sm">{toPersianNum(marketReport.prRatio)} سال</div></div>
+          <div className="grid grid-cols-3 gap-2 pt-1 text-center bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] p-2.5 tabular-nums">
+            <div><div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">رشد ۶ ماهه</div><div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 text-sm">+{toPersianNum(marketReport.hoodGrowth6mPercent)}٪</div></div>
+            <div className="border-x border-slate-200/60 dark:border-[var(--color-border-subtle)]"><div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">میانگین {cityNameFa}</div><div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-0.5 text-sm">+{toPersianNum(marketReport.tehranGrowth6mPercent)}٪</div></div>
+            <div><div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">نسبت P/R</div><div className="font-bold text-amber-600 dark:text-amber-400 mt-0.5 text-sm">{toPersianNum(marketReport.prRatio)} سال</div></div>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{marketReport.summary} · ارزش معیار واحد {formatAreaShort(targetSqm, areaUnit)}: <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(Math.round((selectedHood.buyPerSqm * targetSqm) / 100) / 10)} میلیارد تومان{fxTag(selectedHood.buyPerSqm * targetSqm)}</strong></p>
+          <p className="text-slate-600 dark:text-[var(--color-text-muted)] leading-relaxed">{marketReport.summary} · ارزش معیار واحد {formatAreaShort(targetSqm, areaUnit)}: <strong className="text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">{toPersianNum(Math.round((selectedHood.buyPerSqm * targetSqm) / 100) / 10)} میلیارد تومان{fxTag(selectedHood.buyPerSqm * targetSqm)}</strong></p>
         </div>
         <PurchasingPowerTrendCard selectedHood={selectedHood} marketReport={marketReport} effectiveBuyBudget={effectiveBuyBudget} />
         <ViewportLazyRender minHeightPx={190}>
-          <React.Suspense fallback={<div className="h-44 rounded-[12px] bg-slate-100/80 dark:bg-slate-800/80 animate-pulse" />}>
+          <React.Suspense fallback={<div className="h-44 rounded-[12px] bg-slate-100/80 dark:bg-[var(--color-bg-muted)] animate-pulse" />}>
             <NeighborhoodPriceChartLazy selectedHood={selectedHood} marketReport={marketReport} activeCity={activeCity} />
           </React.Suspense>
         </ViewportLazyRender>
-        <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-3">
+        <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5"><Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>ماشین‌حساب تبدیل رهن و اجاره ({formatAreaShort(targetSqm, areaUnit)})</span></span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">رهن کامل: {toPersianNum(scaledFullRahn)} م{fxTag(scaledFullRahn)}</span>
+            <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">رهن کامل: {toPersianNum(scaledFullRahn)} م{fxTag(scaledFullRahn)}</span>
           </div>
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <span className="text-slate-600 dark:text-slate-400">ودیعه انتخابی:</span>
+              <span className="text-slate-600 dark:text-[var(--color-text-muted)]">ودیعه انتخابی:</span>
               <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.min(hoodCustomDeposit, scaledFullRahn))} میلیون تومان{fxTag(Math.min(hoodCustomDeposit, scaledFullRahn))}</strong>
             </div>
-            <input type="range" aria-label="اسلایدر ودیعه انتخابی تبدیل رهن و اجاره" min={50} max={scaledFullRahn} step={25} value={Math.min(hoodCustomDeposit, scaledFullRahn)} onChange={(e) => setHoodCustomDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            <input type="range" aria-label="اسلایدر ودیعه انتخابی تبدیل رهن و اجاره" min={50} max={scaledFullRahn} step={25} value={Math.min(hoodCustomDeposit, scaledFullRahn)} onChange={(e) => setHoodCustomDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-muted)] rounded-lg" />
           </div>
-          <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 flex items-center justify-between">
-            <span className="text-slate-500 dark:text-slate-400 text-[11px]">اجاره ماهانه واحد {formatAreaShort(targetSqm, areaUnit)}:</span>
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-canvas)] border border-slate-200/70 dark:border-[var(--color-border-subtle)] rounded-[10px] p-2.5 flex items-center justify-between">
+            <span className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">اجاره ماهانه واحد {formatAreaShort(targetSqm, areaUnit)}:</span>
             <div className="text-left shrink-0">
               {calculatedHoodMonthlyRent === 0 ? <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">رهن کامل (بدون اجاره)</span> : <div className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">ماهی {toPersianNum(calculatedHoodMonthlyRent)} میلیون تومان{fxTag(calculatedHoodMonthlyRent)}</div>}
             </div>

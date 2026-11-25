@@ -8,8 +8,8 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
       throw new Error('Fallback to local legal rule engine'); } catch { finishTimer('fallback'); setClauseResult(runLocalLegalRuleEngine(cleanedClause, contractType === 'buy' ? 'مبایعه‌نامه خرید' : 'اجاره‌نامه')); } finally { clearTimeout(timeoutId); setAnalyzingClause(false);
     } };
   return (
-    <div className="space-y-4 text-slate-900 dark:text-slate-100">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
+    <div className="space-y-4 text-slate-900 dark:text-[var(--color-text-primary)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5">
         <div className="flex items-center gap-2.5">
           <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
             <Scale className="w-4 h-4 stroke-[1.75]" />
@@ -18,7 +18,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
               مشاور حقوقی هوشمند قولنامه و سپر ضدکلاهبرداری مسکن
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
               کشف دام‌های حقوقی مبایعه‌نامه و اجاره‌نامه + چک‌لیست ۱۰گانه پیش از پرداخت بیعانه
             </p>
           </div>
@@ -27,22 +27,22 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
           <AreaUnitToggle compact showIntlControls />
           <button
             type="button" aria-label="بستن مشاور حقوقی قولنامه" onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors"
           >
             <X className="w-4 h-4 stroke-[2]" />
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-slate-800/80 p-1 rounded-[10px] font-bold">
+      <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-[var(--color-bg-muted)] p-1 rounded-[10px] font-bold">
         <button
           type="button" onClick={() => setContractTab('clause_ai')}
-          className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${contractTab === 'clause_ai' ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${contractTab === 'clause_ai' ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}
         >
           ۱. تحلیل هوشمند بندهای قرارداد
         </button>
         <button
           type="button" onClick={() => setContractTab('checklist')}
-          className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${contractTab === 'checklist' ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${contractTab === 'checklist' ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}
         >
           ۲. چک‌لیست ۱۰گانه ضدکلاهبرداری ({toPersianNum(safetyScorePercent)}٪)
         </button>
@@ -51,16 +51,16 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
         <div className="space-y-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-500 dark:text-slate-400">نوع قرارداد:</span>
+              <span className="text-slate-500 dark:text-[var(--color-text-muted)]">نوع قرارداد:</span>
               <button
                 type="button" onClick={() => setContractType('buy')}
-                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${contractType === 'buy' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${contractType === 'buy' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)]'}`}
               >
                 مبایعه‌نامه خرید ({formatAreaShort(80, areaUnit)})
               </button>
               <button
                 type="button" onClick={() => setContractType('rent')}
-                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${contractType === 'rent' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${contractType === 'rent' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)]'}`}
               >
                 اجاره‌نامه ({formatAreaShort(80, areaUnit)})
               </button>
@@ -69,7 +69,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
               {SAMPLE_CLAUSES.map((sample, idx) => (
                 <button
                   key={idx} type="button" onClick={() => { setContractType(sample.type); setClauseInput(sample.text); setClauseError(null); }}
-                  className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium cursor-pointer"
+                  className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] text-[11px] font-medium cursor-pointer"
                 >
                   {sample.label}
                 </button>
@@ -80,7 +80,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
             <textarea
               rows={3} maxLength={2500} aria-label="متن بند قرارداد جهت بررسی حقوقی" value={clauseInput} onChange={(e) => { setClauseInput(e.target.value); if (clauseError) setClauseError(null); }}
               placeholder="متن بند یا شرط مورد نظر از مبایعه‌نامه یا اجاره‌نامه را اینجا وارد کنید..."
-              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-emerald-600"
+              className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3 text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-emerald-600"
             />
             {clauseError && (
               <div role="alert" className="text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl px-3 py-2">
@@ -96,8 +96,8 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
             </button>
           </form>
           {clauseResult && (
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+            <div className="space-y-3 bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-strong)] pb-2.5">
                 <div className="flex items-center gap-2">
                   <span
                     className={`px-2.5 py-1 rounded-lg font-bold text-[11px] ${
@@ -111,12 +111,12 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                     سطح ریسک حقوقی:{' '}
                     {clauseResult.riskLevel === 'HIGH' ? 'خطر بالا (نیازمند اصلاح)' : clauseResult.riskLevel === 'MEDIUM' ? 'متوسط (نیازمند تکمیل)' : 'ایمن (کم‌ریسک)'}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
                     موتور تحلیل: {clauseResult.source === 'GEMINI_AI' ? 'هوش مصنوعی حقوقی Gemini' : 'موتور قوانین ثبتی ایران'} · معیار واحد {formatAreaShort(80, areaUnit)}{showIntl ? ` (ودیعه نمونه ۱.۲ میلیارد ت ≈ ${formatMillionTomanAsIntlCurrency(1200, currency, locale)})` : ''} · معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(INITIAL_NEIGHBORHOODS[0].id, INITIAL_NEIGHBORHOODS[0].name, INITIAL_NEIGHBORHOODS[0].buyPerSqm, buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}
                   </span>
                 </div>
               </div>
-              <p className="text-slate-800 dark:text-slate-100 font-semibold leading-relaxed">{clauseResult.summary}</p>
+              <p className="text-slate-800 dark:text-[var(--color-text-primary)] font-semibold leading-relaxed">{clauseResult.summary}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl p-3 space-y-1.5">
                   <div className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
@@ -182,7 +182,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
       )}
       {contractTab === 'checklist' && (
         <div className="space-y-3.5">
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="font-bold text-slate-900 dark:text-white text-sm">
                 امتیاز امنیت معامله شما پیش از واریز بیعانه:{' '}
@@ -198,13 +198,13 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                   {toPersianNum(safetyScorePercent)}٪ از ۱۰۰٪
                 </span>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
+              <p className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px] mt-0.5">
                 {safetyScorePercent >= 80
                   ? 'عالی! ریسک معامله شما در حداقل ممکن قرار دارد.'
                   : 'هشدار: پیش از تکمیل موارد زیر از تحویل چک یا بیعانه خودداری کنید.'}{showIntl ? ` (سقف نمونه بیعانه امن ۵۰۰ م ≈ ${formatMillionTomanAsIntlCurrency(500, currency, locale)})` : ''}
               </p>
             </div>
-            <div className="w-36 h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="w-36 h-2.5 bg-slate-200 dark:bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${
                   safetyScorePercent >= 80
@@ -225,7 +225,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                   className={`p-3 rounded-2xl border transition cursor-pointer flex items-start gap-3 ${
                     checked
                       ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
-                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      : 'bg-white dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'
                   }`}
                 >
                   <input
@@ -244,7 +244,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                   <div className="space-y-0.5">
                     <div className="font-bold text-slate-900 dark:text-white">
                       {toPersianNum(idx + 1)}. {item.title} </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] leading-relaxed">
                       {item.detail} </div>
                   </div>
                 </label>

@@ -19,7 +19,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
   if (reports.length === 0) return null;
 
   return (
-    <section className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs" data-testid="saved-valuations-panel">
+    <section className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2.5 text-xs" data-testid="saved-valuations-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">گزارش‌های ارزش‌گذاری ذخیره‌شده ({toPersianNum(reports.length)})</h3>
         <span className="text-xs text-[var(--color-text-muted)]">تفکیک ذخیره‌سازی حساب کاربری و حافظه محلی دستگاه</span>
@@ -29,7 +29,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
           const cityName = MULTI_CITY_CONFIGS[r.cityId]?.nameFa || 'تهران';
           const isSynced = r.storageScope === 'account_synced';
           return (
-            <div key={r.id} className="p-3 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-between gap-2">
+            <div key={r.id} className="p-3 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-between gap-2">
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span
@@ -68,7 +68,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                   type="button"
                   onClick={() => onLoadReport(r)}
                   title="بازخوانی در فرم و محاسبه مجدد"
-                  className="p-1.5 rounded-[7px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-brand-600)] cursor-pointer"
+                  className="p-1.5 rounded-[7px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-brand-600)] cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -76,7 +76,7 @@ export const SavedValuationsPanel: React.FC<SavedValuationsPanelProps> = ({
                   type="button"
                   onClick={() => onDeleteReport(r.id)}
                   title="حذف گزارش"
-                  className="p-1.5 rounded-[7px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[#B3261E] dark:text-rose-400 cursor-pointer"
+                  className="p-1.5 rounded-[7px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[#B3261E] dark:text-rose-400 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

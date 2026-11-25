@@ -57,7 +57,7 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
   const subTab: MarketSubTabId = p.activeSubTab || 'overview';
 
   const [draft, setDraft] = useState<MarketFilterDraft>(() =>
-    createDefaultMarketDraft(subTab === 'rent' ? 'rent' : 'sale', 'neighborhood', p.selectedHood.zone),
+    createDefaultMarketDraft(subTab === 'rent' ? 'rent' : 'sale', 'city', p.selectedHood.zone),
   );
   const [applied, setApplied] = useState<AppliedMarketFilters>(() => commitMarketDraft(draft));
   const [compareHoodIds, setCompareHoodIds] = useState<number[]>(() =>
@@ -165,16 +165,42 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
     [bundle.indicators],
   );
 
+  const cityMedianAskingSqm = useMemo(() => {
+    const sorted = [...p.evaluatedNeighborhoods].map((h) => h.buyPerSqm).sort((a, b) => a - b);
+    return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
+  }, [p.evaluatedNeighborhoods]);
+
+  const isLowSampleScope =
+    !bundle.isNonResidentialUnavailable &&
+    applied.geoLevel !== 'city' &&
+    (bundle.quality.status === 'insufficient_sample' || bundle.quality.observedCount === 0);
+
+  const handleExpandToCityWide = () => {
+    const nextDraft: MarketFilterDraft = { ...draft, geoLevel: 'city' };
+    setDraft(nextDraft);
+    applyDraftNow(nextDraft);
+  };
+
+  const overviewPrimaryIndicators = subTab === 'overview' ? availableIndicators.slice(0, 4) : availableIndicators.slice(0, 3);
+  const overviewExtraIndicators = subTab === 'overview' ? availableIndicators.slice(4, 6) : [];
+
   return (
     <div className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-intelligence-view">
       <MarketContextBar
         activeCity={p.activeCity}
         selectedHood={p.selectedHood}
         appliedFilters={applied}
+        subTab={subTab}
         isEn={isEn}
+        cityMedianSummaryFa={
+          cityMedianAskingSqm > 0
+            ? `میانه کل محله‌های ${bundle.cityNameFa}: ${toPersianNum(convertPricePerSqmToUnit(cityMedianAskingSqm, areaUnit))} م/متر`
+            : undefined
+        }
+        freshnessLabelFa={bundle.quality.freshnessLabelFa}
         pulseSummaryFa={
           p.marketPulse
-            ? `میانگین ${bundle.cityNameFa}: ${toPersianNum(convertPricePerSqmToUnit(p.marketPulse.marketSummary.tehranAverageBuyPerSqm, areaUnit))} م/متر · رهن ۸۰م: ${toPersianNum(p.marketPulse.marketSummary.tehranAverageRahn80m)} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealUnit, intlCurrency, radarLocale)})` : ''}`
+            ? `میانگین نبض ${bundle.cityNameFa}: ${toPersianNum(convertPricePerSqmToUnit(p.marketPulse.marketSummary.tehranAverageBuyPerSqm, areaUnit))} م/متر · رهن ۸۰م: ${toPersianNum(p.marketPulse.marketSummary.tehranAverageRahn80m)} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealUnit, intlCurrency, radarLocale)})` : ''}`
             : undefined
         }
         onOpenPulseModal={p.marketPulse ? p.onOpenPulseModal : undefined}
@@ -193,12 +219,36 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
         onReset={() => { const r = resetMarketFiltersToDefault(p.selectedHood.zone); setDraft(r.draft); setApplied(r.applied); }}
       />
 
+      {isLowSampleScope && (
+        <div
+          data-testid="market-low-sample-empty-state"
+          className="p-4 sm:p-5 rounded-[14px] bg-[var(--color-bg-surface)] border border-amber-300 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+              نمونه آماری در «{bundle.geoScopeFa}» برای استخراج شاخص پایدار کافی نیست
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              تعداد فایل‌های مشاهده‌شده در این سطح جغرافیایی محدود است. برای مشاهده شاخص‌های معتبر و کامل، دامنه تحلیل را به سطح کل شهر گسترش دهید.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="market-expand-city-btn"
+            onClick={handleExpandToCityWide}
+            className="min-h-[44px] px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-bold shrink-0 cursor-pointer transition"
+          >
+            نمایش کل شهر {bundle.cityNameFa}
+          </button>
+        </div>
+      )}
+
       {bundle.isNonResidentialUnavailable && (
-        <div data-testid="market-unavailable-notice" className="p-4 rounded-[12px] bg-[#FFF4E5] dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-xs text-[#875000] dark:text-amber-200 flex flex-wrap items-center justify-between gap-2">
+        <div data-testid="market-unavailable-notice" className="p-4 rounded-[12px] bg-[#FFF4E5] dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-sm text-[#875000] dark:text-amber-200 flex flex-wrap items-center justify-between gap-2">
           <span>
             داده کالیبره‌شده برای بازار <strong>{applied.marketType === 'commercial' ? 'تجاری' : applied.marketType === 'office' ? 'اداری' : 'زمین'}</strong> هنوز در این نسخه منتشر نشده است و از داده مسکونی برای پر کردن آن استفاده نمی‌شود.
           </span>
-          <button type="button" onClick={() => handleSelectMarketType('residential')} className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => handleSelectMarketType('residential')} className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             بازگشت به بازار مسکونی
           </button>
         </div>
@@ -214,22 +264,72 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
       {subTab === 'supply' && <SupplyCompositionChart byArea={bundle.supplyByArea} byAge={bundle.supplyByAge} geoScopeFa={bundle.geoScopeFa} status={bundle.quality.status} />}
 
       {subTab === 'compare' && (
-        <GeographicComparison
-          allHoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} comparisonRows={bundle.comparisonRows} compareHoodIds={compareHoodIds} areaUnit={areaUnit}
-          onAddCompareHood={(id) => { setCompareHoodIds((prev) => Array.from(new Set([...prev, id])).slice(0, 3)); trackMarketEvent('market_region_compared', { hoodId: id }); }}
-          onRemoveCompareHood={(id) => setCompareHoodIds((prev) => prev.filter((x) => x !== id))} onSelectNeighborhood={p.onSelectNeighborhood}
-        />
+        <div className="space-y-3">
+          <div className="px-4 py-3 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-[var(--color-text-secondary)]">
+              برای مقایسه جزئیات فنی دو محله یا دو ملک کنار هم، می‌توانید از ابزار اختصاصی مقایسه استفاده کنید.
+            </span>
+            <button
+              type="button"
+              onClick={() => p.onNavigateView?.('tools')}
+              className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold cursor-pointer hover:opacity-90"
+            >
+              ورود به ابزار مقایسه محله و ملک ←
+            </button>
+          </div>
+          <GeographicComparison
+            allHoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} comparisonRows={bundle.comparisonRows} compareHoodIds={compareHoodIds} areaUnit={areaUnit}
+            onAddCompareHood={(id) => { setCompareHoodIds((prev) => Array.from(new Set([...prev, id])).slice(0, 3)); trackMarketEvent('market_region_compared', { hoodId: id }); }}
+            onRemoveCompareHood={(id) => setCompareHoodIds((prev) => prev.filter((x) => x !== id))} onSelectNeighborhood={p.onSelectNeighborhood}
+          />
+        </div>
       )}
 
-      {subTab === 'reports' && <MarketReportList reports={bundle.reports} onOpenMethodology={() => setMethodologyOpen(true)} />}
+      {subTab === 'reports' && (
+        <div className="space-y-3">
+          <div className="px-4 py-3 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-[var(--color-text-secondary)]">
+              آرشیو پژوهش‌ها، روش‌شناسی داده و فرهنگ‌نامه تخصصی مسکن در مرکز دانش در دسترس است.
+            </span>
+            <button
+              type="button"
+              onClick={() => p.onNavigateView?.('knowledge')}
+              className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] font-bold cursor-pointer hover:opacity-90"
+            >
+              مشاهده آرشیو در مرکز دانش ←
+            </button>
+          </div>
+          <MarketReportList reports={bundle.reports} onOpenMethodology={() => setMethodologyOpen(true)} />
+        </div>
+      )}
 
       <section aria-labelledby="market-kpis-heading" className="space-y-3">
-        <h2 id="market-kpis-heading" className="text-base font-bold text-[var(--color-text-primary)]">
+        <h2 id="market-kpis-heading" className="text-lg font-bold text-[var(--color-text-primary)]">
           {isEn ? 'Key Market Indicators' : `شاخص‌های کلیدی بازار (${bundle.geoScopeFa})`}
         </h2>
-        {availableIndicators.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {availableIndicators.slice(0, subTab === 'overview' ? 6 : 3).map((ind) => (
+        {overviewPrimaryIndicators.length > 0 && (
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${
+              overviewPrimaryIndicators.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+            }`}
+          >
+            {overviewPrimaryIndicators.map((ind) => (
+              <IndicatorCard
+                key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
+                onSelect={(selected) => {
+                  setSelectedIndicatorId(selected.id);
+                  trackMarketEvent('market_indicator_selected', { indicatorId: selected.id });
+                  if (selected.id === 'rent_deposit_80m') p.onChangeSubTab?.('rent');
+                  else if (selected.id === 'supply_valid_count') p.onChangeSubTab?.('supply');
+                  else if (selected.id === 'asking_price_median_sqm') p.onChangeSubTab?.('prices');
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {overviewExtraIndicators.length > 0 && (
+          <div className={`grid grid-cols-1 ${overviewExtraIndicators.length > 1 ? 'md:grid-cols-2' : ''} gap-3`}>
+            {overviewExtraIndicators.map((ind) => (
               <IndicatorCard
                 key={ind.id} indicator={ind} active={selectedIndicatorId === ind.id}
                 onSelect={(selected) => {
@@ -246,7 +346,7 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
         {unavailableIndicators.length > 0 && !bundle.isNonResidentialUnavailable && (
           <div
             data-testid="market-unavailable-indicators-note"
-            className="px-3.5 py-2.5 rounded-[10px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed"
+            className="px-4 py-3 rounded-[10px] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] text-sm text-[var(--color-text-secondary)] leading-relaxed"
           >
             <strong className="text-[var(--color-text-primary)] font-bold">شفافیت داده‌های ثبتی:</strong>{' '}
             {unavailableIndicators.map((u) => u.titleFa).join('، ')} به دلیل در دسترس نبودن داده رسمی ثبتی در این دوره حذف شده و با برآورد مدل ترکیب نمی‌شود.

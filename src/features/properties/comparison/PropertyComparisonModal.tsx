@@ -45,14 +45,14 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
         tabIndex={-1}
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-[var(--color-border-subtle)] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-5xl bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
       >
-        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-[var(--color-text-primary)] dark:text-white">مقایسه فایل‌های انتخاب‌شده ({toPersianNum(items.length)})</h2>
-            <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">مقادیر نامشخص با «نامشخص» نمایش داده می‌شوند و با صفر/ندارد یکی گرفته نمی‌شوند.</p>
+            <p className="text-[11px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">مقادیر نامشخص با «نامشخص» نمایش داده می‌شوند و با صفر/ندارد یکی گرفته نمی‌شوند.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="بستن مقایسه" className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-slate-800 flex items-center justify-center cursor-pointer">
+          <button type="button" onClick={onClose} aria-label="بستن مقایسه" className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] flex items-center justify-center cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -71,7 +71,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-right min-w-[640px] tabular-nums">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-800">
+                  <tr className="border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
                     <th className="py-2.5 px-3 text-[var(--color-text-muted)] font-bold w-40">شاخص مقایسه</th>
                     {items.map((it) => (
                       <th key={it.listing.listingId} className="py-2.5 px-3 align-top">
@@ -96,7 +96,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--color-border-subtle)] dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--color-border-subtle)] dark:divide-[var(--color-border-subtle)]">
                   <tr>
                     <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">محله و کاربری</td>
                     {items.map((it) => (

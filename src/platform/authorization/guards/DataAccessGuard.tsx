@@ -58,7 +58,7 @@ export const DataAccessGuard: React.FC<DataAccessGuardProps> = ({
     return (
       <span
         dir="rtl"
-        className="inline-block text-xs text-slate-500 dark:text-slate-400"
+        className="inline-block text-xs text-slate-500 dark:text-[var(--color-text-muted)]"
         aria-label={redactedPlaceholderFa}
       >
         {redactedPlaceholderFa}

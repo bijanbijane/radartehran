@@ -62,7 +62,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
               key={c.label}
               type="button"
               onClick={c.onClick}
-              className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 text-start transition cursor-pointer space-y-1.5"
+              className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] hover:border-emerald-600 text-start transition cursor-pointer space-y-1.5"
             >
               <div className="flex items-center justify-between text-[var(--color-text-muted)]">
                 <span className="text-xs font-medium">{c.label}</span>

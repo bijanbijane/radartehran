@@ -16,5 +16,6 @@ export const getThemeTokens = resolveThemeTokens;
 export function applyThemeModeToDocument(mode: RadarThemeMode): void {
   if (typeof document === 'undefined' || !document.documentElement) return;
   document.documentElement.setAttribute('data-apple-theme', mode);
+  document.documentElement.setAttribute('data-radar-theme', mode);
   document.documentElement.classList.toggle('dark', mode === 'dark');
 }

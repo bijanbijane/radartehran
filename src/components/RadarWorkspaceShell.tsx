@@ -30,6 +30,7 @@ import { setInteractiveSpatialMode } from './map/interactiveSpatialMeasureLayer'
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
 import { setActiveAccountScopeUid } from '../features/account/services/accountStorageScope';
+import { loadAccountWorkspaceSnapshot } from '../features/account/services/accountWorkspaceService';
 import type { SavedMapViewItem } from '../navigation/registry/route.types';
 const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDiscoveryModal').then((m) => ({ default: m.ReverseBudgetDiscoveryModal })));
 
@@ -53,6 +54,7 @@ export function RadarWorkspaceShell() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', appleTheme === 'dark'); document.documentElement.classList.toggle('apple-dark', appleTheme === 'dark');
     document.documentElement.setAttribute('data-apple-theme', appleTheme);
+    document.documentElement.setAttribute('data-radar-theme', appleTheme);
     try { localStorage.setItem('tehran_radar_apple_theme_v1', appleTheme); } catch { /* ignore */ }
     setMapTileStyle((prev) => (appleTheme === 'dark' && prev === 'osm' ? 'carto_dark' : appleTheme === 'light' && prev === 'carto_dark' ? 'osm' : prev));
   }, [appleTheme]);
@@ -69,6 +71,12 @@ export function RadarWorkspaceShell() {
   });
   const isVerifiedAdmin = useMemo(() => isAuthorizedAdminUser(currentUser, ui.hasDelegatedAdminDoc), [ui.hasDelegatedAdminDoc, currentUser?.uid, currentUser?.email, currentUser?.emailVerified]);
   useEffect(() => { setActiveAccountScopeUid(currentUser?.uid ?? null); }, [currentUser?.uid]);
+  const unreadNotificationsCount = useMemo(() => {
+    try {
+      const snap = loadAccountWorkspaceSnapshot({ callerUid: currentUser?.uid ?? null });
+      return snap.notifications.filter((n) => !n.read).length;
+    } catch { return 0; }
+  }, [currentUser?.uid, ui.primaryView, ui.activeSubTab]);
   const { fetchMarketPulse, handleDeepWebSync } = useMarketPulseSync({ ui, activeCityRef, currentUser, allExpansionSeeds, setNeighborhoods });
   const activeCityWorkHubs = useMemo(() => (ui.activeCity === 'tehran' ? WORK_HUBS : (MULTI_CITY_CONFIGS[ui.activeCity]?.workHubs || WORK_HUBS)), [ui.activeCity]);
   const selectedWorkHub = useMemo(() => activeCityWorkHubs.find((w) => w.id === workHubId) || activeCityWorkHubs[0] || WORK_HUBS[0], [activeCityWorkHubs, workHubId]);
@@ -178,6 +186,7 @@ export function RadarWorkspaceShell() {
     ui.setPrimaryView('map'); ui.setActiveSubTab(undefined);
   };
   const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap, isMapLoaded, mapZoomLevel } = useLeafletRadarMap({
+    shouldMountMap: isMapRegionVisible,
     activeCity: ui.activeCity, mapTileStyle, setMapTileStyle,
     deferredMapNeighborhoods: nationwideFilteredNeighborhoods, selectedHoodId: ui.selectedHoodId, selectedHood,
     mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter: ui.statusFilter, mapLens: ui.mapLens,
@@ -243,7 +252,7 @@ export function RadarWorkspaceShell() {
   });
 
   return (
-    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-full overflow-hidden bg-[var(--color-bg-canvas)] dark:bg-slate-950 text-[var(--color-text-primary)] dark:text-slate-100 flex flex-col">
+    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-full overflow-hidden bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] flex flex-col">
       {ui.primaryView !== 'admin' && (
         <ProductGlobalHeader
           primaryView={ui.primaryView} activeSubTab={ui.activeSubTab} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
@@ -265,6 +274,7 @@ export function RadarWorkspaceShell() {
             else if (act === 'reverse_budget') setShowReverseBudgetModal(true);
           }}
           activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} invalidCityParam={ui.invalidCityParam} currentUser={currentUser}
+          unreadNotificationsCount={unreadNotificationsCount}
           onOpenProvincesModal={() => ui.setShowNationwideProvinceModal(true)}
         />
       )}
@@ -280,10 +290,10 @@ export function RadarWorkspaceShell() {
         {ui.primaryView === 'map' && (
           <h1 className="sr-only">نقشه تعاملی قیمت مسکن و محله‌های {CITY_DISPLAY_NAMES[ui.activeCity]?.fa || 'تهران'}</h1>
         )}
-        <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC] dark:bg-[#0D1513]" />
-        {!isMapLoaded && (
-          <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-canvas)]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-800/95 shadow-md border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">
+        {isMapRegionVisible && <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC] dark:bg-[#0D1513]" />}
+        {isMapRegionVisible && !isMapLoaded && (
+          <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-canvas)]/70 dark:bg-[var(--color-bg-surface)] backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[var(--color-bg-muted)] shadow-md border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
               <span className="w-3 h-3 border-2 border-[var(--color-brand-600)] border-t-transparent rounded-full animate-spin" />
               <span>در حال بارگذاری نقشه محله‌ها...</span>
             </div>
@@ -296,12 +306,12 @@ export function RadarWorkspaceShell() {
             <div className="text-sm font-bold text-amber-800 dark:text-amber-300">
               شهر درخواستی «{ui.invalidCityParam}» در {CANONICAL_BRAND_FA} پشتیبانی نمی‌شود
             </div>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p className="text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
               برای جلوگیری از نمایش اطلاعات اشتباه، سامانه به‌صورت خودکار به تهران تغییر نکرد. لطفاً یکی از کلان‌شهرهای فعال زیر را انتخاب کنید:
             </p>
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
               {SUPPORTED_CITY_IDS.map((cid) => (
-                <button key={cid} type="button" onClick={() => handleSwitchCity(cid)} className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-[var(--color-brand-700)] dark:hover:bg-emerald-200 transition cursor-pointer">
+                <button key={cid} type="button" onClick={() => handleSwitchCity(cid)} className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold hover:bg-[var(--color-brand-700)] transition cursor-pointer">
                   {CITY_DISPLAY_NAMES[cid].fa}
                 </button>
               ))}
@@ -310,8 +320,8 @@ export function RadarWorkspaceShell() {
         </div>
       )}
       {!ui.invalidCityParam && (ui.geoContextResolution?.status === 'outside_city_boundaries' || ui.geoContextResolution?.status === 'ambiguous') && (
-        <div role="status" data-testid="geo-context-banner" className="fixed left-1/2 -translate-x-1/2 bottom-20 lg:bottom-6 z-[45] max-w-md w-[calc(100vw-1.5rem)] rounded-xl border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
-          <span className="font-bold text-slate-700 dark:text-slate-200">
+        <div role="status" data-testid="geo-context-banner" className="fixed left-1/2 -translate-x-1/2 bottom-20 lg:bottom-6 z-[45] max-w-md w-[calc(100vw-1.5rem)] rounded-xl border border-slate-300 dark:border-[var(--color-border-strong)] bg-white/95 dark:bg-[var(--color-bg-surface)] backdrop-blur-md shadow-xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+          <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
             {ui.geoContextResolution.status === 'ambiguous'
               ? 'مرکز نقشه در مرز هم‌پوشان شهری قرار دارد؛ شهر فعال تغییر نکرد.'
               : 'مرکز نقشه خارج از محدودهٔ کلان‌شهرهای پشتیبانی‌شده است.'}

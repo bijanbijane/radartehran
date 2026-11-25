@@ -137,25 +137,25 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
   return (
     <div dir={copy.dir} lang={copy.lang} className="w-full max-w-[1320px] mx-auto px-4 py-6 sm:py-8 space-y-5 animate-fadeIn" data-testid="product-discover-view">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-4">
         <div>
-          <span className="text-xs font-bold tracking-wide text-[var(--color-brand-600)] dark:text-emerald-400 block mb-1">{copy.eyebrow}</span>
-          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)] tracking-tight">{copy.heading}</h1>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">{copy.subtitle(filtered.length, p.mode)}{fxRefLabel}</p>
+          <span className="text-sm font-bold tracking-wide text-[var(--color-brand-600)] dark:text-emerald-400 block mb-1">{copy.eyebrow}</span>
+          <h1 className="text-2xl sm:text-[30px] font-bold leading-[1.3] text-[var(--color-text-primary)] tracking-tight">{copy.heading}</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">{copy.subtitle(filtered.length, p.mode)}{fxRefLabel}</p>
           <DiscoverSelectedHoodEpistemicBanner hood={p.selectedHood} cityId={activeCity} allNeighborhoods={p.evaluatedNeighborhoods} />
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           {p.onToggleSplitMap && (
-            <button type="button" data-testid="discover-split-map-toggle" aria-pressed={Boolean(p.splitMapMode)} onClick={p.onToggleSplitMap} className={`hidden lg:inline-flex min-h-[36px] items-center px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap cursor-pointer ${p.splitMapMode ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'}`}>
+            <button type="button" data-testid="discover-split-map-toggle" aria-pressed={Boolean(p.splitMapMode)} onClick={p.onToggleSplitMap} className={`hidden lg:inline-flex min-h-[38px] items-center px-3.5 py-1.5 rounded-lg border text-sm font-bold transition whitespace-nowrap cursor-pointer ${p.splitMapMode ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'}`}>
               {p.splitMapMode ? (isEn ? 'Full Width' : 'نمای تمام‌عرض') : (isEn ? 'Show Beside Map' : 'نمایش کنار نقشه')}
             </button>
           )}
-          <button type="button" disabled={!viewportBounds} aria-pressed={filterRankingByViewport} onClick={() => { setCurrentPage(1); updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport }); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-bold transition whitespace-nowrap ${!viewportBounds ? 'opacity-60 cursor-not-allowed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]' : filterRankingByViewport ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 cursor-pointer' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer'}`} title={!viewportBounds ? (isEn ? copy.viewportToggleUnavailableTitle : 'محدوده نقشه هنوز آماده نیست') : copy.viewportToggleActiveTitle}>
+          <button type="button" disabled={!viewportBounds} aria-pressed={filterRankingByViewport} onClick={() => { setCurrentPage(1); updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport }); }} className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-lg border text-sm font-bold transition whitespace-nowrap ${!viewportBounds ? 'opacity-60 cursor-not-allowed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]' : filterRankingByViewport ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 cursor-pointer' : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] cursor-pointer'}`} title={!viewportBounds ? (isEn ? copy.viewportToggleUnavailableTitle : 'محدوده نقشه هنوز آماده نیست') : copy.viewportToggleActiveTitle}>
             {copy.viewportToggleLabel(inViewportHoods.length)}
           </button>
           <div className="flex items-center border border-[var(--color-border-subtle)] rounded-lg p-0.5 bg-[var(--color-bg-muted)]">
-            <button type="button" onClick={() => setLayoutMode('grid')} aria-pressed={layoutMode === 'grid'} title={copy.layoutGridLabel} aria-label={copy.layoutGridLabel} className={`min-w-[40px] min-h-[40px] md:min-w-[32px] md:min-h-[32px] inline-flex items-center justify-center rounded-md transition cursor-pointer ${layoutMode === 'grid' ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] shadow-xs' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><LayoutGrid className="w-4 h-4" /></button>
-            <button type="button" onClick={() => setLayoutMode('list')} aria-pressed={layoutMode === 'list'} title={copy.layoutListLabel} aria-label={copy.layoutListLabel} className={`min-w-[40px] min-h-[40px] md:min-w-[32px] md:min-h-[32px] inline-flex items-center justify-center rounded-md transition cursor-pointer ${layoutMode === 'list' ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] shadow-xs' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><List className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setLayoutMode('grid')} aria-pressed={layoutMode === 'grid'} title={copy.layoutGridLabel} aria-label={copy.layoutGridLabel} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-md transition cursor-pointer ${layoutMode === 'grid' ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] shadow-xs' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><LayoutGrid className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setLayoutMode('list')} aria-pressed={layoutMode === 'list'} title={copy.layoutListLabel} aria-label={copy.layoutListLabel} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-md transition cursor-pointer ${layoutMode === 'list' ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-surface)] shadow-xs' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}><List className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -164,39 +164,39 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search className={`w-4 h-4 text-[var(--color-text-muted)] absolute top-1/2 -translate-y-1/2 pointer-events-none ${copy.dir === 'rtl' ? 'right-3' : 'left-3'}`} />
-            <input type="text" aria-label={copy.searchAriaLabel} value={query} onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }} placeholder={copy.searchPlaceholder} className={`w-full min-h-[44px] md:min-h-[38px] py-2 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-600)] transition ${copy.dir === 'rtl' ? 'pr-9 pl-8' : 'pl-9 pr-8'}`} />
+            <input type="text" aria-label={copy.searchAriaLabel} value={query} onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }} placeholder={copy.searchPlaceholder} className={`w-full min-h-[44px] md:min-h-[40px] py-2 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-brand-600)] transition ${copy.dir === 'rtl' ? 'pr-9 pl-8' : 'pl-9 pr-8'}`} />
             {query && (
-              <button type="button" aria-label={copy.clearSearchAriaLabel} onClick={() => { setQuery(''); setCurrentPage(1); }} className={`min-w-[36px] min-h-[36px] inline-flex items-center justify-center absolute top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer ${copy.dir === 'rtl' ? 'left-1' : 'right-1'}`}><X className="w-3.5 h-3.5" /></button>
+              <button type="button" aria-label={copy.clearSearchAriaLabel} onClick={() => { setQuery(''); setCurrentPage(1); }} className={`min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center absolute top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer ${copy.dir === 'rtl' ? 'left-1' : 'right-1'}`}><X className="w-4 h-4" /></button>
             )}
           </div>
-          <div className="flex items-center gap-1 overflow-x-auto text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto text-sm">
             {(['all', 'green', 'yellow', 'red'] as const).map((st) => (
-              <button key={st} type="button" onClick={() => { setStatusFilter(st); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-xs font-semibold ${statusFilter === st ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>
+              <button key={st} type="button" onClick={() => { setStatusFilter(st); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-sm font-semibold ${statusFilter === st ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>
                 {st === 'all' ? copy.statusAll : st === 'green' ? copy.statusGreen : st === 'yellow' ? copy.statusYellow : copy.statusRed}
               </button>
             ))}
-            <button type="button" aria-pressed={onlyFavorites} onClick={() => { setOnlyFavorites((v) => !v); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer whitespace-nowrap ${onlyFavorites ? 'bg-rose-700 text-white border-rose-700' : 'border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>♥ {copy.favoritesBtn(p.favoriteHoodIds.length)}</button>
-            <button type="button" aria-pressed={onlyWithBargains} onClick={() => { setOnlyWithBargains((v) => !v); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer whitespace-nowrap ${onlyWithBargains ? 'bg-amber-700 text-white border-amber-700' : 'border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>{copy.dealsOnlyBtn}</button>
+            <button type="button" aria-pressed={onlyFavorites} onClick={() => { setOnlyFavorites((v) => !v); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-lg border text-sm font-bold transition cursor-pointer whitespace-nowrap ${onlyFavorites ? 'bg-rose-700 text-white border-rose-700' : 'border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>♥ {copy.favoritesBtn(p.favoriteHoodIds.length)}</button>
+            <button type="button" aria-pressed={onlyWithBargains} onClick={() => { setOnlyWithBargains((v) => !v); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-lg border text-sm font-bold transition cursor-pointer whitespace-nowrap ${onlyWithBargains ? 'bg-amber-700 text-white border-amber-700' : 'border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'}`}>{copy.dealsOnlyBtn}</button>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 border-t border-[var(--color-border-subtle)] text-xs">
-          <span className="text-[var(--color-text-muted)] text-xs shrink-0 font-semibold">{copy.bracketLabel(p.mode)}</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 border-t border-[var(--color-border-subtle)] text-sm">
+          <span className="text-[var(--color-text-muted)] text-sm shrink-0 font-semibold">{copy.bracketLabel(p.mode)}</span>
           {getPriceBracketOptions(p.mode, isEn).map((tier) => (
-            <button key={tier.id} type="button" onClick={() => { setPriceBracket(tier.id); setCurrentPage(1); }} className={`min-h-[40px] md:min-h-[32px] px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer shrink-0 ${priceBracket === tier.id ? 'bg-[var(--color-brand-600)] text-white shadow-2xs' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{tier.label}</button>
+            <button key={tier.id} type="button" onClick={() => { setPriceBracket(tier.id); setCurrentPage(1); }} className={`min-h-[44px] md:min-h-[36px] px-3 py-1 rounded-md text-sm font-bold transition cursor-pointer shrink-0 ${priceBracket === tier.id ? 'bg-[var(--color-brand-600)] text-white shadow-2xs' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}>{tier.label}</button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--color-border-subtle)] text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--color-border-subtle)] text-sm">
           <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
-            <span className="text-[var(--color-text-muted)] text-xs shrink-0 font-semibold">{copy.districtLabel}</span>
-            <select aria-label={copy.districtAriaLabel} value={zoneFilter} onChange={(e) => { setZoneFilter(e.target.value); setCurrentPage(1); }} className="max-w-[200px] sm:max-w-[260px] min-h-[40px] md:min-h-[34px] truncate px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-xs text-[var(--color-text-primary)] focus:outline-none">
+            <span className="text-[var(--color-text-muted)] text-sm shrink-0 font-semibold">{copy.districtLabel}</span>
+            <select aria-label={copy.districtAriaLabel} value={zoneFilter} onChange={(e) => { setZoneFilter(e.target.value); setCurrentPage(1); }} className="max-w-[200px] sm:max-w-[260px] min-h-[44px] md:min-h-[38px] truncate px-3 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-sm text-[var(--color-text-primary)] focus:outline-none">
               <option value="all">{copy.allDistricts}</option>
               {zones.map((z) => (<option key={z} value={z}>{z}</option>))}
             </select>
-            {hasActiveFilters && <button type="button" onClick={resetAllFilters} className="min-h-[40px] md:min-h-[34px] px-3 py-1 rounded-md bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold hover:bg-rose-100 transition cursor-pointer">{copy.resetFiltersBtn}</button>}
+            {hasActiveFilters && <button type="button" onClick={resetAllFilters} className="min-h-[44px] md:min-h-[38px] px-3 py-1 rounded-md bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-sm font-bold hover:bg-rose-100 transition cursor-pointer">{copy.resetFiltersBtn}</button>}
           </div>
           <div className="flex items-center gap-2 min-w-0 max-w-full">
-            <span className="text-[var(--color-text-muted)] text-xs shrink-0 font-semibold">{copy.sortLabel}</span>
-            <select aria-label={copy.sortAriaLabel} value={sortBy} onChange={(e) => { setSortBy(e.target.value as DiscoverSortMode); setCurrentPage(1); }} className="max-w-[210px] sm:max-w-none min-h-[40px] md:min-h-[34px] truncate px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-xs text-[var(--color-text-primary)] font-bold focus:outline-none">
+            <span className="text-[var(--color-text-muted)] text-sm shrink-0 font-semibold">{copy.sortLabel}</span>
+            <select aria-label={copy.sortAriaLabel} value={sortBy} onChange={(e) => { setSortBy(e.target.value as DiscoverSortMode); setCurrentPage(1); }} className="max-w-[210px] sm:max-w-none min-h-[44px] md:min-h-[38px] truncate px-3 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-strong)] text-sm text-[var(--color-text-primary)] font-bold focus:outline-none">
               <option value="score">{copy.sortScore}</option>
               <option value="price_asc">{copy.sortPriceAsc(areaUnit)}</option>
               <option value="price_desc">{copy.sortPriceDesc(areaUnit)}</option>
@@ -210,17 +210,17 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       {filterRankingByViewport && viewportBounds && inViewportHoods.length === 0 ? (
         <div data-testid="empty-viewport-state" className="p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-3">
           <div className="text-base font-bold text-[var(--color-text-primary)]">{isEn ? copy.emptyViewportTitle : 'محله‌ای در محدوده فعلی نقشه قرار ندارد.'}</div>
-          <p className="text-xs text-[var(--color-text-muted)] max-w-md mx-auto">{copy.emptyViewportDesc}</p>
-          <button type="button" onClick={() => { updateMapAdvancedOverlayState({ filterRankingByViewport: false }); setCurrentPage(1); }} className="min-h-[44px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition cursor-pointer">{isEn ? copy.showAllNeighborhoodsBtn : 'نمایش تمام محله‌ها'}</button>
+          <p className="text-sm text-[var(--color-text-muted)] max-w-md mx-auto">{copy.emptyViewportDesc}</p>
+          <button type="button" onClick={() => { updateMapAdvancedOverlayState({ filterRankingByViewport: false }); setCurrentPage(1); }} className="min-h-[44px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-bold transition cursor-pointer">{isEn ? copy.showAllNeighborhoodsBtn : 'نمایش تمام محله‌ها'}</button>
         </div>
       ) : filtered.length === 0 ? (
         <div data-testid="relax-filter-assistant" className="p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-4">
           <div className="text-base font-bold text-[var(--color-text-primary)]">{copy.noMatchesTitle}</div>
-          <p className="text-xs text-[var(--color-text-muted)] max-w-lg mx-auto">{copy.noMatchesDesc}</p>
+          <p className="text-sm text-[var(--color-text-muted)] max-w-lg mx-auto">{copy.noMatchesDesc}</p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-            <button type="button" onClick={() => { setPriceBracket('all'); setCurrentPage(1); }} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer">{copy.relaxPriceBtn}</button>
-            <button type="button" onClick={() => { setZoneFilter('all'); setCurrentPage(1); }} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] text-xs font-bold transition cursor-pointer">{copy.relaxDistrictBtn}</button>
-            <button type="button" onClick={resetAllFilters} className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold transition cursor-pointer">{copy.clearAllFiltersBtn}</button>
+            <button type="button" onClick={() => { setPriceBracket('all'); setCurrentPage(1); }} className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm font-bold hover:bg-emerald-100 transition cursor-pointer">{copy.relaxPriceBtn}</button>
+            <button type="button" onClick={() => { setZoneFilter('all'); setCurrentPage(1); }} className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-xl bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] text-sm font-bold transition cursor-pointer">{copy.relaxDistrictBtn}</button>
+            <button type="button" onClick={resetAllFilters} className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white text-sm font-bold transition cursor-pointer">{copy.clearAllFiltersBtn}</button>
           </div>
         </div>
       ) : (

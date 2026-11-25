@@ -59,7 +59,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4 text-xs" data-testid="community-research-proposals-tab">
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-3">
         <div>
           <strong className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <BookOpenCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -72,16 +72,16 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
+      <form onSubmit={handleSubmit} className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2.5">
         <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <Lightbulb className="w-4 h-4 text-amber-600" />
           <span>پیشنهاد موضوع پژوهش جدید</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <input type="text" aria-label="عنوان پژوهش پیشنهادی" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان پژوهش (مثلاً اثر خط مترو بر اجاره...)" className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
-          <input type="text" aria-label="محدوده جغرافیایی" value={hoodNameFa} onChange={(e) => { setHoodNameFa(e.target.value); setHoodTouched(true); if (feedback) setFeedback(null); }} placeholder="محله یا منطقه" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+          <input type="text" aria-label="عنوان پژوهش پیشنهادی" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان پژوهش (مثلاً اثر خط مترو بر اجاره...)" className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+          <input type="text" aria-label="محدوده جغرافیایی" value={hoodNameFa} onChange={(e) => { setHoodNameFa(e.target.value); setHoodTouched(true); if (feedback) setFeedback(null); }} placeholder="محله یا منطقه" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
         </div>
-        <textarea rows={2} aria-label="سؤال پژوهشی" value={questionFa} onChange={(e) => { setQuestionFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="سؤال دقیق تحلیلی و داده‌ای که می‌خواهید بررسی شود..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+        <textarea rows={2} aria-label="سؤال پژوهشی" value={questionFa} onChange={(e) => { setQuestionFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="سؤال دقیق تحلیلی و داده‌ای که می‌خواهید بررسی شود..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
         {feedback && (
           <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
@@ -96,14 +96,14 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
         {proposals.map((prop) => {
           const voted = prop.voterIds.includes(currentUserId);
           return (
-            <article key={prop.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-start justify-between gap-3">
+            <article key={prop.id} className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1.5 flex-1 min-w-[220px]">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">{prop.neighborhoodNameFa}</span>
                   <span className="text-[var(--color-text-muted)]">{prop.status === 'queued_for_research' ? 'در صف پژوهش تحریریه' : 'پیشنهاد باز جمعی'}</span>
                 </div>
                 <h3 className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white">{prop.titleFa}</h3>
-                <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{prop.questionFa}</p>
+                <p className="text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] leading-relaxed">{prop.questionFa}</p>
                 <CommunityAuthorBadges profile={prop.authorProfile} />
               </div>
               <button
@@ -111,7 +111,7 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
                 data-testid={`vote-research-${prop.id}`}
                 onClick={() => onVoteProposal(prop.id)}
                 className={`px-3 py-2 rounded-[9px] font-bold inline-flex items-center gap-1.5 cursor-pointer border tabular-nums shrink-0 ${
-                  voted ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'bg-white dark:bg-slate-800 border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-white'
+                  voted ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'bg-white dark:bg-[var(--color-bg-muted)] border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-white'
                 }`}
               >
                 <ThumbsUp className="w-3.5 h-3.5" /><span>حمایت ({toPersianNum(prop.votesCount)})</span>

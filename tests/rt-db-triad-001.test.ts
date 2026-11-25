@@ -144,7 +144,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
       return makeStmt(query);
     },
     async batch<T = unknown>(statements: D1PreparedStatement[]) {
-      const out: Array<{ results?: T[]; success: boolean }> = [];
+      const out: Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }> = [];
       raw.exec('BEGIN IMMEDIATE');
       try {
         for (const stmt of statements) {
@@ -152,7 +152,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
           if (!res.success) {
             throw new Error('BATCH_STMT_FAILED');
           }
-          out.push({ results: res.results, success: true });
+          out.push({ results: res.results, success: true, meta: res.meta });
         }
         raw.exec('COMMIT');
         return out;
@@ -233,10 +233,10 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(applied.length, 6);
+      assert.equal(applied.length, 7);
       // Re-applying migrations must be idempotent
       const reapplied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(reapplied.length, 6);
+      assert.equal(reapplied.length, 7);
 
       // Prefer USER_DB over legacy DB
       const bothEnv: WorkerEnv = { USER_DB: userSqlite.db, DB: userSqlite.db, RESEARCH_DB: researchSqlite.db };
@@ -533,7 +533,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
     it('enforces isolated RESEARCH_DB schema (zero PII columns) and strict allowlist/PII rejection', () => {
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
-      assert.equal(applied.length, 2);
+      assert.equal(applied.length, 3);
 
       const cols = researchSqlite.raw.prepare('PRAGMA table_info(research_events)').all() as Array<{ name: string }>;
       const colNames = cols.map((c) => c.name.toLowerCase());

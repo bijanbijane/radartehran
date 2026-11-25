@@ -29,20 +29,20 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
     <section
       aria-label="سنجش ساختار رهن و اجاره"
       data-testid="market-rent-breakdown"
-      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs"
+      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-4 text-xs"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">
             تحلیل تفکیکی ودیعه، اجاره ماهانه و بازده اجاره در {geoScopeFa}
           </h3>
-          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-0.5">
             مقادیر خام ودیعه و اجاره بدون مخلوط‌کردن نمایش داده می‌شوند · وضعیت:{' '}
             {INDICATOR_STATUS_LABELS_FA[rentBreakdown.status]}
           </p>
         </div>
 
-        <label className="inline-flex items-center gap-2 font-semibold text-[var(--color-text-secondary)] dark:text-slate-300 cursor-pointer">
+        <label className="inline-flex items-center gap-2 font-semibold text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] cursor-pointer">
           <input
             type="checkbox"
             checked={includeConverted}
@@ -54,8 +54,8 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 tabular-nums">
-        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
-          <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">شاخص خام رهن کامل (۸۰ متر)</span>
+        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
+          <span className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] block">شاخص خام رهن کامل (۸۰ متر)</span>
           <strong className="text-lg font-bold text-[var(--color-text-primary)] dark:text-white mt-1 block">
             {toPersianNum(rentBreakdown.deposit80mMillion)} م.ت
           </strong>
@@ -66,12 +66,12 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
           )}
         </div>
 
-        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
-          <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">بخش اجاره ماهانه (قرارداد ترکیبی ۶۰٪ رهن)</span>
+        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
+          <span className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] block">بخش اجاره ماهانه (قرارداد ترکیبی ۶۰٪ رهن)</span>
           <strong className="text-lg font-bold text-[var(--color-text-primary)] dark:text-white mt-1 block">
             {toPersianNum(rentBreakdown.monthlyRentAtMixedMillion)} م.ت / ماه
           </strong>
-          <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">باقی‌مانده به‌صورت ودیعه</span>
+          <span className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">باقی‌مانده به‌صورت ودیعه</span>
         </div>
 
         {includeConverted && (
@@ -88,16 +88,16 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
           </div>
         )}
 
-        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 border border-[var(--color-border-subtle)] dark:border-slate-800">
-          <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 block">بازده ناخالص اجاره سالانه به قیمت فروش</span>
+        <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]">
+          <span className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] block">بازده ناخالص اجاره سالانه به قیمت فروش</span>
           <strong className="text-lg font-bold text-[#155E9A] dark:text-sky-300 mt-1 block">
             {toPersianNum(rentBreakdown.grossYieldPct)}٪
           </strong>
-          <span className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">نسبت سالانه اجاره معادل به ارزش واحد</span>
+          <span className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">نسبت سالانه اجاره معادل به ارزش واحد</span>
         </div>
       </div>
 
-      <div className="flex items-start gap-2 text-xs text-[var(--color-text-muted)] dark:text-slate-400 pt-1">
+      <div className="flex items-start gap-2 text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] pt-1">
         <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0 mt-0.5" />
         <span>
           فرمول تبدیل رهن به اجاره: <code>R_eq = R_m + (D × 0.36) / 12</code>. برای قراردادهای واقعی، نرخ توافقی مالک و مستأجر ممکن است متفاوت باشد.

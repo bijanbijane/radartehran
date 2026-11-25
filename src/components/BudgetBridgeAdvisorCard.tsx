@@ -127,13 +127,13 @@ export function BudgetBridgeAdvisorCard({
 
       <div className="space-y-2">
         {/* Option 1: Adjust Area */}
-        <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="bg-white/90 dark:bg-[var(--color-bg-surface)] border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
               <Maximize2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۱. تعدیل متراژ متناسب با بودجه فعلی</span>
             </div>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+            <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               {rawAffordableSqm >= 35 ? (
                 <>با بودجه فعلی می‌توانید در {selectedHood.name} واحد <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatAreaShort(affordableSqm, areaUnit)}</strong>{mode === 'buy' ? <> (با سناریوی فرضی مذاکره (غیرثبتی): <strong className="text-teal-700 font-bold">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>)</> : null} تهیه کنید.</>
               ) : (
@@ -145,7 +145,7 @@ export function BudgetBridgeAdvisorCard({
             <button
               type="button"
               onClick={() => onChangeTargetSqm(affordableSqm)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-bold cursor-pointer transition shrink-0"
+              className="px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-[11px] font-bold cursor-pointer transition shrink-0"
             >
               تغییر متراژ به {formatAreaShort(affordableSqm, areaUnit)}
             </button>
@@ -154,32 +154,32 @@ export function BudgetBridgeAdvisorCard({
 
         {/* Option 2: Building Age */}
         {buildingAgeSegment === 'new' && (
-          <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="bg-white/90 dark:bg-[var(--color-bg-surface)] border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                 <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>۲. انتخاب واحدهای چندساله خوش‌نقشه ({formatAreaShort(targetSqm, areaUnit)})</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
                 تغییر سن بنا به ۶–۱۵ سال حدود <strong className="text-slate-900 dark:text-white">{toPersianNum(midSavingsMillion)} م{fxTag(midSavingsMillion)}</strong> و بالای ۱۵ سال <strong className="text-slate-900 dark:text-white">{toPersianNum(olderSavingsMillion)} م{fxTag(olderSavingsMillion)}</strong> بودجه لازم را کاهش می‌دهد.
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button type="button" onClick={() => onChangeBuildingAgeSegment('mid')} className="px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-200 text-[10.5px] font-bold cursor-pointer">۶ تا ۱۵ سال (-۱۲٪)</button>
-              <button type="button" onClick={() => onChangeBuildingAgeSegment('older')} className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10.5px] font-bold cursor-pointer">۱۵+ سال (-۲۴٪)</button>
+              <button type="button" onClick={() => onChangeBuildingAgeSegment('older')} className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-[var(--color-bg-muted)] hover:bg-slate-300 dark:hover:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] text-[10.5px] font-bold cursor-pointer">۱۵+ سال (-۲۴٪)</button>
             </div>
           </div>
         )}
 
         {/* Option 3: Financial Levers */}
         {(!useLoanBooster || (mode === 'buy' && !deductTenantRahnInBuy)) && (
-          <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="bg-white/90 dark:bg-[var(--color-bg-surface)] border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                 <Percent className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 <span>۳. فعال‌سازی اهرم‌های وام و رهن مستأجر</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
                 {mode === 'buy'
                   ? `کسر رهن مستأجر و تنفس سند حدود ${toPersianNum(tenantRahnUnlockMillion)} م${fxTag(tenantRahnUnlockMillion)} و وام مسکن ۱,۲۰۰ م${fxTag(1200)} به بودجه شما می‌افزاید.`
                   : `وام ودیعه مسکن ۴۰۰ میلیون تومان${fxTag(400)} به توان رهن کامل شما اضافه می‌کند.`}
@@ -200,7 +200,7 @@ export function BudgetBridgeAdvisorCard({
 
         {/* Option 4: Spatial Affordable Neighbor Alternatives */}
         {nearbyAffordableNeighbors.length > 0 && (
-          <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 space-y-1.5">
+          <div className="bg-white/90 dark:bg-[var(--color-bg-surface)] border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 space-y-1.5">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
               <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>۴. نزدیک‌ترین محلات همسایه با قیمت مناسب‌تر:</span>

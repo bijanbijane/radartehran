@@ -97,14 +97,14 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       dir="rtl"
       role="search"
       aria-label="جست‌وجوی یکپارچه رادار تهران"
-      className="flex w-full items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-1.5 shadow-sm transition-colors focus-within:border-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-slate-300"
+      className="flex w-full items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-1.5 shadow-sm transition-colors focus-within:border-slate-900 dark:border-[var(--color-border-strong)] dark:bg-[var(--color-bg-surface)] dark:focus-within:border-slate-300"
     >
       {onScopeChange && (
         <select
           value={scope}
           onChange={(e) => onScopeChange(e.target.value as SearchScope)}
           aria-label="دامنه جست‌وجو"
-          className="min-h-[44px] shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200"
+          className="min-h-[44px] shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-xs font-medium text-slate-700 dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-primary)]"
         >
           {(Object.keys(SCOPE_LABELS_FA) as SearchScope[]).map((s) => (
             <option key={s} value={s}>
@@ -124,7 +124,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         placeholder={placeholderFa}
         aria-label={placeholderFa}
         aria-busy={isLoading}
-        className="min-h-[44px] flex-1 bg-transparent px-2 text-right text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+        className="min-h-[44px] flex-1 bg-transparent px-2 text-right text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-[var(--color-text-primary)]"
       />
 
       {internalVal && (
@@ -132,7 +132,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           type="button"
           onClick={handleClear}
           aria-label="پاک کردن عبارت جست‌وجو"
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-[var(--color-bg-elevated)] dark:hover:text-[var(--color-text-primary)]"
         >
           پاک کردن
         </button>
@@ -142,7 +142,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         type="button"
         onClick={() => onSubmit?.(internalVal)}
         aria-label="اجرای جست‌وجو"
-        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-[var(--color-brand-600)] dark:text-white dark:hover:bg-slate-200"
       >
         {isLoading ? 'در حال جست‌وجو...' : 'جست‌وجو'}
       </button>

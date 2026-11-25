@@ -81,23 +81,23 @@ export const ResultTable: React.FC<ResultTableProps> = ({
         }
       }}
       data-virtualized={isVirtualized ? 'true' : 'false'}
-      className="max-h-[640px] w-full overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+      className="max-h-[640px] w-full overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]"
     >
       <table className="w-full border-collapse text-right text-xs">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-muted)]">
           <tr style={{ height: `${RESULT_TABLE_BENCHMARKS.headerHeightPx}px` }}>
             {columns.map((col) => (
               <th
                 key={col.id}
                 style={{ minWidth: `${col.minWidth}px` }}
-                className="px-3 py-2 font-bold text-slate-700 dark:text-slate-200"
+                className="px-3 py-2 font-bold text-slate-700 dark:text-[var(--color-text-primary)]"
               >
                 {col.id === 'selection' ? (
                   <button
                     type="button"
                     onClick={onSelectPage}
                     aria-label="انتخاب تمام ردیف‌های صفحه جاری"
-                    className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px] dark:border-slate-700"
+                    className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px] dark:border-[var(--color-border-strong)]"
                   >
                     همه
                   </button>
@@ -120,7 +120,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+        <tbody className="divide-y divide-slate-200 dark:divide-[var(--color-border-subtle)]">
           {visibleItems.map((item, idx) => {
             if (!item || !item.id) {
               // Rule 4.7 & 12: Row error must never crash the entire table
@@ -138,8 +138,8 @@ export const ResultTable: React.FC<ResultTableProps> = ({
               <tr
                 key={`${item.entityType}:${item.id}`}
                 style={{ height: `${rowHeight}px` }}
-                className={`transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 ${
-                  isSelected ? 'bg-slate-100/80 dark:bg-slate-800' : ''
+                className={`transition-colors hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] ${
+                  isSelected ? 'bg-slate-100/80 dark:bg-[var(--color-bg-muted)]' : ''
                 }`}
               >
                 {columns.map((col) => {
@@ -167,7 +167,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                   }
                   if (col.id === 'title') {
                     return (
-                      <td key={col.id} className="px-3 py-2 font-semibold text-slate-900 dark:text-slate-100">
+                      <td key={col.id} className="px-3 py-2 font-semibold text-slate-900 dark:text-[var(--color-text-primary)]">
                         {item.title}
                       </td>
                     );
@@ -196,7 +196,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                               type="button"
                               onClick={() => onAction?.('open-detail', item)}
                               aria-label={`مشاهده ${item.title}`}
-                              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium hover:bg-slate-100 dark:border-[var(--color-border-strong)] dark:hover:bg-[var(--color-bg-elevated)]"
                             >
                               جزئیات
                             </button>
@@ -206,7 +206,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                               type="button"
                               onClick={() => onAction?.('add-to-compare', item)}
                               aria-label={`مقایسه ${item.title}`}
-                              className="rounded-lg border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                              className="rounded-lg border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 dark:border-[var(--color-border-strong)] dark:hover:bg-[var(--color-bg-elevated)]"
                             >
                               مقایسه
                             </button>

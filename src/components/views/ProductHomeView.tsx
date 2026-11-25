@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { SlidersHorizontal, ChevronLeft } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
+import { formatPersianPrice, formatPersianScore } from '../../utils/persianBidiFormat';
 import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
@@ -61,8 +62,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
     [p.evaluatedNeighborhoods],
   );
   const budgetDisplay = p.mode === 'buy'
-    ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} میلیون تومان`)
-    : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} میلیون تومان رهن کامل`);
+    ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : formatPersianPrice(p.buyTotalBudget, 'میلیون تومان'))
+    : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : formatPersianPrice(p.totalRahnEquivalent, 'میلیون تومان رهن کامل'));
   const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale, rateState.snapshot)})` : '';
   const topFeaturedScore = featuredHoods.length > 0 ? Math.max(...featuredHoods.map((h) => h.overallScore)) : undefined;
   const activeCityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
@@ -99,10 +100,10 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       <section aria-labelledby="home-featured-hoods-heading" data-testid="home-featured-neighborhoods-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
+            <h2 id="home-featured-hoods-heading" className="text-xl font-bold text-[var(--color-text-primary)]">
               محله‌های منتخب {activeCityNameFa}
             </h2>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               پایش نمونه محله‌های شاخص بر اساس پوشش داده · بودجه فعال:{' '}
               <strong className="tabular-nums text-[var(--color-text-primary)]">{budgetDisplay}{fxBudget}</strong>
             </p>
@@ -111,15 +112,15 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             <button
               type="button"
               onClick={p.onOpenBudgetFilter}
-              className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-xs font-bold text-[var(--color-text-primary)] inline-flex items-center gap-1.5 cursor-pointer hover:bg-[var(--color-bg-muted)] transition"
+              className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-sm font-bold text-[var(--color-text-primary)] inline-flex items-center gap-1.5 cursor-pointer hover:bg-[var(--color-bg-muted)] transition"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+              <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
               <span>تنظیم بودجه</span>
             </button>
             <RadarLink
               href="/areas"
               onNavigate={() => p.onNavigateView('discover')}
-              className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] text-xs font-bold text-[var(--color-brand-fg)] hover:underline gap-1"
+              className="min-h-[44px] md:min-h-[38px] px-3 py-1.5 rounded-[8px] text-sm font-bold text-[var(--color-brand-fg)] hover:underline gap-1"
             >
               <span>مشاهده همه محله‌ها</span>
               <ChevronLeft className="w-4 h-4" aria-hidden="true" />
@@ -151,16 +152,16 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     : 'border-[var(--color-border-subtle)] hover:border-[var(--color-brand-600)]/60'
                 }`}
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm text-[var(--color-text-muted)]">
                     <span className="truncate">{hood.zone}</span>
-                    <span className="font-mono font-bold text-[var(--color-text-primary)] tabular-nums">{toPersianNum(hood.overallScore)}/۱۰</span>
+                    <span className="font-mono font-bold text-[var(--color-text-primary)] tabular-nums">{formatPersianScore(hood.overallScore)}</span>
                   </div>
                   <h3 className="text-base font-bold text-[var(--color-text-primary)]">محله {hood.name}</h3>
-                  <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
+                  <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
                     {explain.nonCompensatoryWarningsFa[0] || explain.primaryReasonFa}
                   </p>
-                  <div className="pt-2 border-t border-[var(--color-border-subtle)] space-y-1 text-xs tabular-nums">
+                  <div className="pt-2 border-t border-[var(--color-border-subtle)] space-y-1 text-sm tabular-nums">
                     <div className="flex justify-between gap-2">
                       <span className="text-[var(--color-text-muted)]">{p.mode === 'buy' ? `${pres.buyReferenceLabelFa}:` : `${pres.rahnAreaLabelFa}:`}</span>
                       <strong className="text-[var(--color-text-primary)]">{p.mode === 'buy' ? pres.buyValueWithUnitFa : pres.rahnValueWithUnitFa}</strong>
@@ -171,7 +172,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     </div>
                   </div>
                 </div>
-                <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-xs">
+                <div className="pt-2.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-sm">
                   <span className={hood.status === 'green' ? 'text-[var(--color-brand-600)] dark:text-emerald-400 font-bold' : 'text-[var(--color-text-muted)]'}>
                     {hood.status === 'green' ? 'در محدوده بودجه' : `${toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه`}
                   </span>

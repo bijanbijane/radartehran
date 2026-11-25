@@ -4,15 +4,16 @@
  */
 import React, { useState, useMemo } from 'react';
 import { Map as MapIcon, Search, Layers, ArrowLeft, X, Compass } from 'lucide-react';
-import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../../data/multiCityData';
 import type { CityId } from '../../../types/models';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { ModuleSubTabId } from '../../../navigation/registry/route.types';
 import { RadarLink } from '../../../components/ui/RadarPrimitives';
 import { executeCategorizedHomeSearch, buildPrivacySafeHomeTelemetry } from '../services/homeDataAdapter';
+import { HomeSpatialSvgMapPreview } from '../components/HomeSpatialSvgMapPreview';
 import type { HomeResilienceScenarioId, HomeSearchResultItem } from '../types/home.types';
-
+import { formatPersianPrice } from '../../../utils/persianBidiFormat';
 import { useRadarLocale } from '../../../components/AreaUnitToggle';
 
 export interface HomeHeroAndMapPreviewProps {
@@ -297,43 +298,23 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 content-start">
-                {previewPins.map((hood, idx) => {
-                  const isCurrent = hood.id === p.selectedHood.id;
-                  const metricText = previewLayer === 'price'
-                    ? (isEn ? `${hood.buyPerSqm} M / m²` : `${toPersianNum(hood.buyPerSqm)} م / متر`)
-                    : previewLayer === 'budget'
-                      ? (hood.status === 'green' ? (isEn ? 'Within budget' : 'در محدوده بودجه') : (isEn ? `+${hood.diffPercent}% above` : `${toPersianNum(hood.diffPercent)}٪ بالاتر`))
-                      : (isEn ? `Air ${hood.air}/10` : `کیفیت هوا ${toPersianNum(hood.air)}/۱۰`);
-                  return (
-                    <button
-                      key={hood.id}
-                      type="button"
-                      onClick={() => { p.onSelectNeighborhood(hood); p.onNavigateView('map'); }}
-                      title={isEn ? `Open ${hood.name} on map` : `ورود به نقشه محله ${hood.name}`}
-                      className={`${idx >= 4 ? 'hidden sm:flex' : 'flex'} min-h-[48px] px-3 py-2 rounded-[8px] border text-start items-center justify-between gap-2 text-xs transition cursor-pointer tabular-nums ${
-                        isCurrent
-                          ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)] shadow-xs'
-                          : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-[var(--color-border-subtle)] hover:border-[var(--color-brand-600)]'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div className="font-bold truncate">{hood.name}</div>
-                        <div className={`text-xs truncate ${isCurrent ? 'text-white/90' : 'text-[var(--color-text-muted)]'}`}>{hood.zone}</div>
-                      </div>
-                      <span className={`font-bold whitespace-nowrap shrink-0 ${isCurrent ? 'text-white' : 'text-[var(--color-brand-fg)]'}`}>
-                        {metricText}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <HomeSpatialSvgMapPreview
+                neighborhoods={previewPins}
+                selectedHood={p.selectedHood}
+                activeCity={p.activeCity}
+                previewLayer={previewLayer}
+                isEn={isEn}
+                onSelectPin={(hood) => {
+                  p.onSelectNeighborhood(hood);
+                  p.onNavigateView('map');
+                }}
+              />
 
               <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--color-bg-surface)] px-3 py-2 rounded-[8px] border border-[var(--color-border-subtle)] text-xs">
                 <div className="text-[var(--color-text-secondary)] truncate tabular-nums">
                   {isEn ? 'Active focus:' : 'کانون فعلی:'}{' '}
                   <strong className="text-[var(--color-text-primary)]">{isEn ? p.selectedHood.name : `محله ${p.selectedHood.name}`}</strong> ·{' '}
-                  {isEn ? `${p.selectedHood.buyPerSqm} M/m²` : `${toPersianNum(p.selectedHood.buyPerSqm)} م/متر`}
+                  {isEn ? `${p.selectedHood.buyPerSqm} M/m²` : formatPersianPrice(p.selectedHood.buyPerSqm, 'م/متر')}
                 </div>
                 <RadarLink
                   href="/map"

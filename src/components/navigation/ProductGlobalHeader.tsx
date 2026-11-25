@@ -83,7 +83,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   const primaryNavItems = (['map', 'discover', 'intelligence', 'properties', 'tools'] as const)
     .map((id) => navigationItems.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions';
+  const isLegalRoute = activeSubTab === 'legal_privacy' || activeSubTab === 'legal_terms';
+  const isMoreActive =
+    !isLegalRoute && (primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions');
   const unreadCount = normalizeUnreadNotificationCount(unreadNotificationsCount ?? 0);
   const formattedUnread = unreadCount > 9 ? (isEn ? '9+' : '+۹') : unreadCount.toLocaleString(isEn ? 'en-US' : 'fa-IR');
 
@@ -147,9 +149,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                       role="option"
                       aria-selected={selected}
                       onClick={() => { setCityMenuOpen(false); onSwitchCity(c.id); }}
-                      className={`w-full min-h-[40px] px-3 py-1.5 rounded-[8px] text-start text-xs font-semibold flex items-center justify-between cursor-pointer transition ${
+                      className={`w-full min-h-[44px] md:min-h-[40px] px-3 py-1.5 rounded-[8px] text-start text-sm font-semibold flex items-center justify-between cursor-pointer transition ${
                         selected
-                          ? 'bg-[var(--color-brand-soft)] dark:bg-[#173530] text-[var(--color-brand-fg)]'
+                          ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]'
                           : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
                       }`}
                     >
@@ -184,9 +186,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onNavigate={() => { closeMegaMenu(); onSelectPrimaryView(item.id); }}
-                className={`relative flex items-center gap-1.5 min-h-[38px] px-2 lg:px-2.5 py-1.5 rounded-[8px] text-xs font-semibold whitespace-nowrap shrink-0 transition cursor-pointer ${
+                className={`relative flex items-center gap-1.5 min-h-[38px] px-2 lg:px-3 py-1.5 rounded-[8px] text-sm font-semibold whitespace-nowrap shrink-0 transition cursor-pointer ${
                   isActive
-                    ? 'text-[var(--color-brand-fg)] bg-[var(--color-brand-soft)] dark:bg-[#173530]'
+                    ? 'text-[var(--color-brand-fg)] bg-[var(--color-brand-soft)]'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
                 }`}
               >
@@ -205,9 +207,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             onMouseEnter={openFromHover}
             onMouseLeave={scheduleCloseMega}
             onClick={toggleFromTriggerClick}
-            className={`flex items-center gap-1 min-h-[38px] px-2 lg:px-2.5 py-1.5 rounded-[8px] text-xs font-semibold whitespace-nowrap shrink-0 transition cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-2 lg:px-3 py-1.5 rounded-[8px] text-sm font-semibold whitespace-nowrap shrink-0 transition cursor-pointer ${
               megaMenuOpen || isMoreActive
-                ? 'text-[var(--color-brand-fg)] bg-[var(--color-brand-soft)] dark:bg-[#173530]'
+                ? 'text-[var(--color-brand-fg)] bg-[var(--color-brand-soft)]'
                 : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
             }`}
           >
@@ -244,7 +246,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             title={currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}
             aria-current={primaryView === 'userspace' ? 'page' : undefined}
             onNavigate={() => { closeMegaMenu(); onSelectPrimaryView('userspace', 'overview'); }}
-            className={`relative hidden sm:inline-flex items-center justify-center gap-1.5 min-h-[36px] px-2.5 rounded-[8px] text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+            className={`relative inline-flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] px-2 sm:px-2.5 rounded-[8px] text-sm font-semibold whitespace-nowrap transition cursor-pointer ${
               primaryView === 'userspace'
                 ? 'bg-[var(--color-brand-600)] text-white'
                 : 'border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]'
@@ -253,7 +255,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             <User className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span className="hidden lg:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
             {unreadCount > 0 && (
-              <span data-testid="header-notification-badge" className="min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-xs font-bold inline-flex items-center justify-center leading-none tabular-nums">
+              <span data-testid="header-notification-badge" className="absolute -top-1 -start-1 sm:static min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-xs font-bold inline-flex items-center justify-center leading-none tabular-nums">
                 {formattedUnread}
               </span>
             )}

@@ -67,8 +67,8 @@ export function BuyerAlertPwaLegalModals({
     <>
       {showBuyerAlertModal && (
         <div role="dialog" aria-modal="true" aria-label="ثبت شماره برای هشدار فوری ملک زیر قیمت" onClick={() => setShowBuyerAlertModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
+          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5 mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4 stroke-[1.75]" />
@@ -79,7 +79,7 @@ export function BuyerAlertPwaLegalModals({
               </div>
               <div className="flex items-center gap-1.5">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" aria-label="بستن پنجره هشدار شکار" onClick={() => setShowBuyerAlertModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+                <button type="button" aria-label="بستن پنجره هشدار شکار" onClick={() => setShowBuyerAlertModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
                   <X className="w-4 h-4 stroke-[1.75]" />
                 </button>
               </div>
@@ -95,19 +95,19 @@ export function BuyerAlertPwaLegalModals({
               <div className="apple-grouped-card bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/60 p-3 text-emerald-900 dark:text-emerald-300 leading-relaxed rounded-xl">
                 درخواست شما برای دریافت هشدار در صورت ثبت فایل واجد شرایط ذخیره می‌شود. ارسال خودکار پیامک در حال حاضر فعال نیست و ثبت درخواست به‌معنای تضمین یافتن ملک در زمان مشخص نیست.
               </div>
-              <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-3">
+              <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 dark:text-slate-300 mb-1">نام و نام خانوادگی:</label>
+                    <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نام و نام خانوادگی:</label>
                     <input
                       type="text" aria-label="نام و نام خانوادگی" aria-invalid={alertMsgTone === 'error' && alertFullName.trim().length < 2} required maxLength={80} value={alertFullName}
                       onChange={(e) => { setAlertSubmitMsg?.(''); setAlertFullName(sanitizeLiveText(e.target.value, 80)); }}
                       placeholder="مثلاً: علی محمدی"
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
+                      className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-600 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1 flex items-center justify-between">
                       <span>شماره موبایل:</span>
                       {!mobileHintValid && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">موبایل ۱۱ رقمی (09...)</span>}
                     </label>
@@ -115,16 +115,16 @@ export function BuyerAlertPwaLegalModals({
                       type="tel" aria-label="شماره موبایل" aria-invalid={!mobileHintValid && alertPhone.trim().length > 0} required maxLength={18} dir="ltr" value={alertPhone}
                       onChange={(e) => { setAlertSubmitMsg?.(''); setAlertPhone(sanitizeLiveText(e.target.value, 18)); }}
                       placeholder="0912xxxxxxx"
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600"
+                      className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 dark:text-slate-300 mb-1">محله مورد نظر:</label>
+                    <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">محله مورد نظر:</label>
                     <select
                       aria-label="محله مورد نظر" value={alertHoodId} onChange={(e) => { setAlertSubmitMsg?.(''); setAlertHoodId(Number(e.target.value)); }}
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
+                      className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       {safeNeighborhoods.map((n) => {
                         const unitVal = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit);
@@ -138,10 +138,10 @@ export function BuyerAlertPwaLegalModals({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
+                    <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">نوع معامله:</label>
                     <select
                       aria-label="نوع معامله" value={alertDealType} onChange={(e) => { setAlertSubmitMsg?.(''); setAlertDealType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید'); }}
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
+                      className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       <option value="خرید">خرید آپارتمان زیر قیمت</option>
                       <option value="اجاره">رهن و اجاره زیر قیمت</option>
@@ -149,7 +149,7 @@ export function BuyerAlertPwaLegalModals({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-300 mb-1 flex items-center justify-between gap-2">
+                  <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1 flex items-center justify-between gap-2">
                     <span>حداکثر بودجه مد نظر شما ({formatAreaShort(85, areaUnit)}{selectedAlertHood ? ` · معیار: ${alertDealType === 'خرید' ? `${toPersianNum(((selectedAlertHood.buyPerSqm * 85) / 1000).toFixed(1))} میلیارد` : `رهن ${toPersianNum(selectedAlertHood.rahn80m)} م / اجاره ${toPersianNum(Math.round(selectedAlertHood.rahn80m * 0.03))} م`}` : ''}):</span>
                     {selectedAlertHood && intlCurrency !== 'IRT' && (
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums" dir="ltr">
@@ -161,7 +161,7 @@ export function BuyerAlertPwaLegalModals({
                     type="text" aria-label="حداکثر بودجه مد نظر" maxLength={90} value={alertMaxBudget}
                     onChange={(e) => { setAlertSubmitMsg?.(''); setAlertMaxBudget(sanitizeLiveText(e.target.value, 90)); }}
                     placeholder="مثلاً: ۱۰ میلیارد خرید یا ۱.۵ میلیارد رهن کامل"
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
+                    className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
                   />
                 </div>
               </div>
@@ -196,24 +196,24 @@ export function BuyerAlertPwaLegalModals({
       )}
       {showPwaModal && (
         <div role="dialog" aria-modal="true" aria-label="راهنمای نصب وب‌اپلیکیشن" onClick={() => setShowPwaModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
+          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Install Tehran Radar Web App' : 'نصب وب‌اپلیکیشن رادار تهران'}
                 </h3>
               </div>
-              <button type="button" aria-label="بستن راهنمای نصب" onClick={() => setShowPwaModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+              <button type="button" aria-label="بستن راهنمای نصب" onClick={() => setShowPwaModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
                 <X className="w-4 h-4 stroke-[1.75]" />
               </button>
             </div>
-            <div className="space-y-2.5 text-slate-600 dark:text-slate-300 leading-relaxed">
-              <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
+            <div className="space-y-2.5 text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
+              <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">نصب در اندروید (Chrome):</div>
                 <p>روی منوی سه نقطه مرورگر کروم بزنید و گزینه <strong>Add to Home screen</strong> یا <strong>Install app</strong> را انتخاب کنید.</p>
               </div>
-              <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
+              <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-3.5 space-y-1.5">
                 <div className="font-bold text-slate-900 dark:text-white">نصب در آیفون (Safari iOS):</div>
                 <p>در مرورگر سافاری روی دکمه <strong>Share</strong> در نوار پایین بزنید و گزینه <strong>Add to Home Screen</strong> را انتخاب کنید.</p>
               </div>
@@ -226,23 +226,23 @@ export function BuyerAlertPwaLegalModals({
       )}
       {showLegalModal && (
         <div role="dialog" aria-modal="true" aria-label="چارچوب قانونی و سلب مسئولیت" onClick={() => setShowLegalModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
+          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEn ? 'Legal Terms & Disclaimer' : 'چارچوب قانونی و سلب مسئولیت'}
                 </h3>
               </div>
-              <button type="button" aria-label="بستن قوانین حقوقی" onClick={() => setShowLegalModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+              <button type="button" aria-label="بستن قوانین حقوقی" onClick={() => setShowLegalModal(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
                 <X className="w-4 h-4 stroke-[1.75]" />
               </button>
             </div>
-            <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 text-slate-700 dark:text-slate-300 leading-7 text-justify space-y-2">
+            <div className="apple-grouped-card bg-slate-50/70 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-4 text-slate-700 dark:text-[var(--color-text-secondary)] leading-7 text-justify space-y-2">
               <p>کلیه قیمت‌ها، شاخص‌های حباب‌سنج و تحلیل‌های ارائه‌شده در سامانه رادار، بر اساس پایش آماری داده‌های عمومی بازار تولید شده و صرفاً جنبه اطلاع‌رسانی دارد. این سامانه در معاملات ملکی ذینفع یا طرف قرارداد نبوده و بررسی اسناد بر عهده طرفین معامله و دفاتر اسناد و املاک رسمی است.</p>
               <p>خروجی‌های محاسباتی، مالیاتی، حقوقی و ترافیکی صرفاً برآورد تحلیلی و آموزشی بوده و جایگزین کارشناسی رسمی دادگستری نمی‌باشند.</p>
             </div>
-            <button type="button" onClick={() => setShowLegalModal(false)} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold transition cursor-pointer">
+            <button type="button" onClick={() => setShowLegalModal(false)} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold transition cursor-pointer">
               {isEn ? 'I Understand & Accept' : 'مورد تایید و مطالعه قرار گرفت'}
             </button>
           </div>

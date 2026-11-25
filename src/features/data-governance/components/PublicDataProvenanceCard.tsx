@@ -73,7 +73,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
   return (
     <section
       data-testid="public-data-provenance-card"
-      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 text-xs"
+      className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3 text-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
           </strong>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200">
+          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[var(--color-bg-muted)] font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
             {isRegistered ? 'دارای سابقه حاکمیت داده' : 'فاقد زنجیره منشأ ثبت‌شده'}
           </span>
           <span className={`px-2 py-0.5 rounded-md border font-bold ${sufficiencyBadge.cls}`}>
@@ -106,25 +106,25 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-xs text-[var(--color-text-muted)]">دوره مرجع داده (Valid Time)</div>
           <strong className="font-bold text-slate-900 dark:text-white block mt-0.5">
             {contract.referencePeriod.labelFa}
           </strong>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-xs text-[var(--color-text-muted)]">تعداد نمونه / ملک یکتا</div>
           <strong className="font-bold text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {sampleText}
           </strong>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-xs text-[var(--color-text-muted)]">تعداد منابع و شواهد مستقل</div>
           <strong className="font-bold text-slate-900 dark:text-white block mt-0.5 tabular-nums">
             {toPersianNum(contract.provenance.sourceCount)} منبع ثبت‌شده · {toPersianNum(contract.provenance.independentEvidenceCount)} شاهد مستقل
           </strong>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-xs text-[var(--color-text-muted)]">تفکیک تایید روش و واقعیت بیرونی</div>
           <strong className="font-bold text-amber-800 dark:text-amber-300 block mt-0.5">
             تایید روش محاسبه ≠ قیمت قطعی ثبتی
@@ -132,8 +132,8 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-        <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[var(--color-border-subtle)]">
+        <div className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center gap-1">
           <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>{contract.limitationsFa[0]}</span>
         </div>
@@ -142,7 +142,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             type="button"
             data-testid="btn-toggle-provenance-lineage"
             onClick={() => setExpandedTab(expandedTab === 'LINEAGE' ? 'NONE' : 'LINEAGE')}
-            className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
+            className="min-h-[44px] md:min-h-[32px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer"
           >
             <GitBranch className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>مشاهده منشأ و روش‌شناسی</span>
@@ -151,7 +151,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             type="button"
             data-testid="btn-toggle-provenance-versions"
             onClick={() => setExpandedTab(expandedTab === 'VERSIONS' ? 'NONE' : 'VERSIONS')}
-            className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
+            className="min-h-[44px] md:min-h-[32px] px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1 cursor-pointer"
           >
             <History className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>تاریخچه نسخه و مقایسه (Diff)</span>
@@ -160,7 +160,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             type="button"
             data-testid="btn-toggle-provenance-correction"
             onClick={() => setExpandedTab(expandedTab === 'CORRECTION' ? 'NONE' : 'CORRECTION')}
-            className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
+            className="min-h-[44px] md:min-h-[32px] px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer inline-flex items-center"
           >
             پیشنهاد اصلاح مستند داده
           </button>
@@ -168,7 +168,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       </div>
 
       {expandedTab === 'LINEAGE' && (
-        <div data-testid="provenance-lineage-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div data-testid="provenance-lineage-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
           <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
             <Database className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>زنجیره منشأ داده (Data Lineage) و منابع قابل انتشار:</span>
@@ -178,14 +178,14 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               {lineageEdges.map((edge) => (
-                <span key={edge.id} className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono">
+                <span key={edge.id} className="px-2 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] font-mono">
                   {edge.parentId} → [{edge.transformationId}] → {edge.childId}
                 </span>
               ))}
             </div>
           )}
           {contract.provenance.attributionFa.length > 0 && (
-            <ul className="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
+            <ul className="list-disc list-inside text-xs text-slate-600 dark:text-[var(--color-text-secondary)] space-y-0.5">
               {contract.provenance.attributionFa.map((attr, idx) => (
                 <li key={idx}>{attr}</li>
               ))}
@@ -195,15 +195,15 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       )}
 
       {expandedTab === 'VERSIONS' && (
-        <div data-testid="provenance-versions-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div data-testid="provenance-versions-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
           <strong className="font-bold text-slate-900 dark:text-white block">
             مقایسه نسخه‌های تاریخی شاخص (تفکیک Data Version و Methodology Version):
           </strong>
           {diff ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <div className="p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)]">
                 <div className="text-[var(--color-text-muted)]">نسخه قبلی (Data: {diff.previousDataVersion} · Method v{diff.previousMethodologyVersion})</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-0.5">
                   مقدار: {toPersianNum(diff.previousValue)} میلیون/متر · وضعیت: {diff.previousQualityStatus}
                 </div>
               </div>
@@ -221,7 +221,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       )}
 
       {expandedTab === 'CORRECTION' && (
-        <div data-testid="provenance-correction-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div data-testid="provenance-correction-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
           <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold">
             <ShieldAlert className="w-3.5 h-3.5" />
             <span>پیشنهاد اصلاح کاربر مستقیماً داده مرجع را تغییر نمی‌دهد؛ پس از بررسی شواهد در صف حاکمیت داده اعمال می‌شود.</span>
@@ -233,7 +233,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
               placeholder="مقدار یا توضیح اصلاحی پیشنهادی..."
               value={proposedVal}
               onChange={(e) => setProposedVal(e.target.value)}
-              className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700"
+              className="p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 dark:border-[var(--color-border-strong)]"
             />
             <input
               type="text"
@@ -241,7 +241,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
               placeholder="منبع یا شاهد پشتیبان (مثلاً کد نوسازی یا گزارش میدانی)..."
               value={proposalReason}
               onChange={(e) => setProposalReason(e.target.value)}
-              className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700"
+              className="p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-300 dark:border-[var(--color-border-strong)]"
             />
           </div>
           <button

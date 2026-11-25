@@ -53,7 +53,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
   return (
     <div className="space-y-1.5 text-start">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={fieldId} className="text-[14px] font-medium text-[var(--color-text-primary)] dark:text-slate-100 leading-[1.5]">
+        <label htmlFor={fieldId} className="text-[14px] font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] leading-[1.5]">
           {label}
         </label>
         {required && (
@@ -75,14 +75,14 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           aria-describedby={hasError ? errorId : helperText ? helperId : undefined}
           placeholder={placeholder}
           onChange={(e) => onChangeValue(numeric ? normalizeNumericFieldDigits(e.target.value) : e.target.value)}
-          className={`w-full ${INPUT_HEIGHTS[size]} rounded-[8px] border bg-[var(--color-bg-surface)] dark:bg-slate-900 px-3 text-[15px] text-[var(--color-text-primary)] dark:text-slate-100 placeholder:text-[var(--color-text-muted)] transition-colors focus:outline-none focus:ring-2 ${
+          className={`w-full ${INPUT_HEIGHTS[size]} rounded-[8px] border bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] px-3 text-[15px] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] transition-colors focus:outline-none focus:ring-2 ${
             hasError
               ? 'border-[#A61B1B] focus:border-[#A61B1B] focus:ring-[#A61B1B]/20'
-              : 'border-[var(--color-border-strong)] dark:border-slate-700 focus:border-[var(--color-brand-600)] focus:ring-[var(--color-focus)]/20'
+              : 'border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] focus:border-[var(--color-brand-600)] focus:ring-[var(--color-focus)]/20'
           } ${leadingIcon ? 'pr-9' : ''} ${unitLabel || trailingIcon ? 'pl-20' : ''} ${numeric ? 'tabular-nums text-left' : ''} disabled:bg-[var(--color-bg-muted)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed`}
         />
         {(unitLabel || trailingIcon) && (
-          <span className="absolute left-3 flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-text-muted)] dark:text-slate-400 pointer-events-none">
+          <span className="absolute left-3 flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] pointer-events-none">
             {unitLabel}
             {trailingIcon}
           </span>
@@ -94,7 +94,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           <span>{errorText}</span>
         </p>
       ) : helperText ? (
-        <p id={helperId} className="text-[13px] text-[var(--color-text-muted)] dark:text-slate-400 leading-[1.6]">
+        <p id={helperId} className="text-[13px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] leading-[1.6]">
           {helperText}
         </p>
       ) : null}
@@ -107,9 +107,9 @@ export const RadarEmptyStateCard: React.FC<{
   description: string;
   action?: React.ReactNode;
 }> = ({ title, description, action }) => (
-  <div className="rt-card dark:border-slate-800 dark:bg-slate-900/60 p-5 text-center space-y-2 bg-[var(--color-bg-canvas)]">
-    <h4 className="text-[15px] font-semibold text-[var(--color-text-primary)] dark:text-slate-100">{title}</h4>
-    <p className="text-[14px] text-[var(--color-text-muted)] dark:text-slate-400 leading-[1.7] max-w-md mx-auto">{description}</p>
+  <div className="rt-card dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)] p-5 text-center space-y-2 bg-[var(--color-bg-canvas)]">
+    <h4 className="text-[15px] font-semibold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">{title}</h4>
+    <p className="text-[14px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] leading-[1.7] max-w-md mx-auto">{description}</p>
     {action && <div className="pt-2 flex justify-center">{action}</div>}
   </div>
 );

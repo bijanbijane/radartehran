@@ -36,7 +36,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs" data-testid="admin-communications-panel">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs" data-testid="admin-communications-panel">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -64,7 +64,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
             type="button"
             onClick={() => setTab(id)}
             className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer ${
-              tab === id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+              tab === id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-primary)]'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -82,19 +82,19 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
       {tab === 'overview' && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)]">
               <div className="text-[10.5px] text-slate-500">تلاش‌های موفق ارسال</div>
               <div className="text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums mt-0.5">{toPersianNum(deliveredCount)}</div>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)]">
               <div className="text-[10.5px] text-slate-500">صف خطای نهایی (DLQ)</div>
               <div className="text-base font-bold text-rose-700 dark:text-rose-300 tabular-nums mt-0.5">{toPersianNum(pendingDlq.length)}</div>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)]">
               <div className="text-[10.5px] text-slate-500">رویدادهای رجیستری</div>
               <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">{toPersianNum(Object.keys(EVENT_POLICY_REGISTRY).length)}</div>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)]">
               <div className="text-[10.5px] text-slate-500">گزارش‌های مزاحمت باز</div>
               <div className="text-base font-bold text-amber-700 dark:text-amber-300 tabular-nums mt-0.5">
                 {toPersianNum(state.reports.filter((r) => r.status === 'PENDING').length)}
@@ -102,13 +102,13 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+          <div className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)] border border-slate-100 dark:border-[var(--color-border-subtle)] rounded-xl overflow-hidden">
             {state.deliveries.slice(0, 8).map((d) => (
               <div key={d.attemptId} className="p-2.5 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{d.eventCode}</span>
                   <span className="text-slate-500 mx-1.5">·</span>
-                  <span className="text-slate-600 dark:text-slate-300 font-bold">{d.channel}</span>
+                  <span className="text-slate-600 dark:text-[var(--color-text-secondary)] font-bold">{d.channel}</span>
                   <span className="text-slate-500 mx-1.5">·</span>
                   <span className="font-mono text-[10.5px] text-slate-500">{d.queueName}</span>
                 </div>
@@ -125,8 +125,8 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {(['comms.critical', 'comms.transactional', 'comms.standard', 'comms.digest', 'comms.retry', 'comms.dead-letter'] as const).map((q) => (
-              <div key={q} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 flex items-center justify-between">
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{q}</span>
+              <div key={q} className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] flex items-center justify-between">
+                <span className="font-mono font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{q}</span>
                 <span className="text-emerald-700 dark:text-emerald-300 font-bold">فعال</span>
               </div>
             ))}
@@ -135,7 +135,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
           <div className="space-y-2">
             <h3 className="font-bold text-slate-900 dark:text-white">مدیریت صف خطای نهایی (DLQ)</h3>
             {state.deadLetters.map((item) => (
-              <div key={item.dlqId} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div key={item.dlqId} className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="font-bold text-slate-900 dark:text-white">
                     <span className="font-mono">{item.eventCode}</span> · {item.channel} · {item.reasonCode}
@@ -149,7 +149,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
                     type="button"
                     data-testid={`dlq-replay-btn-${item.dlqId}`}
                     onClick={() => handleReplay(item.dlqId)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>بازارسال کنترل‌شده (Replay)</span>
@@ -162,7 +162,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
       )}
 
       {tab === 'templates' && (
-        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl">
+        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)] border border-slate-100 dark:border-[var(--color-border-subtle)] rounded-xl">
           {Object.values(EVENT_POLICY_REGISTRY).map((pol) => {
             const tpl = COMMS_TEMPLATE_REGISTRY[pol.eventCode];
             return (
@@ -173,7 +173,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
                     {pol.severity} · {pol.queueName} · نسخه {toPersianNum(tpl.version)}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-700 dark:text-slate-300">{tpl.titleTemplateFa}</div>
+                <div className="text-[11px] text-slate-700 dark:text-[var(--color-text-secondary)]">{tpl.titleTemplateFa}</div>
                 <div className="text-[10.5px] text-slate-500">{pol.descriptionFa}</div>
               </div>
             );
@@ -193,7 +193,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
               ))}
             </div>
           )}
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl">
+          <div className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)] border border-slate-100 dark:border-[var(--color-border-subtle)] rounded-xl">
             {state.audits.map((a) => (
               <div key={a.auditId} className="p-2.5 flex flex-wrap items-center justify-between gap-2">
                 <div>

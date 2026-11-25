@@ -76,7 +76,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
 
   return (
     <>
-      <div className="p-3.5 rounded-[12px] bg-[#FFF4E5]/70 dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-xs text-[#6B3F00] dark:text-amber-200 flex items-start gap-2">
+      <div className="p-3.5 rounded-[12px] bg-[#FFF4E5]/70 dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-sm text-[#6B3F00] dark:text-amber-200 flex items-start gap-2">
         <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
         <p className="leading-relaxed">
           {isEn
@@ -85,7 +85,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
         </p>
       </div>
 
-      <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-xs">
+      <div className="p-4 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-3 text-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 items-center">
           <div className={`relative ${showCategorySelect ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
@@ -157,7 +157,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
       </div>
 
       {visibleProviders.length === 0 ? (
-        <div className="p-8 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-xs">
+        <div className="p-8 rounded-[12px] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-center space-y-2 text-sm">
           <p className="font-bold text-[var(--color-text-primary)]">
             {isEn ? 'No service providers match your current filter.' : 'ارائه‌دهنده‌ای با فیلتر انتخاب‌شده در این رسته ثبت نشده است.'}
           </p>

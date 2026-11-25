@@ -74,7 +74,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
   return (
     <div className="space-y-4" data-testid="stage-35-motion-lab-panel">
       {/* Motion Policy & OS Reduced Motion Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-[10px] bg-[#F6F8F6] dark:bg-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-[10px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-bold text-[#182522] dark:text-white">سیاست حرکت (`/account/preferences/display`):</span>
           {(['standard', 'no_decorative', 'reduced'] as const).map((m) => (
@@ -87,7 +87,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                 onAnnounceStatus(`حالت سیستم حرکت به «${m}» تغییر یافت.`);
               }}
               className={`px-3 py-1.5 min-h-[40px] rounded-[8px] font-bold cursor-pointer ${
-                motionMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+                motionMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)]'
               }`}
             >
               {m === 'standard' ? 'حرکت عادی' : m === 'no_decorative' ? 'بدون حرکت تزئینی' : 'حرکت محدود (Reduced)'}
@@ -104,7 +104,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
             onAnnounceStatus(next ? 'کاهش حرکت سیستم‌عامل (prefers-reduced-motion) فعال شد.' : 'کاهش حرکت سیستم‌عامل غیرفعال شد.');
           }}
           className={`px-3 py-1.5 min-h-[40px] rounded-[8px] font-bold cursor-pointer ${
-            osReduced ? 'bg-amber-700 text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+            osReduced ? 'bg-amber-700 text-white' : 'bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)]'
           }`}
         >
           شبیه‌ساز سیستم‌عامل (`prefers-reduced-motion`: {osReduced ? 'فعال' : 'خاموش'})
@@ -113,7 +113,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
 
       {/* Motion Tokens Table + Save Button Server-Confirmed State Machine */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توکن‌های استاندارد زمان‌بندی و منحنی حرکت (Compositor-Only)</span>
@@ -121,13 +121,13 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
           <table className="w-full text-right border-collapse">
             <caption className="sr-only">جدول توکن‌های حرکت و زمان‌بندی رادار تهران</caption>
             <thead>
-              <tr className="border-b border-[#DCE3DF] dark:border-slate-700 text-[#586760]">
+              <tr className="border-b border-[#DCE3DF] dark:border-[var(--color-border-strong)] text-[#586760]">
                 <th scope="col" className="py-1.5">توکن حرکت</th>
                 <th scope="col" className="py-1.5">مدت مؤثر</th>
                 <th scope="col" className="py-1.5">ویژگی مجاز CSS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#DCE3DF]/60 dark:divide-slate-800 tabular-nums">
+            <tbody className="divide-y divide-[#DCE3DF]/60 dark:divide-[var(--color-border-subtle)] tabular-nums">
               {RADAR_MOTION_TOKENS.map((tok) => {
                 const effMs = resolveEffectiveTokenDuration(tok, policy);
                 return (
@@ -145,12 +145,12 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
           </div>
         </div>
 
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماشین وضعیت دکمه ذخیره (ممنوعیت جعل موفقیت پیش از تأیید سرور)</span>
           </h3>
-          <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 flex flex-wrap items-center justify-between gap-2">
+          <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="font-bold text-[#182522] dark:text-white">
                 برچسب فعلی دکمه: <span data-testid="motion-save-btn-label" className="text-[var(--color-brand-600)] dark:text-emerald-400">«{saveState.labelFa}»</span>
@@ -201,7 +201,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
 
       {/* Scenario 44 & 46: Map Camera Race Cancellation + Layer Empty/Active Feedback */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Navigation className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>جلوگیری از رقابت حرکت‌های نقشه (لغو خودکار مقصد قبلی)</span>
@@ -217,18 +217,18 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                 type="button"
                 data-testid={`pan-hood-${h.id}`}
                 onClick={() => triggerMapPan(h.id, h.nameFa)}
-                className="px-3 py-1.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold cursor-pointer"
+                className="px-3 py-1.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)] font-bold cursor-pointer"
               >
                 انتخاب سریع «{h.nameFa}»
               </button>
             ))}
           </div>
-          <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 tabular-nums">
+          <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] tabular-nums">
             مقصد معتبر فعلی: <strong>{flightRecord.targetNameFa}</strong> (درخواست #{toPersianNum(flightRecord.requestId)}) · مدت انتقال: <strong>{toPersianNum(flightRecord.durationMs)}ms</strong> · لغو درخواست قبلی: <strong>{flightRecord.cancelledPreviousRequestId ? `#${toPersianNum(flightRecord.cancelledPreviousRequestId)}` : 'ندارد'}</strong>
           </div>
         </div>
 
-        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سناریوی تغییر لایه بازار و وضعیت بدون داده (بند ۴۶)</span>
@@ -244,14 +244,14 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                   onAnnounceStatus(resolveMapLayerTransitionFeedback({ layerId: 'sqm_price_heatmap', layerTitleFa: 'پهنه قیمت بازار', phase: ph }).statusMessageFa);
                 }}
                 className={`px-2.5 py-1.5 rounded-[8px] font-bold cursor-pointer ${
-                  layerPhase === ph ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'
+                  layerPhase === ph ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]'
                 }`}
               >
                 {ph === 'loading' ? 'در حال دریافت' : ph === 'loaded_with_data' ? 'داده معتبر' : ph === 'loaded_empty' ? 'بدون داده' : 'خطای شبکه'}
               </button>
             ))}
           </div>
-          <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 font-bold text-[#182522] dark:text-white">
+          <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] font-bold text-[#182522] dark:text-white">
             وضعیت لایه: {layerFeedback.statusMessageFa} · نمایش Legend: {layerFeedback.legendVisible ? 'فعال' : 'مخفی (جلوگیری از رنگ قدیمی)'}
           </div>
         </div>

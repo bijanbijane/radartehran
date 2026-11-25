@@ -54,10 +54,10 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
   const tgHoodSummary = `📊 نرخ فعلی ${selectedHood?.name || 'تهران'}: ${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(uCommPrice)} م (سناریو مذاکره: ${toPersianNum(uDealComm)} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uCommPrice, intlCurrency, locale)})` : ''} · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum((((selectedHood?.buyPerSqm || 135) * 80) / 1000).toFixed(1))} میلیارد | رهن (${formatAreaShort(80, areaUnit)}): ${toPersianNum(selectedHood?.rahn80m || 0)} م (اجاره ماهانه: ${toPersianNum(Math.round((selectedHood?.rahn80m || 0) * 0.03))} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood?.rahn80m || 0, intlCurrency, locale)})` : ''}`;
   return (
     <div role="dialog" aria-modal="true" aria-label="ابزارهای تخصصی معاملات مسکن" onClick={onClose} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl max-w-3xl w-full p-5 max-h-[90vh] overflow-y-auto text-xs focus:outline-none shadow-2xl">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-[var(--color-text-primary)] rounded-2xl max-w-3xl w-full p-5 max-h-[90vh] overflow-y-auto text-xs focus:outline-none shadow-2xl">
         {activeModal === 'commission' && (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Calculator className="w-4 h-4 stroke-[1.75]" />
@@ -66,75 +66,75 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     ماشین‌حساب رسمی کمیسیون املاک، مالیات و هزینه محضر
                   </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">
                     محاسبه دقیق نرخ مصوب اتحادیه مشاوران املاک + ۱۰٪ مالیات ارزش افزوده (مبنای محله{' '}
-                    <strong className="text-slate-800 dark:text-slate-200">{selectedHood?.name || 'تهران'}</strong>)
+                    <strong className="text-slate-800 dark:text-[var(--color-text-primary)]">{selectedHood?.name || 'تهران'}</strong>)
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" aria-label="بستن ماشین‌حساب کمیسیون" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
+                <button type="button" aria-label="بستن ماشین‌حساب کمیسیون" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-slate-800/80 p-1 rounded-[10px] font-bold">
+            <div className="grid grid-cols-2 gap-1 apple-segmented dark:bg-[var(--color-bg-muted)] p-1 rounded-[10px] font-bold">
               <button
                 type="button" onClick={() => setCommDealType('buy')}
-                className={`py-2 rounded-[8px] transition cursor-pointer ${commDealType === 'buy' ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                className={`py-2 rounded-[8px] transition cursor-pointer ${commDealType === 'buy' ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}
               >
                 معامله خرید و فروش ملک
               </button>
               <button
                 type="button" onClick={() => setCommDealType('rent')}
-                className={`py-2 rounded-[8px] transition cursor-pointer ${commDealType === 'rent' ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                className={`py-2 rounded-[8px] transition cursor-pointer ${commDealType === 'rent' ? 'apple-segmented-pill-active dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}
               >
                 معامله رهن و اجاره
               </button>
             </div>
             {commDealType === 'buy' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-4">
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ ملک ({formatAreaValue(commSqm, areaUnit)}):</label>
+                  <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">متراژ ملک ({formatAreaValue(commSqm, areaUnit)}):</label>
                   <NumericDraftInput
                     aria-label="متراژ ملک" min={20} max={1000} fallback={85} value={commSqm}
                     onValueChange={setCommSqm}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
+                    className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-300 mb-1">قیمت هر متر (معادل {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(uCommPrice)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uCommPrice, intlCurrency, locale)}` : ''}):</label>
+                  <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">قیمت هر متر (معادل {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(uCommPrice)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uCommPrice, intlCurrency, locale)}` : ''}):</label>
                   <NumericDraftInput
                     aria-label="قیمت هر متر" min={5} max={2000} fallback={135} value={commPricePerSqm}
                     onValueChange={setCommPricePerSqm}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
+                    className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
-                <div className="flex flex-col justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">ارزش کل معامله:</span>
+                <div className="flex flex-col justify-center bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2">
+                  <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">ارزش کل معامله:</span>
                   <strong className="text-sm font-bold text-slate-900 dark:text-white tabular-nums mt-0.5">
                     {toPersianNum((commBuyTotalMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(commBuyTotalMillion, intlCurrency, locale)})` : ''}
                   </strong>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4">
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-300 mb-1">مبلغ ودیعه / رهن (میلیون تومان{commDeposit > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commDeposit, intlCurrency, locale)}` : ''}):</label>
+                  <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">مبلغ ودیعه / رهن (میلیون تومان{commDeposit > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commDeposit, intlCurrency, locale)}` : ''}):</label>
                   <NumericDraftInput
                     aria-label="مبلغ ودیعه" min={0} max={50000} fallback={500} value={commDeposit}
                     onValueChange={setCommDeposit}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
+                    className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-300 mb-1">اجاره ماهانه (میلیون تومان{commMonthlyRent > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commMonthlyRent, intlCurrency, locale)}` : ''}):</label>
+                  <label className="block text-slate-600 dark:text-[var(--color-text-secondary)] mb-1">اجاره ماهانه (میلیون تومان{commMonthlyRent > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commMonthlyRent, intlCurrency, locale)}` : ''}):</label>
                   <NumericDraftInput
                     aria-label="اجاره ماهانه" min={0} max={2000} fallback={15} value={commMonthlyRent}
                     onValueChange={setCommMonthlyRent}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
+                    className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2 font-bold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
-                <div className="sm:col-span-2 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-[11px]"><span className="text-slate-500 dark:text-slate-400">معادل رهن کامل مبنای کمیسیون ({formatAreaShort(commSqm, areaUnit)}):</span><strong className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.round(commDeposit + (commMonthlyRent * 100) / 3))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.round(commDeposit + (commMonthlyRent * 100) / 3), intlCurrency, locale)})` : ''}</strong></div>
+                <div className="sm:col-span-2 flex items-center justify-between bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-1.5 text-[11px]"><span className="text-slate-500 dark:text-[var(--color-text-muted)]">معادل رهن کامل مبنای کمیسیون ({formatAreaShort(commSqm, areaUnit)}):</span><strong className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.round(commDeposit + (commMonthlyRent * 100) / 3))} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.round(commDeposit + (commMonthlyRent * 100) / 3), intlCurrency, locale)})` : ''}</strong></div>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -145,7 +145,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-[var(--color-brand-600)] text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
                 </div>
-                <div className="space-y-1.5 text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5 text-slate-700 dark:text-[var(--color-text-secondary)]">
                   <div className="flex justify-between">
                     <span>حق کمیسیون پایه املاک:</span>
                     <strong className="tabular-nums text-slate-900 dark:text-white">{fmtFee(commResult.baseCommissionEachSideToman)}</strong>
@@ -166,14 +166,14 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{fmtFee(commResult.totalBuyerPayableToman)}</span>
                 </div>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+              <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-[var(--color-border-strong)] pb-2">
                   <span className="font-bold text-slate-900 dark:text-white text-sm">
                     {commDealType === 'buy' ? 'سهم پرداختی فروشنده' : 'سهم پرداختی موجر (مالک)'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold">شامل مالیات و محضر</span>
+                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] text-[10px] font-bold">شامل مالیات و محضر</span>
                 </div>
-                <div className="space-y-1.5 text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5 text-slate-700 dark:text-[var(--color-text-secondary)]">
                   <div className="flex justify-between">
                     <span>حق کمیسیون پایه املاک:</span>
                     <strong className="tabular-nums text-slate-900 dark:text-white">{fmtFee(commResult.baseCommissionEachSideToman)}</strong>
@@ -195,7 +195,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                     </>
                   )}
                 </div>
-                <div className="pt-2.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="pt-2.5 border-t border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-between">
                   <span className="font-bold text-slate-900 dark:text-white">{commDealType === 'buy' ? 'جمع کل قابل پرداخت فروشنده:' : 'جمع کل قابل پرداخت موجر:'}</span>
                   <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">{fmtFee(commResult.totalSellerPayableToman)}</span>
                 </div>
@@ -211,7 +211,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <><Copy className="w-4 h-4 stroke-[1.75]" /><span>کپی برگه رسمی محاسبه کمیسیون اتحادیه و هزینه محضر</span></>
               )}
             </button>
-            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+            <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-2xl p-3 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
               نکته قانونی: دریافت هرگونه وجه اضافه تحت عنوان «حق التحریر قولنامه» یا «کد رهگیری» خارج از تعرفه پلکانی فوق ممنوع است و بنگاه موظف به صدور رسید رسمی ممهور به مهر اتحادیه می‌باشد.
             </div>
           </div>
@@ -219,27 +219,27 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
         {activeModal === 'contract' && <ContractLegalAdvisorView onClose={onClose} />}
         {activeModal === 'telegram' && (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Send className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">خروجی خودکار شکارها و نبض بازار برای کانال تلگرام</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">تولید خودکار پست استاندارد روزانه + اتصال مستقیم به ربات تلگرام (Webhook)</p>
+                  <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">تولید خودکار پست استاندارد روزانه + اتصال مستقیم به ربات تلگرام (Webhook)</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" aria-label="بستن خروجی تلگرام" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
+                <button type="button" aria-label="بستن خروجی تلگرام" onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer transition-colors"><X className="w-4 h-4 stroke-[2]" /></button>
               </div>
             </div>
             <div className="space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-bold text-slate-700 dark:text-slate-300">پیش‌نمایش پست آماده انتشار در تلگرام ({tgHoodSummary}):</span>
+                <span className="font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">پیش‌نمایش پست آماده انتشار در تلگرام ({tgHoodSummary}):</span>
                 <button
                   type="button" onClick={() => fetchTelegramDigest(activeCity)} disabled={loadingTelegram}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 stroke-[1.75] ${loadingTelegram ? 'animate-spin' : ''}`} />
                   <span>تولید مجدد از آخرین قیمت‌ها</span>
@@ -247,7 +247,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
               </div>
               <textarea
                 aria-label="متن آماده پست تلگرام" rows={10} value={telegramText} onChange={(e) => { setTgSendStatus(null); setTelegramText(e.target.value); }}
-                className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-slate-900 dark:text-white leading-relaxed font-medium focus:outline-none focus:border-emerald-600"
+                className="w-full bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 text-slate-900 dark:text-white leading-relaxed font-medium focus:outline-none focus:border-emerald-600"
               />
               <button
                 type="button"
@@ -261,19 +261,19 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <><Copy className="w-4 h-4 stroke-[1.75]" /><span>کپی پست آماده کانال تلگرام</span></>
                 )} </button>
             </div>
-            <form onSubmit={handleSendToTelegramWebhook} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+            <form onSubmit={handleSendToTelegramWebhook} className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4 space-y-3">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>ارسال مستقیم به کانال رسمی تلگرام (از طریق تنظیمات امن سرور ویژه ادمین)</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
                 توکن ربات و شناسه کانال مقصد صرفاً در متغیرهای محیطی امن سرور نگهداری می‌شوند و از سمت مرورگر ارسال نمی‌گردند.
               </p>
               {tgSendStatus && (
                 <div role={tgSendStatus.type === 'error' ? 'alert' : 'status'} className={`p-2.5 rounded-xl font-semibold border ${tgSendStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'}`}>
                   {tgSendStatus.text} </div>
               )} <button
-                type="submit" disabled={sendingTelegram} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                type="submit" disabled={sendingTelegram} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
               >
                 <Send className="w-4 h-4 stroke-[1.75]" />
                 <span>{sendingTelegram ? 'در حال ارسال به ربات تلگرام...' : 'ارسال مستقیم پست به کانال تلگرام'}</span>

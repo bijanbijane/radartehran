@@ -101,10 +101,10 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   return (
     <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-[#0D1513] flex flex-col">
       {/* Independent Admin Context Top Bar */}
-      <header className="sticky top-0 z-20 bg-white dark:bg-[#131E1B] border-b border-[var(--color-border-subtle)] dark:border-slate-800 px-4 h-14 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-20 bg-white dark:bg-[#131E1B] border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           {p.isVerifiedAdmin && (
-            <button type="button" onClick={() => setSidebarOpenMobile((o) => !o)} aria-label="منوی مدیریت" className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer">
+            <button type="button" onClick={() => setSidebarOpenMobile((o) => !o)} aria-label="منوی مدیریت" className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] cursor-pointer">
               {sidebarOpenMobile ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           )}
@@ -128,7 +128,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         {p.isVerifiedAdmin && (
           <aside
             aria-label="منوی بخش‌های مدیریت"
-            className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[#131E1B] border-l border-[var(--color-border-subtle)] dark:border-slate-800 p-3 space-y-1.5`}
+            className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[#131E1B] border-l border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] p-3 space-y-1.5`}
           >
             <div className="px-2.5 py-1.5 text-xs font-bold text-slate-500">گروه‌های عملیاتی پنل</div>
             {ADMIN_SIDEBAR_SECTIONS.map((sec) => {
@@ -143,7 +143,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                   className={`w-full text-start px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition cursor-pointer ${
                     active
                       ? 'bg-[var(--color-brand-600)] text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : 'text-slate-700 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)]'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -189,7 +189,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
               )}
 
               {(currentSection === 'overview' || currentSection === 'operations') && (
-                <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[#131E1B] border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
+                <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[#131E1B] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2 text-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
                     <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-xs">
@@ -198,7 +198,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {DEFAULT_UI_ROLLOUT_FLAGS.map((flag) => (
-                      <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">
+                      <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs font-semibold text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">
                         {flag.key}: {flag.enabled ? 'فعال' : 'غیرفعال'}
                       </span>
                     ))}

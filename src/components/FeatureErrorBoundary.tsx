@@ -118,7 +118,7 @@ export class FeatureErrorBoundary extends Component<
       <div
         role="alert"
         aria-live="assertive"
-        className={`rounded-2xl border border-amber-300/80 dark:border-amber-700/70 bg-amber-50/95 dark:bg-amber-950/60 text-slate-900 dark:text-slate-100 shadow-sm ${
+        className={`rounded-2xl border border-amber-300/80 dark:border-amber-700/70 bg-amber-50/95 dark:bg-amber-950/60 text-slate-900 dark:text-[var(--color-text-primary)] shadow-sm ${
           this.props.compact ? 'p-3 text-xs' : 'p-5 text-sm'
         }`}
       >
@@ -126,12 +126,12 @@ export class FeatureErrorBoundary extends Component<
           <div className="flex items-start gap-2.5">
             <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
                 اختلال موقت در بخش «{fName}»
               </h3>
-              <p className="mt-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+              <p className="mt-1 text-xs text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed">
                 سایر بخش‌های رادار تهران بدون مشکل فعال هستند. کد پیگیری فنی:{' '}
-                <code className="font-mono text-xs bg-white/80 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                <code className="font-mono text-xs bg-white/80 dark:bg-[var(--color-bg-surface)] px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
                   {this.state.correlationId}
                 </code>
               </p>
@@ -142,7 +142,7 @@ export class FeatureErrorBoundary extends Component<
               type="button"
               onClick={this.props.onDismissModal}
               aria-label="بستن این پنجره"
-              className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+              className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] inline-flex items-center justify-center rounded-lg text-slate-600 dark:text-[var(--color-text-secondary)] hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

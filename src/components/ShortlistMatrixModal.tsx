@@ -99,8 +99,8 @@ export function ShortlistMatrixModal({
 
   return (
     <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-label={isEn ? 'Shortlisted Neighborhoods Matrix' : 'مقایسه جدولی محله‌های منتخب'} onClick={onClose} className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="w-full max-w-5xl apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 my-auto max-h-[90vh] flex flex-col focus:outline-none shadow-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-3.5 shrink-0">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="w-full max-w-5xl apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl p-4 sm:p-6 space-y-4 my-auto max-h-[90vh] flex flex-col focus:outline-none shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-[var(--color-border-subtle)] pb-3.5 shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center text-rose-600 dark:text-rose-400">
               <Heart className="w-4 h-4 stroke-[2] fill-rose-500" />
@@ -109,29 +109,29 @@ export function ShortlistMatrixModal({
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {isEn ? `Shortlist Decision Matrix (${toPersianNum(shortlistedHoods.length)} Neighborhoods)` : `ماتریس مقایسه هم‌زمان محله‌های منتخب (${toPersianNum(shortlistedHoods.length)} محله)`}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
                 {isEn ? 'Top category values and ±0.3 tie-bands are highlighted alongside non-compensatory trade-offs' : 'برترین محله در هر شاخص و بازه هم‌تراز (±۰.۳ امتیاز) همراه با هشدارهای غیرجبرانی نمایش داده شده است'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
             <AreaUnitToggle compact showIntlControls />
-            <button type="button" aria-label={isEn ? 'Close matrix' : 'بستن ماتریس'} onClick={onClose} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition">
+            <button type="button" aria-label={isEn ? 'Close matrix' : 'بستن ماتریس'} onClick={onClose} className="p-2 rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-600 dark:text-[var(--color-text-secondary)] cursor-pointer transition">
               <X className="w-4 h-4 stroke-[2]" />
             </button>
           </div>
         </div>
 
         {shortlistedHoods.length === 0 ? (
-          <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="py-12 text-center text-sm text-slate-500 dark:text-[var(--color-text-muted)]">
             {isEn ? 'No neighborhoods shortlisted yet. Click the heart icon on any neighborhood card to add it to this comparison matrix.' : 'هنوز محله‌ای به لیست منتخب اضافه نکرده‌اید. با کلیک روی آیکون قلب در بالای پنل هر محله، آن را به لیست مقایسه اضافه کنید.'}
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto flex-1 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <div className="overflow-x-auto overflow-y-auto flex-1 rounded-2xl border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
             <table className="w-full text-xs border-collapse min-w-[560px]">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
-                  <th className={`p-3 font-bold text-slate-700 dark:text-slate-200 sticky ${isEn ? 'left-0' : 'right-0'} bg-slate-50 dark:bg-slate-800 z-10 min-w-[170px] ${isEn ? 'border-r text-left' : 'border-l text-right'} border-slate-200/80 dark:border-slate-700`}>
+                <tr className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border-b border-slate-200/80 dark:border-[var(--color-border-subtle)]">
+                  <th className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-primary)] sticky ${isEn ? 'left-0' : 'right-0'} bg-slate-50 dark:bg-[var(--color-bg-muted)] z-10 min-w-[170px] ${isEn ? 'border-r text-left' : 'border-l text-right'} border-slate-200/80 dark:border-[var(--color-border-strong)]`}>
                     {isEn ? 'Comparison Indicator' : 'شاخص مقایسه'}
                   </th>
                   {shortlistedHoods.map((hood, idx) => (
@@ -142,7 +142,7 @@ export function ShortlistMatrixModal({
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mb-2">{hood.zone}</div>
+                      <div className="text-[10.5px] text-slate-500 dark:text-[var(--color-text-muted)] mb-2">{hood.zone}</div>
                       <div className="space-y-1">
                         <button type="button" onClick={() => { onSelectNeighborhood(hood); onClose(); }} aria-label={isEn ? `Jump to ${hood.name} on map` : `پرش به ${hood.name} روی نقشه`} className="w-full py-1 px-2 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
                           <MapPin className="w-3 h-3" />
@@ -159,9 +159,9 @@ export function ShortlistMatrixModal({
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-[var(--color-border-subtle)]">
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? `Asking Price (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `قیمت خرید (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'} — میلیون تومان)`}
                   </td>
                   {shortlistedHoods.map((hood) => {
@@ -170,7 +170,7 @@ export function ShortlistMatrixModal({
                     const hoodTotal80m = Math.round((hood.buyPerSqm * 80) / 1000);
                     const monthlyRent80m = Math.round(hood.rahn80m * 0.03);
                     return (
-                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-slate-200'}`}>
+                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-[var(--color-text-primary)]'}`}>
                         {toPersianNum(unitBuy)} {isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)})` : ''} ({formatAreaShort(80, areaUnit)}: {toPersianNum(hoodTotal80m)}B · rent: {toPersianNum(monthlyRent80m)}M)
                         {isBest && <span className="inline-flex items-center text-[10px] text-emerald-700 dark:text-emerald-400 font-bold ml-1"><Award className="w-3 h-3 mx-0.5" />{isEn ? 'Lowest' : 'ارزان‌ترین'}</span>}
                       </td>
@@ -178,7 +178,7 @@ export function ShortlistMatrixModal({
                   })}
                 </tr>
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? `Estimated Deal v6.4 (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `سناریوی فرضی مذاکره v6.4 (غیرثبتی) (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`}
                   </td>
                   {shortlistedHoods.map((hood) => {
@@ -193,13 +193,13 @@ export function ShortlistMatrixModal({
                   })}
                 </tr>
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? <span>Full Deposit ({formatAreaShort(80, areaUnit)})</span> : <span>رهن کامل ({formatAreaShort(80, areaUnit)} — میلیون تومان)</span>}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const isBest = hood.rahn80m === minRahn80m;
                     return (
-                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-slate-200'}`}>
+                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-[var(--color-text-primary)]'}`}>
                         {toPersianNum(hood.rahn80m)} {isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, radarLocale)})` : ''} (rent: {toPersianNum(Math.round(hood.rahn80m * 0.03))}M)
                         {isBest && <span className="inline-flex items-center text-[10px] text-emerald-700 dark:text-emerald-400 font-bold ml-1"><Award className="w-3 h-3 mx-0.5" />{isEn ? 'Lowest' : 'ارزان‌ترین'}</span>}
                       </td>
@@ -207,29 +207,29 @@ export function ShortlistMatrixModal({
                   })}
                 </tr>
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? 'Affordable Area with Budget' : `متراژ قابل ${mode === 'buy' ? 'خرید' : 'اجاره'} با بودجه شما`}{intlCurrency !== 'IRT' && mode === 'buy' ? ` (${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)})` : ''}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const sqm = getAffordableSqm(hood);
                     const isBest = sqm === maxAffordable && sqm > 0;
                     return (
-                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-slate-200'}`}>
+                      <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-800 dark:text-[var(--color-text-primary)]'}`}>
                         ~{formatAreaValue(sqm, areaUnit, true)}
                       </td>
                     );
                   })}
                 </tr>
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? 'Budget Fit & Non-Compensatory Trade-Offs' : 'تطابق بودجه و موازنه غیرجبرانی شاخص‌ها'}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const explain = explainNeighborhoodRecommendation(hood, { mode, topReferenceScore: maxOverallScore });
                     return (
-                      <td key={hood.id} className="p-3 text-[10.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+                      <td key={hood.id} className="p-3 text-[10.5px] leading-relaxed text-slate-700 dark:text-[var(--color-text-secondary)]">
                         <div className="font-bold text-slate-900 dark:text-white">{explain.budgetFitSemanticsLabelFa}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{explain.tradeOffSummaryFa}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">{explain.tradeOffSummaryFa}</div>
                         {explain.nonCompensatoryWarningsFa.length > 0 && (
                           <div className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400 mt-0.5">{explain.nonCompensatoryWarningsFa[0]}</div>
                         )}
@@ -238,7 +238,7 @@ export function ShortlistMatrixModal({
                   })}
                 </tr>
                 <tr>
-                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                     {isEn ? 'Nearest Metro (GIS)' : 'نزدیک‌ترین خط مترو (GIS)'}
                   </td>
                   {shortlistedHoods.map((hood) => {
@@ -246,9 +246,9 @@ export function ShortlistMatrixModal({
                     const isBest = rep && rep.nearestMetroDistKm === minMetroDistKm;
                     const distKm = rep?.nearestMetroDistKm ?? 1.5;
                     return (
-                      <td key={hood.id} className={`p-3 font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300'}`}>
+                      <td key={hood.id} className={`p-3 font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-[var(--color-text-secondary)]'}`}>
                         <div className="truncate max-w-[160px]">🚇 {rep?.nearestMetroLineName}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
+                        <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5 tabular-nums">
                           ~{toPersianNum(distKm)} km ({toPersianNum(rep?.walkingMinutesEstimate ?? 15)} {isEn ? 'min walk' : 'دقیقه پیاده'})
                         </div>
                       </td>
@@ -260,7 +260,7 @@ export function ShortlistMatrixModal({
                   const tiedAtTopCount = row.key === 'overallScore' ? shortlistedHoods.filter((h) => Math.abs(maxVal - row.getValue(h)) <= 0.3).length : 0;
                   return (
                     <tr key={row.key}>
-                      <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                      <td className={`p-3 font-bold text-slate-700 dark:text-[var(--color-text-secondary)] sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-[var(--color-bg-surface)] z-10 border-slate-200/80 dark:border-[var(--color-border-subtle)]`}>
                         {isEn ? row.labelEn : row.labelFa}
                       </td>
                       {shortlistedHoods.map((hood) => {
@@ -268,7 +268,7 @@ export function ShortlistMatrixModal({
                         const isBest = val === maxVal;
                         const isTieBand = row.key === 'overallScore' && Math.abs(maxVal - val) <= 0.3 && tiedAtTopCount > 1;
                         return (
-                          <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : isTieBand ? 'bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                          <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold' : isTieBand ? 'bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300' : 'text-slate-800 dark:text-[var(--color-text-primary)]'}`}>
                             {toPersianNum(val)}/10{isTieBand ? ' (≈ هم‌تراز ±۰.۳)' : ''}
                           </td>
                         );

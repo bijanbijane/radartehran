@@ -194,7 +194,7 @@ export function BuyerAlertPriceSparkline({
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <span className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums hidden sm:inline">
+        <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums hidden sm:inline">
           ۶ماهه: +{toPersianNum(series.growth6mPercent)}٪
         </span>
       </div>
@@ -202,15 +202,15 @@ export function BuyerAlertPriceSparkline({
   }
 
   return (
-    <div className="bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl p-2.5 space-y-1.5">
-      <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-300 tabular-nums">
-        <span className="font-bold text-slate-800 dark:text-slate-100">
+    <div className="bg-slate-50/90 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-xl p-2.5 space-y-1.5">
+      <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-[var(--color-text-secondary)] tabular-nums">
+        <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
           روند ۶ ماهه {neighborhood.name} ({dealType === 'خرید' ? (areaUnit === 'sqft' ? 'هر ft²' : 'هر متر') : `رهن ${formatAreaShort(80, areaUnit)}`}):
         </span>
         <div className="flex items-center gap-2">
           <span>
             {fmtVal(series.startMillion)} {unitSuffix}{fmtFx(series.startMillion)} ←{' '}
-            <strong className="text-slate-900 dark:text-slate-100">{fmtVal(series.endMillion)} {unitSuffix}</strong>
+            <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{fmtVal(series.endMillion)} {unitSuffix}</strong>
             {fmtFx(series.endMillion)}{dealType === 'خرید' ? ` (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}
           </span>
           <span className="text-emerald-700 dark:text-emerald-400 font-bold">
@@ -238,14 +238,14 @@ export function BuyerAlertPriceSparkline({
                 return (
                   <div
                     dir="rtl"
-                    className="apple-grouped-card bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 rounded-lg px-2 py-1 text-[10px] shadow-md tabular-nums"
+                    className="apple-grouped-card bg-white/95 dark:bg-[var(--color-bg-surface)] border border-slate-200/90 dark:border-[var(--color-border-strong)] rounded-lg px-2 py-1 text-[10px] shadow-md tabular-nums"
                   >
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{pt.month}: </span>
+                    <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{pt.month}: </span>
                     <strong className="text-emerald-700 dark:text-emerald-400">{fmtVal(pt.priceMillion)} {unitSuffix}</strong>
                     {fmtFx(pt.priceMillion)}
-                    <span className="text-slate-500 dark:text-slate-400"> ({dealType === 'خرید' ? `کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((pt.priceMillion * 80) / 1000).toFixed(1))} میلیارد` : `اجاره: ${toPersianNum(Math.round(pt.priceMillion * 0.03))} م`})</span>
+                    <span className="text-slate-500 dark:text-[var(--color-text-muted)]"> ({dealType === 'خرید' ? `کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((pt.priceMillion * 80) / 1000).toFixed(1))} میلیارد` : `اجاره: ${toPersianNum(Math.round(pt.priceMillion * 0.03))} م`})</span>
                     <span className="text-slate-400 mx-1">|</span>
-                    <span className="text-slate-600 dark:text-slate-300">سقف شما: {fmtVal(pt.thresholdMillion)} {unitSuffix}{fmtFx(pt.thresholdMillion)}</span>
+                    <span className="text-slate-600 dark:text-[var(--color-text-secondary)]">سقف شما: {fmtVal(pt.thresholdMillion)} {unitSuffix}{fmtFx(pt.thresholdMillion)}</span>
                   </div>
                 );
               }}
@@ -265,7 +265,7 @@ export function BuyerAlertPriceSparkline({
         </ResponsiveContainer>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-0.5 bg-[var(--color-brand-600)] inline-block rounded" />
           <span>منحنی قیمت ۶ ماه اخیر</span>

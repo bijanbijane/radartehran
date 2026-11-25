@@ -231,9 +231,9 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
   };
 
   return (
-    <article data-testid="knowledge-article-reader" className="p-5 sm:p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-5 text-xs animate-fadeIn">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
-        <button type="button" onClick={onBack} className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
+    <article data-testid="knowledge-article-reader" className="p-5 sm:p-6 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-5 text-xs animate-fadeIn">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] pb-3">
+        <button type="button" onClick={onBack} className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1.5 cursor-pointer">
           <ArrowRight className="w-3.5 h-3.5" /><span>بازگشت به فهرست</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -248,7 +248,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                   ? 'border-amber-300 bg-amber-50 text-amber-800'
                   : isSaved
                     ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300'
-                    : 'border-[var(--color-border-subtle)] dark:border-slate-700'
+                    : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${isSaved && !bookmarkStatusUnknown ? 'fill-[var(--color-brand-600)]' : ''}`} />
@@ -277,7 +277,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
               if (started) { setErrorFa(null); setNoticeFa('فایل ساختاریافته JSON ذخیره شد.'); }
               else { setErrorFa('عملیات دانلود فایل JSON آغاز نشد.'); }
             }}
-            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" /><span>JSON</span>
           </button>
@@ -300,29 +300,29 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">{displayedPub.categoryLabelFa}</span>
           <span className={`px-2 py-0.5 rounded-[6px] border font-bold ${freshness.badgeClass}`}>{freshness.labelFa}</span>
-          <span className="px-2 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold" dir="ltr">
+          <span className="px-2 py-0.5 rounded-[6px] bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] font-bold" dir="ltr">
             {displayedPub.version} {viewingHistoricalVersion ? '(نسخه پیشین)' : '(نسخه فعلی)'}
           </span>
-          <span className="px-2 py-0.5 rounded-[6px] border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold">
+          <span className="px-2 py-0.5 rounded-[6px] border border-slate-300 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] font-bold">
             {KNOWLEDGE_PUBLICATION_STATUS_LABELS_FA[pubStatus]}
           </span>
         </div>
         <h2 className="text-[20px] sm:text-[22px] font-bold text-[var(--color-text-primary)] dark:text-white leading-[1.5] max-w-[720px]">{displayedPub.titleFa}</h2>
-        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.summaryFa}</p>
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">{displayedPub.summaryFa}</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-xs">
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">محدوده و دوره:</span><strong className="text-[var(--color-text-primary)] dark:text-white">{displayedPub.geographyScopeFa} · {displayedPub.periodLabelFa}</strong></div>
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">نویسنده پژوهش:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.author.nameFa}</strong></div>
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">بازبین فنی مستقل:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.technicalReviewer.nameFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)]"><span className="text-[var(--color-text-muted)] block">محدوده و دوره:</span><strong className="text-[var(--color-text-primary)] dark:text-white">{displayedPub.geographyScopeFa} · {displayedPub.periodLabelFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)]"><span className="text-[var(--color-text-muted)] block">نویسنده پژوهش:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.author.nameFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)]"><span className="text-[var(--color-text-muted)] block">بازبین فنی مستقل:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.technicalReviewer.nameFa}</strong></div>
         </div>
       </header>
 
-      <section id="tier-1-raw" data-testid="knowledge-tier-raw-data" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
+      <section id="tier-1-raw" data-testid="knowledge-tier-raw-data" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-1.5">
         <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Database className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۱: داده خام و منابع پایه (Raw Data)</span></h3>
-        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.rawDataSummaryFa}</p>
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">{displayedPub.rawDataSummaryFa}</p>
       </section>
 
-      <section id="tier-2-ind" data-testid="knowledge-tier-indicators" className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-brand-600)]/40 space-y-2.5">
+      <section id="tier-2-ind" data-testid="knowledge-tier-indicators" className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-brand-600)]/40 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Calculator className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۲: شاخص‌های محاسبه‌شده و سناریوهای آموزشی</span></h3>
           <span className="text-xs px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold" dir="ltr">{displayedPub.formulaVersion}</span>
@@ -333,7 +333,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
             const isPending = ind.calculationStatus === 'pending';
             const isUnavailable = ind.calculationStatus === 'unavailable';
             return (
-              <div key={ind.id} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
+              <div key={ind.id} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-1">
                   <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{ind.labelFa}</span>
                   {isIllustrative ? (
@@ -364,23 +364,23 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
 
       <section id="tier-3-interp" data-testid="knowledge-tier-interpretation" className="p-4 rounded-[12px] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900 space-y-2">
         <h3 className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300 flex items-center gap-1.5"><Compass className="w-4 h-4" /><span>لایه ۳: تفسیر پژوهشی و محدودیت‌ها (تفکیک‌شده از آمار خام)</span></h3>
-        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-primary)] dark:text-slate-200">{displayedPub.researchInterpretationFa}</p>
-        <div className="pt-1 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-xs text-[var(--color-text-muted)] space-y-1 max-w-[720px]">
-          <strong className="block text-[var(--color-text-primary)] dark:text-slate-200">سابقه نسخه ({displayedPub.version}) و محدودیت‌ها:</strong>
+        <p className="editorial-prose max-w-[720px] text-sm leading-8 text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">{displayedPub.researchInterpretationFa}</p>
+        <div className="pt-1 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] text-xs text-[var(--color-text-muted)] space-y-1 max-w-[720px]">
+          <strong className="block text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">سابقه نسخه ({displayedPub.version}) و محدودیت‌ها:</strong>
           <p>{displayedPub.changelogFa}</p>
           <ul className="list-disc pr-4 space-y-0.5">{displayedPub.limitationsFa.map((lim) => <li key={lim}>{lim}</li>)}</ul>
         </div>
       </section>
 
       {(publication.versionHistory?.length ?? 0) > 0 && (
-        <section id="tier-versions" data-testid="knowledge-version-history" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2">
+        <section id="tier-versions" data-testid="knowledge-version-history" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-2">
           <strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><History className="w-4 h-4 text-[var(--color-brand-600)]" /><span>تاریخچه نسخه‌های گزارش</span></strong>
           <div className="space-y-1.5">
             {(publication.versionHistory ?? []).map((ver, idx) => {
               const isCurrentSelection = displayedPub.version === ver.version;
               const isLatestVersion = idx === 0 && ver.version === publication.version;
               return (
-                <div key={ver.versionId} className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <div key={ver.versionId} className="p-2.5 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2 text-[11px]">
                   <div>
                     <span className="font-bold text-[var(--color-text-primary)] dark:text-white" dir="ltr">{ver.version}</span>
                     <span className="mx-1.5 text-[var(--color-text-muted)]">· {ver.publishedAtFa} ·</span>
@@ -399,7 +399,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         </section>
       )}
 
-      <section id="tier-4-sources" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2.5">
+      <section id="tier-4-sources" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="text-[var(--color-text-primary)] dark:text-white">شناسنامه منابع مرتبط با این گزارش ({toPersianNum(effectiveSources.length)} منبع)</strong>
           <button type="button" data-testid="knowledge-toggle-correction-btn" onClick={() => setShowCorrForm((v) => !v)} className="text-[11px] font-bold text-[#875000] dark:text-amber-300 flex items-center gap-1 cursor-pointer">
@@ -408,7 +408,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {effectiveSources.map((src) => (
-            <div key={src.sourceId} className="p-3 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1 text-[11px]">
+            <div key={src.sourceId} className="p-3 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-1 text-[11px]">
               <div className="flex items-center justify-between gap-1">
                 <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{src.titleFa}</span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${src.licenseStatus === 'approved' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
@@ -425,20 +425,20 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
           ))}
         </div>
         {showCorrForm && (
-          <div data-testid="knowledge-correction-form" className="p-3 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2">
+          <div data-testid="knowledge-correction-form" className="p-3 rounded-[10px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <select aria-label="نوع خطا" value={corrType} onChange={(e) => setCorrType(e.target.value as KnowledgeCorrectionType)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
+              <select aria-label="نوع خطا" value={corrType} onChange={(e) => setCorrType(e.target.value as KnowledgeCorrectionType)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold">
                 {(Object.keys(KNOWLEDGE_CORRECTION_TYPE_LABELS_FA) as KnowledgeCorrectionType[]).map((k) => (
                   <option key={k} value={k}>{KNOWLEDGE_CORRECTION_TYPE_LABELS_FA[k]}</option>
                 ))}
               </select>
-              <select aria-label="بخش گزارش" value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+              <select aria-label="بخش گزارش" value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
                 <option value="tier-1-raw">لایه ۱: داده خام</option>
                 <option value="tier-2-ind">لایه ۲: شاخص‌های محاسبه‌شده</option>
                 <option value="tier-3-interp">لایه ۳: تفسیر پژوهشی</option>
                 <option value="tier-4-sources">لایه ۴: منابع و مجوزها</option>
               </select>
-              <select aria-label="شاخص مرتبط" value={targetIndicatorId} onChange={(e) => setTargetIndicatorId(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
+              <select aria-label="شاخص مرتبط" value={targetIndicatorId} onChange={(e) => setTargetIndicatorId(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]">
                 <option value="">همه شاخص‌ها / عمومی</option>
                 {displayedPub.calculatedIndicators.map((ind) => (
                   <option key={ind.id} value={ind.id}>{ind.labelFa}</option>
@@ -451,11 +451,11 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
               value={corrNote}
               onChange={(e) => setCorrNote(e.target.value)}
               placeholder="توضیح دقیق خطا یا پیشنهاد اصلاحیه علمی (حداقل ۱۰ و حداکثر ۱۰۰۰ نویسه)..."
-              className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+              className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input type="text" aria-label="شرح مستندات" value={evidenceDesc} onChange={(e) => setEvidenceDesc(e.target.value)} placeholder="توضیح مستندات یا مرجع پشتیبان (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
-              <input type="url" aria-label="نشانی منبع" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://... (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+              <input type="text" aria-label="شرح مستندات" value={evidenceDesc} onChange={(e) => setEvidenceDesc(e.target.value)} placeholder="توضیح مستندات یا مرجع پشتیبان (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+              <input type="url" aria-label="نشانی منبع" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://... (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -464,7 +464,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                   saveKnowledgeCorrectionLocalDraft(displayedPub.id, { correctionType: corrType, targetSection, targetIndicatorId: targetIndicatorId || undefined, noteFa: corrNote, evidenceDescriptionFa: evidenceDesc, sourceUrl });
                   setNoticeFa('پیش‌نویس محلی ذخیره شد.');
                 }}
-                className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold cursor-pointer"
+                className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold cursor-pointer"
               >
                 ذخیره پیش‌نویس محلی
               </button>
@@ -476,10 +476,10 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         )}
       </section>
 
-      <footer className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <footer className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {displayedPub.relatedNeighborhoodNames.map((name) => (
-            <button key={name} type="button" onClick={() => handleOpenNeighborhood(name)} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 hover:border-[var(--color-brand-600)] font-bold flex items-center gap-1 cursor-pointer">
+            <button key={name} type="button" onClick={() => handleOpenNeighborhood(name)} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] hover:border-[var(--color-brand-600)] font-bold flex items-center gap-1 cursor-pointer">
               <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>نقشه {name}</span>
             </button>
           ))}

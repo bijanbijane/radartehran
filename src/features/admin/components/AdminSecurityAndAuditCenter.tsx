@@ -70,7 +70,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
   return (
     <div data-testid="admin-security-audit-center" className="space-y-4 text-xs">
       {/* Two-Step Sensitive Operation Execution Card */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <AlertOctagon className="w-4 h-4 text-rose-600" />
@@ -81,7 +81,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {SENSITIVE_OPERATIONS_CATALOG.map((op) => (
-            <div key={op.opId} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+            <div key={op.opId} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-between gap-2">
               <div>
                 <div className="font-bold text-slate-900 dark:text-white">{op.titleFa}</div>
                 <div className="text-[10.5px] text-slate-500 mt-0.5">{op.impactFa}</div>
@@ -105,7 +105,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
               value={reasonFa}
               onChange={(e) => setReasonFa(e.target.value)}
               placeholder="دلیل دقیق اجرایی (حداقل ۸ کاراکتر)..."
-              className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800"
+              className="w-full p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-rose-200 dark:border-rose-800"
             />
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -113,12 +113,12 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
                 value={typedConfirm}
                 onChange={(e) => setTypedConfirm(e.target.value)}
                 placeholder="عبارت CONFIRM را تایپ کنید"
-                className="flex-1 min-w-[180px] p-2 rounded-lg bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 font-mono"
+                className="flex-1 min-w-[180px] p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-rose-200 dark:border-rose-800 font-mono"
               />
               <button type="button" onClick={executeSensitiveOp} className="px-3.5 py-2 rounded-lg bg-rose-600 text-white font-bold cursor-pointer">
                 تأیید و ثبت در Audit Log
               </button>
-              <button type="button" onClick={() => setSelectedOp(null)} className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold cursor-pointer">
+              <button type="button" onClick={() => setSelectedOp(null)} className="px-3 py-2 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold cursor-pointer">
                 انصراف
               </button>
             </div>
@@ -135,17 +135,17 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
 
       {/* RBAC Matrix + Audit Log Viewer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-5 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+        <div className="lg:col-span-5 p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2.5">
           <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماتریس تفکیک مجوزهای نقش (RBAC)</span>
           </strong>
           <div className="space-y-2">
             {ADMIN_ROLE_DEFINITIONS.map((roleDef) => (
-              <div key={roleDef.role} className={`p-2.5 rounded-xl border ${roleDef.role === activeRole ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
+              <div key={roleDef.role} className={`p-2.5 rounded-xl border ${roleDef.role === activeRole ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-[var(--color-border-subtle)]'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-slate-900 dark:text-white">{roleDef.labelFa}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)] font-bold">
                     {roleDef.canMutateData ? 'مشاهده + اقدام مجاز' : 'فقط مشاهده (Read-Only)'}
                   </span>
                 </div>
@@ -155,7 +155,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
           </div>
         </div>
 
-        <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+        <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <FileSearch className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -165,7 +165,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
               aria-label="فیلتر سطح لاگ ممیزی"
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value as 'all' | 'info' | 'warning' | 'critical')}
-              className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+              className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold"
             >
               <option value="all">همه سطوح</option>
               <option value="info">عادی (Info)</option>
@@ -176,7 +176,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
           {visibleLogs.length === 0 ? (
             <p className="text-slate-500 py-4 text-center">هنوز اقدام ممیزی حاکمیتی در این نشست ثبت نشده است.</p>
           ) : (
-            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
               {visibleLogs.map((log) => (
                 <div key={log.id} className="py-2 flex items-start justify-between gap-2">
                   <div>
@@ -185,7 +185,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
                     </div>
                     <div className="text-[11px] text-slate-500">{log.actorLabelFa} · دلیل: {log.reasonFa}</div>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono shrink-0">{log.severity}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)] font-mono shrink-0">{log.severity}</span>
                 </div>
               ))}
             </div>

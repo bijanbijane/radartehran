@@ -1,6 +1,7 @@
 @layer tokens {
   :root {
     --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-primary: var(--font-sans);
     --font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, monospace;
 
     /* Layer 1: Brand — Deep Petroleum Green (synced 1:1 with src/design-system/colorSystem.ts) */
@@ -19,6 +20,7 @@
     --color-brand-hover: #14534E;
     --color-brand-pressed: #0B302D;
     --color-brand-soft: #EAF3F0;
+    --color-brand-tint: #F1F8F6;
 
     --color-accent-100: #F6E6C8;
     --color-accent-500: #C58A2B;
@@ -40,6 +42,7 @@
 
     --color-border-subtle: #DCE3DF;
     --color-border-strong: #C5D0CA;
+    --color-border-default: var(--color-border-subtle);
 
     /* Layer 3: Semantic & Distinct Accessible Focus Blue */
     --color-success: #176B4C;
@@ -51,6 +54,24 @@
     --color-info: #155E9A;
     --color-info-bg: #EAF3FB;
     --color-focus: #2864DC;
+
+    /* Typography Scale & Editorial Measure (Synced 1:1 with src/design-system/typographySystem.ts) */
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+    --type-display: 2.5rem;
+    --type-h1: 1.875rem;
+    --type-h2: 1.5rem;
+    --type-h3: 1.25rem;
+    --type-h4: 1.125rem;
+    --type-body: 1rem;
+    --type-body-small: 0.875rem;
+    --type-caption: 0.8125rem;
+    --type-micro: 0.75rem;
+    --leading-heading: 1.3;
+    --leading-body: 1.8;
+    --measure-editorial: 72ch;
 
     /* Spacing Scale (4px grid) */
     --space-1: 4px;
@@ -92,6 +113,7 @@
     --z-modal-backdrop: 60;
     --z-modal-dialog: 70;
     --z-toast-banner: 80;
+    --z-critical-error-banner: 80;
     --z-impersonation-banner: 90;
 
     --safe-top: env(safe-area-inset-top, 0px);
@@ -100,33 +122,59 @@
     --safe-right: env(safe-area-inset-right, 0px);
     --app-height: 100dvh;
     --header-height: 56px;
+    --secondary-nav-height: 48px;
     --container-max: 1320px;
     --motion-fast: 120ms;
     --motion-standard: 180ms;
 
-    /* Surface Aliases (mapped cleanly to single design-system source) */
-    --apple-bg-base: var(--color-bg-canvas);
-    --apple-surface: rgba(255, 255, 255, 0.96);
-    --apple-surface-elevated: #FFFFFF;
-    --apple-surface-secondary: var(--color-bg-muted);
-    --apple-fill-tertiary: rgba(24, 37, 34, 0.07);
-    --apple-fill-quaternary: rgba(24, 37, 34, 0.04);
-    --apple-text-primary: var(--color-text-primary);
-    --apple-text-secondary: var(--color-text-secondary);
-    --apple-text-tertiary: var(--color-text-muted);
-    --apple-separator: var(--color-border-subtle);
-    --apple-border-hairline: rgba(255, 255, 255, 0.7);
-    --apple-accent-green: var(--color-brand-600);
-    --apple-accent-blue: var(--color-focus);
-    --apple-accent-amber: var(--color-warning);
-    --apple-accent-red: var(--color-danger);
-    --apple-shadow-floating: var(--shadow-elevation-2);
-    --apple-shadow-sheet: var(--shadow-elevation-3);
+    /* Semantic Surface, Glass & Shadow Helpers */
+    --color-surface-glass: rgba(255, 255, 255, 0.96);
+    --color-fill-subtle: rgba(24, 37, 34, 0.07);
+    --color-brand-soft-border: #C3DFDA;
+    --shadow-floating: var(--shadow-elevation-2);
+    --shadow-sheet: var(--shadow-elevation-3);
   }
 
   @media (min-width: 1024px) {
     :root {
       --header-height: 64px;
+    }
+  }
+
+  /* Tabular Numerals, GIS Price Badges & Mobile Scroll Ergonomics */
+  .radar-tabular-num,
+  .property-code {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    display: inline-block;
+  }
+
+  .radar-map-price-badge {
+    background-color: rgba(13, 21, 19, 0.92);
+    color: #eef4f2;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  .radar-drawer-scroll-container {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @keyframes radarMarkerPulseGpu {
+    0%, 100% {
+      transform: scale3d(1, 1, 1);
+      opacity: 0.95;
+    }
+    50% {
+      transform: scale3d(1.16, 1.16, 1);
+      opacity: 0.65;
     }
   }
 }

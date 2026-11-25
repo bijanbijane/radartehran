@@ -71,7 +71,7 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
           )}
           {onNavigateView && (
             <div className="flex items-center justify-center gap-2 pt-1">
-              <button type="button" onClick={() => onNavigateView('discover')} className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">{isEn ? 'Explore Neighborhoods' : 'کشف و فیلتر محله‌ها'}</button>
+              <button type="button" onClick={() => onNavigateView('discover')} className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold transition cursor-pointer">{isEn ? 'Explore Neighborhoods' : 'کشف و فیلتر محله‌ها'}</button>
               <button type="button" onClick={() => onNavigateView('map')} className="min-h-[44px] md:min-h-[36px] px-3.5 py-1.5 rounded-xl border border-[var(--color-border-strong)] text-[var(--color-text-primary)] text-xs font-bold transition cursor-pointer">{isEn ? 'Open Live Map' : 'کاوش روی نقشه زنده'}</button>
             </div>
           )}
@@ -95,33 +95,33 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
                         <h3 className="font-bold text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
                         {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-xs font-bold">فعال روی نقشه</span>}
                       </div>
-                      <span className="text-xs text-[var(--color-text-muted)]">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-300">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
+                      <span className="text-sm text-[var(--color-text-muted)] block mt-0.5">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)} از ۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-300">· {toPersianNum(explain.nonCompensatoryWarningsFa[0])}</strong> : null}</span>
                     </div>
                   )}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFavorite(hood.id); }} aria-label={`حذف ${hood.name} از منتخب‌ها`} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center text-rose-600 hover:text-rose-700 p-1 cursor-pointer">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); onToggleFavorite(hood.id); }} aria-label={`حذف ${hood.name} از منتخب‌ها`} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-2 cursor-pointer transition">
                     <Heart className="w-4 h-4 fill-rose-500" />
                   </button>
                 </div>
-                <div className="py-3 my-3 border-y border-[var(--color-border-subtle)] grid grid-cols-2 text-xs tabular-nums">
+                <div className="py-3 my-3 border-y border-[var(--color-border-subtle)] grid grid-cols-2 text-sm tabular-nums">
                   <div>
-                    <span className="text-xs text-[var(--color-text-muted)] block font-medium">{unitBuy === unitDeal ? 'برآورد معامله (غیرثبتی):' : 'اعلامی / برآورد معامله (غیرثبتی):'}</span>
+                    <span className="text-sm text-[var(--color-text-muted)] block font-medium">{unitBuy === unitDeal ? 'برآورد معامله (غیرثبتی):' : 'اعلامی / برآورد معامله:'}</span>
                     <strong className="text-[var(--color-text-primary)] font-bold text-sm">{toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-[var(--color-brand-fg)]">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</strong>
                   </div>
                   <div className="border-s border-[var(--color-border-subtle)] ps-3">
-                    <span className="text-xs text-[var(--color-text-muted)] block font-medium">رهن ۸۰ متر:</span>
+                    <span className="text-sm text-[var(--color-text-muted)] block font-medium">رهن ۸۰ متر:</span>
                     <strong className="text-[var(--color-brand-fg)] font-bold text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={(e) => { e.stopPropagation(); onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="flex-1 min-h-[44px] md:min-h-[36px] py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition cursor-pointer">مشاهده کارنامه محله</button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="flex-1 min-h-[44px] md:min-h-[38px] py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-bold transition cursor-pointer">مشاهده کارنامه محله</button>
                   {!isSelected && selectedHood && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] inline-flex items-center justify-center p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-[var(--color-border-subtle)] text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`min-h-[44px] min-w-[44px] md:min-h-[38px] md:min-w-[38px] inline-flex items-center justify-center p-2 rounded-xl border text-sm transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-[var(--color-border-subtle)] text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
                       <Scale className="w-4 h-4" />
                     </button>
                   )}
                   {onNavigateView && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); onSelectNeighborhood(hood); onNavigateView('map'); }} aria-label={`نمایش ${hood.name} روی نقشه`} className="min-h-[44px] md:min-h-[36px] px-2.5 py-2 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] border border-[var(--color-border-subtle)] text-xs font-bold transition cursor-pointer flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" /><span>نقشه کامل</span>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); onSelectNeighborhood(hood); onNavigateView('map'); }} aria-label={`نمایش ${hood.name} روی نقشه`} className="min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] border border-[var(--color-border-subtle)] text-sm font-bold transition cursor-pointer flex items-center gap-1">
+                      <MapPin className="w-4 h-4" /><span>نقشه کامل</span>
                     </button>
                   )}
                 </div>

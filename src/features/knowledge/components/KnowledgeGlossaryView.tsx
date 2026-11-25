@@ -28,7 +28,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
 
   return (
     <div data-testid="knowledge-glossary-view" className="space-y-4 text-xs animate-fadeIn">
-      <div className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+      <div className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="font-bold text-sm text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <BookMarked className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -42,7 +42,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
               value={localQuery}
               onChange={(e) => setLocalQuery(e.target.value)}
               placeholder="جست‌وجوی اصطلاح (مثلاً هدونیک، IQR، R122)..."
-              className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+              className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
             />
           </div>
         </div>
@@ -56,7 +56,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
               className={`px-2.5 py-1 rounded-[7px] font-bold cursor-pointer ${
                 category === cat
                   ? 'bg-[var(--color-brand-600)] text-white'
-                  : 'bg-[#F8F9FA] dark:bg-slate-800 text-[#48534F] dark:text-slate-300'
+                  : 'bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] text-[#48534F] dark:text-[var(--color-text-secondary)]'
               }`}
             >
               {GLOSSARY_CATEGORY_LABELS_FA[cat]}
@@ -66,13 +66,13 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
       </div>
 
       {visibleTerms.length === 0 ? (
-        <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center text-[var(--color-text-muted)]">
+        <div className="p-6 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] text-center text-[var(--color-text-muted)]">
           اصطلاحی با این عبارت پیدا نشد. کلیدواژه ساده‌تری مثل «رهن» یا «ارزش» را جست‌وجو کنید.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {visibleTerms.map((term) => (
-            <article key={term.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 flex flex-col justify-between">
+            <article key={term.id} className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2 flex flex-col justify-between">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-1">
                   <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold text-[10.5px]">
@@ -81,7 +81,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
                   <span className="text-[10.5px] text-[var(--color-text-muted)] font-medium" dir="ltr">{term.termEn}</span>
                 </div>
                 <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{term.termFa}</h3>
-                <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-slate-300 text-xs">{term.shortDefinitionFa}</p>
+                <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] text-xs">{term.shortDefinitionFa}</p>
                 <div className="p-2.5 rounded-[8px] bg-[#FFF4E5]/70 dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-[11px] text-[#875000] dark:text-amber-200 font-medium">
                   تمایز حیاتی: {term.usageDistinctionFa}
                 </div>
@@ -92,7 +92,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigateView(term.relatedView!, term.relatedSubTab)}
-                    className="px-3 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-slate-700 hover:border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold cursor-pointer"
+                    className="px-3 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] hover:border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold cursor-pointer"
                   >
                     مشاهده ابزار مرتبط در رادار ←
                   </button>

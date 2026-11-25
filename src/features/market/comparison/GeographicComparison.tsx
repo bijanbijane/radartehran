@@ -35,15 +35,15 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
     <section
       aria-label="مقایسه جغرافیایی محله‌ها"
       data-testid="market-geo-comparison-section"
-      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4"
+      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مقایسه هم‌معنای محدوده‌ها (تا ۴ محله)</span>
           </h3>
-          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-0.5">
             تمامی ستون‌ها با یک تعریف یکسان (میانه پیشنهادی، برآورد معامله، رهن ۸۰م و تعداد آگهی زنده) سنجیده می‌شوند.
           </p>
         </div>
@@ -58,7 +58,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                 const id = Number(e.target.value);
                 if (id > 0) onAddCompareHood(id);
               }}
-              className="min-w-0 w-full sm:max-w-[260px] truncate min-h-[36px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[var(--color-text-primary)] dark:text-white"
+              className="min-w-0 w-full sm:max-w-[260px] truncate min-h-[36px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-xs font-bold text-[var(--color-text-primary)] dark:text-white"
             >
               <option value="">+ افزودن محله برای مقایسه...</option>
               {candidates.map((c) => (
@@ -74,7 +74,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse tabular-nums">
           <thead>
-            <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-muted)] dark:text-slate-400 text-xs">
+            <tr className="border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] text-xs">
               <th className="text-right py-2 px-2">محدوده</th>
               <th className="text-right py-2 px-2">پیشنهادی آگهی</th>
               <th className="text-right py-2 px-2">برآورد معامله (غیرثبتی)</th>
@@ -91,10 +91,10 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
               const uDeal = convertPricePerSqmToUnit(row.estimatedDealPerSqmMillion, areaUnit);
               const targetHood = allHoods.find((h) => h.id === row.hoodId);
               return (
-                <tr key={row.hoodId} className="border-b border-[var(--color-border-subtle)]/60 dark:border-slate-800">
+                <tr key={row.hoodId} className="border-b border-[var(--color-border-subtle)]/60 dark:border-[var(--color-border-subtle)]">
                   <td className="py-2.5 px-2 font-bold text-[var(--color-text-primary)] dark:text-white">
                     {row.hoodName}{' '}
-                    <span className="text-xs font-normal text-[var(--color-text-muted)] dark:text-slate-400">
+                    <span className="text-xs font-normal text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                       ({row.zone}) {isBase ? '· مبنا' : ''}
                     </span>
                   </td>
@@ -104,7 +104,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                     {isBase ? '—' : `${row.gapFromBasePct > 0 ? '+' : ''}${toPersianNum(row.gapFromBasePct)}٪`}
                   </td>
                   <td className="py-2.5 px-2">{toPersianNum(row.rahn80mMillion)} م</td>
-                  <td className="py-2.5 px-2 text-xs text-[var(--color-text-muted)] dark:text-slate-400">
+                  <td className="py-2.5 px-2 text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                     {toPersianNum(row.observedCount)} زنده · {INDICATOR_STATUS_LABELS_FA[row.status]}
                   </td>
                   <td className="py-2.5 px-2">
@@ -118,14 +118,14 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                                 comparisonArc: { active: true, isPinned: true, hoodA: selectedHood, hoodB: targetHood },
                               });
                             }}
-                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
+                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
                           >
                             کمان روی نقشه
                           </button>
                           <button
                             type="button"
                             onClick={() => onSelectNeighborhood(targetHood)}
-                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-slate-700 text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 cursor-pointer"
+                            className="px-2 py-1 rounded border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] text-xs font-bold hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
                           >
                             انتخاب مبنا
                           </button>

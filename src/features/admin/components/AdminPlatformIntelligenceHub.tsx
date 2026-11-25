@@ -90,9 +90,9 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
   return (
     <section
       data-testid="admin-platform-intelligence-hub"
-      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 text-xs"
+      className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3 text-xs"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Cpu className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -116,7 +116,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 data-testid={`hub-tab-${tab.id}`}
                 onClick={() => { setActiveTab(tab.id); setFeedbackFa(null); }}
                 className={`px-3 py-1.5 rounded-[9px] font-bold inline-flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                  activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" /><span>{tab.labelFa}</span>
@@ -147,14 +147,14 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
       {activeTab === 'intelligence' && isVerifiedAdmin && (
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
               <div className="text-[11px] text-slate-500">سلامت مرکب پلتفرم (Stage 23)</div>
               <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {intel?.healthScoreStatus === 'COMPUTED' && intel.healthScore0To100 !== null ? toPersianNum(intel.healthScore0To100) : 'NOT_AVAILABLE'}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Self-Eval: {intel?.selfEvaluationStatus || 'NOT_MEASURED'}</div>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
               <div className="text-[11px] text-slate-500">تاب‌آوری و ماتریس ۱۰گانه (Stage 9)</div>
               <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {gov?.resilience.overallTier || 'READY'} · {toPersianNum(gov?.resilience.matrixCount ?? 10)} دامنه
@@ -171,7 +171,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 اجرای کنترل سازگاری
               </button>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
               <div className="text-[11px] text-slate-500">انتشار و Rollout (Stages 11–14)</div>
               <div className="font-bold text-slate-900 dark:text-white mt-0.5">
                 {gov?.opsCostRelease.rollout.currentWave || 'WAVE_A'} ({gov?.opsCostRelease.releaseGates.overallStatus || 'PASS_WITH_LIMITATIONS'})
@@ -181,7 +181,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
           </div>
 
           {intel?.decisionSuggestions.map((sug) => (
-            <div key={sug.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div key={sug.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="font-bold text-slate-900 dark:text-white">{sug.titleFa} ({sug.status})</div>
                 <div className="text-[10.5px] text-slate-500">طرح بازگشت: {sug.reversalPlanFa}</div>
@@ -197,7 +197,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
 
       {activeTab === 'automation' && isVerifiedAdmin && (
         <div className="space-y-3">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="font-bold text-slate-900 dark:text-white">
                 Kill Switch مستقل اتوماسیون: {autoState?.killSwitchEngaged ? 'فعال (متوقف)' : 'آماده به کار'}
@@ -237,7 +237,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(autoState?.agents || []).map((ag) => (
-              <div key={ag.agentId} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div key={ag.agentId} className="p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)]">
                 <div className="font-bold text-slate-900 dark:text-white">{ag.roleTitleFa}</div>
                 <div className="text-[10px] font-mono text-slate-500">{ag.agentId} · max={ag.maxRiskClass}</div>
               </div>
@@ -248,26 +248,26 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
 
       {activeTab === 'ecosystem' && isVerifiedAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Scale className="w-4 h-4 text-[var(--color-brand-600)]" /> حقوقی و تجاری (Stages 17–20)
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-300">
+            <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               حقوقی: <strong>{gov?.legal.readinessStatus}</strong> · تجاری: <strong>{gov?.commercial.commercialStatus}</strong> (Entry Gate: {gov?.commercial.commercialEntryGate}) · پرداخت زنده: غیرفعال
             </div>
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 pt-1">
               <Database className="w-4 h-4 text-[var(--color-brand-600)]" /> تبادل داده و بازار ملک (Stages 27–28)
             </div>
-            <div className="text-[11px] text-slate-600 dark:text-slate-300">
+            <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               منابع ثبت‌شده: {toPersianNum(dxSummary?.sourcesCount ?? 0)} (منابع فاقد مجوز مسدود: {toPersianNum(dxSummary?.blockedUnlicensed ?? 0)}) · نوع قیمت: <strong>{marketSummary?.priceKind || 'ASKING_PRICE'}</strong> · معامله واقعی: <strong>{marketSummary?.txStatus || 'NOT_AVAILABLE'}</strong>
             </div>
           </div>
-          <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /> پایلوت درگاه بیرونی (Stage 26 · SSRF Hardened)
             </div>
             {providers.map((p) => (
-              <div key={p.providerId} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between gap-2">
+              <div key={p.providerId} className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold truncate">{p.nameFa}</div>
                   <div className="text-[10px] font-mono text-slate-500">{p.lifecycle} · {p.secretRefAlias} (secretHidden)</div>

@@ -181,11 +181,11 @@ export const DISCOVER_SECONDARY_TABS: readonly SecondaryTabDefinition<DiscoverSu
 
 export const COMMUNITY_SECONDARY_TABS: readonly SecondaryTabDefinition<string>[] = [
   { id: 'overview', labelFa: 'خانه جامعه', labelEn: 'Community Home', path: '/community' },
-  { id: 'topics', labelFa: 'موضوعات', labelEn: 'Topics', path: '/community/topics' },
-  { id: 'questions', labelFa: 'پرسش و پاسخ', labelEn: 'Q&A', path: '/community/questions' },
-  { id: 'discussions', labelFa: 'گفت‌وگوها', labelEn: 'Discussions', path: '/community/discussions' },
-  { id: 'submit', labelFa: 'ثبت مشارکت', labelEn: 'Contribute', path: '/community/contribute' },
-  { id: 'members', labelFa: 'اعضا و آیین‌نامه', labelEn: 'Members', path: '/community/members' },
+  { id: 'discussions', labelFa: 'گفت‌وگو و پرسش‌وپاسخ', labelEn: 'Discussions & Q&A', path: '/community/discussions' },
+  { id: 'submit', labelFa: 'ثبت مشارکت و اصلاح داده', labelEn: 'Contribute', path: '/community/contribute' },
+  { id: 'research', labelFa: 'پیشنهادهای پژوهشی', labelEn: 'Research', path: '/community/research' },
+  { id: 'members', labelFa: 'اعضا', labelEn: 'Members', path: '/community/members' },
+  { id: 'guidelines', labelFa: 'آیین‌نامه و قوانین', labelEn: 'Guidelines', path: '/community/guidelines' },
 ];
 
 export const MARKET_SECONDARY_TABS: readonly SecondaryTabDefinition<MarketSubTabId>[] = [
@@ -210,8 +210,7 @@ export const TOOLS_SECONDARY_TABS: readonly SecondaryTabDefinition<ToolsSubTabId
   { id: 'valuation', labelFa: 'ارزش‌گذاری ملک', labelEn: 'Valuation', path: '/tools/valuation' },
   { id: 'budget_fit', labelFa: 'تطبیق بودجه', labelEn: 'Budget Fit', path: '/tools/budget-fit' },
   { id: 'verifier', labelFa: 'سنجش آگهی', labelEn: 'Listing Verifier', path: '/tools/verifier' },
-  { id: 'compare_props', labelFa: 'مقایسه املاک', labelEn: 'Compare Properties', path: '/tools/compare-properties' },
-  { id: 'compare_areas', labelFa: 'مقایسه محله‌ها', labelEn: 'Compare Areas', path: '/tools/compare-areas' },
+  { id: 'compare_areas', labelFa: 'مقایسه محله و ملک', labelEn: 'Compare', path: '/tools/compare-areas' },
   { id: 'calculators', labelFa: 'محاسبه‌گرها', labelEn: 'Calculators', path: '/tools/calculators' },
 ];
 

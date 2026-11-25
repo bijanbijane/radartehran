@@ -43,7 +43,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
           <select
             value={draft.documentType}
             onChange={(e) => onUpdate({ documentType: e.target.value as DocumentType })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
           >
             {(Object.keys(DOCUMENT_TYPE_LABELS_FA) as DocumentType[]).map((d) => (
               <option key={d} value={d}>{DOCUMENT_TYPE_LABELS_FA[d]}</option>
@@ -59,7 +59,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
               <select
                 value={draft[k]}
                 onChange={(e) => onUpdate({ [k]: e.target.value as AmenityValue })}
-                className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+                className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               >
                 {(Object.keys(AMENITY_VALUE_LABELS_FA) as AmenityValue[]).map((av) => (
                   <option key={av} value={av}>{AMENITY_VALUE_LABELS_FA[av]}</option>
@@ -84,7 +84,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
                 type="button"
                 onClick={() => onUpdate({ priceType: id })}
                 className={`p-2 rounded-[8px] border font-bold cursor-pointer ${
-                  draft.priceType === id ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700'
+                  draft.priceType === id ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
                 }`}
               >
                 {label}
@@ -103,7 +103,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
                 value={draft.saleTotalBillion}
                 onChange={(e) => onUpdate({ saleTotalBillion: e.target.value })}
                 placeholder="مثال: ۲۸.۵"
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
+                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums"
               />
               {errors.saleTotalBillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.saleTotalBillion}</span>}
             </div>
@@ -116,7 +116,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
                   aria-invalid={Boolean(errors.depositMillion)}
                   value={draft.depositMillion}
                   onChange={(e) => onUpdate({ depositMillion: e.target.value })}
-                  className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
+                  className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums"
                 />
                 {errors.depositMillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.depositMillion}</span>}
               </div>
@@ -128,7 +128,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
                     aria-invalid={Boolean(errors.monthlyRentMillion)}
                     value={draft.monthlyRentMillion}
                     onChange={(e) => onUpdate({ monthlyRentMillion: e.target.value })}
-                    className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
+                    className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums"
                   />
                   {errors.monthlyRentMillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.monthlyRentMillion}</span>}
                 </div>
@@ -157,7 +157,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
             value={draft.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
             placeholder="مثال: آپارتمان ۸۵ متری ۲ خواب بازسازی‌شده، سعادت‌آباد"
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
           />
           {errors.title && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.title}</span>}
         </div>
@@ -170,7 +170,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
             value={draft.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
             placeholder="شرایط نورگیر، مشاعات، بازسازی، وضعیت مستأجر و نکات واقعی ملک..."
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
           />
           {errors.description && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.description}</span>}
         </div>
@@ -186,7 +186,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
           <select
             value={draft.publisherRole}
             onChange={(e) => onUpdate({ publisherRole: e.target.value as PublisherRole })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
           >
             {(['owner', 'agent', 'developer'] as PublisherRole[]).map((r) => (
               <option key={r} value={r}>{PUBLISHER_ROLE_LABELS_FA[r]}</option>
@@ -201,7 +201,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
             aria-invalid={Boolean(errors.publisherName)}
             value={draft.publisherName}
             onChange={(e) => onUpdate({ publisherName: e.target.value })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
           />
           {errors.publisherName && <span role="alert" className="text-[#B3261E] text-[10.5px] block mt-0.5">{errors.publisherName}</span>}
         </div>
@@ -214,7 +214,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
             value={draft.publisherPhone}
             onChange={(e) => onUpdate({ publisherPhone: e.target.value })}
             placeholder="09120000000"
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] tabular-nums"
           />
           {errors.publisherPhone && <span role="alert" className="text-[#B3261E] text-[10.5px] block mt-0.5">{errors.publisherPhone}</span>}
         </div>
@@ -233,7 +233,7 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
         </div>
       )}
 
-      <label className="flex items-center gap-2 p-3 rounded-[9px] bg-[var(--color-bg-muted)] dark:bg-slate-800 cursor-pointer font-bold">
+      <label className="flex items-center gap-2 p-3 rounded-[9px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] cursor-pointer font-bold">
         <input
           type="checkbox"
           aria-invalid={Boolean(errors.agreeToVerification)}

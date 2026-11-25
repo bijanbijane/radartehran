@@ -181,7 +181,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   type="button"
                   onClick={() => onToggleSave(record)}
                   className={`py-2 px-2.5 rounded-[9px] border font-bold flex items-center justify-center gap-1 cursor-pointer ${
-                    isSaved ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'
+                    isSaved ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]'
                   }`}
                 >
                   <Bookmark className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   type="button"
                   onClick={() => onToggleCompare(listing.listingId)}
                   className={`py-2 px-2.5 rounded-[9px] border font-bold flex items-center justify-center gap-1 cursor-pointer ${
-                    isCompared ? 'bg-[var(--color-brand-600)] border-[var(--color-brand-600)] text-white' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'
+                    isCompared ? 'bg-[var(--color-brand-600)] border-[var(--color-brand-600)] text-white' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]'
                   }`}
                 >
                   <GitCompare className="w-3.5 h-3.5" />

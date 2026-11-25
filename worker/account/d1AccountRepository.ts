@@ -3,6 +3,11 @@
  * @description Worker-native D1 Account, Profile, Privacy Consent, Favorites, Saved Searches,
  * Sessions, and Data Requests repository operating strictly on `USER_DB` (never `RESEARCH_DB`).
  */
+import {
+  mapConsentRevocationJobRow,
+  type ResearchConsentRevocationJobRecord,
+  type ResearchConsentRevocationStatus,
+} from '../research/researchConsentBarrier';
 import type { D1Database } from '../types';
 
 export interface D1UserProfile {
@@ -29,6 +34,8 @@ export interface D1UserPrivacyConsent {
   readonly grantedAtIso: string | null;
   readonly revokedAtIso: string | null;
   readonly updatedAtIso: string;
+  readonly revocationJobId?: string | null;
+  readonly revocationStatus?: ResearchConsentRevocationStatus | null;
 }
 
 export interface D1UserSession {
@@ -223,12 +230,13 @@ export async function updateUserPrivacyConsentInD1(
   const nextConsentRevision = (current.consentRevision || 0) + 1;
   const consentSource = (params.consentSource ?? 'account_settings').trim().slice(0, 64);
 
+  const isRevokingResearchConsent = !nextResearch && current.researchAnalyticsConsent;
   let grantedAtIso = current.grantedAtIso;
   let revokedAtIso = current.revokedAtIso;
   if (nextResearch && !current.researchAnalyticsConsent) {
     grantedAtIso = nowIso;
     revokedAtIso = null;
-  } else if (!nextResearch && current.researchAnalyticsConsent) {
+  } else if (isRevokingResearchConsent) {
     revokedAtIso = nowIso;
   }
 
@@ -253,7 +261,8 @@ export async function updateUserPrivacyConsentInD1(
       nowIso,
     );
 
-  const auditId = `caud_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const nowMs = Date.parse(nowIso) || Date.now();
+  const auditId = `caud_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
   const auditStmt = userDb
     .prepare(
       `INSERT INTO user_privacy_consent_audit (
@@ -274,7 +283,26 @@ export async function updateUserPrivacyConsentInD1(
       nowIso,
     );
 
-  const results = await userDb.batch([upsertStmt, auditStmt]);
+  const batchStmts = [upsertStmt, auditStmt];
+  let revocationJobId: string | null = null;
+  let revocationStatus: ResearchConsentRevocationStatus | null = null;
+
+  if (isRevokingResearchConsent) {
+    revocationJobId = `revc_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
+    revocationStatus = 'DRAINING_PERMITS';
+    const revocationJobStmt = userDb
+      .prepare(
+        `INSERT INTO research_consent_revocation_jobs (
+          revocation_id, uid, revoked_consent_revision, new_consent_revision,
+          status, erased_events_count, receipt_ids_json,
+          created_at_iso, updated_at_iso, completed_at_iso
+        ) VALUES (?1, ?2, ?3, ?4, 'DRAINING_PERMITS', 0, '[]', ?5, ?6, NULL)`,
+      )
+      .bind(revocationJobId, params.uid, current.consentRevision, nextConsentRevision, nowIso, nowIso);
+    batchStmts.push(revocationJobStmt);
+  }
+
+  const results = await userDb.batch(batchStmts);
   if (results.some((r) => !r.success)) {
     throw new Error('PRIVACY_CONSENT_WRITE_FAILED');
   }
@@ -290,7 +318,43 @@ export async function updateUserPrivacyConsentInD1(
     grantedAtIso,
     revokedAtIso,
     updatedAtIso: nowIso,
+    revocationJobId,
+    revocationStatus,
   };
+}
+
+export async function getResearchConsentRevocationJobFromD1(
+  userDb: D1Database,
+  revocationId: string,
+): Promise<ResearchConsentRevocationJobRecord | null> {
+  const row = await userDb
+    .prepare('SELECT * FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
+    .bind(revocationId)
+    .first<Record<string, unknown>>();
+  return row ? mapConsentRevocationJobRow(row) : null;
+}
+
+export async function listPendingResearchConsentRevocationsFromD1(
+  userDb: D1Database,
+  uid?: string,
+): Promise<ResearchConsentRevocationJobRecord[]> {
+  const res = uid
+    ? await userDb
+        .prepare(
+          `SELECT * FROM research_consent_revocation_jobs
+           WHERE uid = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
+           ORDER BY created_at_iso ASC LIMIT 25`,
+        )
+        .bind(uid)
+        .all<Record<string, unknown>>()
+    : await userDb
+        .prepare(
+          `SELECT * FROM research_consent_revocation_jobs
+           WHERE status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
+           ORDER BY created_at_iso ASC LIMIT 50`,
+        )
+        .all<Record<string, unknown>>();
+  return (res.results ?? []).map(mapConsentRevocationJobRow);
 }
 
 export async function listUserSessionsFromD1(userDb: D1Database, uid: string): Promise<D1UserSession[]> {

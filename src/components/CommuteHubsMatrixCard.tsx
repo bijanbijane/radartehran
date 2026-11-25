@@ -79,7 +79,7 @@ export function CommuteHubsMatrixCard({
         className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col gap-1.5 ${
           isSelected
             ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-2xs'
-            : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300'
+            : 'border-slate-200/80 dark:border-[var(--color-border-subtle)] bg-slate-50/70 dark:bg-[var(--color-bg-canvas)] hover:bg-white dark:hover:bg-[var(--color-bg-elevated)] hover:border-slate-300'
         }`}
       >
         <div className="flex items-center justify-between gap-1">
@@ -87,11 +87,11 @@ export function CommuteHubsMatrixCard({
             <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-slate-400'}`} />
             <span className="truncate">{hub.name}</span>
           </span>
-          <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
+          <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
             {toPersianNum(hub.distKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'}
           </span>
         </div>
-        <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-400 tabular-nums pt-1 border-t border-slate-200/60 dark:border-slate-800">
+        <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-[var(--color-text-muted)] tabular-nums pt-1 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)]">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
             <span>صبح: {toPersianNum(hub.morningMin)} دقیقه</span>
@@ -103,8 +103,8 @@ export function CommuteHubsMatrixCard({
   };
 
   return (
-    <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+    <div className="apple-grouped-card dark:bg-[var(--color-bg-surface)] dark:border-[var(--color-border-subtle)] p-3.5 space-y-2.5 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-2">
         <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
           <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>فاصله، مترو و زمان تردد به قطب‌های کاری</span>
@@ -119,7 +119,7 @@ export function CommuteHubsMatrixCard({
             );
           })()}
           {selectedWorkHubId !== 'none' && (
-            <button type="button" onClick={() => onSelectWorkHubId('none')} className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 cursor-pointer transition">
+            <button type="button" onClick={() => onSelectWorkHubId('none')} className="text-[10.5px] font-bold text-slate-500 dark:text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer transition">
               حذف خط مسیر
             </button>
           )}
@@ -127,18 +127,18 @@ export function CommuteHubsMatrixCard({
       </div>
 
       {spatialReport && (
-        <div className="bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 space-y-2">
+        <div className="bg-slate-50/90 dark:bg-[var(--color-bg-canvas)] border border-slate-200/80 dark:border-[var(--color-border-subtle)] rounded-xl p-2.5 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
               <TrainFront className="w-3.5 h-3.5 shrink-0" style={{ color: spatialReport.nearestMetroColor }} />
               <span className="truncate">{spatialReport.nearestMetroLineName}</span>
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-[10.5px] font-bold text-slate-800 dark:text-[var(--color-text-primary)] tabular-nums">
               ~{toPersianNum(spatialReport.nearestMetroDistKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'} ({toPersianNum(spatialReport.walkingMinutesEstimate)} {radarLocale === 'en' ? 'min walk' : 'دقیقه پیاده'})
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-200/60 dark:border-[var(--color-border-subtle)]">
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold border ${
                 spatialReport.trafficZoneStatus === 'inside_core'
@@ -159,8 +159,8 @@ export function CommuteHubsMatrixCard({
                 aria-label={overlayState.showMetroLines ? 'مخفی‌سازی خطوط مترو در نقشه' : 'نمایش خطوط مترو روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showMetroLines
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    ? 'bg-[var(--color-brand-600)] text-white border-transparent'
+                    : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-100'
                 }`}
               >
                 {radarLocale === 'en' ? 'Metro Lines' : 'خطوط مترو نقشه'}
@@ -171,8 +171,8 @@ export function CommuteHubsMatrixCard({
                 aria-label={overlayState.showTrafficZones ? 'مخفی‌سازی محدوده طرح ترافیک در نقشه' : 'نمایش محدوده طرح ترافیک روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showTrafficZones
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    ? 'bg-[var(--color-brand-600)] text-white border-transparent'
+                    : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-100'
                 }`}
               >
                 {radarLocale === 'en' ? 'Traffic Zone' : 'محدوده طرح ترافیک'}
@@ -185,7 +185,7 @@ export function CommuteHubsMatrixCard({
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     overlayState.showCommuteIsochrones
                       ? 'bg-[var(--color-brand-600)] text-white border-emerald-600'
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-100'
                   }`}
                 >
                   {radarLocale === 'en' ? 'Radial Work Hub Rings' : 'نمایش محدوده‌های شعاعی محل کار'}
@@ -193,7 +193,7 @@ export function CommuteHubsMatrixCard({
               )}
             </div>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">
             {radarLocale === 'en'
               ? 'These rings show straight-line radial distance and do not represent actual travel time.'
               : 'این محدوده‌ها فاصله مستقیم را نشان می‌دهند و بیانگر زمان واقعی سفر نیستند.'}

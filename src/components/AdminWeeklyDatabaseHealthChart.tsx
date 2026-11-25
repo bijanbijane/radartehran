@@ -26,15 +26,15 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
 
   return (
     <div className="space-y-3">
-      <div data-testid="admin-weekly-db-health-chart" className="border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/70 dark:bg-slate-800/60 p-3.5 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+      <div data-testid="admin-weekly-db-health-chart" className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl bg-slate-50/70 dark:bg-[var(--color-bg-muted)] p-3.5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-[var(--color-border-strong)] pb-2.5">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+              <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-xs">
                 نمودار هفتگی داکیومنت‌های نامعتبر و سلامت کلی دیتابیس (۷ روز اخیر)
               </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
+              <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                 روند روزانه اسناد نامعتبر در Firestore · واحد ممیزی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(sampleAuditUnitPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleAuditUnitPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(80, areaUnit)}: {toPersianNum(sample80mTotalMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample80mTotalMillions, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleMonthlyRentMillions, intlCurrency, locale)})` : ''}
               </div>
             </div>
@@ -45,7 +45,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
               {isHealthy ? <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /> : <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />}
               <span>سلامت فعلی دیتابیس: {toPersianNum(overallHealthPercent)}٪ ({isHealthy ? 'سالم' : 'نیازمند بررسی'})</span>
             </span>
-            <span className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold">
+            <span className="px-2 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-[10px] font-bold">
               مجموع خطاهای هفته: {toPersianNum(weekTotalInvalid)} سند
             </span>
           </div>
@@ -122,15 +122,15 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
 
       {/* بازرس مراجع یتیم (Orphaned hoodId) و موتور اصلاح خودکار (Auto-Sanitize) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div data-testid="admin-orphaned-refs-section" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-          <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+        <div data-testid="admin-orphaned-refs-section" className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl overflow-hidden bg-white dark:bg-[var(--color-bg-surface)]">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3 py-2 border-b border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-between">
+            <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-xs flex items-center gap-1.5">
               <Link2Off className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>بازرس کلیدهای خارجی و مراجع یتیم ({toPersianNum(orphanedIssues.length)} مورد)</span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">تطبیق hoodId با جدول محله‌ها</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">تطبیق hoodId با جدول محله‌ها</span>
           </div>
-          <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
             {orphanedIssues.length === 0 ? (
               <div className="py-4 px-3 text-center text-emerald-700 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1.5 text-xs">
                 <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
@@ -141,10 +141,10 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
                 <div key={orp.id} className="px-3 py-2 flex items-center justify-between gap-2 text-[11px] hover:bg-amber-50/40 dark:hover:bg-amber-950/30">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5">
-                      <code className="font-mono font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      <code className="font-mono font-bold text-slate-700 dark:text-[var(--color-text-primary)] bg-slate-100 dark:bg-[var(--color-bg-muted)] px-1.5 py-0.5 rounded">
                         {orp.collection}/{orp.docId}
                       </code>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">{orp.titleOrLabel}</span>
+                      <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{orp.titleOrLabel}</span>
                     </div>
                     <div className="text-[10px] text-amber-800 dark:text-amber-300">{orp.reasonFa}</div>
                   </div>
@@ -156,15 +156,15 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
             )}
           </div>
         </div>
-        <div data-testid="admin-auto-sanitize-section" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-          <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+        <div data-testid="admin-auto-sanitize-section" className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl overflow-hidden bg-white dark:bg-[var(--color-bg-surface)]">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3 py-2 border-b border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-between">
+            <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-xs flex items-center gap-1.5">
               <Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>تعمیر خودکار اسناد معیوب (Auto-Sanitize) ({toPersianNum(sanitizePreviews.length)} سند)</span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">اصلاح اعداد منفی و فیلدهای ناقص</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">اصلاح اعداد منفی و فیلدهای ناقص</span>
           </div>
-          <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
             {sanitizePreviews.length === 0 ? (
               <div className="py-4 px-3 text-center text-slate-400 text-xs">
                 سند معیوبی جهت اعمال اصلاح خودکار در صف قرار ندارد.
@@ -173,7 +173,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
               sanitizePreviews.map((item) => (
                 <div key={`${item.collection}:${item.docId}`} className="px-3 py-2 space-y-1.5 text-[11px] hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30">
                   <div className="flex items-center justify-between gap-2">
-                    <code className="font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded" dir="ltr">
+                    <code className="font-mono font-bold text-slate-800 dark:text-[var(--color-text-primary)] bg-slate-100 dark:bg-[var(--color-bg-muted)] px-1.5 py-0.5 rounded" dir="ltr">
                       {item.collection}/{item.docId}
                     </code>
                     <div className="flex items-center gap-1">
@@ -197,7 +197,7 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
                       )}
                     </div>
                   </div>
-                  <ul className="text-[10px] text-slate-600 dark:text-slate-300 space-y-0.5 list-disc list-inside">
+                  <ul className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)] space-y-0.5 list-disc list-inside">
                     {item.appliedFixesFa.map((fix, idx) => (
                       <li key={idx}>{fix}</li>
                     ))}
@@ -209,19 +209,19 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
         </div>
       </div>
       {/* بازرس یکپارچگی رابطه‌ای، نسبت اقتصادی رهن/خرید، اسناد تکراری و قواعد امنیتی Firestore */}
-      <div data-testid="admin-relational-integrity-section" className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-        <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
-          <div className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+      <div data-testid="admin-relational-integrity-section" className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl overflow-hidden bg-white dark:bg-[var(--color-bg-surface)]">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3 py-2 border-b border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
+          <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-xs flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>
               بازرس یکپارچگی رابطه‌ای، اسناد تکراری (Shadowed Overrides) و انطباق با firestore.rules ({toPersianNum(integrityIssues.length)} مورد)
             </span>
           </div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+          <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">
             بررسی تداخل hood_X/X، نسبت رهن به خرید، انقضای حامیان و فرمت موبایل
           </span>
         </div>
-        <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
           {integrityIssues.length === 0 ? (
             <div className="py-3.5 px-3 text-center text-emerald-700 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1.5 text-xs">
               <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
@@ -229,21 +229,21 @@ export function AdminWeeklyDatabaseHealthChart({ auditReport, orphanedIssues = [
             </div>
           ) : (
             integrityIssues.map((item) => (
-              <div key={item.id} className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <div key={item.id} className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]">
                 <div className="space-y-0.5">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[10px]">
                       {item.category}
                     </span>
-                    <code className="font-mono font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded" dir="ltr">
+                    <code className="font-mono font-bold text-slate-700 dark:text-[var(--color-text-primary)] bg-slate-100 dark:bg-[var(--color-bg-muted)] px-1.5 py-0.5 rounded" dir="ltr">
                       {item.collection}/{item.docId}
                     </code>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{item.summaryFa}</span>
+                    <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{item.summaryFa}</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 dark:text-slate-300">{item.detailFa}</div>
+                  <div className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)]">{item.detailFa}</div>
                 </div>
                 {item.hoodId !== null && (
-                  <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono text-[10px]" dir="ltr">
+                  <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-primary)] font-mono text-[10px]" dir="ltr">
                     hoodId={item.hoodId}
                   </code>
                 )}

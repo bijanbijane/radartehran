@@ -111,9 +111,9 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
   return (
     <div
       data-testid="property-map-pane"
-      className="rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 overflow-hidden flex flex-col h-[460px] lg:h-[620px] lg:sticky lg:top-4"
+      className="rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] overflow-hidden flex flex-col h-[460px] lg:h-[620px] lg:sticky lg:top-4"
     >
-      <div className="px-3.5 py-2.5 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div className="px-3.5 py-2.5 border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 font-bold text-[var(--color-text-primary)] dark:text-white">
           <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>نقشه همگام فایل‌ها ({toPersianNum(projection.mappedCount)} موقعیت روی نقشه)</span>
@@ -127,7 +127,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
           <button
             type="button"
             onClick={onOpenFullMap}
-            className="px-2.5 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800 flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded-[7px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:bg-[var(--color-bg-muted)] dark:hover:bg-[var(--color-bg-elevated)] flex items-center gap-1 cursor-pointer"
           >
             <Compass className="w-3.5 h-3.5" />
             <span>نقشه کامل محله ({selectedHoodName})</span>
@@ -136,7 +136,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
       </div>
 
       {/* Interactive coordinate canvas */}
-      <div className="relative flex-1 bg-[#EEF3F0] dark:bg-slate-950 overflow-hidden select-none">
+      <div className="relative flex-1 bg-[#EEF3F0] dark:bg-[var(--color-bg-canvas)] overflow-hidden select-none">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full opacity-35">
           <defs>
             <pattern id="prop-grid" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -178,7 +178,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
                     ? 'bg-[var(--color-text-primary)] text-white border-white scale-110'
                     : cl.isCluster
                     ? 'bg-[var(--color-brand-600)] text-white border-white'
-                    : 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white border-[var(--color-brand-600)]/60'
+                    : 'bg-white dark:bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] dark:text-white border-[var(--color-brand-600)]/60'
                 }`}
               >
                 {cl.isCluster
@@ -199,7 +199,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
             type="button"
             onClick={() => handleZoom(1)}
             aria-label="بزرگنمایی نقشه"
-            className="w-8 h-8 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-sm cursor-pointer"
+            className="w-8 h-8 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-sm cursor-pointer"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -207,7 +207,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
             type="button"
             onClick={() => handleZoom(-1)}
             aria-label="کوچک‌نمایی نقشه"
-            className="w-8 h-8 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-sm cursor-pointer"
+            className="w-8 h-8 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-sm cursor-pointer"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -217,7 +217,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               data-testid="map-pan-north-btn"
               onClick={() => handlePan('north')}
               aria-label="حرکت به شمال"
-              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
             >
               <ArrowUp className="w-3.5 h-3.5" />
             </button>
@@ -226,7 +226,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               data-testid="map-pan-south-btn"
               onClick={() => handlePan('south')}
               aria-label="حرکت به جنوب"
-              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
             >
               <ArrowDown className="w-3.5 h-3.5" />
             </button>
@@ -235,7 +235,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               data-testid="map-pan-east-btn"
               onClick={() => handlePan('east')}
               aria-label="حرکت به شرق"
-              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -244,7 +244,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               data-testid="map-pan-west-btn"
               onClick={() => handlePan('west')}
               aria-label="حرکت به غرب"
-              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-primary)] dark:text-white shadow-xs cursor-pointer"
             >
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -271,7 +271,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               <button
                 type="button"
                 onClick={onClearViewportBounds}
-                className="px-2.5 py-1.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] text-[11px] font-bold text-[#B3261E] cursor-pointer shadow-sm"
+                className="px-2.5 py-1.5 rounded-[8px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[11px] font-bold text-[#B3261E] cursor-pointer shadow-sm"
               >
                 حذف محدوده نقشه
               </button>
@@ -281,10 +281,10 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
 
         {/* Active Selected Cluster Preview Card */}
         {focusedCluster && (
-          <div className="absolute bottom-3 left-3 right-3 z-20 p-3 rounded-[10px] bg-white/95 dark:bg-slate-900/95 border border-[var(--color-border-subtle)] dark:border-slate-700 shadow-lg flex items-center justify-between gap-2 text-xs">
+          <div className="absolute bottom-3 left-3 right-3 z-20 p-3 rounded-[10px] bg-white/95 dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] shadow-lg flex items-center justify-between gap-2 text-xs">
             <div className="min-w-0">
               <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{focusedCluster.primaryItem.listing.title}</div>
-              <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">
+              <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">
                 {focusedCluster.primaryItem.property.hoodName} · {focusedCluster.precision === 'approximate' ? `موقعیت تقریبی (شعاع ~${toPersianNum(focusedCluster.privacyRadiusMeters)} متر)` : 'سطح محله'}
               </div>
             </div>
@@ -299,7 +299,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
         )}
       </div>
 
-      <div className="px-3.5 py-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 bg-[#F8F9FA] dark:bg-slate-950 text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400 flex items-center gap-1.5">
+      <div className="px-3.5 py-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[#F8F9FA] dark:bg-[var(--color-bg-canvas)] text-[10.5px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] flex items-center gap-1.5">
         <Shield className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0" />
         <span>برای حفظ حریم خصوصی مالکان، موقعیت فایل‌ها با محدوده تقریبی محله و شعاع حفاظتی نمایش داده می‌شود.</span>
       </div>

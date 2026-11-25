@@ -93,12 +93,12 @@ export function CasperNegotiationPlaybookModal({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none"
+        className="w-full max-w-xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-[var(--color-border-subtle)] pb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <Sparkles className="w-5 h-5" />
@@ -107,7 +107,7 @@ export function CasperNegotiationPlaybookModal({
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 راهنمای چانه‌زنی پای میز نشست
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
                 استدلال مستند فنی برای شکستن حباب قیمت آگهی در محله {hoodName}
               </p>
             </div>
@@ -116,7 +116,7 @@ export function CasperNegotiationPlaybookModal({
             type="button"
             onClick={onClose}
             aria-label="بستن پنجره چانه‌زنی"
-            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-[var(--color-text-primary)] rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -124,7 +124,7 @@ export function CasperNegotiationPlaybookModal({
 
         {/* Pricing Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <span className="text-[10px] text-slate-400 block mb-0.5">قیمت اعلامی</span>
             <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
               {toPersianNum(totalAskingBillion)} م.م
@@ -132,7 +132,7 @@ export function CasperNegotiationPlaybookModal({
             <span className="text-[10px] text-slate-400 block mt-0.5">متری {toPersianNum(askingPricePerSqm)} م</span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <span className="text-[10px] text-slate-400 block mb-0.5">کف معامله واقعی</span>
             <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
               {toPersianNum(totalDealBillion)} م.م
@@ -158,9 +158,9 @@ export function CasperNegotiationPlaybookModal({
         </div>
 
         {/* Script Preview Box */}
-        <div className="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
+        <div className="relative rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50 dark:bg-[var(--color-bg-canvas)] p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-emerald-500" />
               متن آماده برای قرائت یا ارسال به مشاور/مالک:
             </span>
@@ -168,7 +168,7 @@ export function CasperNegotiationPlaybookModal({
               سود بالقوه چانه‌زنی: {toPersianNum(savingsMillion)} میلیون تومان
             </span>
           </div>
-          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 selection:bg-amber-200">
+          <p className="text-xs text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-line font-medium bg-white dark:bg-[var(--color-bg-surface)] p-3 rounded-lg border border-slate-200 dark:border-[var(--color-border-subtle)] selection:bg-amber-200">
             {scriptText}
           </p>
         </div>
@@ -184,7 +184,7 @@ export function CasperNegotiationPlaybookModal({
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm ${
               copied
                 ? 'bg-[var(--color-brand-600)] text-white'
-                : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
+                : 'bg-[var(--color-brand-600)] text-white hover:opacity-90'
             }`}
           >
             {copied ? (

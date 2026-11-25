@@ -156,7 +156,7 @@ export const COLOR_SYSTEM_ACCEPTANCE_CRITERIA: readonly { id: string; titleFa: s
 
 export const RADAR_BRAND_COLOR_TOKENS = {
   ...BRAND_PALETTE,
-  'brand-500': '#228B7E',
+  'brand-500': BRAND_PALETTE.brand500,
   'brand-600': BRAND_PALETTE.brand600,
   'brand-700': BRAND_PALETTE.brand700,
   emerald600: BRAND_PALETTE.brand600,

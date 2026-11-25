@@ -61,19 +61,19 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
   return (
     <div className="space-y-4" dir="rtl">
       {/* Title & Status */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
             <Activity className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
               <span>آزمون استرس ۱٬۰۰۰ سناریوی قیمت و ریسک فروش اضطراری</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               شبیه‌سازی مونت‌کارلو (مدل پرش-انتشار مرتون) با تفکیک ریسک کاغذی از کسر ۱۲٪ فروش فوری
             </p>
           </div>
@@ -85,7 +85,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
             type="button"
             onClick={() => setSeedOffset((prev) => prev + 1)}
             aria-label="اجرای مجدد شبیه‌سازی ۱۰۰۰ سناریو"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 text-slate-700 dark:text-[var(--color-text-secondary)] transition cursor-pointer"
           >
             <RefreshCw className="w-3 h-3" />
             <span>شبیه‌سازی مجدد</span>
@@ -97,10 +97,10 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
       </div>
 
       {/* Interactive Controls Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
         {/* Horizon Toggle */}
         <div className="space-y-1">
-          <div className="text-xs font-bold text-slate-700 dark:text-slate-200">افق شبیه‌سازی سرمایه‌گذاری:</div>
+          <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-primary)]">افق شبیه‌سازی سرمایه‌گذاری:</div>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -108,7 +108,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
               className={`flex-1 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 horizonMonths === 12
                   ? 'bg-purple-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                  : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]'
               }`}
             >
               افق ۱۲ ماهه (کوتاه‌مدت)
@@ -119,7 +119,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
               className={`flex-1 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 horizonMonths === 36
                   ? 'bg-purple-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                  : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]'
               }`}
             >
               افق ۳۶ ماهه (میان‌مدت)
@@ -130,7 +130,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
         {/* Jump Intensity Slider */}
         <div className="space-y-1">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+            <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1">
               <Sliders className="w-3.5 h-3.5 text-purple-500" />
               <span>شدت شوک ارزی/جهش قیمت (λ):</span>
             </span>
@@ -146,14 +146,14 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
             value={jumpIntensity}
             onChange={(e) => setJumpIntensity(Number(e.target.value))}
             aria-label="شدت جهش ارزی"
-            className="w-full accent-purple-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+            className="w-full accent-purple-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-[var(--color-bg-elevated)] rounded-lg"
           />
         </div>
       </div>
 
       {/* Key Metric Pillars Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">میانه بازده واقعی (تعدیل تورم):</div>
           <div className={`text-sm font-bold mt-0.5 ${report.metrics.realMedianReturnPct >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
             {report.metrics.realMedianReturnPct >= 0 ? '+' : ''}{toPersianNum(report.metrics.realMedianReturnPct)}٪
@@ -161,7 +161,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           <div className="text-[9px] text-slate-400">اسمی: {toPersianNum(report.metrics.nominalMedianReturnPct)}٪</div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">VaR کاغذی در برابر VaR نقدشوندگی:</div>
           <div className="text-sm font-bold text-rose-600 dark:text-rose-400 mt-0.5" data-testid="stage2-illiquid-var-value">
             -{toPersianNum(report.metrics.var95RealPct)}٪ / -{toPersianNum(report.metrics.illiquidityAdjustedVaR95RealPct)}٪
@@ -169,7 +169,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           <div className="text-[9px] text-slate-400">خروج فوری {toPersianNum(targetSqm)}م: {toPersianNum(illiquidVarCapitalMln)} م.ت{varFx}</div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">زیان مشروط دم (CVaR 95%):</div>
           <div className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-0.5">
             -{toPersianNum(report.metrics.cvar95RealPct)}٪
@@ -177,7 +177,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           <div className="text-[9px] text-slate-400">نسبت عدم تقارن دم: {toPersianNum(report.metrics.tailAsymmetryRatio)}x</div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">ضریب سورتینو (Sortino):</div>
           <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
             {toPersianNum(report.metrics.sortinoRatio)}
@@ -187,8 +187,8 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
       </div>
 
       {/* Histogram Density Distribution Visualization */}
-      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
+      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] space-y-2.5">
+        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
           <span className="flex items-center gap-1.5">
             <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
             <span>توزیع فراوانی احتمالاتی بازده در ۱٬۰۰۰ سناریو</span>
@@ -206,7 +206,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
 
             return (
               <div key={idx} className="flex flex-col items-center gap-1 h-full justify-end">
-                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                <span className="text-[9px] font-bold text-slate-500 dark:text-[var(--color-text-muted)]">
                   {toPersianNum(bucket.densityPercent)}٪
                 </span>
                 <div
@@ -217,7 +217,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
                   }`}
                   style={{ height: `${heightPercent}%` }}
                 />
-                <span className="text-[8px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-full text-center">
+                <span className="text-[8px] font-bold text-slate-600 dark:text-[var(--color-text-muted)] truncate max-w-full text-center">
                   {toPersianNum(bucket.nominalReturnPercent)}٪
                 </span>
               </div>
@@ -225,7 +225,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           })}
         </div>
 
-        <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-200/60 dark:border-slate-700/60 pt-2">
+        <p className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed border-t border-slate-200/60 dark:border-[var(--color-border-strong)] pt-2">
           {report.metrics.strategicAdviceFa}
         </p>
       </div>

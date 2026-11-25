@@ -49,7 +49,7 @@ const KIND_BADGE_META: Record<Exclude<ProfileContributionKind, 'all'>, { labelFa
   },
   comment: {
     labelFa: 'پاسخ و دیدگاه',
-    className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+    className: 'bg-slate-100 text-slate-700 dark:bg-[var(--color-bg-muted)] dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)]',
     Icon: FileText,
   },
 };
@@ -67,7 +67,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
   onSelectContribution,
 }) => {
   return (
-    <div className="space-y-3 pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800" data-testid="community-profile-timeline">
+    <div className="space-y-3 pt-3 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)]" data-testid="community-profile-timeline">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold text-[var(--color-text-primary)] dark:text-white">Timeline مشارکت‌های عمومی کاربر</h3>
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="فیلتر نوع مشارکت">
@@ -82,7 +82,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
               className={`px-2.5 py-1 rounded-[8px] text-xs font-bold cursor-pointer transition ${
                 activeKind === tab.id
                   ? 'bg-[var(--color-brand-600)] text-white'
-                  : 'bg-[#F8F9FA] dark:bg-slate-800 text-[var(--color-text-secondary)] dark:text-slate-300 hover:border-[var(--color-brand-600)]'
+                  : 'bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] hover:border-[var(--color-brand-600)]'
               }`}
             >
               {tab.labelFa}
@@ -94,7 +94,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {!contributionsVisible && (
         <div
           data-testid="profile-timeline-hidden-privacy"
-          className="p-3.5 rounded-[10px] bg-slate-50 dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs text-[var(--color-text-muted)] dark:text-slate-400 font-bold"
+          className="p-3.5 rounded-[10px] bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] font-bold"
         >
           این کاربر نمایش فهرست مشارکت‌های خود را در تنظیمات حریم خصوصی غیرفعال کرده است.
         </div>
@@ -113,7 +113,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {contributionsVisible && loading && (
         <div
           data-testid="profile-timeline-loading"
-          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-xs font-bold text-[var(--color-text-muted)] dark:text-slate-400"
+          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] text-center text-xs font-bold text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]"
         >
           در حال دریافت تاریخچه مشارکت‌های کاربر از سرور...
         </div>
@@ -122,7 +122,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {contributionsVisible && !loading && !errorFa && items.length === 0 && (
         <div
           data-testid="profile-timeline-empty"
-          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-xs text-[var(--color-text-muted)] dark:text-slate-400"
+          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] text-center text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]"
         >
           مشارکت عمومی قابل‌نمایشی در این دسته‌بندی ثبت نشده است.
         </div>
@@ -137,14 +137,14 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
               <article
                 key={`${item.kind}:${item.id}`}
                 data-testid={`profile-timeline-item-${item.id}`}
-                className="p-3 rounded-[11px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-1.5"
+                className="p-3 rounded-[11px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-1.5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] border text-xs font-bold ${meta.className}`}>
                     <Icon className="w-3 h-3 shrink-0" />
                     <span>{meta.labelFa}</span>
                   </span>
-                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] tabular-nums">
                     {item.neighborhoodNameFa && <span>محله {item.neighborhoodNameFa}</span>}
                     {typeof item.helpfulCount === 'number' && item.helpfulCount > 0 && (
                       <span>{toPersianNum(item.helpfulCount)} مفید</span>
@@ -159,10 +159,10 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
                   <h4 className="font-bold text-xs text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h4>
                 )}
 
-                <p className="text-xs text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.excerptFa}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] leading-relaxed">{item.excerptFa}</p>
 
                 <div className="flex items-center justify-between gap-2 pt-1">
-                  <span className="text-xs font-mono text-[var(--color-text-muted)] dark:text-slate-400" dir="ltr">
+                  <span className="text-xs font-mono text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]" dir="ltr">
                     {item.createdAtIso.slice(0, 10)}
                   </span>
                   {onSelectContribution && (

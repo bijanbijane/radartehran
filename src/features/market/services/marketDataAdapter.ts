@@ -1,5 +1,6 @@
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { toPersianNum } from '../../../data/neighborhoods';
+import { formatPersianDeltaPercent } from '../../../utils/persianBidiFormat';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../../data/multiCityData';
 import {
   aggregateNeighborhoodMarketMetrics,
@@ -415,7 +416,7 @@ export function buildMarketSnapshotBundle(params: {
         makeMarketIndicatorValue(
           'period_change_pct',
           periodChangePct,
-          periodChangePct !== null ? `${periodChangePct > 0 ? '+' : ''}${toPersianNum(periodChangePct)}٪` : 'ناموجود برای این سطح',
+          periodChangePct !== null ? formatPersianDeltaPercent(periodChangePct) : 'ناموجود برای این سطح',
           geoScopeFa,
           periodLabelFa,
           slicedPoints.length,

@@ -154,7 +154,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
               className={`min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] border text-xs font-bold cursor-pointer ${
                 input.streetTier === m.tier
                   ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-fg)] dark:bg-emerald-950/50'
-                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)]'
+                  : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-secondary)]'
               }`}
             >
               {m.tier === 'luxury' ? 'پهنه اعیانی' : m.tier === 'balanced' ? 'بافت میانی' : 'پهنه اقتصادی'}
@@ -253,13 +253,13 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               {HEDONIC_RENOVATION_OPTIONS.map((opt) => (
-                <button key={opt.id} type="button" onClick={() => setFieldUser('renovationStatus', { renovationStatus: opt.id })} className={`p-2.5 rounded-[9px] border text-start cursor-pointer ${input.renovationStatus === opt.id ? 'bg-[#EAF3F0] dark:bg-emerald-950/50 border-[var(--color-brand-600)] text-[var(--color-brand-fg)] font-bold' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)]'}`}>
+                <button key={opt.id} type="button" onClick={() => setFieldUser('renovationStatus', { renovationStatus: opt.id })} className={`p-2.5 rounded-[9px] border text-start cursor-pointer ${input.renovationStatus === opt.id ? 'bg-[#EAF3F0] dark:bg-emerald-950/50 border-[var(--color-brand-600)] text-[var(--color-brand-fg)] font-bold' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-secondary)]'}`}>
                   <div className="font-bold">{opt.shortLabel}</div>
                   <div className="text-xs opacity-80 line-clamp-1">{opt.label}</div>
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap gap-4 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 font-bold">
+            <div className="flex flex-wrap gap-4 pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] font-bold">
               <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasParking} onChange={(e) => setFieldUser('amenities', { hasParking: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>پارکینگ سندی</span></label>
               <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasElevator} onChange={(e) => setFieldUser('amenities', { hasElevator: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>آسانسور</span></label>
               <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasStorage} onChange={(e) => setFieldUser('amenities', { hasStorage: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>انباری سندی</span></label>

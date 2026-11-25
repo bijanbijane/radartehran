@@ -139,15 +139,15 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
   const refBudgetText = formatMillionTomanAsIntlCurrency(150, intlCurrency, locale);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+    <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-3 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-strong)] pb-2.5">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <div>
-            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+            <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-sm">
               صفحه کنترل یکپارچه بک‌اند سازمانی (Unified Administrative Control Plane · Employees 74–80)
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+            <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               تفکیک صریح <code className="font-mono">0</code> از <code className="font-mono">NOT_CONFIGURED</code>، <code className="font-mono">UNKNOWN</code>، <code className="font-mono">STALE</code> و <code className="font-mono">DEGRADED</code> · معیار ارزیابی: {refBudgetText}
             </div>
           </div>
@@ -162,7 +162,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         {SECTIONS.map((sec) => {
           const active = activeSection === sec.id;
           return (
-            <button key={sec.id} type="button" onClick={() => setActiveSection(sec.id)} className={`p-2 rounded-xl text-right border transition cursor-pointer ${active ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100'}`}>
+            <button key={sec.id} type="button" onClick={() => setActiveSection(sec.id)} className={`p-2 rounded-xl text-right border transition cursor-pointer ${active ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-slate-50 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-primary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-100'}`}>
               <div className="truncate">{sec.labelFa}</div>
               <div className={`text-[10px] font-mono mt-0.5 ${active ? 'text-indigo-100' : 'text-slate-400'}`}>{sec.empLabel}</div>
             </button>
@@ -177,12 +177,12 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
           <span className="font-bold text-amber-900 dark:text-amber-200">آیا از اجرای این عملیات حساس مدیریتی (ثبت در Audit Trail تغییرناپذیر) اطمینان دارید؟</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => void executeConfirmedAction(confirmAction)} className="px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">تایید و اجرا</button>
-            <button type="button" onClick={() => setConfirmAction(null)} className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold cursor-pointer">انصراف</button>
+            <button type="button" onClick={() => setConfirmAction(null)} className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] font-bold cursor-pointer">انصراف</button>
           </div>
         </div>
       )}
 
-      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
         {activeSection === 'platform' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /><span>ماژول‌های ثبت‌شده پلتفرم (Employees 53–80): <strong>{toPersianNum(liveState.modulesCount)} ماژول</strong> · چرخه وابستگی راه‌اندازی: <strong>۰ (DAG Verified)</strong></span></div>
@@ -228,7 +228,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         {activeSection === 'reliability' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /><span>وضعیت آمادگی پلتفرم: <strong>{liveState.readiness?.readiness || 'READY'}</strong> · اصلاح خودکار اختلاف مالی/مالکیت/Legal Hold: <strong>مسدود (نیازمند تایید دستی)</strong></span></div>
-            <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-mono text-[10px]">SLO External KMS: INSUFFICIENT_MEASUREMENT_DATA</span>
+            <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] font-mono text-[10px]">SLO External KMS: INSUFFICIENT_MEASUREMENT_DATA</span>
           </div>
         )}
       </div>

@@ -101,7 +101,7 @@ export function ListingMediaGallery({
               key={idx}
               type="button"
               onClick={() => setSelectedImageUrl(url)}
-              className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-emerald-500 w-20 h-16 shrink-0 cursor-pointer"
+              className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-[var(--color-border-strong)] hover:border-emerald-500 w-20 h-16 shrink-0 cursor-pointer"
               title="مشاهده تصویر در اندازه کامل از آبجکت استوریج"
             >
               <img
@@ -177,17 +177,17 @@ export function ListingMediaGallery({
               ref={lightboxRef}
               tabIndex={-1}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-3 space-y-2 shadow-2xl"
+              className="bg-white dark:bg-[var(--color-bg-surface)] border dark:border-[var(--color-border-subtle)] rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-3 space-y-2 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-[var(--color-text-primary)] truncate">
                   {listing.title} — فایل آبجکت استوریج
                 </span>
                 <button
                   type="button"
                   aria-label="بستن پیش‌نمایش تصویر"
                   onClick={() => setSelectedImageUrl(null)}
-                  className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
+                  className="p-1 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>

@@ -1,4 +1,4 @@
-/** @file src/components/common/RadarCard.tsx — RT-UI-COMP-001 Card primitive (info, metric, action) */
+/** @file src/components/common/RadarCard.tsx — Accessible Card primitive unified with design system tokens (F-08) */
 import React from 'react';
 import { cardSurface, focusRing, textPrimary, textMuted } from '../../design-system/classMaps';
 
@@ -32,10 +32,10 @@ export const RadarCard: React.FC<RadarCardProps> = ({
   const inner = (
     <>
       {(title || subtitle) && (
-        <header className="space-y-0.5">
+        <div className="space-y-0.5">
           {title && <h3 className={`text-sm font-bold ${textPrimary}`}>{title}</h3>}
           {subtitle && <p className={`text-xs ${textMuted}`}>{subtitle}</p>}
-        </header>
+        </div>
       )}
       <div className={density}>{children}</div>
     </>
@@ -44,13 +44,20 @@ export const RadarCard: React.FC<RadarCardProps> = ({
   const base = `${cardSurface} ${PADDING[padding]} ${className}`;
   if (interactive && onClick) {
     return (
-      <button
-        type="button"
+      <article
+        role="button"
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
         className={`${base} w-full text-start cursor-pointer transition-colors hover:bg-[var(--color-bg-muted)] ${focusRing}`}
       >
         {inner}
-      </button>
+      </article>
     );
   }
   return <article className={base}>{inner}</article>;

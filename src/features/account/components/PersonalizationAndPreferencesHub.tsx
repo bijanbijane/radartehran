@@ -56,16 +56,16 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
   return (
     <section
       data-testid="personalization-and-preferences-hub"
-      className="p-4 sm:p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-5 text-xs"
+      className="p-4 sm:p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-5 text-sm"
     >
       <div className="space-y-3" data-testid="unified-saved-items-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <strong className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <strong className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Bookmark className="w-4 h-4 text-[var(--color-brand-fg)]" />
               <span>ذخیره‌های من (نگهداری یکپارچه املاک، محله‌ها، جست‌وجوها، نقشه‌ها و مطالب)</span>
             </strong>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
               ذخیره‌سازی بر پایه شناسه پایدار موجودیت · پشتیبانی از بازگردانی فوری (Undo)، حذف گروهی و نمایش وضعیت آگهی‌های منقضی
             </p>
           </div>
@@ -74,7 +74,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
               type="button"
               data-testid="btn-bulk-delete-saved"
               onClick={handleBulkDelete}
-              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold flex items-center gap-1 cursor-pointer"
+              className="min-h-[44px] md:min-h-[34px] px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold flex items-center gap-1 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>حذف گروهی ({formatValueWithNumberPreference(selectedIds.length, prefs.display.numberFormat)} مورد)</span>
@@ -85,7 +85,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         {undoBannerFa && (
           <div data-testid="saved-item-undo-banner" className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between gap-2">
             <span className="font-bold text-amber-900 dark:text-amber-200">{undoBannerFa}</span>
-            <button type="button" data-testid="btn-undo-removed-saved-item" onClick={handleUndoRemove} className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold flex items-center gap-1 cursor-pointer">
+            <button type="button" data-testid="btn-undo-removed-saved-item" onClick={handleUndoRemove} className="min-h-[44px] md:min-h-[32px] px-3 py-1 rounded-lg bg-amber-600 text-white font-bold flex items-center gap-1 cursor-pointer">
               <RotateCcw className="w-3.5 h-3.5" /><span>بازگردانی</span>
             </button>
           </div>
@@ -106,7 +106,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
               aria-selected={filterKind === t.id}
               data-testid={`saved-filter-tab-${t.id.toLowerCase()}`}
               onClick={() => setFilterKind(t.id as typeof filterKind)}
-              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${filterKind === t.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`min-h-[44px] md:min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold cursor-pointer ${filterKind === t.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]'}`}
             >
               {t.label}
             </button>
@@ -140,7 +140,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <button type="button" data-testid={`btn-remove-saved-${it.id}`} onClick={() => handleRemoveSingle(it.id)} className="min-h-[40px] min-w-[40px] md:min-h-[34px] md:min-w-[34px] inline-flex items-center justify-center p-1.5 text-[var(--color-text-muted)] hover:text-rose-600 cursor-pointer shrink-0" aria-label={`حذف ${it.titleFa}`}>
+                <button type="button" data-testid={`btn-remove-saved-${it.id}`} onClick={() => handleRemoveSingle(it.id)} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--color-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer shrink-0 transition" aria-label={`حذف ${it.titleFa}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -149,10 +149,10 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         </div>
       </div>
 
-      <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3" data-testid="user-preferences-and-personalization-section">
+      <div className="pt-4 border-t border-[var(--color-border-subtle)] space-y-3" data-testid="user-preferences-and-personalization-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-[var(--color-brand-600)]" />
+          <strong className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <Sliders className="w-4 h-4 text-[var(--color-brand-fg)]" />
             <span>ترجیحات من و کنترل سطح شخصی‌سازی (بدون تغییر حقیقت داده پایگاه داده)</span>
           </strong>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -167,7 +167,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
                 type="button"
                 data-testid={`pref-tab-${sec.id.toLowerCase()}`}
                 onClick={() => setActivePrefSection(sec.id as typeof activePrefSection)}
-                className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${activePrefSection === sec.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+                className={`min-h-[44px] md:min-h-[36px] inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold cursor-pointer ${activePrefSection === sec.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]'}`}
               >
                 {sec.label}
               </button>
@@ -176,15 +176,15 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         </div>
 
         {activePrefSection === 'DISPLAY' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" data-testid="prefs-display-panel">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)]" data-testid="prefs-display-panel">
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">قالب نمایش اعداد (شناسه فنی دست‌نخورده می‌ماند):</label>
+              <label className="font-bold text-[var(--color-text-primary)] block mb-1">قالب نمایش اعداد (شناسه فنی دست‌نخورده می‌ماند):</label>
               <select
                 aria-label="قالب اعداد"
                 data-testid="pref-select-number-format"
                 value={prefs.display.numberFormat}
                 onChange={(e) => setPrefs(defaultPersonalizationEngine.updatePreferences(userId, { display: { numberFormat: e.target.value as 'fa' | 'en' } }))}
-                className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold"
+                className="w-full p-2 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-primary)] font-bold"
               >
                 <option value="fa">اعداد فارسی (۱۴٬۹۰۰)</option>
                 <option value="en">اعداد لاتین (14,900)</option>
@@ -223,16 +223,16 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         )}
 
         {activePrefSection === 'SEARCH' && (
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" data-testid="prefs-search-panel">
-            <div className="text-slate-700 dark:text-slate-200 font-bold">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2" data-testid="prefs-search-panel">
+            <div className="text-slate-700 dark:text-[var(--color-text-primary)] font-bold">
               شهر پیش‌فرض جست‌وجو: <span className="text-emerald-700">{prefs.search.defaultCityId}</span> (همیشه به‌صورت شفاف در نوار فیلتر نشان داده می‌شود و فیلتر پنهان ایجاد نمی‌کند)
             </div>
           </div>
         )}
 
         {activePrefSection === 'PERSONALIZATION' && (
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" data-testid="prefs-personalization-panel">
-            <label className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 cursor-pointer">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2" data-testid="prefs-personalization-panel">
+            <label className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] cursor-pointer">
               <span><strong>سطح ۲ و ۳ شخصی‌سازی:</strong> استفاده از سابقه فعالیت و جست‌وجوهای ذخیره‌شده برای پیشنهادهای هوشمند</span>
               <input
                 type="checkbox"

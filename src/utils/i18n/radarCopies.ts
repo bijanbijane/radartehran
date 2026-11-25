@@ -120,22 +120,22 @@ const BOTTOM_NAV_COPY: Record<SupportedRadarLocale, RadarBottomNavCopy> = {
 
 const INSPECTOR_COPY: Record<SupportedRadarLocale, RadarInspectorCopy> = {
   fa: {
-    headerTitle: 'کارنامه و راهنمای محله',
+    headerTitle: 'کارنامه محله',
     scorecardTab: 'کارنامه',
-    marketTab: 'بازار و نمودار',
-    bargainsTabPrefix: 'فایل‌های زیر قیمت',
-    reviewsTab: 'نظرات ساکنان',
+    marketTab: 'بازار',
+    bargainsTabPrefix: 'شکار',
+    reviewsTab: 'نظرات',
     voteTab: 'امکانات',
-    hedonicCta: 'ماشین‌حساب هوشمند قیمت‌گذاری ملک (Hedonic)',
+    hedonicCta: 'محاسبه قیمت دقیق ملک',
   },
   en: {
-    headerTitle: 'Neighborhood Scorecard & Insights',
-    scorecardTab: 'Scorecard',
-    marketTab: 'Market & Charts',
-    bargainsTabPrefix: 'Under-Market Deals',
-    reviewsTab: 'Resident Reviews',
-    voteTab: 'Infrastructure',
-    hedonicCta: 'Hedonic Property Valuation Calculator',
+    headerTitle: 'Area Scorecard',
+    scorecardTab: 'Overview',
+    marketTab: 'Market',
+    bargainsTabPrefix: 'Deals',
+    reviewsTab: 'Reviews',
+    voteTab: 'Amenities',
+    hedonicCta: 'Estimate Exact Property Value',
   },
 };
 

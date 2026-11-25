@@ -69,19 +69,19 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   return (
     <div className="space-y-4" dir="rtl">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold">
             <PieChart className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
               <span>رادار فازهای ادواری مسکن، شتاب حقیقی و فرسایش حباب</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
               تفکیک رشد اسمی از رشد حقیقی (تعدیل‌شده با تورم CPI) و لنگر پویا نسبت قیمت به اجاره
             </p>
           </div>
@@ -120,38 +120,38 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
       </div>
 
       {/* Cycle Progress Track */}
-      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] space-y-2">
         <div className="flex justify-between items-center text-xs">
-          <span className="font-bold text-slate-700 dark:text-slate-200">فازهای چرخه ادواری بازار:</span>
-          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">فازهای چرخه ادواری بازار:</span>
+          <span className="text-[11px] font-bold text-slate-500 dark:text-[var(--color-text-muted)]">
             شاخص چرخه: {toPersianNum(cycle.cycleScore)} از ۱۰۰
           </span>
         </div>
 
         {/* 4-Step Cycle Bar */}
         <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'ACCUMULATION_RECOVERY' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'ACCUMULATION_RECOVERY' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border-slate-200 dark:border-[var(--color-border-strong)]'}`}>
             ۱. کف‌سازی و پیش‌رونق
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'EXPANSION_SURGE' ? 'bg-blue-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'EXPANSION_SURGE' ? 'bg-blue-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border-slate-200 dark:border-[var(--color-border-strong)]'}`}>
             ۲. رونق و شتاب
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'DISTRIBUTION_EXHAUSTION' ? 'bg-rose-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'DISTRIBUTION_EXHAUSTION' ? 'bg-rose-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border-slate-200 dark:border-[var(--color-border-strong)]'}`}>
             ۳. اشباع و قله حباب
           </div>
-          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'CONTRACTION_STAGNATION' ? 'bg-amber-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+          <div className={`p-1.5 rounded-lg border transition-all ${cycle.regimeId === 'CONTRACTION_STAGNATION' ? 'bg-amber-500 text-white font-bold shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-muted)] border-slate-200 dark:border-[var(--color-border-strong)]'}`}>
             ۴. رکود معاملاتی
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+        <p className="text-[10px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed pt-1">
           {cycle.regimeDescriptionFa}
         </p>
       </div>
 
       {/* 3 Indicators Grid */}
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">ریسک فرسایش و ترکیدن حباب:</div>
           <div className="text-sm font-bold text-rose-600 dark:text-rose-400 mt-0.5">
             {toPersianNum(cycle.bubbleExhaustionRiskPct)}٪
@@ -159,15 +159,15 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <div className="text-[9px] text-slate-400">احتمال سقف دوره‌ای</div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">نسبت قیمت به اجاره سالانه:</div>
-          <div className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+          <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)] mt-0.5">
             {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
           <div className="text-[9px] text-slate-400">لنگر تعادلی: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx ? ` · رهن ${toPersianNum(targetSqm)}م: ${toPersianNum(report.rahn80m)}م${rahnFx}` : ''}</div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)]">
           <div className="text-[10px] text-slate-400">شکاف پیشنهاد تا معامله:</div>
           <div className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-0.5">
             {toPersianNum(cycle.askingToDealSpreadPct)}٪
@@ -177,9 +177,9 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
       </div>
 
       {/* Persona Guidance Section */}
-      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
-          <span className="font-bold text-slate-700 dark:text-slate-200">راهبرد اختصاصی بر مبنای نقش شما:</span>
+          <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">راهبرد اختصاصی بر مبنای نقش شما:</span>
           <div className="flex items-center gap-1">
             {[
               { id: 'buyer' as const, label: 'خریدار خانه‌اولی' },
@@ -192,7 +192,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
                 onClick={() => setSelectedPersona(p.id)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
                   selectedPersona === p.id
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                    ? 'bg-[var(--color-brand-600)] text-white'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -202,7 +202,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           </div>
         </div>
 
-        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 leading-relaxed flex items-start gap-2">
+        <div className="p-2.5 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/70 dark:border-[var(--color-border-strong)] text-xs text-slate-700 dark:text-[var(--color-text-primary)] leading-relaxed flex items-start gap-2">
           <ArrowRight className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
           <span>
             {selectedPersona === 'buyer'

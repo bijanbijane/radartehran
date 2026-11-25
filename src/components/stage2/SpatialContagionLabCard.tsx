@@ -64,11 +64,11 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
   return (
     <div className="space-y-3 text-right" dir="rtl" data-testid="spatial-contagion-lab-card">
       {/* Section 1: Akerlof Information Asymmetry & Lemon Risk Index */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs space-y-2.5">
+      <div className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] p-3 shadow-xs space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               شفافیت قیمت محله و ریسک آگهی‌های طعمه یا قیمت‌سازی‌شده (مدل آکرلوف)
             </h4>
           </div>
@@ -77,19 +77,19 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
           </span>
         </div>
 
-        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
           {akerlofLemon.sellerAdvantageWarningFa}
         </p>
 
         <div className="grid grid-cols-3 gap-2 pt-1 text-center tabular-nums">
-          <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پراکندگی بین‌چارکی (IQR)</span>
-            <strong className="text-xs font-bold text-slate-800 dark:text-slate-100">
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">پراکندگی بین‌چارکی (IQR)</span>
+            <strong className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               {toPersianNum(akerlofLemon.priceDispersionRatioPct)}٪
             </strong>
           </div>
-          <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">نرخ آگهی طعمه/ردشده</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">نرخ آگهی طعمه/ردشده</span>
             <strong className="text-xs font-bold text-rose-600 dark:text-rose-400">
               {toPersianNum(akerlofLemon.baitRejectionRatePct)}٪
             </strong>
@@ -102,12 +102,12 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
           </div>
         </div>
 
-        <div className="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200/60 dark:border-slate-700/70 space-y-1">
-          <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200">
+        <div className="rounded-lg bg-slate-50 dark:bg-[var(--color-bg-muted)] p-2.5 border border-slate-200/60 dark:border-[var(--color-border-strong)] space-y-1">
+          <div className="text-[10px] font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
             پروتکل خنثی‌سازی برتری اطلاعاتی فروشنده پیش از عقد قرارداد:
           </div>
           {akerlofLemon.dueDiligenceProtocolFa.map((step, i) => (
-            <div key={i} className="flex items-start gap-1.5 text-[10.5px] text-slate-600 dark:text-slate-300">
+            <div key={i} className="flex items-start gap-1.5 text-[10.5px] text-slate-600 dark:text-[var(--color-text-secondary)]">
               <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
               <span>{step}</span>
             </div>
@@ -116,11 +116,11 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
       </div>
 
       {/* Section 2: Spatial Econometric Contagion & Ripple Network */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs space-y-2.5">
+      <div className="rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] p-3 shadow-xs space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Network className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               شبکه سرایت فضایی قیمت و قطب‌های پیش‌ران / جاذب سرریز (Spatial Econometrics)
             </h4>
           </div>
@@ -136,13 +136,13 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
             return (
               <div
                 key={node.hoodId}
-                className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col justify-between gap-2"
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/60 dark:bg-[var(--color-bg-muted)] flex flex-col justify-between gap-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5">
                       <GitBranch className={`w-3.5 h-3.5 ${isDriver ? 'text-amber-500' : 'text-emerald-500'}`} />
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                      <span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
                         محله {node.hoodName}
                       </span>
                       <span className="text-[10px] text-slate-400">({node.zone})</span>
@@ -163,7 +163,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
                       type="button"
                       onClick={() => onSelectCompareHood(node.hoodName)}
                       aria-label={`انتخاب محله ${node.hoodName} روی نقشه`}
-                      className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 flex items-center gap-1 cursor-pointer shrink-0"
+                      className="px-2 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] hover:border-indigo-500 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 flex items-center gap-1 cursor-pointer shrink-0"
                     >
                       <span>پرش نقشه</span>
                       <ArrowUpLeft className="w-3 h-3" />
@@ -171,12 +171,12 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
                   )}
                 </div>
 
-                <p className="text-[10.5px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-[10.5px] text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed">
                   {node.mechanismFa}
                 </p>
 
-                <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5 tabular-nums">
-                  <span className="font-bold text-slate-700 dark:text-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] border-t border-slate-200/60 dark:border-[var(--color-border-strong)] pt-1.5 tabular-nums">
+                  <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
                     متری {toPersianNum(node.dealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(node.dealPricePerSqm, intlCurrency, 'fa')})
                   </span>
                   <span>فاصله: {toPersianNum(node.distanceKm)} ک.م</span>
@@ -194,7 +194,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <BrainCircuit className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
               نظریه چشم‌انداز کانمن-تورسکی (Prospect Theory) و مهندسی مذاکره ضد زیان‌گریزی
             </h4>
           </div>
@@ -211,7 +211,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
                 className={`px-2 py-0.5 rounded font-bold cursor-pointer transition ${
                   anchorMarkupPct === opt.pct
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-indigo-200 dark:border-slate-700'
+                    : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-600 dark:text-[var(--color-text-secondary)] border border-indigo-200 dark:border-[var(--color-border-strong)]'
                 }`}
               >
                 {opt.label}
@@ -220,17 +220,17 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900 dark:text-indigo-200 bg-white/60 dark:bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 tabular-nums">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900 dark:text-indigo-200 bg-white/60 dark:bg-[var(--color-bg-surface)] px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 tabular-nums">
           <span>مقاومت روانی فروشنده (Disposition Effect): {toPersianNum(prospectTheory.dispositionRigidityPct)}٪</span>
           <span>ضریب زیان‌گریزی: λ={toPersianNum(prospectTheory.lossAversionLambda)}</span>
           <span>شکاف چانه‌زنی {toPersianNum(targetSqm)} متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت ({formatMillionTomanAsIntlCurrency(prospectTheory.nominalDiscountMillion80m, intlCurrency, 'fa')})</span>
         </div>
 
-        <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
+        <p className="text-[11px] text-slate-700 dark:text-[var(--color-text-secondary)] leading-relaxed">
           {prospectTheory.recommendedNegotiationFramingFa}
         </p>
 
-        <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 text-[10.5px] text-indigo-950 dark:text-indigo-200 font-medium">
+        <div className="p-2 rounded-lg bg-white/80 dark:bg-[var(--color-bg-surface)] border border-indigo-100 dark:border-indigo-900/50 text-[10.5px] text-indigo-950 dark:text-indigo-200 font-medium">
           <strong className="font-bold">تاکتیک اجرایی در جلسه قرارداد: </strong>
           {prospectTheory.stagedPaymentTacticFa}
         </div>

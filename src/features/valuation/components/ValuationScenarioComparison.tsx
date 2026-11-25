@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, GitCompare } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import { formatPersianDeltaPercent, toPersianDigits } from '../../../utils/persianBidiFormat';
 import { HEDONIC_RENOVATION_OPTIONS, type HedonicRenovationStatus } from '../../../data/hedonicPricingEngine';
 import { evaluateWorkspaceValuation } from '../services/valuationWorkspaceService';
 import type { ValuationWorkspaceInput, ValuationWorkspaceResult } from '../types/valuation.types';
@@ -61,7 +62,7 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
   return (
     <div
       data-testid="valuation-whatif-comparison"
-      className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs"
+      className="p-4 rounded-[12px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3 text-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
@@ -81,7 +82,7 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
             aria-label="وضعیت نوسازی فرضی"
             value={altRenovation}
             onChange={(e) => setAltRenovation(e.target.value as HedonicRenovationStatus)}
-            className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
+            className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold"
           >
             {HEDONIC_RENOVATION_OPTIONS.map((o) => (
               <option key={o.id} value={o.id}>{o.shortLabel}</option>
@@ -95,7 +96,7 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
             aria-label="جابجایی فرضی طبقه"
             value={altFloorDelta}
             onChange={(e) => setAltFloorDelta(Number(e.target.value))}
-            className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
+            className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold"
           >
             <option value={0}>بدون تغییر طبقه</option>
             <option value={1}>+۱ طبقه بالاتر</option>
@@ -104,7 +105,7 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
           </select>
         </div>
         <div className="flex items-end">
-          <label className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
+          <label className="w-full min-h-[44px] md:min-h-[36px] p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1.5 cursor-pointer">
             <input type="checkbox" checked={altParking} onChange={(e) => setAltParking(e.target.checked)} className="accent-[var(--color-brand-600)]" />
             <span>دارای پارکینگ سندی</span>
           </label>
@@ -123,8 +124,8 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 tabular-nums text-center">
-        <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] tabular-nums text-center">
+        <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)]">
           <span className="text-xs text-[var(--color-text-muted)] block">سناریوی پایه</span>
           <strong className="font-bold text-[var(--color-text-primary)] dark:text-white">
             {isRent ? `${toPersianNum(baseValue)} م رهن` : `${toPersianNum(baseResult.hedonic.hedonicTotalBillion)} م.ت`}
@@ -136,11 +137,15 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
             {isRent ? `${toPersianNum(altValue)} م رهن` : `${toPersianNum(altResult.hedonic.hedonicTotalBillion)} م.ت`}
           </strong>
         </div>
-        <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
+        <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)]">
           <span className="text-xs text-[var(--color-text-muted)] block">تفاوت فرضی</span>
-          <strong className={`font-bold ${deltaPercent >= 0 ? 'text-[var(--color-brand-fg)]' : 'text-rose-700 dark:text-rose-300'}`}>
-            {deltaPercent > 0 ? '+' : ''}
-            {isRent ? `${toPersianNum(deltaMillion)} م` : `${toPersianNum(deltaBillion)} م.ت`} ({deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaPercent)}٪)
+          <strong className={`font-bold ${deltaPercent >= 0 ? 'text-[var(--color-brand-fg)]' : 'text-[var(--color-danger)]'}`}>
+            <span className="[unicode-bidi:isolate]">
+              {isRent
+                ? `${deltaMillion > 0 ? '+' : ''}${toPersianDigits(deltaMillion)} م`
+                : `${deltaMillion > 0 ? '+' : ''}${toPersianDigits(deltaBillion)} میلیارد`}
+            </span>{' '}
+            ({formatPersianDeltaPercent(deltaPercent)})
           </strong>
         </div>
       </div>

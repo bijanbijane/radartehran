@@ -52,10 +52,10 @@ export const ProductQuietFooter: React.FC<ProductQuietFooterProps> = ({
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-[var(--color-text-primary)]">
+            <p className="text-xs font-bold text-[var(--color-text-primary)]">
               {isEn ? 'Core Sections' : 'بخش‌های اصلی'}
-            </h3>
-            <nav aria-label={isEn ? 'Primary footer links' : 'لینک‌های اصلی پاورقی'} className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-secondary)]">
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-secondary)]">
               <RadarLink href="/map" onNavigate={() => onNavigateView('map')} className={FOOTER_LINK_CLS}>
                 {isEn ? 'Interactive Map' : 'نقشه تعاملی'}
               </RadarLink>
@@ -71,14 +71,14 @@ export const ProductQuietFooter: React.FC<ProductQuietFooterProps> = ({
               <RadarLink href="/tools" onNavigate={() => onNavigateView('tools')} className={FOOTER_LINK_CLS}>
                 {isEn ? 'Tools' : 'ابزارها'}
               </RadarLink>
-            </nav>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-[var(--color-text-primary)]">
+            <p className="text-xs font-bold text-[var(--color-text-primary)]">
               {isEn ? 'Transparency & Legal' : 'شفافیت و منابع'}
-            </h3>
-            <nav aria-label={isEn ? 'Transparency, resources & legal links' : 'شفافیت، منابع و قوانین'} className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-secondary)]">
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-secondary)]">
               <RadarLink href="/knowledge/methodology" onNavigate={() => onNavigateView('knowledge', 'methodology')} className={FOOTER_LINK_CLS}>
                 {isEn ? 'Data Methodology' : 'روش‌شناسی داده'}
               </RadarLink>
@@ -107,7 +107,7 @@ export const ProductQuietFooter: React.FC<ProductQuietFooterProps> = ({
               >
                 {isEn ? 'Terms of Use' : 'قوانین استفاده'}
               </RadarLink>
-            </nav>
+            </div>
           </div>
         </div>
 

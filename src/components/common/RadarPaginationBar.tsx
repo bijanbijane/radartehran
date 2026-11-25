@@ -32,7 +32,8 @@ export function RadarPaginationBar<T>({
   const fmt = (n: number) => (isEn ? String(n) : toPersianNum(n));
 
   return (
-    <nav
+    <div
+      role="region"
       aria-label={isEn ? 'Pagination Navigation' : 'صفحه‌بندی نتایج'}
       data-testid="radar-pagination-bar"
       className={`flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-xs ${
@@ -69,7 +70,7 @@ export function RadarPaginationBar<T>({
               aria-label={isEn ? 'Items per page' : 'تعداد نمایش در هر صفحه'}
               value={slice.pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-muted)] px-2 py-1 font-bold text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-brand-600)] cursor-pointer"
+              className="min-h-[44px] md:min-h-[34px] rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg-muted)] px-2 py-1 font-bold text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-brand-600)] cursor-pointer"
             >
               {pageSizeOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -134,6 +135,6 @@ export function RadarPaginationBar<T>({
           </button>
         </div>
       )}
-    </nav>
+    </div>
   );
 }

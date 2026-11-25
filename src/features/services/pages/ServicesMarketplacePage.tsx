@@ -16,7 +16,6 @@ import {
   loadServiceProposals,
   loadServiceRequests,
   submitProviderOnboarding,
-  submitServiceProposal,
   submitServiceRequest,
   submitVerifiedProviderReview,
   trackServiceEvent,
@@ -24,7 +23,6 @@ import {
   updateServiceProposalStatus,
 } from '../services/serviceWorkflowService';
 import {
-  CANONICAL_CATEGORY_LABELS_FA,
   type ServiceCanonicalCategory,
   type ServiceCategory,
   type ServiceFilterState,
@@ -39,16 +37,30 @@ import { ServiceProviderPortalTab } from '../components/ServiceProviderPortalTab
 
 import { useRadarLocale } from '../../../components/AreaUnitToggle';
 
+import type { PrimaryViewId } from '../../../utils/areaUnit';
+import type { ModuleSubTabId } from '../../../navigation/registry/route.types';
+
 export interface ServicesMarketplacePageProps {
   activeSubTab?: ServicesSubTabId;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
   unitPrice: number;
   fxSample: string;
+  onNavigateView?: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
   onOpenHedonic: () => void;
   onOpenListingVerifier: () => void;
   onOpenExpansionModal: (t: ExpansionModalType) => void;
   onOpenSuperModule: (t: SuperModuleTabId) => void;
+}
+
+function resolveServicesHeading(subTab: ServicesSubTabId | undefined, isEn: boolean): string {
+  switch (subTab) {
+    case 'valuation': return isEn ? 'On-Site Property Valuation Specialists' : 'کارشناسی و ارزش‌گذاری حضوری ملک';
+    case 'consulting': return isEn ? 'Legal & Real Estate Advisory' : 'مشاوره حقوقی و معاملاتی املاک';
+    case 'inspection': return isEn ? 'Technical Building Inspection' : 'بازرسی فنی و عیب‌یابی ساختمان';
+    case 'agencies': return isEn ? 'Verified Real Estate Agencies' : 'دفاتر و مشاوران فعال املاک';
+    default: return isEn ? 'Real Estate Specialists, Legal Advisors & Agencies' : 'خدمات تخصصی، حقوقی و دفاتر فعال املاک';
+  }
 }
 
 type ServicesPageTab = 'directory' | 'wizard' | 'requests' | 'provider_portal';
@@ -88,8 +100,7 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
   activeSubTab,
   evaluatedNeighborhoods,
   selectedHood,
-  unitPrice,
-  fxSample,
+  onNavigateView,
   onOpenHedonic,
   onOpenListingVerifier,
   onOpenExpansionModal,
@@ -195,53 +206,77 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
       {/* Header */}
       <div className="border-b border-[var(--color-border-subtle)] pb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="text-xs font-bold text-[var(--color-brand-fg)] flex items-center gap-1 mb-1">
-            <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="text-sm font-bold text-[var(--color-brand-fg)] flex items-center gap-1.5 mb-1">
+            <Briefcase className="w-4 h-4" aria-hidden="true" />
             <span>
               {isEn
-                ? `Transparent Real Estate Services Marketplace · ${selectedHood.name}`
-                : `بازار شفاف خدمات و متخصصان ملکی · ${selectedHood.name}`}
+                ? 'Transparent Real Estate Services Marketplace'
+                : 'بازار شفاف خدمات، کارشناسی و متخصصان ملکی'}
             </span>
           </span>
-          <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">
-            {isEn ? 'Real Estate Specialists, Legal Advisors & Agencies' : 'خدمات تخصصی، حقوقی و دفاتر فعال املاک'}
+          <h1 className="text-2xl sm:text-[30px] font-bold leading-[1.3] text-[var(--color-text-primary)]">
+            {resolveServicesHeading(activeSubTab, isEn)}
           </h1>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1 tabular-nums">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             {isEn
-              ? `Reference base price in ${selectedHood.name}: ${unitPrice} M${fxSample}`
-              : `نرخ پایه مرجع در محله ${selectedHood.name}: ${toPersianNum(unitPrice)} م${fxSample}`}
+              ? 'Compare verified specialists, submit a service brief, and receive transparent fee proposals.'
+              : 'مقایسه متخصصان تأییدشده، ثبت درخواست کارشناسی و دریافت پیشنهاد شفاف پیش از عقد قرارداد.'}
           </p>
         </div>
 
-        <div role="tablist" aria-label={isEn ? 'Services workflow sections' : 'بخش‌های بازار خدمات'} className="flex flex-wrap items-center gap-1.5 text-xs">
+        <div role="group" aria-label={isEn ? 'Services workflow actions' : 'عملیات بازار خدمات'} className="flex flex-wrap items-center gap-1.5 text-sm">
           {[
             { id: 'directory' as const, label: isEn ? 'Directory' : 'دایرکتوری متخصصان', icon: Briefcase },
-            { id: 'wizard' as const, label: isEn ? 'New Request' : 'ثبت درخواست ۷ مرحله‌ای', icon: PlusCircle },
-            { id: 'requests' as const, label: isEn ? `Requests (${requests.length})` : `درخواست‌ها (${toPersianNum(requests.length)})`, icon: ClipboardList },
+            { id: 'wizard' as const, label: isEn ? 'New Request' : 'ثبت درخواست جدید', icon: PlusCircle },
+            { id: 'requests' as const, label: isEn ? `Requests (${requests.length})` : `درخواست‌های من (${toPersianNum(requests.length)})`, icon: ClipboardList },
             { id: 'provider_portal' as const, label: isEn ? 'Provider Portal' : 'پرتال متخصصان', icon: Award },
           ].map((t) => {
             const Icon = t.icon;
+            const isCurrent = activeTab === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
-                role="tab"
-                aria-selected={activeTab === t.id}
+                aria-pressed={isCurrent}
                 data-testid={`services-tab-${t.id}`}
                 onClick={() => setActiveTab(t.id)}
-                className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[9px] font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition ${
-                  activeTab === t.id
-                    ? 'bg-[var(--color-brand-600)] text-white'
-                    : 'bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
+                className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[9px] font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition ${
+                  isCurrent
+                    ? 'bg-[var(--color-brand-soft)] border border-[var(--color-brand-600)] text-[var(--color-brand-fg)]'
+                    : t.id === 'wizard'
+                      ? 'bg-[var(--color-brand-600)] text-white hover:bg-[var(--color-brand-700)]'
+                      : 'bg-[var(--color-bg-surface)] border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                <Icon className="w-4 h-4" aria-hidden="true" />
                 <span>{t.label}</span>
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* IO-01 Cross-link between Services Valuation & Free Automated Tools Valuation */}
+      {activeSubTab === 'valuation' && (
+        <div
+          data-testid="services-valuation-crosslink"
+          className="p-4 rounded-[12px] bg-[var(--color-brand-soft)]/60 border border-[var(--color-brand-600)]/30 flex flex-wrap items-center justify-between gap-3 text-sm"
+        >
+          <span className="text-[var(--color-text-primary)] font-medium">
+            پیش از درخواست کارشناس حضوری، می‌توانید برآورد فوری و رایگان قیمت ملک را با مدل هدونیک محاسبه کنید.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (onNavigateView) onNavigateView('tools', 'valuation');
+              else onOpenHedonic();
+            }}
+            className="min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
+          >
+            محاسبه‌گر رایگان ارزش‌گذاری ←
+          </button>
+        </div>
+      )}
 
       {activeTab === 'directory' && (
         <ServicesDirectoryPanel
@@ -282,25 +317,6 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
           requests={requests}
           proposals={proposals}
           reviews={reviews}
-          onSimulateSampleProposal={(req) => {
-            const sample = submitServiceProposal({
-              requestId: req.id,
-              providerId: req.providerId === 'marketplace-open' ? `sp-${selectedHood.id}` : req.providerId,
-              providerName: req.providerName === 'درخواست عمومی برای متخصصان منطبق' ? `دفتر تخصصی ${req.neighborhoodName}` : req.providerName,
-              providerVerificationSummaryFa: 'پیشنهاد نمونه آزمایشی (احراز خوداظهار)',
-              offeringTitleFa: CANONICAL_CATEGORY_LABELS_FA[req.canonicalCategory],
-              priceMode: 'starting_from',
-              priceDisplayFa: 'شروع از ۳٫۵ میلیون تومان',
-              estimatedAmountMillion: 3.5,
-              timelineFa: '۲۴ تا ۴۸ ساعت کاری',
-              scopeSummaryFa: `اجرای کامل خدمت در محدوده ${req.neighborhoodName} با گزارش مکتوب`,
-              includesFa: 'بازدید اولیه و گزارش کتبی',
-              excludesFa: 'هزینه‌های استعلام رسمی',
-              status: 'submitted',
-            });
-            setProposals((prev) => [sample, ...prev]);
-            setRequests(loadServiceRequests());
-          }}
           onProposalAction={(proposalId, action) => {
             const res = updateServiceProposalStatus(proposalId, action);
             if (res.ok) {

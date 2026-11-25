@@ -44,8 +44,8 @@ export const MapQuickControlsStrip: React.FC<MapQuickControlsStripProps> = ({
           onClick={() => setMode('rent')}
           className={`px-2 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${
             mode === 'rent'
-              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-[var(--color-brand-600)] text-white shadow-2xs'
+              : 'text-slate-600 dark:text-[var(--color-text-secondary)] hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           {isEn ? 'Rent' : 'رهن'}
@@ -57,8 +57,8 @@ export const MapQuickControlsStrip: React.FC<MapQuickControlsStripProps> = ({
           onClick={() => setMode('buy')}
           className={`px-2 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${
             mode === 'buy'
-              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-[var(--color-brand-600)] text-white shadow-2xs'
+              : 'text-slate-600 dark:text-[var(--color-text-secondary)] hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           {isEn ? 'Buy' : 'خرید'}
@@ -78,7 +78,7 @@ export const MapQuickControlsStrip: React.FC<MapQuickControlsStripProps> = ({
           className={`inline-flex items-center gap-1 px-2 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${
             showMetroLines
               ? 'bg-emerald-600 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+              : 'text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-100/80 dark:hover:bg-[var(--color-bg-elevated)]'
           }`}
         >
           <TrainFront className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -93,7 +93,7 @@ export const MapQuickControlsStrip: React.FC<MapQuickControlsStripProps> = ({
           className={`inline-flex items-center gap-1 px-2 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${
             showTrafficZones
               ? 'bg-rose-600 text-white shadow-2xs'
-              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+              : 'text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-100/80 dark:hover:bg-[var(--color-bg-elevated)]'
           }`}
         >
           <TrafficCone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -109,7 +109,7 @@ export const MapQuickControlsStrip: React.FC<MapQuickControlsStripProps> = ({
             className={`inline-flex items-center gap-1 px-2 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${
               rulerActive
                 ? 'bg-indigo-600 text-white shadow-2xs'
-                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+                : 'text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-100/80 dark:hover:bg-[var(--color-bg-elevated)]'
             }`}
           >
             <Ruler className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />

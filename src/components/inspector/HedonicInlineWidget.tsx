@@ -104,10 +104,10 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
       data-area-unit={areaUnit}
       data-intl-currency={intlCurrency}
       aria-label={`ماشین‌حساب هدونیک ارزش‌گذاری ملک در ${hoodNameFa}`}
-      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/95 p-4 text-slate-900 dark:text-slate-100 shadow-lg"
+      className="rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] p-4 text-slate-900 dark:text-[var(--color-text-primary)] shadow-lg"
     >
       {/* Layer 1: Zero-State Instant Benchmark Summary [RULE-12] */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
           <span className="inline-block rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
             تخمین هوشمند رادار بر اساس معاملات مشابه اخیر
@@ -120,7 +120,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           <div className="radar-tabular-num text-lg font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
             {formatMillionToVerbalPersian(estimation.estimatedTotalMillion)} ({formatMillionTomanAsIntlCurrency(estimation.estimatedTotalMillion, intlCurrency, radarLocale)})
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
             بازه اطمینان: {fmt.format(estimation.lowBandTotalMillion)} تا {fmt.format(estimation.highBandTotalMillion)} میلیون تومان
           </div>
         </div>
@@ -129,7 +129,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
       {/* Primary Quick Sliders */}
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">
             <label htmlFor="hedonic-area-slider">متراژ بنا ({areaUnit === 'sqft' ? 'فوت مربع' : 'متر مربع'})</label>
             <span className="radar-tabular-num font-bold text-slate-900 dark:text-white">{formatAreaShort(areaSqm, areaUnit)}</span>
           </div>
@@ -141,11 +141,11 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             step={5}
             value={areaSqm}
             onChange={(e) => setAreaSqm(normalizeFinancialInput(e.target.value))}
-            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-slate-700 accent-emerald-500"
+            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-[var(--color-bg-elevated)] accent-emerald-500"
           />
         </div>
         <div>
-          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">
             <label htmlFor="hedonic-age-slider">سن بنا ({estimation.ageRegimeLabel})</label>
             <span className="radar-tabular-num font-bold text-slate-900 dark:text-white">
               {buildingAgeYears === 0 ? 'نوساز' : `${fmt.format(buildingAgeYears)} سال`}
@@ -159,7 +159,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             step={1}
             value={buildingAgeYears}
             onChange={(e) => setBuildingAgeYears(normalizeFinancialInput(e.target.value))}
-            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-slate-700 accent-emerald-500"
+            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-[var(--color-bg-elevated)] accent-emerald-500"
           />
         </div>
       </div>
@@ -169,7 +169,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
         <button
           type="button"
           onClick={() => setIsAdvancedOpen((prev) => !prev)}
-          className="radar-interactive-chip flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800"
+          className="radar-interactive-chip flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-[var(--color-bg-muted)] px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[var(--color-text-primary)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)]"
         >
           <span>تنظیمات دقیق واحد، تبدیل رهن و اجاره و مقایسه قیمت پیشنهادی</span>
           <span>{isAdvancedOpen ? 'بستن ▲' : 'باز کردن ▼'}</span>
@@ -177,7 +177,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
       </div>
 
       {isAdvancedOpen && (
-        <div className="mt-4 space-y-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+        <div className="mt-4 space-y-4 border-t border-slate-200 dark:border-[var(--color-border-subtle)] pt-4">
           <div className="flex flex-wrap gap-2">
             {[
               { label: 'پارکینگ سندی', active: hasParking, toggle: () => setHasParking(!hasParking) },
@@ -191,7 +191,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
                 onClick={item.toggle}
                 aria-pressed={item.active}
                 aria-label={item.label}
-                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${item.active ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${item.active ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-muted)] hover:bg-slate-200 dark:hover:bg-[var(--color-bg-elevated)]'}`}
               >
                 {item.label}
               </button>
@@ -200,32 +200,32 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-500 dark:text-slate-400">طبقه واحد</label>
-              <NumericDraftInput aria-label="طبقه واحد" min={0} max={60} fallback={3} value={floorNumber} onValueChange={setFloorNumber} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <label className="block text-xs text-slate-500 dark:text-[var(--color-text-muted)]">طبقه واحد</label>
+              <NumericDraftInput aria-label="طبقه واحد" min={0} max={60} fallback={3} value={floorNumber} onValueChange={setFloorNumber} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-canvas)] px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 dark:text-slate-400">تعداد اتاق خواب</label>
-              <NumericDraftInput aria-label="تعداد اتاق خواب" min={0} max={10} fallback={2} value={bedrooms} onValueChange={setBedrooms} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <label className="block text-xs text-slate-500 dark:text-[var(--color-text-muted)]">تعداد اتاق خواب</label>
+              <NumericDraftInput aria-label="تعداد اتاق خواب" min={0} max={10} fallback={2} value={bedrooms} onValueChange={setBedrooms} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-canvas)] px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
           </div>
 
           {/* Rahn-to-Ejareh Dynamic Slider [RULE-13] */}
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-950/80 p-3">
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+          <div className="rounded-xl bg-slate-50 dark:bg-[var(--color-bg-canvas)] p-3">
+            <div className="flex flex-wrap items-center justify-between text-xs text-slate-700 dark:text-[var(--color-text-secondary)]">
               <span>تبدیل رهن و اجاره (نرخ عرف: {fmt.format(monthlyConversionRate)}٪ ماهانه)</span>
               <span className="text-[var(--color-brand-600)] dark:text-emerald-400">بازده اجاره سالانه (Cap Rate): {fmt.format(estimation.annualCapRatePercent)}٪</span>
             </div>
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400">نسبت ودیعه (رهن) به اجاره</label>
+                <label className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">نسبت ودیعه (رهن) به اجاره</label>
                 <input type="range" aria-label="نسبت ودیعه به اجاره" min={0} max={1} step={0.1} value={depositShareRatio} onChange={(e) => setDepositShareRatio(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400">نرخ تبدیل ماهانه (۱.۵٪ تا ۴٪)</label>
+                <label className="text-xs text-slate-500 dark:text-[var(--color-text-muted)]">نرخ تبدیل ماهانه (۱.۵٪ تا ۴٪)</label>
                 <input type="range" aria-label="نرخ تبدیل ماهانه" min={1.5} max={4.0} step={0.25} value={monthlyConversionRate} onChange={(e) => setMonthlyConversionRate(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
+            <div className="mt-2 flex flex-wrap justify-between text-xs font-semibold text-slate-800 dark:text-[var(--color-text-primary)]">
               <span>ودیعه: {formatMillionToVerbalPersian(estimation.suggestedDepositMillion)}</span>
               <span>اجاره ماهانه: {formatMillionToVerbalPersian(estimation.suggestedMonthlyRentMillion)}</span>
             </div>
@@ -233,7 +233,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
 
           {/* Seller Ask Price Disambiguation [RULE-08] & [RULE-09] */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">بررسی قیمت پیشنهادی فروشنده (به میلیون تومان)</label>
+            <label className="block text-xs font-medium text-slate-700 dark:text-[var(--color-text-secondary)]">بررسی قیمت پیشنهادی فروشنده (به میلیون تومان)</label>
             <input
               type="text"
               aria-label="قیمت پیشنهادی فروشنده به میلیون تومان"
@@ -242,7 +242,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
               value={offeredTotalInput}
               onChange={(e) => setOfferedTotalInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-              className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+              className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-canvas)] px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
             />
             <div className="mt-1 text-xs text-[var(--color-brand-600)] dark:text-emerald-400">{offeredValidation.verbalPersianText}</div>
             {offeredValidation.warningMessage && (

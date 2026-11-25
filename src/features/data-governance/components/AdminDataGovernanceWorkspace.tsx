@@ -73,7 +73,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
   };
 
   return (
-    <section data-testid="admin-data-governance-workspace" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
+    <section data-testid="admin-data-governance-workspace" className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -96,7 +96,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
               key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id}
               data-testid={`dgov-tab-${tab.id.toLowerCase()}`}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}
             >
               {tab.label}
             </button>
@@ -113,28 +113,28 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
 
       {activeTab === 'OVERVIEW' && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="dgov-overview-kpis">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <div className="text-[11px] text-slate-500">موجودیت‌های دارای زنجیره منشأ (Provenance)</div>
             <strong className="text-base font-bold text-emerald-700 dark:text-emerald-400 block mt-0.5 tabular-nums">
               {toPersianNum(registeredEntityCount)} موجودیت ({toPersianNum(versions.length)} نسخه)
             </strong>
             <span className="text-[10.5px] text-slate-500">محاسبه از دفتر نسخه‌ها و زنجیره منشأ ثبت‌شده</span>
           </div>
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <div className="text-[11px] text-slate-500">منابع ثبت‌شده فعال و مجاز</div>
             <strong className="text-base font-bold text-slate-900 dark:text-white block mt-0.5 tabular-nums">
               {toPersianNum(sources.filter((s) => s.status === 'ACTIVE' || s.status === 'RESTRICTED').length)} از {toPersianNum(sources.length)} منبع
             </strong>
             <span className="text-[10.5px] text-slate-500">ارزیابی اعتبار به تفکیک حوزه</span>
           </div>
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <div className="text-[11px] text-slate-500">پرونده‌های تعارض در صف بررسی</div>
             <strong className="text-base font-bold text-amber-700 dark:text-amber-400 block mt-0.5 tabular-nums">
               {toPersianNum(conflicts.filter((c) => c.status !== 'RESOLVED').length)} پرونده
             </strong>
             <span className="text-[10.5px] text-slate-500">حل خودکار برای متراژ/مرز/معامله ممنوع است</span>
           </div>
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]">
             <div className="text-[11px] text-slate-500">منابع با محدودیت انتشار خام (Rights)</div>
             <strong className="text-base font-bold text-emerald-700 dark:text-emerald-400 block mt-0.5 tabular-nums">
               {toPersianNum(restrictedSourceCount)} از {toPersianNum(sources.length)} منبع
@@ -147,20 +147,20 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
       {activeTab === 'SOURCES' && (
         <div className="space-y-2.5" data-testid="dgov-sources-list">
           {sources.map((src) => (
-            <div key={src.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-start justify-between gap-3">
+            <div key={src.id} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <strong className="text-slate-900 dark:text-white font-bold">{src.nameFa}</strong>
-                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 font-bold text-[10.5px]">{src.sourceType}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-[var(--color-bg-elevated)] font-bold text-[10.5px]">{src.sourceType}</span>
                   <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-bold text-[10.5px]">وضعیت: {src.status}</span>
                   <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 font-bold text-[10.5px]">مجوز: {src.usagePolicy.status}</span>
                 </div>
-                <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
                   سازمان: {src.organizationFa} · مسئول: <strong>{src.owner}</strong> · روش دریافت: {src.collectionMethod}
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {src.domainReliability.map((dr) => (
-                    <span key={dr.domain} className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px]">
+                    <span key={dr.domain} className="px-2 py-0.5 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] text-[10.5px]">
                       {dr.domain}: <strong>{dr.level}</strong> ({dr.rationaleFa})
                     </span>
                   ))}
@@ -177,17 +177,17 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
       {activeTab === 'CONFLICTS' && (
         <div className="space-y-3" data-testid="dgov-conflicts-queue">
           <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="dgov-res-reason" className="font-bold text-slate-700 dark:text-slate-200">
+            <label htmlFor="dgov-res-reason" className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
               دلیل مستند حل تعارض (الزامی برای ثبت تصمیم):
             </label>
             <input
               id="dgov-res-reason" type="text" value={resolutionReason}
               onChange={(e) => setResolutionReason(e.target.value)}
-              className="flex-1 min-w-[240px] p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
+              className="flex-1 min-w-[240px] p-2 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-300 dark:border-[var(--color-border-strong)]"
             />
           </div>
           {conflicts.map((c) => (
-            <div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
+            <div key={c.id} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <Scale className="w-4 h-4 text-amber-600" />
@@ -202,8 +202,8 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {claims.filter((cl) => c.claimIds.includes(cl.id)).map((cl) => (
-                  <div key={cl.id} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                    <div className="font-bold text-slate-800 dark:text-slate-100">ادعای {cl.id}: مقدار {toPersianNum(cl.value)} {cl.unit} ({cl.verificationStatus})</div>
+                  <div key={cl.id} className="p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)]">
+                    <div className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">ادعای {cl.id}: مقدار {toPersianNum(cl.value)} {cl.unit} ({cl.verificationStatus})</div>
                     <div className="text-[10.5px] text-slate-500">منبع: {cl.sourceId} · مشاهده (Valid): {cl.observedAt.slice(0, 10)} · ثبت (System): {cl.recordedAt.slice(0, 10)}</div>
                   </div>
                 ))}
@@ -216,7 +216,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
       {activeTab === 'LINEAGE' && (
         <div className="space-y-2" data-testid="dgov-versions-list">
           {versions.map((v) => (
-            <div key={v.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div key={v.id} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                   <GitMerge className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
@@ -224,7 +224,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
                 </strong>
                 <div className="text-[11px] text-slate-500">مقدار: <strong>{toPersianNum(v.value)}</strong> · نسخه داده: {v.dataVersion} · نسخه روش: v{v.methodologyVersion} · تغییر: {v.changeType}</div>
               </div>
-              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{v.changeReasonFa}</span>
+              <span className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] font-medium">{v.changeReasonFa}</span>
             </div>
           ))}
         </div>
@@ -233,13 +233,13 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
       {activeTab === 'PIPELINES' && (
         <div className="space-y-3" data-testid="dgov-analytics-pipelines">
           {serverPipelines.length === 0 ? (
-            <div data-testid="dgov-pipelines-empty" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+            <div data-testid="dgov-pipelines-empty" className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)]">
               هیچ Pipeline عملیاتی از سرور دریافت نشد (رکوردهای نمونه آزمایشی در محیط عملیاتی غیرفعال شده‌اند).
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {serverPipelines.map((p) => (
-                <div key={p.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
+                <div key={p.id} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{p.titleFa}</span></strong>
                     <button type="button" data-testid={`btn-run-pipeline-${p.id}`} onClick={() => handleTriggerPipeline(p.id)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--color-brand-600)] text-white font-bold text-[10.5px] cursor-pointer">
@@ -255,7 +255,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
             <div key={m.modelId} className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <strong className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /><span>رجیستری مدل تحلیلی: {m.modelNameFa} (v{toPersianNum(m.version)})</span></strong>
-                <div className="text-[11px] text-slate-600 dark:text-slate-300">خطای MAPE: {toPersianNum(m.mapePercent)}٪ · عدم‌قطعیت: ±{toPersianNum(m.uncertaintyBandPercent)}٪ · Drift: {m.dataDriftStatus}</div>
+                <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">خطای MAPE: {toPersianNum(m.mapePercent)}٪ · عدم‌قطعیت: ±{toPersianNum(m.uncertaintyBandPercent)}٪ · Drift: {m.dataDriftStatus}</div>
               </div>
               <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[10.5px] flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> نیازمند نظارت انسانی</span>
             </div>

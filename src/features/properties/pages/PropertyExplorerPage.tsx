@@ -245,6 +245,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
     <div className="w-full max-w-[1320px] mx-auto px-4 py-6 space-y-5 animate-fadeIn" data-testid="product-properties-view">
       <PropertyExplorerHeader
         isEn={isEn}
+        activeSubTab={p.activeSubTab}
         sectionTab={sectionTab}
         viewMode={viewMode}
         splitMapMode={p.splitMapMode}

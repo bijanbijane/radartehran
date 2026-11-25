@@ -79,30 +79,30 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
   const maxImageMb = storageStatus?.maxImageMb ?? 5;
   const maxVideoMb = storageStatus?.maxVideoMb ?? 50;
   return (
-    <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-3 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
+    <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 space-y-3 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-[var(--color-border-strong)] pb-2.5">
+        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
           <Database className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>
             ذخیرهٔ عکس و فیلم آگهی ({hoodName} · {formatAreaShort(sqm, areaUnit)} · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(unitPrice)} م · کل: {toPersianNum(effectiveTotalMillions.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(effectiveTotalMillions, intlCurrency, locale)}) · اجاره ماهانه: {toPersianNum(estMonthlyRentMillions)} م ({formatMillionTomanAsIntlCurrency(estMonthlyRentMillions, intlCurrency, locale)})) با بهینه‌سازی خودکار تصویر
           </span>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 rounded-xl px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)] bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200/70 dark:border-[var(--color-border-strong)] rounded-xl px-3 py-2">
         <div>
-          سرویس ذخیره‌سازی: <strong className="text-slate-900 dark:text-slate-100">{storageStatus?.providerLabelFa || 'فضای ذخیره‌سازی رسانهٔ آگهی'}</strong>
+          سرویس ذخیره‌سازی: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{storageStatus?.providerLabelFa || 'فضای ذخیره‌سازی رسانهٔ آگهی'}</strong>
         </div>
         <div className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
           سقف مجاز: عکس تا {toPersianNum(maxImageMb)} مگابایت · ویدیو تا {toPersianNum(maxVideoMb)} مگابایت
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold cursor-pointer transition">
+        <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-[var(--color-bg-surface)] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold cursor-pointer transition">
           <ImageIcon className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>آپلود عکس ملک (تا {toPersianNum(maxImageMb)}MB · WebP)</span>
           <input type="file" aria-label="آپلود عکس ملک" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(e) => handleFileSelect(e, 'image')} className="hidden" />
         </label>
-        <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-sky-50 dark:hover:bg-sky-950/50 border border-dashed border-sky-400 dark:border-sky-700 text-sky-800 dark:text-sky-300 font-bold cursor-pointer transition">
+        <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-[var(--color-bg-surface)] hover:bg-sky-50 dark:hover:bg-sky-950/50 border border-dashed border-sky-400 dark:border-sky-700 text-sky-800 dark:text-sky-300 font-bold cursor-pointer transition">
           <Film className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
           <span>آپلود فیلم ملک (تا {toPersianNum(maxVideoMb)}MB)</span>
           <input type="file" aria-label="آپلود فیلم ملک" accept="video/mp4,video/webm,video/quicktime" disabled={uploading} onChange={(e) => handleFileSelect(e, 'video')} className="hidden" />
@@ -140,30 +140,30 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
           {uploadError} </div>
       )} {uploadedMedia.length > 0 && (
         <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
             <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>
                 {toPersianNum(imageItems.length)} تصویر و {toPersianNum(videoItem ? 1 : 0)} ویدیو روی آبجکت استوریج ذخیره شد
               </span>
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">آماده اتصال به آگهی</span>
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)]">آماده اتصال به آگهی</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {uploadedMedia.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
+              <div key={item.id} className="flex items-center justify-between gap-2 bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2">
                 <div className="flex items-center gap-2 min-w-0">
                   {item.mediaType === 'image' ? (
-                    <img src={item.url} alt="پیش‌نمایش عکس ملک" className="w-11 h-11 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" />
+                    <img src={item.url} alt="پیش‌نمایش عکس ملک" className="w-11 h-11 rounded-lg object-cover border border-slate-200 dark:border-[var(--color-border-strong)] shrink-0" />
                   ) : (
                     <div className="w-11 h-11 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 flex items-center justify-center shrink-0">
                       <UploadCloud className="w-5 h-5" />
                     </div>
                   )} <div className="min-w-0">
-                    <div className="font-bold text-slate-900 dark:text-slate-100 truncate text-[11px]">
+                    <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] truncate text-[11px]">
                       {item.mediaType === 'video' ? '🎬 ویدیوی تور ملک (MP4)' : '🖼️ تصویر ملک'} · {toPersianNum(Math.max(1, Math.round(item.sizeBytes / 1024)))} KB
                     </div>
-                    <div dir="ltr" className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate" title={item.objectKey}>
+                    <div dir="ltr" className="text-[10px] font-mono text-slate-500 dark:text-[var(--color-text-muted)] truncate" title={item.objectKey}>
                       {item.objectKey} </div>
                   </div>
                 </div>

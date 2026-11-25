@@ -24,7 +24,17 @@ import {
   requestAccountServerExport,
 } from '../../features/account/services/accountActionService';
 import type { AccountDeleteLayerStatus, AccountWorkspaceSnapshot } from '../../features/account/types/account.types';
-import { loadAccountWorkspaceSnapshot, recordDataRequest, removeSavedPropertyById } from '../../features/account/services/accountWorkspaceService';
+import {
+  createSavedSearchWatchlist,
+  deleteSavedMapView,
+  deleteSavedMarketAnalysisById,
+  deleteSavedSearchWatchlist,
+  loadAccountWorkspaceSnapshot,
+  recordDataRequest,
+  removeSavedPropertyById,
+  toggleSavedSearchAlertCadence,
+} from '../../features/account/services/accountWorkspaceService';
+import { formatPersianPrice, formatPersianScore } from '../../utils/persianBidiFormat';
 import { AccountOverviewDashboard } from '../../features/account/components/AccountOverviewDashboard';
 import { AccountSavedItemsPanel } from '../../features/account/components/AccountSavedItemsPanel';
 import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
@@ -159,74 +169,96 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">{p.currentUser?.displayName || (isEn ? 'Guest User Account' : 'حساب کاربری مهمان')}</h1>
+                <h1 className="text-2xl sm:text-[30px] font-bold leading-[1.3] text-[var(--color-text-primary)]">
+                  {currentTab === 'favorites'
+                    ? (isEn ? 'Saved Neighborhoods & Properties' : 'محله‌ها و املاک ذخیره‌شده')
+                    : currentTab === 'saved_searches'
+                      ? (isEn ? 'Saved Searches & Alerts' : 'جست‌وجوهای ذخیره‌شده')
+                      : currentTab === 'saved_views'
+                        ? (isEn ? 'Saved Map Views & Reports' : 'نماهای نقشه و گزارش‌های ذخیره‌شده')
+                        : currentTab === 'activity'
+                          ? (isEn ? 'Visits & Activity Timeline' : 'بازدیدها و تاریخچه فعالیت')
+                          : currentTab === 'contributions'
+                            ? (isEn ? 'My Listings & Service Requests' : 'فایل‌ها و درخواست‌های من')
+                            : currentTab === 'community'
+                              ? (isEn ? 'My Community Activity' : 'فعالیت‌های من در جامعه کاربران')
+                              : currentTab === 'notifications'
+                                ? (isEn ? 'Notifications & Price Alerts' : 'اعلان‌ها و هشدارهای هوشمند')
+                                : currentTab === 'profile'
+                                  ? (isEn ? 'Account Profile' : 'مشخصات پروفایل کاربری')
+                                  : currentTab === 'settings'
+                                    ? (isEn ? 'Display, Settings & Privacy' : 'تنظیمات نمایش و حریم خصوصی')
+                                    : (p.currentUser?.displayName || (isEn ? 'User Account Overview' : 'داشبورد حساب کاربری'))}
+                </h1>
                 {p.currentUser?.emailVerified && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold border border-[var(--color-border-subtle)]">
                     <CheckCircle2 className="w-3.5 h-3.5" /><span>{isEn ? 'Verified' : 'تأییدشده'}</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{p.currentUser?.email || (isEn ? 'Sign in to sync saved neighborhoods and price alerts across devices.' : 'برای همگام‌سازی ابری منتخب‌ها و دریافت هشدارهای هوشمند وارد شوید.')}</p>
+              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+                {p.currentUser?.email || (isEn ? 'Sign in to sync saved neighborhoods and price alerts across devices.' : 'حساب مهمان · برای همگام‌سازی ابری منتخب‌ها و دریافت هشدارهای هوشمند وارد شوید.')}
+              </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto text-sm">
             {p.currentUser ? (
               <>
-                <button type="button" onClick={() => void handleExportAccountData(false)} disabled={busyAction !== null} className="min-h-[44px] md:min-h-[36px] px-3 py-2 rounded-xl bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-3.5 h-3.5" /><span>دانلود اطلاعات حساب من</span></button>
-                <button type="button" onClick={() => setConfirmDeleteOpen((v) => !v)} disabled={busyAction !== null} className="min-h-[44px] md:min-h-[36px] px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /><span>حذف کامل حساب کاربری</span></button>
-                <button type="button" onClick={p.onSignOut} className="min-h-[44px] md:min-h-[36px] px-3.5 py-2 rounded-xl bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><LogOut className="w-3.5 h-3.5" /><span>{isEn ? 'Sign Out' : 'خروج از حساب'}</span></button>
+                <button type="button" onClick={() => void handleExportAccountData(false)} disabled={busyAction !== null} className="min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-4 h-4" /><span>دانلود اطلاعات حساب من</span></button>
+                <button type="button" onClick={() => setConfirmDeleteOpen((v) => !v)} disabled={busyAction !== null} className="min-h-[44px] md:min-h-[38px] px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Trash2 className="w-4 h-4" /><span>حذف کامل حساب</span></button>
+                <button type="button" onClick={p.onSignOut} className="min-h-[44px] md:min-h-[38px] px-3.5 py-2 rounded-xl bg-[var(--color-bg-muted)] hover:bg-[var(--color-border-subtle)] text-[var(--color-text-primary)] font-bold flex items-center gap-1.5 transition cursor-pointer"><LogOut className="w-4 h-4" /><span>{isEn ? 'Sign Out' : 'خروج از حساب'}</span></button>
               </>
             ) : (
-              <button type="button" onClick={p.onGoogleSignIn} className="min-h-[44px] md:min-h-[38px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
+              <button type="button" onClick={p.onGoogleSignIn} className="min-h-[44px] md:min-h-[40px] px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-4 h-4" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
             )}
           </div>
         </div>
         {currentTab === 'overview' && (
-          <div className="pt-3 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="pt-3 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="text-[var(--color-text-secondary)] tabular-nums">
               بودجه فعال:{' '}
               <strong className="text-[var(--color-text-primary)]">
                 {p.mode === 'buy'
-                  ? `${toPersianNum(effectiveBuyBudget)} م خرید${p.useLoanBooster ? ' (با وام)' : ''}`
-                  : `${toPersianNum(p.deposit)}م / ${toPersianNum(p.monthlyRent)}م (رهن معادل: ${toPersianNum(effectiveRahnPower)}م)`}
+                  ? `${formatPersianPrice(effectiveBuyBudget, 'م')} خرید${p.useLoanBooster ? ' (با وام)' : ''}`
+                  : `${formatPersianPrice(p.deposit, 'م')} ودیعه / ${formatPersianPrice(p.monthlyRent, 'م')} اجاره (رهن معادل: ${formatPersianPrice(effectiveRahnPower, 'م')})`}
               </strong>
               {budgetFx ? <span className="text-[var(--color-text-muted)]">{budgetFx}</span> : null}
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={p.onOpenBudgetFilter} className="min-h-[40px] md:min-h-[34px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] font-bold inline-flex items-center gap-1.5 cursor-pointer">
-                <SlidersHorizontal className="w-3.5 h-3.5" /><span>تنظیم بودجه</span>
+              <button type="button" onClick={p.onOpenBudgetFilter} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                <SlidersHorizontal className="w-4 h-4" /><span>تنظیم بودجه</span>
               </button>
-              <button type="button" onClick={p.onOpenVisitedModal} className="min-h-[40px] md:min-h-[34px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] font-bold cursor-pointer">
+              <button type="button" onClick={p.onOpenVisitedModal} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] font-bold cursor-pointer">
                 {isEn ? 'Visit Log' : `دفترچه بازدیدها (${toPersianNum(p.visitedHomesCount)})`}
               </button>
-              <button type="button" onClick={p.onOpenBuyerAlertModal} className="min-h-[40px] md:min-h-[34px] px-3 py-1 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 font-bold cursor-pointer">
+              <button type="button" onClick={p.onOpenBuyerAlertModal} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 font-bold cursor-pointer">
                 {isEn ? 'Deal Alert' : 'ثبت هشدار شکار'}
               </button>
               {favoriteHoods.length >= 2 && p.onOpenShortlistMatrix && (
-                <button type="button" onClick={p.onOpenShortlistMatrix} aria-label="مقایسه ماتریسی منتخب‌ها" className="min-h-[40px] md:min-h-[34px] px-3 py-1 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-brand-600)] dark:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer">
-                  <ArrowLeftRight className="w-3.5 h-3.5" /><span>مقایسه منتخب‌ها</span>
+                <button type="button" onClick={p.onOpenShortlistMatrix} aria-label="مقایسه ماتریسی منتخب‌ها" className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] text-[var(--color-brand-600)] dark:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer">
+                  <ArrowLeftRight className="w-4 h-4" /><span>مقایسه منتخب‌ها</span>
                 </button>
               )}
             </div>
           </div>
         )}
         {confirmDeleteOpen && p.currentUser && (
-          <div className="p-3.5 rounded-2xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="p-3.5 rounded-2xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm">
             <span className="text-rose-800 dark:text-rose-200 font-bold">آیا از حذف دائمی حساب کاربری، آگهی‌ها، هشدارهای خرید و فایل‌های رسانه خود اطمینان دارید؟</span>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => void handleConfirmAccountDelete()} disabled={busyAction === 'delete'} className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
-              <button type="button" onClick={() => setConfirmDeleteOpen(false)} className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold cursor-pointer">انصراف</button>
+              <button type="button" onClick={() => void handleConfirmAccountDelete()} disabled={busyAction === 'delete'} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
+              <button type="button" onClick={() => setConfirmDeleteOpen(false)} className="min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)] font-bold cursor-pointer">انصراف</button>
             </div>
           </div>
         )}
         {deleteLayers && (
-          <div className="p-3 rounded-xl bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] flex flex-wrap gap-2 text-xs font-bold">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] flex flex-wrap gap-2 text-sm font-bold">
             <span>حذف داده‌های سرور: {deleteLayers.serverDeletion === 'completed' ? 'کامل' : 'جزئی'}</span>
             <span>· پاکسازی محلی حساب ({deleteLayers.removedLocalKeysCount} کلید): {deleteLayers.localCleanup === 'completed' ? 'انجام شد' : 'ناموفق'}</span>
             <span>· هویت حساب: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
           </div>
         )}
-        {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-xs font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
+        {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-sm font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
       </div>
       {currentTab !== 'overview' && currentTab !== 'favorites' && (
         <AccountSubSectionsPanel
@@ -248,15 +280,19 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           savedMapViews={workspaceSnapshot.savedMapViews} savedMarketAnalyses={workspaceSnapshot.savedMarketAnalyses}
           evaluatedNeighborhoods={p.evaluatedNeighborhoods} dealMode={p.mode}
           onRemoveSavedProperty={(id) => { removeSavedPropertyById(id, effectiveUid); refreshWorkspace(); }}
-          onCreateSearchWatchlist={() => {}} onChangeSearchCadence={() => {}} onDeleteSearchWatchlist={() => {}}
-          onDeleteSavedMapView={() => {}} onDeleteSavedMarketAnalysis={() => {}}
+          onCreateSearchWatchlist={(title, querySummaryFa, mod) => { createSavedSearchWatchlist({ title, querySummaryFa, module: mod, filtersSnapshot: {}, alertCadence: 'daily_digest' }, effectiveUid); refreshWorkspace(); }}
+          onChangeSearchCadence={(id, cadence) => { toggleSavedSearchAlertCadence(id, cadence, effectiveUid); refreshWorkspace(); }}
+          onDeleteSearchWatchlist={(id) => { deleteSavedSearchWatchlist(id, effectiveUid); refreshWorkspace(); }}
+          onDeleteSavedMapView={(id) => { deleteSavedMapView(id, effectiveUid); refreshWorkspace(); }}
+          onDeleteSavedMarketAnalysis={(id) => { deleteSavedMarketAnalysisById(id, effectiveUid); refreshWorkspace(); }}
+          onRestoreSavedView={p.onRestoreSavedView}
           onOpenBudgetFilter={p.onOpenBudgetFilter} onSelectNeighborhood={p.onSelectNeighborhood} onNavigateView={p.onNavigateView}
         />
       )}
       {(currentTab === 'overview' || currentTab === 'favorites') && (
         <>
           {refHood && (
-            <div className="text-xs text-[var(--color-text-muted)] px-1 tabular-nums">
+            <div className="text-sm text-[var(--color-text-muted)] px-1 tabular-nums">
               محله مرجع فعال ({refHood.name}): برآورد معامله (غیرثبتی) هر متر {toPersianNum(refDealSqm)} میلیون تومان
             </div>
           )}
@@ -270,7 +306,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                   <h3 className="font-bold text-[var(--color-text-primary)] text-sm">{isOtherCity ? `${cityLabel} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
                   {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:text-emerald-300 text-xs font-bold">فعال روی نقشه</span>}
                 </div>
-                <span className="text-xs text-[var(--color-text-muted)]">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
+                <span className="text-sm text-[var(--color-text-muted)]">{hood.zone} · امتیاز {formatPersianScore(hood.overallScore)} {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-700 dark:text-amber-400">· هشدار: {toPersianNum(explain.nonCompensatoryWarningsFa[0])}</strong> : null}</span>
               </div>
             )}
             onToggleFavorite={p.onToggleFavorite} onSelectNeighborhood={p.onSelectNeighborhood} onOpenInspector={p.onOpenInspector}

@@ -173,17 +173,17 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
   const target85mDiscount = Math.round(Math.max(rollup.medianPriceMillionToman * 0.04, rollup.medianPriceMillionToman - rollup.estimatedFairDealMillionToman) * 85);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+    <div className="bg-white dark:bg-[var(--color-bg-surface)] rounded-2xl border border-slate-200 dark:border-[var(--color-border-subtle)] p-4 shadow-sm space-y-4" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+            <h4 className="font-bold text-slate-800 dark:text-[var(--color-text-primary)] text-sm">
               شناسنامه اقتصادی-اجتماعی و مرجع پژوهشی ({rollup.hoodName})
             </h4>
-            <p data-testid="socioeconomic-k-anonymity-badge" className="text-[11px] text-slate-500 dark:text-slate-400 font-mono" dir="ltr">
+            <p data-testid="socioeconomic-k-anonymity-badge" className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] font-mono" dir="ltr">
               Citation ID: {rollup.academicCitationTag} · {rollup.provenanceSource === 'SERVER_K_ANONYMITY' ? (rollup.isSyntheticSimulation ? `k-Anonymity Simulation (k=${rollup.distinctSessionCount ?? 18})` : `k-Anonymity Live (k=${rollup.distinctSessionCount ?? 18})`) : 'Spatial Baseline Model'}
             </p>
           </div>
@@ -205,41 +205,41 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-          <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف سناریوی مذاکره (غیرثبتی):</span>
-            <span className="font-bold text-slate-800 dark:text-slate-100">{toPersianDigits(rollup.estimatedFairDealMillionToman)} م.ت/متر</span>
+          <div className="p-2 rounded-lg bg-white/80 dark:bg-[var(--color-bg-surface)] border border-amber-100 dark:border-amber-900/40">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">کف سناریوی مذاکره (غیرثبتی):</span>
+            <span className="font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{toPersianDigits(rollup.estimatedFairDealMillionToman)} م.ت/متر</span>
           </div>
-          <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">سقف چانه برای واحد ۸۵ متری:</span>
+          <div className="p-2 rounded-lg bg-white/80 dark:bg-[var(--color-bg-surface)] border border-amber-100 dark:border-amber-900/40">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">سقف چانه برای واحد ۸۵ متری:</span>
             <span className="font-bold text-amber-700 dark:text-amber-300">حداقل {toPersianDigits(target85mDiscount)} م.ت تخفیف</span>
           </div>
-          <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">توصیه استراتژیک مذاکره:</span>
-            <span className="font-bold text-slate-700 dark:text-slate-200">{bubbleGapPct > 4 ? 'مشروط‌سازی قرارداد به کارشناسی و استعلام ثبتی' : 'سرعت در نشست، نقدینگی آماده و تثبیت ثمن'}</span>
+          <div className="p-2 rounded-lg bg-white/80 dark:bg-[var(--color-bg-surface)] border border-amber-100 dark:border-amber-900/40">
+            <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] block">توصیه استراتژیک مذاکره:</span>
+            <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">{bubbleGapPct > 4 ? 'مشروط‌سازی قرارداد به کارشناسی و استعلام ثبتی' : 'سرعت در نشست، نقدینگی آماده و تثبیت ثمن'}</span>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700 leading-relaxed">
+      <p className="text-xs text-slate-700 dark:text-[var(--color-text-primary)] bg-slate-50 dark:bg-[var(--color-bg-muted)] p-3 rounded-xl border border-slate-200/80 dark:border-[var(--color-border-strong)] leading-relaxed">
         {rollup.policySummary}
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-rose-500" /><span>فشار استطاعت خرید</span></div>
-          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.affordabilityPressureIndex)} از ۱۰۰</div>
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-rose-500" /><span>فشار استطاعت خرید</span></div>
+          <div className="text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-1">{toPersianDigits(rollup.affordabilityPressureIndex)} از ۱۰۰</div>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Compass className="w-3.5 h-3.5 text-indigo-500" /><span>سال‌های پس‌انداز لازم</span></div>
-          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.yearsOfHouseholdSavingRequired)} سال</div>
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-1"><Compass className="w-3.5 h-3.5 text-indigo-500" /><span>سال‌های پس‌انداز لازم</span></div>
+          <div className="text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-1">{toPersianDigits(rollup.yearsOfHouseholdSavingRequired)} سال</div>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Building2 className="w-3.5 h-3.5 text-amber-500" /><span>شتاب اعیان‌سازی</span></div>
-          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.gentrificationVelocityScore)}٪</div>
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-1"><Building2 className="w-3.5 h-3.5 text-amber-500" /><span>شتاب اعیان‌سازی</span></div>
+          <div className="text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-1">{toPersianDigits(rollup.gentrificationVelocityScore)}٪</div>
         </div>
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>سهم اجاره از درآمد</span></div>
-          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.rentToIncomeBurdenPct)}٪</div>
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/70 dark:border-[var(--color-border-strong)]">
+          <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>سهم اجاره از درآمد</span></div>
+          <div className="text-sm font-bold text-slate-800 dark:text-[var(--color-text-primary)] mt-1">{toPersianDigits(rollup.rentToIncomeBurdenPct)}٪</div>
         </div>
       </div>
 
@@ -251,12 +251,12 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-        <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40 space-y-1.5">
-          <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+        <div className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/40 dark:bg-[var(--color-bg-muted)] space-y-1.5">
+          <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
             <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>ورودی تقاضا به این محله از کجاست؟</span>
           </div>
           {rollup.displacementInflowFrom.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+            <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-[var(--color-text-secondary)]">
               <button type="button" onClick={() => onSelectCompareHood?.(item.hoodName)} className="hover:text-indigo-600 dark:hover:text-indigo-400 font-medium underline decoration-dotted text-right">
                 {item.hoodName}
               </button>
@@ -267,12 +267,12 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           ))}
         </div>
 
-        <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40 space-y-1.5">
-          <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+        <div className="p-3 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] bg-slate-50/40 dark:bg-[var(--color-bg-muted)] space-y-1.5">
+          <div className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
             <ArrowLeftRight className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /><span>کوچ تقاضا از این محله به کدام محلات است؟</span>
           </div>
           {rollup.displacementOutflowTo.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+            <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-[var(--color-text-secondary)]">
               <button type="button" onClick={() => onSelectCompareHood?.(item.hoodName)} className="hover:text-indigo-600 dark:hover:text-indigo-400 font-medium underline decoration-dotted text-right">
                 {item.hoodName}
               </button>

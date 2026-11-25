@@ -92,13 +92,13 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4 text-xs" data-testid="community-questions-tab">
-      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
+      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <HelpCircle className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>طرح پرسش تخصصی (حقوقی، شهرسازی، قیمت‌گذاری و محله {selectedHood.name})</span>
           </h2>
-          <select aria-label="حوزه پرسش" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
+          <select aria-label="حوزه پرسش" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold">
             <option value="topic-legal-contracts">قراردادها و مسائل حقوقی</option>
             <option value="topic-zoning-urban">شهرسازی و ضوابط تراکم</option>
             <option value="topic-valuation">ارزش‌گذاری و قدرالسهم</option>
@@ -112,7 +112,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           value={titleFa}
           onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="سؤال دقیق خود را در یک جمله روشن بنویسید..."
-          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100"
+          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]"
         />
 
         {similarSuggestions.length > 0 && (

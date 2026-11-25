@@ -11,8 +11,9 @@ import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
 import {
+  acquireQueuedResearchProcessingPermitInD1,
   purgeExpiredResearchData,
-  verifyQueuedResearchSubjectConsent,
+  releaseResearchProcessingPermitInD1,
   writePseudonymizedEventsToResearchDb,
 } from '../research/researchService';
 import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
@@ -335,9 +336,19 @@ async function handleTelemetryArchiveFlush(
   };
 }
 
-async function handleResearchEventIngestJob(
+export async function executeQueuedResearchEventIngest(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
+  options?: {
+    nowMs?: number;
+    permitTtlMs?: number;
+    beforeResearchWriteBarrier?: (ctx: {
+      permitId: string;
+      consentRevision: number;
+      subjectKey: string;
+      subjectKeyVersion: string;
+    }) => Promise<void>;
+  },
 ): Promise<QueueJobExecutionResult> {
   const userDb = resolveUserDb(env);
   const researchDb = resolveResearchDb(env);
@@ -363,43 +374,81 @@ async function handleResearchEventIngestJob(
     );
   }
 
-  // Re-verify active consent, monotonic consent_revision, write-blocks, and erasure outbox
-  // against USER_DB immediately before committing queued events to RESEARCH_DB.
-  const consentCheck = await verifyQueuedResearchSubjectConsent({
-    userDb,
-    subjectKey,
-    subjectKeyVersion,
-    expectedConsentRevision,
-  });
-  if (consentCheck.allowed === false) {
-    throw new QueueJobExecutionError(
-      consentCheck.code,
-      `Queued research_event_ingest rejected by USER_DB consent gate: ${consentCheck.code}`,
-      consentCheck.statusCode === 503,
-    );
-  }
-
+  const nowMs = options?.nowMs ?? Date.now();
   const validated: ValidatedResearchEvent[] = [];
   for (const item of rawEvents) {
-    const check = validateAndMinimizeResearchEvent(item);
+    const check = validateAndMinimizeResearchEvent(item, nowMs);
     if ('event' in check && check.ok) validated.push(check.event);
   }
   if (validated.length === 0) {
     throw new QueueJobExecutionError('INVALID_RESEARCH_EVENTS', 'Zero valid research events in queue payload', false);
   }
-  const res = await writePseudonymizedEventsToResearchDb({
-    researchDb,
+
+  // Atomically verify active consent, consent_revision, write-blocks, and erasure outbox
+  // AND acquire a bounded-lease processing permit in USER_DB before writing to RESEARCH_DB.
+  const permit = await acquireQueuedResearchProcessingPermitInD1({
+    userDb,
     subjectKey,
     subjectKeyVersion,
-    events: validated,
+    expectedConsentRevision,
+    ttlMs: options?.permitTtlMs,
+    nowMs,
   });
-  return {
-    jobType: 'research_event_ingest',
-    idempotencyKey: envelope.idempotencyKey,
-    executedAtIso: new Date().toISOString(),
-    affectedCount: res.acceptedCount,
-    summary: { ...res, consentRevision: consentCheck.consentRevision },
-  };
+  if (permit.ok === false) {
+    throw new QueueJobExecutionError(
+      permit.code,
+      `Queued research_event_ingest rejected by USER_DB consent barrier: ${permit.code}`,
+      permit.statusCode === 503,
+    );
+  }
+
+  try {
+    if (options?.beforeResearchWriteBarrier) {
+      await options.beforeResearchWriteBarrier({
+        permitId: permit.permitId,
+        consentRevision: permit.consentRevision,
+        subjectKey,
+        subjectKeyVersion,
+      });
+    }
+
+    const res = await writePseudonymizedEventsToResearchDb({
+      researchDb,
+      subjectKey,
+      subjectKeyVersion,
+      consentRevision: permit.consentRevision,
+      events: validated,
+      nowMs,
+    });
+
+    if (res.fencedCount > 0 && res.acceptedCount === 0) {
+      throw new QueueJobExecutionError(
+        'CONSENT_FENCED_IN_RESEARCH_DB',
+        'Queued research_event_ingest blocked atomically by RESEARCH_DB consent fence',
+        false,
+      );
+    }
+
+    return {
+      jobType: 'research_event_ingest',
+      idempotencyKey: envelope.idempotencyKey,
+      executedAtIso: new Date(nowMs).toISOString(),
+      affectedCount: res.acceptedCount,
+      summary: { ...res, consentRevision: permit.consentRevision, permitId: permit.permitId },
+    };
+  } finally {
+    await releaseResearchProcessingPermitInD1({
+      userDb,
+      permitId: permit.permitId,
+    }).catch(() => {});
+  }
+}
+
+async function handleResearchEventIngestJob(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  return executeQueuedResearchEventIngest(envelope, env);
 }
 
 async function handleResearchSubjectErasureJob(

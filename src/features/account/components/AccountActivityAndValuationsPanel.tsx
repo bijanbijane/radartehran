@@ -34,18 +34,18 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
   return (
     <div className="space-y-4 text-xs" data-testid="account-activity-valuations">
       {/* Visit Log Card */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-white">دفترچه بازدیدهای میدانی</h2>
           <p className="text-slate-500 mt-1 tabular-nums">تاکنون {toPersianNum(visitedHomesCount)} بازدید ملکی ثبت کرده‌اید.</p>
         </div>
-        <button type="button" onClick={onOpenVisitedModal} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
+        <button type="button" onClick={onOpenVisitedModal} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
           مشاهده و ثبت بازدید
         </button>
       </div>
 
       {/* Saved Valuation Reports History */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Calculator className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -61,7 +61,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {savedValuations.map((rep) => (
-              <div key={rep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div key={rep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-bold text-slate-900 dark:text-white">
@@ -75,7 +75,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
                     {toPersianNum((rep.hedonicTotalMillion / 1000).toFixed(2))} م.ت (میلیارد)
                   </strong>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)]">
                   <button
                     type="button"
                     onClick={() => handleReloadValuation(rep.id)}
@@ -95,7 +95,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
       </div>
 
       {/* Unified Activity Stream */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <History className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>خط زمانی فعالیت‌های حساب</span>
@@ -103,7 +103,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
         {timeline.length === 0 ? (
           <p className="text-slate-500">فعالیتی ثبت نشده است.</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
             {timeline.map((t) => (
               <div key={t.id} className="py-2.5 flex items-center justify-between gap-2">
                 <div>
@@ -111,7 +111,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
                   <div className="text-[11px] text-slate-500">{t.metaFa}</div>
                 </div>
                 {t.targetView && (
-                  <button type="button" onClick={() => onNavigateView?.(t.targetView!, t.targetSubTab)} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold cursor-pointer">
+                  <button type="button" onClick={() => onNavigateView?.(t.targetView!, t.targetSubTab)} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] font-bold cursor-pointer">
                     مشاهده
                   </button>
                 )}

@@ -61,48 +61,48 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const activeCityName = resolveActiveCityDisplayName(p.activeCity, isEn);
   const navigateTo = (view: PrimaryViewId, subTab?: ModuleSubTabId) => { ui.setActiveSubTab?.(subTab); ui.setPrimaryView(view); };
 
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : '';
+  const isNeighborhoodDetailSlug =
+    primaryView === 'discover' &&
+    ((currentPath.startsWith('/areas/') && currentPath !== '/areas/registry') || currentPath.startsWith('/neighborhoods/'));
+
   const mapAxisBar = effectiveSplitMap ? (
-    <div className="sticky top-0 z-20 w-full bg-white/95 dark:bg-[#131E1B]/95 backdrop-blur-md border-b border-[var(--color-border-subtle)] dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1">
-      <div className="max-w-[1320px] mx-auto flex flex-wrap items-center justify-between gap-1.5 text-xs">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <select aria-label="تغییر سریع محله فعال روی نقشه" value={selectedHood.id} onChange={(e) => { const found = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (found) handleSelectNeighborhood(found); }} className="font-bold text-[var(--color-text-primary)] dark:text-white bg-[var(--color-bg-muted)] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-[var(--color-brand-600)] cursor-pointer max-w-[145px] sm:max-w-[190px] truncate">
+    <div className="sticky top-0 z-20 w-full bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-subtle)] px-3 sm:px-4 py-2 space-y-1.5">
+      <div className="max-w-[1320px] mx-auto flex flex-wrap items-center justify-between gap-2 text-sm">
+        <div className="flex items-center gap-2 min-w-0">
+          <select aria-label="تغییر سریع محله فعال روی نقشه" value={selectedHood.id} onChange={(e) => { const found = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (found) handleSelectNeighborhood(found); }} className="min-h-[44px] lg:min-h-[36px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] rounded-lg px-2.5 py-1 text-sm focus:outline-none focus:border-[var(--color-brand-600)] cursor-pointer max-w-[175px] sm:max-w-[220px] truncate">
             {evaluatedNeighborhoods.map((h) => (
-              <option key={h.id} value={h.id}>{isEn ? `${h.name} (${h.overallScore}/10)` : `محله ${h.name} (${h.overallScore}/۱۰)`}</option>
+              <option key={h.id} value={h.id}>
+                {isEn
+                  ? `${h.name} (${h.overallScore.toFixed(1)}/10)`
+                  : `محله ${h.name} (${toPersianNum(h.overallScore.toFixed(1).replace('.', '٫'))} از ۱۰)`}
+              </option>
             ))}
           </select>
-          <span className="hidden xl:inline text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums whitespace-nowrap">برآورد معامله: {activeDealLabel}</span>
-          <button type="button" onClick={() => ui.setMobileSheetOpen(true)} className="px-2.5 py-1 rounded-md bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 border border-[var(--color-brand-600)]/25 text-xs font-bold hover:opacity-90 transition cursor-pointer shrink-0 whitespace-nowrap">{isEn ? 'Scorecard ↗' : 'کارنامه محله ↗'}</button>
-          <div role="group" aria-label={isEn ? 'Map lens' : 'لنز نمایش نقشه'} className="hidden md:flex items-center gap-0.5 bg-[var(--color-bg-muted)] dark:bg-slate-800 p-0.5 rounded-lg shrink-0 text-xs">
-            {([{ id: 'budget', label: isEn ? 'Budget' : 'بودجه' }, { id: 'heatmap', label: isEn ? 'Heatmap' : 'هیت‌مپ' }, { id: 'bubble', label: isEn ? 'Bubble' : 'حباب' }, { id: 'air', label: isEn ? 'Air' : 'هوا' }, { id: 'traffic', label: isEn ? 'Traffic' : 'ترافیک' }] as const).map((l) => (
-              <button key={l.id} type="button" aria-pressed={ui.mapLens === l.id} onClick={() => ui.setMapLens(l.id)} className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer whitespace-nowrap ${ui.mapLens === l.id ? 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white shadow-2xs' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] dark:hover:text-white'}`}>{l.label}</button>
-            ))}
-          </div>
+          <span className="hidden xl:inline text-sm font-semibold text-[var(--color-brand-fg)] tabular-nums whitespace-nowrap">برآورد معامله: {activeDealLabel}</span>
+          <button type="button" onClick={() => ui.setMobileSheetOpen(true)} className="min-h-[44px] lg:min-h-[36px] px-3 py-1 rounded-lg bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] border border-[var(--color-brand-soft-border)] text-sm font-semibold hover:opacity-90 transition cursor-pointer shrink-0 whitespace-nowrap">{isEn ? 'Scorecard ↗' : 'کارنامه محله ↗'}</button>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0 lg:hidden text-xs">
-            <button type="button" aria-pressed={showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })} className={`px-2 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showMetroLines ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-white dark:bg-slate-800 text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] dark:border-slate-700'}`}>{isEn ? 'Metro' : 'مترو'}</button>
-            <button type="button" aria-pressed={showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })} className={`px-2 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'bg-white dark:bg-slate-800 text-[var(--color-text-secondary)] border-[var(--color-border-subtle)] dark:border-slate-700'}`}>{isEn ? 'Traffic' : 'طرح'}</button>
+        <div className="flex items-center gap-2">
+          <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1.5 shrink-0 lg:hidden text-sm">
+            <button type="button" aria-pressed={showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })} className={`min-h-[44px] px-3 py-1 rounded-lg border font-semibold transition cursor-pointer whitespace-nowrap ${showMetroLines ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'}`}>{isEn ? 'Metro' : 'مترو'}</button>
+            <button type="button" aria-pressed={showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })} className={`min-h-[44px] px-3 py-1 rounded-lg border font-semibold transition cursor-pointer whitespace-nowrap ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]'}`}>{isEn ? 'Traffic' : 'طرح'}</button>
           </div>
-          <div role="group" aria-label={isEn ? 'Deal Mode' : 'نوع معامله'} className="hidden sm:inline-flex items-center bg-[var(--color-bg-muted)] dark:bg-slate-800 p-0.5 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700">
-            <button type="button" onClick={() => p.setMode('buy')} className={`px-2 py-0.5 rounded-md text-xs font-bold transition cursor-pointer whitespace-nowrap ${p.mode === 'buy' ? 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white shadow-2xs' : 'text-[var(--color-text-muted)]'}`}>{isEn ? 'Buy' : 'خرید'}</button>
-            <button type="button" onClick={() => p.setMode('rent')} className={`px-2 py-0.5 rounded-md text-xs font-bold transition cursor-pointer whitespace-nowrap ${p.mode === 'rent' ? 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white shadow-2xs' : 'text-[var(--color-text-muted)]'}`}>{isEn ? 'Rent' : 'رهن/اجاره'}</button>
-          </div>
-          <button type="button" data-testid="toggle-split-map-btn" onClick={() => setSplitMapMode((s) => !s)} className="hidden lg:flex px-2.5 py-1 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] dark:text-slate-200 text-xs font-bold items-center gap-1 transition cursor-pointer whitespace-nowrap">
+          <button type="button" data-testid="toggle-split-map-btn" onClick={() => setSplitMapMode((s) => !s)} className="hidden lg:inline-flex min-h-[36px] px-3 py-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] text-sm font-semibold items-center gap-1 transition cursor-pointer whitespace-nowrap">
             <span>{isEn ? 'Full Width' : 'نمای تمام‌عرض'}</span>
           </button>
-          <button type="button" onClick={() => navigateTo('map')} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center gap-1 transition cursor-pointer whitespace-nowrap">
+          <button type="button" onClick={() => navigateTo('map')} className="min-h-[44px] lg:min-h-[36px] px-3 py-1 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-sm font-semibold flex items-center gap-1 transition cursor-pointer whitespace-nowrap">
             <span>{isEn ? 'Full Map' : 'نقشه کامل'}</span>
           </button>
         </div>
       </div>
       {hasActiveArc && comparisonArc.hoodA && comparisonArc.hoodB && (
-        <div className="max-w-[1320px] mx-auto flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-[#EAF3F0] dark:bg-emerald-950/60 border border-[var(--color-brand-600)]/25 text-xs">
-          <span className="font-bold text-[var(--color-brand-700)] dark:text-emerald-200 truncate">
+        <div className="max-w-[1320px] mx-auto flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-brand-soft)] border border-[var(--color-brand-soft-border)] text-sm">
+          <span className="font-semibold text-[var(--color-brand-fg)] truncate">
             {isEn ? 'Active Comparison Arc:' : 'کمان مقایسه فعال روی نقشه:'} <strong>{comparisonArc.hoodA.name}</strong> ⇄ <strong>{comparisonArc.hoodB.name}</strong>
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button type="button" onClick={() => { ui.setCompareId1(comparisonArc.hoodA!.id); ui.setCompareId2(comparisonArc.hoodB!.id); ui.setShowCompareModal(true); }} className="px-2 py-0.5 rounded bg-[var(--color-brand-600)] text-white font-bold hover:opacity-90 transition cursor-pointer whitespace-nowrap">{isEn ? 'Full Matrix' : 'جدول مقایسه کامل'}</button>
-            <button type="button" aria-label="حذف کمان مقایسه" onClick={() => updateMapAdvancedOverlayState({ comparisonArc: { active: false, isPinned: false, hoodA: null, hoodB: null } })} className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold cursor-pointer">✕</button>
+            <button type="button" onClick={() => { ui.setCompareId1(comparisonArc.hoodA!.id); ui.setCompareId2(comparisonArc.hoodB!.id); ui.setShowCompareModal(true); }} className="min-h-[36px] px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-semibold hover:opacity-90 transition cursor-pointer whitespace-nowrap">{isEn ? 'Full Matrix' : 'جدول مقایسه کامل'}</button>
+            <button type="button" aria-label="حذف کمان مقایسه" onClick={() => updateMapAdvancedOverlayState({ comparisonArc: { active: false, isPinned: false, hoodA: null, hoodB: null } })} className="min-h-[36px] min-w-[36px] px-2 py-1 rounded-lg bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)] font-bold cursor-pointer">✕</button>
           </div>
         </div>
       )}
@@ -124,10 +124,6 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
       />
     );
   } else if (primaryView === 'discover') {
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : '';
-    const isNeighborhoodDetailSlug =
-      (currentPath.startsWith('/areas/') && currentPath !== '/areas/registry') ||
-      currentPath.startsWith('/neighborhoods/');
     content = effectiveSubTab === 'registry' ? (
       <GeographicRegistryView />
     ) : isNeighborhoodDetailSlug ? (
@@ -183,6 +179,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} featureFlags={p.featureFlags} activeCity={p.activeCity}
         currentUser={p.currentUser} targetSqm={p.targetSqm} activeSubTab={effectiveSubTab as ToolsSubTabId}
+        onSelectSubTab={(t) => ui.setActiveSubTab?.(t)}
       />
     );
   } else if (primaryView === 'userspace') {
@@ -236,9 +233,18 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   if (!content) return null;
   const { shellBg, splitShell } = resolveProductViewRouterShellClasses(effectiveSplitMap, homeContentFirst);
   return (
-    <div className={`overflow-y-auto pb-20 md:pb-8 pointer-events-auto transition-[background-color,box-shadow] duration-200 min-w-0 flex flex-col ${shellBg} ${effectiveSplitMap ? 'lg:border-l border-[var(--color-border-subtle)] dark:border-slate-800 shadow-2xl' : ''} ${splitShell}`}>
+    <div className={`overflow-y-auto pb-20 md:pb-8 pointer-events-auto transition-[background-color,box-shadow] duration-200 min-w-0 flex flex-col ${shellBg} ${effectiveSplitMap ? 'lg:border-l border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] shadow-2xl' : ''} ${splitShell}`}>
       {mapAxisBar}
-      <ModuleSecondaryNav primaryView={primaryView} subTab={effectiveSubTab} tabs={secondaryTabs} onSelectSubTab={(t) => ui.setActiveSubTab?.(t)} onNavigateView={navigateTo} locale={radarLocale} cityName={activeCityName} hoodName={selectedHood.name} />
+      <ModuleSecondaryNav
+        primaryView={primaryView}
+        subTab={effectiveSubTab}
+        tabs={isNeighborhoodDetailSlug ? [] : secondaryTabs}
+        onSelectSubTab={(t) => ui.setActiveSubTab?.(t)}
+        onNavigateView={navigateTo}
+        locale={radarLocale}
+        cityName={activeCityName}
+        hoodName={isNeighborhoodDetailSlug ? selectedHood.name : undefined}
+      />
       <div className="flex-1">
         <FeatureErrorBoundary key={primaryView} sectionName="بخش محتوای رادار" resetKey={`${primaryView}-${effectiveSubTab || 'default'}`}>
           <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>{content}</React.Suspense>

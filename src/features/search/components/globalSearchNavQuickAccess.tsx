@@ -15,7 +15,7 @@ export const GlobalSearchNavQuickAccess: React.FC<GlobalSearchNavQuickAccessProp
   if (items.length === 0) return null;
   return (
     <div
-      className="border-b border-slate-100 dark:border-slate-800 pb-2 mb-1 space-y-1"
+      className="border-b border-slate-100 dark:border-[var(--color-border-subtle)] pb-2 mb-1 space-y-1"
       data-testid="global-search-nav-quick-access"
     >
       <p className="px-2 text-[10px] font-semibold text-slate-500">بخش‌های مرتبط در رادار</p>
@@ -24,7 +24,7 @@ export const GlobalSearchNavQuickAccess: React.FC<GlobalSearchNavQuickAccessProp
           key={entry.id}
           type="button"
           role="option"
-          className="w-full text-right px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+          className="w-full text-right px-2 py-1.5 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] cursor-pointer"
           onClick={() => {
             onCloseSuggestions?.();
             onSelectPath?.(entry.href);

@@ -24,16 +24,16 @@ export const SupplyCompositionChart: React.FC<SupplyCompositionChartProps> = ({
 
   const renderBars = (title: string, items: SupplyCompositionSegment[], barColor: string) => (
     <div className="space-y-2">
-      <div className="text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">{title}</div>
+      <div className="text-xs font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">{title}</div>
       {items.map((seg) => (
         <div key={seg.key} className="space-y-1 text-xs tabular-nums">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[var(--color-text-secondary)] dark:text-slate-300">{seg.labelFa}</span>
+            <span className="text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)]">{seg.labelFa}</span>
             <span className="font-bold text-[var(--color-text-primary)] dark:text-white">
               {toPersianNum(seg.count)} فایل ({toPersianNum(seg.sharePct)}٪)
             </span>
           </div>
-          <div className="w-full h-2 rounded bg-[#EEF2EF] dark:bg-slate-800 overflow-hidden">
+          <div className="w-full h-2 rounded bg-[#EEF2EF] dark:bg-[var(--color-bg-muted)] overflow-hidden">
             <div className={`h-full rounded ${barColor}`} style={{ width: `${Math.max(seg.count > 0 ? 4 : 0, seg.sharePct)}%` }} />
           </div>
         </div>

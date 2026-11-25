@@ -91,8 +91,8 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
   const diffTotalMillion = Math.abs(hoodA.buyPerSqm - hoodB.buyPerSqm) * targetSqm;
 
   return (
-    <div className="my-3 apple-grouped-card bg-white dark:bg-slate-900 overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-xs transition-all duration-300">
-      <div className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition bg-slate-50/60 dark:bg-slate-900">
+    <div className="my-3 apple-grouped-card bg-white dark:bg-[var(--color-bg-surface)] overflow-hidden border border-slate-200/90 dark:border-[var(--color-border-subtle)] shadow-xs transition-all duration-300">
+      <div className="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50/70 dark:hover:bg-[var(--color-bg-elevated)] transition bg-slate-50/60 dark:bg-[var(--color-bg-surface)]">
         <button
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
@@ -100,17 +100,17 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
           aria-label={compareCopy.inlineTitle}
           className="flex-1 min-w-0 flex items-center gap-2 text-right cursor-pointer"
         >
-          <div className="w-7 h-7 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+          <div className="w-7 h-7 rounded-[8px] bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] flex items-center justify-center shrink-0 border border-slate-200 dark:border-[var(--color-border-strong)]">
             <Layers className="w-4 h-4 stroke-[1.75]" />
           </div>
           <div className="text-right min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{compareCopy.inlineTitle}</span>
-              <span className="px-1.5 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold tabular-nums">
+              <span className="text-xs font-bold text-slate-800 dark:text-[var(--color-text-primary)]">{compareCopy.inlineTitle}</span>
+              <span className="px-1.5 py-0.5 rounded-[6px] bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)] text-[10px] font-bold tabular-nums">
                 {hoodA.name} vs {hoodB.name}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+            <div className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] truncate">
               {isExpanded ? (isEn ? 'Close side-by-side comparison table' : 'جدول مقایسه شاخص‌های هوا، مترو و قیمت') : (isEn ? 'Click to expand comparison table' : 'کلیک کنید تا جدول مقایسه ۲ محله باز شود')}
             </div>
           </div>
@@ -123,7 +123,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
             className={`px-2 py-1 rounded-[7px] text-[10px] font-bold border flex items-center gap-1 transition cursor-pointer ${
               isPinnedA
                 ? 'bg-slate-900 dark:bg-[var(--color-brand-600)] text-white border-slate-900 dark:border-emerald-600 shadow-2xs'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                : 'bg-white dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'
             }`}
             title="قفل کردن محله اول و ترسیم کمان مقایسه زنده روی نقشه با کلیک روی سایر محلات"
           >
@@ -139,7 +139,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
             <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hidden sm:inline">
               {isExpanded ? (isEn ? 'Collapse' : 'بستن جدول') : (isEn ? 'View Table' : 'مشاهده جدول')}
             </span>
-            <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+            <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-[var(--color-bg-muted)] flex items-center justify-center text-slate-500 dark:text-[var(--color-text-muted)]">
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5 stroke-[2]" /> : <ChevronDown className="w-3.5 h-3.5 stroke-[2]" />}
             </div>
           </button>
@@ -147,8 +147,8 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
       </div>
 
       {isExpanded && (
-        <div className="p-3 border-t border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 animate-in fade-in-0 duration-200">
-          <div className="flex items-center justify-between gap-1.5 p-2 rounded-[10px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-xs">
+        <div className="p-3 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] space-y-3 animate-in fade-in-0 duration-200">
+          <div className="flex items-center justify-between gap-1.5 p-2 rounded-[10px] bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-xs">
             <div className="flex-1 min-w-0 text-center">
               <button
                 type="button"
@@ -156,13 +156,13 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                 className={`text-[10px] font-bold mb-0.5 inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-md transition cursor-pointer ${
                   isPinnedA
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700'
+                    : 'text-slate-500 dark:text-[var(--color-text-muted)] hover:bg-slate-200/70 dark:hover:bg-[var(--color-bg-elevated)]'
                 }`}
               >
                 <Pin className={`w-2.5 h-2.5 ${isPinnedA ? 'text-[var(--color-brand-600)] fill-emerald-600' : 'text-slate-500'}`} />
                 <span>{isPinnedA ? (isEn ? 'Slot 1 (Pinned)' : 'محله اول (پین قفل شد)') : (isEn ? 'Slot 1 (Pin)' : 'محله اول (پین کردن)')}</span>
               </button>
-              <div className="font-bold text-slate-900 dark:text-slate-100 truncate">{hoodA.name}</div>
+              <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] truncate">{hoodA.name}</div>
               <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                 {isEn ? 'Score: ' : 'امتیاز: '}{toPersianNum(hoodA.overallScore)}
               </div>
@@ -172,17 +172,17 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
               onClick={handleSwap}
               title="جابجایی دو محله"
               aria-label="جابجایی دو محله"
-              className="p-1.5 rounded-full bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 transition shrink-0 cursor-pointer shadow-2xs"
+              className="p-1.5 rounded-full bg-white dark:bg-[var(--color-bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)] transition shrink-0 cursor-pointer shadow-2xs"
             >
               <ArrowLeftRight className="w-3.5 h-3.5 stroke-[2]" />
             </button>
             <div className="flex-1 min-w-0 text-center">
-              <div className="text-[10px] text-slate-400 dark:text-slate-400 font-bold mb-0.5">{isEn ? 'Slot 2 (Compare)' : 'محله دوم (انتخابی)'}</div>
+              <div className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] font-bold mb-0.5">{isEn ? 'Slot 2 (Compare)' : 'محله دوم (انتخابی)'}</div>
               <select
                 aria-label={isEn ? 'Select second neighborhood to compare' : 'انتخاب محله دوم برای مقایسه'}
                 value={hoodBId}
                 onChange={(e) => setHoodBId(Number(e.target.value))}
-                className="w-full text-center text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] py-0.5 px-1 focus:outline-none focus:border-emerald-500 cursor-pointer truncate"
+                className="w-full text-center text-xs font-bold text-slate-900 dark:text-[var(--color-text-primary)] bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-[7px] py-0.5 px-1 focus:outline-none focus:border-emerald-500 cursor-pointer truncate"
               >
                 {allNeighborhoods.map((h) => {
                   const optVal = mode === 'rent' ? h.rahn80m : convertPricePerSqmToUnit(h.buyPerSqm, areaUnit);
@@ -200,7 +200,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-1 px-2.5 py-1.5 rounded-[8px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-[11px] font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-1 px-2.5 py-1.5 rounded-[8px] bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-[11px] font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
             <span className="flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
               <span>{isEn ? 'Summary Result' : 'نتیجه مقایسه'} ({formatAreaShort(targetSqm, areaUnit)}: {isEn ? 'Diff ' : 'اختلاف '}{toPersianNum((diffTotalMillion / 1000).toFixed(1))} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(diffTotalMillion, intlCurrency, radarLocale)}` : ''}):</span>
@@ -214,19 +214,19 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-[10px] border border-slate-200/80 dark:border-slate-800">
+          <div className="overflow-x-auto rounded-[10px] border border-slate-200/80 dark:border-[var(--color-border-subtle)]">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="bg-slate-100/90 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border-b border-slate-200 dark:border-slate-700">
+                <tr className="bg-slate-100/90 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] text-[11px] font-bold border-b border-slate-200 dark:border-[var(--color-border-strong)]">
                   <th className="py-2 px-2.5">{isEn ? 'Metric' : 'شاخص ارزیابی'}</th>
                   <th className="py-2 px-2 text-center w-28">{hoodA.name}</th>
                   <th className="py-2 px-2 text-center w-28">{hoodB.name}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
                 {metrics.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition">
-                    <td className="py-2 px-2.5 font-bold text-slate-700 dark:text-slate-300">
+                  <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-[var(--color-bg-elevated)] transition">
+                    <td className="py-2 px-2.5 font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">
                       <div className="flex items-center gap-1.5">
                         {m.icon} <span>{m.label}</span>
                       </div>
@@ -235,21 +235,21 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                       className={`py-2 px-2 text-center tabular-nums font-bold ${
                         m.winner === 'A'
                           ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
-                          : 'text-slate-800 dark:text-slate-200'
+                          : 'text-slate-800 dark:text-[var(--color-text-primary)]'
                       }`}
                     >
                       <div>{m.valA}</div>
-                      {m.subA && <div className="text-[9.5px] text-slate-400 dark:text-slate-400 font-normal">{m.subA}</div>}
+                      {m.subA && <div className="text-[9.5px] text-slate-400 dark:text-[var(--color-text-muted)] font-normal">{m.subA}</div>}
                     </td>
                     <td
                       className={`py-2 px-2 text-center tabular-nums font-bold ${
                         m.winner === 'B'
                           ? 'bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
-                          : 'text-slate-800 dark:text-slate-200'
+                          : 'text-slate-800 dark:text-[var(--color-text-primary)]'
                       }`}
                     >
                       <div>{m.valB}</div>
-                      {m.subB && <div className="text-[9.5px] text-slate-400 dark:text-slate-400 font-normal">{m.subB}</div>}
+                      {m.subB && <div className="text-[9.5px] text-slate-400 dark:text-[var(--color-text-muted)] font-normal">{m.subB}</div>}
                     </td>
                   </tr>
                 ))}
@@ -262,14 +262,14 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
               <button
                 type="button"
                 onClick={() => onSelectNeighborhood(hoodA)}
-                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodA.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
+                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodA.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}
               >
                 {currentHood.id === hoodA.id ? (isEn ? 'Current Hood' : 'محله فعلی در پنل') : `${isEn ? 'View ' : 'مشاهده '}${hoodA.name}`}
               </button>
               <button
                 type="button"
                 onClick={() => onSelectNeighborhood(hoodB)}
-                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodB.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
+                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodB.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}
               >
                 {currentHood.id === hoodB.id ? (isEn ? 'Current Hood' : 'محله فعلی در پنل') : `${isEn ? 'View ' : 'مشاهده '}${hoodB.name}`}
               </button>

@@ -18,14 +18,14 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         <AdminEnvConfigPanel />
         <React.Suspense fallback={<div className="p-3 text-slate-400">در حال بارگذاری مرکز کلود و هوش مصنوعی...</div>}><AdminCloudAiCommerceCenter /></React.Suspense>
         <AdminPanel neighborhoods={neighborhoods} sponsorRequests={sponsorRequests} buyerLeads={buyerLeads} isVerifiedAdmin={isVerifiedAdmin} />
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+              <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] text-sm">
                 مانیتورینگ زنده سلامت سرور، Rate Limiter و لاگ‌های امنیتی
               </div>
-              <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+              <div className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px]">
                 داده‌های زنده از اندپوینت <code className="font-mono">/api/system-health</code> · رویدادهای کلاینت: {toPersianNum(clientDiagnosticsCount)}
               </div>
             </div>
@@ -78,53 +78,53 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               {auditReport.steps.map((s) => (
                 <div key={s.step} className="py-2 flex items-center justify-between gap-2 text-xs hover:bg-emerald-500/5 px-2 rounded-lg transition">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0">#{toPersianNum(s.step)}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 shrink-0">{s.domain}</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{s.name}</span>
+                    <span className="font-mono font-bold text-slate-500 dark:text-[var(--color-text-muted)] shrink-0">#{toPersianNum(s.step)}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)] shrink-0">{s.domain}</span>
+                    <span className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] truncate">{s.name}</span>
                   </div>
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px] truncate shrink-0 max-w-xs">{s.details}</span>
+                  <span className="text-slate-500 dark:text-[var(--color-text-muted)] text-[11px] truncate shrink-0 max-w-xs">{s.details}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>آپ‌تایم سرور (Uptime)</span>
               <Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            <div className="text-base font-bold text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.uptimeMinutes)} دقیقه (${toPersianNum(systemHealth.uptimeHours)} ساعت)` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
             </div>
             <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">پایداری هسته Express: فعال (OK)</div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>مصرف حافظه رم (RSS)</span>
               <Cpu className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+            <div className="text-base font-bold text-slate-900 dark:text-[var(--color-text-primary)] tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.memoryRssMb)} مگابایت` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              سقف Payload مجاز: <strong className="text-slate-800 dark:text-slate-200">{systemHealth?.securityMetrics?.payloadLimit || '128kb'}</strong>
+            <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
+              سقف Payload مجاز: <strong className="text-slate-800 dark:text-[var(--color-text-primary)]">{systemHealth?.securityMetrics?.payloadLimit || '128kb'}</strong>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>سپر ضدحمله (Rate Limiter)</span>
               <ShieldCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
-            <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <div className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
               {systemHealth?.securityMetrics?.generalRateLimit || '180 req / min'} · {systemHealth?.securityMetrics?.heavySyncRateLimit || '3 req / 10 min'}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              IPهای فعال: <strong className="text-slate-800 dark:text-slate-200">{toPersianNum(systemHealth?.securityMetrics?.activeTrackedIps ?? 1)}</strong> | مسدودشده: <strong className="text-rose-600 dark:text-rose-400">{toPersianNum(systemHealth?.securityMetrics?.totalBlockedRequests ?? 0)}</strong>
+            <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
+              IPهای فعال: <strong className="text-slate-800 dark:text-[var(--color-text-primary)]">{toPersianNum(systemHealth?.securityMetrics?.activeTrackedIps ?? 1)}</strong> | مسدودشده: <strong className="text-rose-600 dark:text-rose-400">{toPersianNum(systemHealth?.securityMetrics?.totalBlockedRequests ?? 0)}</strong>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[var(--color-text-muted)]">
               <span>وضعیت API هوا و هوش مصنوعی</span>
               <Server className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
@@ -132,44 +132,44 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${systemHealth?.apiConnectivity?.openMeteoStatus === 'OK' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
                 Open-Meteo: {systemHealth?.apiConnectivity?.openMeteoStatus || 'OK'}
               </span>
-              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${systemHealth?.apiConnectivity?.geminiConfigured ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
+              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${systemHealth?.apiConnectivity?.geminiConfigured ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-200 dark:bg-[var(--color-bg-elevated)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
                 Gemini: {systemHealth?.apiConnectivity?.geminiConfigured ? 'متصل' : 'کش داخلی'}
               </span>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              نوبت بعدی رصد: <strong className="text-slate-800 dark:text-slate-200">{systemHealth?.cacheStatus?.nextScheduledTimeFa || 'ساعت زوج بعدی'}</strong>
+            <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)]">
+              نوبت بعدی رصد: <strong className="text-slate-800 dark:text-[var(--color-text-primary)]">{systemHealth?.cacheStatus?.nextScheduledTimeFa || 'ساعت زوج بعدی'}</strong>
             </div>
           </div>
         </div>
         {systemHealth?.cacheStatus && (
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
             <div>
-              وضعیت کش سرور: <strong className="text-emerald-700 dark:text-emerald-400">{systemHealth.cacheStatus.state}</strong> · آخرین بروزرسانی: <strong className="text-slate-900 dark:text-slate-100">{systemHealth.cacheStatus.lastUpdatedTimeFa}</strong>
+              وضعیت کش سرور: <strong className="text-emerald-700 dark:text-emerald-400">{systemHealth.cacheStatus.state}</strong> · آخرین بروزرسانی: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{systemHealth.cacheStatus.lastUpdatedTimeFa}</strong>
             </div>
             <div>
-              محله‌های فعال در کش: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum(systemHealth.cacheStatus.totalCachedNeighborhoods)} محله</strong> · بازنویسی‌های عمیق Gemini: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(systemHealth.cacheStatus.deepSyncedOverridesCount)} محله</strong>
+              محله‌های فعال در کش: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{toPersianNum(systemHealth.cacheStatus.totalCachedNeighborhoods)} محله</strong> · بازنویسی‌های عمیق Gemini: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(systemHealth.cacheStatus.deepSyncedOverridesCount)} محله</strong>
             </div>
           </div>
         )}
-        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-          <div className="bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
+        <div className="border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl overflow-hidden bg-white dark:bg-[var(--color-bg-surface)]">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] px-3.5 py-2.5 border-b border-slate-200 dark:border-[var(--color-border-strong)] flex items-center justify-between font-bold text-slate-800 dark:text-[var(--color-text-primary)]">
             <div className="flex items-center gap-1.5">
               <Activity className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۲۰ لاگ اخیر رویدادها و همگام‌سازی سرور (Audit Ring Buffer)</span>
             </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">بروزرسانی لحظه‌ای</span>
+            <span className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] font-normal">بروزرسانی لحظه‌ای</span>
           </div>
-          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-[var(--color-border-subtle)]">
             {!systemHealth?.recentLogs || systemHealth.recentLogs.length === 0 ? (
               <div className="py-6 text-center text-slate-400">هنوز رویدادی در بافر سرور ثبت نشده است.</div>
             ) : (
               systemHealth.recentLogs.map((log) => (
-                <div key={log.id} className="px-3.5 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+                <div key={log.id} className="px-3.5 py-2 flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-[var(--color-bg-elevated)]">
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.level === 'SYNC' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : log.level === 'WARN' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.level === 'SYNC' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : log.level === 'WARN' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-700 dark:text-[var(--color-text-secondary)]'}`}>
                       {log.level}
                     </span>
-                    <span className="text-slate-800 dark:text-slate-200 font-medium">{log.event}</span>
+                    <span className="text-slate-800 dark:text-[var(--color-text-primary)] font-medium">{log.event}</span>
                   </div>
                   <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{log.timeFa}</span>
                 </div>
@@ -184,9 +184,9 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
     <div className="space-y-4">
       <AdminEnvConfigPanel />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
-            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+        <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-[var(--color-border-strong)] pb-2.5">
+            <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>موتور مدیریت ماژول‌های سال اول (Feature Flags)</span>
             </div>
@@ -196,15 +196,15 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
             {FEATURE_FLAG_ITEMS.map((item) => {
               const active = Boolean(featureFlags[item.key]);
               return (
-                <div key={item.key} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center justify-between gap-3">
+                <div key={item.key} className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-3 flex items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <div className="font-bold text-slate-900 dark:text-slate-100">{item.title}</div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{item.subtitle}</div>
+                    <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">{item.title}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-[var(--color-text-muted)] leading-relaxed">{item.subtitle}</div>
                   </div>
                   <button
                     type="button" onClick={() => onToggleFeatureFlag(item.key)}
                     className={`px-3 py-1.5 rounded-xl font-bold text-[11px] shrink-0 transition cursor-pointer border ${
-                      active ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      active ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs' : 'bg-slate-100 dark:bg-[var(--color-bg-muted)] text-slate-600 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-200'
                     }`}
                   >
                     {active ? 'فعال (ON)' : 'غیرفعال (OFF)'}
@@ -215,21 +215,21 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           </div>
         </div>
         <div className="space-y-4">
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-3">
+            <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
               <Database className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>پشتیبان‌گیری کامل و بازیابی ۱-کلیکی دیتابیس</span>
             </div>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
+            <p className="text-slate-600 dark:text-[var(--color-text-secondary)] leading-relaxed text-[11px]">
               شامل تمامی محله‌ها، قیمت‌های ویرایش‌شده، حامیان املاک (CRM)، آگهی‌های شکار طلایی، شماره‌های خریداران و تنظیمات ماژول‌ها در قالب یک فایل استاندارد JSON.
             </p>
             <button type="button" onClick={onDownloadFullBackupJson} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs">
               <Download className="w-4 h-4 stroke-[1.75]" />
               <span>دانلود فایل پشتیبان کامل دیتابیس (Full JSON Backup)</span>
             </button>
-            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700 space-y-2">
-              <label className="block font-bold text-slate-800 dark:text-slate-200">بازیابی دیتابیس از فایل پشتیبان (Restore JSON):</label>
-              <label className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 border-dashed font-bold flex items-center justify-center gap-2 transition cursor-pointer">
+            <div className="pt-2 border-t border-slate-200/80 dark:border-[var(--color-border-strong)] space-y-2">
+              <label className="block font-bold text-slate-800 dark:text-[var(--color-text-primary)]">بازیابی دیتابیس از فایل پشتیبان (Restore JSON):</label>
+              <label className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-[var(--color-bg-surface)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] border border-slate-300 dark:border-[var(--color-border-strong)] border-dashed font-bold flex items-center justify-center gap-2 transition cursor-pointer">
                 <Upload className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>انتخاب فایل JSON و بازیابی فوری اطلاعات</span>
                 <input type="file" aria-label="انتخاب فایل پشتیبان JSON دیتابیس" accept=".json,application/json" onChange={onRestoreFullBackupJson} className="hidden" />
@@ -242,21 +242,21 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               </div>
             )}
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2 text-[11px] text-slate-600 dark:text-slate-300">
-            <div className="font-bold text-slate-900 dark:text-slate-100">خلاصه موجودیت‌های فعلی آماده پشتیبان‌گیری ({formatAreaShort(80, areaUnit)}):</div>
+          <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-2 text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
+            <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)]">خلاصه موجودیت‌های فعلی آماده پشتیبان‌گیری ({formatAreaShort(80, areaUnit)}):</div>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-                کل محله‌ها: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum(neighborhoods.length)} محله</strong> ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(avgUnitBuy)} م · معیار {formatAreaShort(80, areaUnit)} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)}` : ''})
+              <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">
+                کل محله‌ها: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{toPersianNum(neighborhoods.length)} محله</strong> ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(avgUnitBuy)} م · معیار {formatAreaShort(80, areaUnit)} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)}` : ''})
               </div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">فایل‌های شکار طلایی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(totalLiveBargainsCount)} فایل</strong></div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">درخواست‌های CRM املاک: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum((sponsorRequests || []).length)} مورد</strong></div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">شماره خریداران: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum((buyerLeads || []).length)} شماره</strong></div>
+              <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">فایل‌های شکار طلایی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(totalLiveBargainsCount)} فایل</strong></div>
+              <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">درخواست‌های CRM املاک: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{toPersianNum((sponsorRequests || []).length)} مورد</strong></div>
+              <div className="bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5">شماره خریداران: <strong className="text-slate-900 dark:text-[var(--color-text-primary)]">{toPersianNum((buyerLeads || []).length)} شماره</strong></div>
             </div>
           </div>
           {featureFlags.enableTelegramFeed && (
-            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+            <div className="bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <div className="font-bold text-slate-900 dark:text-[var(--color-text-primary)] flex items-center gap-1.5">
                   <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>خروجی زنده کانال تلگرام و ربات Webhook</span>
                 </div>
@@ -264,13 +264,13 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                   بروزرسانی متن
                 </button>
               </div>
-              <textarea rows={6} aria-label="متن خروجی کانال تلگرام" value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed" />
+              <textarea rows={6} aria-label="متن خروجی کانال تلگرام" value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] rounded-xl p-2.5 text-slate-800 dark:text-[var(--color-text-primary)] text-[11px] leading-relaxed" />
               <button type="button" onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); if (tgCopyTimerRef.current !== null) window.clearTimeout(tgCopyTimerRef.current); tgCopyTimerRef.current = window.setTimeout(() => { tgCopyTimerRef.current = null; setAdminTgCopied(false); }, 2000); }} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer">
                 <Copy className="w-4 h-4 stroke-[1.75]" />
                 <span>{adminTgCopied ? 'پست آماده تلگرام کپی شد!' : 'کپی پست آماده کانال تلگرام'}</span>
               </button>
-              <form onSubmit={handleAdminSendTelegram} className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <div className="text-[11px] text-slate-600 dark:text-slate-300">
+              <form onSubmit={handleAdminSendTelegram} className="space-y-2 pt-2 border-t border-slate-200 dark:border-[var(--color-border-strong)]">
+                <div className="text-[11px] text-slate-600 dark:text-[var(--color-text-secondary)]">
                   ارسال مستقیم از طریق متغیرهای محیطی امن سرور (`TELEGRAM_BOT_TOKEN` و `TELEGRAM_CHANNEL_ID`)
                 </div>
                 {adminTgStatus && (

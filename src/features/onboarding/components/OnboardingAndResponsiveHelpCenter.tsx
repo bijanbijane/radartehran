@@ -140,7 +140,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
       {stageTab === 'stage32' && (
         <div className="space-y-4" data-testid="stage-32-onboarding-panel">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -150,20 +150,20 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               </div>
               <ul className="space-y-2">
                 {checklist.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800/70">
-                    <label className="flex items-center gap-2 cursor-pointer font-bold text-[#182522] dark:text-slate-100">
+                  <li key={item.id} className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)]">
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-[#182522] dark:text-[var(--color-text-primary)]">
                       <input type="checkbox" checked={item.completed} onChange={() => { toggleChecklistItem(item.id); setLiveStatusMsg(`گام «${item.titleFa}» به‌روزرسانی شد.`); }} className="accent-[var(--color-brand-600)] w-4 h-4" />
                       <span>{item.titleFa} — <span className="font-normal text-[#586760]">{item.descriptionFa}</span></span>
                     </label>
                     {onNavigateView && (
-                      <button type="button" onClick={() => onNavigateView(item.actionRoute === '/market' ? 'intelligence' : item.actionRoute === '/properties' ? 'properties' : 'map')} className="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 font-bold whitespace-nowrap cursor-pointer">اجرا ←</button>
+                      <button type="button" onClick={() => onNavigateView(item.actionRoute === '/market' ? 'intelligence' : item.actionRoute === '/properties' ? 'properties' : 'map')} className="px-2 py-1 rounded bg-white dark:bg-[var(--color-bg-surface)] border border-[#DCE3DF] dark:border-[var(--color-border-strong)] font-bold whitespace-nowrap cursor-pointer">اجرا ←</button>
                     )}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                   <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -173,9 +173,9 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
                   {deviceTouch ? 'حالت لمسی (موبایل)' : 'حالت ماوس (دسکتاپ)'}
                 </button>
               </div>
-              <p className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 text-[#182522] dark:text-slate-200 font-semibold">{gestureHint.panHintFa} · {gestureHint.zoomHintFa}</p>
+              <p className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] text-[#182522] dark:text-[var(--color-text-primary)] font-semibold">{gestureHint.panHintFa} · {gestureHint.zoomHintFa}</p>
               <p className="p-2.5 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200">{zoomLockInfo.messageFa}</p>
-              <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1">
+              <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] space-y-1">
                 <div className="font-bold text-[#182522] dark:text-white">تداوم اقدام پس از ورود (Post-Auth Action Continuation):</div>
                 <p className="text-[#586760]">{authPrompt.messageFa}</p>
                 <div className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
@@ -186,19 +186,19 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
               <h3 className="text-sm font-bold text-[#182522] dark:text-white">ثبت نسخه‌دار راهنماها (تفکیک «رد شده» از «تکمیل‌شده» + اجرای مجدد)</h3>
               {ONBOARDING_GUIDE_REGISTRY.slice(0, 4).map((g) => {
                 const st = manager.getGuideStatus(g.guideId);
                 return (
-                  <div key={g.guideId} className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 flex flex-wrap items-center justify-between gap-2">
+                  <div key={g.guideId} className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <div className="font-bold text-[#182522] dark:text-white">{g.titleFa} ({g.version})</div>
                       <div className="text-xs text-[#586760]">وضعیت فعلی: <strong>{st}</strong> · حداکثر راهنمای شناور هم‌زمان: ۱</div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button type="button" onClick={() => { manager.completeGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} تکمیل شد.`); }} className="px-2 py-1 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">تکمیل</button>
-                      <button type="button" onClick={() => { manager.skipGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} رد شد (Skipped !== Completed).`); }} className="px-2 py-1 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 font-bold cursor-pointer">رد کردن</button>
+                      <button type="button" onClick={() => { manager.skipGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} رد شد (Skipped !== Completed).`); }} className="px-2 py-1 rounded border border-[#DCE3DF] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] font-bold cursor-pointer">رد کردن</button>
                       <button type="button" onClick={() => { manager.replayGuideFromHelpCenter(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`اجرای مجدد راهنمای ${g.titleFa} آغاز شد.`); }} className="px-2 py-1 rounded border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold inline-flex items-center gap-1 cursor-pointer"><RotateCcw className="w-3 h-3" />بازپخش</button>
                     </div>
                   </div>
@@ -206,15 +206,15 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               })}
             </div>
 
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-2.5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#182522] dark:text-white">تفکیک مسیر ورود بازارچه خدمات (متقاضی در برابر ارائه‌دهنده)</h3>
-                <div className="inline-flex rounded-[6px] border border-[#DCE3DF] dark:border-slate-700 p-0.5">
+                <div className="inline-flex rounded-[6px] border border-[#DCE3DF] dark:border-[var(--color-border-strong)] p-0.5">
                   <button type="button" onClick={() => setServiceRole('seeker')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'seeker' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>متقاضی خدمت (۷ گام)</button>
                   <button type="button" onClick={() => setServiceRole('provider')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'provider' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>ارائه‌دهنده (۶ گام)</button>
                 </div>
               </div>
-              <ol className="list-decimal list-inside space-y-1 text-[#34433E] dark:text-slate-200 font-medium">
+              <ol className="list-decimal list-inside space-y-1 text-[#34433E] dark:text-[var(--color-text-primary)] font-medium">
                 {(serviceRole === 'seeker' ? SERVICES_SEEKER_ONBOARDING_STEPS_FA : SERVICES_PROVIDER_ONBOARDING_STEPS_FA).map((step) => (
                   <li key={step}>{step}</li>
                 ))}
@@ -227,17 +227,17 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
       {stageTab === 'stage33' && (
         <div className="space-y-4" data-testid="stage-33-responsive-panel">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3">
               <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                 <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>شبیه‌ساز ۵ رده نمایشگر و حفظ وضعیت در تغییر ابعاد (Stage 33)</span>
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {[320, 390, 768, 1024, 1440].map((w) => (
-                  <button key={w} type="button" data-testid={`viewport-btn-${w}`} onClick={() => { setViewportWidthPx(w); setLiveStatusMsg(`عرض نمایشگر به ${toPersianNum(w)} پیکسل تغییر یافت؛ فیلترها و موقعیت نقشه بدون تغییر حفظ شدند.`); }} className={`px-3 py-1.5 rounded-[8px] font-bold tabular-nums cursor-pointer ${viewportWidthPx === w ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>{toPersianNum(w)}px</button>
+                  <button key={w} type="button" data-testid={`viewport-btn-${w}`} onClick={() => { setViewportWidthPx(w); setLiveStatusMsg(`عرض نمایشگر به ${toPersianNum(w)} پیکسل تغییر یافت؛ فیلترها و موقعیت نقشه بدون تغییر حفظ شدند.`); }} className={`px-3 py-1.5 rounded-[8px] font-bold tabular-nums cursor-pointer ${viewportWidthPx === w ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] text-[#34433E] dark:text-[var(--color-text-primary)]'}`}>{toPersianNum(w)}px</button>
                 ))}
               </div>
-              <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1 tabular-nums">
+              <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] space-y-1 tabular-nums">
                 <div className="font-bold text-[#182522] dark:text-white">رده فعال: {tierContract.labelFa}</div>
                 <div>الگوی ناوبری: <strong>{tierContract.navigationPattern}</strong> · الگوی نقشه: <strong>{tierContract.mapLayoutPattern}</strong></div>
                 <div>حداقل هدف لمسی: <strong>{toPersianNum(tierContract.minTouchTargetPx)}×{toPersianNum(tierContract.minTouchTargetPx)} پیکسل</strong> · حفظ کوئری پس از چرخش صفحه: <strong>«{continuityAfterResize.preservedState.searchQuery}» (بدون ریست)</strong></div>
@@ -245,25 +245,25 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               </div>
             </div>
 
-            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+            <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-[var(--color-border-subtle)] space-y-3">
               <h3 className="text-sm font-bold text-[#182522] dark:text-white flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>قرارداد Bottom Sheet سه‌حالته موبایل و تفکیک ژست لمسی نقشه</span>
               </h3>
               <div className="flex gap-2">
                 {(['collapsed', 'half', 'expanded'] as const).map((snap) => (
-                  <button key={snap} type="button" data-testid={`sheet-snap-${snap}`} onClick={() => setSheetSnap(snap)} className={`px-3 py-1.5 rounded-[8px] font-bold cursor-pointer ${sheetSnap === snap ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>
+                  <button key={snap} type="button" data-testid={`sheet-snap-${snap}`} onClick={() => setSheetSnap(snap)} className={`px-3 py-1.5 rounded-[8px] font-bold cursor-pointer ${sheetSnap === snap ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] text-[#34433E] dark:text-[var(--color-text-primary)]'}`}>
                     {snap === 'collapsed' ? 'جمع‌شده (72–120px)' : snap === 'half' ? 'میانی (40–55%)' : 'باز کامل (80–90%)'}
                   </button>
                 ))}
               </div>
-              <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1 tabular-nums">
+              <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-[var(--color-bg-muted)] space-y-1 tabular-nums">
                 <div>بازه ارتفاع شیت: <strong>{toPersianNum(sheetGeometry.minHeightPx)} تا {toPersianNum(sheetGeometry.maxHeightPx)} پیکسل</strong></div>
                 <div>قفل اسکرول داخلی در حالت جمع: <strong>{sheetGeometry.innerScrollLocked ? 'فعال (جلوگیری از تداخل با نقشه)' : 'آزاد برای پیمایش نتایج'}</strong></div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {GIS_ACCORDION_LAYER_GROUPS.map((grp) => (
-                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-xs font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-slate-700'}`}>
+                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-xs font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-[var(--color-border-strong)]'}`}>
                     {grp.titleFa} ({toPersianNum(grp.layerIds.length)})
                   </button>
                 ))}

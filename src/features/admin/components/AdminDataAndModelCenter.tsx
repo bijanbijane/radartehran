@@ -33,7 +33,7 @@ export const AdminDataAndModelCenter: React.FC<AdminDataAndModelCenterProps> = (
       : 0;
 
   return (
-    <div data-testid="admin-data-model-center" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
+    <div data-testid="admin-data-model-center" className="p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <Cpu className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -45,17 +45,17 @@ export const AdminDataAndModelCenter: React.FC<AdminDataAndModelCenterProps> = (
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
           <div className="text-[11px] text-slate-500 flex items-center gap-1"><Database className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> نسخه مدل هدونیک فعال</div>
           <strong className="text-sm font-bold text-slate-900 dark:text-white block">Hedonic Rule Heuristic v1405.1</strong>
           <div className="text-[11px] text-slate-500 tabular-nums">ضریب فروش فوری: {toPersianNum(FAST_SALE_FACTOR)} · منبع: سناریو محاسباتی (غیرثبتی)</div>
         </div>
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
           <div className="text-[11px] text-slate-500 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> پوشش جغرافیایی شهر فعال ({activeCity})</div>
           <strong className="text-sm font-bold text-slate-900 dark:text-white block tabular-nums">{toPersianNum(neighborhoods.length)} محله پایش‌شده</strong>
           <div className="text-[11px] text-slate-500 tabular-nums">میانگین پایه اعلامی: {toPersianNum(avgBuy)} م.ت / متر</div>
         </div>
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] space-y-1">
           <div className="text-[11px] text-slate-500 flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> انضباط تفکیک نوع داده</div>
           <strong className="text-sm font-bold text-slate-900 dark:text-white block">پیشنهادی ≠ معامله‌شده ≠ برآوردی</strong>
           <div className="text-[11px] text-slate-500">هیچ خروجی برآوردی به‌عنوان ثبت رسمی معامله نمایش داده نمی‌شود.</div>

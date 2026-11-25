@@ -70,7 +70,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs" data-testid="account-comms-inbox">
-      <div className="lg:col-span-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="lg:col-span-4 p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex items-center justify-between gap-2">
           <strong className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <MessageSquare className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -90,7 +90,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
         </p>
 
         {visibleList.length === 0 ? (
-          <div className="p-4 text-center text-slate-500 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+          <div className="p-4 text-center text-slate-500 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)]">
             گفت‌وگویی در این بخش وجود ندارد.
           </div>
         ) : (
@@ -107,7 +107,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
                   className={`w-full text-start p-3 rounded-xl border transition cursor-pointer ${
                     isSelected
                       ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      : 'border-slate-200 dark:border-[var(--color-border-subtle)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'
                   }`}
                 >
                   <div className="text-[10.5px] font-bold text-slate-500">
@@ -124,12 +124,12 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
         )}
       </div>
 
-      <div className="lg:col-span-8 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3">
+      <div className="lg:col-span-8 p-4 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-col justify-between gap-3">
         {!activeConv ? (
           <div className="py-12 text-center text-slate-500">یک گفت‌وگو را از فهرست انتخاب کنید.</div>
         ) : (
           <>
-            <div className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <div className="pb-3 border-b border-slate-100 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="text-[11px] font-bold text-slate-500">
                   {CONTEXT_LABEL_FA[activeConv.type]} · شناسه <span className="font-mono">{activeConv.contextEntityId}</span>
@@ -137,11 +137,11 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{activeConv.contextTitleFa}</h3>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <button type="button" onClick={() => handleControl('mute')} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer">
+                <button type="button" onClick={() => handleControl('mute')} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1 cursor-pointer">
                   <VolumeX className="w-3.5 h-3.5" />
                   <span>{myParticipant?.muted ? 'لغو سکوت' : 'بی‌صدا'}</span>
                 </button>
-                <button type="button" onClick={() => handleControl('archive')} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer">
+                <button type="button" onClick={() => handleControl('archive')} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] font-bold flex items-center gap-1 cursor-pointer">
                   <Archive className="w-3.5 h-3.5" />
                   <span>{myParticipant?.archived ? 'خروج از بایگانی' : 'بایگانی'}</span>
                 </button>
@@ -163,7 +163,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
                   value={reportReason}
                   onChange={(e) => setReportReason(e.target.value)}
                   placeholder="دلیل گزارش مزاحمت یا نقض قوانین ارتباطی..."
-                  className="flex-1 min-w-[200px] p-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800"
+                  className="flex-1 min-w-[200px] p-2 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-amber-200 dark:border-amber-800"
                 />
                 <button
                   type="button"
@@ -191,21 +191,21 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
                     key={m.messageId}
                     className={`p-3 rounded-xl border ${
                       isSystem
-                        ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                        ? 'bg-slate-50 dark:bg-[var(--color-bg-muted)] border-slate-200 dark:border-[var(--color-border-strong)] text-slate-600 dark:text-[var(--color-text-secondary)]'
                         : isMine
                           ? 'bg-emerald-50/60 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                          : 'bg-white dark:bg-[var(--color-bg-surface)] border-slate-200 dark:border-[var(--color-border-subtle)]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 text-[10.5px] text-slate-500">
-                      <span className="font-bold text-slate-700 dark:text-slate-200">
+                      <span className="font-bold text-slate-700 dark:text-[var(--color-text-primary)]">
                         {m.senderLabelFa} · {m.senderType === 'SYSTEM' ? 'سیستمی' : m.senderType === 'SUPPORT_AGENT' ? 'پشتیبانی' : 'عضو پرونده'}
                       </span>
                       <span className="tabular-nums">
                         {m.status === 'READ' ? 'خوانده‌شده' : m.status === 'DELIVERED' ? 'تحویل‌شده' : m.status === 'REDACTED' ? 'مخفی‌شده' : 'ارسال‌شده'}
                       </span>
                     </div>
-                    <p className="mt-1 text-slate-800 dark:text-slate-100 leading-relaxed">{m.bodyFa}</p>
+                    <p className="mt-1 text-slate-800 dark:text-[var(--color-text-primary)] leading-relaxed">{m.bodyFa}</p>
                   </div>
                 );
               })}
@@ -217,7 +217,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
               </div>
             )}
 
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <div className="pt-2 border-t border-slate-100 dark:border-[var(--color-border-subtle)] flex items-center gap-2">
               <input
                 type="text"
                 value={draftBody}
@@ -225,7 +225,7 @@ export const AccountInboxPanel: React.FC<AccountInboxPanelProps> = ({ uid, conve
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
                 placeholder={myParticipant?.blockedOtherParticipant ? 'گفت‌وگو مسدود است...' : 'پاسخ مرتبط با این پرونده را بنویسید...'}
                 disabled={Boolean(myParticipant?.blockedOtherParticipant)}
-                className="flex-1 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                className="flex-1 p-2.5 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)]"
               />
               <button
                 type="button"

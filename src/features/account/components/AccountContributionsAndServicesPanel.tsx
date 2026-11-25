@@ -65,13 +65,13 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
   return (
     <div className="space-y-4 text-xs" data-testid="account-listings-and-services">
       {/* My Submitted Property Listings */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>فایل‌های ملکی ثبت‌شده من ({toPersianNum(myListings.length)})</span>
           </h2>
-          <button type="button" onClick={() => onNavigateView?.('properties')} className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
+          <button type="button" onClick={() => onNavigateView?.('properties')} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             ثبت فایل جدید در بخش املاک
           </button>
         </div>
@@ -81,7 +81,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
         ) : (
           <div className="space-y-2.5">
             {myListings.map((rec) => (
-              <div key={rec.listing.listingId} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div key={rec.listing.listingId} className="p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="font-bold text-slate-900 dark:text-white">{rec.listing.title}</div>
                   <div className="text-[11px] text-slate-500">
@@ -98,7 +98,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       </div>
 
       {/* My Service Requests & Received Proposals */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Briefcase className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -116,14 +116,14 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
             {serviceRequests.map((req) => {
               const propCount = serviceProposals.filter((p) => p.requestId === req.id).length;
               return (
-                <div key={req.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                <div key={req.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="font-bold text-slate-900 dark:text-white">{req.providerName}</div>
                     <div className="text-[11px] text-slate-500">
                       محله {req.neighborhoodName} · وضعیت: {req.status} · {toPersianNum(propCount)} پیشنهاد
                     </div>
                   </div>
-                  <button type="button" onClick={() => onNavigateView?.('services')} className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold cursor-pointer">
+                  <button type="button" onClick={() => onNavigateView?.('services')} className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[var(--color-bg-muted)] font-bold cursor-pointer">
                     پیگیری و مقایسه
                   </button>
                 </div>
@@ -134,7 +134,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       </div>
 
       {/* Community Price / Quality / Data Contributions */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <MessageSquarePlus className="w-4 h-4 text-[var(--color-brand-600)]" />
@@ -148,7 +148,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       </div>
 
       {/* Stage 85.5: Account-Linked Saved Knowledge Studies with Version & Archived Badges */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3" data-testid="account-saved-knowledge-section">
+      <div className="p-5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] space-y-3" data-testid="account-saved-knowledge-section">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -161,7 +161,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
                 : 'نشان‌شده‌های موقت نشست فعلی (برای ذخیره دائمی وارد حساب کاربری شوید).'}
             </p>
           </div>
-          <button type="button" onClick={() => onNavigateView?.('knowledge', 'reports')} className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => onNavigateView?.('knowledge', 'reports')} className="px-4 py-2 rounded-xl border border-slate-300 dark:border-[var(--color-border-strong)] text-slate-900 dark:text-white font-bold cursor-pointer">
             مشاهده در پایگاه دانش
           </button>
         </div>
@@ -169,7 +169,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
         {savedKnowledgeItems.length > 0 && (
           <div className="space-y-2 pt-1">
             {savedKnowledgeItems.slice(0, 6).map((item) => (
-              <div key={item.publicationId} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div key={item.publicationId} className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--color-bg-muted)] border border-slate-200 dark:border-[var(--color-border-strong)] flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 dark:text-white truncate">{item.titleFa}</div>
                   <div className="text-[10.5px] text-slate-500 flex items-center gap-2 mt-0.5">
@@ -187,7 +187,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
                 <button
                   type="button"
                   onClick={() => onNavigateView?.('knowledge', 'reports')}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-strong)] font-bold cursor-pointer"
                 >
                   بازخوانی
                 </button>

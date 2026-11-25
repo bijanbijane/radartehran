@@ -12,7 +12,6 @@ import {
 } from '../data/iranProvincesDirectory';
 import { CityId, MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData';
 import { Neighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
@@ -70,11 +69,10 @@ export function TopBarProvinceAndCityDirectoryControl({
             </option>
             {provHoods.map((h) => {
               const unitPrice = convertPricePerSqmToUnit(h.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(aggregateMarketMetricsForHood(h).estimatedDealPricePerSqm, areaUnit);
               const monthlyRent80mMillions = Math.round(h.rahn80m * 0.03);
               return (
                 <option key={h.id} value={`hood:${h.id}`}>
-                  {h.name} — {h.zone} ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(unitPrice)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره · سناریو v6.4 (غیرثبتی): {toPersianNum(unitDeal)} م{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)}` : ''})
+                  {h.name} — {h.zone} ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(unitPrice)}م · اجاره {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)}م{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)}` : ''})
                 </option>
               );
             })}
@@ -127,7 +125,7 @@ export function TopBarProvinceAndCityDirectoryControl({
               }
             }
           }}
-          className="bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[140px] sm:max-w-[150px] 2xl:max-w-[180px] truncate"
+          className="bg-slate-100/90 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200/70 dark:hover:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[140px] sm:max-w-[150px] 2xl:max-w-[180px] truncate"
           title="فهرست‌بندی جامع ۳۱ استان، شهرها و محله‌های ایران"
         >
           {renderedProvinceGroups}

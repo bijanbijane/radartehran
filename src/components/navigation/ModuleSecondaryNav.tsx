@@ -50,7 +50,7 @@ export const ModuleSecondaryNav: React.FC<ModuleSecondaryNavProps> = ({
   });
 
   const renderCrumbList = (items: ReturnType<typeof buildNavigationBreadcrumbs>) => (
-    <ol className="flex items-center gap-1 text-xs min-w-0 overflow-hidden">
+    <ol className="flex items-center gap-1 text-[13px] min-w-0 overflow-hidden">
       {items.map((node, idx) => (
         <li key={`${node.id}-${idx}`} className="flex items-center gap-1 min-w-0">
           {idx > 0 && <Separator className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />}
@@ -78,24 +78,38 @@ export const ModuleSecondaryNav: React.FC<ModuleSecondaryNavProps> = ({
   // Account has its own adaptive AccountSidebarNav; skip single-item strips & dedicated legal docs
   const isDedicatedLegalDoc = subTab === 'legal_privacy' || subTab === 'legal_terms';
   const showModuleTabs = Boolean(tabs && tabs.length > 1 && onSelectSubTab && primaryView !== 'userspace' && !isDedicatedLegalDoc);
+  const showBreadcrumbs = isDedicatedLegalDoc || desktopCrumbs.length > 2;
 
-  if (primaryView === 'home' && !showModuleTabs) {
+  if (!showBreadcrumbs && !showModuleTabs) {
     return null;
   }
 
   return (
     <div className="w-full border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)]/90 px-4 sm:px-6 py-2 space-y-1.5">
-      <nav aria-label={isEn ? 'Breadcrumb' : 'مسیر ناوبری'} className="max-w-[1320px] mx-auto flex items-center justify-between gap-2">
-        <div className="hidden sm:block min-w-0">{renderCrumbList(desktopCrumbs)}</div>
-        <div className="sm:hidden min-w-0">{renderCrumbList(mobileCrumbs)}</div>
-      </nav>
+      {showBreadcrumbs && (
+        <nav aria-label={isEn ? 'Breadcrumb' : 'مسیر ناوبری'} className="max-w-[1320px] mx-auto flex items-center justify-between gap-2">
+          <div className="hidden sm:block min-w-0">{renderCrumbList(desktopCrumbs)}</div>
+          <div className="sm:hidden min-w-0">{renderCrumbList(mobileCrumbs)}</div>
+        </nav>
+      )}
       {showModuleTabs && tabs && onSelectSubTab && (
         <nav
           aria-label={isEn ? 'Module sections' : 'زیرصفحات بخش'}
           className="max-w-[1320px] mx-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5"
         >
           {tabs.map((tab) => {
-            const active = subTab === tab.id || (!subTab && tab.id === tabs[0]?.id);
+            const isGroupedCommunityActive =
+              primaryView === 'contributions' &&
+              ((tab.id === 'discussions' && (subTab === 'questions' || subTab === 'topics' || subTab === 'neighborhoods' || subTab === 'market')) ||
+                (tab.id === 'submit' && (subTab === 'contributions' || subTab === 'reports')) ||
+                (tab.id === 'members' && (subTab === 'help' || subTab === 'points' || subTab === 'verify')));
+            const isGroupedToolsCompareActive =
+              primaryView === 'tools' && tab.id === 'compare_areas' && subTab === 'compare_props';
+            const active =
+              subTab === tab.id ||
+              (!subTab && tab.id === tabs[0]?.id) ||
+              isGroupedCommunityActive ||
+              isGroupedToolsCompareActive;
             const communityTestId =
               primaryView === 'contributions'
                 ? tab.id === 'research'
@@ -111,7 +125,7 @@ export const ModuleSecondaryNav: React.FC<ModuleSecondaryNavProps> = ({
                 data-testid={communityTestId}
                 aria-current={active ? 'page' : undefined}
                 onNavigate={() => onSelectSubTab(tab.id as ModuleSubTabId)}
-                className={`min-h-[44px] md:min-h-[36px] px-3 py-1.5 rounded-[8px] text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer inline-flex items-center gap-1.5 ${
+                className={`min-h-[44px] md:min-h-[38px] px-3.5 py-1.5 rounded-[8px] text-sm font-semibold whitespace-nowrap shrink-0 transition cursor-pointer inline-flex items-center gap-1.5 ${
                   active
                     ? 'bg-[var(--color-brand-600)] text-white shadow-2xs'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)]'
