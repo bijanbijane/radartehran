@@ -169,6 +169,15 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.statusCode, 200);
   });
 
+  it('rejects an existing but empty revocation watermark', async () => {
+    const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
+      revocation_watermark: '',
+    }))));
+    assert.equal(result.authenticated, false);
+    assert.equal(result.reasonCode, 'REVOCATION_STATE_INVALID');
+    assert.equal(result.statusCode, 503);
+  });
+
   it('rejects malformed expiry timestamps and future-issued sessions', async () => {
     const malformedExpiry = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
       expires_at_iso: 'not-a-date',
