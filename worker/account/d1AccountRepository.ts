@@ -235,9 +235,31 @@ export async function updateUserPrivacyConsentInD1(
   const nextTelemetry = params.behavioralTelemetryConsent ?? current.behavioralTelemetryConsent;
   const nextMarketing = params.marketingCommunicationsConsent ?? current.marketingCommunicationsConsent;
   const consentVersion = (params.consentVersion ?? current.consentVersion ?? 'v1').trim().slice(0, 24);
-  const nextConsentRevision = (current.consentRevision || 0) + 1;
   const consentSource = (params.consentSource ?? 'account_settings').trim().slice(0, 64);
 
+  const changes = [
+    {
+      type: 'research_analytics_consent',
+      previous: current.researchAnalyticsConsent,
+      next: nextResearch,
+    },
+    {
+      type: 'behavioral_telemetry_consent',
+      previous: current.behavioralTelemetryConsent,
+      next: nextTelemetry,
+    },
+    {
+      type: 'marketing_communications_consent',
+      previous: current.marketingCommunicationsConsent,
+      next: nextMarketing,
+    },
+  ].filter((entry) => entry.previous !== entry.next);
+
+  if (changes.length === 0 && consentVersion === current.consentVersion && consentSource === current.consentSource) {
+    return current;
+  }
+
+  const nextConsentRevision = current.consentRevision + 1;
   let grantedAtIso = current.grantedAtIso;
   let revokedAtIso = current.revokedAtIso;
   if (nextResearch && !current.researchAnalyticsConsent) {
@@ -247,13 +269,25 @@ export async function updateUserPrivacyConsentInD1(
     revokedAtIso = nowIso;
   }
 
+  // Optimistic compare-and-swap preserves monotonic consent_revision under concurrent updates.
   const upsertStmt = userDb
     .prepare(
-      `INSERT OR REPLACE INTO user_privacy_consents (
+      `INSERT INTO user_privacy_consents (
         uid, research_analytics_consent, behavioral_telemetry_consent,
         marketing_communications_consent, consent_version, consent_revision, consent_source,
         granted_at_iso, revoked_at_iso, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+      ON CONFLICT(uid) DO UPDATE SET
+        research_analytics_consent = excluded.research_analytics_consent,
+        behavioral_telemetry_consent = excluded.behavioral_telemetry_consent,
+        marketing_communications_consent = excluded.marketing_communications_consent,
+        consent_version = excluded.consent_version,
+        consent_revision = excluded.consent_revision,
+        consent_source = excluded.consent_source,
+        granted_at_iso = excluded.granted_at_iso,
+        revoked_at_iso = excluded.revoked_at_iso,
+        updated_at_iso = excluded.updated_at_iso
+      WHERE user_privacy_consents.consent_revision = ?11`,
     )
     .bind(
       params.uid,
@@ -266,32 +300,45 @@ export async function updateUserPrivacyConsentInD1(
       grantedAtIso,
       revokedAtIso,
       nowIso,
+      current.consentRevision,
     );
 
-  const auditId = `caud_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-  const auditStmt = userDb
-    .prepare(
-      `INSERT INTO user_privacy_consent_audit (
-        audit_id, uid, consent_type, previous_value, new_value,
-        consent_version, consent_revision, actor_uid, source, recorded_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-    )
-    .bind(
-      auditId,
-      params.uid,
-      'research_analytics_consent',
-      current.researchAnalyticsConsent ? 1 : 0,
-      nextResearch ? 1 : 0,
-      consentVersion,
-      nextConsentRevision,
-      params.actorUid,
-      consentSource,
-      nowIso,
-    );
+  const auditStatements = changes.map((entry) => {
+    const auditId = `caud_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    return userDb
+      .prepare(
+        `INSERT INTO user_privacy_consent_audit (
+          audit_id, uid, consent_type, previous_value, new_value,
+          consent_version, actor_uid, source, recorded_at_iso
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+        WHERE changes() = 1`,
+      )
+      .bind(
+        auditId,
+        params.uid,
+        entry.type,
+        entry.previous ? 1 : 0,
+        entry.next ? 1 : 0,
+        consentVersion,
+        params.actorUid,
+        consentSource,
+        nowIso,
+      );
+  });
 
-  const results = await userDb.batch([upsertStmt, auditStmt]);
-  if (results.some((r) => !r.success)) {
+  const results = await userDb.batch([upsertStmt, ...auditStatements]);
+  if (
+    results.length !== 1 + auditStatements.length ||
+    results.some((result) => !result.success)
+  ) {
     throw new Error('PRIVACY_CONSENT_WRITE_FAILED');
+  }
+  if (results[0]?.meta?.changes !== 1) {
+    throw new Error('CONSENT_REVISION_CONFLICT');
+  }
+  if (results.slice(1).some((result) => result.meta?.changes !== 1)) {
+    throw new Error('PRIVACY_CONSENT_AUDIT_WRITE_FAILED');
   }
 
   return {
