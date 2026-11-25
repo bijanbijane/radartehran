@@ -172,6 +172,34 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   });
   assert.equal(missingContext.ok, false);
 
+  const duplicateParticipant = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-duplicate',
+    contextTitleFa: 'طرف تکراری',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-buyer', displayNameFa: 'طرف دوم جعلی', roleLabelFa: 'مالک', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(duplicateParticipant.ok, false);
+  assert.equal(duplicateParticipant.errorCode, 'INVALID_CONVERSATION_PARTICIPANTS');
+
+  const participantWithoutCreator = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-no-creator',
+    contextTitleFa: 'بدون سازنده',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-seller', displayNameFa: 'مالک', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-other', displayNameFa: 'کاربر دیگر', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(participantWithoutCreator.ok, false);
+  assert.equal(participantWithoutCreator.errorCode, 'INVALID_CONVERSATION_PARTICIPANTS');
+
   const convRes = engine.createScopedConversation({
     type: 'LISTING_INQUIRY',
     contextEntityType: 'listing',
