@@ -208,7 +208,9 @@ async function handleR2OrphanMediaReconcile(
       ? envelope.payload.nowMs
       : Date.now();
   const staleThresholdMs =
-    typeof envelope.payload?.staleThresholdMs === 'number' && envelope.payload.staleThresholdMs >= 0
+    typeof envelope.payload?.staleThresholdMs === 'number' &&
+    Number.isFinite(envelope.payload.staleThresholdMs) &&
+    envelope.payload.staleThresholdMs >= 0
       ? envelope.payload.staleThresholdMs
       : 30 * 60 * 1000;
   const nowIso = new Date(nowMs).toISOString();
@@ -216,11 +218,17 @@ async function handleR2OrphanMediaReconcile(
 
   let deletedCount = 0;
   let skippedLegalHoldCount = 0;
+  let skippedUnknownOwnershipCount = 0;
 
-  // 1. Reconcile D1 media_objects stuck in PENDING_UPLOAD / FAILED_UPLOAD / PENDING_PHYSICAL_DELETE
+  // Reconcile a bounded page of stale D1 media records first.
   const staleObjects = await userDb
     .prepare(
-      `SELECT * FROM media_objects WHERE lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE') AND updated_at_iso <= ?1`,
+      `SELECT object_id, storage_key, legal_hold, retention_until
+       FROM media_objects
+       WHERE lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
+         AND updated_at_iso <= ?1
+       ORDER BY updated_at_iso ASC
+       LIMIT 100`,
     )
     .bind(cutoffIso)
     .all<{
@@ -229,6 +237,9 @@ async function handleR2OrphanMediaReconcile(
       legal_hold: number;
       retention_until: string | null;
     }>();
+  if (!staleObjects.success) {
+    throw new QueueJobExecutionError('MEDIA_OBJECT_STALE_SCAN_FAILED', 'Unable to read stale media objects.', true);
+  }
 
   for (const obj of staleObjects.results ?? []) {
     const hold = await isObjectUnderLegalHold(userDb, obj.object_id);
@@ -238,48 +249,126 @@ async function handleR2OrphanMediaReconcile(
       continue;
     }
     await env.MEDIA_BUCKET.delete(obj.storage_key);
-    await userDb
+    const markDeleted = await userDb
       .prepare(
         'UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5',
       )
       .bind('DELETED', 'PHYSICALLY_DELETED', nowIso, nowIso, obj.object_id)
       .run();
-    deletedCount += 1;
-  }
-
-  // 2. Scan R2 objects under listings/ not tracked as active in D1
-  const knownActiveRes = await userDb
-    .prepare('SELECT storage_key FROM media_objects WHERE deletion_state != ?1')
-    .bind('PHYSICALLY_DELETED')
-    .all<{ storage_key: string }>();
-  const knownKeys = new Set((knownActiveRes.results ?? []).map((r) => r.storage_key));
-
-  const listed = await env.MEDIA_BUCKET.list({ prefix: 'listings/', limit: 100 });
-  for (const r2Obj of listed.objects) {
-    if (knownKeys.has(r2Obj.key)) continue;
-    const uploadedMs = r2Obj.uploaded instanceof Date ? r2Obj.uploaded.getTime() : 0;
-    if (nowMs - uploadedMs < staleThresholdMs) continue;
-    const maybeObjectId = r2Obj.customMetadata?.objectId || r2Obj.key;
-    const hold = await isObjectUnderLegalHold(userDb, maybeObjectId);
-    if (hold.held) {
-      skippedLegalHoldCount += 1;
-      continue;
+    if (!markDeleted.success) {
+      throw new QueueJobExecutionError('MEDIA_OBJECT_DELETE_STATE_WRITE_FAILED', 'Unable to persist physical deletion state.', true);
     }
-    await env.MEDIA_BUCKET.delete(r2Obj.key);
     deletedCount += 1;
   }
 
-  await userDb
+  // Persist the R2 cursor per queue idempotency key so retries resume instead of
+  // repeatedly scanning the first page. Unknown objects without objectId metadata
+  // are retained: legal-hold status cannot be established safely for them.
+  const safeIdem = envelope.idempotencyKey.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+  const cursorWatermarkKey = `r2_orphan_media_reconcile:cursor:${safeIdem}`;
+  const cursorRow = await userDb
+    .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1')
+    .bind(cursorWatermarkKey)
+    .first<{ watermark_value: string }>();
+  let cursor = cursorRow?.watermark_value || undefined;
+  let pageCount = 0;
+  let truncated = false;
+
+  do {
+    const listed = await env.MEDIA_BUCKET.list({
+      prefix: 'listings/',
+      limit: 80,
+      ...(cursor ? { cursor } : {}),
+    });
+    const pageKeys = listed.objects.map((obj) => obj.key);
+    const knownKeys = new Set<string>();
+    if (pageKeys.length > 0) {
+      const placeholders = pageKeys.map((_, index) => `?${index + 1}`).join(', ');
+      const knownActiveRes = await userDb
+        .prepare(
+          `SELECT storage_key FROM media_objects
+           WHERE storage_key IN (${placeholders})
+             AND COALESCE(deletion_state, '') != ?${pageKeys.length + 1}`,
+        )
+        .bind(...pageKeys, 'PHYSICALLY_DELETED')
+        .all<{ storage_key: string }>();
+      if (!knownActiveRes.success) {
+        throw new QueueJobExecutionError('MEDIA_OBJECT_OWNERSHIP_SCAN_FAILED', 'Unable to verify R2 object ownership.', true);
+      }
+      for (const row of knownActiveRes.results ?? []) knownKeys.add(row.storage_key);
+    }
+
+    for (const r2Obj of listed.objects) {
+      if (knownKeys.has(r2Obj.key)) continue;
+      const uploadedMs = r2Obj.uploaded instanceof Date ? r2Obj.uploaded.getTime() : Number.NaN;
+      if (!Number.isFinite(uploadedMs) || uploadedMs <= 0) {
+        skippedUnknownOwnershipCount += 1;
+        continue;
+      }
+      if (nowMs - uploadedMs < staleThresholdMs) continue;
+
+      const objectId = String(r2Obj.customMetadata?.objectId || '').trim();
+      if (!objectId) {
+        skippedUnknownOwnershipCount += 1;
+        continue;
+      }
+      const hold = await isObjectUnderLegalHold(userDb, objectId);
+      if (hold.held) {
+        skippedLegalHoldCount += 1;
+        continue;
+      }
+      await env.MEDIA_BUCKET.delete(r2Obj.key);
+      deletedCount += 1;
+    }
+
+    pageCount += 1;
+    truncated = listed.truncated;
+    if (truncated) {
+      if (!listed.cursor) {
+        throw new QueueJobExecutionError('R2_RECONCILE_CURSOR_MISSING', 'R2 listing is truncated without a continuation cursor.', true);
+      }
+      const saveCursor = await userDb
+        .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
+        .bind(cursorWatermarkKey, listed.cursor, nowIso)
+        .run();
+      if (!saveCursor.success) {
+        throw new QueueJobExecutionError('R2_RECONCILE_CURSOR_WRITE_FAILED', 'Unable to persist R2 continuation cursor.', true);
+      }
+      cursor = listed.cursor;
+    } else {
+      const clearCursor = await userDb
+        .prepare('DELETE FROM sync_watermarks WHERE watermark_key = ?1')
+        .bind(cursorWatermarkKey)
+        .run();
+      if (!clearCursor.success) {
+        throw new QueueJobExecutionError('R2_RECONCILE_CURSOR_CLEAR_FAILED', 'Unable to clear completed R2 cursor.', true);
+      }
+      cursor = undefined;
+    }
+  } while (truncated && pageCount < 5);
+
+  if (truncated) {
+    throw new QueueJobExecutionError(
+      'R2_RECONCILE_PAGE_LIMIT_REACHED',
+      'R2 orphan reconciliation saved its cursor and will continue on retry.',
+      true,
+    );
+  }
+
+  const watermark = await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('r2_orphan_media_reconcile:last_run', JSON.stringify({ deletedCount, skippedLegalHoldCount }), nowIso)
+    .bind('r2_orphan_media_reconcile:last_run', JSON.stringify({ deletedCount, skippedLegalHoldCount, skippedUnknownOwnershipCount }), nowIso)
     .run();
+  if (!watermark.success) {
+    throw new QueueJobExecutionError('R2_RECONCILE_WATERMARK_WRITE_FAILED', 'Unable to persist R2 reconciliation watermark.', true);
+  }
 
   return {
     jobType: 'r2_orphan_media_reconcile',
     idempotencyKey: envelope.idempotencyKey,
     executedAtIso: nowIso,
     affectedCount: deletedCount,
-    summary: { deletedCount, skippedLegalHoldCount },
+    summary: { deletedCount, skippedLegalHoldCount, skippedUnknownOwnershipCount, pagesProcessed: pageCount },
   };
 }
 
