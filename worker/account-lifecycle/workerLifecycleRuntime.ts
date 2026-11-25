@@ -312,7 +312,10 @@ export async function executeAccountDeletionLifecycle(params: {
       };
     }
     const existingStatus = String(existingJob.status) as AccountDeletionJobStatus;
-    if (existingStatus === 'PENDING_PERMIT_DRAIN') {
+    if (existingStatus === 'PENDING_PERMIT_DRAIN' ||
+        existingStatus === 'INITIATED' ||
+        existingStatus === 'BLOCKED_LEGAL_HOLD') {
+      // Recover interrupted requests and re-evaluate legal holds on retry.
       resumedJobId = String(existingJob.job_id);
     } else {
       return {
