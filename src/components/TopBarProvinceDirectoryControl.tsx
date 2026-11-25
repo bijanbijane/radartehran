@@ -5,7 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { Compass, Database } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import {
   ALL_31_IRAN_PROVINCES,
   findProvinceForHood,
@@ -26,7 +26,6 @@ export interface TopBarProvinceDirectoryProps {
     targetZoom?: number
   ) => void;
   onOpenProvinceModal?: () => void;
-  onOpenCanonicalRegistry?: () => void;
 }
 
 export function TopBarProvinceAndCityDirectoryControl({
@@ -34,7 +33,6 @@ export function TopBarProvinceAndCityDirectoryControl({
   selectedHoodId,
   onSwitchCity,
   onOpenProvinceModal,
-  onOpenCanonicalRegistry,
 }: TopBarProvinceDirectoryProps): React.ReactElement {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -135,19 +133,6 @@ export function TopBarProvinceAndCityDirectoryControl({
           {renderedProvinceGroups}
         </select>
       </div>
-
-      {onOpenCanonicalRegistry && (
-        <button
-          type="button"
-          onClick={onOpenCanonicalRegistry}
-          className="px-2.5 py-1.5 rounded-[9px] border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 text-[11px] font-extrabold flex items-center gap-1 shadow-xs transition shrink-0 cursor-pointer whitespace-nowrap"
-          title="مشاهده تمام محله‌های canonical از رجیستری رسمی هوشمندی محله‌های ایران"
-          aria-label="بازکردن رجیستری رسمی محله‌های ایران"
-        >
-          <Database className="w-3.5 h-3.5" />
-          <span>رجیستری رسمی</span>
-        </button>
-      )}
 
       {/* دکمه باز کردن مودال فهرست جامع ۳۱ استان و شهرها */}
       {onOpenProvinceModal && (
