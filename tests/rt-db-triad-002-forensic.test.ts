@@ -43,6 +43,7 @@ import {
 } from '../worker/account-lifecycle/d1MutationPermit';
 import {
   executeAccountDeletionLifecycle,
+  processPendingResearchErasureOutbox,
   resolveDedicatedLifecycleReceiptSecret,
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
 import { resolveWriteAdmissionFromD1 } from '../worker/account-lifecycle/d1WriteAdmissionResolver';
@@ -762,6 +763,58 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('D1 failure-result fail-closed regressions', () => {
+    it('reconciles a completed outbox when the previous invocation missed the parent-job update', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const nowMs = 1_795_000_000_000;
+      const nowIso = new Date(nowMs).toISOString();
+      const uid = 'uid_outbox_parent_recovery';
+      const jobId = 'adel_outbox_parent_recovery';
+
+      await userSqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason,
+          created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        jobId, uid, 'idem_outbox_parent_recovery', uid, 'USER_REQUESTED_ERASURE', nowIso, nowIso,
+      ).run();
+      await userSqlite.db.prepare(
+        `INSERT INTO research_erasure_outbox (
+          outbox_id, job_id, subject_key, subject_key_version, status,
+          attempt_count, next_retry_at_ms, receipt_id, erased_events_count,
+          created_at_iso, updated_at_iso, completed_at_iso
+        ) VALUES (?1, ?2, ?3, ?4, 'COMPLETED', 1, 0, ?5, 7, ?6, ?6, ?6)`,
+      ).bind(
+        'outbox_parent_recovery', jobId, 'subject_key_1234567890', 'v1',
+        'research_receipt_1', nowIso,
+      ).run();
+
+      await processPendingResearchErasureOutbox({
+        userDb: userSqlite.db,
+        researchDb: researchSqlite.db,
+        receiptSecret: TEST_RECEIPT_SECRET,
+        nowMs,
+      });
+
+      const job = userSqlite.raw.prepare(
+        'SELECT status FROM account_deletion_jobs WHERE job_id = ?',
+      ).get(jobId) as { status: string };
+      assert.equal(job.status, 'COMPLETED');
+
+      const receipt = userSqlite.raw.prepare(
+        `SELECT deleted_records_count, evidence_json
+         FROM account_lifecycle_receipts
+         WHERE job_id = ? AND stage = 'RESEARCH_ERASURE_CONFIRMED'`,
+      ).get(jobId) as { deleted_records_count: number; evidence_json: string };
+      assert.equal(receipt.deleted_records_count, 7);
+      assert.deepEqual(JSON.parse(receipt.evidence_json), {
+        completedOutboxItems: 1,
+        erasedEventsTotal: 7,
+      });
+    });
     it('does not convert unsuccessful D1 reads into missing rows', async () => {
       const sqlite = createForensicSqliteD1();
       sqlite.setFailResultOnSqlContains('SELECT 1');
