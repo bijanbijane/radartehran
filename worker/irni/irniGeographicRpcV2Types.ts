@@ -121,9 +121,11 @@ export interface IrniRpcRelationshipSnapshotV2 {
   readonly registryChecksum: string;
   readonly relationships: readonly IrniRpcRelationshipV2[];
 }
+export type IrniRpcLegacySystemCode = 'TEHRAN_RADAR' | 'LEGACY_IRAN_NEIGHBORHOOD_ID' | 'RETIRED_CANONICAL_ID' | 'OTHER_LEGACY';
+
 export interface IrniRpcLegacyAliasV2 {
   readonly aliasId: string;
-  readonly legacySystemCode: string;
+  readonly legacySystemCode: IrniRpcLegacySystemCode;
   readonly legacyIdentifierValue: string;
   readonly canonicalGeographicEntityId: string;
   readonly aliasStatus: 'ACTIVE_COMPATIBILITY_ALIAS';
@@ -151,5 +153,5 @@ export interface IrniGeographicRpcBindingV2 {
   }>>;
   listApprovedEntitiesPaginated(filter: IrniRpcEntityFilterV2, page: IrniRpcPageRequestV2, expectedRevision: number): Promise<IrniRpcResult<IrniRpcEntityPageV2>>;
   listApprovedRelationshipsForEntity(id: string, expectedRevision: number): Promise<IrniRpcResult<IrniRpcRelationshipSnapshotV2>>;
-  listApprovedLegacyAliases(systemCode: string | undefined, expectedRevision: number): Promise<IrniRpcResult<IrniRpcLegacyAliasSnapshotV2>>;
+  listApprovedLegacyAliases(systemCode: IrniRpcLegacySystemCode | undefined, expectedRevision: number): Promise<IrniRpcResult<IrniRpcLegacyAliasSnapshotV2>>;
 }
