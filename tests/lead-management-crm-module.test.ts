@@ -411,10 +411,37 @@ async function runAllTests() {
   });
 
   // Test 12: Express API routes integration
-  await verify('Express API router responds to inquiries, pagination, assignment, and activities', async () => {
+  await verify('Express API router fails closed without a verifier and enforces verified identity and scoped access', async () => {
+    const noVerifierApp = express();
+    noVerifierApp.use(express.json());
+    noVerifierApp.use('/api/leads', createLeadRouter(engine));
+    const noVerifierServer = http.createServer(noVerifierApp);
+    await new Promise<void>((resolve) => noVerifierServer.listen(0, resolve));
+    const noVerifierPort = (noVerifierServer.address() as any).port;
+    try {
+      const noVerifierRes = await fetch(`http://127.0.0.1:${noVerifierPort}/api/leads/my-leads`, {
+        headers: { 'x-test-uid': 'spoofed_user_uid_12345' },
+      });
+      assert.equal(noVerifierRes.status, 503);
+    } finally {
+      await new Promise<void>((resolve) => noVerifierServer.close(() => resolve()));
+    }
+
+    const leadTokenVerifier = {
+      async verifyIdToken(token: string) {
+        const identities: Record<string, { uid: string; email: string; email_verified: boolean }> = {
+          token_customer_lead_test_123456: { uid: 'cust_express_test', email: 'customer@example.com', email_verified: true },
+          token_professional_lead_test_123456: { uid: 'pro_reza_1', email: 'pro@example.com', email_verified: true },
+          token_attacker_lead_test_123456: { uid: 'attacker_lead_user', email: 'attacker@example.com', email_verified: true },
+        };
+        const identity = identities[token];
+        if (!identity) throw new Error('INVALID_TOKEN');
+        return identity;
+      },
+    };
     const app = express();
     app.use(express.json());
-    app.use('/api/leads', createLeadRouter(engine));
+    app.use('/api/leads', createLeadRouter(engine, leadTokenVerifier));
 
     const server = http.createServer(app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -427,7 +454,7 @@ async function runAllTests() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-test-uid': 'cust_express_test',
+          Authorization: 'Bearer token_customer_lead_test_123456',
         },
         body: JSON.stringify({
           targetListingId: 'brg_active_101',
@@ -445,7 +472,7 @@ async function runAllTests() {
 
       // 2. GET /api/leads/my-leads
       const getRes = await fetch(`${baseUrl}/my-leads`, {
-        headers: { 'x-test-uid': 'cust_express_test' },
+        headers: { Authorization: 'Bearer token_customer_lead_test_123456' },
       });
       assert.equal(getRes.status, 200);
       const getJson = (await getRes.json()) as any;
@@ -456,8 +483,7 @@ async function runAllTests() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-test-uid': 'pro_reza_1',
-          'x-role': 'PROFESSIONAL',
+          Authorization: 'Bearer token_professional_lead_test_123456',
         },
         body: JSON.stringify({
           activityType: 'CALL_ATTEMPTED',
@@ -468,9 +494,36 @@ async function runAllTests() {
 
       // 4. GET /api/leads/:leadId/activities
       const getActsRes = await fetch(`${baseUrl}/${newLeadId}/activities`, {
-        headers: { 'x-test-uid': 'cust_express_test' },
+        headers: { Authorization: 'Bearer token_customer_lead_test_123456' },
       });
       assert.equal(getActsRes.status, 200);
+
+      // An authenticated but unassigned user cannot read internal activities or impersonate ADMIN via x-role.
+      const forbiddenActivities = await fetch(`${baseUrl}/${newLeadId}/activities`, {
+        headers: { Authorization: 'Bearer token_attacker_lead_test_123456' },
+      });
+      assert.equal(forbiddenActivities.status, 403);
+
+      const spoofedAdminContact = await fetch(`${baseUrl}/${newLeadId}/contact-access`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer token_attacker_lead_test_123456',
+          'x-role': 'ADMIN',
+        },
+        body: JSON.stringify({ accessPurposeFa: 'test' }),
+      });
+      assert.equal(spoofedAdminContact.status, 403);
+
+      const forbiddenAgencyQueue = await fetch(`${baseUrl}/crm/agency?agencyId=agency_alpha_1`, {
+        headers: { Authorization: 'Bearer token_attacker_lead_test_123456' },
+      });
+      assert.equal(forbiddenAgencyQueue.status, 403);
+
+      const forbiddenAgencyMetrics = await fetch(`${baseUrl}/crm/metrics?agencyId=agency_alpha_1`, {
+        headers: { Authorization: 'Bearer token_attacker_lead_test_123456' },
+      });
+      assert.equal(forbiddenAgencyMetrics.status, 403);
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
