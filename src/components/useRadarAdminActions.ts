@@ -23,7 +23,7 @@ const syncApprovedSponsorRequestsExpiry = async (hoodId: number, expiresAtIso: s
   if (!response.ok) throw new Error(`MARKET_STATE_HTTP_${response.status}`);
   const state = await response.json() as { sponsors?: Array<{ id?: string; hoodId?: number; status?: string }> };
   const requests = (state.sponsors || []).filter((item) => item.hoodId === hoodId && item.status === 'approved');
-  await Promise.all(requests.map((item) => updateSponsorRequestExpiry(String(item.id || '').replace(/^cloud-/, ''), expiresAtIso)));
+  await Promise.all(requests.map((item) => updateSponsorRequestExpiry(String(item.id || '').replace(/^cloud-/, ''), expiresAtIso, cityId)));
 };
 export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
   const handleAdminApproveSponsor = async (reqItem: SponsorCrmRequestItem) => {

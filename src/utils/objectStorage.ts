@@ -184,7 +184,8 @@ export async function compressImageFileInBrowser(
  * Upload image/video content to the authenticated server endpoint.
  *
  * The server must verify:
- * - Firebase ID token and user authorization.
+ * - Cloudflare D1 session cookie and user authorization (legacy Firebase Bearer/App Check
+ *   headers are accepted only for transition clients while the remaining routes migrate).
  * - MIME type and file signatures.
  * - File size, dimensions and media count limits.
  * - City/neighborhood permissions.
