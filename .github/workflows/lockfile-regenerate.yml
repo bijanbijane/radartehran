@@ -36,20 +36,65 @@ jobs:
           cache: "npm"
 
       - name: Regenerate lockfile from all declared workspaces
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Verify deterministic clean install
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Commit generated lockfile when changed
         shell: bash
         run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "Lockfile already matches the declared manifests."
-            exit 0
+          set +e
+          npm --version
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund 2>&1 | tee /tmp/lockfile-generation.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            {
+              echo "# Lockfile generation failure"
+              echo
+              echo "Exit code: $code"
+              echo
+              tail -n 160 /tmp/lockfile-generation.log
+            } > LOCKFILE_REGEN_DIAGNOSTIC.md
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add LOCKFILE_REGEN_DIAGNOSTIC.md
+            git commit -m "chore(ci): record lockfile generation failure" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}" || true
+            exit "$code"
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore(deps): regenerate workspace lockfile"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore(deps): regenerate workspace lockfile"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Verify deterministic clean install
+        shell: bash
+        run: |
+          set +e
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            {
+              echo "# npm ci verification failure"
+              echo
+              echo "Exit code: $code"
+              echo
+              tail -n 160 /tmp/npm-ci.log
+            } > LOCKFILE_REGEN_DIAGNOSTIC.md
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add LOCKFILE_REGEN_DIAGNOSTIC.md
+            git commit -m "chore(ci): record npm ci verification failure" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}" || true
+            exit "$code"
+          fi
+
+      - name: Retain package-manager diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-lockfile-regeneration-diagnostics
+          path: |
+            /tmp/lockfile-generation.log
+            /tmp/npm-ci.log
+            LOCKFILE_REGEN_DIAGNOSTIC.md
+          if-no-files-found: ignore
+          retention-days: 3
