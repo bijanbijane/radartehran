@@ -11,6 +11,8 @@ import { REGISTERED_API_ROUTES } from '../src/utils/expressRouteCatalog';
 import { resetWorkerRateLimitWindowsForTests } from '../worker/contextAndSecurity';
 import workerEntrypoint from '../worker/index';
 import { sanitizeWorkerErrorMessage } from '../worker/errorSanitizer';
+import { enforceWorkerMutationWriteBlock, releaseWorkerMutationPermitIfHeld } from '../worker/account-lifecycle/writeBlockWorkerGate';
+import type { WorkerRequestContext } from '../worker/types';
 import {
   ROUTE_MIGRATION_CONTROL_REGISTER,
   UNMOUNTED_ENTERPRISE_DOMAIN_MODULES,
@@ -576,5 +578,57 @@ describe('Worker error-message redaction', () => {
       sanitizeWorkerErrorMessage('D1 binding unavailable for route /api/health'),
       'D1 binding unavailable for route /api/health'
     );
+  });
+});
+
+
+describe('Worker mutation write-admission gate', () => {
+  function makeContext(changes: number, shouldThrow = false): WorkerRequestContext {
+    const db = {
+      prepare(_sql: string) {
+        return {
+          bind(..._values: unknown[]) {
+            return {
+              async run() {
+                if (shouldThrow) throw new Error('D1_SCHEMA_UNAVAILABLE');
+                return { success: true, meta: { changes } };
+              },
+            };
+          },
+        };
+      },
+    };
+    return {
+      request: new Request('https://radartehran.ir/api/v1/account/profile', { method: 'PATCH' }),
+      method: 'PATCH',
+      pathname: '/api/v1/account/profile',
+      url: new URL('https://radartehran.ir/api/v1/account/profile'),
+      env: { USER_DB: db } as unknown as WorkerEnv,
+      correlationId: 'corr-write-admission-test',
+      requestId: 'req-write-admission-test',
+    } as unknown as WorkerRequestContext;
+  }
+
+  it('acquires and releases a permit using the canonical USER_DB schema', async () => {
+    const ctx = makeContext(1);
+    const response = await enforceWorkerMutationWriteBlock(ctx, 'user-123');
+    assert.equal(response, null);
+    await releaseWorkerMutationPermitIfHeld(ctx);
+  });
+
+  it('rejects mutations when an active write block prevents permit acquisition', async () => {
+    const ctx = makeContext(0);
+    const response = await enforceWorkerMutationWriteBlock(ctx, 'user-123');
+    assert.equal(response?.status, 423);
+    const body = (await response!.json()) as { code: string };
+    assert.equal(body.code, 'ACCOUNT_WRITE_BLOCKED');
+  });
+
+  it('fails closed with 503 when the USER_DB permit schema is unavailable', async () => {
+    const ctx = makeContext(0, true);
+    const response = await enforceWorkerMutationWriteBlock(ctx, 'user-123');
+    assert.equal(response?.status, 503);
+    const body = (await response!.json()) as { code: string };
+    assert.equal(body.code, 'WRITE_ADMISSION_UNAVAILABLE');
   });
 });
