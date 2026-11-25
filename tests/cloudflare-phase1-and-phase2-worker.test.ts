@@ -10,6 +10,7 @@ import { describe, it } from 'node:test';
 import { REGISTERED_API_ROUTES } from '../src/utils/expressRouteCatalog';
 import { resetWorkerRateLimitWindowsForTests } from '../worker/contextAndSecurity';
 import workerEntrypoint from '../worker/index';
+import { sanitizeWorkerErrorMessage } from '../worker/errorSanitizer';
 import {
   ROUTE_MIGRATION_CONTROL_REGISTER,
   UNMOUNTED_ENTERPRISE_DOMAIN_MODULES,
@@ -541,5 +542,39 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     );
     assert.equal(rateLimitedRes.status, 429);
     assert.ok(rateLimitedRes.headers.get('retry-after'));
+  });
+});
+
+
+describe('Worker error-message redaction', () => {
+  it('redacts bearer credentials, standalone JWTs, and email addresses', () => {
+    const bearer = 'Bearer abc.def.ghi';
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature';
+    const email = 'operator@example.com';
+    const result = sanitizeWorkerErrorMessage(
+      `request failed with ${bearer}; token=${jwt}; contact=${email}`
+    );
+
+    assert.equal(result.includes('abc.def.ghi'), false);
+    assert.equal(result.includes(jwt), false);
+    assert.equal(result.includes(email), false);
+    assert.match(result, /Bearer \\[REDACTED\\]/);
+    assert.match(result, /\\[REDACTED_JWT\\]/);
+    assert.match(result, /\\[REDACTED_EMAIL\\]/);
+  });
+
+  it('redacts case-insensitively and enforces the 240-character log limit', () => {
+    const result = sanitizeWorkerErrorMessage(
+      `bEaReR secret-value ${'x'.repeat(300)}`
+    );
+    assert.equal(result.includes('secret-value'), false);
+    assert.equal(result.length, 240);
+  });
+
+  it('leaves ordinary diagnostic text intact', () => {
+    assert.equal(
+      sanitizeWorkerErrorMessage('D1 binding unavailable for route /api/health'),
+      'D1 binding unavailable for route /api/health'
+    );
   });
 });
