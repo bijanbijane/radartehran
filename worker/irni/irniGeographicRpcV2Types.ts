@@ -101,6 +101,7 @@ export interface IrniRpcEntityFilterV2 {
   readonly classificationSystemId?: string;
   readonly parentGeographicEntityId?: string;
   readonly provinceGeographicEntityId?: string;
+  readonly canonicalNameQuery?: string;
 }
 export interface IrniRpcEntityPageV2 {
   readonly registryRevision: number;
