@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Tehran Radar Express API (server.ts, server/modules, src/utils/server*)",
   "scripts": {
-    "dev": "tsx server.ts --port 3001",
-    "start": "tsx server.ts --port 3001",
+    "dev": "tsx bootstrap.ts --port 3001",
+    "start": "tsx bootstrap.ts --port 3001",
     "start:prod": "node ./scripts/start-production.mjs --port 3001",
     "build": "node ./scripts/build-production.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
