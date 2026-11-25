@@ -1,5 +1,5 @@
 /** @file src/features/valuation/services/valuationStorageAndApiClient.ts — Stage 92.6, 93 & 94 Account-Scoped Valuation Storage, Schema Migration, API Client & Copy Formatter */
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, type AreaUnit, type IntlCurrencyCode } from '../../../utils/areaUnit';
@@ -152,28 +152,20 @@ export function persistSavedValuationReports(reports: SavedValuationReport[], ui
   } catch { /* ignore */ }
 }
 
-async function getValuationAuthHeaders(currentUser?: User | null): Promise<{ ok: boolean; headers: Record<string, string>; errorFa?: string }> {
-  if (!currentUser || !currentUser.uid || typeof currentUser.getIdToken !== 'function') {
-    return { ok: false, headers: {}, errorFa: 'برای همگام‌سازی گزارش در حساب کاربری وارد شوید.' };
-  }
-  try {
-    const token = await currentUser.getIdToken();
-    if (!token) return { ok: false, headers: {}, errorFa: 'توکن احراز هویت دریافت نشد.' };
-    return { ok: true, headers: { Authorization: `Bearer ${token}` } };
-  } catch {
-    return { ok: false, headers: {}, errorFa: 'خطا در احراز هویت کاربر.' };
-  }
+async function getValuationAuthHeaders(currentUser?: AuthUserSnapshot | null): Promise<{ ok: boolean; headers: Record<string, string>; errorFa?: string }> {
+  if (!currentUser?.uid) return { ok: false, headers: {}, errorFa: 'برای همگام‌سازی گزارش در حساب کاربری وارد شوید.' };
+  return { ok: true, headers: {} };
 }
 
 /** Stage 93.2: Account-linked valuation report API methods */
 export async function getMyValuationReports(
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; status: number; items: SavedValuationReport[]; errorFa?: string }> {
   const auth = await getValuationAuthHeaders(currentUser);
   if (!auth.ok) return { ok: false, status: 401, items: [], errorFa: auth.errorFa };
   try {
-    const res = await fetch('/api/account/valuations', { headers: { Accept: 'application/json', ...auth.headers }, signal });
+    const res = await fetch('/api/account/valuations', { headers: { Accept: 'application/json', ...auth.headers }, credentials: 'same-origin', signal });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, status: res.status, items: [], errorFa: body?.message || 'خطا در دریافت گزارش‌ها' };
     return { ok: true, status: res.status, items: validateAndMigrateSavedValuationReports(body.items) };
@@ -184,7 +176,7 @@ export async function getMyValuationReports(
 
 export async function saveValuationReport(
   report: SavedValuationReport,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ): Promise<{ ok: boolean; status: number; item?: SavedValuationReport; errorFa?: string }> {
   const auth = await getValuationAuthHeaders(currentUser);
   if (!auth.ok) return { ok: false, status: 401, errorFa: auth.errorFa };
@@ -205,7 +197,7 @@ export async function saveValuationReport(
 
 export async function getValuationReport(
   reportId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; status: number; item?: SavedValuationReport; errorFa?: string }> {
   const auth = await getValuationAuthHeaders(currentUser);
@@ -226,7 +218,7 @@ export async function getValuationReport(
 
 export async function deleteValuationReport(
   reportId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ): Promise<{ ok: boolean; status: number; errorFa?: string }> {
   const auth = await getValuationAuthHeaders(currentUser);
   if (!auth.ok) return { ok: false, status: 401, errorFa: auth.errorFa };

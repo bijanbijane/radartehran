@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { CommunityMembersAndGuidelinesTab } from '../components/CommunityMembersAndGuidelinesTab';
 import {
   followCommunityUser,
@@ -35,11 +35,8 @@ const TARGET_PROFILE: CommunityProfile = {
   verifiedCredentialFa: null,
 };
 
-function makeFakeUser(uid: string): User {
-  return {
-    uid,
-    getIdToken: async () => `fake-token-${uid}`,
-  } as unknown as User;
+function makeFakeUser(uid: string): AuthUserSnapshot {
+  return { uid, email: null, phoneNumber: null, displayName: null, emailVerified: false, authProvider: 'unknown' };
 }
 
 test('FOLLOW-021..FOLLOW-022: SSR renders Follow button for signed-in non-owner, and hides it for guest or self', () => {

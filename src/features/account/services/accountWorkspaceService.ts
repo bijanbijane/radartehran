@@ -282,9 +282,9 @@ export function buildLocalWorkspaceExportBundle(uid?: string | null): Record<str
       'local_service_requests',
     ],
     excludedSources: [
-      'server_account_firestore',
+      'server_account_d1',
       'server_bargains_and_sponsors',
-      'firebase_auth_identity',
+      'cloudflare_auth_identity',
       'security_tokens_and_secrets',
     ],
     localWorkspaceData: {

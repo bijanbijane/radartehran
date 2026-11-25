@@ -1,5 +1,5 @@
 /** @file src/features/community/services/communityApiClient.ts — Stage 4b Canonical v1 Community API Client (Zero Spoofable Headers, Idempotency-Key & Cursor Pagination) */
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { COMMUNITY_AUTH_REQUIRED_FA } from './communityTrustService';
 import type {
   CommunityAbuseReason,
@@ -40,21 +40,13 @@ export function createCommunityIdempotencyKey(prefix = 'comm'): string {
   return `${prefix}_${rand}`.slice(0, 72);
 }
 
-async function buildProtectedHeaders(currentUser: User | null | undefined): Promise<{
+async function buildProtectedHeaders(currentUser: AuthUserSnapshot | null | undefined): Promise<{
   ok: boolean;
   headers: Record<string, string>;
   errorFa?: string;
 }> {
-  if (!currentUser || !currentUser.uid || typeof currentUser.getIdToken !== 'function') {
-    return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
-  }
-  try {
-    const token = await currentUser.getIdToken();
-    if (!token) return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
-    return { ok: true, headers: { Authorization: `Bearer ${token}` } };
-  } catch {
-    return { ok: false, headers: {}, errorFa: 'نشست کاربری معتبر نیست؛ لطفاً مجدداً وارد حساب خود شوید.' };
-  }
+  if (!currentUser?.uid) return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  return { ok: true, headers: {} };
 }
 
 export const COMMUNITY_PERMISSION_DENIED_FA =
@@ -96,7 +88,7 @@ async function fetchJsonSafe<T>(
 ): Promise<CommunityApiCallResult<T>> {
   if (init.signal?.aborted) return { ok: false, status: 0, errorFa: 'ABORTED' };
   try {
-    const res = await fetch(url, init);
+    const res = await fetch(url, { ...init, credentials: init.credentials ?? 'same-origin' });
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
       return {
@@ -131,7 +123,7 @@ export const getCommunityOverview = (signal?: AbortSignal) =>
     pendingCorrectionsCount: Number(b.pendingCorrectionsCount ?? 0),
   }));
 
-export async function getCommunityTopics(currentUser?: User | null, signal?: AbortSignal) {
+export async function getCommunityTopics(currentUser?: AuthUserSnapshot | null, signal?: AbortSignal) {
   const auth = currentUser ? await buildProtectedHeaders(currentUser) : { ok: false, headers: {} };
   return fetchJsonSafe<Array<CommunityTopicNode & { isFollowedByMe?: boolean }>>(
     '/api/v1/community/topics',
@@ -243,7 +235,7 @@ export async function getCommunityMembers(params?: {
   limit?: number;
   q?: string;
   includeSeeds?: boolean;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   signal?: AbortSignal;
 }) {
   const qs = new URLSearchParams();
@@ -263,7 +255,7 @@ export async function getCommunityMembers(params?: {
   );
 }
 
-export async function getCommunityMember(username: string, options?: { currentUser?: User | null; signal?: AbortSignal }) {
+export async function getCommunityMember(username: string, options?: { currentUser?: AuthUserSnapshot | null; signal?: AbortSignal }) {
   const auth = options?.currentUser ? await buildProtectedHeaders(options.currentUser) : { ok: false, headers: {} };
   return fetchJsonSafe<CommunityProfile>(
     `/api/v1/community/profiles/${encodeURIComponent(username)}`,
@@ -272,7 +264,7 @@ export async function getCommunityMember(username: string, options?: { currentUs
   );
 }
 
-export async function getMyCommunityActivity(currentUser: User | null | undefined, signal?: AbortSignal) {
+export async function getMyCommunityActivity(currentUser: AuthUserSnapshot | null | undefined, signal?: AbortSignal) {
   const auth = await buildProtectedHeaders(currentUser);
   if (!auth.ok) return { ok: false, status: 401, errorFa: auth.errorFa } as CommunityApiCallResult<{
     myProfile: CommunityProfile | null;
@@ -296,7 +288,7 @@ async function postProtectedJson<T>(
   url: string,
   method: 'POST' | 'PATCH' | 'DELETE',
   payload: Record<string, unknown>,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   extract: (body: Record<string, unknown>) => T,
   idempotencyKey?: string,
 ): Promise<CommunityApiCallResult<T>> {
@@ -319,34 +311,34 @@ async function postProtectedJson<T>(
 
 export const createCommunityDiscussion = (
   payload: { track: 'social_discussion' | 'expert_qa'; neighborhoodId: number; neighborhoodNameFa: string; topicId: string; titleFa: string; bodyFa: string; socialContext?: SocialContentContext },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityDiscussionPost>('/api/v1/community/posts', 'POST', payload, currentUser, (b) => b.item as CommunityDiscussionPost, idempotencyKey);
 
 export const editCommunityDiscussion = (
   postId: string,
   payload: { titleFa: string; bodyFa: string; reasonFa: string },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityDiscussionPost>(`/api/v1/community/posts/${encodeURIComponent(postId)}`, 'PATCH', payload, currentUser, (b) => b.item as CommunityDiscussionPost, idempotencyKey);
 
 export const createCommunityReply = (
   postId: string,
   payload: { bodyFa: string; parentReplyId?: string | null },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityDiscussionPost>(`/api/v1/community/posts/${encodeURIComponent(postId)}/comments`, 'POST', payload, currentUser, (b) => b.post as CommunityDiscussionPost, idempotencyKey);
 
 export const createCommunityQuestion = (
   payload: { titleFa: string; bodyFa: string; neighborhoodId: number; neighborhoodNameFa: string; topicId: string; socialContext?: SocialContentContext },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityQuestionItem>('/api/v1/community/questions', 'POST', payload, currentUser, (b) => b.item as CommunityQuestionItem, idempotencyKey);
 
 export const createCommunityAnswer = (
   questionId: string,
   payload: { bodyFa: string; sourceReferenceFa?: string },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<{ item: CommunityAnswerItem; question: CommunityQuestionItem }>(
   `/api/v1/community/questions/${encodeURIComponent(questionId)}/answers`,
@@ -360,19 +352,19 @@ export const createCommunityAnswer = (
 export const selectQuestionAnswer = (
   questionId: string,
   answerId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ) => postProtectedJson<CommunityQuestionItem>(`/api/v1/community/questions/${encodeURIComponent(questionId)}/select-answer`, 'POST', { answerId }, currentUser, (b) => b.item as CommunityQuestionItem);
 
 export const createDataCorrection = (
   payload: { neighborhoodId: number; neighborhoodNameFa: string; category: DataCorrectionCategory; titleFa: string; currentValueFa?: string; evidenceSummaryFa: string; suggestedValueFa: string; observedDateFa?: string; socialContext?: SocialContentContext },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<DataCorrectionProposal>('/api/v1/community/contributions', 'POST', payload, currentUser, (b) => b.item as DataCorrectionProposal, idempotencyKey);
 
-export const withdrawDataCorrection = (proposalId: string, currentUser: User | null | undefined) =>
+export const withdrawDataCorrection = (proposalId: string, currentUser: AuthUserSnapshot | null | undefined) =>
   postProtectedJson<DataCorrectionProposal>(`/api/v1/community/contributions/${encodeURIComponent(proposalId)}/withdraw`, 'POST', {}, currentUser, (b) => b.item as DataCorrectionProposal);
 
-export const toggleCommunityReaction = (targetId: string, reaction: ReactionType, currentUser: User | null | undefined, idempotencyKey?: string) =>
+export const toggleCommunityReaction = (targetId: string, reaction: ReactionType, currentUser: AuthUserSnapshot | null | undefined, idempotencyKey?: string) =>
   postProtectedJson<{ reactionCounts: ReactionCounts; activeReaction: ReactionType | null }>(
     '/api/v1/community/reactions',
     'POST',
@@ -384,25 +376,25 @@ export const toggleCommunityReaction = (targetId: string, reaction: ReactionType
 
 export const submitCommunityAbuseReport = (
   payload: { targetType: CommunityAbuseReport['targetType']; targetId: string; reason: CommunityAbuseReason; detailsFa: string },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityAbuseReport>('/api/v1/community/reports', 'POST', payload, currentUser, (b) => b.item as CommunityAbuseReport, idempotencyKey);
 
 export const submitCommunityAppeal = (
   payload: { moderationActionId: string; targetId: string; argumentFa: string },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ) => postProtectedJson<ModerationAppeal>('/api/v1/community/appeals', 'POST', payload, currentUser, (b) => b.item as ModerationAppeal);
 
 export const createResearchProposal = (
   payload: { titleFa: string; questionFa: string; neighborhoodNameFa: string; linkedKnowledgeTab: 'reports' | 'methodology'; socialContext?: SocialContentContext },
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<ResearchTopicProposal>('/api/v1/community/research-proposals', 'POST', payload, currentUser, (b) => b.item as ResearchTopicProposal, idempotencyKey);
 
-export const voteResearchProposal = (proposalId: string, currentUser: User | null | undefined) =>
+export const voteResearchProposal = (proposalId: string, currentUser: AuthUserSnapshot | null | undefined) =>
   postProtectedJson<ResearchTopicProposal>(`/api/v1/community/research-proposals/${encodeURIComponent(proposalId)}/vote`, 'POST', {}, currentUser, (b) => b.item as ResearchTopicProposal);
 
-export const toggleTopicFollow = (topicId: string, currentUser: User | null | undefined, idempotencyKey?: string) =>
+export const toggleTopicFollow = (topicId: string, currentUser: AuthUserSnapshot | null | undefined, idempotencyKey?: string) =>
   postProtectedJson<{ topics: Array<CommunityTopicNode & { isFollowedByMe?: boolean }>; isFollowed: boolean }>(
     '/api/v1/community/follows',
     'POST',
@@ -412,10 +404,10 @@ export const toggleTopicFollow = (topicId: string, currentUser: User | null | un
     idempotencyKey,
   );
 
-export const toggleCommunityDiscussionFollow = (postId: string, currentUser: User | null | undefined, idempotencyKey?: string) =>
+export const toggleCommunityDiscussionFollow = (postId: string, currentUser: AuthUserSnapshot | null | undefined, idempotencyKey?: string) =>
   postProtectedJson<CommunityDiscussionPost>('/api/v1/community/follows', 'POST', { scope: 'post', targetId: postId }, currentUser, (b) => b.item as CommunityDiscussionPost, idempotencyKey);
 
-export const updateCommunityPrivacySettings = (privacy: Partial<PrivacySettings>, currentUser: User | null | undefined) =>
+export const updateCommunityPrivacySettings = (privacy: Partial<PrivacySettings>, currentUser: AuthUserSnapshot | null | undefined) =>
   postProtectedJson<CommunityProfile>('/api/account/community/privacy', 'PATCH', { privacy }, currentUser, (b) => b.profile as CommunityProfile);
 
 export {

@@ -193,22 +193,26 @@ export interface ServerAccountExportEnvelope {
   referenceValuationIntlText?: string;
 }
 
-export interface ServerAccountDeletionStep {
-  category: string;
-  policy: 'delete' | 'anonymize';
-  completed: boolean;
-}
+export type CloudflareAccountDeletionJobStatus =
+  | 'INITIATED'
+  | 'BLOCKED_LEGAL_HOLD'
+  | 'PENDING_PERMIT_DRAIN'
+  | 'PENDING_RESEARCH_ERASURE'
+  | 'COMPLETED'
+  | 'FAILED';
 
 export interface ServerAccountDeletionPayload {
-  status: 'ok' | 'partial';
-  jobId?: string;
-  lifecycleState?: AccountDeletionLifecycleState;
-  steps: ServerAccountDeletionStep[];
-  requiresClientAuthDeletion: boolean;
-  failedSteps: string[];
-  clearClientLocalStorageKeys: string[];
-  deletedMediaCount: number;
-  failedMediaCount: number;
+  ok: boolean;
+  status: CloudflareAccountDeletionJobStatus;
+  statusCode: number;
+  jobId: string;
+  idempotentReplay: boolean;
+  userDbDeletedRecords: number;
+  outboxItemsQueued: number;
+  outboxItemsCompleted: number;
+  researchEventsErased: number;
+  receiptHash: string | null;
+  code: string;
 }
 
 export type AccountActionErrorCode =

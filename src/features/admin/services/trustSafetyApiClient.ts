@@ -1,5 +1,5 @@
 /** @file src/features/admin/services/trustSafetyApiClient.ts — Stage 5 Trust & Safety Moderation Lifecycle Admin Client */
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { createCommunityIdempotencyKey } from '../../community/services/communityApiClient';
 
 export type TrustSafetyDecision = 'dismiss' | 'hide' | 'lock' | 'soft_delete' | 'warn_author' | 'escalate';
@@ -20,27 +20,21 @@ export interface TrustSafetyCaseItem {
   updatedAtIso: string;
 }
 
-async function getBearerHeader(currentUser?: User | null): Promise<Record<string, string>> {
-  if (!currentUser || typeof currentUser.getIdToken !== 'function') return {};
-  try {
-    const token = await currentUser.getIdToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch {
-    return {};
-  }
+function getBearerHeader(currentUser?: AuthUserSnapshot | null): Record<string, string> {
+  return currentUser?.uid ? {} : {};
 }
 
 export async function listTrustSafetyCases(
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
   statusFilter?: string,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; cases: TrustSafetyCaseItem[]; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
   if (signal?.aborted) return { ok: false, cases: [] };
-  if (!auth.Authorization) return { ok: false, cases: [], errorFa: 'نشست مدیر تایید نشده است.' };
+  if (!currentUser?.uid) return { ok: false, cases: [], errorFa: 'نشست مدیر تایید نشده است.' };
   const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
   try {
-    const res = await fetch(`/api/v1/trust-safety/cases${qs}`, { headers: { Accept: 'application/json', ...auth }, signal });
+    const res = await fetch(`/api/v1/trust-safety/cases${qs}`, { headers: { Accept: 'application/json', ...auth }, credentials: 'same-origin', signal });
     const body = (await res.json().catch(() => ({}))) as { cases?: TrustSafetyCaseItem[]; messageFa?: string; code?: string };
     if (!res.ok) return { ok: false, cases: [], errorFa: body.messageFa || body.code || 'خطا در دریافت پرونده‌های ایمنی' };
     return { ok: true, cases: Array.isArray(body.cases) ? body.cases : [] };
@@ -50,13 +44,13 @@ export async function listTrustSafetyCases(
   }
 }
 
-export async function claimTrustSafetyCase(caseId: string, currentUser?: User | null): Promise<{ ok: boolean; errorFa?: string }> {
+export async function claimTrustSafetyCase(caseId: string, currentUser?: AuthUserSnapshot | null): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
-  if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
+  if (!currentUser?.uid) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
   try {
     const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/claim`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-claim'), ...auth },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-claim'), ...auth }, credentials: 'same-origin',
     });
     const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
     return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'خطا در قفل‌گذاری پرونده' };
@@ -69,14 +63,14 @@ export async function applyTrustSafetyDecision(
   caseId: string,
   decision: TrustSafetyDecision,
   reasonFa: string,
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
 ): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
-  if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
+  if (!currentUser?.uid) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
   try {
     const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/decision`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-dec'), ...auth },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-dec'), ...auth }, credentials: 'same-origin',
       body: JSON.stringify({ decision, reasonFa }),
     });
     const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
@@ -90,14 +84,14 @@ export async function resolveTrustSafetyAppeal(
   caseId: string,
   decision: 'upheld' | 'overturned',
   reviewerNoteFa: string,
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
 ): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
-  if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
+  if (!currentUser?.uid) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
   try {
     const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/appeal-resolve`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-app'), ...auth },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-app'), ...auth }, credentials: 'same-origin',
       body: JSON.stringify({ decision, reviewerNoteFa }),
     });
     const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };

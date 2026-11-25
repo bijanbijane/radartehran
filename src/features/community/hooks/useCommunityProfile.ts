@@ -1,6 +1,6 @@
 /** @file src/features/community/hooks/useCommunityProfile.ts — Authoritative Public Profile, Paginated Contribution Timeline & User Follow Graph Hook (RT-SOCIAL-IMPL-008 & RT-SOCIAL-IMPL-009) */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import {
   followCommunityUser,
   getCommunityMember,
@@ -17,7 +17,7 @@ import type {
 export interface UseCommunityProfileOptions {
   username: string | null;
   fallbackProfile?: CommunityProfile | null;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   pageSize?: number;
 }
 
@@ -69,7 +69,7 @@ export function useCommunityProfile({
   const timelineReqSeqRef = useRef<number>(0);
   const followPendingRef = useRef<boolean>(false);
   const loadMoreAbortRef = useRef<AbortController | null>(null);
-  const currentUserRef = useRef<User | null>(currentUser);
+  const currentUserRef = useRef<AuthUserSnapshot | null>(currentUser);
   currentUserRef.current = currentUser;
   const fallbackProfileRef = useRef<CommunityProfile | null>(fallbackProfile);
   fallbackProfileRef.current = fallbackProfile;

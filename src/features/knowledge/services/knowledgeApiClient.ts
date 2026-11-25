@@ -1,5 +1,5 @@
 /** @file src/features/knowledge/services/knowledgeApiClient.ts — Stage 83–86 Knowledge Center API Client (Publications, Versions, Sources, Corrections, Bookmarks & Editorial Governance) */
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import type { KnowledgeDataBrief } from '../data/knowledgeSourcesAndBriefs';
 import type {
   GlossaryTermCategory,
@@ -42,28 +42,11 @@ export interface GetKnowledgePublicationsParams {
   signal?: AbortSignal;
 }
 
-async function resolveBearerHeader(currentUser: User | null | undefined): Promise<{ ok: boolean; headers: Record<string, string>; errorFa?: string }> {
-  if (!currentUser || !currentUser.uid || typeof currentUser.getIdToken !== 'function') {
-    return {
-      ok: false,
-      headers: {},
-      errorFa: 'برای انجام این عملیات ابتدا وارد حساب کاربری معتبر خود شوید.',
-    };
+async function resolveBearerHeader(currentUser: AuthUserSnapshot | null | undefined): Promise<{ ok: boolean; headers: Record<string, string>; errorFa?: string }> {
+  if (!currentUser?.uid) {
+    return { ok: false, headers: {}, errorFa: 'برای انجام این عملیات ابتدا وارد حساب کاربری معتبر خود شوید.' };
   }
-  try {
-    const token = await currentUser.getIdToken();
-    if (!token) {
-      return { ok: false, headers: {}, errorFa: 'دریافت توکن احراز هویت ناموفق بود.' };
-    }
-    return {
-      ok: true,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  } catch {
-    return { ok: false, headers: {}, errorFa: 'نشست کاربری معتبر نیست؛ لطفاً دوباره وارد شوید.' };
-  }
+  return { ok: true, headers: {} };
 }
 
 function mapHttpErrorFa(status: number, fallbackMessage?: string): string {
@@ -251,7 +234,7 @@ export async function getKnowledgeGlossary(
 export async function submitKnowledgeCorrection(
   publicationId: string,
   input: KnowledgeCorrectionInput,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ): Promise<KnowledgeApiResult<KnowledgeCorrectionRecord>> {
   const fetchedAtIso = new Date().toISOString();
   const auth = await resolveBearerHeader(currentUser);
@@ -271,7 +254,7 @@ export async function submitKnowledgeCorrection(
 }
 
 export async function getMySavedKnowledge(
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   signal?: AbortSignal,
 ): Promise<KnowledgeApiResult<{ items: SavedKnowledgeBookmarkItem[]; savedIds: string[] }>> {
   const fetchedAtIso = new Date().toISOString();
@@ -302,7 +285,7 @@ export async function getMySavedKnowledge(
 
 export async function saveKnowledgePublication(
   publicationId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ): Promise<KnowledgeApiResult<{ items: SavedKnowledgeBookmarkItem[]; savedIds: string[] }>> {
   const fetchedAtIso = new Date().toISOString();
   const auth = await resolveBearerHeader(currentUser);
@@ -328,7 +311,7 @@ export async function saveKnowledgePublication(
 
 export async function removeSavedKnowledgePublication(
   publicationId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
 ): Promise<KnowledgeApiResult<{ items: SavedKnowledgeBookmarkItem[]; savedIds: string[] }>> {
   const fetchedAtIso = new Date().toISOString();
   const auth = await resolveBearerHeader(currentUser);
@@ -352,7 +335,7 @@ export async function removeSavedKnowledgePublication(
 }
 
 export async function getAdminKnowledgeGovernanceState(
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
   signal?: AbortSignal,
 ): Promise<KnowledgeApiResult<{ items: KnowledgePublication[]; statuses: Record<string, KnowledgePublicationStatus>; corrections: KnowledgeCorrectionRecord[] }>> {
   const fetchedAtIso = new Date().toISOString();
@@ -385,7 +368,7 @@ export async function transitionAdminKnowledgePublicationStatus(params: {
   actorUserId: string;
   actorRole: KnowledgeEditorialRole;
   reasonFa: string;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
 }): Promise<KnowledgeApiResult<{ publication: KnowledgePublication; decision: KnowledgeEditorialDecision; statuses: Record<string, KnowledgePublicationStatus> }>> {
   const fetchedAtIso = new Date().toISOString();
   const auth = params.currentUser ? await resolveBearerHeader(params.currentUser) : { ok: true, headers: {} };
