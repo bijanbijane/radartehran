@@ -71,7 +71,7 @@ export async function acquireMutationPermitInD1(params: {
     ? Number(suppliedNowMs)
     : Date.now();
   const suppliedTtlMs = Number(params.ttlMs ?? 15 * 60_000);
-  const ttlMs = Number.isSafeInteger(suppliedTtlMs)
+  const ttlMs = Number.isSafeInteger(suppliedTtlMs) && suppliedTtlMs > 0
     ? Math.max(1_000, Math.min(15 * 60_000, suppliedTtlMs))
     : 15 * 60_000;
   const expiresAtMs = nowMs + ttlMs;
