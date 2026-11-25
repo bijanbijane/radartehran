@@ -114,6 +114,8 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     );
     const adminAuth = await verifyAdminApiAuthorization(
       req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
     );
     if (!auth.authorized && !adminAuth.authorized) {
       res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' });
@@ -180,6 +182,8 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     );
     const adminAuth = await verifyAdminApiAuthorization(
       req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
     );
     if (!auth.authorized && !adminAuth.authorized) {
       res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' });
