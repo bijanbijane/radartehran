@@ -361,9 +361,15 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       if (!parsed.ok) {
         return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code, message: parsed.messageFa });
       }
-      const idempotencyKey =
-        request.headers.get('idempotency-key') ||
-        String(parsed.body.idempotencyKey || `del_${uid}_${Date.now()}`).trim();
+      const idempotencyKey = String(
+        request.headers.get('idempotency-key') || parsed.body.idempotencyKey || '',
+      ).trim();
+      if (!idempotencyKey) {
+        return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      }
+      if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) {
+        return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_IDEMPOTENCY_KEY' });
+      }
       const result = await executeAccountDeletionLifecycle({
         env,
         uid,
