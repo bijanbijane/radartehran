@@ -1232,6 +1232,16 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
+    it('fails closed when active mutation permit count cannot be read', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT COUNT(*) AS cnt FROM account_mutation_permits');
+      await assert.rejects(
+        () => countActiveMutationPermitsInD1(sqlite.db, 'uid_permit_count_failure'),
+        /ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE/,
+      );
+    });
+
     it('keeps active mutation permits valid for the maximum Worker request lifetime', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
