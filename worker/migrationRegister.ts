@@ -141,7 +141,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     return {
       migrationGroup: 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS',
       workerHandlerModule: 'worker/routes/irniCanonicalRpcV2Routes.ts',
-      status: 'VERIFIED',
+      status: 'IMPLEMENTED',
       activeRuntime: 'cloudflare_worker',
       dependencies: [
         'worker/irni/irniGeographicRpcV2Client.ts',
