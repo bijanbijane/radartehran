@@ -75,8 +75,6 @@ export function formatUserFacingErrorBoundaryState(
 }
 export const TRUSTED_MAP_TILE_ORIGINS: ReadonlySet<string> = new Set([
   'https://tile.openstreetmap.org',
-  'https://a.tile.openstreetmap.fr',
-  'https://b.tile.openstreetmap.fr',
   'https://tile1.neshan.org',
   'https://tile2.neshan.org',
   'https://tile3.neshan.org',

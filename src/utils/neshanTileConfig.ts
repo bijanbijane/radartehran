@@ -2,7 +2,7 @@ import type { MapTileServerId } from '../types/models';
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 export const DEFAULT_NESHAN_WEB_KEY = 'web.d1062b862f27494f892ae998f10bf735'; export const OFFICIAL_OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const NESHAN_FALLBACK_MESSAGE = 'نقشه نشان در دسترس نیست؛ نقشه رایگان OpenStreetMap به عنوان پشتیبان فعال گردید.'; export const TILE_STYLE_PREF_STORAGE_KEY = 'tehran_radar_tile_style_v1'; export const NESHAN_PREF_MIGRATED_KEY = 'tehran_radar_neshan_pref_migrated_v1'; export const NESHAN_FALLBACK_CIRCUIT_KEY = 'tehran_radar_neshan_fallback_state_v1';
-export const NESHAN_TILE_OPTIONS = { tileSize: 256, zoomOffset: 0, detectRetina: false, minZoom: 4, maxZoom: 19, subdomains: ['1', '2', '3', '4'], keepBuffer: 6, updateWhenIdle: false, updateWhenZooming: false } as const; export const OSM_STANDARD_TILE_OPTIONS = { tileSize: 256, zoomOffset: 0, detectRetina: false, minZoom: 1, maxZoom: 19, keepBuffer: 6, updateWhenIdle: false, updateWhenZooming: false } as const;
+export const NESHAN_TILE_OPTIONS = { tileSize: 256, zoomOffset: 0, detectRetina: false, minZoom: 4, maxZoom: 19, subdomains: ['1', '2', '3', '4'], keepBuffer: 2, updateWhenIdle: false, updateWhenZooming: false } as const; export const OSM_STANDARD_TILE_OPTIONS = { tileSize: 256, zoomOffset: 0, detectRetina: false, minZoom: 1, maxZoom: 19, keepBuffer: 2, updateWhenIdle: false, updateWhenZooming: false } as const;
 export function patchLeafletGridLayerNullSafety(L: any): void { if (!L || !L.GridLayer || (L.GridLayer.prototype as any).__tehranRadarPatched) return; const proto = L.GridLayer.prototype; (proto as any).__tehranRadarPatched = true; const origAnimateZoom = proto._animateZoom;
   if (typeof origAnimateZoom === 'function') { proto._animateZoom = function (e: any) { if (!this._map) return; return origAnimateZoom.call(this, e); }; }
   const origSetView = proto._setView; if (typeof origSetView === 'function') { proto._setView = function (center: any, zoom: any, noPrune: any, noUpdate: any) { if (!this._map) return; return origSetView.call(this, center, zoom, noPrune, noUpdate); }; }
@@ -278,9 +278,20 @@ export function writePersistedFallbackCircuit(active: boolean, reason?: string):
   } catch {
   }
 }
+const APPROVED_MAP_TILE_STYLES: ReadonlySet<string> = new Set(['neshan', 'osm', 'voyager']);
+
 export function resolveInitialPreferredTileStyle(): MapTileServerId {
   try {
     if (typeof localStorage === 'undefined') return 'neshan';
     const stored = localStorage.getItem(TILE_STYLE_PREF_STORAGE_KEY);
-    if (stored === 'neshan' || stored === 'osm' || stored === 'satellite' || stored === 'carto_dark' || stored === 'osm_hot' || stored === 'voyager') { return stored as MapTileServerId; }
-    if (stored === 'mapbox') { localStorage.setItem(TILE_STYLE_PREF_STORAGE_KEY, 'neshan'); return 'neshan'; } return 'neshan'; } catch { return 'neshan'; } }
+    if (stored && APPROVED_MAP_TILE_STYLES.has(stored)) return stored as MapTileServerId;
+    if (stored !== null) {
+      // Remove legacy/unlicensed styles from persistent preferences rather than
+      // falling back repeatedly on every reload.
+      localStorage.setItem(TILE_STYLE_PREF_STORAGE_KEY, 'neshan');
+    }
+    return 'neshan';
+  } catch {
+    return 'neshan';
+  }
+}

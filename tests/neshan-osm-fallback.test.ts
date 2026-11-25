@@ -26,6 +26,7 @@ import {
 } from '../src/components/mapBaseTileController';
 import { FREE_KEYLESS_TILE_SERVERS } from '../src/data/neighborhoods';
 import { isValidMapTileServerId } from '../src/types/typeGuards';
+import { resolveInitialPreferredTileStyle, TILE_STYLE_PREF_STORAGE_KEY } from '../src/utils/neshanTileConfig';
 
 console.log('🗺️ Running Neshan Primary Provider & Automatic OSM Fallback Test Suite...\n');
 
@@ -83,6 +84,8 @@ async function runSuite(): Promise<void> {
   await check('Neshan tile options use 256px standard tiles with subdomains', () => {
     assert.equal(NESHAN_TILE_OPTIONS.tileSize, 256);
     assert.equal(NESHAN_TILE_OPTIONS.detectRetina, false);
+    assert.equal(NESHAN_TILE_OPTIONS.keepBuffer, 2, 'Neshan should retain only the default two-tile viewport buffer');
+    assert.equal(OSM_STANDARD_TILE_OPTIONS.keepBuffer, 2, 'OSM fallback should use the same bounded tile buffer');
     assert.equal(NESHAN_TILE_OPTIONS.maxZoom, 19);
     assert.deepEqual([...NESHAN_TILE_OPTIONS.subdomains], ['1', '2', '3', '4']);
   });
@@ -256,15 +259,63 @@ async function runSuite(): Promise<void> {
     controller.destroy();
   });
 
-  await check('FREE_KEYLESS_TILE_SERVERS excludes Mapbox and typeGuards accepts neshan', () => {
+  await check('Only approved Neshan/OSM providers are selectable', () => {
+    assert.deepEqual(Object.keys(FREE_KEYLESS_TILE_SERVERS).sort(), ['osm', 'voyager'], 'Only explicitly approved free OSM endpoints may appear in the keyless-provider registry');
     assert.equal((FREE_KEYLESS_TILE_SERVERS as any).mapbox, undefined);
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).satellite, undefined, 'Esri imagery must not be exposed without a commercial license');
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).carto_dark, undefined, 'CARTO basemaps must not be exposed without an API key');
+    assert.equal((FREE_KEYLESS_TILE_SERVERS as any).osm_hot, undefined, 'OSM France free tiles must not be exposed for a commercial site');
     assert.equal(isValidMapTileServerId('neshan'), true);
     assert.equal(isValidMapTileServerId('osm'), true);
-    assert.equal(isValidMapTileServerId('satellite'), true);
-    assert.equal(isValidMapTileServerId('carto_dark'), true);
+    assert.equal(isValidMapTileServerId('satellite'), false, 'Unlicensed Esri imagery must not be selectable');
+    assert.equal(isValidMapTileServerId('carto_dark'), false, 'CARTO basemaps require a configured API key');
+    assert.equal(isValidMapTileServerId('osm_hot'), false, 'OSM France free tiles are not an approved commercial provider');
     assert.equal(isValidMapTileServerId('voyager'), true);
     assert.equal(isValidMapTileServerId('mapbox'), false, 'Removed mapbox must not be valid');
     assert.equal(isValidMapTileServerId('invalid_style'), false);
+
+    const priorStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    let storedStyle: string | null = null;
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => key === TILE_STYLE_PREF_STORAGE_KEY ? storedStyle : null,
+        setItem: (key: string, value: string) => { if (key === TILE_STYLE_PREF_STORAGE_KEY) storedStyle = value; },
+      },
+    });
+    try {
+      for (const legacyStyle of ['carto_dark', 'satellite', 'osm_hot', 'mapbox']) {
+        storedStyle = legacyStyle;
+        assert.equal(resolveInitialPreferredTileStyle(), 'neshan', `legacy style ${legacyStyle} must fall back to Neshan`);
+        assert.equal(storedStyle, 'neshan', `legacy style ${legacyStyle} must be migrated out of localStorage`);
+      }
+      storedStyle = 'voyager';
+      assert.equal(resolveInitialPreferredTileStyle(), 'voyager', 'approved same-origin proxy preference must be retained');
+      assert.equal(storedStyle, 'voyager');
+    } finally {
+      if (priorStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', priorStorageDescriptor);
+      else delete (globalThis as any).localStorage;
+    }
+
+    const restoredStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    try {
+      delete (globalThis as any).localStorage;
+      assert.equal(resolveInitialPreferredTileStyle(), 'neshan', 'Missing browser storage must fail safely to the configured primary provider');
+    } finally {
+      if (restoredStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', restoredStorageDescriptor);
+      else delete (globalThis as any).localStorage;
+    }
+  });
+
+  await check('early map connection hint matches the default Neshan provider, not the fallback', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const preconnects = html
+      .split(String.fromCharCode(10))
+      .filter((line) => line.includes('rel="preconnect"'))
+      .map((line) => line.match(/href="([^"]+)"/)?.[1])
+      .filter((href): href is string => Boolean(href));
+    assert.deepEqual(preconnects, ['https://tile1.neshan.org'], 'Only the default primary provider should receive an early TCP/TLS preconnect');
+    assert.ok(html.includes('<link rel="dns-prefetch" href="https://tile.openstreetmap.org">'), 'Fallback provider DNS should still be resolved early');
   });
 
   await check('patchLeafletGridLayerNullSafety intercepts Leaflet zoom and setView when _map is null', () => {

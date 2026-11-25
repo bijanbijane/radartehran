@@ -251,7 +251,7 @@ test('Stage 50.4: dynamic LOD pill sizing, clean compact label formatting, and t
     [902, { shortPriceLabel: '۷٬۹۰۰م', fullPriceLabel: '۷٬۹۰۰م رهن' }],
   ]);
   const pixelMap = { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng, y: lat }) };
-  const dynamicTiers = computeDeclutteredMarkerTiers(pixelMap, [wideHoodA, wideHoodB], 12, null, () => true, labelsMap);
+  const dynamicTiers = computeDeclutteredMarkerTiers(pixelMap, [wideHoodA, wideHoodB], 14, null, () => true, labelsMap);
   assert.equal(dynamicTiers.get(901), 'compact_chip');
   assert.equal(dynamicTiers.get(902), 'dot', 'Colliding wide pill at 105px must demote to dot');
 

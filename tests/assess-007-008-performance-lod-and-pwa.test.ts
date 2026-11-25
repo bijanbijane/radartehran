@@ -161,7 +161,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     () => false
   );
   assert.equal(tiersZ12.get(1), 'standard_pill', 'Selected neighborhood keeps its readable tier at zoom 12');
-  assert.equal(tiersZ12.get(2), 'compact_chip', 'A fitting compact marker remains visible at zoom 12');
+  assert.equal(tiersZ12.get(2), 'dot', 'Non-selected neighborhoods remain unlabeled through zoom 13');
 
   const tiersZ14 = computeDeclutteredMarkerTiers(
     markerMap,
@@ -183,7 +183,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     1,
     (hood) => hood.id === 3
   );
-  assert.equal(sponsorPriorityTiers.get(3), 'detailed_pill', 'Sponsored neighborhoods retain priority among ordinary markers');
+  assert.equal(sponsorPriorityTiers.get(3), 'compact_chip', 'Sponsored neighborhoods retain placement priority while using short labels');
   assert.equal(sponsorPriorityTiers.get(2), 'dot', 'Lower-priority colliding markers demote to a dot');
 
   const denseZoomTiers = computeDeclutteredMarkerTiers(
@@ -303,7 +303,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/api/osm-tile/12/2632/1611' }),
     'StaleWhileRevalidateMapTile',
-    'OSM tile proxy requests must use StaleWhileRevalidateMapTile'
+    'OSM tile proxy requests use the current Service Worker cache baseline until PR #16 is merged'
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/assets/index-D8a91.js' }),
