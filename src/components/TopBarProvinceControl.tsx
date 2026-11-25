@@ -85,7 +85,7 @@ export function TopBarProvinceAndCityDirectoryControl({
         ))}
       </div>
 
-      {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها */}
+      {/* سلکتور محدوده‌های دارای پوشش بازار */}
       <div className="relative flex items-center">
         <select
           aria-label="فهرست مناطق دارای پوشش بازار Radar"
@@ -136,7 +136,7 @@ export function TopBarProvinceAndCityDirectoryControl({
         </select>
       </div>
 
-      {/* دکمه باز کردن مودال فهرست جامع ۳۱ استان و شهرها */}
+      {/* دکمه باز کردن مودال فهرست محدوده‌های دارای پوشش بازار */}
       {onOpenProvinceModal && (
         <button
           type="button"
