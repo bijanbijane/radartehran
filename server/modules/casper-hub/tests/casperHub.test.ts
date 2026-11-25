@@ -175,21 +175,23 @@ async function runTest(name: string, fn: () => Promise<void> | void) {
     assert.equal((await invoke('POST /api/casper-hub/notes', { title: 'T', summary: `Leak ${secretTok}` })).statusCode, 400);
   });
 
-  await runTest('11. evaluatePolicyCoverageStatusWithLimitations distinguishes WITHIN_WAITING_PERIOD, elapsed waiting period, and uncovered risks', () => {
+  await runTest('11. evaluatePolicyCoverageStatusWithLimitations distinguishes explicit waiting-period exclusions, elapsed waiting periods, and uncovered risks', () => {
     const basePolicy: any = {
       policyId: 'pol-1', coverageStartIso: '2026-01-01T00:00:00.000Z', coverageEndIso: '2027-01-01T00:00:00.000Z',
       status: 'ACTIVE', verificationStatus: 'PROVIDER_CONFIRMED_AUTHORITATIVE', providerConfirmedActive: true,
       policyholderIsConfirmedPropertyOwner: true, insuredPropertyCanonicalIds: ['prop-1'],
+      financialStructure: { outstandingPremiumAmount: 0 },
     };
     const floodCov: any = {
-      coverageId: 'cov-flood', coverageCategory: 'FLOOD', insuredAssetCanonicalIds: ['prop-1'],
+      coverageId: 'cov-flood', policyId: 'pol-1', coverageCategory: 'FLOOD', insuredAssetCanonicalIds: ['prop-1'],
       effectiveStartIso: '2026-01-01T00:00:00.000Z', effectiveEndIso: '2027-01-01T00:00:00.000Z',
+      coverageLimitAmount: 1_000_000, deductibleMethod: 'FIXED_AMOUNT', deductibleValue: 0,
     };
     const waitingExcl: any = {
-      limitationId: 'lim-wait', limitationCategory: 'WAITING_PERIOD', excludedRiskCategories: ['FLOOD', 'EARTHQUAKE'],
+      limitationId: 'lim-wait', policyId: 'pol-1', limitationCategory: 'WAITING_PERIOD', excludedRiskCategories: ['FLOOD', 'EARTHQUAKE'],
       affectedAssetCanonicalIds: ['prop-1'], waitingPeriodDays: 14, originalSourceWordingVerbatim: '14-day waiting period',
     };
-    assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: [floodCov], exclusions: [waitingExcl], asOfIso: '2026-01-05T00:00:00.000Z', queryRiskCategory: 'FLOOD', queryAssetCanonicalId: 'prop-1' }).queriedRiskEvaluation.applicabilityConclusion, 'WITHIN_WAITING_PERIOD');
+    assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: [floodCov], exclusions: [waitingExcl], asOfIso: '2026-01-05T00:00:00.000Z', queryRiskCategory: 'FLOOD', queryAssetCanonicalId: 'prop-1' }).queriedRiskEvaluation.applicabilityConclusion, 'EXCLUDED_BY_EXPLICIT_LIMITATION');
     assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: [floodCov], exclusions: [waitingExcl], asOfIso: '2026-02-01T00:00:00.000Z', queryRiskCategory: 'FLOOD', queryAssetCanonicalId: 'prop-1' }).queriedRiskEvaluation.applicabilityConclusion, 'ELIGIBLE_SUBJECT_TO_ADJUSTMENT');
     assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: [floodCov], exclusions: [waitingExcl], asOfIso: '2026-01-05T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1' }).queriedRiskEvaluation.applicabilityConclusion, 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM');
   });

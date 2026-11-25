@@ -1112,10 +1112,11 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     assert.ok(isValidCurrencyNoticeOrToman(liqReport.buyerReservationIntlText));
   });
 
-  it('24. verifies complete removal of server/modules/casper-hub and zero /api/casper-hub routes in expressRouteCatalog', async () => {
+  it('24. verifies CASPER Hub is not mounted by the server and zero /api/casper-hub routes remain', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    assert.equal(fs.existsSync(path.join(process.cwd(), 'server/modules/casper-hub')), false);
+    const serverEntry = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+    assert.equal(serverEntry.includes('registerCasperHubRoutes'), false, 'server.ts must not mount the retired CASPER Hub module');
     const { REGISTERED_API_ROUTES } = await import('../src/utils/expressRouteCatalog');
     assert.equal(
       REGISTERED_API_ROUTES.some((r) => r.path.includes('casper-hub')),
