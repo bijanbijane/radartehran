@@ -15,7 +15,7 @@ const BLOCKED_FIELDS = new Set([
 
 export function toPublicSpatialListing(listing: SpatialPublishableListing): PublicSpatialListing {
   const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(listing as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(listing)) {
     if (BLOCKED_FIELDS.has(key)) continue;
     out[key] = value;
   }

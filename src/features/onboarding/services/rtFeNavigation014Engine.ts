@@ -163,8 +163,9 @@ export function buildValidatedBreadcrumbs(input: {
 function resolveDiscoveryVisibilityContext(
   visibility: NavigationVisibilityContext | readonly string[],
 ): NavigationVisibilityContext {
-  if (!Array.isArray(visibility)) return visibility;
-  const { platformPermissions, legacyAliases, activeRole } = mergeLegacyDiscoveryPermissions(visibility);
+  if (!Array.isArray(visibility)) return visibility as NavigationVisibilityContext;
+  const legacyPermissions = visibility as readonly string[];
+  const { platformPermissions, legacyAliases, activeRole } = mergeLegacyDiscoveryPermissions(legacyPermissions);
   const userPermissions = expandPlatformPermissionsForNavigation(
     platformPermissions,
     activeRole,

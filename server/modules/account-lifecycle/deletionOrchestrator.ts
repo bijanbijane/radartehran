@@ -26,6 +26,7 @@ import {
   RETENTION_POLICY_SOURCES,
   UserOwnedDomainRepositoryAdapter,
 } from './types.ts';
+import type { UserOwnedDomainSource } from './types.ts';
 import { createInitialDomainSteps } from './deletionJobBootstrap.ts';
 import type { DurableAccountLifecycleStore } from './storeContract.ts';
 import { assertAuthorizedForTargetAccount } from './exportService.ts';

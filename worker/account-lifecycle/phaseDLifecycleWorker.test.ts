@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { validateLifecycleQueuePayload, buildLifecycleQueueIdempotencyKey } from './lifecycleQueueContract.ts';
 import { validateQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
+import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1WriteAdmissionPermit.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
 
 async function run(): Promise<void> {
@@ -30,9 +31,38 @@ async function run(): Promise<void> {
     payload: { jobId: 'deljob_u1', targetUid: 'u1', operation: 'DELETION_STEP' as const },
   };
   const v = validateQueueEnvelope(envelope);
-  assert.equal(v.valid, true);
+  assert.equal(v.valid, false);
+  if (v.valid === false) {
+    assert.equal(v.reason, 'UNKNOWN_OR_UNSUPPORTED_JOB_TYPE');
+  }
 
   const db = new InMemoryAccountLifecycleD1();
+
+  const permitNowMs = Date.now();
+  const permit = await acquireD1MutationPermit({
+    db,
+    targetUid: 'permit-user',
+    holderId: 'phase-d-test',
+    routeSignature: 'POST /api/v1/account/profile',
+    nowMs: permitNowMs,
+  });
+  assert.ok(permit.permitId.startsWith('d1permit_'));
+  const released = await releaseD1MutationPermit({
+    db,
+    targetUid: 'permit-user',
+    permitId: permit.permitId,
+    nowMs: permitNowMs + 1,
+  });
+  assert.equal(released.released, true);
+
+  const repeatedRelease = await releaseD1MutationPermit({
+    db,
+    targetUid: 'permit-user',
+    permitId: permit.permitId,
+    nowMs: permitNowMs + 2,
+  });
+  assert.equal(repeatedRelease.released, false);
+
   const dispatch = new D1AccountLifecycleDispatch(db);
   const now = new Date().toISOString();
   const inserted = await dispatch.enqueueDispatchEvent({

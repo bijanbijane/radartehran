@@ -171,15 +171,12 @@ export function registerMediaModuleRoutes(app: Express, options?: MediaRoutesOpt
         String(req.params.objectId || ''),
         rangeHeader,
       );
-      res.setHeader('Content-Type', payload.mimeType);
+      res.setHeader('Content-Type', descriptor.mimeType);
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('X-Media-Object-Id', descriptor.objectId);
-      if (payload.rangeStart !== undefined && payload.rangeEnd !== undefined && payload.totalSizeBytes !== undefined) {
+      if (payload.isPartialContent && payload.contentRange) {
         res.status(206);
-        res.setHeader(
-          'Content-Range',
-          `bytes ${payload.rangeStart}-${payload.rangeEnd}/${payload.totalSizeBytes}`,
-        );
+        res.setHeader('Content-Range', payload.contentRange);
       } else {
         res.status(200);
       }

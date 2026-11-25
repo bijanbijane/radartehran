@@ -14,14 +14,14 @@ export type PipelineRunExtendedStatus =
   | 'RETRYABLE_FAILURE'
   | 'PARTIAL';
 
-export interface PipelineRunResult extends PipelineExecutionRunRecord {
+export type PipelineRunResult = Omit<PipelineExecutionRunRecord, 'status'> & {
   status: PipelineRunExtendedStatus;
   stageResults?: Array<{ stage: string; ok: boolean; detailFa?: string }>;
   actualComputeDurationMs: number;
   inputDatasetVersions?: string[];
   outputDatasetVersions?: string[];
   correlationId?: string;
-}
+};
 
 export function canCancelPipelineRun(status: PipelineRunExtendedStatus): boolean {
   return (

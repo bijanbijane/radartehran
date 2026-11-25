@@ -22,26 +22,71 @@ jobs:
       contracts: ${{ steps.filter.outputs.contracts }}
       worker: ${{ steps.filter.outputs.worker }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
+      - name: Checkout complete history for deterministic diff
+        uses: actions/checkout@v4
         with:
-          filters: |
-            frontend:
-              - 'src/**'
-              - 'index.html'
-              - 'vite.config.ts'
-              - 'apps/frontend/**'
-            api:
-              - 'apps/api/**'
-              - 'server/**'
-              - 'src/utils/server*.ts'
-              - 'src/cells/**'
-            contracts:
-              - 'packages/contracts/**'
-            worker:
-              - 'worker/**'
-              - 'wrangler.jsonc'
+          fetch-depth: 0
+
+      - name: Detect changed paths without an external filter action
+        id: filter
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BASE_SHA}" ]]; then
+            git fetch --no-tags origin main
+            BASE_SHA="$(git merge-base origin/main HEAD)"
+          fi
+
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          git diff --name-only "${BASE_SHA}...${HEAD_SHA}" > changed-paths.txt
+
+          frontend=false
+          api=false
+          contracts=false
+          worker=false
+
+          while IFS= read -r file; do
+            [[ -n "${file}" ]] || continue
+            case "${file}" in
+              src/*|index.html|vite.config.ts|apps/frontend/*) frontend=true ;;
+            esac
+            case "${file}" in
+              apps/api/*|server/*|src/utils/server*.ts|src/cells/*) api=true ;;
+            esac
+            case "${file}" in
+              packages/contracts/*) contracts=true ;;
+            esac
+            case "${file}" in
+              worker/*|wrangler.jsonc) worker=true ;;
+            esac
+          done < changed-paths.txt
+
+          {
+            echo "frontend=${frontend}"
+            echo "api=${api}"
+            echo "contracts=${contracts}"
+            echo "worker=${worker}"
+          } >> "${GITHUB_OUTPUT}"
+
+          {
+            echo "### Path filter diagnostics"
+            echo "- Base: ${BASE_SHA}"
+            echo "- Head: ${HEAD_SHA}"
+            echo "- Frontend: ${frontend}"
+            echo "- API: ${api}"
+            echo "- Contracts: ${contracts}"
+            echo "- Worker: ${worker}"
+            echo
+            echo 'Changed files:'
+            sed 's/^/- /' changed-paths.txt
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          cat changed-paths.txt
 
   frontend-gates:
     needs: detect

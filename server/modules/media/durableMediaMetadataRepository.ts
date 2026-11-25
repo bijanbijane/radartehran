@@ -94,14 +94,15 @@ function createLegacyFirestoreMediaMetadataRepository(): MediaMetadataRepository
   return {
     async verifyAvailable() {
       const check = await verifyMediaFirestoreMetadataAuthority();
-      return check.ok
-        ? { ok: true, backend: 'firestore_legacy' }
-        : {
-            ok: false,
-            backend: 'firestore_legacy',
-            code: check.code,
-            message: check.message,
-          };
+      if (check.ok === false) {
+        return {
+          ok: false,
+          backend: 'firestore_legacy',
+          code: check.code,
+          message: check.message,
+        };
+      }
+      return { ok: true, backend: 'firestore_legacy' };
     },
     async getById(objectId: string) {
       const { fetchMediaMetadataRecordFromFirestore } = await import('./firestoreMetadataAuthority');

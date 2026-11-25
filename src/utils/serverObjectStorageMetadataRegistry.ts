@@ -46,7 +46,7 @@ export function isDurableObjectMetadataProductionMode(
   return isProductionApiRuntime(env);
 }
 
-async function isSafeRecord(value: unknown): Promise<boolean> {
+async function isSafeRecord(value: unknown): Promise<value is StoredObjectRecord> {
   const { isSafeStoredObjectRecord } = await import('./serverObjectStorageHelpers');
   return isSafeStoredObjectRecord(value);
 }

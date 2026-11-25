@@ -327,9 +327,9 @@ export async function executePropertySearchPipeline(
     maxAskingPriceMillion: filters.maxAskingPriceMillion,
     minAreaSqm: filters.minAreaSqm,
     maxAreaSqm: filters.maxAreaSqm,
-    bedroomsMin: filters.bedroomsMin,
+    bedroomsMin: filters.minRooms,
     constructionStatus: filters.constructionStatus,
-    verifiedOnly: filters.verifiedOnly,
+    verifiedOnly: filters.onlyVerified,
     boundingBox: filters.boundingBox,
   });
 

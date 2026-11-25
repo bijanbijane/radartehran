@@ -32,7 +32,10 @@ export async function queryWriteAdmissionViaWorkerRpc(params: {
   targetUid: string;
   env?: ExpressWriteAdmissionEnv;
 }): Promise<WriteAdmissionDecision> {
-  const env = params.env ?? process.env;
+  const env: ExpressWriteAdmissionEnv = params.env ?? {
+    [WRITE_ADMISSION_RPC_SECRET_ENV]: process.env[WRITE_ADMISSION_RPC_SECRET_ENV],
+    [WRITE_ADMISSION_WORKER_BASE_URL_ENV]: process.env[WRITE_ADMISSION_WORKER_BASE_URL_ENV],
+  };
   const secret = env[WRITE_ADMISSION_RPC_SECRET_ENV]?.trim();
   const baseUrl = resolveWorkerBaseUrl(env);
   if (!secret || secret.length < 16 || !baseUrl) {

@@ -14,7 +14,7 @@ import {
 } from '../../server/modules/account-lifecycle/writeAdmissionRpcContract.ts';
 import { verifyWriteAdmissionRpcRequest } from '../../server/modules/account-lifecycle/writeAdmissionRpcAuth.ts';
 import { resolveWriteAdmissionFromD1 } from '../account-lifecycle/d1WriteAdmissionResolver.ts';
-import { consumeLifecycleRpcNonce } from '../account-lifecycle/d1InternalRpcNonceStore.ts';
+import { consumeLifecycleRpcNonce } from '../account-lifecycle/d1WriteAdmissionNonceStore.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
 export function isInternalWriteAdmissionPath(pathname: string, method: string): boolean {
@@ -72,7 +72,7 @@ export async function handleInternalWriteAdmissionRoute(ctx: WorkerRequestContex
   const db = ctx.env.DB as unknown as D1DatabaseBinding;
   const nonceResult = await consumeLifecycleRpcNonce({ db, nonce });
   if (!nonceResult.consumed) {
-    const status = nonceResult.code === 'RPC_NONCE_REPLAYED' ? 409 : 503;
+    const status = nonceResult.code === 'RPC_NONCE_REPLAYED' ? 409 : nonceResult.code === 'RPC_NONCE_INVALID' ? 401 : 503;
     return jsonWorkerResponse(ctx, status, { status: 'error', code: nonceResult.code ?? 'RPC_NONCE_REJECTED' });
   }
 

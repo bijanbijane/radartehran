@@ -12,7 +12,7 @@ export interface D1WritePauseState {
  * fails closed; an absent or expired deadline leaves normal operation enabled.
  */
 export function resolveD1WritePauseState(
-  env: Pick<WorkerEnv, 'DB_WRITES_PAUSED_UNTIL_UTC'>,
+  env: Partial<Pick<WorkerEnv, 'DB_WRITES_PAUSED_UNTIL_UTC'>> = {},
   nowMs = Date.now(),
 ): D1WritePauseState {
   const configuredDeadline = env.DB_WRITES_PAUSED_UNTIL_UTC?.trim();

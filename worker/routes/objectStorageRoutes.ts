@@ -259,7 +259,7 @@ export async function handleObjectStorageRoute(
     });
   }
   const bucketRes = resolveWorkerMediaBucketName(env);
-  if (!bucketRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
+  if (bucketRes.ok === false) return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
 
   const auth = await authenticateUploadCaller(ctx);
   if (!auth.authenticated || !auth.uid) {

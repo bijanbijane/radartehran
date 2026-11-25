@@ -133,6 +133,8 @@ export interface DependencyCompatibilityEntry {
  */
 export interface WorkerEnv {
   readonly ASSETS?: WorkerAssetFetcher;
+  readonly RADAR_API?: WorkerAssetFetcher;
+  readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
   readonly ENVIRONMENT?: DeploymentEnvironmentName;
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;

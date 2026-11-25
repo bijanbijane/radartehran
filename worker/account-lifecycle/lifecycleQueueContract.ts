@@ -2,9 +2,7 @@
  * Account lifecycle queue message contract (Stage D).
  */
 
-import type { RadarQueueJobType } from '../queues/queueAndCronProcessor.ts';
-
-export const ACCOUNT_LIFECYCLE_QUEUE_JOB_TYPE: RadarQueueJobType = 'account_lifecycle_deletion_step';
+export const ACCOUNT_LIFECYCLE_QUEUE_JOB_TYPE = 'account_lifecycle_deletion_step' as const;
 
 export const ACCOUNT_LIFECYCLE_QUEUE_SCHEMA_VERSION = '1.0' as const;
 

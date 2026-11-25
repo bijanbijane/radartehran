@@ -2,7 +2,7 @@
  * RT-INFRA-011 — Database-independent object-storage metadata backend resolution.
  */
 import type { MetadataRepositoryBackendId } from './objectMetadataPorts';
-import { isDurableObjectMetadataProductionMode } from '../../../src/utils/serverObjectStorageMetadataRegistry';
+import { isDurableObjectMetadataProductionMode } from '../../../../src/utils/serverObjectStorageMetadataRegistry';
 
 export function resolveObjectStorageMetadataBackendId(
   env: Record<string, string | undefined> = process.env,
@@ -35,7 +35,7 @@ export async function verifyObjectStorageDurableMetadataRepository(
     };
   }
   const { verifyDurableMetadataRepositoryAvailable } = await import(
-    '../../../src/utils/serverObjectStorageMetadataRegistry'
+    '../../../../src/utils/serverObjectStorageMetadataRegistry'
   );
   return verifyDurableMetadataRepositoryAvailable(env);
 }

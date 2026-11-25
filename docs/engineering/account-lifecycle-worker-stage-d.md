@@ -22,19 +22,23 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 
 ## Composition
 
-`worker/account-lifecycle/workerLifecycleRuntime.ts` → `D1AccountLifecycleStore` + `AccountDeletionOrchestrator` + Worker adapters.
+`worker/account-lifecycle/workerLifecycleRuntime.ts` exposes the current HTTP-driven deletion flow through `executeAccountDeletionLifecycle`. It blocks writes, disables the account identity, performs USER_DB cleanup, and records research erasure work in the durable `research_erasure_outbox`. The hourly Worker schedule processes that research-erasure outbox.
 
-## Queue
+## Queue status
 
-- Job type: `account_lifecycle_deletion_step`
-- Payload: `{ jobId, targetUid, operation: 'DELETION_STEP' }`
-- Producer: outbox in D1 (`account_lifecycle_dispatch_outbox`, migration `0007`)
-- Consumer: `jobDispatcher.ts` → `executeBoundedDeletionStep`
-- Scheduled recovery: `worker/index.ts` `scheduled` cron `0 * * * *` calls `recoverPendingLifecycleDispatch`
+The older Stage D lifecycle-step queue contract is **not registered in the canonical Worker queue dispatcher**:
+
+- Local contract label: `account_lifecycle_deletion_step`
+- Payload shape: `{ jobId, targetUid, operation: 'DELETION_STEP' }`
+- The generic `RadarQueueJobType` registry and `validateQueueEnvelope` do not accept this job type.
+- Unsupported messages are rejected and retried (or routed to the DLQ when configured); they must not be treated as completed work.
+- `D1AccountLifecycleDispatch` and lease tables are currently exercised as a persistence adapter/test surface; a production producer-to-consumer execution chain is not wired through `worker/index.ts`.
+
+Do not publish lifecycle-step messages until a dedicated consumer is implemented, registered, and covered by a real Worker integration test. The active HTTP deletion flow and the research-erasure outbox are separate from this unregistered legacy queue contract.
 
 ## Leases
 
-`account_deletion_job_leases` — per-job token + fencing revision.
+`account_deletion_job_leases` — per-job token + fencing revision; the persistence adapter is present, but production queue consumption is not yet connected.
 
 ## Write block
 

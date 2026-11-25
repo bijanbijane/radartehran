@@ -7,7 +7,7 @@ import { resolveWriteAdmissionFromD1 } from './d1WriteAdmissionResolver.ts';
 import type { WorkerRequestContext } from '../types.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import { jsonWorkerResponse } from '../contextAndSecurity.ts';
-import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1MutationPermit.ts';
+import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1WriteAdmissionPermit.ts';
 
 const ACTIVE_PERMITS = new WeakMap<Request, { permitId: string; targetUid: string }>();
 
