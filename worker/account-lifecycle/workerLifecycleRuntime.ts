@@ -193,6 +193,26 @@ export async function processPendingResearchErasureOutbox(params: {
     }
   }
 
+  // Recover parent jobs whose outbox items were completed by a previous invocation
+  // but whose parent status update was interrupted.
+  const alreadyCompletedJobs = await params.userDb
+    .prepare(
+      `SELECT j.job_id
+       FROM account_deletion_jobs j
+       WHERE j.status = 'PENDING_RESEARCH_ERASURE'
+         AND EXISTS (SELECT 1 FROM research_erasure_outbox o WHERE o.job_id = j.job_id)
+         AND NOT EXISTS (
+           SELECT 1 FROM research_erasure_outbox o
+           WHERE o.job_id = j.job_id AND o.status != 'COMPLETED'
+         )
+       LIMIT 50`,
+    )
+    .all<{ job_id: string }>();
+  if (!alreadyCompletedJobs.success) throw new Error('RESEARCH_ERASURE_COMPLETED_JOB_SCAN_FAILED');
+  for (const row of alreadyCompletedJobs.results ?? []) {
+    if (row.job_id) touchedJobIds.add(String(row.job_id));
+  }
+
   // Reconcile parent deletion jobs: mark COMPLETED only when 0 incomplete outbox entries remain
   for (const jobId of touchedJobIds) {
     const remainingRow = await params.userDb
@@ -210,8 +230,25 @@ export async function processPendingResearchErasureOutbox(params: {
         .first<{ uid: string }>();
       if (!jobRow?.uid) throw new Error('ACCOUNT_DELETION_JOB_UID_MISSING_DURING_RECONCILIATION');
 
+      const completionSummary = await params.userDb
+        .prepare(
+          `SELECT COUNT(*) AS completed_count,
+                  COALESCE(SUM(erased_events_count), 0) AS erased_events_total
+           FROM research_erasure_outbox
+           WHERE job_id = ?1 AND status = 'COMPLETED'`,
+        )
+        .bind(jobId)
+        .first<{ completed_count: number; erased_events_total: number }>();
+      if (
+        !completionSummary ||
+        !Number.isFinite(Number(completionSummary.completed_count)) ||
+        !Number.isFinite(Number(completionSummary.erased_events_total))
+      ) {
+        throw new Error('RESEARCH_ERASURE_COMPLETION_SUMMARY_UNAVAILABLE');
+      }
+
       const uidHash = await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret);
-      const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
+      const receiptId = `rcpt_res_${jobId}`;
 
       const receiptInsert = await params.userDb
         .prepare(
@@ -227,8 +264,11 @@ export async function processPendingResearchErasureOutbox(params: {
           'RESEARCH_ERASURE_CONFIRMED',
           'RESEARCH_DB',
           'COMPLETED',
-          erasedEventsTotal,
-          JSON.stringify({ completedOutboxItems: completed }),
+          Number(completionSummary.erased_events_total),
+          JSON.stringify({
+            completedOutboxItems: Number(completionSummary.completed_count),
+            erasedEventsTotal: Number(completionSummary.erased_events_total),
+          }),
           nowIso,
         )
         .run();
