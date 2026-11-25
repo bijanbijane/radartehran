@@ -275,6 +275,61 @@ async function runTests(): Promise<void> {
       assert.equal(createdClaim.streetNameNormalized, 'بهار شمالی');
       assert.ok(createdClaim.aiPlausibilityScore >= 70);
 
+      // Client cannot choose a claim ID to overwrite another contributor's claim.
+      const duplicateIdAttempt = await requestJson(
+        baseUrl,
+        'POST',
+        '/api/v1/claims',
+        {
+          claimId: createdClaim.claimId,
+          hoodId: 1,
+          cityId: 'tehran',
+          streetName: 'خیابان بهار شمالی',
+          category: 'ALLEY_LIVABILITY',
+          narrativeText: 'این متن نباید جایگزین گزارش قبلی شود.',
+        },
+        { Authorization: 'Bearer tok_author_ali' },
+      );
+      assert.equal(duplicateIdAttempt.status, 201);
+      assert.notEqual((duplicateIdAttempt.data.claim as CrowdClaimDocument).claimId, createdClaim.claimId);
+
+      // Client cannot set the neighborhood baseline to bypass outlier detection.
+      const poisonedBaselineAttempt = await requestJson(
+        baseUrl,
+        'POST',
+        '/api/v1/claims',
+        {
+          hoodId: 1,
+          cityId: 'tehran',
+          streetName: 'خیابان بهار شمالی',
+          category: 'PRICE_OBSERVATION',
+          estimatedPriceSqm: 300,
+          baseHoodPriceSqmOverride: 300,
+          narrativeText: 'مشاهده قیمت متری ۳۰۰ میلیون تومان بدون مدرک.',
+        },
+        { Authorization: 'Bearer tok_author_ali' },
+      );
+      assert.equal(poisonedBaselineAttempt.status, 201);
+      assert.equal((poisonedBaselineAttempt.data.claim as CrowdClaimDocument).aiPlausibilityScore < 70, true);
+
+      // Client cannot attach arbitrary private media object IDs without an ownership resolver.
+      const forgedEvidenceAttempt = await requestJson(
+        baseUrl,
+        'POST',
+        '/api/v1/claims',
+        {
+          hoodId: 1,
+          cityId: 'tehran',
+          streetName: 'خیابان بهار شمالی',
+          category: 'ALLEY_LIVABILITY',
+          narrativeText: 'گزارش با مدرک متعلق به کاربر دیگر.',
+          evidenceMediaObjectIds: ['private_media_object_123'],
+        },
+        { Authorization: 'Bearer tok_author_ali' },
+      );
+      assert.equal(forgedEvidenceAttempt.status, 503);
+      assert.equal(forgedEvidenceAttempt.data.code, 'EVIDENCE_OWNERSHIP_RESOLVER_UNAVAILABLE');
+
       // CC-A08: Vote without Authorization -> 401
       const noAuthVote = await requestJson(baseUrl, 'POST', `/api/v1/claims/${createdClaim.claimId}/vote`, {
         voterUid: 'voter_realtor_1',
