@@ -169,6 +169,19 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.statusCode, 200);
   });
 
+  it('requires recent authentication when a sensitive route explicitly opts in', async () => {
+    const staleContext = makeContext(makeD1(sessionRow({
+      created_at_iso: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+    })));
+    const stale = await authenticateWorkerSession(staleContext, true, true);
+    assert.equal(stale.authenticated, false);
+    assert.equal(stale.reasonCode, 'RECENT_LOGIN_REQUIRED');
+    assert.equal(stale.statusCode, 403);
+
+    const fresh = await authenticateWorkerSession(makeContext(makeD1(sessionRow())), true, true);
+    assert.equal(fresh.authenticated, true);
+  });
+
   it('keeps session reads available without touching last_seen while D1 writes are paused', async () => {
     const updateCalls = { count: 0 };
     const staleLastSeen = new Date(Date.now() - 10 * 60 * 1000).toISOString();
