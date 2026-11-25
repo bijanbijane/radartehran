@@ -34,6 +34,17 @@ export interface KnowledgeRoutesOptions {
 
 const registeredKnowledgeApps = new WeakSet<Express>();
 
+/**
+ * Editorial roles are derived from verified admin class, never from request JSON.
+ * Static shared-secret auth has no human editorial identity and is denied here.
+ */
+export function resolveKnowledgeEditorialRole(auth: { reason?: string }): KnowledgeEditorialRole | null {
+  if (auth.reason === 'AUTHORIZED_BOOTSTRAP_ADMIN') return 'release_manager';
+  if (auth.reason === 'AUTHORIZED_DELEGATED_ADMIN') return 'editorial_editor';
+  return null;
+}
+
+
 export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesOptions): void {
   if (registeredKnowledgeApps.has(app)) return;
   registeredKnowledgeApps.add(app);
@@ -284,9 +295,13 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason });
       return;
     }
+    const actorRole = resolveKnowledgeEditorialRole(auth);
+    if (!actorRole) {
+      res.status(403).json({ status: 'error', code: 'HUMAN_EDITORIAL_ADMIN_REQUIRED' });
+      return;
+    }
     const toStatus = req.body?.toStatus as KnowledgePublicationStatus;
-    const actorUserId = auth.email || auth.uid || 'admin-release-manager';
-    const actorRole = (req.body?.actorRole || 'release_manager') as KnowledgeEditorialRole;
+    const actorUserId = auth.uid || auth.actorUid || auth.email || 'admin-release-manager';
     const reasonFa = String(req.body?.reasonFa || '');
 
     const result = transitionServerPublicationStatus({
@@ -319,14 +334,19 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason });
       return;
     }
+    const actorRole = resolveKnowledgeEditorialRole(auth);
+    if (!actorRole) {
+      res.status(403).json({ status: 'error', code: 'HUMAN_EDITORIAL_ADMIN_REQUIRED' });
+      return;
+    }
     const result = publishNewServerKnowledgeVersion({
       publicationId: req.params.id,
       version: String(req.body?.version || ''),
       changelogFa: String(req.body?.changelogFa || ''),
       titleFa: req.body?.titleFa ? String(req.body.titleFa) : undefined,
       summaryFa: req.body?.summaryFa ? String(req.body.summaryFa) : undefined,
-      actorUserId: auth.email || auth.uid || 'admin-release-manager',
-      actorRole: (req.body?.actorRole || 'release_manager') as KnowledgeEditorialRole,
+      actorUserId: auth.uid || auth.actorUid || auth.email || 'admin-release-manager',
+      actorRole,
     });
     if (!result.ok) {
       res.status(result.status).json({ status: 'error', code: 'VERSION_PUBLISH_FAILED', message: result.errorFa });
