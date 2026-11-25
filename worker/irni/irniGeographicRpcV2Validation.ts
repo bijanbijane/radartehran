@@ -150,6 +150,12 @@ export function isRelationshipSnapshot(value: unknown): value is IrniRpcRelation
     Array.isArray(value.relationships) &&
     value.relationships.every(isRelationship);
 }
+function isVersionedRadarAliasValue(systemCode: unknown, value: unknown): boolean {
+  if (systemCode !== 'TEHRAN_RADAR' || !isText(value, 256)) return false;
+  return /^radar:city-hood:v1:[a-z][a-z0-9_-]{0,63}:[1-9][0-9]{0,8}$/.test(value) ||
+    /^radar:geography-catalog:v1:hood%3A[a-z][a-z0-9_-]{0,63}%3A[1-9][0-9]{0,8}$/.test(value) ||
+    /^radar:urban-intelligence:v1:[a-z][a-z0-9_-]{0,63}%3Ahood%3A[1-9][0-9]{0,8}$/.test(value);
+}
 export function isAliasSnapshot(value: unknown): value is IrniRpcLegacyAliasSnapshotV2 {
   return isRecord(value) &&
     isSafeCount(value.registryRevision) &&
@@ -163,7 +169,8 @@ export function isAliasSnapshot(value: unknown): value is IrniRpcLegacyAliasSnap
       alias.aliasStatus === 'ACTIVE_COMPATIBILITY_ALIAS' &&
       isText(alias.resolutionEvidenceRef, 2048) &&
       isSafeCount(alias.recordedAtRegistryRevision) &&
-      typeof alias.automaticResolutionEligible === 'boolean');
+      typeof alias.automaticResolutionEligible === 'boolean' &&
+      (!alias.automaticResolutionEligible || isVersionedRadarAliasValue(alias.legacySystemCode, alias.legacyIdentifierValue)));
 }
 export function isResolution(value: unknown): value is {
   queryIdentifier: string; resolved: boolean; canonicalGeographicEntityId: string | null;
