@@ -135,7 +135,7 @@ export async function handleIrniCanonicalRpcV2Route(ctx: WorkerRequestContext): 
     if (!cursor.ok) return cursor.response;
     const sortBy = optionalString(ctx, 'sortBy', 64);
     if (!sortBy.ok) return sortBy.response;
-    if (sortBy.value && !['canonicalNameFa', 'geographicEntityId'].includes(sortBy.value)) {
+    if (sortBy.value && !['canonicalNameFa', 'geographicEntityId', 'issuedOrderIndex'].includes(sortBy.value)) {
       return badRequest(ctx, 'فیلد مرتب‌سازی در allowlist مجاز نیست.');
     }
     const sortDirection = ctx.url.searchParams.get('sortDirection') || undefined;
@@ -150,17 +150,20 @@ export async function handleIrniCanonicalRpcV2Route(ctx: WorkerRequestContext): 
     if (!parent.ok) return parent.response;
     const province = optionalString(ctx, 'provinceGeographicEntityId', MAX_ID);
     if (!province.ok) return province.response;
+    const canonicalNameQuery = optionalString(ctx, 'canonicalNameQuery', 80);
+    if (!canonicalNameQuery.ok) return canonicalNameQuery.response;
     return respond(ctx, await client.listApprovedEntitiesPaginated(
       {
         ...(entityType.value ? { entityType: entityType.value } : {}),
         ...(classification.value ? { classificationSystemId: classification.value } : {}),
         ...(parent.value ? { parentGeographicEntityId: parent.value } : {}),
         ...(province.value ? { provinceGeographicEntityId: province.value } : {}),
+        ...(canonicalNameQuery.value ? { canonicalNameQuery: canonicalNameQuery.value } : {}),
       },
       {
         ...(cursor.value ? { cursor: cursor.value } : {}),
         ...(limit.value !== undefined ? { limit: limit.value } : {}),
-        ...(sortBy.value ? { sortBy: sortBy.value as 'canonicalNameFa' | 'geographicEntityId' } : {}),
+        ...(sortBy.value ? { sortBy: sortBy.value as 'canonicalNameFa' | 'geographicEntityId' | 'issuedOrderIndex' } : {}),
         ...(sortDirection ? { sortDirection } : {}),
       },
       revision.value!,
