@@ -131,14 +131,18 @@ export async function countActiveMutationPermitsInD1(
   nowMs: number = Date.now(),
 ): Promise<number> {
   const safeNowMs = Number.isSafeInteger(nowMs) && nowMs > 0 ? nowMs : Date.now();
-  const row = await userDb
+  const result = await userDb
     .prepare(
       'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
     )
     .bind(uid, safeNowMs)
-    .first<{ cnt: number }>();
-  if (!row || !Number.isFinite(Number(row.cnt)) || Number(row.cnt) < 0) {
+    .all<{ cnt: number }>();
+  if (!result.success || result.results.length !== 1) {
     throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
   }
-  return Number(row.cnt);
+  const count = Number(result.results[0].cnt);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_INVALID');
+  }
+  return count;
 }
