@@ -56,12 +56,16 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
   }
 
   async function requireAdmin(req: Request, res: Response): Promise<string | null> {
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(
+      req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+    );
     if (!auth.authorized) {
       recordAbuseSignal(getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return null;
     }
-    return auth.email || auth.uid || 'admin-operator';
+    return auth.actorUid || auth.uid || 'verified-primary-admin';
   }
 
   app.get('/api/v1/notifications', async (req: Request, res: Response) => {
