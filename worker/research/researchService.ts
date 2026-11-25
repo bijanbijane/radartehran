@@ -100,7 +100,10 @@ export async function verifyServerSideResearchConsent(
     if (!row || Number(row.research_analytics_consent) !== 1 || row.revoked_at_iso) {
       return { allowed: false, statusCode: 403, code: 'RESEARCH_CONSENT_REQUIRED' };
     }
-    const consentRevision = Math.max(1, Number(row.consent_revision ?? 1));
+    const consentRevision = Number(row.consent_revision ?? 1);
+    if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+      return { allowed: false, statusCode: 503, code: 'CONSENT_REVISION_INVALID' };
+    }
     if (expectedConsentRevision !== undefined && consentRevision !== expectedConsentRevision) {
       return { allowed: false, statusCode: 403, code: 'CONSENT_REVISION_STALE_OR_REVOKED' };
     }
@@ -164,6 +167,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
   subjectKeyVersion: string;
   events: readonly ValidatedResearchEvent[];
   nowMs?: number;
+  rejectedCount?: number;
 }): Promise<{
   readonly batchId: string;
   readonly receiptId: string;
@@ -235,8 +239,9 @@ export async function writePseudonymizedEventsToResearchDb(params: {
         receipt_id, batch_id, accepted_count, deduplicated_count, rejected_count, recorded_at_iso
       ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
     )
-    .bind(receiptId, batchId, acceptedCount, deduplicatedCount, 0, nowIso)
+    .bind(receiptId, batchId, acceptedCount, deduplicatedCount, params.rejectedCount ?? 0, nowIso)
     .run();
+  if (!receiptInsert.success) throw new Error('RESEARCH_INGESTION_RECEIPT_WRITE_FAILED');
 
   return { batchId, receiptId, acceptedCount, deduplicatedCount };
 }
@@ -360,7 +365,7 @@ export async function ingestResearchEventsBatch(params: {
 
   // 5. Record subject key version mapping inside USER_DB ONLY (for rotation-safe erasure)
   const nowIso = new Date(nowMs).toISOString();
-  await userDbRes.db
+  const registryWrite = await userDbRes.db
     .prepare(
       `INSERT OR IGNORE INTO user_research_subject_registry (
         uid, subject_key, subject_key_version, created_at_iso
@@ -368,6 +373,14 @@ export async function ingestResearchEventsBatch(params: {
     )
     .bind(params.uid, pseudo.derived.subjectKey, pseudo.derived.subjectKeyVersion, nowIso)
     .run();
+  if (!registryWrite.success) {
+    return {
+      ok: false,
+      statusCode: 503,
+      code: 'RESEARCH_SUBJECT_REGISTRY_WRITE_FAILED',
+      messageFa: 'ثبت نگاشت حذف‌پذیر داده پژوهشی در دسترس نیست؛ ثبت رویداد متوقف شد.',
+    };
+  }
 
   // Optional test seam to exercise mid-flight consent revocation race deterministically
   if (params.beforeResearchWriteHook) {
@@ -399,6 +412,7 @@ export async function ingestResearchEventsBatch(params: {
     subjectKeyVersion: pseudo.derived.subjectKeyVersion,
     events: validEvents,
     nowMs,
+    rejectedCount: rejections.length,
   });
 
   return {
@@ -465,7 +479,10 @@ export async function executeResearchSubjectErasure(params: {
     .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
     .bind(params.subjectKey, params.subjectKeyVersion)
     .first<{ cnt: number }>();
-  const targetCount = Number(countRow?.cnt ?? 0);
+  if (!countRow || !Number.isSafeInteger(Number(countRow.cnt)) || Number(countRow.cnt) < 0) {
+    throw new Error('RESEARCH_ERASURE_TARGET_COUNT_UNAVAILABLE');
+  }
+  const targetCount = Number(countRow.cnt);
 
   // Identify derived aggregation scopes impacted by this subject so stale counts are invalidated atomically.
   const impactedScopesRes = await params.researchDb
@@ -474,6 +491,7 @@ export async function executeResearchSubjectErasure(params: {
     )
     .bind(params.subjectKey, params.subjectKeyVersion)
     .all<{ event_type: string; city_id: string }>();
+  if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
   const impactedScopes = impactedScopesRes.results ?? [];
 
   const erasureId = `rerase_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
@@ -513,7 +531,10 @@ export async function executeResearchSubjectErasure(params: {
     ...invalidateWindowStmts,
     insertInboxStmt,
   ]);
-  if (batchResults.some((r) => !r.success)) {
+  if (
+    batchResults.length !== 2 + invalidateWindowStmts.length ||
+    batchResults.some((r) => !r.success)
+  ) {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
   }
 
@@ -554,6 +575,9 @@ export async function purgeExpiredResearchData(params: {
     .prepare('DELETE FROM research_aggregation_windows WHERE expires_at_iso <= ?1')
     .bind(nowIso)
     .run();
+  if (!evRes.success || !idemRes.success || !aggRes.success) {
+    throw new Error('RESEARCH_RETENTION_PURGE_FAILED');
+  }
 
   return {
     purgedAtIso: nowIso,
@@ -629,7 +653,12 @@ export async function computeKAnonymousResearchAggregation(params: {
   assertDayAlignedAggregationWindow(params.windowStartIso, params.windowEndIso);
 
   const policy = RESEARCH_EVENT_POLICIES[params.eventType];
-  const kThreshold = Math.max(HARD_MIN_K_ANONYMITY, Math.trunc(params.minCohortSize ?? policy.minKAnonymity));
+  if (!policy) {
+    throw new AggregationWindowPolicyError('UNSUPPORTED_RESEARCH_EVENT_TYPE', 'Unsupported research event type.');
+  }
+  const requestedK = Number(params.minCohortSize ?? policy.minKAnonymity);
+  const normalizedK = Number.isSafeInteger(requestedK) ? requestedK : policy.minKAnonymity;
+  const kThreshold = Math.max(HARD_MIN_K_ANONYMITY, normalizedK);
   const nowMs = params.nowMs ?? Date.now();
   const generatedAtIso = new Date(nowMs).toISOString();
   const expiresAtIso = new Date(nowMs + policy.aggregationRetentionDays * 24 * 60 * 60 * 1000).toISOString();
@@ -653,15 +682,24 @@ export async function computeKAnonymousResearchAggregation(params: {
         .bind(params.eventType, params.cityId, hoodId, params.windowStartIso, params.windowEndIso, generatedAtIso)
         .first<{ distinct_subjects: number; event_count: number }>();
 
-  const rawDistinct = Number(stats?.distinct_subjects ?? 0);
-  const rawEvents = Number(stats?.event_count ?? 0);
+  if (
+    !stats ||
+    !Number.isSafeInteger(Number(stats.distinct_subjects)) ||
+    !Number.isSafeInteger(Number(stats.event_count)) ||
+    Number(stats.distinct_subjects) < 0 ||
+    Number(stats.event_count) < 0
+  ) {
+    throw new Error('RESEARCH_AGGREGATION_STATS_UNAVAILABLE_OR_INVALID');
+  }
+  const rawDistinct = Number(stats.distinct_subjects);
+  const rawEvents = Number(stats.event_count);
   const kSuppressed = rawDistinct < kThreshold;
 
   const distinctSubjectsCount = kSuppressed ? null : coarsenCount(rawDistinct);
   const eventCount = kSuppressed ? null : coarsenCount(rawEvents);
   const windowId = `ragg_${params.eventType}_${params.cityId}_${hoodId ?? 'all'}_${params.windowStartIso.slice(0, 10)}_${params.windowEndIso.slice(0, 10)}`;
 
-  await params.researchDb
+  const aggregationWrite = await params.researchDb
     .prepare(
       `INSERT OR REPLACE INTO research_aggregation_windows (
         window_id, event_type, city_id, hood_id, window_start_iso, window_end_iso,
@@ -692,6 +730,7 @@ export async function computeKAnonymousResearchAggregation(params: {
       expiresAtIso,
     )
     .run();
+  if (!aggregationWrite.success) throw new Error('RESEARCH_AGGREGATION_WINDOW_WRITE_FAILED');
 
   return {
     windowId,
