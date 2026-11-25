@@ -1184,6 +1184,48 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(aggNaN.kThreshold, 10);
       assert.equal(aggNaN.kSuppressed, true, 'NaN must not bypass the hard k-anonymity floor');
 
+      // A subject present under two HMAC versions is still one person. Counting both
+      // pseudonyms as separate subjects would incorrectly release a cohort of five.
+      const rotationSqlite = createForensicSqliteD1();
+      applyMigrations(rotationSqlite.raw, 'migrations/research-d1');
+      for (let i = 1; i <= 5; i += 1) {
+        for (const version of ['v1', 'v2']) {
+          const rotatedKey = await deriveResearchSubjectKey({
+            uid: `rotation_subject_${i}`,
+            secret: TEST_HMAC_SECRET,
+            keyVersion: version,
+          });
+          assert.equal(rotatedKey.ok, true);
+          if (!rotatedKey.ok) continue;
+          await rotationSqlite.db.prepare(
+            `INSERT INTO research_events (
+              event_id, subject_key, subject_key_version, event_type, schema_version,
+              city_id, hood_id, session_bucket, payload_json, occurred_at_iso,
+              ingested_at_iso, expires_at_iso, idempotency_key
+            ) VALUES (?1, ?2, ?3, 'radar.map.neighborhood_select', 1, 'tehran', 11,
+              '2026-11-22', '{}', ?4, ?4, ?5, ?6)`,
+          ).bind(
+            `rotation_evt_${i}_${version}`,
+            rotatedKey.derived.subjectKey,
+            version,
+            eventTime,
+            expTime,
+            `rotation_idem_${i}_${version}`,
+          ).run();
+        }
+      }
+      const rotationAgg = await computeKAnonymousResearchAggregation({
+        researchDb: rotationSqlite.db,
+        eventType: 'radar.map.neighborhood_select',
+        cityId: 'tehran',
+        hoodId: 11,
+        windowStartIso: '2026-11-22T00:00:00.000Z',
+        windowEndIso: '2026-11-23T00:00:00.000Z',
+        nowMs: Date.parse('2026-11-22T12:00:00.000Z'),
+      });
+      assert.equal(rotationAgg.kSuppressed, true);
+      assert.equal(rotationAgg.distinctSubjectsCount, null);
+
       // 3. Add 3 more subjects (total 12) and then 1 more (total 13) -> both coarsen to 10 (blocks differencing!)
       for (let i = 10; i <= 12; i += 1) {
         const sk = await deriveResearchSubjectKey({ uid: `k_subj_${i}`, secret: TEST_HMAC_SECRET, keyVersion: 'v1' });
