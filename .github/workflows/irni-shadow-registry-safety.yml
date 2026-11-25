@@ -11,6 +11,16 @@ on:
       - "src/data/irniGeographyClient.ts"
       - "tests/irni-shadow-registry-disabled.test.ts"
       - ".github/workflows/irni-shadow-registry-safety.yml"
+  push:
+    branches:
+      - fix/disable-shadow-irni-registry-2026-11-25
+    paths:
+      - "apps/api/server.ts"
+      - "server/modules/geography/geographyRegistryHttpRoutes.ts"
+      - "src/utils/expressRouteCatalog.ts"
+      - "src/data/irniGeographyClient.ts"
+      - "tests/irni-shadow-registry-disabled.test.ts"
+      - ".github/workflows/irni-shadow-registry-safety.yml"
 
 permissions:
   contents: read
