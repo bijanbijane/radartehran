@@ -27,7 +27,7 @@ export type AccountDeletionJobStatus =
   | 'COMPLETED'
   | 'FAILED';
 
-function resolveDedicatedLifecycleReceiptSecret(env: WorkerEnv): string | null {
+export function resolveDedicatedLifecycleReceiptSecret(env: WorkerEnv): string | null {
   const secret = String(env.LIFECYCLE_RECEIPT_HMAC_SECRET || '').trim();
   if (new TextEncoder().encode(secret).byteLength < 32) return null;
   const otherSecrets = [
