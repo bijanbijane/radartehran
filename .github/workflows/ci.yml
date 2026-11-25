@@ -7,12 +7,14 @@ on:
       - master
       - cursor/rt-infra-001-gate-b-monorepo
       - migration/firebase-retirement-mainline-2026-11-24
+      - debug/backend-hardening-2026-11-25
   pull_request:
     branches:
       - main
       - master
       - cursor/rt-infra-001-gate-b-monorepo
       - migration/firebase-retirement-mainline-2026-11-24
+      - feat/radar-irni-readonly-rpc-v2-consumer-2026-11-25
   workflow_dispatch:
 
 permissions:
