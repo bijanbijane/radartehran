@@ -96,12 +96,16 @@ export async function dispatchWorkerApiOrSeoRequest(
   const conditionallyRoutedMarketplace =
     registeredMatch?.entry.workerHandlerModule === 'worker/routes/marketplaceRoutes.ts' &&
     registeredMatch.entry.status === 'IMPLEMENTED';
+  const conditionallyRoutedIrniGeography =
+    registeredMatch?.entry.workerHandlerModule === 'worker/routes/irniCanonicalRpcV2Routes.ts' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
   if (
     registeredMatch &&
     registeredMatch.entry.status !== 'VERIFIED' &&
     !conditionallyRoutedAuth &&
     !conditionallyRoutedAccount &&
-    !conditionallyRoutedMarketplace
+    !conditionallyRoutedMarketplace &&
+    !conditionallyRoutedIrniGeography
   ) {
     const { entry } = registeredMatch;
     let sessionAssertion: string | undefined;
