@@ -305,7 +305,7 @@ export async function executeAccountDeletionFlow(params: {
         headers: {
           'Content-Type': 'application/json',
           // Stable per account so a network retry reuses the same deletion job.
-          'Idempotency-Key': params.idempotencyKey || `del_${targetUid.slice(0, 124)}`,
+          'Idempotency-Key': params.idempotencyKey || `del_${targetUid.slice(0, 120)}_v1`,
         },
         body: JSON.stringify({ reason: 'USER_REQUESTED_ERASURE' }),
       },
