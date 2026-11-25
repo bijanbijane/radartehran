@@ -68,6 +68,21 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  // The canonical IRNI facade is always intercepted here, including unsupported methods,
+  // so no request can fall through to the legacy Express or direct-D1 geography paths.
+  const irniCanonicalPath = pathname === '/api/v2/reference/irni/canonical' ||
+    pathname.startsWith('/api/v2/reference/irni/canonical/');
+  if (irniCanonicalPath) {
+    const response = await handleIrniCanonicalRpcV2Route(ctx);
+    if (response) {
+      return {
+        response,
+        routePattern: pathname,
+        migrationStatus: 'IMPLEMENTED',
+      };
+    }
+  }
+
   const internalAdmission = await handleInternalWriteAdmissionRoute(ctx);
   if (internalAdmission) {
     return {
@@ -96,16 +111,12 @@ export async function dispatchWorkerApiOrSeoRequest(
   const conditionallyRoutedMarketplace =
     registeredMatch?.entry.workerHandlerModule === 'worker/routes/marketplaceRoutes.ts' &&
     registeredMatch.entry.status === 'IMPLEMENTED';
-  const conditionallyRoutedIrniGeography =
-    registeredMatch?.entry.workerHandlerModule === 'worker/routes/irniCanonicalRpcV2Routes.ts' &&
-    registeredMatch.entry.status === 'IMPLEMENTED';
   if (
     registeredMatch &&
     registeredMatch.entry.status !== 'VERIFIED' &&
     !conditionallyRoutedAuth &&
     !conditionallyRoutedAccount &&
-    !conditionallyRoutedMarketplace &&
-    !conditionallyRoutedIrniGeography
+    !conditionallyRoutedMarketplace
   ) {
     const { entry } = registeredMatch;
     let sessionAssertion: string | undefined;
@@ -237,10 +248,6 @@ export async function dispatchWorkerApiOrSeoRequest(
   const researchResponse = await handleResearchWorkerRoute(ctx);
   if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
-  // Canonical geography is read only through the IRNI internal Service Binding.
-  // The legacy direct-D1 publisher/reader route is intentionally not dispatched.
-  const irniGeographicResponse = await handleIrniCanonicalRpcV2Route(ctx);
-  if (irniGeographicResponse) return { response: irniGeographicResponse, routePattern: pathname, migrationStatus: 'IMPLEMENTED' };
 
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
