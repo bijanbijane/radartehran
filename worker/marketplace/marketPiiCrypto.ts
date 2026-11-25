@@ -26,11 +26,30 @@ async function importEncryptionKey(env: WorkerEnv): Promise<CryptoKey> {
 
 async function importHashKey(env: WorkerEnv): Promise<CryptoKey> {
   const secret = env.MARKET_PII_HASH_SECRET;
-  if (!secret || secret.length < 32) throw new Error('MARKET_PII_HASH_SECRET_MISSING');
+  if (!secret || encoder.encode(secret).byteLength < 32) throw new Error('MARKET_PII_HASH_SECRET_MISSING');
+  const encodedEncryptionKey = String(env.MARKET_PII_ENCRYPTION_KEY || '').trim();
+  if (encodedEncryptionKey && secret === encodedEncryptionKey) {
+    throw new Error('MARKET_PII_ENCRYPTION_AND_HASH_KEYS_MUST_BE_DISTINCT');
+  }
+  if (encodedEncryptionKey) {
+    const encryptionBytes = decodeBase64Url(encodedEncryptionKey);
+    const hashBytes = encoder.encode(secret);
+    if (
+      encryptionBytes.byteLength === hashBytes.byteLength &&
+      encryptionBytes.every((byte, index) => byte === hashBytes[index])
+    ) {
+      throw new Error('MARKET_PII_ENCRYPTION_AND_HASH_KEYS_MUST_BE_DISTINCT');
+    }
+  }
   return crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 }
 
+function assertIranianMobileE164(phoneE164: string): void {
+  if (!/^\+989\d{9}$/.test(phoneE164)) throw new Error('MARKET_PHONE_E164_INVALID');
+}
+
 export async function encryptMarketPhone(phoneE164: string, env: WorkerEnv): Promise<string> {
+  assertIranianMobileE164(phoneE164);
   const key = await importEncryptionKey(env);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(phoneE164));
@@ -50,6 +69,7 @@ export async function decryptMarketPhone(ciphertextValue: string, env: WorkerEnv
 }
 
 export async function hashMarketPhone(phoneE164: string, env: WorkerEnv): Promise<string> {
+  assertIranianMobileE164(phoneE164);
   const key = await importHashKey(env);
   const digest = await crypto.subtle.sign('HMAC', key, encoder.encode(phoneE164));
   return encodeBase64Url(new Uint8Array(digest));
