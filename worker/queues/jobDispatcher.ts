@@ -9,7 +9,11 @@ import type { CityId } from '../../src/types/models';
 import { processPendingResearchErasureOutbox, resolveDedicatedLifecycleReceiptSecret } from '../account-lifecycle/workerLifecycleRuntime';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
-import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
+import {
+  MAX_RESEARCH_BATCH_SIZE,
+  validateAndMinimizeResearchEvent,
+  type ValidatedResearchEvent,
+} from '../research/researchEventContract';
 import {
   purgeExpiredResearchData,
   verifyQueuedResearchSubjectConsent,
@@ -470,11 +474,12 @@ async function handleResearchEventIngestJob(
     !/^[A-Za-z0-9._-]{1,32}$/.test(subjectKeyVersion) ||
     expectedConsentRevision === undefined ||
     expectedConsentRevision < 1 ||
-    rawEvents.length === 0
+    rawEvents.length === 0 ||
+    rawEvents.length > MAX_RESEARCH_BATCH_SIZE
   ) {
     throw new QueueJobExecutionError(
       'INVALID_RESEARCH_INGEST_PAYLOAD',
-      'research_event_ingest requires a valid pseudonymized subject key, key version, positive consent revision, and non-empty events',
+      `research_event_ingest requires a valid pseudonymized subject key, key version, positive consent revision, and 1-${MAX_RESEARCH_BATCH_SIZE} events`,
       false,
     );
   }
@@ -503,6 +508,23 @@ async function handleResearchEventIngestJob(
   if (validated.length === 0) {
     throw new QueueJobExecutionError('INVALID_RESEARCH_EVENTS', 'Zero valid research events in queue payload', false);
   }
+
+  // Consent can be revoked while the queue payload is being validated. Re-check
+  // immediately before the cross-database RESEARCH_DB commit.
+  const preCommitConsent = await verifyQueuedResearchSubjectConsent({
+    userDb,
+    subjectKey,
+    subjectKeyVersion,
+    expectedConsentRevision,
+  });
+  if (preCommitConsent.allowed === false) {
+    throw new QueueJobExecutionError(
+      preCommitConsent.code,
+      `Queued research_event_ingest pre-commit consent check failed: ${preCommitConsent.code}`,
+      preCommitConsent.statusCode === 503,
+    );
+  }
+
   const res = await writePseudonymizedEventsToResearchDb({
     researchDb,
     subjectKey,
