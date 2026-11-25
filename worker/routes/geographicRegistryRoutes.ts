@@ -7,6 +7,12 @@
  * references pass verification in one D1 transaction.
  */
 import { requireNeighborhoodDb } from '../db/bindingResolver';
+import {
+  assessReceivingGeographicPublishHead,
+  compareActiveGeographicPublishManifest,
+  computeExpectedGeographicPublishBatchId,
+  type ExpectedGeographicPublishManifest,
+} from './geographicRegistryPublishManifest';
 import type { D1Database, WorkerRequestContext } from '../types';
 import { jsonWorkerResponse } from '../contextAndSecurity';
 
@@ -23,17 +29,20 @@ interface ActiveRegistryHead {
   readonly registry_revision: number;
   readonly registry_checksum: string;
   readonly activated_at_iso: string;
-  readonly contract_version: string;
-  readonly id_algorithm_version: string;
-  readonly schema_version: string;
-  readonly canonical_entry_count: number;
-  readonly canonical_entity_count: number;
-  readonly relationship_count: number;
-  readonly anchor_count: number;
-  readonly source_mapping_count: number;
-  readonly legacy_alias_count: number;
-  readonly duplicate_conflict_count: number;
-  readonly integrity_verified: number;
+  // Nullable because publishFinalize uses LEFT JOIN to detect pointer/head divergence.
+  readonly head_registry_revision: number | null;
+  readonly head_registry_checksum: string | null;
+  readonly contract_version: string | null;
+  readonly id_algorithm_version: string | null;
+  readonly schema_version: string | null;
+  readonly canonical_entry_count: number | null;
+  readonly canonical_entity_count: number | null;
+  readonly relationship_count: number | null;
+  readonly anchor_count: number | null;
+  readonly source_mapping_count: number | null;
+  readonly legacy_alias_count: number | null;
+  readonly duplicate_conflict_count: number | null;
+  readonly integrity_verified: number | null;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -193,6 +202,7 @@ async function getCurrentHead(db: D1Database): Promise<ActiveRegistryHead | null
   try {
     return await db.prepare(
       `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.registry_revision AS head_registry_revision,h.registry_checksum AS head_registry_checksum,
         h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
         h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
         h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
@@ -236,14 +246,15 @@ async function publishStart(
   const idAlgorithmVersion = payload.idAlgorithmVersion;
   const schemaVersion = payload.schemaVersion;
   if (!isString(batchId, 80) || !Number.isSafeInteger(revision) || Number(revision) < 1 ||
-      !isString(checksum, 128) || !counts ||
-      !Number.isSafeInteger(counts.entities) || !Number.isSafeInteger(counts.relationships) ||
-      !Number.isSafeInteger(counts.sourceMappings) ||
-      !Number.isSafeInteger(counts.identityEntries) ||
-      !Number.isSafeInteger(counts.anchors) ||
-      !Number.isSafeInteger(counts.legacyAliases) ||
+      !isString(checksum, 128) || !/^[a-f0-9]{64}$/i.test(checksum) || !counts ||
+      !Number.isSafeInteger(counts.entities) || Number(counts.entities) < 0 ||
+      !Number.isSafeInteger(counts.relationships) || Number(counts.relationships) < 0 ||
+      !Number.isSafeInteger(counts.sourceMappings) || Number(counts.sourceMappings) < 0 ||
+      !Number.isSafeInteger(counts.identityEntries) || Number(counts.identityEntries) < 0 ||
+      !Number.isSafeInteger(counts.anchors) || Number(counts.anchors) < 0 ||
+      !Number.isSafeInteger(counts.legacyAliases) || Number(counts.legacyAliases) < 0 ||
       !isString(contractVersion, 80) || !isString(idAlgorithmVersion, 80) ||
-      !isString(schemaVersion, 40)) {
+      !isString(schemaVersion, 40) || !artifacts) {
     return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_MANIFEST_INVALID' });
   }
   if (ctx.env.GEO_REGISTRY_EXPECTED_CONTRACT &&
@@ -254,11 +265,42 @@ async function publishStart(
       idAlgorithmVersion !== ctx.env.GEO_REGISTRY_EXPECTED_ID_ALGORITHM) {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_ID_ALGORITHM_MISMATCH' });
   }
-  for (const key of ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases']) {
-    if (artifacts && artifacts[key] !== undefined && !/^[a-f0-9]{64}$/i.test(String(artifacts[key]))) {
-      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_INVALID' });
+  const normalizedChecksum = String(checksum).toLowerCase();
+  const artifactKeys = ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases'] as const;
+  const normalizedArtifacts = {} as Record<(typeof artifactKeys)[number], string>;
+  for (const key of artifactKeys) {
+    const artifactSha = artifacts[key];
+    if (!isString(artifactSha, 64) || !/^[a-f0-9]{64}$/i.test(artifactSha)) {
+      return jsonWorkerResponse(ctx, 400, {
+        status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_REQUIRED_OR_INVALID', artifact: key,
+      });
     }
+    normalizedArtifacts[key] = artifactSha.toLowerCase();
   }
+
+  const manifestIdentity: ExpectedGeographicPublishManifest = {
+    registryRevision: Number(revision),
+    registryChecksum: normalizedChecksum,
+    contractVersion: String(contractVersion),
+    idAlgorithmVersion: String(idAlgorithmVersion),
+    schemaVersion: String(schemaVersion),
+    expectedCounts: {
+      entities: Number(counts.entities),
+      relationships: Number(counts.relationships),
+      sourceMappings: Number(counts.sourceMappings),
+      identityEntries: Number(counts.identityEntries),
+      anchors: Number(counts.anchors),
+      legacyAliases: Number(counts.legacyAliases),
+    },
+    artifactChecksums: normalizedArtifacts,
+  };
+  const expectedBatchId = await computeExpectedGeographicPublishBatchId(manifestIdentity);
+  if (batchId !== expectedBatchId) {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error', code: 'PUBLISH_BATCH_MANIFEST_ID_MISMATCH',
+    });
+  }
+
   const head = await getCurrentHead(db);
   if (head && Number(revision) < Number(head.registry_revision)) {
     return jsonWorkerResponse(ctx, 409, {
@@ -267,11 +309,55 @@ async function publishStart(
     });
   }
   if (head && Number(revision) === Number(head.registry_revision)) {
-    if (checksum !== head.registry_checksum) {
+    if (normalizedChecksum !== String(head.registry_checksum).toLowerCase()) {
       return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'SAME_REVISION_CHECKSUM_CONFLICT' });
     }
+
+    let importedArtifacts: {
+      artifact_path: string;
+      artifact_sha256: string;
+      record_count: number;
+      registry_revision: number;
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(Number(revision)).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+      });
+    }
+
+    const comparison = compareActiveGeographicPublishManifest({
+      activeHead: head,
+      expected: manifestIdentity,
+      importedArtifacts,
+    });
+    if (!comparison.matches) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_SAME_REVISION_MANIFEST_CONFLICT',
+        mismatches: comparison.mismatches,
+      });
+    }
     return jsonWorkerResponse(ctx, 200, {
-      status: 'ok', alreadyPublished: true, registryRevision: revision, registryChecksum: checksum,
+      status: 'ok',
+      alreadyPublished: true,
+      registryRevision: revision,
+      registryChecksum: normalizedChecksum,
+      verifiedArtifacts: 6,
     });
   }
   const now = new Date().toISOString();
@@ -283,21 +369,48 @@ async function publishStart(
      VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,'RECEIVING',?13)
      ON CONFLICT(batch_id) DO NOTHING`,
   ).bind(
-    String(batchId), Number(revision), String(checksum), String(contractVersion),
+    String(batchId), Number(revision), normalizedChecksum, String(contractVersion),
     String(idAlgorithmVersion), String(schemaVersion), Number(counts.entities),
     Number(counts.relationships), Number(counts.sourceMappings), Number(counts.identityEntries),
     Number(counts.anchors), Number(counts.legacyAliases), now,
   ).run();
   requireSuccess(result, 'PUBLISH_START');
   const stored = await db.prepare(
-    'SELECT registry_revision,registry_checksum,status FROM geo_registry_publish_sessions WHERE batch_id = ?1',
-  ).bind(String(batchId)).first<{registry_revision:number;registry_checksum:string;status:string}>();
-  if (!stored || Number(stored.registry_revision) !== Number(revision) ||
-      stored.registry_checksum !== checksum || stored.status !== 'RECEIVING') {
+    `SELECT registry_revision,registry_checksum,contract_version,id_algorithm_version,schema_version,
+       expected_entities,expected_relationships,expected_source_mappings,expected_identity_entries,
+       expected_anchors,expected_legacy_aliases,status
+     FROM geo_registry_publish_sessions WHERE batch_id = ?1`,
+  ).bind(String(batchId)).first<{
+    registry_revision:number;
+    registry_checksum:string;
+    contract_version:string;
+    id_algorithm_version:string;
+    schema_version:string;
+    expected_entities:number;
+    expected_relationships:number;
+    expected_source_mappings:number;
+    expected_identity_entries:number;
+    expected_anchors:number;
+    expected_legacy_aliases:number;
+    status:string;
+  }>();
+  const storedManifestMatches = stored &&
+    Number(stored.registry_revision) === Number(revision) &&
+    String(stored.registry_checksum).toLowerCase() === normalizedChecksum &&
+    stored.contract_version === contractVersion &&
+    stored.id_algorithm_version === idAlgorithmVersion &&
+    stored.schema_version === schemaVersion &&
+    Number(stored.expected_entities) === Number(counts.entities) &&
+    Number(stored.expected_relationships) === Number(counts.relationships) &&
+    Number(stored.expected_source_mappings) === Number(counts.sourceMappings) &&
+    Number(stored.expected_identity_entries) === Number(counts.identityEntries) &&
+    Number(stored.expected_anchors) === Number(counts.anchors) &&
+    Number(stored.expected_legacy_aliases) === Number(counts.legacyAliases);
+  if (!storedManifestMatches || stored.status !== 'RECEIVING') {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_ID_CONFLICT' });
   }
   return jsonWorkerResponse(ctx, 202, {
-    status: 'ok', batchId, registryRevision: revision, registryChecksum: checksum,
+    status: 'ok', batchId, registryRevision: revision, registryChecksum: normalizedChecksum,
     expectedCounts: counts, currentRevision: head?.registry_revision ?? null,
   });
 }
@@ -552,13 +665,211 @@ async function publishFinalize(
     'SELECT * FROM geo_registry_publish_sessions WHERE batch_id = ?1',
   ).bind(batchId).first<Record<string, unknown>>();
   if (!session) return jsonWorkerResponse(ctx, 404, { status: 'error', code: 'PUBLISH_BATCH_NOT_FOUND' });
+
+  const artifactPayload = asRecord(payload.artifactChecksums);
+  if (!artifactPayload) {
+    return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUMS_REQUIRED' });
+  }
+  const artifactKeys = ['snapshot','relationships','sourceMappings','identityEntries','anchors','legacyAliases'] as const;
+  const normalizedArtifacts = {} as Record<(typeof artifactKeys)[number], string>;
+  for (const key of artifactKeys) {
+    if (!isString(artifactPayload[key], 64) || !/^[a-f0-9]{64}$/i.test(artifactPayload[key])) {
+      return jsonWorkerResponse(ctx, 400, {
+        status: 'error', code: 'PUBLISH_ARTIFACT_CHECKSUM_REQUIRED_OR_INVALID', artifact: key,
+      });
+    }
+    normalizedArtifacts[key] = String(artifactPayload[key]).toLowerCase();
+  }
+
+  const sessionCounts = {
+    entities: Number(session.expected_entities),
+    relationships: Number(session.expected_relationships),
+    sourceMappings: Number(session.expected_source_mappings),
+    identityEntries: Number(session.expected_identity_entries),
+    anchors: Number(session.expected_anchors),
+    legacyAliases: Number(session.expected_legacy_aliases),
+  };
+  if (!Number.isSafeInteger(session.registry_revision) || Number(session.registry_revision) < 1 ||
+      !isString(session.registry_checksum, 64) || !/^[a-f0-9]{64}$/i.test(session.registry_checksum) ||
+      !isString(session.contract_version, 80) || !isString(session.id_algorithm_version, 80) ||
+      !isString(session.schema_version, 40) ||
+      Object.values(sessionCounts).some((count) => !Number.isSafeInteger(count) || count < 0)) {
+    return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_SESSION_MANIFEST_INVALID' });
+  }
+  const finalizeManifest: ExpectedGeographicPublishManifest = {
+    registryRevision: Number(session.registry_revision),
+    registryChecksum: String(session.registry_checksum).toLowerCase(),
+    contractVersion: String(session.contract_version),
+    idAlgorithmVersion: String(session.id_algorithm_version),
+    schemaVersion: String(session.schema_version),
+    expectedCounts: sessionCounts,
+    artifactChecksums: normalizedArtifacts,
+  };
+  const expectedBatchId = await computeExpectedGeographicPublishBatchId(finalizeManifest);
+  if (batchId !== expectedBatchId) {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error', code: 'PUBLISH_FINALIZE_MANIFEST_ID_MISMATCH',
+    });
+  }
+
   if (session.status === 'COMPLETED') {
     const head = await getCurrentHead(db);
-    return jsonWorkerResponse(ctx, 200, { status: 'ok', alreadyPublished: true, registry: head });
+    if (!head || head.batch_id !== batchId ||
+        Number(head.registry_revision) !== finalizeManifest.registryRevision ||
+        String(head.registry_checksum).toLowerCase() !== finalizeManifest.registryChecksum) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_BATCH_SUPERSEDED_OR_ACTIVE_HEAD_MISMATCH',
+        currentRevision: head?.registry_revision ?? null,
+      });
+    }
+    let importedArtifacts: {
+      artifact_path: string;
+      artifact_sha256: string;
+      record_count: number;
+      registry_revision: number;
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(finalizeManifest.registryRevision).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+      });
+    }
+    const comparison = compareActiveGeographicPublishManifest({
+      activeHead: head,
+      expected: finalizeManifest,
+      importedArtifacts,
+    });
+    if (!comparison.matches) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_COMPLETED_MANIFEST_CONFLICT',
+        mismatches: comparison.mismatches,
+      });
+    }
+    return jsonWorkerResponse(ctx, 200, {
+      status: 'ok', alreadyPublished: true, registry: head, verifiedArtifacts: 6,
+    });
   }
   if (session.status !== 'RECEIVING') {
     return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'PUBLISH_BATCH_NOT_OPEN' });
   }
+
+  // Re-read the active pointer before any canonical-table writes. The trusted
+  // IRNI publisher workflow is serialized; this check also rejects stale
+  // RECEIVING sessions that survived an earlier interrupted publication.
+  let finalizeHead: ActiveRegistryHead | null;
+  try {
+    finalizeHead = await db.prepare(
+      `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.registry_revision AS head_registry_revision,h.registry_checksum AS head_registry_checksum,
+        h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
+        h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
+        h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
+       FROM geo_registry_publish_pointer p
+       LEFT JOIN geo_registry_head h ON h.singleton_id = 'current'
+       WHERE p.singleton_id = 'current'`,
+    ).first<ActiveRegistryHead>();
+  } catch {
+    return jsonWorkerResponse(ctx, 503, {
+      status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+    });
+  }
+
+  if (!finalizeHead) {
+    // A head without its active pointer is not an empty registry.
+    try {
+      const orphanHead = await db.prepare(
+        "SELECT registry_revision FROM geo_registry_head WHERE singleton_id='current'",
+      ).first<{ registry_revision: number }>();
+      if (orphanHead) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_POINTER_MISSING',
+          currentRevision: orphanHead.registry_revision,
+        });
+      }
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+      });
+    }
+  }
+
+  const headAssessment = assessReceivingGeographicPublishHead({
+    activeHead: finalizeHead,
+    expected: finalizeManifest,
+    batchId: String(batchId),
+  });
+  if (headAssessment.action === 'reject') {
+    return jsonWorkerResponse(ctx, 409, {
+      status: 'error',
+      code: headAssessment.code,
+      currentRevision: headAssessment.currentRevision,
+    });
+  }
+  if (headAssessment.action === 'verify-active') {
+    if (!finalizeHead) {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_HEAD_UNAVAILABLE',
+      });
+    }
+    let importedArtifacts: {
+      artifact_path: string;
+      artifact_sha256: string;
+      record_count: number;
+      registry_revision: number;
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(finalizeManifest.registryRevision).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
+      return jsonWorkerResponse(ctx, 503, {
+        status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+      });
+    }
+    const comparison = compareActiveGeographicPublishManifest({
+      activeHead: finalizeHead,
+      expected: finalizeManifest,
+      importedArtifacts,
+    });
+    if (!comparison.matches) {
+      return jsonWorkerResponse(ctx, 409, {
+        status: 'error',
+        code: 'PUBLISH_RECEIVING_BATCH_ACTIVE_MANIFEST_CONFLICT',
+        mismatches: comparison.mismatches,
+      });
+    }
+    return jsonWorkerResponse(ctx, 200, {
+      status: 'ok', alreadyPublished: true, registry: finalizeHead, verifiedArtifacts: 6,
+    });
+  }
+
   const batchIdValue = String(batchId);
   const [entityCount,relationshipCount,mappingCount,identityEntryCount,anchorCount,aliasCount] = await Promise.all([
     db.prepare('SELECT COUNT(*) AS count FROM geo_registry_entity_stage WHERE batch_id = ?1')
@@ -676,11 +987,11 @@ async function publishFinalize(
   }
 
   const timestamp = new Date().toISOString();
-  const registryChecksum = String(session.registry_checksum);
+  const registryChecksum = String(session.registry_checksum).toLowerCase();
   const previousHead = await db.prepare("SELECT registry_revision FROM geo_registry_head WHERE singleton_id='current'")
     .first<{registry_revision:number}>();
   const previousRevision = previousHead ? Number(previousHead.registry_revision) : null;
-  const artifacts = asRecord(payload.artifactChecksums) ?? {};
+  const artifacts = normalizedArtifacts;
   const statements = [
     db.prepare(
       `INSERT INTO geo_canonical_entities
