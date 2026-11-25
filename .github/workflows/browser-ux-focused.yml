@@ -1,0 +1,51 @@
+name: Radar Browser UX Focused Regressions
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/components/FloatingTopBar.tsx'
+      - 'tests/e2e/helpers/multicityRtlResponsiveHelpers.ts'
+      - 'tests/tehran-radar.e2e.spec.ts'
+      - 'tests/e2e/journeys/critical-journeys-matrix.e2e.spec.ts'
+      - 'vite.config.ts'
+      - '.github/workflows/browser-ux-focused.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-browser-ux-focused-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-ux:
+    name: Five-city context and 8-viewport browser regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact PR merge ref
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run city-context and responsive UX tests
+        run: npx playwright test tests/tehran-radar.e2e.spec.ts tests/e2e/journeys/critical-journeys-matrix.e2e.spec.ts --workers=1
+      - name: Retain Playwright traces and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-browser-ux-artifacts
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -99,8 +99,8 @@ export async function switchCityAndAssertContext(page: Page, targetCityId: CityI
     await expect.poll(() => new URL(page.url()).searchParams.get('city')).toBe(targetCityId);
   }
 
-  // Header brand reflects active city
-  await expect(page.locator('header')).toContainText(`رادار ${cfg.nameFa}`);
+  // The product brand remains canonical; the adjacent active-city label carries the selected city.
+  await expect(page.getByTestId('global-active-city-label')).toHaveText(cfg.nameFa);
 }
 
 /**

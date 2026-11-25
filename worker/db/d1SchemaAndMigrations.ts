@@ -2,6 +2,16 @@ import type { D1Database, D1PreparedStatement } from '../types';
 
 export const AUTHORITATIVE_D1_MIGRATIONS_TABLE = 'd1_migrations' as const;
 
+/** Exact Wrangler migration ledger expected for the production USER_DB binding. */
+export const USER_D1_MIGRATION_FILES: readonly string[] = [
+  '0001_core_projections_and_watermarks.sql',
+  '0002_upload_sessions_legal_holds_and_rate_limits.sql',
+  '0003_media_objects_and_queue_execution_leases.sql',
+  '0004_user_accounts_privacy_and_sessions.sql',
+  '0005_account_lifecycle_permits_and_outbox.sql',
+  '0006_consent_revision_ordering.sql',
+] as const;
+
 export interface D1MigrationDefinition {
   version: string;
   name: string;
@@ -312,7 +322,10 @@ export async function runD1MigrationsIdempotently(db: D1Database): Promise<{
  * Read-only inspection of the authoritative `d1_migrations` ledger, sync watermarks, and queue idempotency log.
  * Never executes DDL or mutates schema state. Safely handles unmigrated databases where `d1_migrations` does not yet exist.
  */
-export async function inspectD1OperationalDiagnostics(db: D1Database | undefined): Promise<{
+export async function inspectD1OperationalDiagnostics(
+  db: D1Database | undefined,
+  expectedMigrationFiles: readonly string[] = D1_MIGRATIONS.map((migration) => migration.fileName),
+): Promise<{
   ledgerTable: typeof AUTHORITATIVE_D1_MIGRATIONS_TABLE;
   expectedCount: number;
   allCanonicalMigrationsApplied: boolean;
@@ -331,9 +344,9 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
   if (!db) {
     return {
       ledgerTable: AUTHORITATIVE_D1_MIGRATIONS_TABLE,
-      expectedCount: D1_MIGRATIONS.length,
+      expectedCount: expectedMigrationFiles.length,
       allCanonicalMigrationsApplied: false,
-      pendingMigrations: D1_MIGRATIONS.map((m) => m.fileName),
+      pendingMigrations: [...expectedMigrationFiles],
       migrationsApplied: [],
       watermarks: [],
       lastQueueProcessedAtIso: null,
@@ -356,13 +369,12 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
       id: Number(row.id),
       name: meta ? meta.name : row.name.replace(/\.sql$/, ''),
       fileName: row.name,
-      checksum_sha256: meta ? meta.checksumSha256 : 'UNREGISTERED_MIGRATION',
+      checksum_sha256: meta ? meta.checksumSha256 : 'MIGRATION_FILE_NOT_MIRRORED_IN_RUNTIME',
       applied_at: row.applied_at,
     };
   });
-  const pendingMigrations = D1_MIGRATIONS.filter(
-    (m) => !migrationsApplied.some((applied) => applied.fileName === m.fileName),
-  ).map((m) => m.fileName);
+  const appliedFileNames = new Set(migrationsApplied.map((applied) => applied.fileName));
+  const pendingMigrations = expectedMigrationFiles.filter((fileName) => !appliedFileNames.has(fileName));
 
   let watermarks: Array<{ watermark_key: string; watermark_value: string; updated_at_iso: string }> = [];
   try {
@@ -396,7 +408,7 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
 
   return {
     ledgerTable: AUTHORITATIVE_D1_MIGRATIONS_TABLE,
-    expectedCount: D1_MIGRATIONS.length,
+    expectedCount: expectedMigrationFiles.length,
     allCanonicalMigrationsApplied: pendingMigrations.length === 0,
     pendingMigrations,
     migrationsApplied,

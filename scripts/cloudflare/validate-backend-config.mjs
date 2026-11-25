@@ -98,6 +98,15 @@ function scanVarsForPlaintextSecrets(varsObj, envLabel, errors) {
   }
 }
 
+function validateWritePauseTimestamp(varsObj, envLabel, errors) {
+  const value = String(varsObj?.DB_WRITES_PAUSED_UNTIL_UTC ?? '').trim();
+  if (!value) return;
+  const timestamp = Date.parse(value);
+  if (!value.includes('T') || !value.endsWith('Z') || !Number.isFinite(timestamp)) {
+    errors.push(`INVALID_DB_WRITES_PAUSE_TIMESTAMP:${envLabel}`);
+  }
+}
+
 function scanBindingsForForbiddenIds(d1List, envLabel, errors) {
   if (!Array.isArray(d1List)) return;
   for (const entry of d1List) {
@@ -226,6 +235,12 @@ export function validateBackendWranglerConfig(
   const prodNames = new Set(prodD1.map((d) => String(d.database_name || '').toLowerCase()).filter(Boolean));
   const stagingD1 = Array.isArray(staging?.d1_databases) ? staging.d1_databases : [];
   scanBindingsForForbiddenIds(stagingD1, 'staging', errors);
+  const irniDirectBindingPresent = [...prodD1, ...stagingD1].some((binding) =>
+    FORBIDDEN_IRNI_IDENTIFIERS.some((identifier) =>
+      [binding?.binding, binding?.database_name, binding?.database_id]
+        .some((value) => String(value || '').trim().toLowerCase() === identifier.toLowerCase()),
+    ),
+  );
 
   let stagingProvisioningStatus = 'PROVISIONED';
   if (stagingD1.length === 0) {
@@ -263,9 +278,39 @@ export function validateBackendWranglerConfig(
     }
   }
 
-  // 5. Plaintext secrets scan
+  // 5. Background processing wiring: Cron handlers enqueue work and cannot run without
+  // a producer, matching consumer, and durable DLQ. The nightly cron also emits R2 jobs.
+  const configuredCrons = Array.isArray(config.triggers?.crons) ? config.triggers.crons : [];
+  const supportedCronPatterns = new Set(['30 0 * * *', '30 18 * * *', '0 * * * *']);
+  for (const cron of configuredCrons) {
+    if (!supportedCronPatterns.has(cron)) errors.push(`UNSUPPORTED_CRON_PATTERN:${cron}`);
+  }
+  const queueProducers = Array.isArray(config.queues?.producers) ? config.queues.producers : [];
+  const queueConsumers = Array.isArray(config.queues?.consumers) ? config.queues.consumers : [];
+  if (configuredCrons.length > 0) {
+    const mainQueueProducer = queueProducers.find((p) => p.binding === 'RADAR_QUEUE' && p.queue);
+    const dlqProducer = queueProducers.find((p) => p.binding === 'RADAR_DLQ' && p.queue);
+    if (!mainQueueProducer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_PRODUCER');
+    if (!dlqProducer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_DLQ_PRODUCER');
+    const matchingConsumer = mainQueueProducer
+      ? queueConsumers.find((c) => c.queue === mainQueueProducer.queue)
+      : undefined;
+    if (!matchingConsumer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_CONSUMER');
+    if (matchingConsumer && dlqProducer && matchingConsumer.dead_letter_queue !== dlqProducer.queue) {
+      errors.push('RADAR_QUEUE_DLQ_BINDING_MISMATCH');
+    }
+  }
+  if (configuredCrons.includes('30 18 * * *')) {
+    const hasMediaBucket = Array.isArray(config.r2_buckets) &&
+      config.r2_buckets.some((bucket) => bucket.binding === 'MEDIA_BUCKET' && bucket.bucket_name);
+    if (!hasMediaBucket) errors.push('NIGHTLY_MEDIA_CRON_REQUIRES_MEDIA_BUCKET');
+  }
+
+  // 6. Plaintext secrets scan
   scanVarsForPlaintextSecrets(config.vars, 'production', errors);
   scanVarsForPlaintextSecrets(staging?.vars, 'staging', errors);
+  validateWritePauseTimestamp(config.vars, 'production', errors);
+  validateWritePauseTimestamp(staging?.vars, 'staging', errors);
 
   return {
     ok: errors.length === 0,
@@ -279,7 +324,8 @@ export function validateBackendWranglerConfig(
       userMigrationsCount: userMigrationFiles.length,
       researchMigrationsCount: researchMigrationFiles.length,
       stagingProvisioningStatus,
-      irniDirectBindingPresent: false,
+      irniDirectBindingPresent,
+      dbWritesPausedUntilUtc: config.vars?.DB_WRITES_PAUSED_UNTIL_UTC ?? null,
     },
   };
 }
