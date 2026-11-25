@@ -168,7 +168,7 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
       if (yieldBeforeBatch) {
         await new Promise((r) => setTimeout(r, 15));
       }
-      const out: Array<{ results?: T[]; success: boolean }> = [];
+      const out: Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }> = [];
       raw.exec('BEGIN IMMEDIATE');
       try {
         for (const stmt of statements) {
@@ -176,7 +176,7 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
           if (!res.success) {
             throw new Error('BATCH_STMT_FAILED');
           }
-          out.push({ results: res.results, success: true });
+          out.push({ results: res.results, success: true, meta: res.meta });
         }
         raw.exec('COMMIT');
         return out;
