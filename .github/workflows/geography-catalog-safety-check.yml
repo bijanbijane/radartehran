@@ -1,0 +1,43 @@
+name: Geography Catalog Safety
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/modules/geography/geographyCatalog.ts"
+      - "worker/irni/radarLegacyIdentifiers.ts"
+      - "tests/geography-catalog-legacy-safety.test.ts"
+      - ".github/workflows/geography-catalog-safety-check.yml"
+  push:
+    branches:
+      - main
+      - fix/geography-legacy-catalog-safety-mainline
+    paths:
+      - "server/modules/geography/geographyCatalog.ts"
+      - "worker/irni/radarLegacyIdentifiers.ts"
+      - "tests/geography-catalog-legacy-safety.test.ts"
+      - ".github/workflows/geography-catalog-safety-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geography-catalog-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  legacy-catalog-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Run geography catalog and legacy identifier safety tests
+        run: npx tsx --test tests/geography-catalog-legacy-safety.test.ts
