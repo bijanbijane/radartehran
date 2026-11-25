@@ -105,12 +105,29 @@ export async function consumeLifecycleRpcNonce(params: {
   const expiresAtMs = nowMs + MAX_RPC_CLOCK_SKEW_MS * 2;
 
   try {
-    const insertRes = await params.db
-      .prepare(
-        'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, issuer, expires_at_ms, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
-      )
-      .bind(nonce, issuer, expiresAtMs, new Date(nowMs).toISOString())
-      .run();
+    const schema = await params.db
+      .prepare('PRAGMA table_info(lifecycle_internal_rpc_nonces)')
+      .all<{ name: string }>();
+    if (schema.success === false) return { consumed: false, code: 'RPC_NONCE_SCHEMA_UNAVAILABLE' };
+    const columns = new Set((schema.results ?? []).map((column) => column.name));
+
+    const insertRes = columns.has('issuer') && columns.has('created_at_iso')
+      ? await params.db
+          .prepare(
+            'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, issuer, expires_at_ms, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
+          )
+          .bind(nonce, issuer, expiresAtMs, new Date(nowMs).toISOString())
+          .run()
+      : columns.has('consumed_at_iso')
+        ? await params.db
+            .prepare(
+              'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)',
+            )
+            .bind(nonce, new Date(nowMs).toISOString(), expiresAtMs)
+            .run()
+        : null;
+
+    if (!insertRes) return { consumed: false, code: 'RPC_NONCE_SCHEMA_CONTRACT_UNRECOGNIZED' };
 
     if (insertRes.success === false) {
       return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
