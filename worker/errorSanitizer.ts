@@ -5,7 +5,8 @@
  */
 export function sanitizeWorkerErrorMessage(message: string): string {
   return message
-    .replace(/(?:Bearer|Basic)\s+\S+/gi, '[REDACTED_AUTH_SCHEME]')
+    .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+    .replace(/Basic\s+\S+/gi, 'Basic [REDACTED]')
     .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[REDACTED_JWT]')
     .replace(/\b(cookie|set-cookie)\s*:\s*[^\r\n]+/gi, '$1: [REDACTED]')
     .replace(/(__Host-radar_session|radar_session)=([^;\s]+)/gi, '$1=[REDACTED]')
