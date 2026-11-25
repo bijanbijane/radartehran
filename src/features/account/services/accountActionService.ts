@@ -55,8 +55,9 @@ export function stripSecretsFromExportValue(value: unknown, depth = 0): unknown 
   }
   if (Array.isArray(value)) return value.map((item) => stripSecretsFromExportValue(item, depth + 1));
   if (!isPlainRecord(value)) return value;
-  const clean: Record<string, unknown> = {};
+  const clean: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [key, val] of Object.entries(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     const normalizedKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
     if (SENSITIVE_EXPORT_FIELD_NAMES.has(normalizedKey)) continue;
     clean[key] = stripSecretsFromExportValue(val, depth + 1);
