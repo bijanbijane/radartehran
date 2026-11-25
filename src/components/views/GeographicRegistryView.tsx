@@ -51,6 +51,7 @@ export function GeographicRegistryView(): React.ReactElement {
   const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [items, setItems] = useState<CanonicalGeographicEntity[]>([]);
+  const [totalMatchedCount, setTotalMatchedCount] = useState(0);
   const [provinces, setProvinces] = useState<CanonicalGeographicEntity[]>([]);
   const [head, setHead] = useState<RegistryHead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,13 +95,14 @@ export function GeographicRegistryView(): React.ReactElement {
         if (!active) return;
         if (result.registryRevision !== head.registryRevision || result.registryChecksum !== head.registryChecksum) throw new Error('IRNI_REGISTRY_SNAPSHOT_MISMATCH');
         setItems(result.page.items);
+        setTotalMatchedCount(result.page.totalMatchedCount);
         setNextCursor(result.page.nextCursor);
         setLoading(false);
       })
       .catch((cause) => {
         if (!active || (cause as Error)?.name === 'AbortError') return;
         setError(cause instanceof Error ? cause.message : 'GEOGRAPHIC_QUERY_FAILED');
-        setItems([]); setNextCursor(null); setLoading(false);
+        setItems([]); setTotalMatchedCount(0); setNextCursor(null); setLoading(false);
       });
     return () => { active = false; controller.abort(); };
   }, [head, entityType, provinceId, query, page, pageSize, currentCursor]);
@@ -147,7 +149,7 @@ export function GeographicRegistryView(): React.ReactElement {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-muted)]">
-        <span className="tabular-nums">{typeLabel(entityType)} · ترتیب رسمی رجیستری · {rangeLabel}</span>
+        <span className="tabular-nums">{typeLabel(entityType)} · {faNumber(totalMatchedCount)} رکورد · ردیف رسمی {rangeLabel}</span>
         <div className="flex items-center gap-2"><span>تعداد در صفحه:</span><div role="group" aria-label="تعداد ردیف در صفحه" className="inline-flex rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-0.5">
           {([20, 50] as const).map((size) => <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => { setPageSize(size); resetPage(); }} className={pageSize === size ? 'min-h-[32px] px-2.5 rounded-[6px] text-xs font-bold tabular-nums transition cursor-pointer bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-2xs' : 'min-h-[32px] px-2.5 rounded-[6px] text-xs font-bold tabular-nums transition cursor-pointer text-[var(--color-text-secondary)]'}>{faNumber(size)}</button>)}
         </div></div>
