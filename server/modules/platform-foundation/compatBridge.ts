@@ -73,7 +73,10 @@ export function verifiedAdminContextMiddleware(
   next: NextFunction,
 ): void {
   void (async () => {
-    const auth = await verifyAdminApiAuthorization(req);
+    const auth = await verifyAdminApiAuthorization(
+      req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+    );
     if (!auth.authorized) {
       res.status(auth.statusCode === 401 ? 401 : 403).json({
         status: 'error',
