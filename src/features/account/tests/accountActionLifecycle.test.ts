@@ -190,6 +190,12 @@ test('Stage 184: stripSecretsFromExportValue normalizes secret key variants and 
   assert.equal(scrubbed.safeField, 'kept');
   assert.equal(JSON.stringify(scrubbed).includes('deep-secret'), false);
   assert.equal(JSON.stringify(scrubbed).includes('OMITTED_MAX_DEPTH'), true);
+
+  const hostile = JSON.parse('{"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}},"safe":1}');
+  const safeHostile = stripSecretsFromExportValue(hostile) as Record<string, unknown>;
+  assert.equal('constructor' in safeHostile, false);
+  assert.equal(({} as Record<string, unknown>).polluted, undefined);
+  assert.equal(safeHostile.safe, 1);
 });
 
 test('Stage 184: requestAccountServerExport maps 401/403/429/500, owner mismatch, schema mismatch, and valid envelope', async () => {
