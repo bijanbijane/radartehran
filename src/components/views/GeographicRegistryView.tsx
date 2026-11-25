@@ -70,7 +70,7 @@ export function GeographicRegistryView(): React.ReactElement {
         setProvinces(provincePage.page.items);
         setError(null);
       } catch (cause) {
-        if (active && (cause as Error)?.name !== 'AbortError') setError(cause instanceof Error ? cause.message : 'REGISTRY_UNAVAILABLE');
+        if (active && (cause as Error)?.name !== 'AbortError') { setError(cause instanceof Error ? cause.message : 'REGISTRY_UNAVAILABLE'); setLoading(false); }
       }
     })();
     return () => { active = false; controller.abort(); };
