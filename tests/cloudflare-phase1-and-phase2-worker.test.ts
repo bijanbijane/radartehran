@@ -573,6 +573,22 @@ describe('Worker error-message redaction', () => {
     assert.equal(result.length, 240);
   });
 
+  it('redacts session cookies, OTPs, phone numbers, IP addresses, and research subject keys', () => {
+    const raw = [
+      'Cookie: __Host-radar_session=secret-session-token',
+      'otp=123456 phone=+989121234567 ip=192.0.2.10 subject=sk_v1_abcdef0123456789',
+    ].join('\n');
+    const result = sanitizeWorkerErrorMessage(raw);
+    assert.equal(result.includes('secret-session-token'), false);
+    assert.equal(result.includes('123456'), false);
+    assert.equal(result.includes('+989121234567'), false);
+    assert.equal(result.includes('192.0.2.10'), false);
+    assert.equal(result.includes('sk_v1_abcdef0123456789'), false);
+    assert.ok(result.includes('[REDACTED_PHONE]'));
+    assert.ok(result.includes('[REDACTED_IP]'));
+    assert.ok(result.includes('[REDACTED_SUBJECT_KEY]'));
+  });
+
   it('leaves ordinary diagnostic text intact', () => {
     assert.equal(
       sanitizeWorkerErrorMessage('D1 binding unavailable for route /api/health'),
