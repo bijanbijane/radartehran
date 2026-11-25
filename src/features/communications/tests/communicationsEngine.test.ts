@@ -304,7 +304,7 @@ test('COMMS-T35: Conversation summaries hide peer-private flags and message hist
   if (firstPage.ok) {
     assert.deepEqual(firstPage.items.map((item) => item.messageId), ['msg-4', 'msg-5']);
     assert.equal(firstPage.hasMore, true);
-    assert.equal(firstPage.nextCursor, 'msg-3');
+    assert.equal(firstPage.nextCursor, 'msg-4');
     const secondPage = paginateConversationMessages(messages, 2, firstPage.nextCursor || undefined);
     assert.equal(secondPage.ok, true);
     if (secondPage.ok) assert.deepEqual(secondPage.items.map((item) => item.messageId), ['msg-2', 'msg-3']);
