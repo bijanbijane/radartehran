@@ -1,0 +1,40 @@
+name: IRNI Shadow Registry Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/api/server.ts"
+      - "server/modules/geography/geographyRegistryHttpRoutes.ts"
+      - "src/utils/expressRouteCatalog.ts"
+      - "src/data/irniGeographyClient.ts"
+      - "tests/irni-shadow-registry-disabled.test.ts"
+      - ".github/workflows/irni-shadow-registry-safety.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: irni-shadow-registry-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shadow-registry-safety:
+    name: Verify no locally fabricated IRNI registry is served
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install repository dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run shadow registry retirement regression tests
+        run: npx tsx --test tests/irni-shadow-registry-disabled.test.ts
