@@ -6,14 +6,30 @@ import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 import type { MediaDeletionCoordinationAdapter } from '../../server/modules/account-lifecycle/types.ts';
 import type { AccountLifecycleActorContext } from '../../server/modules/account-lifecycle/types.ts';
+import { AccountLifecycleStoreError } from '../../server/modules/account-lifecycle/storeContract.ts';
 import { d1FirstRow } from './d1ResultHelpers.ts';
 
 export function createWorkerMediaDeletionAdapter(params: {
+  /** Stage D orchestration database. Never used as the owner of media records. */
   db: D1DatabaseBinding;
+  /** Must be the distinct D1 database that authoritatively owns media_objects. */
+  authoritativeUserDataDb?: D1DatabaseBinding;
   mediaBucket?: WorkerEnv['MEDIA_BUCKET'];
   bucketName: string;
 }): MediaDeletionCoordinationAdapter {
-  const { db, mediaBucket, bucketName } = params;
+  const { mediaBucket, bucketName } = params;
+  const db = params.authoritativeUserDataDb;
+  if (!db) {
+    const unavailable = () => new AccountLifecycleStoreError(
+      'DOMAIN_ADAPTER_UNAVAILABLE',
+      'Media deletion requires the authoritative USER_DB binding; Stage D lifecycle D1 cannot stand in for it.',
+      503,
+    );
+    return {
+      async listOwnedMediaPage() { throw unavailable(); },
+      async deleteOwnedMediaObject() { throw unavailable(); },
+    };
+  }
 
   return {
     async listOwnedMediaPage({ targetUid, cursor, pageSize }) {
@@ -27,7 +43,14 @@ export function createWorkerMediaDeletionAdapter(params: {
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) {
+        throw new AccountLifecycleStoreError(
+          'STORE_UNAVAILABLE',
+          'Owned media could not be listed from D1; deletion cannot advance.',
+          503,
+        );
+      }
+      const rows = res.results;
       const items = rows.map((r) => ({
         objectId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -53,7 +76,9 @@ export function createWorkerMediaDeletionAdapter(params: {
     async deleteOwnedMediaObject({ targetUid, objectId }) {
       const row = await d1FirstRow(
         db,
-        `SELECT object_id, owner_uid, storage_key, bucket_name FROM media_objects WHERE object_id = ?1`,
+        `SELECT object_id, owner_uid, storage_key, bucket_name, legal_hold, retention_until,
+           EXISTS (SELECT 1 FROM legal_holds WHERE resource_id = ?1 AND active = 1) AS has_active_legal_hold
+           FROM media_objects WHERE object_id = ?1`,
         objectId,
       );
       if (!row) {
@@ -67,20 +92,55 @@ export function createWorkerMediaDeletionAdapter(params: {
       if (rowBucket !== bucketName) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'BUCKET_OWNERSHIP_MISMATCH' };
       }
-      if (mediaBucket) {
-        try {
-          await mediaBucket.delete(storageKey);
-        } catch {
-          return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
+
+      // Legal holds and retention are authoritative in USER_DB, not the Stage D
+      // orchestration database. Missing or malformed metadata is fail-closed.
+      if (Number(row.legal_hold) !== 0 || !Number.isFinite(Number(row.legal_hold))) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+      }
+      if (Number(row.has_active_legal_hold) !== 0 || !Number.isFinite(Number(row.has_active_legal_hold))) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+      }
+      const retentionUntil = row.retention_until;
+      if (retentionUntil !== null) {
+        if (typeof retentionUntil !== 'string' || !retentionUntil.trim()) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_METADATA_INVALID' };
+        }
+        const retentionUntilMs = Date.parse(retentionUntil);
+        if (!Number.isFinite(retentionUntilMs)) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_METADATA_INVALID' };
+        }
+        if (retentionUntilMs > Date.now()) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_LOCK' };
         }
       }
+
+      if (!mediaBucket) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_MEDIA_BUCKET_UNAVAILABLE' };
+      }
+      try {
+        await mediaBucket.delete(storageKey);
+      } catch {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
+      }
       const nowIso = new Date().toISOString();
-      await db
+      const updated = await db
         .prepare(
-          `UPDATE media_objects SET deletion_state = 'DELETED', lifecycle_state = 'PURGED', updated_at_iso = ?1, deleted_at_iso = ?1 WHERE object_id = ?2 AND owner_uid = ?3`,
+          `UPDATE media_objects
+           SET deletion_state = 'DELETED', lifecycle_state = 'PURGED',
+               updated_at_iso = ?1, deleted_at_iso = ?1
+           WHERE object_id = ?2 AND owner_uid = ?3 AND legal_hold = 0
+             AND (retention_until IS NULL OR
+               (julianday(retention_until) IS NOT NULL AND julianday(retention_until) <= julianday(?4)))
+             AND NOT EXISTS (
+               SELECT 1 FROM legal_holds WHERE resource_id = ?2 AND active = 1
+             )`,
         )
-        .bind(nowIso, nowIso, objectId, targetUid)
+        .bind(nowIso, objectId, targetUid, nowIso)
         .run();
+      if (!updated.success || (updated.meta?.changes ?? 0) !== 1) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'D1_MEDIA_METADATA_UPDATE_FAILED' };
+      }
       return { objectId, status: 'DELETED' };
     },
   };

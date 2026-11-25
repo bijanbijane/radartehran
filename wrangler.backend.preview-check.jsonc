@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "radartehran-api",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_ENV": "preview",
+    "WORKER_ENV": "preview",
+    "APP_URL": "https://preview.invalid",
+    "FIREBASE_PROJECT_ID": "preview-disabled",
+    "FIREBASE_APP_CHECK_MODE": "enforced",
+    "STAGE_D_LIFECYCLE_ENABLED": "false"
+  }
+}

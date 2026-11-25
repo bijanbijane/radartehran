@@ -1,6 +1,6 @@
 /**
  * Real local Cloudflare D1 (Wrangler Miniflare SQLite) integration — account lifecycle CV.
- * Skips with explicit reason when Wrangler cannot run in this environment.
+ * Wrangler, migration, proxy, or schema failures fail this test; they are never silently skipped.
  */
 
 import assert from 'node:assert/strict';
@@ -10,6 +10,8 @@ import { createInitialDomainSteps } from '../../server/modules/account-lifecycle
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import type { DurableAccountDeletionJob } from '../../server/modules/account-lifecycle/types.ts';
 import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
+import { requireWorkerLifecycleBindings } from './stageDLifecycleRuntime.ts';
+import { acquireD1MutationPermit, countActiveD1MutationPermits, releaseD1MutationPermit, D1MutationPermitError } from './d1WriteAdmissionPermit.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
 import { fileURLToPath } from 'node:url';
@@ -45,37 +47,40 @@ function sampleJob(targetUid: string, jobId: string): DurableAccountDeletionJob 
 }
 
 async function main(): Promise<void> {
-  try {
-    execSync(
-      'npx wrangler d1 migrations apply radartehran-staging-db --local --env staging',
-      { cwd: projectRoot, stdio: 'pipe', encoding: 'utf8' },
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.log('SKIP: Wrangler local D1 migrations unavailable:', msg.slice(0, 240));
-    return;
-  }
+  // Wrangler is an explicit project devDependency and this test runs in CI after npm ci.
+  // Migration or local-proxy failures are test failures, not environmental skips: otherwise
+  // a broken Stage D schema could incorrectly make the suite green.
+  execSync(
+    'npx wrangler d1 migrations apply radartehran-staging-db --local --env staging',
+    { cwd: projectRoot, stdio: 'pipe', encoding: 'utf8' },
+  );
 
-  let dispose: (() => Promise<void>) | undefined;
-  let db: D1DatabaseBinding | undefined;
-  try {
-    const wrangler = await import('wrangler');
-    const proxy = await wrangler.getPlatformProxy<{ DB: D1DatabaseBinding }>({
-      configPath: path.join(projectRoot, 'wrangler.jsonc'),
-      environment: 'staging',
-    });
-    db = proxy.env.DB;
-    dispose = proxy.dispose;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.log('SKIP: getPlatformProxy unavailable:', msg.slice(0, 240));
-    return;
-  }
-
+  const wrangler = await import('wrangler');
+  const proxy = await wrangler.getPlatformProxy<{ DB: D1DatabaseBinding }>({
+    configPath: path.join(projectRoot, 'wrangler.jsonc'),
+    environment: 'staging',
+  });
+  const db = proxy.env.DB;
   if (!db) {
-    console.log('SKIP: DB binding missing from getPlatformProxy');
-    return;
+    await proxy.dispose();
+    throw new Error('Local Wrangler staging proxy did not expose the DB binding.');
   }
+
+  try {
+
+  await assert.rejects(
+    () => requireWorkerLifecycleBindings({ DB: db } as unknown as import('../types.ts').WorkerEnv),
+    (error: unknown) => error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
+  );
+  const stageDEnv = {
+    DB: db,
+    STAGE_D_LIFECYCLE_ENABLED: 'true',
+  } as unknown as import('../types.ts').WorkerEnv;
+  await requireWorkerLifecycleBindings(stageDEnv);
+  await assert.rejects(
+    () => requireWorkerLifecycleBindings({ DB: db, USER_DB: db, STAGE_D_LIFECYCLE_ENABLED: 'true' } as unknown as import('../types.ts').WorkerEnv),
+    (error: unknown) => error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
+  );
 
   const store = new D1AccountLifecycleStore(db);
   const health = await store.probeHealth();
@@ -83,8 +88,29 @@ async function main(): Promise<void> {
 
   const uid = `wrangler_d1_${Date.now()}`;
   const jobId = `deljob_${uid}_real`;
+  const activePermit = await acquireD1MutationPermit({
+    db,
+    targetUid: uid,
+    holderId: 'wrangler-lifecycle-test',
+    routeSignature: 'POST /api/test/mutation',
+  });
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 1);
+
   const created = await store.createOrGetActiveJob(sampleJob(uid, jobId));
   assert.equal(created.createdNew, true);
+  assert.equal(await store.countContinuableDeletionJobs(), 1);
+  await assert.rejects(
+    () => acquireD1MutationPermit({
+      db,
+      targetUid: uid,
+      holderId: 'late-mutation',
+      routeSignature: 'POST /api/test/late-mutation',
+    }),
+    (error: unknown) => error instanceof D1MutationPermitError && error.httpStatus === 423,
+  );
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 1);
+  await releaseD1MutationPermit({ db, targetUid: uid, permitId: activePermit.permitId });
+  assert.equal(await countActiveD1MutationPermits({ db, targetUid: uid }), 0);
 
   const smokeKey = `${jobId}:smoke:${Date.now()}`;
   const smokeInsert = await store.recordBatchReceiptIdempotent({
@@ -158,8 +184,10 @@ async function main(): Promise<void> {
   });
   assert.equal(dup.receiptInserted, false);
 
-  if (dispose) await dispose();
   console.log('Wrangler local D1 account lifecycle integration: PASSED');
+  } finally {
+    await proxy.dispose();
+  }
 }
 
 main().catch((err) => {

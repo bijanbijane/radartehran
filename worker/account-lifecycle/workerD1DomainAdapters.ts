@@ -13,6 +13,14 @@ import type {
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import { ALL_USER_OWNED_DOMAIN_SOURCES, DEPENDENT_PURGE_SOURCES } from '../../server/modules/account-lifecycle/types.ts';
 
+async function runD1Mutation(db: D1DatabaseBinding, sql: string, ...values: unknown[]): Promise<number> {
+  const result = await db.prepare(sql).bind(...values).run();
+  if (!result.success) {
+    throw new AccountLifecycleError('STORE_UNAVAILABLE', result.error || 'D1 domain mutation failed.', 503);
+  }
+  return result.meta?.changes ?? 0;
+}
+
 const FIRESTORE_AUTHORITATIVE_SOURCES = new Set<UserOwnedDomainSource>([
   'BARGAIN_LISTINGS',
   'BUYER_ALERTS',
@@ -55,7 +63,8 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.session_id),
         ownerUid: String(r.owner_uid),
@@ -75,8 +84,9 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
       const receipts = [];
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(item.recordId).run();
-        await db.prepare('DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2').bind(item.recordId, targetUid).run();
+        await runD1Mutation(db, 'DELETE FROM upload_session_chunks WHERE session_id = ?1', item.recordId);
+        const sessionChanges = await runD1Mutation(db, 'DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2', item.recordId, targetUid);
+        if (sessionChanges !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned upload session could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -103,7 +113,8 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.request_id),
         ownerUid: String(r.target_uid),
@@ -122,10 +133,8 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
       const page = await this.fetchOwnedRecordsPage({ targetUid, cursor, pageSize: batchSize ?? 25 });
       const receipts = [];
       for (const item of page.items) {
-        await db
-          .prepare('DELETE FROM account_data_requests WHERE request_id = ?1 AND target_uid = ?2')
-          .bind(item.recordId, targetUid)
-          .run();
+        const deleted = await runD1Mutation(db, 'DELETE FROM account_data_requests WHERE request_id = ?1 AND target_uid = ?2', item.recordId, targetUid);
+        if (deleted !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned data request could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -142,35 +151,69 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
 function createUserProfileD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
   const sessions = createUploadSessionAdapter(db);
   const requests = createDataRequestsAdapter(db);
+
+  const normalizedBatchSize = (size: number): number =>
+    Math.max(1, Math.min(50, Math.trunc(size)));
+
+  const encodeRequestCursor = (cursor: string | null, hasMore: boolean): string | null =>
+    cursor ? `drq:${cursor}` : hasMore ? 'drq:' : null;
+
   return {
     source: 'USER_PROFILE',
     async fetchOwnedRecordsPage(params) {
-      if (!params.cursor || !params.cursor.startsWith('drq:')) {
-        const page = await sessions.fetchOwnedRecordsPage(params);
-        if (page.hasMore) return page;
-        const reqPage = await requests.fetchOwnedRecordsPage({ ...params, cursor: null });
-        return {
-          items: reqPage.items,
-          nextCursor: reqPage.nextCursor ? `drq:${reqPage.nextCursor}` : reqPage.hasMore ? 'drq:' : null,
-          hasMore: reqPage.hasMore,
-        };
+      const limit = normalizedBatchSize(params.pageSize);
+      if (params.cursor?.startsWith('drq:')) {
+        const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
+        return requests.fetchOwnedRecordsPage({ ...params, cursor: innerCursor, pageSize: limit });
       }
-      const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
-      return requests.fetchOwnedRecordsPage({ ...params, cursor: innerCursor });
+
+      const sessionPage = await sessions.fetchOwnedRecordsPage({ ...params, pageSize: limit });
+      if (sessionPage.hasMore) return sessionPage;
+
+      // Preserve the final short upload-session page and use only the remaining page capacity
+      // for data requests. Returning only the request page would silently omit these sessions.
+      const remaining = limit - sessionPage.items.length;
+      if (remaining <= 0) {
+        return { items: sessionPage.items, nextCursor: 'drq:', hasMore: true };
+      }
+
+      const requestPage = await requests.fetchOwnedRecordsPage({
+        ...params,
+        cursor: null,
+        pageSize: remaining,
+      });
+      return {
+        items: [...sessionPage.items, ...requestPage.items],
+        nextCursor: encodeRequestCursor(requestPage.nextCursor, requestPage.hasMore),
+        hasMore: requestPage.hasMore,
+      };
     },
     async disposeOwnedRecordsBatch(params) {
-      if (!params.cursor || !params.cursor.startsWith('drq:')) {
-        const batch = await sessions.disposeOwnedRecordsBatch(params);
-        if (batch.hasMore) return batch;
-        const reqBatch = await requests.disposeOwnedRecordsBatch({ ...params, cursor: null });
-        return {
-          receipts: [...batch.receipts, ...reqBatch.receipts],
-          nextCursor: reqBatch.nextCursor ? `drq:${reqBatch.nextCursor}` : reqBatch.hasMore ? 'drq:' : null,
-          hasMore: reqBatch.hasMore,
-        };
+      const limit = normalizedBatchSize(params.batchSize);
+      if (params.cursor?.startsWith('drq:')) {
+        const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
+        return requests.disposeOwnedRecordsBatch({ ...params, cursor: innerCursor, batchSize: limit });
       }
-      const innerCursor = params.cursor === 'drq:' ? null : params.cursor.slice(4);
-      return requests.disposeOwnedRecordsBatch({ ...params, cursor: innerCursor });
+
+      const sessionBatch = await sessions.disposeOwnedRecordsBatch({ ...params, batchSize: limit });
+      if (sessionBatch.hasMore) return sessionBatch;
+
+      // Keep the combined operation bounded by the caller's batchSize across both tables.
+      const remaining = limit - sessionBatch.receipts.length;
+      if (remaining <= 0) {
+        return { ...sessionBatch, nextCursor: 'drq:', hasMore: true };
+      }
+
+      const requestBatch = await requests.disposeOwnedRecordsBatch({
+        ...params,
+        cursor: null,
+        batchSize: remaining,
+      });
+      return {
+        receipts: [...sessionBatch.receipts, ...requestBatch.receipts],
+        nextCursor: encodeRequestCursor(requestBatch.nextCursor, requestBatch.hasMore),
+        hasMore: requestBatch.hasMore,
+      };
     },
   };
 }
@@ -189,7 +232,8 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success || !Array.isArray(res.results)) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -210,13 +254,15 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
       const nowIso = new Date().toISOString();
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db
-          .prepare(
-            `UPDATE media_objects SET lifecycle_state = 'PURGED', deletion_state = 'DELETED', updated_at_iso = ?1
-             WHERE object_id = ?2 AND owner_uid = ?3`,
-          )
-          .bind(nowIso, item.recordId, targetUid)
-          .run();
+        const updated = await runD1Mutation(
+          db,
+          `UPDATE media_objects SET lifecycle_state = 'PURGED', deletion_state = 'DELETED', updated_at_iso = ?1
+           WHERE object_id = ?2 AND owner_uid = ?3`,
+          nowIso,
+          item.recordId,
+          targetUid,
+        );
+        if (updated !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned media metadata could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'MEDIA_METADATA',
@@ -229,10 +275,36 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
   };
 }
 
-export function createWorkerD1DomainAdapters(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter[] {
+function failClosedD1DomainAdapter(source: UserOwnedDomainSource): UserOwnedDomainRepositoryAdapter {
+  const unavailable = () => new AccountLifecycleError(
+    'DOMAIN_ADAPTER_UNAVAILABLE',
+    `Stage D lifecycle D1 is not an authoritative user-data source for "${source}". A separately bound and verified USER_DB adapter is required.`,
+    503,
+  );
+  return {
+    source,
+    async fetchOwnedRecordsPage() { throw unavailable(); },
+    async disposeOwnedRecordsBatch() { throw unavailable(); },
+  };
+}
+
+/**
+ * Contract-test adapters for the limited D1 subset only.
+ * They are deliberately not wired into the Stage D runtime because they do not cover
+ * every USER_PROFILE / MEDIA_METADATA record owned by USER_DB.
+ */
+export function createPartialUserProfileD1AdapterForContractTests(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
+  return createUserProfileD1Adapter(db);
+}
+
+export function createPartialMediaMetadataD1AdapterForContractTests(db: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter {
+  return createMediaMetadataD1Adapter(db);
+}
+
+export function createWorkerD1DomainAdapters(_lifecycleDb: D1DatabaseBinding): UserOwnedDomainRepositoryAdapter[] {
   const bySource = new Map<UserOwnedDomainSource, UserOwnedDomainRepositoryAdapter>();
-  bySource.set('USER_PROFILE', createUserProfileD1Adapter(db));
-  bySource.set('MEDIA_METADATA', createMediaMetadataD1Adapter(db));
+  bySource.set('USER_PROFILE', failClosedD1DomainAdapter('USER_PROFILE'));
+  bySource.set('MEDIA_METADATA', failClosedD1DomainAdapter('MEDIA_METADATA'));
   for (const source of FIRESTORE_AUTHORITATIVE_SOURCES) {
     bySource.set(source, failClosedFirestoreAdapter(source));
   }
@@ -241,4 +313,18 @@ export function createWorkerD1DomainAdapters(db: D1DatabaseBinding): UserOwnedDo
 
 export function workerD1AdapterSources(): readonly UserOwnedDomainSource[] {
   return DEPENDENT_PURGE_SOURCES;
+}
+
+/**
+ * The current Worker runtime intentionally wires fail-closed adapters for every
+ * user-owned source. Contract-test adapters are partial and are not production-ready.
+ */
+export function getWorkerD1DomainAdapterReadiness(): {
+  ready: false;
+  unavailableSources: readonly UserOwnedDomainSource[];
+} {
+  return {
+    ready: false,
+    unavailableSources: ALL_USER_OWNED_DOMAIN_SOURCES,
+  };
 }

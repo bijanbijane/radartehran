@@ -48,10 +48,17 @@ WHERE target_uid = ?5`;
 export const SQL_LIST_JOBS = `SELECT job_id, job_json, revision, state, target_uid, completed_at_iso, updated_at_iso
   FROM account_deletion_jobs ORDER BY updated_at_iso DESC`;
 
+const CONTINUABLE_DELETION_STATES_SQL =
+  "'PARTIAL_FAILURE_RETRYABLE', 'PURGING_DEPENDENT_RECORDS', 'CLEANING_UP_MEDIA', 'APPLYING_RETENTION_POLICIES', 'DELETING_AUTH_IDENTITY', 'INITIATED_WRITE_BLOCKED'";
+
 export const SQL_LIST_RETRYABLE_JOBS = `SELECT job_id, job_json, revision, state, target_uid, completed_at_iso, updated_at_iso
   FROM account_deletion_jobs
-  WHERE state IN ('PARTIAL_FAILURE_RETRYABLE', 'PURGING_DEPENDENT_RECORDS', 'CLEANING_UP_MEDIA', 'APPLYING_RETENTION_POLICIES', 'DELETING_AUTH_IDENTITY', 'INITIATED_WRITE_BLOCKED')
+  WHERE state IN (${CONTINUABLE_DELETION_STATES_SQL})
   ORDER BY updated_at_iso ASC LIMIT ?1 OFFSET ?2`;
+
+export const SQL_COUNT_RETRYABLE_JOBS = `SELECT COUNT(*) AS job_count
+  FROM account_deletion_jobs
+  WHERE state IN (${CONTINUABLE_DELETION_STATES_SQL})`;
 
 export const SQL_INSERT_BATCH_RECEIPT = `INSERT OR IGNORE INTO account_deletion_batch_receipts (
   receipt_id, job_id, target_uid, domain_source, idempotency_key, batch_cursor, outcome_json, recorded_at_iso, status, completed_at_iso

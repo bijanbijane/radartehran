@@ -59,7 +59,9 @@
         "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
         "ADMIN_EMAIL": "radio837isf@gmail.com",
         "FIREBASE_APP_CHECK_MODE": "monitor",
-        "R2_MEDIA_BUCKET_NAME": "radartehran-staging-media"
+        "R2_MEDIA_BUCKET_NAME": "radartehran-staging-media",
+        "STAGE_D_LIFECYCLE_ENABLED": "false",
+        "STAGE_D_USER_DATABASE_ID": "fbb98e6b-5200-4047-b4bc-15a51c06aa84"
       },
       "triggers": {
         "crons": [
@@ -74,6 +76,13 @@
           "database_name": "radartehran-staging-db",
           "database_id": "00000000-0000-0000-0000-000000000001",
           "migrations_dir": "migrations/d1",
+          "migrations_table": "d1_migrations"
+        },
+        {
+          "binding": "USER_DB",
+          "database_name": "radar-user-db",
+          "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
+          "migrations_dir": "migrations/user-d1",
           "migrations_table": "d1_migrations"
         }
       ],
