@@ -329,7 +329,24 @@ export class CommsCoreStateEngine {
     if (recentSentCount >= MAX_MESSAGES_PER_MINUTE_STANDARD) return { ok: false, statusCode: 429, errorCode: 'MESSAGE_RATE_LIMIT_EXCEEDED' };
     const cleanBody = sanitizeInput(input.bodyFa, 1200);
     if (cleanBody.length < 2) return { ok: false, statusCode: 400, errorCode: 'EMPTY_OR_UNSAFE_MESSAGE' };
-    const safeAttachments = (input.attachments ?? []).filter((a) => ALLOWED_ATTACHMENT_MIMES.has(a.mimeType) && a.sizeBytes > 0 && a.sizeBytes <= MAX_ATTACHMENT_SIZE_BYTES);
+    const requestedAttachments = input.attachments ?? [];
+    if (requestedAttachments.length > 5) return { ok: false, statusCode: 400, errorCode: 'TOO_MANY_ATTACHMENTS' };
+    const safeAttachments: MessageAttachmentMeta[] = [];
+    for (const attachment of requestedAttachments) {
+      const attachmentId = sanitizeInput(String(attachment?.attachmentId || ''), 120);
+      const fileName = sanitizeInput(String(attachment?.fileName || ''), 120).replace(/[\\/]/g, '').trim();
+      const mimeType = attachment?.mimeType;
+      const sizeBytes = Number(attachment?.sizeBytes);
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(attachmentId) ||
+          !fileName ||
+          !ALLOWED_ATTACHMENT_MIMES.has(mimeType) ||
+          !Number.isSafeInteger(sizeBytes) ||
+          sizeBytes <= 0 ||
+          sizeBytes > MAX_ATTACHMENT_SIZE_BYTES) {
+        return { ok: false, statusCode: 400, errorCode: 'INVALID_ATTACHMENT_METADATA' };
+      }
+      safeAttachments.push({ attachmentId, fileName, mimeType, sizeBytes });
+    }
     const now = new Date().toISOString();
     const msg: MessageRecord = {
       messageId: generateSecureId('msg'), conversationId: conv.conversationId,
