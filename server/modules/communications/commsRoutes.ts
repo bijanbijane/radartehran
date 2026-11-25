@@ -5,7 +5,7 @@ import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY } from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
-import type { ConversationRecord, ConversationType } from '../../../src/features/communications/types/comms.types';
+import type { ConversationRecord, ConversationType, MessageAttachmentMeta } from '../../../src/features/communications/types/comms.types';
 import {
   paginateNotifications,
   scrubCommsAdminStats,
@@ -31,6 +31,8 @@ export interface CommunicationsRoutesOptions {
     contextEntityId: string;
     creatorUid: string;
   }) => Promise<{ uid: string; displayNameFa?: string; contextTitleFa?: string } | null>;
+  /** Verifies attachment ownership and returns canonical metadata for this sender. */
+  resolveOwnedConversationAttachments?: (uid: string, attachmentIds: string[]) => Promise<MessageAttachmentMeta[]>;
 }
 
 const registeredCommsApps = new WeakSet<Express>();
@@ -263,9 +265,37 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
 
   app.post('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
+    const requestedAttachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+    if (requestedAttachments.length > 5 || requestedAttachments.some((item: unknown) => !item || typeof item !== 'object' || typeof (item as any).attachmentId !== 'string')) {
+      res.status(400).json({ status: 'error', code: 'INVALID_ATTACHMENT_METADATA' });
+      return;
+    }
+    let verifiedAttachments: MessageAttachmentMeta[] = [];
+    if (requestedAttachments.length > 0) {
+      if (!options?.resolveOwnedConversationAttachments) {
+        res.status(503).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_RESOLVER_UNAVAILABLE' });
+        return;
+      }
+      const attachmentIds = requestedAttachments.map((item: any) => sanitizeInput(item.attachmentId, 120));
+      if (attachmentIds.some((id: string) => !/^[A-Za-z0-9_-]{1,120}$/.test(id)) || new Set(attachmentIds).size !== attachmentIds.length) {
+        res.status(400).json({ status: 'error', code: 'INVALID_ATTACHMENT_IDS' });
+        return;
+      }
+      try {
+        verifiedAttachments = await options.resolveOwnedConversationAttachments(uid, attachmentIds);
+      } catch {
+        res.status(503).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_LOOKUP_FAILED' });
+        return;
+      }
+      const verifiedIds = new Set(verifiedAttachments.map((item) => item.attachmentId));
+      if (verifiedAttachments.length !== attachmentIds.length || attachmentIds.some((id: string) => !verifiedIds.has(id))) {
+        res.status(403).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_FORBIDDEN' });
+        return;
+      }
+    }
     const result = serverCommsEngine.sendMessage({
       conversationId: req.params.id, senderUid: uid, bodyFa: String(req.body?.bodyFa || ''),
-      attachments: Array.isArray(req.body?.attachments) ? req.body.attachments : [],
+      attachments: verifiedAttachments,
     });
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error', code: result.errorCode }); return; }
     persistServerCommsNow();
