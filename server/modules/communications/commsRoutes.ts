@@ -5,7 +5,7 @@ import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY } from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
-import type { ConversationRecord, ConversationType, MessageAttachmentMeta } from '../../../src/features/communications/types/comms.types';
+import type { ConversationRecord, ConversationType, MessageAttachmentMeta, MessageRecord } from '../../../src/features/communications/types/comms.types';
 import {
   paginateNotifications,
   scrubCommsAdminStats,
@@ -56,6 +56,64 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     }
     return auth.uid;
   }
+
+export function toConversationSummary(conversation: ConversationRecord, viewerUid: string) {
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  return {
+    conversationId: conversation.conversationId,
+    type: conversation.type,
+    contextEntityType: conversation.contextEntityType,
+    contextEntityId: conversation.contextEntityId,
+    contextTitleFa: conversation.contextTitleFa,
+    status: conversation.status,
+    participants: conversation.participants.map((participant) => ({
+      uid: participant.uid,
+      displayNameFa: participant.displayNameFa,
+      roleLabelFa: participant.roleLabelFa,
+      senderType: participant.senderType,
+      ...(participant.uid === viewerUid
+        ? {
+            muted: participant.muted,
+            archived: participant.archived,
+            blockedOtherParticipant: participant.blockedOtherParticipant,
+          }
+        : {}),
+    })),
+    lastMessage: lastMessage
+      ? {
+          messageId: lastMessage.messageId,
+          senderUid: lastMessage.senderUid,
+          senderLabelFa: lastMessage.senderLabelFa,
+          bodyFa: lastMessage.bodyFa,
+          status: lastMessage.status,
+          createdAtIso: lastMessage.createdAtIso,
+          attachmentCount: lastMessage.attachments.length,
+        }
+      : null,
+    messageCount: conversation.messages.length,
+    unreadCount: conversation.messages.filter((message) => !message.readByUids.includes(viewerUid)).length,
+    createdAtIso: conversation.createdAtIso,
+    updatedAtIso: conversation.updatedAtIso,
+  };
+}
+
+export function paginateConversationMessages(
+  messages: MessageRecord[],
+  limit: number,
+  beforeMessageId?: string,
+): { ok: true; items: MessageRecord[]; hasMore: boolean; nextCursor: string | null } | { ok: false } {
+  const beforeIndex = beforeMessageId
+    ? messages.findIndex((message) => message.messageId === beforeMessageId)
+    : messages.length;
+  if (beforeIndex < 0) return { ok: false };
+  const startIndex = Math.max(0, beforeIndex - limit);
+  return {
+    ok: true,
+    items: messages.slice(startIndex, beforeIndex),
+    hasMore: startIndex > 0,
+    nextCursor: startIndex > 0 ? messages[startIndex - 1].messageId : null,
+  };
+}
 
   async function requireAdmin(req: Request, res: Response): Promise<string | null> {
     const auth = await verifyAdminApiAuthorization(
@@ -156,9 +214,31 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
 
   app.get('/api/v1/conversations', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
-    const items = serverCommsEngine.conversations.filter((c) => c.participants.some((p) => p.uid === uid));
+    const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+    if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+      res.status(400).json({ status: 'error', code: 'INVALID_PAGE_LIMIT' });
+      return;
+    }
+    const limit = Math.min(rawLimit, 100);
+    const cursor = req.query.before === undefined ? '' : sanitizeInput(String(req.query.before), 120);
+    const conversations = serverCommsEngine.conversations
+      .filter((conversation) => conversation.participants.some((participant) => participant.uid === uid))
+      .sort((a, b) => Date.parse(b.updatedAtIso) - Date.parse(a.updatedAtIso));
+    const beforeIndex = cursor ? conversations.findIndex((conversation) => conversation.conversationId === cursor) : conversations.length;
+    if (beforeIndex < 0) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CURSOR' });
+      return;
+    }
+    const startIndex = Math.max(0, beforeIndex - limit);
+    const page = conversations.slice(startIndex, beforeIndex);
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ status: 'ok', items });
+    res.status(200).json({
+      status: 'ok',
+      items: page.map((conversation) => toConversationSummary(conversation, uid)),
+      hasMore: startIndex > 0,
+      nextCursor: startIndex > 0 ? conversations[startIndex - 1].conversationId : null,
+      limit,
+    });
   });
 
   app.post('/api/v1/conversations', async (req: Request, res: Response) => {
@@ -244,7 +324,7 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     });
     if (!result.ok) { res.status(400).json({ status: 'error', code: result.errorCode }); return; }
     persistServerCommsNow();
-    res.status(201).json({ status: 'ok', conversation: result.conversation });
+    res.status(201).json({ status: 'ok', conversation: toConversationSummary(result.conversation!, uid) });
   });
 
   app.get('/api/v1/conversations/:id', async (req: Request, res: Response) => {
@@ -252,7 +332,7 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
-    res.status(200).json({ status: 'ok', conversation: conv });
+    res.status(200).json({ status: 'ok', conversation: toConversationSummary(conv, uid) });
   });
 
   app.get('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
@@ -260,7 +340,19 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
-    res.status(200).json({ status: 'ok', items: conv.messages });
+    const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+    if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+      res.status(400).json({ status: 'error', code: 'INVALID_PAGE_LIMIT' });
+      return;
+    }
+    const limit = Math.min(rawLimit, 100);
+    const beforeMessageId = req.query.before === undefined ? undefined : sanitizeInput(String(req.query.before), 120);
+    const page = paginateConversationMessages(conv.messages, limit, beforeMessageId);
+    if (!page.ok) {
+      res.status(400).json({ status: 'error', code: 'INVALID_MESSAGE_CURSOR' });
+      return;
+    }
+    res.status(200).json({ status: 'ok', ...page, limit });
   });
 
   app.post('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
