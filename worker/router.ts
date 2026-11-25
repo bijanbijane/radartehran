@@ -233,7 +233,10 @@ export async function dispatchWorkerApiOrSeoRequest(
   const researchResponse = await handleResearchWorkerRoute(ctx);
   if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
-  // Canonical geography is read only through the IRNI internal Service Binding.\n  // The legacy direct-D1 publisher/reader route is intentionally not dispatched.\n  const irniGeographicResponse = await handleIrniCanonicalRpcV2Route(ctx);\n  if (irniGeographicResponse) return { response: irniGeographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+  // Canonical geography is read only through the IRNI internal Service Binding.
+  // The legacy direct-D1 publisher/reader route is intentionally not dispatched.
+  const irniGeographicResponse = await handleIrniCanonicalRpcV2Route(ctx);
+  if (irniGeographicResponse) return { response: irniGeographicResponse, routePattern: pathname, migrationStatus: 'IMPLEMENTED' };
 
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
