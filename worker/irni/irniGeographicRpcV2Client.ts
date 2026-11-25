@@ -213,6 +213,9 @@ export class IrniGeographicRpcV2Client {
     if (!filter || typeof filter !== 'object' || !page || typeof page !== 'object') {
       return failure('VALIDATION_FAILURE', 'فیلتر یا پارامتر صفحه‌بندی معتبر نیست.');
     }
+    if (filter.canonicalNameQuery !== undefined && (!filter.canonicalNameQuery || filter.canonicalNameQuery.length > 80 || filter.canonicalNameQuery.trim() !== filter.canonicalNameQuery)) {
+      return failure('VALIDATION_FAILURE', 'عبارت جست‌وجوی نام باید بین ۱ تا ۸۰ نویسه باشد.');
+    }
     if (
       page.limit !== undefined && (!Number.isSafeInteger(page.limit) || page.limit < 1 || page.limit > 100) ||
       page.cursor !== undefined && page.cursor !== null && (page.cursor.length > 2048 || page.cursor.trim() !== page.cursor) ||
