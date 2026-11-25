@@ -14,7 +14,7 @@ import {
   sanitizeInternalDeepLink,
 } from '../services/commsEngine';
 import { EVENT_POLICY_REGISTRY, renderSafeTemplateText } from '../registries/eventPolicyAndTemplateRegistry';
-import { registerCommunicationsRoutes } from '../../../../server/modules/communications/commsRoutes';
+import { paginateConversationMessages, registerCommunicationsRoutes, toConversationSummary } from '../../../../server/modules/communications/commsRoutes';
 import { resolveRouteFromLocation } from '../../../navigation/url/navigationUrlContract';
 
 test('COMMS-T01/T02: Event ingestion validates transactionCommitted, recipientActive, and enforces idempotency dedupe', () => {
@@ -263,6 +263,53 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   assert.equal(engine.redactMessage(cid, msgId, 'admin-mod', 'حاوی شماره تماس شخصی'), true);
   assert.equal(convRes.conversation!.messages[0].status, 'REDACTED');
   assert.equal(classifyNotificationDateBucketFa(new Date().toISOString()), 'امروز');
+});
+
+test('COMMS-T35: Conversation summaries hide peer-private flags and message history is paginated', () => {
+  const engine = new CommsCoreStateEngine();
+  const created = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-summary-1',
+    contextTitleFa: 'آگهی نمونه',
+    creatorUid: 'summary-buyer',
+    participants: [
+      { uid: 'summary-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: true, archived: false, blockedOtherParticipant: false },
+      { uid: 'summary-seller', displayNameFa: 'فروشنده', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: true, blockedOtherParticipant: true },
+    ],
+  });
+  assert.equal(created.ok, true);
+  const conversation = created.conversation!;
+  const summary = toConversationSummary(conversation, 'summary-buyer');
+  assert.equal(summary.participants[0].muted, true);
+  assert.equal('muted' in summary.participants[1], false);
+  assert.equal('archived' in summary.participants[1], false);
+  assert.equal('blockedOtherParticipant' in summary.participants[1], false);
+  assert.equal('messages' in summary, false);
+
+  const messages = Array.from({ length: 5 }, (_, index) => ({
+    messageId: `msg-${index + 1}`,
+    conversationId: conversation.conversationId,
+    senderUid: 'summary-buyer',
+    senderType: 'USER' as const,
+    senderLabelFa: 'خریدار',
+    bodyFa: `پیام ${index + 1}`,
+    attachments: [],
+    status: 'SENT' as const,
+    readByUids: ['summary-buyer'],
+    createdAtIso: new Date(1_700_000_000_000 + index * 1000).toISOString(),
+  }));
+  const firstPage = paginateConversationMessages(messages, 2);
+  assert.equal(firstPage.ok, true);
+  if (firstPage.ok) {
+    assert.deepEqual(firstPage.items.map((item) => item.messageId), ['msg-4', 'msg-5']);
+    assert.equal(firstPage.hasMore, true);
+    assert.equal(firstPage.nextCursor, 'msg-3');
+    const secondPage = paginateConversationMessages(messages, 2, firstPage.nextCursor || undefined);
+    assert.equal(secondPage.ok, true);
+    if (secondPage.ok) assert.deepEqual(secondPage.items.map((item) => item.messageId), ['msg-2', 'msg-3']);
+  }
+  assert.equal(paginateConversationMessages(messages, 2, 'missing-cursor').ok, false);
 });
 
 test('COMMS-T38: Routes & Express endpoints enforce auth (fail-closed) and resolve aliases cleanly', async () => {
