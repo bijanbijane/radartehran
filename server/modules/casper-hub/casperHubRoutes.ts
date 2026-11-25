@@ -4,6 +4,7 @@
  * Keeps `CASPER_HUB_TOKEN` strictly on the server and enforces auth, rate limits, and payload bounds.
  */
 import type { Express, Request, Response } from 'express';
+import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard.ts';
 import {
   CASPER_AGENT_ID,
@@ -57,19 +58,23 @@ function isFallbackEligible(result: { errorCode?: string }): boolean {
   );
 }
 
-function defaultAuthGuard(req: Request, res: Response, ip: string): boolean {
-  const authHeader = String(req.headers?.authorization || '').trim();
-  const adminHeader = String(req.headers?.['x-admin-token'] || req.headers?.['x-casper-session'] || '').trim();
-  if (!authHeader.startsWith('Bearer ') && !adminHeader) {
-    recordAbuseSignal(ip, 'auth_failure');
-    res.status(401).json({
+async function defaultAuthGuard(req: Request, res: Response, ip: string): Promise<boolean> {
+  const auth = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+    process.env,
+    { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+  );
+  if (!auth.authorized) {
+    if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(ip, 'auth_failure');
+    res.status(auth.statusCode === 401 ? 401 : 403).json({
       ok: false,
       status: 'error',
-      error: 'Authentication required to access CASPER HUB server bridge',
+      error: 'Verified primary administrator authentication is required for CASPER HUB.',
       code: 'CASPER_HUB_BRIDGE_UNAUTHORIZED',
     });
     return false;
   }
+  res.locals.adminUid = auth.actorUid || auth.uid;
   return true;
 }
 
@@ -98,7 +103,7 @@ export function registerCasperHubRoutes(
     if (options.requireAdminOrAuthenticated) {
       return options.requireAdminOrAuthenticated(req, res);
     }
-    return defaultAuthGuard(req, res, ip);
+    return await defaultAuthGuard(req, res, ip);
   };
 
   if (!options.client) {
