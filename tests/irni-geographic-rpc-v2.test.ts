@@ -171,7 +171,7 @@ describe('Radar IRNI geographic RPC v2 consumer', () => {
   it('registers and serves the public read-only v2 facade', async () => {
     const match = findMigrationRegisterEntry('GET', '/api/v2/reference/irni/canonical/metadata');
     assert.ok(match);
-    assert.equal(match.entry.status, 'VERIFIED');
+    assert.equal(match.entry.status, 'IMPLEMENTED');
     const response = await handleIrniCanonicalRpcV2Route(context('GET', '/api/v2/reference/irni/canonical/metadata', binding()));
     assert.ok(response);
     assert.equal(response.status, 200);
