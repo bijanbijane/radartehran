@@ -490,7 +490,13 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
       const expectedCodeHash = await hmacSha256Hex(piiHashSecret, `${challengeId}:${code}`);
       if (!challenge.code_hash || !constantTimeStringMatch(challenge.code_hash, expectedCodeHash)) {
         if (Number(challenge.attempts) + 1 < 5) {
-          await db.prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'').bind(challengeId).run();
+          const resetChallenge = await db
+            .prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'')
+            .bind(challengeId)
+            .run();
+          if (!resetChallenge.success || (resetChallenge.meta?.changes ?? 0) !== 1) {
+            return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'OTP_CHALLENGE_STATE_UPDATE_FAILED' });
+          }
         }
         return jsonWorkerResponse(ctx, 401, { status: 'error', code: 'OTP_INVALID' });
       }
