@@ -181,7 +181,14 @@ async function handleExpiredChunkUploadSessionCleanup(
   }
 
   const expiredIds = (expiredRes.results ?? []).map((r) => r.session_id);
+  let deletedSessionCount = 0;
+  let skippedLegalHoldCount = 0;
   for (const sid of expiredIds) {
+    const hold = await isObjectUnderLegalHold(userDb, sid, nowMs);
+    if (hold.held) {
+      skippedLegalHoldCount += 1;
+      continue;
+    }
     const chunksDelete = await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
     if (!chunksDelete.success) {
       throw new QueueJobExecutionError('UPLOAD_SESSION_CHUNK_DELETE_FAILED', 'Unable to remove expired upload chunks.', true);
@@ -190,11 +197,12 @@ async function handleExpiredChunkUploadSessionCleanup(
     if (!sessionDelete.success) {
       throw new QueueJobExecutionError('UPLOAD_SESSION_DELETE_FAILED', 'Unable to remove expired upload session.', true);
     }
+    deletedSessionCount += 1;
   }
 
   const cleanupWatermark = await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('expired_chunk_upload_session_cleanup:last_run', String(expiredIds.length), nowIso)
+    .bind('expired_chunk_upload_session_cleanup:last_run', JSON.stringify({ deletedSessionCount, skippedLegalHoldCount }), nowIso)
     .run();
   if (!cleanupWatermark.success) {
     throw new QueueJobExecutionError('UPLOAD_SESSION_CLEANUP_WATERMARK_FAILED', 'Unable to persist cleanup watermark.', true);
@@ -204,8 +212,8 @@ async function handleExpiredChunkUploadSessionCleanup(
     jobType: 'expired_chunk_upload_session_cleanup',
     idempotencyKey: envelope.idempotencyKey,
     executedAtIso: nowIso,
-    affectedCount: expiredIds.length,
-    summary: { purgedSessionCount: expiredIds.length, cutoffMs },
+    affectedCount: deletedSessionCount,
+    summary: { purgedSessionCount: deletedSessionCount, skippedLegalHoldCount, scannedSessionCount: expiredIds.length, cutoffMs },
   };
 }
 
