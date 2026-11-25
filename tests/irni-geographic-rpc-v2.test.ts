@@ -161,6 +161,26 @@ describe('Radar IRNI geographic RPC v2 consumer', () => {
     assert.equal(calls, 1);
   });
 
+  it('rejects a provider that marks a bare numeric alias automatically resolvable', async () => {
+    const service = binding({ listApprovedLegacyAliases: async (_system, revision) => ok({
+      registryRevision: revision,
+      registryChecksum: CHECKSUM,
+      aliases: [{
+        aliasId: 'legacy-1',
+        legacySystemCode: 'TEHRAN_RADAR',
+        legacyIdentifierValue: '8',
+        canonicalGeographicEntityId: ID,
+        aliasStatus: 'ACTIVE_COMPATIBILITY_ALIAS',
+        resolutionEvidenceRef: 'evidence:phase-12',
+        recordedAtRegistryRevision: 19,
+        automaticResolutionEligible: true,
+      }],
+    }) });
+    const result = await new IrniGeographicRpcV2Client(service).listApprovedLegacyAliases('TEHRAN_RADAR', 19);
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.error.details?.failureCode, 'IRNI_RPC_INVALID_RESPONSE');
+  });
+
   it('checks both registry revision and checksum on paginated snapshots', async () => {
     const service = binding({ listApprovedEntitiesPaginated: async (_filter, _page, revision) => ok({
       registryRevision: revision, registryChecksum: 'f'.repeat(64),
