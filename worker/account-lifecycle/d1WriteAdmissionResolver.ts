@@ -6,7 +6,7 @@
  */
 
 import type { D1DatabaseBinding } from '../db/types.ts';
-import { createD1AccountLifecycleStore } from '../../server/modules/account-lifecycle/storeFactory.ts';
+import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
 import {
   mapWriteBlockRowToAdmissionDecision,
   type WriteAdmissionDecision,
@@ -62,7 +62,7 @@ export async function resolveWriteAdmissionFromD1(
     }
 
     if (columns.has('target_uid') && columns.has('state') && columns.has('active_deletion_job_id')) {
-      const store = createD1AccountLifecycleStore(db);
+      const store = new D1AccountLifecycleStore(db);
       const activeJob = await d1FirstRow(db, SQL_GET_ACTIVE_JOB_FOR_UID, targetUid);
       const block = await store.getWriteBlock(targetUid);
       if (activeJob) {
