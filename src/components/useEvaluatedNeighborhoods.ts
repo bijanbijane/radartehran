@@ -106,15 +106,22 @@ export function indexResidentVotesByHoodId(votes: ResidentVoteDoc[]): Map<number
   return map;
 }
 export type PrecomputedNeighborhood = Neighborhood & Pick<EvaluatedNeighborhood, 'marketReport' | 'trafficInfo'>;
+const staticReportCache = new WeakMap<Neighborhood, {
+  cloudBargains: BargainListing[] | undefined; cloudSponsor: NeighborhoodSponsor | undefined; value: PrecomputedNeighborhood;
+}>();
 export function precomputeNeighborhoodStaticReports(
   base: Neighborhood,
   cloudBargainsByHood: Record<number, BargainListing[]> = {},
   cloudSponsorsByHood: Record<number, NeighborhoodSponsor> = {},
 ): PrecomputedNeighborhood {
-  const cloudList = cloudBargainsByHood[base.id] || [];
-  const mergedBargains = cloudList.length > 0 ? [...cloudList, ...(base.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))] : (base.bargains || []);
-  const merged: Neighborhood = { ...base, bargains: mergedBargains, sponsor: cloudSponsorsByHood[base.id] || base.sponsor };
-  return { ...merged, marketReport: getNeighborhoodMarketReport(merged), trafficInfo: getNeighborhoodTrafficInfo(merged) };
+  const cloudList = cloudBargainsByHood[base.id], cloudSponsor = cloudSponsorsByHood[base.id];
+  const cached = staticReportCache.get(base);
+  if (cached && cached.cloudBargains === cloudList && cached.cloudSponsor === cloudSponsor) return cached.value;
+  const mergedBargains = cloudList?.length ? [...cloudList, ...(base.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))] : (base.bargains || []);
+  const merged: Neighborhood = { ...base, bargains: mergedBargains, sponsor: cloudSponsor || base.sponsor };
+  const value = { ...merged, marketReport: getNeighborhoodMarketReport(merged), trafficInfo: getNeighborhoodTrafficInfo(merged) };
+  staticReportCache.set(base, { cloudBargains: cloudList, cloudSponsor, value });
+  return value;
 }
 export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParams) {
   const {
