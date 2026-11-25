@@ -61,9 +61,20 @@ The old geographic route module remains in the repository for audit/retirement f
 
 ## 5. Legacy Radar crosswalk
 
-Radar's mainline contains 104 local legacy geography records: 35 Tehran city, 25 additional Tehran city, 20 Tehran-province/county and 24 records across Karaj, Mashhad, Isfahan and Shiraz.
+Radar's active `getAllMultiCityNeighborhoods()` path contains **265 unique legacy market records** across the five configured hubs and imported regional spreads:
 
-IRNI Draft PR #23 records every source row and its evidence-backed status:
+| Source | Records |
+|---|---:|
+| Tehran core + remaining + county sources | 80 |
+| Direct records in `multiCityData.ts` | 24 |
+| Metropolitan seed arrays | 76 |
+| North/West and East/Northeast regional arrays | 45 |
+| Central/Zagros and South/Persian Gulf regional arrays | 40 |
+| **Total** | **265** |
+
+The previous 104-record count omitted 161 records introduced through imported arrays. The stale source-code comment claiming 996 records was also incorrect and is corrected in Radar PR #61. The full static source inventory has 265 unique numeric IDs and no duplicates. Other server-side/dynamic geography sources remain a separate call-site audit.
+
+IRNI Draft PR #23 now records every one of these 265 source rows and its evidence-backed status:
 
 | Classification | Count |
 |---|---:|
@@ -73,7 +84,7 @@ IRNI Draft PR #23 records every source row and its evidence-backed status:
 | Radar-owned composite market areas | 42 |
 | Alternate-label review case | 1 |
 | Unresolved | 47 |
-| **Total** | **104** |
+| **Total** | **265** |
 
 Only the 11 existing one-to-one aliases and the unpublished Yusefabad proposal receive proposed namespaced keys. The other 92 rows receive no canonical alias key. Numeric aliases remain compatibility evidence and are not automatically attached by the v2 client. No alias has been published or activated by these PRs.
 
