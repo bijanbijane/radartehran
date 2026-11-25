@@ -407,14 +407,14 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (!phone) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PHONE_NUMBER' });
     const piiHashSecret = String(env.AUTH_PII_HMAC_SECRET || '').trim();
     if (piiHashSecret.length < 32) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'AUTH_PII_HASH_SECRET_NOT_CONFIGURED' });
-    const phoneHash = await hmacSha256Hex(piiHashSecret, phone);
+    const phoneHash = await hmacSha256Hex(piiHashSecret, `phone:${phone}`);
     const clientIp = request.headers.get('cf-connecting-ip') || 'unknown';
-    const ipHash = await hmacSha256Hex(piiHashSecret, clientIp);
+    const ipHash = await hmacSha256Hex(piiHashSecret, `ip:${clientIp}`);
     const now = Date.now();
     await db.prepare('DELETE FROM auth_phone_challenges WHERE created_at_ms < ?1').bind(now - 24 * 60 * 60 * 1000).run();
     const challengeId = crypto.randomUUID();
     const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, '0');
-    const codeHash = await hmacSha256Hex(piiHashSecret, `${challengeId}:${otp}`);
+    const codeHash = await hmacSha256Hex(piiHashSecret, `otp:${challengeId}:${otp}`);
     const reservation = await db.prepare(
       `INSERT INTO auth_phone_challenges (
         challenge_id, phone_e164, phone_hash, provider_reference, status, attempts,
@@ -450,8 +450,22 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     const challenge = await db.prepare(
       'SELECT phone_e164, phone_hash, code_hash, status, attempts, expires_at_ms FROM auth_phone_challenges WHERE challenge_id = ?1 LIMIT 1',
     ).bind(challengeId).first<{ phone_e164: string; phone_hash: string; code_hash: string | null; status: string; attempts: number; expires_at_ms: number }>();
-    if (!challenge || challenge.status !== 'PENDING' || Number(challenge.expires_at_ms) <= Date.now()) {
+    const challengeExpiresAtMs = Number(challenge?.expires_at_ms);
+    const challengeAttempts = Number(challenge?.attempts);
+    if (
+      !challenge ||
+      challenge.status !== 'PENDING' ||
+      !Number.isSafeInteger(challengeExpiresAtMs) ||
+      challengeExpiresAtMs <= Date.now()
+    ) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'OTP_CHALLENGE_EXPIRED' });
+    }
+    if (!Number.isSafeInteger(challengeAttempts) || challengeAttempts < 0 || challengeAttempts >= 5) {
+      return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_CHALLENGE_ATTEMPTS_EXHAUSTED' });
+    }
+    const piiHashSecret = String(env.AUTH_PII_HMAC_SECRET || '').trim();
+    if (new TextEncoder().encode(piiHashSecret).byteLength < 32) {
+      return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'AUTH_PII_HASH_SECRET_NOT_CONFIGURED' });
     }
     const claim = await db.prepare(
       `UPDATE auth_phone_challenges
@@ -462,7 +476,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
     if (Number(claim.meta?.changes || 0) !== 1) return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'OTP_CHALLENGE_ALREADY_USED_OR_LOCKED' });
 
     try {
-      const expectedCodeHash = await hmacSha256Hex(String(env.AUTH_PII_HMAC_SECRET || ''), `${challengeId}:${code}`);
+      const expectedCodeHash = await hmacSha256Hex(piiHashSecret, `otp:${challengeId}:${code}`);
       if (!challenge.code_hash || !constantTimeStringMatch(challenge.code_hash, expectedCodeHash)) {
         if (Number(challenge.attempts) + 1 < 5) {
           await db.prepare('UPDATE auth_phone_challenges SET status = \'PENDING\' WHERE challenge_id = ?1 AND status = \'LOCKED\'').bind(challengeId).run();
