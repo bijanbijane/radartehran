@@ -816,6 +816,55 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('counts concurrent duplicate research ingestion from atomic D1 changes, not optimistic SELECTs', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1({ yieldBeforeBatch: true });
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const uid = 'uid_concurrent_research_idempotency';
+      await updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+      });
+      const params = {
+        env: {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          RESEARCH_HMAC_KEY_VERSION: 'v1',
+        },
+        uid,
+        clientIp: '198.51.100.21',
+        rawEvents: [{
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 12,
+          idempotencyKey: 'concurrent_idempotency_event',
+          payload: { mapZoomBucket: 'z14', viewMode: 'buy' },
+        }],
+      };
+      const [first, second] = await Promise.all([
+        ingestResearchEventsBatch(params),
+        ingestResearchEventsBatch(params),
+      ]);
+      assert.equal(first.ok, true);
+      assert.equal(second.ok, true);
+      if (first.ok && second.ok) {
+        assert.equal(first.acceptedCount + second.acceptedCount, 1);
+        assert.equal(first.deduplicatedCount + second.deduplicatedCount, 1);
+      }
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        1,
+      );
+      const receiptTotals = researchSqlite.raw.prepare(
+        'SELECT SUM(accepted_count) AS accepted, SUM(deduplicated_count) AS deduplicated FROM research_ingestion_receipts',
+      ).get() as { accepted: number; deduplicated: number };
+      assert.equal(receiptTotals.accepted, 1);
+      assert.equal(receiptTotals.deduplicated, 1);
+    });
+
     it('fails closed when the research subject registry write is unsuccessful', async () => {
       const userSqlite = createForensicSqliteD1();
       const researchSqlite = createForensicSqliteD1();
