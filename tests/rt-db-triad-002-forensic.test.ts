@@ -1014,6 +1014,20 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
+    it('blocks account writes when the write-block lookup returns success=false', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT uid FROM account_write_blocks');
+      await assert.rejects(
+        () => upsertUserProfileInD1(sqlite.db, { uid: 'uid_write_block_lookup_failure', displayName: 'Blocked' }),
+        /ACCOUNT_WRITE_BLOCK_CHECK_UNAVAILABLE/,
+      );
+      assert.equal(
+        (sqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM user_profiles').get() as { cnt: number }).cnt,
+        0,
+      );
+    });
+
     it('does not convert unsuccessful D1 reads into missing rows', async () => {
       const sqlite = createForensicSqliteD1();
       sqlite.setFailResultOnSqlContains('SELECT 1');
