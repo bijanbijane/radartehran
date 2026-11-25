@@ -100,7 +100,7 @@ export function getValidatedCityConfig(cityId: unknown): CityConfig {
   }
 }
 /**
- * Aggregates and validates all 996 neighborhoods and county cities across all 31 Iranian provinces.
+ * Aggregates and validates the 265 legacy market records currently wired into Radar's five regional hubs. This is not the canonical national registry; IRNI is the source for all canonical geography.
  * @returns Array of all valid `Neighborhood` objects across the 5 regional hubs.
  */
 export function getAllMultiCityNeighborhoods(): Neighborhood[] {
