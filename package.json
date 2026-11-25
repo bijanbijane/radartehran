@@ -69,12 +69,13 @@
     "cf:preview": "CLOUDFLARE_VITE=1 vite preview --mode cloudflare",
     "cf:config:check": "wrangler deploy --dry-run",
     "cf:staging:preflight": "wrangler deploy --env staging --dry-run",
-    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights",
-    "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check",
+    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights && npm run test:geo",
+    "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check && npm run test:geo",
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend",
-    "test:marketplace": "tsx --test tests/cloudflare-marketplace-write-routes.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts"
+    "test:marketplace": "tsx --test tests/cloudflare-marketplace-write-routes.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts",
+    "test:geo": "tsx --test tests/irni-geographic-rpc-v2.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
