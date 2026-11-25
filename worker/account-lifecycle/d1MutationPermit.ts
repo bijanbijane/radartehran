@@ -66,9 +66,16 @@ export async function acquireMutationPermitInD1(params: {
   ttlMs?: number;
   nowMs?: number;
 }): Promise<AcquiredMutationPermit | RejectedMutationPermit> {
-  const nowMs = params.nowMs ?? Date.now();
-  const ttlMs = Math.max(1_000, Math.min(120_000, params.ttlMs ?? 30_000));
+  const suppliedNowMs = params.nowMs ?? Date.now();
+  const nowMs = Number.isSafeInteger(suppliedNowMs) && Number(suppliedNowMs) > 0
+    ? Number(suppliedNowMs)
+    : Date.now();
+  const suppliedTtlMs = Number(params.ttlMs ?? 15 * 60_000);
+  const ttlMs = Number.isSafeInteger(suppliedTtlMs)
+    ? Math.max(1_000, Math.min(15 * 60_000, suppliedTtlMs))
+    : 15 * 60_000;
   const expiresAtMs = nowMs + ttlMs;
+  if (!Number.isSafeInteger(expiresAtMs)) throw new Error('ACCOUNT_MUTATION_PERMIT_EXPIRY_INVALID');
   const permitId = `perm_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
   // Single atomic SQL statement prevents TOCTOU race where account_write_blocks is inserted
@@ -107,7 +114,10 @@ export async function releaseMutationPermitInD1(params: {
   permitId: string;
   nowMs?: number;
 }): Promise<void> {
-  const nowMs = params.nowMs ?? Date.now();
+  const suppliedNowMs = params.nowMs ?? Date.now();
+  const nowMs = Number.isSafeInteger(suppliedNowMs) && Number(suppliedNowMs) > 0
+    ? Number(suppliedNowMs)
+    : Date.now();
   const result = await params.userDb
     .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
     .bind(nowMs, params.permitId)
@@ -120,11 +130,12 @@ export async function countActiveMutationPermitsInD1(
   uid: string,
   nowMs: number = Date.now(),
 ): Promise<number> {
+  const safeNowMs = Number.isSafeInteger(nowMs) && nowMs > 0 ? nowMs : Date.now();
   const row = await userDb
     .prepare(
       'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
     )
-    .bind(uid, nowMs)
+    .bind(uid, safeNowMs)
     .first<{ cnt: number }>();
   if (!row || !Number.isFinite(Number(row.cnt)) || Number(row.cnt) < 0) {
     throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
