@@ -5,7 +5,7 @@ import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY } from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
-import type { ConversationType } from '../../../src/features/communications/types/comms.types';
+import type { ConversationRecord, ConversationType } from '../../../src/features/communications/types/comms.types';
 import {
   paginateNotifications,
   scrubCommsAdminStats,
@@ -20,6 +20,17 @@ import {
 export interface CommunicationsRoutesOptions {
   checkRateLimit?: (ip: string, bucket: 'general', max: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
+  /**
+   * Server-side resolver for non-support conversations. It must load the
+   * referenced entity, verify creator access, and return the canonical counterparty UID.
+   * Client-supplied counterpartyUid is never an identity source.
+   */
+  resolveContextCounterpartyUid?: (input: {
+    type: ConversationType;
+    contextEntityType: ConversationRecord['contextEntityType'];
+    contextEntityId: string;
+    creatorUid: string;
+  }) => Promise<string | null>;
 }
 
 const registeredCommsApps = new WeakSet<Express>();
@@ -146,16 +157,62 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
 
   app.post('/api/v1/conversations', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
-    const convType = (req.body?.type as ConversationType) || 'SUPPORT';
-    const contextEntityId = sanitizeInput(String(req.body?.contextEntityId || ''), 64).trim();
-    const counterpartyUid = convType === 'SUPPORT' ? 'support-desk' : sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
-    if (!contextEntityId || !counterpartyUid || counterpartyUid === uid) {
-      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CONTEXT', messageFa: 'شناسه پرونده و طرف گفت‌وگوی معتبر الزامی است.' });
+    const rawType = req.body?.type === undefined ? 'SUPPORT' : String(req.body.type);
+    const allowedTypes: readonly ConversationType[] = ['SUPPORT', 'LISTING_INQUIRY', 'SERVICE_REQUEST', 'ADMIN_CASE'];
+    if (!allowedTypes.includes(rawType as ConversationType)) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_TYPE' });
       return;
     }
+    const convType = rawType as ConversationType;
+    const expectedContextType: Record<Exclude<ConversationType, 'SYSTEM_CONVERSATION'>, ConversationRecord['contextEntityType']> = {
+      SUPPORT: 'support_ticket',
+      LISTING_INQUIRY: 'listing',
+      SERVICE_REQUEST: 'service_request',
+      ADMIN_CASE: 'admin_case',
+    };
+    const contextEntityType = expectedContextType[convType as Exclude<ConversationType, 'SYSTEM_CONVERSATION'>];
+    const suppliedContextType = req.body?.contextEntityType === undefined
+      ? contextEntityType
+      : String(req.body.contextEntityType);
+    const contextEntityId = sanitizeInput(String(req.body?.contextEntityId || ''), 64).trim();
+    if (!/^[A-Za-z0-9_-]{3,64}$/.test(contextEntityId) || suppliedContextType !== contextEntityType) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CONTEXT', messageFa: 'نوع یا شناسه پرونده معتبر نیست.' });
+      return;
+    }
+
+    let counterpartyUid: string | null = null;
+    if (convType === 'SUPPORT') {
+      counterpartyUid = 'support-desk';
+      const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
+      if (requestedCounterparty && requestedCounterparty !== counterpartyUid) {
+        res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
+        return;
+      }
+    } else {
+      if (!options?.resolveContextCounterpartyUid) {
+        res.status(503).json({ status: 'error', code: 'CONTEXT_OWNER_RESOLVER_UNAVAILABLE' });
+        return;
+      }
+      counterpartyUid = await options.resolveContextCounterpartyUid({
+        type: convType,
+        contextEntityType,
+        contextEntityId,
+        creatorUid: uid,
+      });
+      if (!counterpartyUid || counterpartyUid === uid) {
+        res.status(403).json({ status: 'error', code: 'CONTEXT_ACCESS_FORBIDDEN' });
+        return;
+      }
+      const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
+      if (requestedCounterparty && requestedCounterparty !== counterpartyUid) {
+        res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
+        return;
+      }
+    }
+
     const result = serverCommsEngine.createScopedConversation({
       type: convType,
-      contextEntityType: req.body?.contextEntityType || (convType === 'SUPPORT' ? 'support_ticket' : 'listing'),
+      contextEntityType,
       contextEntityId,
       contextTitleFa: sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120),
       creatorUid: uid,
