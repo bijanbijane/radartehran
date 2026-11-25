@@ -422,13 +422,21 @@ async function handleTelemetryArchiveFlush(
     throw new QueueJobExecutionError('TELEMETRY_WATERMARK_READ_FAILED', 'Unable to read telemetry archive watermarks.', true);
   }
 
+  const safeWatermarks = (watermarks.results ?? []).filter((row) => {
+    const key = row.watermark_key;
+    return key === 'd1_projection_sync:last_run' ||
+      /^d1_projection_sync:[a-z0-9_-]{1,64}$/i.test(key) ||
+      key === 'expired_chunk_upload_session_cleanup:last_run' ||
+      key === 'telemetry_archive_flush:last_run' ||
+      key === 'r2_orphan_media_reconcile:last_run';
+  });
   const archivePayload = {
     schemaVersion: '1.0',
     flushedAtIso: nowIso,
     correlationId: envelope.correlationId,
     idempotencyKey: envelope.idempotencyKey,
-    watermarksCount: (watermarks.results ?? []).length,
-    watermarks: (watermarks.results ?? []).filter((w) => !w.watermark_key.startsWith('revoked_uid:')),
+    watermarksCount: safeWatermarks.length,
+    watermarks: safeWatermarks,
   };
 
   await env.MEDIA_BUCKET.put(archiveKey, JSON.stringify(archivePayload), {
