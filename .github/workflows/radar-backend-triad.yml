@@ -2,7 +2,7 @@ name: Radar Backend Triad & Frontend Service Binding
 
 on:
   push:
-    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001, debug/backend-hardening-2026-11-25]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -12,11 +12,12 @@ on:
       - 'migrations/research-d1/**'
       - 'migrations/neighborhood-d1/**'
       - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'tests/rt-db-triad-002-forensic.test.ts'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/radar-backend-triad.yml'
   pull_request:
-    branches: [main, cursor/rt-infra-001-gate-b-monorepo, migration/firebase-retirement-mainline-2026-11-24, migration/cloudflare-express-session-bridge-2026-11-24]
+    branches: [main, cursor/rt-infra-001-gate-b-monorepo, migration/firebase-retirement-mainline-2026-11-24, migration/cloudflare-express-session-bridge-2026-11-24, feat/radar-irni-readonly-rpc-v2-consumer-2026-11-25]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -26,6 +27,7 @@ on:
       - 'migrations/research-d1/**'
       - 'migrations/neighborhood-d1/**'
       - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'tests/rt-db-triad-002-forensic.test.ts'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/radar-backend-triad.yml'
@@ -65,6 +67,7 @@ jobs:
       - name: Run focused D1 triad binding-isolation contract tests
         run: |
           npx tsx tests/d1-triad-binding-isolation.test.ts
+          npm run test:triad
           npx tsx --test tests/frontend-api-service-binding.test.ts
           npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
           npm run test:geo
