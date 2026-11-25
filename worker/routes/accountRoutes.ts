@@ -307,6 +307,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         completenessStatus: unavailableSources.length > 0 || truncatedSources.length > 0 ? 'INCOMPLETE_PARTIAL' : 'COMPLETE',
         totalRecordsExported,
         omittedPagesCount: truncatedSources.length,
+        omittedPagesCountIsLowerBound: true,
         truncatedSources,
         unavailableSources,
         domainSourcesIncluded: availableSources.filter((source) => source.available).map((source) => source.domainSource),
