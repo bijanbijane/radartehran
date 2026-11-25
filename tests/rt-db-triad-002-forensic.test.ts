@@ -1014,6 +1014,58 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
+    it('audits each changed consent flag and prevents concurrent revision collapse', async () => {
+      const auditSqlite = createForensicSqliteD1();
+      applyMigrations(auditSqlite.raw, 'migrations/user-d1');
+      const uid = 'uid_all_consent_audit';
+      const updated = await updateUserPrivacyConsentInD1(auditSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+        behavioralTelemetryConsent: true,
+        marketingCommunicationsConsent: true,
+      });
+      assert.equal(updated.consentRevision, 1);
+      const auditRows = auditSqlite.raw.prepare(
+        'SELECT consent_type, previous_value, new_value, consent_revision FROM user_privacy_consent_audit WHERE uid = ? ORDER BY consent_type',
+      ).all(uid) as Array<{ consent_type: string; previous_value: number; new_value: number; consent_revision: number }>;
+      assert.deepEqual(auditRows.map((row) => row.consent_type).sort(), [
+        'behavioral_telemetry_consent',
+        'marketing_communications_consent',
+        'research_analytics_consent',
+      ]);
+      assert.ok(auditRows.every((row) => row.previous_value === 0 && row.new_value === 1 && row.consent_revision === 1));
+
+      const concurrentSqlite = createForensicSqliteD1({ yieldBeforeFirst: true });
+      applyMigrations(concurrentSqlite.raw, 'migrations/user-d1');
+      await updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+        uid: 'uid_consent_cas',
+        actorUid: 'uid_consent_cas',
+        researchAnalyticsConsent: true,
+      });
+      concurrentSqlite.setYieldBeforeBatch(true);
+      const concurrent = await Promise.allSettled([
+        updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+          uid: 'uid_consent_cas',
+          actorUid: 'uid_consent_cas',
+          researchAnalyticsConsent: false,
+        }),
+        updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+          uid: 'uid_consent_cas',
+          actorUid: 'uid_consent_cas',
+          behavioralTelemetryConsent: true,
+        }),
+      ]);
+      assert.equal(concurrent.filter((result) => result.status === 'fulfilled').length, 1);
+      const rejected = concurrent.find((result) => result.status === 'rejected');
+      assert.ok(rejected && rejected.status === 'rejected');
+      assert.match(String(rejected.reason), /CONSENT_REVISION_CONFLICT/);
+      const finalRow = concurrentSqlite.raw.prepare(
+        'SELECT consent_revision FROM user_privacy_consents WHERE uid = ?',
+      ).get('uid_consent_cas') as { consent_revision: number };
+      assert.equal(finalRow.consent_revision, 2);
+    });
+
     it('does not reset a corrupt consent revision to a lower value', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
