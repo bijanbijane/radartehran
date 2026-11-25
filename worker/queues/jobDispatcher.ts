@@ -459,13 +459,17 @@ async function handleResearchEventIngestJob(
   }
   const subjectKey = String(envelope.payload?.subjectKey || '').trim();
   const subjectKeyVersion = String(envelope.payload?.subjectKeyVersion || '').trim();
-  const expectedConsentRevision = envelope.payload?.consentRevision;
+  const expectedConsentRevision =
+    typeof envelope.payload?.consentRevision === 'number' &&
+    Number.isSafeInteger(envelope.payload.consentRevision)
+      ? envelope.payload.consentRevision
+      : undefined;
   const rawEvents = Array.isArray(envelope.payload?.events) ? envelope.payload.events : [];
   if (
     !/^sk_[A-Za-z0-9._-]{8,200}$/.test(subjectKey) ||
     !/^[A-Za-z0-9._-]{1,32}$/.test(subjectKeyVersion) ||
-    !Number.isSafeInteger(expectedConsentRevision) ||
-    Number(expectedConsentRevision) < 1 ||
+    expectedConsentRevision === undefined ||
+    expectedConsentRevision < 1 ||
     rawEvents.length === 0
   ) {
     throw new QueueJobExecutionError(
