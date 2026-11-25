@@ -186,15 +186,23 @@ export async function isTokenRevokedOrUserDisabled(
       reason: 'AUTH_REVOCATION_STORE_UNAVAILABLE',
     };
   }
+  if (!Number.isFinite(issuedAtSeconds) || issuedAtSeconds <= 0) {
+    return { revoked: true, unavailable: true, reason: 'AUTH_TOKEN_ISSUED_AT_INVALID' };
+  }
   try {
-    const row = await db
+    const result = await db
       .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1')
       .bind(`revoked_uid:${uid}`)
-      .first<{ watermark_value: string }>();
-    if (!row || !row.watermark_value) {
-      return { revoked: false };
+      .all<{ watermark_value: string }>();
+    if (!result.success) {
+      return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_CHECK_FAILED' };
     }
-    const rawValue = String(row.watermark_value).trim();
+    const row = result.results[0];
+    if (!row) return { revoked: false };
+    const rawValue = String(row.watermark_value ?? '').trim();
+    if (!rawValue) {
+      return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_WATERMARK_CORRUPTED' };
+    }
     if (rawValue === 'DISABLED') {
       return { revoked: true, reason: 'USER_ACCOUNT_DISABLED' };
     }
