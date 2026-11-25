@@ -114,6 +114,7 @@ export async function processPendingResearchErasureOutbox(params: {
         .bind(nowMs)
         .all<Record<string, unknown>>();
 
+  if (!outboxRowsRes.success) throw new Error('RESEARCH_ERASURE_OUTBOX_READ_FAILED');
   const rows = outboxRowsRes.results ?? [];
   let attempted = 0;
   let completed = 0;
@@ -166,10 +167,25 @@ export async function processPendingResearchErasureOutbox(params: {
         .run();
 
       // Remove subject key mapping from USER_DB registry ONLY after verifiable RESEARCH_DB receipt
-      await params.userDb
+      const registryDelete = await params.userDb
         .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
         .bind(subjectKey, subjectKeyVersion)
         .run();
+      if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+
+      const outboxComplete = await params.userDb
+        .prepare(
+          `UPDATE research_erasure_outbox
+           SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
+               erased_events_count = ?3, last_error_code = NULL,
+               updated_at_iso = ?4, completed_at_iso = ?5
+           WHERE outbox_id = ?6`,
+        )
+        .bind(attempts, erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
+        .run();
+      if (!outboxComplete.success || (outboxComplete.meta?.changes ?? 0) !== 1) {
+        throw new Error('RESEARCH_ERASURE_OUTBOX_COMPLETION_UNCONFIRMED');
+      }
 
       erasedEventsTotal += erasureRes.deletedEventsCount;
       completed += 1;
@@ -195,18 +211,20 @@ export async function processPendingResearchErasureOutbox(params: {
       .bind(jobId)
       .first<{ cnt: number }>();
 
-    if (Number(remainingRow?.cnt ?? 0) === 0) {
+    if (!remainingRow || !Number.isFinite(Number(remainingRow.cnt)) || Number(remainingRow.cnt) < 0) {
+      throw new Error('RESEARCH_ERASURE_OUTBOX_RECONCILIATION_UNAVAILABLE');
+    }
+    if (Number(remainingRow.cnt) === 0) {
       const jobRow = await params.userDb
         .prepare('SELECT uid FROM account_deletion_jobs WHERE job_id = ?1')
         .bind(jobId)
         .first<{ uid: string }>();
+      if (!jobRow?.uid) throw new Error('ACCOUNT_DELETION_JOB_UID_MISSING_DURING_RECONCILIATION');
 
-      const uidHash = jobRow?.uid
-        ? await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret)
-        : `unknown_${jobId}`;
+      const uidHash = await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret);
       const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
-      await params.userDb
+      const receiptInsert = await params.userDb
         .prepare(
           `INSERT OR IGNORE INTO account_lifecycle_receipts (
             receipt_id, job_id, uid_hash, stage, subsystem, status,
@@ -225,8 +243,9 @@ export async function processPendingResearchErasureOutbox(params: {
           nowIso,
         )
         .run();
+      if (!receiptInsert.success) throw new Error('RESEARCH_ERASURE_RECEIPT_INSERT_FAILED');
 
-      await params.userDb
+      const jobComplete = await params.userDb
         .prepare(
           `UPDATE account_deletion_jobs
            SET status = 'COMPLETED', stage = 'COMPLETED', receipt_hash = ?1,
@@ -235,6 +254,9 @@ export async function processPendingResearchErasureOutbox(params: {
         )
         .bind(uidHash, nowIso, nowIso, jobId)
         .run();
+      if (!jobComplete.success || (jobComplete.meta?.changes ?? 0) !== 1) {
+        throw new Error('ACCOUNT_DELETION_COMPLETION_UNCONFIRMED');
+      }
     }
   }
 
@@ -452,6 +474,7 @@ export async function executeAccountDeletionLifecycle(params: {
     .prepare('SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1')
     .bind(params.uid)
     .all<{ subject_key: string; subject_key_version: string }>();
+  if (!regRes.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_READ_FAILED');
   for (const row of regRes.results ?? []) {
     subjectKeyMap.set(`${row.subject_key_version}:${row.subject_key}`, {
       subjectKey: row.subject_key,
@@ -497,6 +520,7 @@ export async function executeAccountDeletionLifecycle(params: {
   let userDbDeletedRecords = 0;
   for (const sql of deleteTables) {
     const res = await userDb.prepare(sql).bind(params.uid).run();
+    if (!res.success) throw new Error('USER_DB_ERASURE_DELETE_FAILED');
     userDbDeletedRecords += res.meta?.changes ?? 0;
   }
 
@@ -521,12 +545,13 @@ export async function executeAccountDeletionLifecycle(params: {
       nowIso,
     )
     .run();
+  if (!userReceipt.success) throw new Error('USER_DB_ERASURE_RECEIPT_INSERT_FAILED');
 
   // 8. Enqueue durable UID-FREE research_erasure_outbox items
   const subjectKeys = Array.from(subjectKeyMap.values());
   for (const sk of subjectKeys) {
     const outboxId = `rout_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-    await userDb
+    const outboxInsert = await userDb
       .prepare(
         `INSERT INTO research_erasure_outbox (
           outbox_id, job_id, subject_key, subject_key_version, status,
@@ -535,9 +560,10 @@ export async function executeAccountDeletionLifecycle(params: {
       )
       .bind(outboxId, jobId, sk.subjectKey, sk.subjectKeyVersion, nowIso, nowIso)
       .run();
+    if (!outboxInsert.success) throw new Error('RESEARCH_ERASURE_OUTBOX_INSERT_FAILED');
   }
 
-  await userDb
+  const pendingJobUpdate = await userDb
     .prepare(
       `UPDATE account_deletion_jobs
        SET status = 'PENDING_RESEARCH_ERASURE', stage = 'RESEARCH_ERASURE_OUTBOX',
@@ -546,16 +572,22 @@ export async function executeAccountDeletionLifecycle(params: {
     )
     .bind(uidHash, nowIso, jobId)
     .run();
+  if (!pendingJobUpdate.success || (pendingJobUpdate.meta?.changes ?? 0) !== 1) {
+    throw new Error('ACCOUNT_DELETION_PENDING_STATE_UNCONFIRMED');
+  }
 
   // 9. Attempt immediate Outbox -> RESEARCH_DB Inbox execution (falls back cleanly to retryable PENDING_RESEARCH_ERASURE if RESEARCH_DB fails/absent)
   const researchDb = resolveResearchDb(params.env);
   if (subjectKeys.length === 0) {
-    await userDb
+    const emptyOutboxCompletion = await userDb
       .prepare(
         `UPDATE account_deletion_jobs SET status = 'COMPLETED', stage = 'COMPLETED', updated_at_iso = ?1, completed_at_iso = ?2 WHERE job_id = ?3`,
       )
       .bind(nowIso, nowIso, jobId)
       .run();
+    if (!emptyOutboxCompletion.success || (emptyOutboxCompletion.meta?.changes ?? 0) !== 1) {
+      throw new Error('ACCOUNT_DELETION_EMPTY_OUTBOX_COMPLETION_UNCONFIRMED');
+    }
     return {
       ok: true,
       statusCode: 200,
