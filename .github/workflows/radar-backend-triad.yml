@@ -2,7 +2,7 @@ name: Radar Backend Triad & Frontend Service Binding
 
 on:
   push:
-    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001, migration/firebase-retirement-mainline-2026-11-24, migration/cloudflare-express-session-bridge-2026-11-24]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -16,7 +16,7 @@ on:
       - 'package-lock.json'
       - '.github/workflows/radar-backend-triad.yml'
   pull_request:
-    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    branches: [main, cursor/rt-infra-001-gate-b-monorepo, migration/firebase-retirement-mainline-2026-11-24, migration/cloudflare-express-session-bridge-2026-11-24]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
@@ -67,6 +67,14 @@ jobs:
           npx tsx tests/d1-triad-binding-isolation.test.ts
           npx tsx --test tests/frontend-api-service-binding.test.ts
           npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
+          npm run test:geo
+
+      - name: Verify temporary D1 write-pause deadline behavior
+        run: |
+          npx tsx tests/d1-triad-binding-isolation.test.ts
+          npx tsx --test tests/frontend-api-service-binding.test.ts
+          npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
+          npm run test:geo
 
       - name: Verify temporary D1 write-pause deadline behavior
         run: npx tsx --test worker/db/writePause.test.ts
@@ -81,6 +89,7 @@ jobs:
         run: npm run build -w radartehran-frontend
 
       - name: Read-only live Worker smoke (no database mutations)
+        if: github.event_name != 'pull_request'
         env:
           RADAR_FRONTEND_URL: https://radartehran-frontend.bijanbijane-1.workers.dev
           RADAR_API_URL: https://radartehran-api.bijanbijane-1.workers.dev
@@ -116,12 +125,19 @@ jobs:
             if (health.status !== "ok" ||
                 health.bindings?.userDbBound !== true ||
                 health.bindings?.researchDbBound !== true ||
-                health.bindings?.neighborhoodDbBound !== true ||
+                health.bindings?.irniServiceBindingConfigured !== true ||
+                health.bindings?.legacyNeighborhoodDbBindingPresent !== false ||
+                health.bindings?.irniDirectDbBindingPresent !== false ||
+                health.probes?.irniRpc !== 'ok' ||
+                health.geographicRegistry?.integrityVerified !== true ||
                 health.bindings?.isolationViolation !== false ||
                 frontendHealth.status !== health.status ||
                 frontendHealth.bindings?.userDbBound !== true ||
                 frontendHealth.bindings?.researchDbBound !== true ||
-                frontendHealth.bindings?.neighborhoodDbBound !== true ||
+                frontendHealth.bindings?.irniServiceBindingConfigured !== true ||
+                frontendHealth.bindings?.legacyNeighborhoodDbBindingPresent !== false ||
+                frontendHealth.bindings?.irniDirectDbBindingPresent !== false ||
+                frontendHealth.probes?.irniRpc !== 'ok' ||
                 frontendHealth.bindings?.isolationViolation !== false) {
               throw new Error("Live Radar D1 triad health is not ready: " + JSON.stringify(health));
             }
@@ -129,6 +145,8 @@ jobs:
               status: health.status,
               bindings: health.bindings,
               registryRevision: health.geographicRegistry?.revision ?? health.registry?.revision ?? null,
+              irniRpc: health.probes?.irniRpc ?? null,
+              directNeighborhoodD1: health.bindings?.legacyNeighborhoodDbBindingPresent ?? null,
               frontendServiceBinding: "verified"
             }));
           '
