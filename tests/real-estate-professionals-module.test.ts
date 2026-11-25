@@ -274,6 +274,20 @@ async function runAllTests() {
     const baseUrl = `http://127.0.0.1:${port}`;
 
     try {
+      // Forged identity and admin headers must not authenticate protected mutations.
+      const forgedUser = await fetch(`${baseUrl}/api/v2/real-estate-professionals/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-uid': 'user_attacker', Authorization: 'Bearer user_attacker' },
+        body: JSON.stringify({ publicDisplayName: 'spoofed' }),
+      });
+      assert.equal(forgedUser.status, 401);
+      const forgedAdmin = await fetch(`${baseUrl}/api/v2/real-estate-professionals/admin/credentials/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-role': 'super_admin', 'x-admin-secret': 'admin_verified' },
+        body: JSON.stringify({ credentialId: 'credential_1', decision: 'APPROVE' }),
+      });
+      assert.equal(forgedAdmin.status, 403);
+
       // 1. GET professionals search
       const profRes = await fetch(`${baseUrl}/api/v2/real-estate-professionals?cityId=tehran`);
       assert.equal(profRes.status, 200);
