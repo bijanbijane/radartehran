@@ -248,7 +248,7 @@ export default {
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
     if (resolveD1WritePauseState(env).paused) return;
-    if (event.cron === '0 * * * *' && (env.USER_DB || env.DB)) {
+    if (event.cron === '0 * * * *') {
       const userDb = resolveUserDb(env);
       if (!userDb) throw new Error('USER_DB_BINDING_UNAVAILABLE_OR_DOMAIN_COLLISION');
       const receiptSecret = resolveDedicatedLifecycleReceiptSecret(env);
