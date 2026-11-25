@@ -133,7 +133,21 @@ export async function createSignedR2MediaUrl(params: {
   nowSeconds?: number;
 }): Promise<{ signedPath: string; expiresAtSeconds: number; signatureHex: string }> {
   const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
-  const exp = nowSec + Math.max(30, Math.min(3600, Math.trunc(params.expiresInSeconds)));
+  const requestedTtl = Number(params.expiresInSeconds);
+  if (!Number.isSafeInteger(nowSec) || nowSec <= 0 || !Number.isFinite(requestedTtl)) {
+    throw new Error('MEDIA_SIGNING_TIME_INVALID');
+  }
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId)) throw new Error('MEDIA_OBJECT_ID_INVALID');
+  if (
+    !params.objectKey.startsWith('listings/') ||
+    params.objectKey.length > 512 ||
+    params.objectKey.includes('\\') ||
+    params.objectKey.split('/').some((segment) => !segment || segment === '.' || segment === '..')
+  ) throw new Error('MEDIA_OBJECT_KEY_INVALID');
+  if (!EXTENSION_BY_MIME[params.mimeType]) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
+  const ttlSeconds = Math.max(30, Math.min(3600, Math.trunc(requestedTtl)));
+  const exp = nowSec + ttlSeconds;
+  if (!Number.isSafeInteger(exp)) throw new Error('MEDIA_SIGNING_EXPIRY_INVALID');
   const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${exp}`;
   const signatureHex = await computeHmacSha256Hex(canonical, params.signingSecret);
   const signedPath = `/api/object-storage/file/${encodeURIComponent(params.objectId)}?exp=${exp}&sig=${signatureHex}`;
@@ -151,9 +165,22 @@ export async function verifySignedR2MediaUrl(params: {
   nowSeconds?: number;
 }): Promise<boolean> {
   const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
-  if (!Number.isFinite(params.expSeconds) || params.expSeconds < nowSec) return false;
-  if (!params.signingSecret || !params.signatureHex) return false;
-  const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${Math.trunc(params.expSeconds)}`;
+  if (
+    !Number.isSafeInteger(nowSec) ||
+    nowSec <= 0 ||
+    !Number.isSafeInteger(params.expSeconds) ||
+    params.expSeconds < nowSec ||
+    params.expSeconds > nowSec + 3600 ||
+    !/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId) ||
+    !params.objectKey.startsWith('listings/') ||
+    params.objectKey.length > 512 ||
+    params.objectKey.includes('\\') ||
+    params.objectKey.split('/').some((segment) => !segment || segment === '.' || segment === '..') ||
+    !EXTENSION_BY_MIME[params.mimeType] ||
+    !/^[a-f0-9]{64}$/i.test(params.signatureHex) ||
+    !params.signingSecret
+  ) return false;
+  const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${params.expSeconds}`;
   const expectedHex = await computeHmacSha256Hex(canonical, params.signingSecret);
   return timingSafeEqualHex(expectedHex, params.signatureHex.trim());
 }
