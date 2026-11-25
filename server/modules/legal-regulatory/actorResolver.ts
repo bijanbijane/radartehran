@@ -55,7 +55,7 @@ export async function resolveLegalRegulatoryActor(
   const headers = (req.headers ?? {}) as ExpressHeadersMap;
   const verifyAdminFn =
     deps?.verifyAdmin ??
-    ((h: ExpressHeadersMap) => verifyAdminApiAuthorization(h, process.env, { disallowStaticToken: true }));
+    ((h: ExpressHeadersMap) => verifyAdminApiAuthorization(h, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true }));
   const verifyUserFn = deps?.verifyUser ?? ((h: ExpressHeadersMap) => verifyAuthenticatedUserHeader(h));
 
   const hasAuthHeader =
