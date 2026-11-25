@@ -34,7 +34,7 @@ async function defaultVerifyAdminAuth(req: Request): Promise<boolean> {
   const result = await verifyAdminApiAuthorization(
     req.headers as Record<string, string | string[] | undefined>,
     process.env,
-    { disallowStaticToken: true },
+    { disallowStaticToken: true, requirePrimaryBootstrapAdmin: true },
   );
   return result.authorized;
 }
