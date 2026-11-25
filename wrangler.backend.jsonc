@@ -54,5 +54,11 @@
       "migrations_dir": "migrations/research-d1",
       "migrations_table": "d1_migrations"
     },
+  ],
+  "services": [
+    {
+      "binding": "IRNI_GEOGRAPHY",
+      "service": "irni-api"
+    }
   ]
 }
