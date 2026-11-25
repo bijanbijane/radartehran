@@ -37,14 +37,25 @@ export async function blockUserWritesInD1(params: {
   nowIso?: string;
 }): Promise<void> {
   const nowIso = params.nowIso ?? new Date().toISOString();
-  await params.userDb
+  const result = await params.userDb
     .prepare(
-      `INSERT OR REPLACE INTO account_write_blocks (
+      `INSERT INTO account_write_blocks (
         uid, job_id, block_reason, blocked_at_iso, released_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, NULL)`,
+      ) VALUES (?1, ?2, ?3, ?4, NULL)
+      ON CONFLICT(uid) DO UPDATE SET
+        job_id = excluded.job_id,
+        block_reason = excluded.block_reason,
+        blocked_at_iso = excluded.blocked_at_iso,
+        released_at_iso = NULL
+      WHERE account_write_blocks.released_at_iso IS NOT NULL
+         OR account_write_blocks.job_id = excluded.job_id`,
     )
     .bind(params.uid, params.jobId, params.reason || 'ACCOUNT_DELETION_ACTIVE', nowIso)
     .run();
+
+  if (result.success === false || (result.meta?.changes ?? 0) !== 1) {
+    throw new Error('ACCOUNT_WRITE_BLOCK_CONFLICT_OR_STORE_UNAVAILABLE');
+  }
 }
 
 export async function acquireMutationPermitInD1(params: {
