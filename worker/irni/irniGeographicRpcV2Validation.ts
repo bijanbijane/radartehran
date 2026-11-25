@@ -87,7 +87,16 @@ function isEntity(value: unknown): value is IrniRpcEntityV2 {
     isText(value.schemaVersion, 128) &&
     value.isSyntheticFixture === false &&
     isRecord(value.metadataCoverage) &&
-    Object.values(value.metadataCoverage).every(item => typeof item === 'string');
+    Object.values(value.metadataCoverage).every(item => typeof item === 'string') &&
+    isRecord(value.registryIdentity) &&
+    value.registryIdentity.identityAnchor === value.identityAnchor &&
+    value.registryIdentity.anchorType === value.identityAnchorType &&
+    typeof value.registryIdentity.issuedOrderIndex === 'number' && Number.isSafeInteger(value.registryIdentity.issuedOrderIndex) && value.registryIdentity.issuedOrderIndex > 0 &&
+    typeof value.registryIdentity.issuedAtRegistryRevision === 'number' && Number.isSafeInteger(value.registryIdentity.issuedAtRegistryRevision) && value.registryIdentity.issuedAtRegistryRevision > 0 &&
+    value.registryIdentity.identityStatus === 'CONFIRMED_CANONICAL' &&
+    value.registryIdentity.retiredAtRegistryRevision === null &&
+    value.registryIdentity.retiredReason === null &&
+    value.registryIdentity.survivingGeographicEntityId === null;
 }
 function isRelationship(value: unknown): boolean {
   return isRecord(value) &&
