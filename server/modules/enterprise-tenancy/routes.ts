@@ -43,7 +43,7 @@ export async function defaultTenancyActorResolver(req: Request): Promise<Tenancy
     return {
       authenticated: true,
       actorId: adminCheck.actorUid || adminCheck.uid || 'platform-admin',
-      verifiedEmail: adminCheck.email || 'admin@radartehran.ir',
+      verifiedEmail: adminCheck.email || '',
       isPlatformAdmin: true,
       correlationId,
     };
