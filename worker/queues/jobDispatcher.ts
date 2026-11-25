@@ -6,7 +6,7 @@
  */
 import { getValidatedCityConfig } from '../../src/data/multiCityData';
 import type { CityId } from '../../src/types/models';
-import { processPendingResearchErasureOutbox } from '../account-lifecycle/workerLifecycleRuntime';
+import { processPendingResearchErasureOutbox, resolveDedicatedLifecycleReceiptSecret } from '../account-lifecycle/workerLifecycleRuntime';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
@@ -416,7 +416,14 @@ async function handleResearchSubjectErasureJob(
     );
   }
   const jobId = typeof envelope.payload?.jobId === 'string' ? envelope.payload.jobId.trim() : undefined;
-  const receiptSecret = env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = resolveDedicatedLifecycleReceiptSecret(env);
+  if (!receiptSecret) {
+    throw new QueueJobExecutionError(
+      'LIFECYCLE_RECEIPT_HMAC_SECRET_UNAVAILABLE',
+      'A dedicated lifecycle receipt HMAC secret is required; RPC and research secrets cannot be reused.',
+      true,
+    );
+  }
   const outboxRes = await processPendingResearchErasureOutbox({ userDb, researchDb, jobId, receiptSecret });
   return {
     jobType: 'research_subject_erasure',
