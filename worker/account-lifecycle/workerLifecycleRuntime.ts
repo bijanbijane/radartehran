@@ -155,17 +155,6 @@ export async function processPendingResearchErasureOutbox(params: {
         nowMs,
       });
 
-      await params.userDb
-        .prepare(
-          `UPDATE research_erasure_outbox
-           SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
-               erased_events_count = ?3, last_error_code = NULL,
-               updated_at_iso = ?4, completed_at_iso = ?5
-           WHERE outbox_id = ?6`,
-        )
-        .bind(attempts, erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
-        .run();
-
       // Remove subject key mapping from USER_DB registry ONLY after verifiable RESEARCH_DB receipt
       const registryDelete = await params.userDb
         .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
@@ -526,7 +515,7 @@ export async function executeAccountDeletionLifecycle(params: {
 
   const uidHash = await hashUidForComplianceReceipt(params.uid, receiptSecret);
   const userReceiptId = `rcpt_usr_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  await userDb
+  const userReceipt = await userDb
     .prepare(
       `INSERT INTO account_lifecycle_receipts (
         receipt_id, job_id, uid_hash, stage, subsystem, status,
