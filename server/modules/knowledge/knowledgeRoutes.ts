@@ -335,8 +335,8 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
       return;
     }
     const actorRole = resolveKnowledgeEditorialRole(auth);
-    if (!actorRole) {
-      res.status(403).json({ status: 'error', code: 'HUMAN_EDITORIAL_ADMIN_REQUIRED' });
+    if (actorRole !== 'release_manager') {
+      res.status(403).json({ status: 'error', code: 'RELEASE_MANAGER_REQUIRED' });
       return;
     }
     const result = publishNewServerKnowledgeVersion({
