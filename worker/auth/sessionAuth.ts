@@ -141,8 +141,10 @@ export async function authenticateWorkerSession(
     const createdAtSeconds = Math.floor(createdAtMs / 1000);
     const revocationWatermark = row.revocation_watermark;
     if (revocationWatermark === 'DISABLED') return unauthenticated('ACCOUNT_DISABLED');
-    if (revocationWatermark !== null && revocationWatermark !== undefined && String(revocationWatermark).trim() !== '') {
-      const parsedWatermark = Number(revocationWatermark);
+    if (revocationWatermark !== null && revocationWatermark !== undefined) {
+      const rawWatermark = String(revocationWatermark).trim();
+      if (!rawWatermark) return unauthenticated('REVOCATION_STATE_INVALID', 503);
+      const parsedWatermark = Number(rawWatermark);
       const revokedBeforeSeconds = parsedWatermark >= 1_000_000_000_000
         ? Math.floor(parsedWatermark / 1000)
         : parsedWatermark;
