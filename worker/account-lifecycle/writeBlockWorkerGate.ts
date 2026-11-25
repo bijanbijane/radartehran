@@ -30,7 +30,7 @@ export async function enforceWorkerMutationWriteBlock(
       userDb,
       uid: authenticatedUid,
       operationName: `${ctx.method.toUpperCase()} ${ctx.pathname}`,
-      ttlMs: 30_000,
+      ttlMs: 15 * 60_000,
     });
     if (!permit.ok) {
       return jsonWorkerResponse(ctx, 423, {
