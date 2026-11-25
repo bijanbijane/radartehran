@@ -103,9 +103,13 @@ export class PaymentEngine {
   public async startPaymentAttempt(
     intentId: string,
     callbackUrl: string,
+    requesterUid: string,
   ): Promise<{ success: boolean; errors?: string[]; attempt?: PaymentAttempt; redirectUrl?: string }> {
     const intent = await this.store.getIntentById(intentId);
     if (!intent) return { success: false, errors: ['INTENT_NOT_FOUND'] };
+    if (!requesterUid || intent.customerUid !== requesterUid) {
+      return { success: false, errors: ['PAYMENT_INTENT_FORBIDDEN'] };
+    }
 
     if (intent.lifecycleState === 'SUCCEEDED') {
       return { success: false, errors: ['PAYMENT_ALREADY_SUCCEEDED'] };
@@ -257,6 +261,9 @@ export class PaymentEngine {
   }): Promise<{ success: boolean; errors?: string[]; refund?: RefundRecord }> {
     const intent = await this.store.getIntentById(params.paymentIntentId);
     if (!intent) return { success: false, errors: ['INTENT_NOT_FOUND'] };
+    if (!params.requestedByUid || intent.customerUid !== params.requestedByUid) {
+      return { success: false, errors: ['PAYMENT_INTENT_FORBIDDEN'] };
+    }
 
     if (intent.lifecycleState !== 'SUCCEEDED' && intent.lifecycleState !== 'PARTIALLY_REFUNDED') {
       return { success: false, errors: ['PAYMENT_NOT_REFUNDABLE'] };
