@@ -216,7 +216,7 @@ export class IrniGeographicRpcV2Client {
     if (
       page.limit !== undefined && (!Number.isSafeInteger(page.limit) || page.limit < 1 || page.limit > 100) ||
       page.cursor !== undefined && page.cursor !== null && (page.cursor.length > 2048 || page.cursor.trim() !== page.cursor) ||
-      page.sortBy !== undefined && page.sortBy !== 'canonicalNameFa' && page.sortBy !== 'geographicEntityId' ||
+      page.sortBy !== undefined && page.sortBy !== 'canonicalNameFa' && page.sortBy !== 'geographicEntityId' && page.sortBy !== 'issuedOrderIndex' ||
       page.sortDirection !== undefined && page.sortDirection !== 'ASC' && page.sortDirection !== 'DESC'
     ) return failure('VALIDATION_FAILURE', 'پارامترهای صفحه‌بندی خارج از قرارداد مجاز هستند.');
     const gate = await this.gate(expectedRevision);
