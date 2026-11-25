@@ -64,6 +64,16 @@ export interface IrniRpcEntityV2 {
   readonly schemaVersion: string;
   readonly isSyntheticFixture: false;
   readonly metadataCoverage: Readonly<Record<string, string>>;
+  readonly registryIdentity: {
+    readonly identityAnchor: string;
+    readonly anchorType: 'TYPE_A_SOURCE_NATIVE' | 'TYPE_B_REGISTRY_FALLBACK';
+    readonly issuedOrderIndex: number;
+    readonly issuedAtRegistryRevision: number;
+    readonly identityStatus: 'CONFIRMED_CANONICAL';
+    readonly retiredAtRegistryRevision: null;
+    readonly retiredReason: null;
+    readonly survivingGeographicEntityId: null;
+  };
 }
 export interface IrniRpcRelationshipV2 {
   readonly relationshipId: string;
@@ -83,7 +93,7 @@ export interface IrniRpcRelationshipV2 {
 export interface IrniRpcPageRequestV2 {
   readonly cursor?: string | null;
   readonly limit?: number;
-  readonly sortBy?: 'canonicalNameFa' | 'geographicEntityId';
+  readonly sortBy?: 'canonicalNameFa' | 'geographicEntityId' | 'issuedOrderIndex';
   readonly sortDirection?: 'ASC' | 'DESC';
 }
 export interface IrniRpcEntityFilterV2 {
