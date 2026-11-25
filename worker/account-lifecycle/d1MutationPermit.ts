@@ -22,11 +22,12 @@ export interface RejectedMutationPermit {
 export async function isUserWriteBlockedInD1(userDb: D1Database, uid: string): Promise<boolean> {
   // Missing schema or a D1 read failure is not evidence that writes are allowed.
   // Callers must fail closed rather than interpreting an unavailable block table as OPEN.
-  const row = await userDb
+  const result = await userDb
     .prepare('SELECT uid FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL')
     .bind(uid)
-    .first<{ uid: string }>();
-  return Boolean(row);
+    .all<{ uid: string }>();
+  if (!result.success) throw new Error('ACCOUNT_WRITE_BLOCK_READ_FAILED');
+  return result.results.length > 0;
 }
 
 export async function blockUserWritesInD1(params: {
@@ -85,6 +86,9 @@ export async function acquireMutationPermitInD1(params: {
     .bind(permitId, params.uid, params.operationName.slice(0, 80), nowMs, expiresAtMs)
     .run();
 
+  if (res.success === false) {
+    throw new Error('ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE');
+  }
   if ((res.meta?.changes ?? 0) !== 1) {
     return { ok: false, statusCode: 423, code: 'ACCOUNT_WRITE_BLOCKED' };
   }
@@ -104,10 +108,11 @@ export async function releaseMutationPermitInD1(params: {
   nowMs?: number;
 }): Promise<void> {
   const nowMs = params.nowMs ?? Date.now();
-  await params.userDb
+  const result = await params.userDb
     .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
     .bind(nowMs, params.permitId)
     .run();
+  if (result.success === false) throw new Error('ACCOUNT_MUTATION_PERMIT_RELEASE_FAILED');
 }
 
 export async function countActiveMutationPermitsInD1(
@@ -121,5 +126,8 @@ export async function countActiveMutationPermitsInD1(
     )
     .bind(uid, nowMs)
     .first<{ cnt: number }>();
-  return Number(row?.cnt ?? 0);
+  if (!row || !Number.isFinite(Number(row.cnt)) || Number(row.cnt) < 0) {
+    throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
+  }
+  return Number(row.cnt);
 }
