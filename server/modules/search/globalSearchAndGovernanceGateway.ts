@@ -52,7 +52,7 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
       process.env,
       { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
     );
-    if (admin.authorized) return { uid: 'admin', isAdmin: true };
+    if (admin.authorized) return { uid: admin.actorUid || admin.uid || 'verified-primary-admin', isAdmin: true };
     const uid = await resolveOptionalAuthUid(req);
     return { uid: uid ?? undefined, isAdmin: false };
   };
