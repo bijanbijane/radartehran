@@ -1,6 +1,6 @@
 /**
  * @file src/components/TopBarProvinceDirectoryControl.tsx
- * @description کنترل یکپارچه سوییچر ۵ کلان‌شهر + فهرست‌بندی طبقه‌بندی‌شده ۳۱ استان و شهرهای کشور در نوار بالا.
+ * @description کنترل شهرهای دارای داده بازار و میان‌بر به رجیستری canonical سراسری IRNI.
  * جداشده از `NationwideProvinceModal` برای فعال‌سازی بارگذاری تنبل (Code-Splitting) واقعی مودال ۳۱ استان.
  */
 
@@ -102,10 +102,10 @@ export function TopBarProvinceAndCityDirectoryControl({
         ))}
       </div>
 
-      {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها (فقط در صورت عدم وجود مودال ۳۱ استان) */}
+      {/* سلکتور محدوده‌های دارای پوشش بازار (فقط در صورت عدم وجود مودال ۳۱ استان) */}
       <div className={onOpenProvinceModal ? 'sr-only' : 'relative hidden sm:flex items-center'}>
         <select
-          aria-label="فهرست‌بندی استان‌ها و شهرهای ایران"
+          aria-label="فهرست مناطق دارای پوشش بازار Radar"
           tabIndex={onOpenProvinceModal ? -1 : 0}
           value={`hood:${selectedHoodId}`}
           onChange={(e) => {
@@ -126,20 +126,20 @@ export function TopBarProvinceAndCityDirectoryControl({
             }
           }}
           className="bg-slate-100/90 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200/70 dark:hover:bg-[var(--color-bg-elevated)] text-slate-800 dark:text-[var(--color-text-primary)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[140px] sm:max-w-[150px] 2xl:max-w-[180px] truncate"
-          title="فهرست‌بندی جامع ۳۱ استان، شهرها و محله‌های ایران"
+          title="مناطق دارای داده بازار محلی Radar؛ مرجع رسمی در رجیستری IRNI"
         >
           {renderedProvinceGroups}
         </select>
       </div>
 
-      {/* دکمه باز کردن مودال فهرست جامع ۳۱ استان و شهرها */}
+      {/* دکمه باز کردن فهرست محدوده‌های دارای پوشش بازار */}
       {onOpenProvinceModal && (
         <button
           type="button"
           onClick={onOpenProvinceModal}
           aria-label={`فهرست ۳۱ استان (${activeProvince.nameFa})`}
           className="px-2 sm:px-2.5 py-1.5 rounded-[9px] bg-slate-900 dark:bg-[var(--color-brand-600)] hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs transition shrink-0 cursor-pointer whitespace-nowrap"
-          title="مشاهده فهرست‌بندی کامل ۳۱ استان، شهرها و محله‌های سراسر ایران"
+          title="مشاهده محدوده‌های دارای داده بازار در نسخه فعلی Radar"
         >
           <Compass className="w-3.5 h-3.5 stroke-[2] shrink-0" />
           <span className="hidden sm:inline">۳۱ استان</span>
