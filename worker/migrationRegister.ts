@@ -23,6 +23,15 @@ const GROUP_1A_VERIFIED_PATHS = new Set<string>([
   'GET /robots.txt',
 ]);
 
+const GROUP_2_VERIFIED_IRNI_RPC_V2_PATHS = new Set<string>([
+  'GET /api/v2/reference/irni/canonical/metadata',
+  'GET /api/v2/reference/irni/canonical/entities',
+  'GET /api/v2/reference/irni/canonical/entities/:geographicEntityId',
+  'GET /api/v2/reference/irni/canonical/entities/:geographicEntityId/relationships',
+  'GET /api/v2/reference/irni/canonical/resolve',
+  'GET /api/v2/reference/irni/canonical/aliases',
+]);
+
 const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'POST /api/v1/ai/intelligent-search',
   'POST /api/ai/gateway/infer',
@@ -125,6 +134,23 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       ],
       stateStorageTouchpoints: ['stateless_or_ephemeral_isolate_ledger'],
       externalApiTouchpoints: [],
+    };
+  }
+
+  if (GROUP_2_VERIFIED_IRNI_RPC_V2_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS',
+      workerHandlerModule: 'worker/routes/irniCanonicalRpcV2Routes.ts',
+      status: 'VERIFIED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: [
+        'worker/irni/irniGeographicRpcV2Client.ts',
+        'worker/irni/irniGeographicRpcV2Validation.ts',
+        'worker/irni/irniGeographicRpcV2Types.ts',
+        'workers/irni-api/src/geographicReadRepository.ts',
+      ],
+      stateStorageTouchpoints: ['IRNI canonical registry via internal read-only Workers RPC; no Radar geography D1 access'],
+      externalApiTouchpoints: ['IRNI_GEOGRAPHY Cloudflare Workers Service Binding'],
     };
   }
 
