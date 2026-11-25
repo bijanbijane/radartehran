@@ -134,14 +134,14 @@ export function TopBarProvinceAndCityDirectoryControl({
         </select>
       </div>
 
-      {/* دکمه باز کردن مودال فهرست جامع ۳۱ استان و شهرها */}
+      {/* دکمه باز کردن فهرست محدوده‌های دارای پوشش بازار */}
       {onOpenProvinceModal && (
         <button
           type="button"
           onClick={onOpenProvinceModal}
           aria-label={`فهرست ۳۱ استان (${activeProvince.nameFa})`}
           className="px-2 sm:px-2.5 py-1.5 rounded-[9px] bg-slate-900 dark:bg-[var(--color-brand-600)] hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs transition shrink-0 cursor-pointer whitespace-nowrap"
-          title="مشاهده فهرست‌بندی کامل ۳۱ استان، شهرها و محله‌های سراسر ایران"
+          title="مشاهده محدوده‌های دارای داده بازار در نسخه فعلی Radar"
         >
           <Compass className="w-3.5 h-3.5 stroke-[2] shrink-0" />
           <span className="hidden sm:inline">۳۱ استان</span>
