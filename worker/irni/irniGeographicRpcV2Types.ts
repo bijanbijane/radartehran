@@ -10,7 +10,7 @@ export interface IrniRpcError {
   readonly entityId: string | null;
   readonly messageFa: string;
   readonly retryable: boolean;
-  readonly details?: Readonly<Record<string, string | number | boolean | null>>;
+  readonly details?: Readonly<Record<string, unknown>>;
 }
 export type IrniRpcResult<T> =
   | { readonly ok: true; readonly value: T }
