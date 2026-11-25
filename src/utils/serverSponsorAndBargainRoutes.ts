@@ -103,7 +103,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
   });
   app.post('/api/admin/sponsors/approve', (req: Request, res: Response) => {
     runSafeAsync(res, async () => {
-      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
+      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const requestId = typeof req.body?.requestId === 'string' ? req.body.requestId.trim() : ''; const hoodId = Number(req.body?.hoodId); const planMonths: 1 | 3 = req.body?.planMonths === 3 ? 3 : 1;
       if ((requestId && !isValidFirestoreDocId(requestId)) || !Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_SPONSOR_APPROVAL_INPUT' }); return; }
@@ -129,7 +129,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           }
           return { expiresAtIso, sponsor: overrideSponsor };
         },
-        runPostCommitSideEffects: async () => { recordLiveAdminSecurityAudit({ action: 'SPONSOR_REQUEST_APPROVE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: `HOOD_${hoodId}_EXPIRES_${expiresAtIso}` }); },
+        runPostCommitSideEffects: async () => { recordLiveAdminSecurityAudit({ action: 'SPONSOR_REQUEST_APPROVE', actorUid: auth.actorUid || auth.uid || 'verified-primary-admin', actorEmail: auth.actorEmail || auth.email || 'verified-primary-admin', outcome: 'allowed', reason: `HOOD_${hoodId}_EXPIRES_${expiresAtIso}` }); },
       });
       if (committed.ok === false) { res.status(503).json({ status: 'error', code: committed.code, message: committed.messageFa }); return; }
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso, sponsor: overrideSponsor });
@@ -137,7 +137,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
   });
   app.post('/api/admin/sponsors/extend', (req: Request, res: Response) => {
     runSafeAsync(res, async () => {
-      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
+      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const hoodId = Number(req.body?.hoodId); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
       const currentExpiresAtIso = typeof req.body?.currentExpiresAtIso === 'string' ? req.body.currentExpiresAtIso : null; const expiresAtIso = computeExtendedSponsorExpirationIso(currentExpiresAtIso, Date.now(), 30);
@@ -163,13 +163,13 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         }
         if (!extendedViaRest) { res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' }); return; }
       }
-      recordLiveAdminSecurityAudit({ action: 'SPONSOR_EXTEND_30D', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: `HOOD_${hoodId}_${expiresAtIso}` });
+      recordLiveAdminSecurityAudit({ action: 'SPONSOR_EXTEND_30D', actorUid: auth.actorUid || auth.uid || 'verified-primary-admin', actorEmail: auth.actorEmail || auth.email || 'verified-primary-admin', outcome: 'allowed', reason: `HOOD_${hoodId}_${expiresAtIso}` });
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso });
     });
   });
   app.post('/api/admin/sponsors/release', (req: Request, res: Response) => {
     runSafeAsync(res, async () => {
-      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
+      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const hoodId = Number(req.body?.hoodId); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
       const seedHood = resolveServerNeighborhood(req.body?.city, hoodId).matchedHood; const pastIso = new Date(Date.now() - 86400000).toISOString();
@@ -186,7 +186,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         }
         if (!releasedViaRest) { res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'آزادسازی اسپانسر در پایگاه داده انجام نشد.' }); return; }
       }
-      recordLiveAdminSecurityAudit({ action: 'SPONSOR_RELEASE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: `HOOD_${hoodId}` });
+      recordLiveAdminSecurityAudit({ action: 'SPONSOR_RELEASE', actorUid: auth.actorUid || auth.uid || 'verified-primary-admin', actorEmail: auth.actorEmail || auth.email || 'verified-primary-admin', outcome: 'allowed', reason: `HOOD_${hoodId}` });
       res.status(200).json({ status: 'ok', hoodId, released: true });
     });
   });
@@ -205,13 +205,13 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
   });
   app.post('/api/admin/bargains/approve', (req: Request, res: Response) => {
     runSafeAsync(res, async () => {
-      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
+      res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const bargainId = typeof req.body?.bargainId === 'string' ? req.body.bargainId.trim() : ''; const rawTargetStatus = req.body?.status === undefined ? 'approved' : req.body?.status;
       if (rawTargetStatus !== 'approved' && rawTargetStatus !== 'rejected') { res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_STATUS' }); return; }
       const targetStatus: 'approved' | 'rejected' = rawTargetStatus;
       if (!isValidFirestoreDocId(bargainId) || !isValidBargainStateTransition(req.body?.fromStatus, targetStatus, true)) { res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_TRANSITION' }); return; }
-      const approvedAtIso = new Date().toISOString(); const adminUid = auth.actorUid || 'admin';
+      const approvedAtIso = new Date().toISOString(); const adminUid = auth.actorUid || auth.uid || 'verified-primary-admin';
       const moderationPayload = buildBargainModerationFirestorePayload(targetStatus, adminUid);
       try {
         const adminDb = getFirebaseAdminFirestoreForServer();
@@ -226,7 +226,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       await ensureBucketLoaded(); let mutated = false;
       for (const item of objectStoreIndex) { if (item.bargainId === bargainId && targetStatus === 'rejected') { item.deletionState = 'pending_delete'; mutated = true; } }
       if (mutated) { await persistObjectStoreIndexNow().catch(() => {}); }
-      recordLiveAdminSecurityAudit({ action: `BARGAIN_MODERATION_${targetStatus.toUpperCase()}`, actorUid: adminUid, actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: bargainId });
+      recordLiveAdminSecurityAudit({ action: `BARGAIN_MODERATION_${targetStatus.toUpperCase()}`, actorUid: adminUid, actorEmail: auth.actorEmail || auth.email || 'verified-primary-admin', outcome: 'allowed', reason: bargainId });
       res.status(200).json({ status: 'ok', bargainId, moderationStatus: targetStatus, approvedAtIso });
     });
   });
