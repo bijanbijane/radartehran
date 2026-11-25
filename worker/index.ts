@@ -24,7 +24,11 @@ import {
   createCanonicalQueueJobDispatcher,
 } from './queues/jobDispatcher';
 import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
-import { resolveUserDb } from './db/bindingResolver';
+import { resolveUserDb, resolveResearchDb } from './db/bindingResolver';
+import {
+  processPendingResearchErasureOutbox,
+  resolveDedicatedLifecycleReceiptSecret,
+} from './account-lifecycle/workerLifecycleRuntime';
 import { resolveD1WritePauseState } from './db/writePause';
 import {
   processRadarQueueBatch,
@@ -244,9 +248,16 @@ export default {
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
     if (resolveD1WritePauseState(env).paused) return;
-    if (event.cron === '0 * * * *' && env.DB) {
-      const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/workerLifecycleRuntime.ts');
-      await recoverPendingLifecycleDispatch(env, 25);
+    if (event.cron === '0 * * * *' && (env.USER_DB || env.DB)) {
+      const userDb = resolveUserDb(env);
+      if (!userDb) throw new Error('USER_DB_BINDING_UNAVAILABLE_OR_DOMAIN_COLLISION');
+      const receiptSecret = resolveDedicatedLifecycleReceiptSecret(env);
+      if (!receiptSecret) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED');
+      await processPendingResearchErasureOutbox({
+        userDb,
+        researchDb: resolveResearchDb(env),
+        receiptSecret,
+      });
     }
     if (!env.RADAR_QUEUE) {
       throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');
