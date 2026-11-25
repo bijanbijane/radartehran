@@ -55,7 +55,7 @@ export function getRequestTraceContext(req: Request): RequestTraceContext {
 
 interface VerifiedPlatformAdminContext {
   actorId: string;
-  actorRole: 'primary_admin' | 'delegated_admin';
+  actorRole: 'primary_admin' | 'read_only_admin';
   permissions: string[];
 }
 
@@ -86,7 +86,7 @@ export function verifiedAdminContextMiddleware(
       auth.reason === 'AUTHORIZED_SERVER_SECRET';
     (req as RequestWithVerifiedPlatformAdmin).verifiedPlatformAdminContext = {
       actorId: auth.actorUid || auth.uid || 'verified-platform-admin',
-      actorRole: isPrimary ? 'primary_admin' : 'delegated_admin',
+      actorRole: isPrimary ? 'primary_admin' : 'read_only_admin',
       permissions: isPrimary
         ? ['*']
         : ['platform.modules.read', 'platform.config.read', 'platform.health.read'],
