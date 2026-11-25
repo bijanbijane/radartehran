@@ -138,13 +138,18 @@ export async function createSignedR2MediaUrl(params: {
     throw new Error('MEDIA_SIGNING_TIME_INVALID');
   }
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId)) throw new Error('MEDIA_OBJECT_ID_INVALID');
+  if (params.method !== 'GET' && params.method !== 'PUT') throw new Error('MEDIA_METHOD_INVALID');
+  const extension = EXTENSION_BY_MIME[params.mimeType];
+  if (!extension) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
   if (
     !params.objectKey.startsWith('listings/') ||
     params.objectKey.length > 512 ||
     params.objectKey.includes('\\') ||
-    params.objectKey.split('/').some((segment) => !segment || segment === '.' || segment === '..')
+    params.objectKey.split('/').some((segment) =>
+      !segment || segment === '.' || segment === '..' || !/^[A-Za-z0-9._-]+$/.test(segment),
+    ) ||
+    !params.objectKey.endsWith(`/${params.objectId}.${extension}`)
   ) throw new Error('MEDIA_OBJECT_KEY_INVALID');
-  if (!EXTENSION_BY_MIME[params.mimeType]) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
   const ttlSeconds = Math.max(30, Math.min(3600, Math.trunc(requestedTtl)));
   const exp = nowSec + ttlSeconds;
   if (!Number.isSafeInteger(exp)) throw new Error('MEDIA_SIGNING_EXPIRY_INVALID');
@@ -172,11 +177,15 @@ export async function verifySignedR2MediaUrl(params: {
     params.expSeconds < nowSec ||
     params.expSeconds > nowSec + 3600 ||
     !/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId) ||
+    (params.method !== 'GET' && params.method !== 'PUT') ||
     !params.objectKey.startsWith('listings/') ||
     params.objectKey.length > 512 ||
     params.objectKey.includes('\\') ||
-    params.objectKey.split('/').some((segment) => !segment || segment === '.' || segment === '..') ||
+    params.objectKey.split('/').some((segment) =>
+      !segment || segment === '.' || segment === '..' || !/^[A-Za-z0-9._-]+$/.test(segment),
+    ) ||
     !EXTENSION_BY_MIME[params.mimeType] ||
+    !params.objectKey.endsWith(`/${params.objectId}.${EXTENSION_BY_MIME[params.mimeType]}`) ||
     !/^[a-f0-9]{64}$/i.test(params.signatureHex) ||
     !params.signingSecret
   ) return false;
