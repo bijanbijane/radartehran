@@ -234,10 +234,16 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   assert.equal(engine.sendMessage({ conversationId: cid, senderUid: 'intruder', bodyFa: 'سلام پیام غیرمجاز' }).statusCode, 403);
 
   // Rate limit blocks flooding beyond MAX_MESSAGES_PER_MINUTE_STANDARD
-  for (let i = 0; i < MAX_MESSAGES_PER_MINUTE_STANDARD; i++) {
+  for (let i = 0; i < MAX_MESSAGES_PER_MINUTE_STANDARD - 1; i++) {
     const sent = engine.sendMessage({ conversationId: cid, senderUid: 'u-buyer', bodyFa: `پیام تست شماره ${i + 1}` });
     assert.equal(sent.statusCode, 201);
   }
+  const crossConversationSend = engine.sendMessage({
+    conversationId: changedCounterparty.conversation!.conversationId,
+    senderUid: 'u-buyer',
+    bodyFa: 'پیام در گفت‌وگوی دوم',
+  });
+  assert.equal(crossConversationSend.statusCode, 201);
   const flooded = engine.sendMessage({ conversationId: cid, senderUid: 'u-buyer', bodyFa: 'پیام اضافه اسپم' });
   assert.equal(flooded.statusCode, 429);
 
