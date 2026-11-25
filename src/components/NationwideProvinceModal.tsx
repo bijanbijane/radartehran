@@ -1,6 +1,6 @@
 /**
  * @file src/components/NationwideProvinceModal.tsx
- * @description پنجره جامع انتخاب استان‌ها، شهرها و محله‌های کل کشور (۳۱ استان ایران)
+ * @description پنجره پوشش بازار منتخب Radar در استان‌ها و شهرهای ایران
  * به همراه کنترل فهرست‌بندی سریع استان‌ها و شهرها در نوار ابزار بالای نقشه.
  */
 
@@ -109,13 +109,13 @@ export function NationwideProvinceModal({
             </span>
             <div>
               <h2 id="nationwide-province-modal-title" className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                <span>فهرست‌بندی جامع استان‌ها، شهرها و محله‌های ایران</span>
+                <span>فهرست مناطق دارای پوشش بازار در Radar</span>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                  ۳۱ استان • {toPersianNum(allNationwideHoods.length)} محله و شهر
+                  ۳۱ استان • {toPersianNum(allNationwideHoods.length)} محدوده بازار
                 </span>
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                روی نام هر استان یا هر یک از شهرها و محله‌های زیرمجموعه کلیک کنید تا نقشه و رادار آن باز شود
+                این فهرست فقط محدوده‌های دارای داده بازار در نسخه فعلی Radar را نشان می‌دهد؛ فهرست کامل محله‌های canonical در بخش «کشف ← رجیستری رسمی» قرار دارد.
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function NationwideProvinceModal({
               type="text" aria-label="جست‌وجوی استان، شهر یا محله"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جست‌وجوی استان، شهر یا محله (تبریز، گلسار رشت، ساری، اهواز، کیش، کاشان، یزد، لواسان...)"
+              placeholder="جست‌وجوی استان یا محدوده بازار (تبریز، گلسار رشت، ساری، اهواز، کیش، کاشان...)"
               className="w-full pr-9 pl-3 py-2 text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-[12px] focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
             />
             {searchQuery && (
