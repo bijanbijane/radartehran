@@ -111,6 +111,20 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
   }
 
   public runQuery(sql: string, values: unknown[]): { rows: Row[]; changes: number } {
+    if (sql === 'PRAGMA table_info(account_write_blocks)') {
+      return {
+        rows: ['target_uid', 'state', 'active_deletion_job_id', 'blocked_at_iso', 'updated_at_iso', 'reason', 'revision']
+          .map((name) => ({ name })),
+        changes: 0,
+      };
+    }
+    if (sql === 'PRAGMA table_info(lifecycle_internal_rpc_nonces)') {
+      return {
+        rows: ['nonce', 'consumed_at_iso', 'expires_at_ms'].map((name) => ({ name })),
+        changes: 0,
+      };
+    }
+
     const activeJobsForUid = (uid: string): Row[] =>
       Array.from(this.deletionJobs.values()).filter(
         (j) => j.target_uid === uid && (j.completed_at_iso === null || j.completed_at_iso === undefined),
@@ -508,7 +522,9 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
 
     if (
       sql ===
-      'INSERT INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)'
+        'INSERT INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)' ||
+      sql ===
+        'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)'
     ) {
       const nonce = String(values[0]);
       if (this.rpcNonces.has(nonce)) {
