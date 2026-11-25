@@ -35,7 +35,7 @@ export async function resolveWriteAdmissionFromD1(
     if (columns.has('uid') && columns.has('job_id') && columns.has('released_at_iso')) {
       const [activeJob, block] = await Promise.all([
         db.prepare(
-          'SELECT job_id FROM account_deletion_jobs WHERE uid = ?1 AND completed_at_iso IS NULL LIMIT 1',
+          "SELECT job_id FROM account_deletion_jobs WHERE uid = ?1 AND completed_at_iso IS NULL AND status NOT IN ('COMPLETED', 'FAILED', 'BLOCKED_LEGAL_HOLD') LIMIT 1",
         ).bind(targetUid).first<{ job_id: string }>(),
         db.prepare(
           'SELECT uid, job_id, block_reason FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL LIMIT 1',
