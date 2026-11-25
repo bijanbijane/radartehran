@@ -21,7 +21,7 @@ import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
 import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
 import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
-import { handleGeographicRegistryRoute } from './routes/geographicRegistryRoutes';
+import { handleIrniCanonicalRpcV2Route } from './routes/irniCanonicalRpcV2Routes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -233,8 +233,7 @@ export async function dispatchWorkerApiOrSeoRequest(
   const researchResponse = await handleResearchWorkerRoute(ctx);
   if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
-  const geographicResponse = await handleGeographicRegistryRoute(ctx);
-  if (geographicResponse) return { response: geographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+  // Canonical geography is read only through the IRNI internal Service Binding.\n  // The legacy direct-D1 publisher/reader route is intentionally not dispatched.\n  const irniGeographicResponse = await handleIrniCanonicalRpcV2Route(ctx);\n  if (irniGeographicResponse) return { response: irniGeographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
