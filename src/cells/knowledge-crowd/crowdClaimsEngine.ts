@@ -160,6 +160,7 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
   const nowIso = new Date().toISOString();
   const rawClaimId = input.claimId ? sanitizeInput(input.claimId, 100) : `clm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   if (!isValidFirestoreDocId(rawClaimId)) throw new Error('INVALID_CLAIM_ID');
+  if (inMemoryCrowdClaims.has(rawClaimId)) throw new Error('CLAIM_ID_ALREADY_EXISTS');
   const intlCurrency: IntlCurrencyCode = input.intlCurrency || 'USD';
 
   const claim: CrowdClaimDocument = {
