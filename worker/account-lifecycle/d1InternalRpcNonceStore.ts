@@ -71,6 +71,9 @@ export async function verifyAndConsumeInternalRpcNonce(params: {
     .bind(nonce, params.issuer.slice(0, 64), expiresAtMs, new Date(nowMs).toISOString())
     .run();
 
+  if (insertRes.success === false) {
+    return { ok: false, statusCode: 503, code: 'INTERNAL_RPC_NONCE_STORE_UNAVAILABLE' };
+  }
   if ((insertRes.meta?.changes ?? 0) !== 1) {
     return { ok: false, statusCode: 409, code: 'INTERNAL_RPC_NONCE_REPLAYED' };
   }
