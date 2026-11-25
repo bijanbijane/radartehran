@@ -95,10 +95,12 @@ export async function assertUserNotWriteBlocked(userDb: D1Database, uid: string)
 }
 
 export async function getUserProfileFromD1(userDb: D1Database, uid: string): Promise<D1UserProfile | null> {
-  const row = await userDb
+  const profileRead = await userDb
     .prepare('SELECT * FROM user_profiles WHERE uid = ?1')
     .bind(uid)
-    .first<Record<string, unknown>>();
+    .all<Record<string, unknown>>();
+  if (!profileRead.success) throw new Error('USER_PROFILE_READ_FAILED');
+  const row = profileRead.results[0];
   if (!row) return null;
   return {
     uid: String(row.uid),
@@ -178,10 +180,12 @@ export async function upsertUserProfileInD1(
 }
 
 export async function getUserPrivacyConsentFromD1(userDb: D1Database, uid: string): Promise<D1UserPrivacyConsent> {
-  const row = await userDb
+  const consentRead = await userDb
     .prepare('SELECT * FROM user_privacy_consents WHERE uid = ?1')
     .bind(uid)
-    .first<Record<string, unknown>>();
+    .all<Record<string, unknown>>();
+  if (!consentRead.success) throw new Error('USER_PRIVACY_CONSENT_READ_FAILED');
+  const row = consentRead.results[0];
   if (!row) {
     return {
       uid,
@@ -362,6 +366,7 @@ export async function listUserSessionsFromD1(userDb: D1Database, uid: string): P
     .prepare('SELECT * FROM user_sessions WHERE uid = ?1 ORDER BY last_seen_at_iso DESC LIMIT 50')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_SESSION_LIST_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     sessionId: String(row.session_id),
     uid: String(row.uid),
@@ -389,7 +394,7 @@ export async function upsertUserSessionInD1(
 ): Promise<D1UserSession> {
   await assertUserNotWriteBlocked(userDb, params.uid);
   const nowIso = params.nowIso ?? new Date().toISOString();
-  await userDb
+  const sessionWrite = await userDb
     .prepare(
       `INSERT OR REPLACE INTO user_sessions (
         session_id, uid, device_label, user_agent_summary, ip_prefix,
@@ -407,6 +412,7 @@ export async function upsertUserSessionInD1(
       nowIso,
     )
     .run();
+  if (!sessionWrite.success) throw new Error('USER_SESSION_WRITE_FAILED');
 
   return {
     sessionId: params.sessionId,
@@ -436,6 +442,7 @@ export async function revokeUserSessionInD1(
     )
     .bind('REVOKED', nowIso, params.actorUid, params.sessionId, params.uid)
     .run();
+  if (!res.success) throw new Error('USER_SESSION_REVOKE_FAILED');
   return { revoked: (res.meta?.changes ?? 0) > 0 };
 }
 
@@ -444,6 +451,7 @@ export async function listUserFavoritesFromD1(userDb: D1Database, uid: string): 
     .prepare('SELECT * FROM user_favorites WHERE uid = ?1 ORDER BY created_at_iso DESC LIMIT 100')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_FAVORITES_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     uid: String(row.uid),
     cityId: String(row.city_id),
@@ -460,12 +468,13 @@ export async function upsertUserFavoriteInD1(
   await assertUserNotWriteBlocked(userDb, params.uid);
   const nowIso = params.nowIso ?? new Date().toISOString();
   const note = String(params.note || '').trim().slice(0, 200);
-  await userDb
+  const favoriteWrite = await userDb
     .prepare(
       'INSERT OR REPLACE INTO user_favorites (uid, city_id, hood_id, note, created_at_iso) VALUES (?1, ?2, ?3, ?4, ?5)',
     )
     .bind(params.uid, params.cityId, params.hoodId, note, nowIso)
     .run();
+  if (!favoriteWrite.success) throw new Error('USER_FAVORITE_WRITE_FAILED');
   return { uid: params.uid, cityId: params.cityId, hoodId: params.hoodId, note, createdAtIso: nowIso };
 }
 
@@ -478,6 +487,7 @@ export async function removeUserFavoriteInD1(
     .prepare('DELETE FROM user_favorites WHERE uid = ?1 AND city_id = ?2 AND hood_id = ?3')
     .bind(params.uid, params.cityId, params.hoodId)
     .run();
+  if (!res.success) throw new Error('USER_FAVORITE_DELETE_FAILED');
   return { deleted: (res.meta?.changes ?? 0) > 0 };
 }
 
@@ -486,6 +496,7 @@ export async function listUserDataRequestsFromD1(userDb: D1Database, uid: string
     .prepare('SELECT * FROM user_data_requests WHERE uid = ?1 ORDER BY requested_at_iso DESC LIMIT 50')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_DATA_REQUEST_LIST_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     requestId: String(row.request_id),
     uid: String(row.uid),
@@ -508,7 +519,7 @@ export async function createUserDataRequestInD1(
   const nowIso = params.nowIso ?? new Date().toISOString();
   const requestId = `udr_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const payloadSummaryJson = JSON.stringify(params.summary ?? {}).slice(0, 2000);
-  await userDb
+  const requestWrite = await userDb
     .prepare(
       `INSERT INTO user_data_requests (
         request_id, uid, request_type, status, payload_summary_json,
@@ -517,6 +528,7 @@ export async function createUserDataRequestInD1(
     )
     .bind(requestId, params.uid, params.requestType, 'PENDING', payloadSummaryJson, nowIso, nowIso)
     .run();
+  if (!requestWrite.success) throw new Error('USER_DATA_REQUEST_WRITE_FAILED');
   return {
     requestId,
     uid: params.uid,
