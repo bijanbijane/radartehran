@@ -287,8 +287,15 @@ export class CommsCoreStateEngine {
         !participantUids.includes(input.creatorUid)) {
       return { ok: false, errorCode: 'INVALID_CONVERSATION_PARTICIPANTS' };
     }
+    const requestedParticipantSet = new Set(participantUids);
     const existing = this.conversations.find(
-      (c) => c.type === input.type && c.contextEntityId === input.contextEntityId && c.participants.some((p) => p.uid === input.creatorUid),
+      (c) =>
+        c.type === input.type &&
+        c.contextEntityType === input.contextEntityType &&
+        c.contextEntityId === input.contextEntityId &&
+        c.participants.length === requestedParticipantSet.size &&
+        c.participants.every((participant) => requestedParticipantSet.has(participant.uid)) &&
+        c.participants.some((participant) => participant.uid === input.creatorUid),
     );
     if (existing) return { ok: true, conversation: existing };
     const now = new Date().toISOString();
