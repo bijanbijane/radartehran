@@ -196,13 +196,17 @@ export async function getUserPrivacyConsentFromD1(userDb: D1Database, uid: strin
       updatedAtIso: new Date(0).toISOString(),
     };
   }
+  const consentRevision = Number(row.consent_revision ?? 1);
+  if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+    throw new Error('CONSENT_REVISION_INVALID');
+  }
   return {
     uid: String(row.uid),
     researchAnalyticsConsent: Number(row.research_analytics_consent) === 1,
     behavioralTelemetryConsent: Number(row.behavioral_telemetry_consent) === 1,
     marketingCommunicationsConsent: Number(row.marketing_communications_consent) === 1,
     consentVersion: String(row.consent_version || 'v1'),
-    consentRevision: Math.max(1, Number(row.consent_revision ?? 1)),
+    consentRevision,
     consentSource: String(row.consent_source || 'account_settings'),
     grantedAtIso: row.granted_at_iso ? String(row.granted_at_iso) : null,
     revokedAtIso: row.revoked_at_iso ? String(row.revoked_at_iso) : null,
