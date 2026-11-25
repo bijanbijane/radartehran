@@ -260,6 +260,7 @@ export async function updateUserPrivacyConsentInD1(
   }
 
   const nextConsentRevision = current.consentRevision + 1;
+  if (!Number.isSafeInteger(nextConsentRevision)) throw new Error('CONSENT_REVISION_EXHAUSTED');
   let grantedAtIso = current.grantedAtIso;
   let revokedAtIso = current.revokedAtIso;
   if (nextResearch && !current.researchAnalyticsConsent) {
@@ -309,9 +310,9 @@ export async function updateUserPrivacyConsentInD1(
       .prepare(
         `INSERT INTO user_privacy_consent_audit (
           audit_id, uid, consent_type, previous_value, new_value,
-          consent_version, actor_uid, source, recorded_at_iso
+          consent_version, consent_revision, actor_uid, source, recorded_at_iso
         )
-        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10
         WHERE changes() = 1`,
       )
       .bind(
@@ -321,6 +322,7 @@ export async function updateUserPrivacyConsentInD1(
         entry.previous ? 1 : 0,
         entry.next ? 1 : 0,
         consentVersion,
+        nextConsentRevision,
         params.actorUid,
         consentSource,
         nowIso,
