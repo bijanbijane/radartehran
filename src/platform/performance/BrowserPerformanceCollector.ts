@@ -6,6 +6,8 @@
 export const RT_FE_RUM_MEASUREMENT_TRUTH_SPEC_ID = 'RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030' as const;
 export const RT_FE_RUM_MEASUREMENT_TRUTH_READY = 'RT_FE_STAGE30_RUM_MEASUREMENT_TRUTH_READY' as const;
 
+const MAX_TRACKED_INTERACTIONS = 10_000;
+
 export type PerformanceMeasurementSource = 'FIELD_RUM' | 'LAB' | 'SYNTHETIC_LOCAL';
 export type MetricAvailabilityStatus = 'MEASURED' | 'NO_DATA_YET' | 'UNSUPPORTED_API';
 export type RumBudgetVerdict = 'GOOD' | 'NEEDS_IMPROVEMENT' | 'BUDGET_VIOLATION' | 'INSUFFICIENT_SAMPLE';
@@ -35,6 +37,8 @@ export interface PercentileDistribution {
   p50: number | null;
   p75: number | null;
   p95: number | null;
+  /** Tail diagnostic only; unstable for small cohorts and never a Core Web Vital budget gate. */
+  p99: number | null;
 }
 
 export interface RumPercentileBudgetEvaluation {
@@ -93,6 +97,7 @@ export function buildPercentileDistribution(values: readonly number[]): Percenti
     p50: computeSamplePercentile(valid, 50),
     p75: computeSamplePercentile(valid, 75),
     p95: computeSamplePercentile(valid, 95),
+    p99: computeSamplePercentile(valid, 99),
   };
 }
 
@@ -108,8 +113,11 @@ export function evaluateRumPercentileBudget(params: {
   const clsDist = buildPercentileDistribution(params.clsSamples);
   const ltDist = buildPercentileDistribution(params.longTaskCounts ?? []);
 
-  const totalSamples = Math.max(lcpDist.sampleCount, inpDist.sampleCount, clsDist.sampleCount);
-  if (totalSamples === 0) {
+  // A GOOD verdict requires observations for all three Core Web Vitals.
+  // The minimum count is a conservative lower bound for a complete metric set;
+  // missing INP or CLS must never be silently interpreted as passing.
+  const completeCoreVitalsSampleCount = Math.min(lcpDist.sampleCount, inpDist.sampleCount, clsDist.sampleCount);
+  if (completeCoreVitalsSampleCount === 0) {
     return {
       measurementSource: params.measurementSource,
       sampleCount: 0,
@@ -162,7 +170,9 @@ export class BrowserRumCollector {
   private longTaskCount = 0;
   private totalBlockingTimeMs = 0;
   private slowResourceCount = 0;
-  private interactionDurations: number[] = [];
+  // Keep one maximum duration per interaction ID; repeated event entries must not
+  // overweight a single interaction in the page-level INP percentile.
+  private interactionDurationsById = new Map<number, number>();
   private supportedTypes: Set<string>;
   private readonly observerFactory?: ObserverFactory;
   private routeKey: string;
@@ -196,10 +206,20 @@ export class BrowserRumCollector {
       for (const entry of entries) {
         const interactionId = Number(entry.interactionId ?? 0);
         const duration = Number(entry.duration);
-        if (interactionId > 0 && Number.isFinite(duration) && duration >= 0) {
-          this.interactionDurations.push(duration);
-          const p98 = computeSamplePercentile(this.interactionDurations, 98);
-          this.inpMs = p98 !== null ? Math.round(p98) : Math.round(duration);
+        if (Number.isSafeInteger(interactionId) && interactionId > 0 && Number.isFinite(duration) && duration >= 0) {
+          const previousMax = this.interactionDurationsById.get(interactionId);
+          if (previousMax === undefined || duration > previousMax) {
+            // Refresh insertion order for active interactions while retaining only
+            // a bounded rolling window for unusually long-lived SPA sessions.
+            this.interactionDurationsById.delete(interactionId);
+            this.interactionDurationsById.set(interactionId, duration);
+            if (this.interactionDurationsById.size > MAX_TRACKED_INTERACTIONS) {
+              const oldestInteractionId = this.interactionDurationsById.keys().next().value;
+              if (oldestInteractionId !== undefined) this.interactionDurationsById.delete(oldestInteractionId);
+            }
+            const p98 = computeSamplePercentile([...this.interactionDurationsById.values()], 98);
+            if (p98 !== null) this.inpMs = Math.round(p98);
+          }
         }
       }
     });
@@ -225,7 +245,6 @@ export class BrowserRumCollector {
       }
     });
   }
-
   private observeType(type: string, handler: (entries: Array<Record<string, unknown>>) => void): void {
     if (!this.supportedTypes.has(type)) return;
     if (this.observerFactory) {
@@ -240,7 +259,6 @@ export class BrowserRumCollector {
       this.observers.push(obs as unknown as ObserverLike);
     } catch { /* ignore */ }
   }
-
   public recordNavigationTiming(responseStart: number, requestStart: number): void {
     if (Number.isFinite(responseStart) && Number.isFinite(requestStart) && responseStart >= requestStart) {
       this.ttfbMs = Math.round(responseStart - requestStart);
@@ -277,7 +295,7 @@ export class BrowserRumCollector {
         lcp: this.resolveStatus('largest-contentful-paint', this.lcpMs),
         inp: this.resolveStatus('event', this.inpMs),
         cls: this.resolveStatus('layout-shift', this.clsValue),
-        longtask: this.resolveStatus('longtask', null, this.observers.length > 0),
+        longtask: this.resolveStatus('longtask', null, this.longTaskCount > 0),
       },
     };
   }

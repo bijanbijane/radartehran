@@ -1,8 +1,8 @@
 /**
  * @file tests/rt-fe-stage30-rum-measurement-truth.test.ts
  * @description Comprehensive acceptance test suite for Stage 30 Browser Performance & RUM Measurement Truth
- * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — >= 240 tests verifying real PerformanceObserver collection,
- * zero inference of longTaskCount from LCP, P50/P75/P95 distributions, INSUFFICIENT_SAMPLE handling,
+ * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — 247 tests verifying real PerformanceObserver collection,
+ * zero inference of longTaskCount from LCP, P50/P75/P95/P99 distributions, INSUFFICIENT_SAMPLE handling,
  * FIELD_RUM vs LAB vs SYNTHETIC_LOCAL provenance separation, and Stage 26 telemetry consent gating.
  */
 
@@ -43,6 +43,7 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snap.lcpMs, highLcpMs);
       assert.equal(snap.longTaskCount, 0); // Must be 0, NEVER 4!
       assert.equal(snap.totalBlockingTimeMs, 0);
+      assert.equal(snap.availability.longtask, 'NO_DATA_YET');
 
       const budget = evaluatePagePerformanceBudget({
         lcpMs: highLcpMs,
@@ -126,10 +127,11 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snapUnsupported.availability.lcp, 'UNSUPPORTED_API');
       assert.equal(snapUnsupported.availability.inp, 'UNSUPPORTED_API');
       assert.equal(snapUnsupported.availability.cls, 'UNSUPPORTED_API');
+      assert.equal(snapUnsupported.availability.longtask, 'UNSUPPORTED_API');
 
       const idleCollector = new BrowserRumCollector({
         routePath: '/map',
-        supportedEntryTypes: ['largest-contentful-paint', 'event', 'layout-shift'],
+        supportedEntryTypes: ['largest-contentful-paint', 'event', 'layout-shift', 'longtask'],
         observerFactory: () => ({ observe: () => {}, disconnect: () => {} }),
       });
       idleCollector.start();
@@ -137,6 +139,7 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snapIdle.lcpMs, null);
       assert.equal(snapIdle.availability.lcp, 'NO_DATA_YET');
       assert.equal(snapIdle.availability.inp, 'NO_DATA_YET');
+      assert.equal(snapIdle.availability.longtask, 'NO_DATA_YET');
       idleCollector.disconnect();
     });
   }
@@ -165,6 +168,21 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(goodEval.withinBudget, true);
       assert.equal(goodEval.verdict, 'GOOD');
       assert.ok((goodEval.distributions.lcpMs.p75 ?? 0) <= 2500);
+      assert.equal(goodEval.distributions.lcpMs.p50, 1650);
+      assert.equal(goodEval.distributions.lcpMs.p95, 2055);
+      assert.equal(goodEval.distributions.lcpMs.p99, 2091, 'P99 is calculated as an interpolated tail diagnostic');
+      assert.equal(buildPercentileDistribution([]).p99, null, 'empty cohorts do not fabricate P99');
+
+      const tailOnlyEval = evaluateRumPercentileBudget({
+        measurementSource: 'FIELD_RUM',
+        lcpSamplesMs: [1000, 1100, 1200, 1300, 30000],
+        inpSamplesMs: [20, 30, 40, 50, 60],
+        clsSamples: [0.01, 0.02, 0.03, 0.04, 0.05],
+        longTaskCounts: [0, 0, 0, 0, 0],
+      });
+      assert.equal(tailOnlyEval.withinBudget, true, 'P99 must not become a Core Web Vitals release gate');
+      assert.ok((tailOnlyEval.distributions.lcpMs.p99 ?? 0) > 2500, 'the P99 tail remains visible as a diagnostic');
+      assert.ok(!tailOnlyEval.failingMetrics.some((metric) => metric.endsWith('_P99')), 'only established P75 metrics gate the verdict');
 
       const violationEval = evaluateRumPercentileBudget({
         measurementSource: 'SYNTHETIC_LOCAL',
@@ -246,4 +264,53 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(noSample.measurementSource, 'FIELD_RUM');
     });
   }
+
+
+describe('Core Web Vitals sample completeness', () => {
+  it('does not return GOOD when one of LCP, INP, or CLS has no observations', () => {
+    const partial = evaluateRumPercentileBudget({
+      measurementSource: 'FIELD_RUM',
+      lcpSamplesMs: [1200, 1500],
+      inpSamplesMs: [],
+      clsSamples: [0.02, 0.04],
+      longTaskCounts: [0, 0],
+    });
+
+    assert.equal(partial.sampleCount, 0, 'the complete Core Web Vitals sample count is zero');
+    assert.equal(partial.withinBudget, null);
+    assert.equal(partial.verdict, 'INSUFFICIENT_SAMPLE');
+    assert.equal(partial.distributions.lcpMs.sampleCount, 2);
+    assert.equal(partial.distributions.inpMs.sampleCount, 0);
+    assert.equal(partial.distributions.cls.sampleCount, 2);
+  });
+});
+
+describe('INP interaction aggregation', () => {
+  it('uses one maximum duration per interaction instead of weighting repeated event entries', () => {
+    const collector = new BrowserRumCollector({
+      routePath: '/search',
+      supportedEntryTypes: ['event'],
+      observerFactory: (cb) => ({
+        observe: (options) => {
+          if (options.type !== 'event') return;
+          const repeatedEvents = Array.from({ length: 100 }, () => ({ interactionId: 1, duration: 10 }));
+          cb([
+            ...repeatedEvents,
+            { interactionId: 1, duration: 80 },
+            { interactionId: 2, duration: 200 },
+            { interactionId: 3, duration: 300 },
+          ]);
+        },
+        disconnect: () => {},
+      }),
+    });
+
+    collector.start();
+    const snapshot = collector.getSnapshot();
+    const expectedInp = Math.round(computeSamplePercentile([80, 200, 300], 98) ?? 0);
+    assert.equal(snapshot.inpMs, expectedInp);
+    assert.equal(snapshot.inpMs, 296);
+    collector.disconnect();
+  });
+});
 });
