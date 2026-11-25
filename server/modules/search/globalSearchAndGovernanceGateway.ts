@@ -47,7 +47,11 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   };
 
   const resolveSearchAuth = async (req: Request): Promise<{ uid?: string; isAdmin: boolean }> => {
-    const admin = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const admin = await verifyAdminApiAuthorization(
+      req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+    );
     if (admin.authorized) return { uid: 'admin', isAdmin: true };
     const uid = await resolveOptionalAuthUid(req);
     return { uid: uid ?? undefined, isAdmin: false };
