@@ -28,8 +28,12 @@ import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import { decryptMarketPhone } from '../marketplace/marketPiiCrypto';
 import type { WorkerRequestContext } from '../types';
 
-async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
-  return authenticateWorkerSession(ctx, sensitiveRoute);
+async function authenticateAccountCaller(
+  ctx: WorkerRequestContext,
+  sensitiveRoute = false,
+  requireRecentAuth = false,
+) {
+  return authenticateWorkerSession(ctx, sensitiveRoute, requireRecentAuth);
 }
 
 function isHandledAccountWorkerRoute(method: string, pathname: string): boolean {
@@ -65,7 +69,11 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
   const isSensitive =
     (method !== 'GET' && method !== 'HEAD') ||
     (method === 'GET' && pathname === '/api/account/export-data');
-  const auth = await authenticateAccountCaller(ctx, isSensitive);
+  const requiresRecentAuth =
+    pathname === '/api/account/export-data' ||
+    pathname === '/api/account/deletion-requests' ||
+    (method === 'POST' && pathname.startsWith('/api/account/sessions/') && pathname.endsWith('/revoke'));
+  const auth = await authenticateAccountCaller(ctx, isSensitive, requiresRecentAuth);
   if (!auth.authenticated || !auth.uid) {
     return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
       status: 'error',
