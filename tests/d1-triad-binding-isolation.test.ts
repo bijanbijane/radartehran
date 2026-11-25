@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { D1Database, WorkerEnv } from '../worker/types';
 import {
+  getTriadDomainBindingDiagnostics,
   hasUserResearchBindingCollision,
   requireNeighborhoodDb,
   requireResearchDb,
@@ -39,4 +40,19 @@ test('neighborhood store cannot alias research store', () => {
   assert.equal(hasUserResearchBindingCollision({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }), true);
   assert.equal(requireNeighborhoodDb({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }).ok, false);
 });
+
+test('diagnostics report the physical IRNI geographic D1 binding when present', () => {
+  const env: WorkerEnv = { DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: neighborhoods };
+  const diagnostics = getTriadDomainBindingDiagnostics(env);
+  assert.equal(diagnostics.neighborhoodDbBound, true);
+  assert.equal(diagnostics.irniDirectDbBindingPresent, true);
+});
+
+test('diagnostics report no IRNI geographic D1 binding when absent', () => {
+  const env: WorkerEnv = { DB: user, RESEARCH_DB: research };
+  const diagnostics = getTriadDomainBindingDiagnostics(env);
+  assert.equal(diagnostics.neighborhoodDbBound, false);
+  assert.equal(diagnostics.irniDirectDbBindingPresent, false);
+});
+
 // The live smoke reports the deployed JS asset count and App Check site-key presence without mutating D1.
