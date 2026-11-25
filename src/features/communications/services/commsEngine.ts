@@ -319,7 +319,13 @@ export class CommsCoreStateEngine {
     if (sender.blockedOtherParticipant || conv.participants.some((p) => p.uid !== input.senderUid && p.blockedOtherParticipant)) {
       return { ok: false, statusCode: 403, errorCode: 'CONVERSATION_BLOCKED_BY_RECIPIENT' };
     }
-    const recentSentCount = conv.messages.filter((m) => m.senderUid === input.senderUid && Date.now() - Date.parse(m.createdAtIso) < 60_000).length;
+    const nowMs = Date.now();
+    const recentSentCount = this.conversations.reduce(
+      (count, conversation) => count + conversation.messages.filter(
+        (message) => message.senderUid === input.senderUid && nowMs - Date.parse(message.createdAtIso) < 60_000,
+      ).length,
+      0,
+    );
     if (recentSentCount >= MAX_MESSAGES_PER_MINUTE_STANDARD) return { ok: false, statusCode: 429, errorCode: 'MESSAGE_RATE_LIMIT_EXCEEDED' };
     const cleanBody = sanitizeInput(input.bodyFa, 1200);
     if (cleanBody.length < 2) return { ok: false, statusCode: 400, errorCode: 'EMPTY_OR_UNSAFE_MESSAGE' };
