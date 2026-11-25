@@ -76,6 +76,7 @@ import {
   purgeExpiredResearchData,
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
+import { evaluateTieredWorkerRateLimit } from '../worker/cache/kvAndEdgeRateLimiter';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
@@ -816,6 +817,40 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('fails closed when a strong durable rate-limit store is missing', async () => {
+      const result = await evaluateTieredWorkerRateLimit({
+        tier: 'strong_durable',
+        action: 'admin_mutation',
+        subjectKey: 'admin-user',
+        maxRequests: 5,
+        windowSeconds: 60,
+      });
+      assert.equal(result.allowed, false);
+      assert.equal(result.tierUsed, 'strong_durable');
+    });
+
+    it('enforces strong durable limits atomically under concurrent requests', async () => {
+      const sqlite = createForensicSqliteD1({ yieldBeforeFirst: true });
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const results = await Promise.all(
+        Array.from({ length: 20 }, () => evaluateTieredWorkerRateLimit({
+          tier: 'strong_durable',
+          action: 'research_ingest',
+          subjectKey: 'same-user',
+          maxRequests: 5,
+          windowSeconds: 60,
+          db: sqlite.db,
+          nowMs: 1_795_000_000_000,
+        })),
+      );
+      assert.equal(results.filter((result) => result.allowed).length, 5);
+      assert.equal(results.filter((result) => !result.allowed).length, 15);
+      const row = sqlite.raw.prepare(
+        'SELECT counter FROM strong_rate_limits WHERE bucket_key = ?',
+      ).get('research_ingest:same-user') as { counter: number };
+      assert.equal(row.counter, 6, 'the denied counter is capped at maxRequests + 1');
+    });
+
     it('counts concurrent duplicate research ingestion from atomic D1 changes, not optimistic SELECTs', async () => {
       const userSqlite = createForensicSqliteD1();
       const researchSqlite = createForensicSqliteD1({ yieldBeforeBatch: true });
