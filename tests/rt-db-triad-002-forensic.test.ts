@@ -78,7 +78,12 @@ import {
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
 import { evaluateTieredWorkerRateLimit } from '../worker/cache/kvAndEdgeRateLimiter';
-import { buildR2MediaObjectKey, isObjectUnderLegalHold } from '../worker/storage/r2StorageAdapter';
+import {
+  buildR2MediaObjectKey,
+  createSignedR2MediaUrl,
+  isObjectUnderLegalHold,
+  verifySignedR2MediaUrl,
+} from '../worker/storage/r2StorageAdapter';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
@@ -819,6 +824,49 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('binds signed R2 URLs to safe object paths, MIME types, methods, and bounded expiry', async () => {
+      const nowSeconds = 1_795_000_000;
+      const signingSecret = 'test-r2-signing-secret-0123456789';
+      const params = {
+        objectId: 'media_12345678',
+        objectKey: 'listings/tehran/hood-1001/image/2026-11/media_12345678.jpg',
+        method: 'GET' as const,
+        mimeType: 'image/jpeg',
+        expiresInSeconds: 3600,
+        signingSecret,
+        nowSeconds,
+      };
+      const signed = await createSignedR2MediaUrl(params);
+      assert.equal(await verifySignedR2MediaUrl({
+        objectId: params.objectId,
+        objectKey: params.objectKey,
+        method: params.method,
+        mimeType: params.mimeType,
+        expSeconds: signed.expiresAtSeconds,
+        signatureHex: signed.signatureHex,
+        signingSecret,
+        nowSeconds,
+      }), true);
+      assert.equal(await verifySignedR2MediaUrl({
+        objectId: params.objectId,
+        objectKey: params.objectKey,
+        method: params.method,
+        mimeType: params.mimeType,
+        expSeconds: signed.expiresAtSeconds + 1,
+        signatureHex: signed.signatureHex,
+        signingSecret,
+        nowSeconds,
+      }), false);
+      await assert.rejects(
+        () => createSignedR2MediaUrl({ ...params, objectKey: 'listings/../private/media_12345678.jpg' }),
+        /MEDIA_OBJECT_KEY_INVALID/,
+      );
+      await assert.rejects(
+        () => createSignedR2MediaUrl({ ...params, expiresInSeconds: Number.NaN }),
+        /MEDIA_SIGNING_TIME_INVALID/,
+      );
+    });
+
     it('rejects unsafe R2 key components instead of silently coercing them', () => {
       const validKey = buildR2MediaObjectKey({
         city: 'TEHRAN',
