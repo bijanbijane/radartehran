@@ -1340,6 +1340,19 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       const researchSqlite = createForensicSqliteD1();
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
 
+      // Explicit timezone-less timestamps must not be interpreted using runtime-local timezone.
+      await assert.rejects(
+        () => computeKAnonymousResearchAggregation({
+          researchDb: researchSqlite.db,
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 10,
+          windowStartIso: '2026-11-22T00:00:00.000',
+          windowEndIso: '2026-11-23T00:00:00.000Z',
+        }),
+        (err: unknown) => err instanceof AggregationWindowPolicyError && err.code === 'AGGREGATION_WINDOW_NOT_CANONICAL_UTC',
+      );
+
       // 1. Sub-day / non-midnight window MUST be rejected (Query Differencing protection)
       await assert.rejects(
         () =>
