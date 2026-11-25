@@ -1,11 +1,11 @@
 /**
  * @file src/components/TopBarProvinceDirectoryControl.tsx
- * @description کنترل یکپارچه سوییچر ۵ کلان‌شهر + فهرست‌بندی طبقه‌بندی‌شده ۳۱ استان و شهرهای کشور در نوار بالا.
+ * @description کنترل شهرهای دارای داده بازار و میان‌بر به رجیستری canonical سراسری IRNI.
  * جداشده از `NationwideProvinceModal` برای فعال‌سازی بارگذاری تنبل (Code-Splitting) واقعی مودال ۳۱ استان.
  */
 
 import React, { useMemo } from 'react';
-import { Compass } from 'lucide-react';
+import { Compass, Database } from 'lucide-react';
 import {
   ALL_31_IRAN_PROVINCES,
   findProvinceForHood,
@@ -26,6 +26,7 @@ export interface TopBarProvinceDirectoryProps {
     targetZoom?: number
   ) => void;
   onOpenProvinceModal?: () => void;
+  onOpenCanonicalRegistry?: () => void;
 }
 
 export function TopBarProvinceAndCityDirectoryControl({
@@ -33,6 +34,7 @@ export function TopBarProvinceAndCityDirectoryControl({
   selectedHoodId,
   onSwitchCity,
   onOpenProvinceModal,
+  onOpenCanonicalRegistry,
 }: TopBarProvinceDirectoryProps): React.ReactElement {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -107,7 +109,7 @@ export function TopBarProvinceAndCityDirectoryControl({
       {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها (فقط در صورت عدم وجود مودال ۳۱ استان) */}
       <div className={onOpenProvinceModal ? 'sr-only' : 'relative hidden sm:flex items-center'}>
         <select
-          aria-label="فهرست‌بندی استان‌ها و شهرهای ایران"
+          aria-label="فهرست مناطق دارای پوشش بازار Radar"
           tabIndex={onOpenProvinceModal ? -1 : 0}
           value={`hood:${selectedHoodId}`}
           onChange={(e) => {
@@ -128,11 +130,24 @@ export function TopBarProvinceAndCityDirectoryControl({
             }
           }}
           className="bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-[9px] px-2 py-1.5 text-[11px] font-bold focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[140px] sm:max-w-[150px] 2xl:max-w-[180px] truncate"
-          title="فهرست‌بندی جامع ۳۱ استان، شهرها و محله‌های ایران"
+          title="مناطق دارای داده بازار محلی Radar؛ مرجع رسمی در رجیستری IRNI"
         >
           {renderedProvinceGroups}
         </select>
       </div>
+
+      {onOpenCanonicalRegistry && (
+        <button
+          type="button"
+          onClick={onOpenCanonicalRegistry}
+          className="px-2.5 py-1.5 rounded-[9px] border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 text-[11px] font-extrabold flex items-center gap-1 shadow-xs transition shrink-0 cursor-pointer whitespace-nowrap"
+          title="مشاهده تمام محله‌های canonical از رجیستری رسمی هوشمندی محله‌های ایران"
+          aria-label="بازکردن رجیستری رسمی محله‌های ایران"
+        >
+          <Database className="w-3.5 h-3.5" />
+          <span>رجیستری رسمی</span>
+        </button>
+      )}
 
       {/* دکمه باز کردن مودال فهرست جامع ۳۱ استان و شهرها */}
       {onOpenProvinceModal && (
