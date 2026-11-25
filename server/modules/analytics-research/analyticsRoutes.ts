@@ -133,7 +133,7 @@ export function registerAnalyticsResearchRoutes(
   app.post('/api/v1/analytics/exports', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
-    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     const placeId = typeof req.body?.placeId === 'string' ? sanitizeInput(req.body.placeId, 64).trim() : null;
     const format = req.body?.format === 'json' ? 'json' : 'csv';
     const datasetId = resolveDatasetIdForExport(placeId);
@@ -268,7 +268,7 @@ export function registerAnalyticsResearchRoutes(
   app.get('/api/v1/research/workspace', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
-    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     const state = getAnalyticsState();
     const visibleAnalyses = state.savedAnalyses.filter((a) =>
       a.visibility === 'PUBLIC' || adminAuth.authorized || (auth.authorized && auth.uid && a.ownerId === auth.uid),
@@ -311,7 +311,7 @@ export function registerAnalyticsResearchRoutes(
   });
 
   app.post('/api/admin/analytics/pipelines/:pipelineId/run', async (req: Request, res: Response) => {
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) { res.status(auth.statusCode).json({ ok: false, errorFa: 'اجرای پایپ‌لاین فقط برای مدیر مجاز است.' }); return; }
     const state = getAnalyticsState();
     const def = state.pipelineDefinitions.find((p) => p.id === req.params.pipelineId);
@@ -347,7 +347,7 @@ export function registerAnalyticsResearchRoutes(
   });
 
   app.post('/api/admin/analytics/runs/:runId/cancel', async (req: Request, res: Response) => {
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) { res.status(auth.statusCode).json({ ok: false }); return; }
     const state = getAnalyticsState();
     const run = state.pipelineRuns.find((r) => r.runId === req.params.runId);
