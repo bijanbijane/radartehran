@@ -111,19 +111,30 @@ async function createOrResolveIdentity(
   linkUid?: string,
 ): Promise<{ uid: string; linked: boolean }> {
   const existing = await db.prepare(
-    `SELECT i.uid, p.account_status
+    `SELECT i.uid, p.account_status, i.email, i.email_verified, i.phone_e164
      FROM auth_identities i
      LEFT JOIN user_profiles p ON p.uid = i.uid
      WHERE i.provider = ?1 AND i.provider_subject = ?2
      LIMIT 1`,
-  ).bind(provider, subject).first<{ uid: string; account_status: string | null }>();
+  ).bind(provider, subject).first<{
+    uid: string;
+    account_status: string | null;
+    email: string | null;
+    email_verified: number;
+    phone_e164: string | null;
+  }>();
 
   if (existing) {
     if (existing.account_status !== 'ACTIVE') throw new Error('ACCOUNT_NOT_ACTIVE');
     if (linkUid && existing.uid !== linkUid) throw new Error('IDENTITY_ALREADY_LINKED_TO_ANOTHER_ACCOUNT');
+    const nextEmail = profile.email === undefined ? existing.email : profile.email;
+    const nextEmailVerified = profile.emailVerified === undefined
+      ? Number(existing.email_verified) === 1
+      : profile.emailVerified;
+    const nextPhone = profile.phone === undefined ? existing.phone_e164 : profile.phone;
     const updated = await db.prepare(
       'UPDATE auth_identities SET email = ?1, email_verified = ?2, phone_e164 = ?3, last_authenticated_at_iso = ?4 WHERE provider = ?5 AND provider_subject = ?6 AND uid = ?7',
-    ).bind(profile.email ?? null, profile.emailVerified ? 1 : 0, profile.phone ?? null, new Date().toISOString(), provider, subject, existing.uid).run();
+    ).bind(nextEmail, nextEmailVerified ? 1 : 0, nextPhone, new Date().toISOString(), provider, subject, existing.uid).run();
     assertSingleD1Write(updated, 'AUTH_IDENTITY_WRITE_FAILED');
     return { uid: existing.uid, linked: false };
   }
