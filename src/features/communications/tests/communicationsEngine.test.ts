@@ -214,6 +214,22 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   assert.equal(convRes.ok, true);
   const cid = convRes.conversation!.conversationId;
 
+  // Ownership changes must not reuse the previous owner's private conversation.
+  const changedCounterparty = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-99',
+    contextTitleFa: 'استعلام واحد ۹۰ متری پونک',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-new-seller', displayNameFa: 'مالک جدید', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(changedCounterparty.ok, true);
+  assert.notEqual(changedCounterparty.conversation!.conversationId, cid);
+  assert.equal(changedCounterparty.conversation!.participants.some((p) => p.uid === 'u-seller'), false);
+
   // Non-participant IDOR blocked on sendMessage
   assert.equal(engine.sendMessage({ conversationId: cid, senderUid: 'intruder', bodyFa: 'سلام پیام غیرمجاز' }).statusCode, 403);
 
