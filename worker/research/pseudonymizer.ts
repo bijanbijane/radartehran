@@ -151,8 +151,8 @@ export async function deriveAllSubjectKeysForErasure(params: {
 export async function hashUidForComplianceReceipt(uid: string, receiptSecret?: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
   const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length >= 16) {
-    return computeHmacSha256Hex(cleanSecret, canonical);
+  if (new TextEncoder().encode(cleanSecret).byteLength < 32) {
+    throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK');
   }
-  return computeSha256Hex(canonical);
+  return computeHmacSha256Hex(cleanSecret, canonical);
 }
