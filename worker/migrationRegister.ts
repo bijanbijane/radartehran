@@ -23,7 +23,7 @@ const GROUP_1A_VERIFIED_PATHS = new Set<string>([
   'GET /robots.txt',
 ]);
 
-const GROUP_2_VERIFIED_IRNI_RPC_V2_PATHS = new Set<string>([
+const GROUP_2_IRNI_RPC_V2_PATHS = new Set<string>([
   'GET /api/v2/reference/irni/canonical/metadata',
   'GET /api/v2/reference/irni/canonical/entities',
   'GET /api/v2/reference/irni/canonical/entities/:geographicEntityId',
@@ -137,7 +137,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
     };
   }
 
-  if (GROUP_2_VERIFIED_IRNI_RPC_V2_PATHS.has(key)) {
+  if (GROUP_2_IRNI_RPC_V2_PATHS.has(key)) {
     return {
       migrationGroup: 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS',
       workerHandlerModule: 'worker/routes/irniCanonicalRpcV2Routes.ts',
