@@ -51,7 +51,8 @@ Draft PR #61 adds:
 - Revision and checksum verification, including entity identity metadata and paginated snapshots.
 - A public, read-only Radar facade at `/api/v2/reference/irni/canonical/*` for metadata, entities, relationships, exact resolution and aliases.
 - Migration Register entries and a Wrangler Service Binding from Radar to `irni-api`. The binding targets the default WorkerEntrypoint; no `entrypoint` field is required.
-- The Geographic Registry Explorer migrated to cursor pagination, official `issuedOrderIndex`, province filtering and canonical-name search.
+- The Geographic Registry Explorer migrated to cursor pagination, official `issuedOrderIndex`, province filtering and canonical-name search; the global map toolbar now links directly to Discover → Registry.
+- The legacy 31-province modal is explicitly labeled as Radar's current market-data coverage, not as the canonical national neighborhood registry. Its static market areas remain separate from IRNI canonical entities.
 - Health diagnostics that verify IRNI RPC metadata and do not read the shared geography D1 directly.
 - Removal of the obsolete external HTTPS/token client and its environment variables.
 - Removal of dispatch to the legacy direct-D1 geographic reader/publisher handler.
