@@ -100,4 +100,4 @@
 
 1. **احراز هویت Cloudflare در محیط اجرا (`BLOCKED`):** `wrangler whoami` احراز هویت نشده و هیچ `CLOUDFLARE_API_TOKEN` در محیط موجود نیست؛ بنابراین بررسی زنده Remote D1، اجرای Migration Remote و استقرار Staging/Production در این محیط امکان‌پذیر نیست.
 2. **تامین دیتابیس‌های Staging (`BLOCKED_STAGING_DATABASES_NOT_PROVISIONED`):** Staging به هیچ دیتابیس Production متصل نیست و نیازمند ایجاد `radar-user-db-staging` و `radar-researcher-db-staging` است.
-3. **قرارداد زنده خارجی IRNI (`BLOCKED_EXTERNAL_IRNI_CONTRACT`):** کلاینت IRNI از نظر Unit و Contract تست شده، اما تا زمان تامین `IRNI_API_BASE_URL`، سکرت `IRNI_API_TOKEN` و قرارداد رسمی سرویس زنده IRNI، تست یکپارچگی زنده (`Live External API Integration Tested`) مسدود است.
+3. **مرجع جغرافیایی IRNI:** مسیر خارجی HTTPS و Bearer Token بازنشسته شده است. مسیر هدف، Service Binding داخلی `IRNI_GEOGRAPHY` به Worker `irni-api` با RPC نسخه ۲ است. پیاده‌سازی در Radar PR #61 و IRNI PR #22 به‌صورت Draft قرار دارد؛ تا اجرای واقعی تست‌ها و استقرار کنترل‌شده، یکپارچگی زنده تأییدشده محسوب نمی‌شود.
