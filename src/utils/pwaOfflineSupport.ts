@@ -11,7 +11,7 @@ export type ServiceWorkerCachingStrategy =
   | 'BypassPrivateOrMutation'
   | 'NetworkFirstShell'
   | 'NetworkFirstMarketData'
-  | 'StaleWhileRevalidateMapTile'
+  | 'NetworkOnlyMapTile'
   | 'StaleWhileRevalidateUiAsset'
   | 'NetworkOnlyOther';
 
@@ -190,13 +190,19 @@ export function classifyServiceWorkerRequestStrategy(input: {
     return 'NetworkFirstMarketData';
   }
 
-  if (
-    pathname.startsWith('/api/osm-tile/') ||
-    host.includes('tile.openstreetmap.org') ||
-    host.includes('basemaps.cartocdn.com') ||
-    host.includes('arcgisonline.com')
-  ) {
-    return 'StaleWhileRevalidateMapTile';
+  if (pathname.startsWith('/api/osm-tile/')) {
+    return 'NetworkOnlyMapTile';
+  }
+
+  const isExternalMapTileHost =
+    host === 'tile.openstreetmap.org' ||
+    host.endsWith('.tile.openstreetmap.org') ||
+    host === 'basemaps.cartocdn.com' ||
+    host.endsWith('.basemaps.cartocdn.com') ||
+    host === 'arcgisonline.com' ||
+    host.endsWith('.arcgisonline.com');
+  if (isExternalMapTileHost) {
+    return 'NetworkOnlyMapTile';
   }
 
   if (host === 'cdn.jsdelivr.net' || host === 'fonts.googleapis.com' || host === 'fonts.gstatic.com') {

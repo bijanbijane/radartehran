@@ -2,8 +2,9 @@
  * @file public/sw.js
  * @description Service Worker for Tehran Housing Radar (رادار محله‌های تهران).
  * Caches essential UI assets (HTML shell, JS/CSS bundles, fonts, icons, Leaflet map assets,
- * visited map tiles, and read-only market pulse snapshots) to enable basic neighborhood
- * exploration, filtering, and calculators without an active internet connection.
+ * and read-only market pulse snapshots) to enable basic neighborhood exploration,
+ * filtering, and calculators without an active internet connection. Map tiles are never
+ * persisted in Cache API; their providers' HTTP cache directives remain authoritative.
  */
 
 const CACHE_VERSION = 'v4-2026-10';
@@ -12,7 +13,6 @@ const UI_ASSETS_CACHE = `tehran-radar-assets-${CACHE_VERSION}`;
 const MAP_AND_API_CACHE = `tehran-radar-data-${CACHE_VERSION}`;
 
 const ACTIVE_CACHES = [APP_SHELL_CACHE, UI_ASSETS_CACHE, MAP_AND_API_CACHE];
-const MAX_CACHED_MAP_TILES = 160;
 
 /**
  * Core app shell URLs pre-cached during Service Worker installation.
@@ -36,15 +36,6 @@ const OPTIONAL_WARM_URLS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   '/api/market-pulse?city=tehran',
 ];
-
-/**
- * Offline SVG tile placeholder when an uncached map tile is requested while offline.
- */
-const OFFLINE_MAP_TILE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" fill="#E5E5EA"/>
-  <path d="M0 64H256M0 128H256M0 192H256M64 0V256M128 0V256M192 0V256" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4 4"/>
-  <circle cx="128" cy="128" r="24" fill="none" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.45"/>
-</svg>`;
 
 /**
  * City-scoped honest offline JSON response for /api/market-pulse or /api/air-quality
@@ -117,16 +108,26 @@ function isPrivateOrSensitiveRequest(request, url) {
 /**
  * Determines whether a request is for a map tile (local proxy or public OSM/CARTO tile server).
  */
+/**
+ * Recognizes map tiles for network-only fetch handling and old-cache cleanup.
+ * Keep the same-origin OSM proxy in this predicate: proxy responses are still
+ * OSM-derived and must not become persistent offline-map tiles in Cache API.
+ */
 function isMapTileRequest(url) {
   const pathname = url.pathname || '';
   if (pathname.startsWith('/api/osm-tile/')) return true;
   const host = (url.hostname || '').toLowerCase();
   return (
-    host.includes('tile.openstreetmap.org') ||
-    host.includes('basemaps.cartocdn.com') ||
-    host.includes('arcgisonline.com')
+    host === 'tile.openstreetmap.org' ||
+    host.endsWith('.tile.openstreetmap.org') ||
+    host === 'basemaps.cartocdn.com' ||
+    host.endsWith('.basemaps.cartocdn.com') ||
+    host === 'arcgisonline.com' ||
+    host.endsWith('.arcgisonline.com')
   );
 }
+
+
 
 /**
  * Determines whether a request is for an essential UI asset (JS/CSS bundle, font, icon, Leaflet CDN, Vite module).
@@ -167,23 +168,6 @@ function isEssentialUiAssetRequest(request, url) {
   }
 
   return /\.(js|mjs|ts|tsx|css|woff2?|ttf|otf|svg|png|jpe?g|webp|avif|ico)$/i.test(pathname);
-}
-
-/**
- * Bounds the number of entries in a cache (FIFO eviction) so map tiles never exhaust storage.
- */
-async function trimCache(cacheName, maxItems) {
-  try {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    if (keys.length <= maxItems) return;
-    const excess = keys.length - maxItems;
-    for (let i = 0; i < excess; i += 1) {
-      await cache.delete(keys[i]);
-    }
-  } catch {
-    // Ignore quota/storage errors
-  }
 }
 
 self.addEventListener('install', (event) => {
@@ -244,6 +228,27 @@ self.addEventListener('activate', (event) => {
       } catch {
         // Never block SW claim on cache enumeration failure
       }
+
+      // Purge all previously cached map tiles. The PWA must not provide offline tile storage.
+      try {
+        const dataCache = await caches.open(MAP_AND_API_CACHE);
+        const cachedRequests = await dataCache.keys();
+        await Promise.all(
+          cachedRequests.map(async (cachedRequest) => {
+            try {
+              const cachedUrl = new URL(cachedRequest.url);
+              if (isMapTileRequest(cachedUrl)) {
+                await dataCache.delete(cachedRequest);
+              }
+            } catch {
+              // A malformed cache key must not prevent activation.
+            }
+          })
+        );
+      } catch {
+        // Cache cleanup is best-effort; never block SW claim.
+      }
+
       await self.clients.claim();
     })()
   );
@@ -382,40 +387,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Map Tiles: Stale-While-Revalidate with SVG tile placeholder when offline
+  // 3. Map tiles: use the browser's HTTP cache and provider Cache-Control headers.
+  // Do not persist OSM-derived tiles in Cache API: the OSM standard tile service
+  // prohibits offline-map use. Same-origin proxy tiles follow the same conservative rule.
   if (isMapTileRequest(url)) {
-    event.respondWith(
-      (async () => {
-        const tileCache = await caches.open(MAP_AND_API_CACHE);
-        const cachedTile = await tileCache.match(request);
-        const networkPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')) {
-              tileCache
-                .put(request, networkResponse.clone())
-                .then(() => trimCache(MAP_AND_API_CACHE, MAX_CACHED_MAP_TILES))
-                .catch(() => {});
-            }
-            return networkResponse;
-          })
-          .catch(() => null);
-
-        if (cachedTile) {
-          return cachedTile;
-        }
-        const liveTile = await networkPromise;
-        if (liveTile) {
-          return liveTile;
-        }
-        return new Response(OFFLINE_MAP_TILE_SVG, {
-          status: 200,
-          headers: {
-            'Content-Type': 'image/svg+xml; charset=utf-8',
-            'Cache-Control': 'no-store',
-          },
-        });
-      })()
-    );
+    event.respondWith(fetch(request));
     return;
   }
 

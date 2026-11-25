@@ -77,13 +77,63 @@ assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://tehranradar.ir/api/osm-tile/osm/13/5264/3226.png',
   }),
-  'StaleWhileRevalidateMapTile'
+  'NetworkOnlyMapTile'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
     url: 'https://tehranradar.ir/api/market-pulse?city=tehran',
   }),
   'NetworkFirstMarketData'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://tile.openstreetmap.org/13/5264/3226.png',
+  }),
+  'NetworkOnlyMapTile',
+  'Direct OpenStreetMap tiles must not be stored by the Radar Service Worker'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://a.basemaps.cartocdn.com/light_all/13/5264/3226.png',
+  }),
+  'NetworkOnlyMapTile',
+  'Direct CARTO tiles must remain network-only unless a provider-specific cache policy is implemented'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/13/1/2/3',
+  }),
+  'NetworkOnlyMapTile',
+  'Direct ArcGIS tiles must remain network-only unless a provider-specific cache policy is implemented'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://a.tile.openstreetmap.org/13/5264/3226.png',
+  }),
+  'NetworkOnlyMapTile',
+  'Recognized OSM subdomains must follow the same provider-safe network-only policy'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://tile.openstreetmap.org.evil.example/13/5264/3226.png',
+  }),
+  'NetworkOnlyOther',
+  'A hostname that merely contains an OSM provider suffix must not be treated as an OSM host'
+);
+assert.equal(
+  classifyServiceWorkerRequestStrategy({
+    url: 'https://basemaps.cartocdn.com.evil.example/light_all/13/5264/3226.png',
+  }),
+  'NetworkOnlyOther',
+  'A hostname that merely contains a CARTO provider suffix must not be treated as a CARTO host'
+);
+assert.ok(
+  swSource.includes('event.respondWith(fetch(request))') && swSource.includes('Do not persist OSM-derived tiles in Cache API'),
+  'Map tiles must use the browser HTTP cache rather than persistent Service Worker offline storage'
+);
+assert.ok(
+  swSource.includes('if (isMapTileRequest(cachedUrl))'),
+  'Service Worker activation must purge previously cached map tile entries'
 );
 assert.equal(
   classifyServiceWorkerRequestStrategy({
