@@ -1014,6 +1014,26 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
+    it('does not reset a corrupt consent revision to a lower value', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.prepare(
+        `INSERT INTO user_privacy_consents (
+          uid, research_analytics_consent, behavioral_telemetry_consent,
+          marketing_communications_consent, consent_version, consent_revision,
+          consent_source, granted_at_iso, revoked_at_iso, updated_at_iso
+        ) VALUES (?, 1, 0, 0, 'v1', 'not-a-number', 'test', ?, NULL, ?)`,
+      ).run('uid_corrupt_consent_revision', new Date().toISOString(), new Date().toISOString());
+      await assert.rejects(
+        () => updateUserPrivacyConsentInD1(sqlite.db, {
+          uid: 'uid_corrupt_consent_revision',
+          actorUid: 'uid_corrupt_consent_revision',
+          researchAnalyticsConsent: false,
+        }),
+        /CONSENT_REVISION_INVALID/,
+      );
+    });
+
     it('blocks account writes when the write-block lookup returns success=false', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
