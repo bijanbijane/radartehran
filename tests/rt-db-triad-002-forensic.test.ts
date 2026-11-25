@@ -833,10 +833,12 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       applyMigrations(sqlite.raw, 'migrations/user-d1');
       sqlite.raw.prepare(
         `INSERT INTO media_objects (
-          object_id, owner_uid, media_type, mime_type, size_bytes, storage_key,
-          lifecycle_state, deletion_state, legal_hold, retention_until,
-          created_at_iso, updated_at_iso
-        ) VALUES (?, ?, 'image', 'image/jpeg', 100, ?, 'ACTIVE', NULL, 0, ?, ?, ?)`,
+          object_id, owner_uid, bucket_name, storage_key, city_id, hood_id,
+          media_type, mime_type, size_bytes, sha256_checksum, lifecycle_state,
+          deletion_state, legal_hold, retention_until, created_at_iso, updated_at_iso
+        ) VALUES (?, ?, 'radar-test', ?, 'tehran', 1, 'image', 'image/jpeg', 100,
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'ACTIVE', 'ACTIVE', 0, ?, ?, ?)`,
       ).run(
         'object_bad_retention',
         'uid_retention',
