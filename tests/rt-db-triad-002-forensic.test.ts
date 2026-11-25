@@ -817,6 +817,42 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('never deletes R2 objects when the D1 ownership scan fails', async () => {
+      const userSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      userSqlite.setFailResultOnSqlContains('SELECT storage_key FROM media_objects');
+      let deleteCalls = 0;
+      const mediaBucket = {
+        list: async () => ({
+          objects: [{
+            key: 'listings/orphan-candidate.jpg',
+            uploaded: new Date('2026-01-01T00:00:00.000Z'),
+            customMetadata: { objectId: 'orphan-candidate' },
+          }],
+          truncated: false,
+        }),
+        delete: async () => { deleteCalls += 1; },
+      } as unknown as R2Bucket;
+      const dispatch = createCanonicalQueueJobDispatcher({
+        USER_DB: userSqlite.db,
+        MEDIA_BUCKET: mediaBucket,
+      });
+      const envelope: RadarQueueEnvelope = {
+        schemaVersion: '1.0',
+        messageId: 'msg_r2_ownership_failure',
+        idempotencyKey: 'idem_r2_ownership_failure',
+        jobType: 'r2_orphan_media_reconcile',
+        createdAtIso: new Date().toISOString(),
+        correlationId: 'corr_r2_ownership_failure',
+        payload: { nowMs: Date.parse('2026-11-25T12:00:00.000Z'), staleThresholdMs: 1000 },
+      };
+      await assert.rejects(
+        () => dispatch(envelope),
+        (err: unknown) => err instanceof QueueJobExecutionError && err.code === 'MEDIA_OBJECT_OWNERSHIP_SCAN_FAILED',
+      );
+      assert.equal(deleteCalls, 0, 'an unavailable ownership index must never be interpreted as an empty active-object set');
+    });
+
     it('fails closed when a strong durable rate-limit store is missing', async () => {
       const result = await evaluateTieredWorkerRateLimit({
         tier: 'strong_durable',
