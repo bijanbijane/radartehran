@@ -109,6 +109,8 @@ export function registerAiIngestionRoutes(
     } else {
       const fallbackAuth = await verifyAdminApiAuthorization(
         req.headers as Record<string, string | string[] | undefined>,
+        process.env,
+        { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
       );
       if (!fallbackAuth.authorized) {
         recordAbuseSignal(ip, 'auth_failure');
