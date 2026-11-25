@@ -150,26 +150,39 @@ export async function isObjectUnderLegalHold(
   objectId: string,
   nowMs: number = Date.now(),
 ): Promise<{ held: boolean; reason?: string }> {
-  if (!db) {
-    throw new Error('LEGAL_HOLD_DB_UNAVAILABLE');
+  if (!db) throw new Error('LEGAL_HOLD_DB_UNAVAILABLE');
+  if (typeof objectId !== 'string' || !objectId.trim() || objectId.length > 200) {
+    throw new Error('LEGAL_HOLD_OBJECT_ID_INVALID');
   }
-  const holdRow = await db
+  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error('LEGAL_HOLD_TIME_INVALID');
+
+  const holdRows = await db
     .prepare('SELECT active, reason FROM legal_holds WHERE resource_id = ?1')
     .bind(objectId)
-    .first<{ active: number; reason: string }>();
-  if (holdRow && Number(holdRow.active) === 1) {
-    return { held: true, reason: holdRow.reason || 'ACTIVE_LEGAL_HOLD' };
+    .all<{ active: number; reason: string }>();
+  if (!holdRows.success) throw new Error('LEGAL_HOLD_LOOKUP_FAILED');
+  for (const row of holdRows.results ?? []) {
+    const active = Number(row.active);
+    if (active === 1) return { held: true, reason: row.reason || 'ACTIVE_LEGAL_HOLD' };
+    if (active !== 0) return { held: true, reason: 'LEGAL_HOLD_STATE_INVALID' };
   }
-  const mediaRow = await db
+
+  const mediaRows = await db
     .prepare('SELECT legal_hold, retention_until FROM media_objects WHERE object_id = ?1')
     .bind(objectId)
-    .first<{ legal_hold: number; retention_until: string | null }>();
+    .all<{ legal_hold: number; retention_until: string | null }>();
+  if (!mediaRows.success) throw new Error('MEDIA_RETENTION_LOOKUP_FAILED');
+  const mediaRow = mediaRows.results?.[0];
   if (mediaRow) {
-    if (Number(mediaRow.legal_hold) === 1) {
-      return { held: true, reason: 'MEDIA_OBJECT_LEGAL_HOLD' };
-    }
-    if (mediaRow.retention_until && Date.parse(mediaRow.retention_until) > nowMs) {
-      return { held: true, reason: 'MEDIA_OBJECT_RETENTION_LOCK' };
+    const legalHold = Number(mediaRow.legal_hold);
+    if (legalHold === 1) return { held: true, reason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+    if (legalHold !== 0) return { held: true, reason: 'MEDIA_LEGAL_HOLD_STATE_INVALID' };
+    if (mediaRow.retention_until) {
+      const retentionUntilMs = Date.parse(mediaRow.retention_until);
+      if (!Number.isFinite(retentionUntilMs)) {
+        return { held: true, reason: 'MEDIA_RETENTION_TIMESTAMP_INVALID' };
+      }
+      if (retentionUntilMs > nowMs) return { held: true, reason: 'MEDIA_OBJECT_RETENTION_LOCK' };
     }
   }
   return { held: false };
