@@ -65,12 +65,7 @@ export async function defaultPlatformAdminAuthVerifier(
   req: Request,
   requiredPermission: 'platform:admin:read' | 'platform:admin:write',
 ): Promise<PlatformAdminAuthIdentity> {
-  const roleOverrideHeader = req.headers['x-admin-role-scope'];
-  const rawScope = Array.isArray(roleOverrideHeader) ? roleOverrideHeader[0] : roleOverrideHeader;
-
-  const auth = await verifyAdminApiAuthorization(
-    req.headers as Record<string, string | string[] | undefined>,
-  );
+  const auth = await verifyAdminApiAuthorization(req);
   if (!auth.authorized) {
     return {
       authorized: false,
@@ -82,10 +77,13 @@ export async function defaultPlatformAdminAuthVerifier(
     };
   }
 
-  const isReadOnlyScope = rawScope === 'read_only';
-  const permissions = isReadOnlyScope
-    ? ['platform:admin:read']
-    : ['platform:admin:read', 'platform:admin:write', 'platform:admin:governance'];
+  // Only the bootstrap administrator and server-to-server secret may write.
+  // A delegated admin is read-only until a server-side scoped permission record exists.
+  const isPrimary = auth.reason === 'AUTHORIZED_BOOTSTRAP_ADMIN' ||
+    auth.reason === 'AUTHORIZED_SERVER_SECRET';
+  const permissions = isPrimary
+    ? ['platform:admin:read', 'platform:admin:write', 'platform:admin:governance']
+    : ['platform:admin:read'];
 
   if (!permissions.includes(requiredPermission)) {
     return {
@@ -103,7 +101,7 @@ export async function defaultPlatformAdminAuthVerifier(
     statusCode: 200,
     reason: auth.reason,
     actorId: auth.actorUid || auth.uid || 'verified-admin',
-    actorRole: auth.reason === 'AUTHORIZED_BOOTSTRAP_ADMIN' ? 'primary_admin' : 'admin',
+    actorRole: isPrimary ? 'primary_admin' : 'read_only_admin',
     permissions,
   };
 }
