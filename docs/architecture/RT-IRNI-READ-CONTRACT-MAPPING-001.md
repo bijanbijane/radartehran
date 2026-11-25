@@ -3,7 +3,7 @@
 **Status:** RPC v2 implementation drafted in both repositories; production cutover blocked pending executable CI and ordered deployment  
 **Updated:** 2026-11-25  
 **IRNI read repository:** [PR #22](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/pull/22)  
-**IRNI 104-record crosswalk:** [PR #23](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/pull/23)  
+**IRNI 265-record crosswalk:** [PR #23](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/pull/23)  
 **Radar RPC consumer:** [PR #61](https://github.com/bijanbijane/radartehran/pull/61), stacked on PR #60 → PR #58  
 **Tracking:** [Radar Issue #4](https://github.com/bijanbijane/radartehran/issues/4), [IRNI Issue #7](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/issues/7), [IRNI Issue #21](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/issues/21)
 
@@ -110,7 +110,7 @@ Merge/deploy order:
 3. Radar PR #58 → PR #60 → PR #61, in order; PR #61 must not be retargeted around its auth/runtime dependencies.
 4. Validate the Service Binding and all six RPC methods in a controlled staging environment.
 5. Deploy Radar config, verify health reports `irniRpc=ok` and no legacy direct D1 binding, then explicitly remove the old publisher secret.
-6. Complete evidence-backed resolution of the 104 legacy rows; do not promote review/unresolved/composite rows by fuzzy matching.
+6. Complete evidence-backed resolution of the 265 legacy rows; do not promote review/unresolved/composite rows by fuzzy matching.
 
 GitHub Actions currently fails before job execution: the latest IRNI job reports `runner_id=0`, no steps and no log artifact. This is not a source-code test failure and is not a passing validation. Both PRs remain Draft until executable checks run.
 
