@@ -230,7 +230,28 @@ export async function processRadarQueueBatch(params: {
       const existing = await params.db
         .prepare('SELECT * FROM queue_job_executions WHERE idempotency_key = ?1')
         .bind(envelope.idempotencyKey)
-        .first<{ status: string; lease_owner: string | null; lease_expires_at_ms: number | null }>();
+        .first<{ job_type: string; status: string; lease_owner: string | null; lease_expires_at_ms: number | null }>();
+
+      if (existing && existing.job_type !== envelope.jobType) {
+        const forwarded = await routeToDlqFailClosed({
+          dlq: params.dlq,
+          record: {
+            deadLetterReason: 'IDEMPOTENCY_KEY_JOB_TYPE_CONFLICT',
+            envelope,
+            attempts: msg.attempts,
+            failedAtIso: nowIso,
+          },
+        });
+        if (forwarded) {
+          msg.ack();
+          deadLetteredCount += 1;
+        } else {
+          msg.retry({ delaySeconds: computeQueueRetryDelaySeconds(msg.attempts) });
+          retriedCount += 1;
+          failedCount += 1;
+        }
+        continue;
+      }
 
       if (existing?.status === 'COMPLETED') {
         msg.ack();
