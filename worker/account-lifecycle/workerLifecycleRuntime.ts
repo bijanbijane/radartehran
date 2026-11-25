@@ -27,6 +27,22 @@ export type AccountDeletionJobStatus =
   | 'COMPLETED'
   | 'FAILED';
 
+function resolveDedicatedLifecycleReceiptSecret(env: WorkerEnv): string | null {
+  const secret = String(env.LIFECYCLE_RECEIPT_HMAC_SECRET || '').trim();
+  if (new TextEncoder().encode(secret).byteLength < 32) return null;
+  const otherSecrets = [
+    env.INTERNAL_LIFECYCLE_RPC_SECRET,
+    env.RESEARCH_HMAC_SECRET,
+    env.AUTH_INTERNAL_HMAC_SECRET,
+    env.AUTH_PII_HMAC_SECRET,
+    env.MARKET_PII_HASH_SECRET,
+    env.R2_SIGNING_SECRET,
+    env.OBJECT_STORAGE_SIGNING_SECRET,
+    env.IRNI_PUBLISH_HMAC_SECRET,
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+  return otherSecrets.includes(secret) ? null : secret;
+}
+
 export interface AccountDeletionExecutionResult {
   readonly ok: boolean;
   readonly statusCode: 200 | 202 | 409 | 423 | 503;
@@ -69,13 +85,15 @@ export async function processPendingResearchErasureOutbox(params: {
   researchDb?: D1Database;
   jobId?: string;
   nowMs?: number;
-  receiptSecret?: string;
+  receiptSecret: string;
 }): Promise<{
   readonly attempted: number;
   readonly completed: number;
   readonly pending: number;
   readonly erasedEventsTotal: number;
 }> {
+  const receiptSecret = resolveDedicatedLifecycleReceiptSecret({ LIFECYCLE_RECEIPT_HMAC_SECRET: params.receiptSecret } as WorkerEnv);
+  if (!receiptSecret) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED');
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
@@ -254,7 +272,22 @@ export async function executeAccountDeletionLifecycle(params: {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
-  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET || params.env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = resolveDedicatedLifecycleReceiptSecret(params.env);
+  if (!receiptSecret) {
+    return {
+      ok: false,
+      statusCode: 503,
+      jobId: '',
+      status: 'FAILED',
+      idempotentReplay: false,
+      userDbDeletedRecords: 0,
+      outboxItemsQueued: 0,
+      outboxItemsCompleted: 0,
+      researchEventsErased: 0,
+      receiptHash: null,
+      code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED',
+    };
+  }
 
   // 1. Idempotency check (with resumable PENDING_PERMIT_DRAIN support)
   let resumedJobId: string | null = null;
