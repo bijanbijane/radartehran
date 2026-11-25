@@ -90,6 +90,23 @@ describe('marketplace contact PII cryptography', () => {
     assert.equal(first.includes(phone), false);
   });
 
+  it('rejects reuse of the same raw key material for encryption and HMAC', async () => {
+    const rawKey = Buffer.alloc(32, 0x11);
+    const reusedKeyEnv = {
+      MARKET_PII_ENCRYPTION_KEY: rawKey.toString('base64url'),
+      MARKET_PII_HASH_SECRET: rawKey.toString('utf8'),
+    } as WorkerEnv;
+    await assert.rejects(
+      () => hashMarketPhone('+989121234567', reusedKeyEnv),
+      /MARKET_PII_ENCRYPTION_AND_HASH_KEYS_MUST_BE_DISTINCT/,
+    );
+  });
+
+  it('rejects non-Iranian or malformed phone values before encryption or hashing', async () => {
+    await assert.rejects(() => encryptMarketPhone('+15551234567', TEST_MARKET_ENV), /MARKET_PHONE_E164_INVALID/);
+    await assert.rejects(() => hashMarketPhone('09121234567', TEST_MARKET_ENV), /MARKET_PHONE_E164_INVALID/);
+  });
+
   it('rejects missing or malformed encryption and HMAC secrets', async () => {
     await assert.rejects(() => encryptMarketPhone('+989121234567', {} as WorkerEnv), /MARKET_PII_ENCRYPTION_KEY_MISSING/);
     await assert.rejects(() => encryptMarketPhone('+989121234567', {
