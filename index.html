@@ -51,6 +51,27 @@
       }
     </script>
 
+    <!-- Cloudflare Web Analytics: production canonical hostname only.
+         Use ?cf-analytics=off once per browser session to exclude operator/test traffic. -->
+    <script type="module">
+      let analyticsOptOut = false;
+      try {
+        if (new URLSearchParams(window.location.search).get('cf-analytics') === 'off') {
+          window.sessionStorage.setItem('radar_cf_analytics_optout', '1');
+        }
+        analyticsOptOut = window.sessionStorage.getItem('radar_cf_analytics_optout') === '1';
+      } catch {
+        analyticsOptOut = true;
+      }
+      if (window.location.hostname === 'radartehran.ir' && !analyticsOptOut) {
+        const beacon = document.createElement('script');
+        beacon.type = 'module';
+        beacon.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+        beacon.dataset.cfBeacon = JSON.stringify({ token: 'e45ecbe249864815a56ef0f3c7de2cbc' });
+        document.head.appendChild(beacon);
+      }
+    </script>
+
     <!-- پیش‌بارگذاری اتصال و DNS سرورهای تایل نقشه برای افزایش چشمگیر سرعت بارگذاری -->
     <link rel="dns-prefetch" href="https://tile.openstreetmap.org">
     <link rel="dns-prefetch" href="https://tile1.neshan.org">
