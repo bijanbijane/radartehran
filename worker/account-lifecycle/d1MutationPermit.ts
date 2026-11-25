@@ -20,19 +20,13 @@ export interface RejectedMutationPermit {
 }
 
 export async function isUserWriteBlockedInD1(userDb: D1Database, uid: string): Promise<boolean> {
-  try {
-    const row = await userDb
-      .prepare('SELECT uid FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL')
-      .bind(uid)
-      .first<{ uid: string }>();
-    return Boolean(row);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (/no such table:\s*account_write_blocks/i.test(msg)) {
-      return false;
-    }
-    throw err;
-  }
+  // Missing schema or a D1 read failure is not evidence that writes are allowed.
+  // Callers must fail closed rather than interpreting an unavailable block table as OPEN.
+  const row = await userDb
+    .prepare('SELECT uid FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL')
+    .bind(uid)
+    .first<{ uid: string }>();
+  return Boolean(row);
 }
 
 export async function blockUserWritesInD1(params: {
