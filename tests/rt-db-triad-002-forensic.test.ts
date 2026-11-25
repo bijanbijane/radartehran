@@ -45,6 +45,7 @@ import {
   executeAccountDeletionLifecycle,
   resolveDedicatedLifecycleReceiptSecret,
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
+import { resolveWriteAdmissionFromD1 } from '../worker/account-lifecycle/d1WriteAdmissionResolver';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -456,6 +457,22 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('F-02 & F-03 [P0]: Atomic Permits/Nonces, Write-Block During Drain, Drain Resume & Orphan Cleanup', () => {
+    it('resolves the production USER_DB write-block schema and keeps blocked users closed', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const open = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_write_open');
+      assert.equal(open.status, 'OPEN');
+      await blockUserWritesInD1({
+        userDb: sqlite.db,
+        uid: 'uid_write_closed',
+        jobId: 'job_write_closed',
+        nowIso: new Date().toISOString(),
+      });
+      const closed = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_write_closed');
+      assert.equal(closed.status, 'CLOSED');
+      if (closed.status === 'CLOSED') assert.equal(closed.deletionJobId, 'job_write_closed');
+    });
+
     it('fails closed when the durable account-write-block schema is unavailable', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
