@@ -496,7 +496,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
       }
       const current = await authenticateWorkerSession(ctx);
       const identity = await createOrResolveIdentity(db, 'phone', challenge.phone_e164, {
-        phone: challenge.phone_e164, emailVerified: false,
+        phone: challenge.phone_e164,
       }, current.authenticated ? current.uid || undefined : undefined);
       const session = await issueSession(db, request, identity.uid, 'phone');
       try {
