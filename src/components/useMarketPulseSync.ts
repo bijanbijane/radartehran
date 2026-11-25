@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useCallback, useRef } from 'react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../platform/auth';
 import {
   INITIAL_NEIGHBORHOODS,
   LOCAL_STORAGE_KEY,
@@ -66,7 +66,7 @@ function applyPulseSnapshots(
 export interface UseMarketPulseSyncParams {
   ui: AppUiState;
   activeCityRef: React.MutableRefObject<CityId>;
-  currentUser: FirebaseUser | null;
+  currentUser: AuthUserSnapshot | null;
   allExpansionSeeds: Neighborhood[];
   setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>;
 }
@@ -103,14 +103,11 @@ export function useMarketPulseSync({
       const seq = ++pulseSeqRef.current;
       ui.setSyncingPulse(true);
       try {
-        const headers: Record<string, string> = {};
-        if (forceRefresh && currentUser) {
-          try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ }
-        }
+        const headers: Record<string, string> = { Accept: 'application/json' };
         if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         const res = await fetch(
           `/api/market-pulse?city=${encodeURIComponent(targetCity)}${forceRefresh ? '&refresh=1' : ''}`,
-          { headers, signal: controller.signal }
+          { credentials: 'same-origin', headers, signal: controller.signal }
         );
         if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         if (res.ok && activeCityRef.current === targetCity) {
@@ -162,11 +159,11 @@ export function useMarketPulseSync({
     ui.setDeepSyncing(true);
     ui.setLastSyncNotice('در حال استعلام زنده از منابع رایگان وب (AQICN، دیوار و شیپور)...');
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (currentUser) { try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ } }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
       if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current) return;
       const res = await fetch('/api/market-pulse/deep-sync', {
         method: 'POST',
+        credentials: 'same-origin',
         headers,
         body: JSON.stringify({ city: targetCity }),
         signal: controller.signal,

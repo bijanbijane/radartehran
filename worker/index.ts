@@ -24,14 +24,18 @@ import {
   createCanonicalQueueJobDispatcher,
 } from './queues/jobDispatcher';
 import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
-import { resolveResearchDb, resolveUserDb } from './db/bindingResolver';
-import { processPendingResearchErasureOutbox } from './account-lifecycle/workerLifecycleRuntime';
+import { resolveUserDb, resolveResearchDb } from './db/bindingResolver';
+import {
+  processPendingResearchErasureOutbox,
+  resolveDedicatedLifecycleReceiptSecret,
+} from './account-lifecycle/workerLifecycleRuntime';
 import { resolveD1WritePauseState } from './db/writePause';
 import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
 } from './queues/queueAndCronProcessor';
 import { dispatchWorkerApiOrSeoRequest } from './router';
+import { sanitizeWorkerErrorMessage } from './errorSanitizer';
 import {
   injectWorkerDynamicSeoHtml,
   resolveWorkerBaseUrl,
@@ -199,11 +203,7 @@ export default {
     } catch (err) {
       const errorCategory = err instanceof Error ? err.name : 'UNHANDLED_WORKER_EXCEPTION';
       const safeErrorMessage = err instanceof Error
-        ? err.message
-          .replace(/Bearer\\s+\\S+/gi, 'Bearer [REDACTED]')
-          .replace(/\\beyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\b/g, '[REDACTED_JWT]')
-          .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
-          .slice(0, 240)
+        ? sanitizeWorkerErrorMessage(err.message)
         : 'Non-Error exception';
       console.error('WORKER_UNHANDLED_EXCEPTION', JSON.stringify({
         correlationId: reqCtx.correlationId,
@@ -250,13 +250,14 @@ export default {
     if (resolveD1WritePauseState(env).paused) return;
     if (event.cron === '0 * * * *') {
       const userDb = resolveUserDb(env);
-      if (userDb) {
-        await processPendingResearchErasureOutbox({
-          userDb,
-          researchDb: resolveResearchDb(env),
-          receiptSecret: env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET,
-        });
-      }
+      if (!userDb) throw new Error('USER_DB_BINDING_UNAVAILABLE_OR_DOMAIN_COLLISION');
+      const receiptSecret = resolveDedicatedLifecycleReceiptSecret(env);
+      if (!receiptSecret) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED');
+      await processPendingResearchErasureOutbox({
+        userDb,
+        researchDb: resolveResearchDb(env),
+        receiptSecret,
+      });
     }
     if (!env.RADAR_QUEUE) {
       throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');

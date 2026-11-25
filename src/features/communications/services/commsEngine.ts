@@ -272,9 +272,30 @@ export class CommsCoreStateEngine {
     contextTitleFa: string; creatorUid: string; participants: ConversationParticipantRecord[];
   }): { ok: boolean; errorCode?: string; conversation?: ConversationRecord } {
     if (!ALLOWED_DIRECT_CONVERSATION_TYPES.includes(input.type) || !input.contextEntityId.trim()) return { ok: false, errorCode: 'CONTEXT_REQUIRED_NO_OPEN_CHAT' };
-    if (!input.participants || input.participants.length < 2) return { ok: false, errorCode: 'PARTICIPANTS_REQUIRED' };
+    const allowedContextTypes = new Set<ConversationRecord['contextEntityType']>([
+      'service_request', 'listing', 'support_ticket', 'admin_case', 'system',
+    ]);
+    if (!input.creatorUid?.trim() || !allowedContextTypes.has(input.contextEntityType)) {
+      return { ok: false, errorCode: 'INVALID_CONVERSATION_CONTEXT' };
+    }
+    if (!input.participants || input.participants.length < 2 || input.participants.length > 10) {
+      return { ok: false, errorCode: 'PARTICIPANTS_REQUIRED' };
+    }
+    const participantUids = input.participants.map((participant) => String(participant.uid || '').trim());
+    if (participantUids.some((participantUid) => !participantUid) ||
+        new Set(participantUids).size !== participantUids.length ||
+        !participantUids.includes(input.creatorUid)) {
+      return { ok: false, errorCode: 'INVALID_CONVERSATION_PARTICIPANTS' };
+    }
+    const requestedParticipantSet = new Set(participantUids);
     const existing = this.conversations.find(
-      (c) => c.type === input.type && c.contextEntityId === input.contextEntityId && c.participants.some((p) => p.uid === input.creatorUid),
+      (c) =>
+        c.type === input.type &&
+        c.contextEntityType === input.contextEntityType &&
+        c.contextEntityId === input.contextEntityId &&
+        c.participants.length === requestedParticipantSet.size &&
+        c.participants.every((participant) => requestedParticipantSet.has(participant.uid)) &&
+        c.participants.some((participant) => participant.uid === input.creatorUid),
     );
     if (existing) return { ok: true, conversation: existing };
     const now = new Date().toISOString();
@@ -298,11 +319,34 @@ export class CommsCoreStateEngine {
     if (sender.blockedOtherParticipant || conv.participants.some((p) => p.uid !== input.senderUid && p.blockedOtherParticipant)) {
       return { ok: false, statusCode: 403, errorCode: 'CONVERSATION_BLOCKED_BY_RECIPIENT' };
     }
-    const recentSentCount = conv.messages.filter((m) => m.senderUid === input.senderUid && Date.now() - Date.parse(m.createdAtIso) < 60_000).length;
+    const nowMs = Date.now();
+    const recentSentCount = this.conversations.reduce(
+      (count, conversation) => count + conversation.messages.filter(
+        (message) => message.senderUid === input.senderUid && nowMs - Date.parse(message.createdAtIso) < 60_000,
+      ).length,
+      0,
+    );
     if (recentSentCount >= MAX_MESSAGES_PER_MINUTE_STANDARD) return { ok: false, statusCode: 429, errorCode: 'MESSAGE_RATE_LIMIT_EXCEEDED' };
     const cleanBody = sanitizeInput(input.bodyFa, 1200);
     if (cleanBody.length < 2) return { ok: false, statusCode: 400, errorCode: 'EMPTY_OR_UNSAFE_MESSAGE' };
-    const safeAttachments = (input.attachments ?? []).filter((a) => ALLOWED_ATTACHMENT_MIMES.has(a.mimeType) && a.sizeBytes > 0 && a.sizeBytes <= MAX_ATTACHMENT_SIZE_BYTES);
+    const requestedAttachments = input.attachments ?? [];
+    if (requestedAttachments.length > 5) return { ok: false, statusCode: 400, errorCode: 'TOO_MANY_ATTACHMENTS' };
+    const safeAttachments: MessageAttachmentMeta[] = [];
+    for (const attachment of requestedAttachments) {
+      const attachmentId = sanitizeInput(String(attachment?.attachmentId || ''), 120);
+      const fileName = sanitizeInput(String(attachment?.fileName || ''), 120).replace(/[\\/]/g, '').trim();
+      const mimeType = attachment?.mimeType;
+      const sizeBytes = Number(attachment?.sizeBytes);
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(attachmentId) ||
+          !fileName ||
+          !ALLOWED_ATTACHMENT_MIMES.has(mimeType) ||
+          !Number.isSafeInteger(sizeBytes) ||
+          sizeBytes <= 0 ||
+          sizeBytes > MAX_ATTACHMENT_SIZE_BYTES) {
+        return { ok: false, statusCode: 400, errorCode: 'INVALID_ATTACHMENT_METADATA' };
+      }
+      safeAttachments.push({ attachmentId, fileName, mimeType, sizeBytes });
+    }
     const now = new Date().toISOString();
     const msg: MessageRecord = {
       messageId: generateSecureId('msg'), conversationId: conv.conversationId,

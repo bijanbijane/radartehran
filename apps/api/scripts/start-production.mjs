@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const apiDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(apiDir, '../..');
 const entry = path.join(apiDir, 'dist/server.mjs');
 
 process.env.NODE_ENV = 'production';
@@ -21,7 +22,7 @@ const forwardArgs = process.argv.slice(2);
 const child = spawn(process.execPath, [entry, ...forwardArgs], {
   stdio: 'inherit',
   env: process.env,
-  cwd: apiDir,
+  cwd: repoRoot,
 });
 
 child.on('exit', (code, signal) => {

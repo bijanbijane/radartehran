@@ -549,6 +549,16 @@ export class LeadEngine {
     const lead = await this.store.getLeadById(leadId);
     if (!lead) return { success: false, errors: ['LEAD_NOT_FOUND'] };
 
+    // Authorization must be checked inside the domain engine, not only in the HTTP router.
+    if (actorRole === 'PROFESSIONAL' &&
+        lead.currentAssignment?.professionalId !== actorUid &&
+        lead.targetProfessionalId !== actorUid) {
+      return { success: false, errors: ['FORBIDDEN_PROFESSIONAL_ACCESS'] };
+    }
+    if (actorRole === 'AGENCY_MANAGER' && !(await this.canManageAgency(actorUid, lead.targetAgencyId ?? ''))) {
+      return { success: false, errors: ['FORBIDDEN_AGENCY_ACCESS'] };
+    }
+
     // Customers can ONLY write customer-visible notes
     let visibility: ActivityVisibility = params.visibility ?? 'INTERNAL_CRM';
     if (actorRole === 'CUSTOMER') {
@@ -679,6 +689,12 @@ export class LeadEngine {
     });
 
     return { success: true };
+  }
+
+  public async canManageAgency(actorUid: string, agencyId: string): Promise<boolean> {
+    if (!actorUid || !agencyId) return false;
+    const agency = await this.professionalAdapter.verifyAgency(agencyId);
+    return Boolean(agency.exists && (agency.ownerUid === actorUid || agency.managerUids.includes(actorUid)));
   }
 
   public projectCustomerLead(lead: LeadRecord): CustomerLeadProjection {

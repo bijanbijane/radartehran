@@ -17,7 +17,11 @@ import {
 
 export function registerAccountAdminRoutes(
   app: Express,
-  deps: { getIp: (req: Request) => string },
+  deps: {
+    getIp: (req: Request) => string;
+    /** Must revoke the actual authenticated session at the identity provider. */
+    revokeSession?: (uid: string, sessionId: string) => Promise<boolean>;
+  },
 ): void {
   // === AUTHORIZED USER ACCOUNT PROFILE, PRIVACY, SESSIONS & DATA REQUESTS ===
   app.get('/api/account/profile', async (req: Request, res: Response) => {
@@ -142,6 +146,20 @@ export function registerAccountAdminRoutes(
     const target = list.find((s) => s.sessionId === req.params.id);
     if (!target) { res.status(404).json({ status: 'error', code: 'SESSION_NOT_FOUND' }); return; }
     if (target.isCurrent) { res.status(409).json({ status: 'error', code: 'CANNOT_REVOKE_ACTIVE_SESSION' }); return; }
+    if (!deps.revokeSession) {
+      res.status(503).json({ status: 'error', code: 'SESSION_REVOCATION_PROVIDER_UNAVAILABLE' });
+      return;
+    }
+    let providerRevoked = false;
+    try {
+      providerRevoked = await deps.revokeSession(auth.uid, target.sessionId);
+    } catch {
+      providerRevoked = false;
+    }
+    if (!providerRevoked) {
+      res.status(503).json({ status: 'error', code: 'SESSION_REVOCATION_FAILED' });
+      return;
+    }
     target.revokedAtIso = new Date().toISOString();
     state.sessionsByUid[auth.uid] = list.filter((s) => !s.revokedAtIso);
     saveAccountAdminState();
@@ -158,7 +176,11 @@ export function registerAccountAdminRoutes(
   // === AUTHORITATIVE ADMIN RBAC, AUDIT, QUEUES, MODERATION & SENSITIVE OPS ===
   app.get('/api/admin/me', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+    process.env,
+    { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+  );
     if (!auth.authorized) {
       recordAbuseSignal(deps.getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ authorized: false, code: auth.reason, messageFa: 'احراز هویت مدیر سیستم برقرار نیست.' });

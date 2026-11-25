@@ -7,25 +7,10 @@
  * - Reads consent & subject registry strictly from `USER_DB` (fail-closed if unavailable).
  * - Writes events, aggregates, and erasure receipts strictly to `RESEARCH_DB` (zero raw UID / zero PII).
  */
-import {
-  getResearchConsentRevocationJobFromD1,
-  listPendingResearchConsentRevocationsFromD1,
-  updateUserPrivacyConsentInD1,
-  type D1UserPrivacyConsent,
-} from '../account/d1AccountRepository';
 import { evaluateTieredWorkerRateLimit } from '../cache/kvAndEdgeRateLimiter';
-import { requireResearchDb, requireUserDb, resolveResearchDb } from '../db/bindingResolver';
+import { requireResearchDb, requireUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerEnv } from '../types';
-import { deriveAllSubjectKeysForErasure, deriveResearchSubjectKey } from './pseudonymizer';
-import {
-  acquireQueuedResearchProcessingPermitInD1,
-  acquireResearchProcessingPermitInD1,
-  countActiveResearchProcessingPermitsInD1,
-  expireStaleResearchProcessingPermitsInD1,
-  PERMANENT_DELETION_FENCE_REVISION,
-  releaseResearchProcessingPermitInD1,
-  type ResearchConsentRevocationStatus,
-} from './researchConsentBarrier';
+import { deriveResearchSubjectKey } from './pseudonymizer';
 import {
   MAX_RESEARCH_BATCH_SIZE,
   RESEARCH_EVENT_POLICIES,
@@ -33,23 +18,6 @@ import {
   type AllowedResearchEventType,
   type ValidatedResearchEvent,
 } from './researchEventContract';
-
-export {
-  acquireQueuedResearchProcessingPermitInD1,
-  acquireResearchProcessingPermitInD1,
-  countActiveResearchProcessingPermitsInD1,
-  DEFAULT_RESEARCH_PERMIT_TTL_MS,
-  expireStaleResearchProcessingPermitsInD1,
-  PERMANENT_DELETION_FENCE_REVISION,
-  releaseResearchProcessingPermitInD1,
-} from './researchConsentBarrier';
-export type {
-  AcquiredResearchProcessingPermit,
-  RejectedResearchProcessingPermit,
-  ResearchConsentRevocationJobRecord,
-  ResearchConsentRevocationStatus,
-  ResearchProcessingConsumerKind,
-} from './researchConsentBarrier';
 
 export const DEFAULT_K_ANONYMITY_MIN_COHORT = 10;
 export const HARD_MIN_K_ANONYMITY = 10;
@@ -132,7 +100,10 @@ export async function verifyServerSideResearchConsent(
     if (!row || Number(row.research_analytics_consent) !== 1 || row.revoked_at_iso) {
       return { allowed: false, statusCode: 403, code: 'RESEARCH_CONSENT_REQUIRED' };
     }
-    const consentRevision = Math.max(1, Number(row.consent_revision ?? 1));
+    const consentRevision = Number(row.consent_revision ?? 1);
+    if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+      return { allowed: false, statusCode: 503, code: 'CONSENT_REVISION_INVALID' };
+    }
     if (expectedConsentRevision !== undefined && consentRevision !== expectedConsentRevision) {
       return { allowed: false, statusCode: 403, code: 'CONSENT_REVISION_STALE_OR_REVOKED' };
     }
@@ -157,26 +128,15 @@ export async function verifyQueuedResearchSubjectConsent(params: {
   | { readonly allowed: false; readonly statusCode: 403 | 503; readonly code: string }
 > {
   try {
-    const outboxRows = await params.userDb
+    const outbox = await params.userDb
       .prepare(
-        `SELECT outbox_id, status, max_consent_revision FROM research_erasure_outbox
-         WHERE subject_key = ?1 AND subject_key_version = ?2`,
+        `SELECT outbox_id FROM research_erasure_outbox
+         WHERE subject_key = ?1 AND subject_key_version = ?2 LIMIT 1`,
       )
       .bind(params.subjectKey, params.subjectKeyVersion)
-      .all<{ outbox_id: string; status: string; max_consent_revision?: number | null }>();
-    for (const item of outboxRows.results ?? []) {
-      const maxRev =
-        item.max_consent_revision === null || item.max_consent_revision === undefined
-          ? null
-          : Number(item.max_consent_revision);
-      if (
-        item.status !== 'COMPLETED' ||
-        maxRev === null ||
-        params.expectedConsentRevision === undefined ||
-        params.expectedConsentRevision <= maxRev
-      ) {
-        return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
-      }
+      .first<{ outbox_id: string }>();
+    if (outbox) {
+      return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
     }
 
     const reg = await params.userDb
@@ -199,55 +159,48 @@ export async function verifyQueuedResearchSubjectConsent(params: {
 
 /**
  * Persists a validated, already-pseudonymized batch of events into `RESEARCH_DB`.
- * Enforces an atomic per-subject consent fence (`research_subject_consent_fences`) inside SQL so
- * zombie or replayed consumers carrying a revoked `consent_revision` can NEVER persist rows.
+ * Reusable by both HTTP direct ingestion and Queue consumer (`research_event_ingest`).
  */
 export async function writePseudonymizedEventsToResearchDb(params: {
   researchDb: D1Database;
   subjectKey: string;
   subjectKeyVersion: string;
   events: readonly ValidatedResearchEvent[];
-  consentRevision?: number;
   nowMs?: number;
+  rejectedCount?: number;
 }): Promise<{
   readonly batchId: string;
   readonly receiptId: string;
   readonly acceptedCount: number;
   readonly deduplicatedCount: number;
-  readonly fencedCount: number;
 }> {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
   const batchId = `rb_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
   const receiptId = `rcpt_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  const consentRevision = Math.max(1, Math.trunc(params.consentRevision ?? 1));
 
   let acceptedCount = 0;
   let deduplicatedCount = 0;
-  let fencedCount = 0;
 
   for (const evt of params.events) {
+    const existing = await params.researchDb
+      .prepare('SELECT idempotency_key FROM research_idempotency_keys WHERE idempotency_key = ?1')
+      .bind(evt.idempotencyKey)
+      .first<{ idempotency_key: string }>();
+
+    if (existing) {
+      deduplicatedCount += 1;
+      continue;
+    }
+
     const eventId = `revt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
     const insertEventStmt = params.researchDb
       .prepare(
-        `INSERT INTO research_events (
+        `INSERT OR IGNORE INTO research_events (
           event_id, subject_key, subject_key_version, event_type, schema_version,
           city_id, hood_id, session_bucket, payload_json,
-          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key, consent_revision
-        )
-        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
-        WHERE NOT EXISTS (
-          SELECT 1 FROM research_subject_consent_fences
-          WHERE subject_key = ?15
-            AND subject_key_version = ?16
-            AND revoked_through_revision >= ?17
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM research_idempotency_keys WHERE idempotency_key = ?18
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM research_events WHERE idempotency_key = ?19
-        )`,
+          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
       )
       .bind(
         eventId,
@@ -263,61 +216,46 @@ export async function writePseudonymizedEventsToResearchDb(params: {
         evt.ingestedAtIso,
         evt.expiresAtIso,
         evt.idempotencyKey,
-        consentRevision,
-        params.subjectKey,
-        params.subjectKeyVersion,
-        consentRevision,
-        evt.idempotencyKey,
-        evt.idempotencyKey,
       );
 
     const insertIdemStmt = params.researchDb
       .prepare(
         `INSERT OR IGNORE INTO research_idempotency_keys (
           idempotency_key, event_type, recorded_at_iso, expires_at_iso
-        )
-        SELECT ?1, ?2, ?3, ?4
-        WHERE EXISTS (
-          SELECT 1 FROM research_events WHERE idempotency_key = ?5
-        )`,
+        ) VALUES (?1, ?2, ?3, ?4)`,
       )
-      .bind(evt.idempotencyKey, evt.eventType, nowIso, evt.expiresAtIso, evt.idempotencyKey);
+      .bind(evt.idempotencyKey, evt.eventType, nowIso, evt.expiresAtIso);
 
     const batchResults = await params.researchDb.batch([insertEventStmt, insertIdemStmt]);
-    if (batchResults.some((r) => !r.success)) {
+    if (batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
       throw new Error('RESEARCH_DB_ATOMIC_WRITE_FAILED');
     }
-
-    if ((batchResults[0]?.meta?.changes ?? 0) === 1) {
-      acceptedCount += 1;
+    const eventChanges = batchResults[0]?.meta?.changes;
+    const idempotencyChanges = batchResults[1]?.meta?.changes;
+    if (!Number.isSafeInteger(eventChanges) || !Number.isSafeInteger(idempotencyChanges)) {
+      throw new Error('RESEARCH_DB_ATOMIC_WRITE_RESULT_UNCONFIRMED');
+    }
+    if (eventChanges === 0) {
+      deduplicatedCount += 1;
       continue;
     }
-
-    const fenceRow = await params.researchDb
-      .prepare(
-        `SELECT revoked_through_revision FROM research_subject_consent_fences
-         WHERE subject_key = ?1 AND subject_key_version = ?2`,
-      )
-      .bind(params.subjectKey, params.subjectKeyVersion)
-      .first<{ revoked_through_revision: number }>();
-
-    if (fenceRow && Number(fenceRow.revoked_through_revision) >= consentRevision) {
-      fencedCount += 1;
-    } else {
-      deduplicatedCount += 1;
+    if (eventChanges !== 1 || idempotencyChanges !== 1) {
+      throw new Error('RESEARCH_DB_IDEMPOTENCY_STATE_INCONSISTENT');
     }
+    acceptedCount += 1;
   }
 
-  await params.researchDb
+  const receiptInsert = await params.researchDb
     .prepare(
       `INSERT INTO research_ingestion_receipts (
         receipt_id, batch_id, accepted_count, deduplicated_count, rejected_count, recorded_at_iso
       ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
     )
-    .bind(receiptId, batchId, acceptedCount, deduplicatedCount, fencedCount, nowIso)
+    .bind(receiptId, batchId, acceptedCount, deduplicatedCount, params.rejectedCount ?? 0, nowIso)
     .run();
+  if (!receiptInsert.success) throw new Error('RESEARCH_INGESTION_RECEIPT_WRITE_FAILED');
 
-  return { batchId, receiptId, acceptedCount, deduplicatedCount, fencedCount };
+  return { batchId, receiptId, acceptedCount, deduplicatedCount };
 }
 
 /**
@@ -336,14 +274,7 @@ export async function ingestResearchEventsBatch(params: {
   clientIp: string;
   rawEvents: unknown;
   nowMs?: number;
-  permitTtlMs?: number;
   beforeResearchWriteHook?: () => Promise<void>;
-  afterConsentCheckBeforeResearchWriteHook?: (ctx: {
-    permitId: string;
-    consentRevision: number;
-    subjectKey: string;
-    subjectKeyVersion: string;
-  }) => Promise<void>;
 }): Promise<ResearchIngestionResponse | ResearchIngestionFailure> {
   const userDbRes = requireUserDb(params.env);
   if (userDbRes.ok === false) {
@@ -354,19 +285,20 @@ export async function ingestResearchEventsBatch(params: {
     return { ok: false, statusCode: 503, code: researchDbRes.code, messageFa: researchDbRes.messageFa };
   }
 
-  // 1. Fast fail-closed server-side consent pre-check
-  const initialConsent = await verifyServerSideResearchConsent(userDbRes.db, params.uid);
-  if (initialConsent.allowed === false) {
+  // 1. Authoritative server-side consent check (captures monotonic consentRevision)
+  const consent = await verifyServerSideResearchConsent(userDbRes.db, params.uid);
+  if (consent.allowed === false) {
     return {
       ok: false,
-      statusCode: initialConsent.statusCode,
-      code: initialConsent.code,
+      statusCode: consent.statusCode,
+      code: consent.code,
       messageFa:
-        initialConsent.statusCode === 503
+        consent.statusCode === 503
           ? 'بررسی رضایت پژوهشی در دسترس نیست؛ ثبت رویداد متوقف شد.'
           : 'کاربر رضایت فعال برای ثبت داده‌های پژوهشی ندارد.',
     };
   }
+  const capturedConsentRevision = consent.consentRevision;
 
   // 2. Durable rate limiting per user
   const rateLimit = await evaluateTieredWorkerRateLimit({
@@ -445,7 +377,7 @@ export async function ingestResearchEventsBatch(params: {
 
   // 5. Record subject key version mapping inside USER_DB ONLY (for rotation-safe erasure)
   const nowIso = new Date(nowMs).toISOString();
-  await userDbRes.db
+  const registryWrite = await userDbRes.db
     .prepare(
       `INSERT OR IGNORE INTO user_research_subject_registry (
         uid, subject_key, subject_key_version, created_at_iso
@@ -453,99 +385,58 @@ export async function ingestResearchEventsBatch(params: {
     )
     .bind(params.uid, pseudo.derived.subjectKey, pseudo.derived.subjectKeyVersion, nowIso)
     .run();
-
-  // 6. Atomically verify active consent + absence of revocation/write-block AND acquire leased permit in USER_DB
-  const permit = await acquireResearchProcessingPermitInD1({
-    userDb: userDbRes.db,
-    uid: params.uid,
-    subjectKey: pseudo.derived.subjectKey,
-    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
-    consumerKind: 'http_ingest',
-    expectedConsentRevision: initialConsent.consentRevision,
-    ttlMs: params.permitTtlMs,
-    nowMs,
-  });
-  if (permit.ok === false) {
+  if (!registryWrite.success) {
     return {
       ok: false,
-      statusCode: permit.statusCode,
-      code: permit.code,
-      messageFa:
-        permit.statusCode === 503
-          ? 'بررسی رضایت پژوهشی در دسترس نیست؛ ثبت رویداد متوقف شد.'
-          : 'مجوز پردازش پژوهشی صادر نشد؛ رضایت کاربر فعال نیست یا در حال لغو است.',
+      statusCode: 503,
+      code: 'RESEARCH_SUBJECT_REGISTRY_WRITE_FAILED',
+      messageFa: 'ثبت نگاشت حذف‌پذیر داده پژوهشی در دسترس نیست؛ ثبت رویداد متوقف شد.',
     };
   }
 
-  try {
-    // Optional test seam before pre-commit consent re-verification
-    if (params.beforeResearchWriteHook) {
-      await params.beforeResearchWriteHook();
-    }
+  // Optional test seam to exercise mid-flight consent revocation race deterministically
+  if (params.beforeResearchWriteHook) {
+    await params.beforeResearchWriteHook();
+  }
 
-    // 7. Fast-fail pre-commit consent re-verification with monotonic consent_revision check
-    const preCommitConsent = await verifyServerSideResearchConsent(
-      userDbRes.db,
-      params.uid,
-      permit.consentRevision,
-    );
-    if (preCommitConsent.allowed === false) {
-      return {
-        ok: false,
-        statusCode: preCommitConsent.statusCode,
-        code:
-          preCommitConsent.statusCode === 503
-            ? preCommitConsent.code
-            : 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT',
-        messageFa: 'رضایت پژوهشی کاربر هم‌زمان لغو یا تغییر یافته و ثبت رویداد متوقف شد.',
-      };
-    }
-
-    // Optional Section B barrier seam: suspended AFTER all USER_DB checks, immediately BEFORE RESEARCH_DB write
-    if (params.afterConsentCheckBeforeResearchWriteHook) {
-      await params.afterConsentCheckBeforeResearchWriteHook({
-        permitId: permit.permitId,
-        consentRevision: permit.consentRevision,
-        subjectKey: pseudo.derived.subjectKey,
-        subjectKeyVersion: pseudo.derived.subjectKeyVersion,
-      });
-    }
-
-    // 8. Persist pseudonymized events strictly in RESEARCH_DB with atomic consent fence enforcement
-    const written = await writePseudonymizedEventsToResearchDb({
-      researchDb: researchDbRes.db,
-      subjectKey: pseudo.derived.subjectKey,
-      subjectKeyVersion: pseudo.derived.subjectKeyVersion,
-      consentRevision: permit.consentRevision,
-      events: validEvents,
-      nowMs,
-    });
-
-    if (written.fencedCount > 0 && written.acceptedCount === 0) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'CONSENT_FENCED_IN_RESEARCH_DB',
-        messageFa: 'نسخه رضایت پژوهشی پیش‌تر لغو و در RESEARCH_DB مسدود شده است.',
-      };
-    }
-
+  // 6. Pre-commit consent re-verification with monotonic consent_revision check
+  const preCommitConsent = await verifyServerSideResearchConsent(
+    userDbRes.db,
+    params.uid,
+    capturedConsentRevision,
+  );
+  if (preCommitConsent.allowed === false) {
     return {
-      ok: true,
-      batchId: written.batchId,
-      receiptId: written.receiptId,
-      acceptedCount: written.acceptedCount,
-      deduplicatedCount: written.deduplicatedCount,
-      rejectedCount: rejections.length + written.fencedCount,
-      consentRevision: permit.consentRevision,
-      rejections,
+      ok: false,
+      statusCode: preCommitConsent.statusCode,
+      code:
+        preCommitConsent.statusCode === 503
+          ? preCommitConsent.code
+          : 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT',
+      messageFa: 'رضایت پژوهشی کاربر هم‌زمان لغو یا تغییر یافته و ثبت رویداد متوقف شد.',
     };
-  } finally {
-    await releaseResearchProcessingPermitInD1({
-      userDb: userDbRes.db,
-      permitId: permit.permitId,
-    }).catch(() => {});
   }
+
+  // 7. Persist pseudonymized events strictly in RESEARCH_DB
+  const written = await writePseudonymizedEventsToResearchDb({
+    researchDb: researchDbRes.db,
+    subjectKey: pseudo.derived.subjectKey,
+    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
+    events: validEvents,
+    nowMs,
+    rejectedCount: rejections.length,
+  });
+
+  return {
+    ok: true,
+    batchId: written.batchId,
+    receiptId: written.receiptId,
+    acceptedCount: written.acceptedCount,
+    deduplicatedCount: written.deduplicatedCount,
+    rejectedCount: rejections.length,
+    consentRevision: capturedConsentRevision,
+    rejections,
+  };
 }
 
 export interface ResearchSubjectErasureResult {
@@ -554,15 +445,12 @@ export interface ResearchSubjectErasureResult {
   readonly receiptId: string;
   readonly deletedEventsCount: number;
   readonly invalidatedAggregationWindowsCount: number;
-  readonly fencedThroughRevision: number;
   readonly idempotentReplay: boolean;
   readonly completedAtIso: string;
 }
 
 /**
  * Idempotent Inbox consumer in `RESEARCH_DB` executing erasure by `(subject_key, subject_key_version)`.
- * Atomically deletes matching events, invalidates affected aggregation windows, advances
- * `research_subject_consent_fences`, and records an idempotent receipt in `research_erasure_inbox`.
  * Never receives or stores raw Firebase UID.
  */
 export async function executeResearchSubjectErasure(params: {
@@ -570,16 +458,10 @@ export async function executeResearchSubjectErasure(params: {
   outboxId: string;
   subjectKey: string;
   subjectKeyVersion: string;
-  maxConsentRevision?: number | null;
   nowMs?: number;
 }): Promise<ResearchSubjectErasureResult> {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
-  const scopedRevision =
-    typeof params.maxConsentRevision === 'number' && Number.isInteger(params.maxConsentRevision)
-      ? params.maxConsentRevision
-      : null;
-  const effectiveFenceRevision = scopedRevision ?? PERMANENT_DELETION_FENCE_REVISION;
 
   const existing = await params.researchDb
     .prepare(
@@ -600,83 +482,42 @@ export async function executeResearchSubjectErasure(params: {
       receiptId: existing.receipt_id,
       deletedEventsCount: Number(existing.deleted_events_count || 0),
       invalidatedAggregationWindowsCount: 0,
-      fencedThroughRevision: effectiveFenceRevision,
       idempotentReplay: true,
       completedAtIso: existing.completed_at_iso,
     };
   }
 
-  const countRow =
-    scopedRevision === null
-      ? await params.researchDb
-          .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-          .bind(params.subjectKey, params.subjectKeyVersion)
-          .first<{ cnt: number }>()
-      : await params.researchDb
-          .prepare(
-            'SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND consent_revision <= ?3',
-          )
-          .bind(params.subjectKey, params.subjectKeyVersion, scopedRevision)
-          .first<{ cnt: number }>();
-  const targetCount = Number(countRow?.cnt ?? 0);
+  const countRow = await params.researchDb
+    .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
+    .bind(params.subjectKey, params.subjectKeyVersion)
+    .first<{ cnt: number }>();
+  if (!countRow || !Number.isSafeInteger(Number(countRow.cnt)) || Number(countRow.cnt) < 0) {
+    throw new Error('RESEARCH_ERASURE_TARGET_COUNT_UNAVAILABLE');
+  }
+  const targetCount = Number(countRow.cnt);
 
   // Identify derived aggregation scopes impacted by this subject so stale counts are invalidated atomically.
-  const impactedScopesRes =
-    scopedRevision === null
-      ? await params.researchDb
-          .prepare(
-            'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2',
-          )
-          .bind(params.subjectKey, params.subjectKeyVersion)
-          .all<{ event_type: string; city_id: string }>()
-      : await params.researchDb
-          .prepare(
-            'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND consent_revision <= ?3',
-          )
-          .bind(params.subjectKey, params.subjectKeyVersion, scopedRevision)
-          .all<{ event_type: string; city_id: string }>();
+  const impactedScopesRes = await params.researchDb
+    .prepare(
+      'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2',
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion)
+    .all<{ event_type: string; city_id: string }>();
+  if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
   const impactedScopes = impactedScopesRes.results ?? [];
 
   const erasureId = `rerase_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
   const receiptId = `ercpt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
 
-  const deleteEventsStmt =
-    scopedRevision === null
-      ? params.researchDb
-          .prepare('DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-          .bind(params.subjectKey, params.subjectKeyVersion)
-      : params.researchDb
-          .prepare(
-            'DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND consent_revision <= ?3',
-          )
-          .bind(params.subjectKey, params.subjectKeyVersion, scopedRevision);
+  const deleteEventsStmt = params.researchDb
+    .prepare('DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
+    .bind(params.subjectKey, params.subjectKeyVersion);
 
   const invalidateWindowStmts = impactedScopes.map((scope) =>
     params.researchDb
       .prepare('DELETE FROM research_aggregation_windows WHERE event_type = ?1 AND city_id = ?2')
       .bind(scope.event_type, scope.city_id),
   );
-
-  const upsertFenceStmt = params.researchDb
-    .prepare(
-      `INSERT INTO research_subject_consent_fences (
-        subject_key, subject_key_version, revoked_through_revision,
-        last_outbox_id, last_receipt_id, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-      ON CONFLICT(subject_key, subject_key_version) DO UPDATE SET
-        revoked_through_revision = MAX(research_subject_consent_fences.revoked_through_revision, excluded.revoked_through_revision),
-        last_outbox_id = excluded.last_outbox_id,
-        last_receipt_id = excluded.last_receipt_id,
-        updated_at_iso = excluded.updated_at_iso`,
-    )
-    .bind(
-      params.subjectKey,
-      params.subjectKeyVersion,
-      effectiveFenceRevision,
-      params.outboxId,
-      receiptId,
-      nowIso,
-    );
 
   const insertInboxStmt = params.researchDb
     .prepare(
@@ -700,10 +541,12 @@ export async function executeResearchSubjectErasure(params: {
   const batchResults = await params.researchDb.batch([
     deleteEventsStmt,
     ...invalidateWindowStmts,
-    upsertFenceStmt,
     insertInboxStmt,
   ]);
-  if (batchResults.some((r) => !r.success)) {
+  if (
+    batchResults.length !== 2 + invalidateWindowStmts.length ||
+    batchResults.some((r) => !r.success)
+  ) {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
   }
 
@@ -713,436 +556,8 @@ export async function executeResearchSubjectErasure(params: {
     receiptId,
     deletedEventsCount: targetCount,
     invalidatedAggregationWindowsCount: impactedScopes.length,
-    fencedThroughRevision: effectiveFenceRevision,
     idempotentReplay: false,
     completedAtIso: nowIso,
-  };
-}
-
-export interface ResearchConsentRevocationExecutionResult {
-  readonly ok: boolean;
-  readonly statusCode: 200 | 202 | 404 | 503;
-  readonly revocationId: string;
-  readonly status: ResearchConsentRevocationStatus;
-  readonly completed: boolean;
-  readonly idempotentReplay: boolean;
-  readonly revokedConsentRevision: number;
-  readonly newConsentRevision: number;
-  readonly activePermitsRemaining: number;
-  readonly expiredPermitsReclaimed: number;
-  readonly outboxItemsTotal: number;
-  readonly outboxItemsCompleted: number;
-  readonly erasedEventsCount: number;
-  readonly receiptIds: string[];
-  readonly code: string;
-}
-
-/**
- * Reconciles a durable consent-revocation job through:
- * 1. Reclaiming expired leases (`expires_at_ms <= nowMs`) and draining active permits.
- * 2. Refusing to complete while ANY active permit for `consent_revision <= newConsentRevision` remains.
- * 3. Enqueuing UID-free `research_erasure_outbox` rows scoped to `max_consent_revision = newConsentRevision`.
- * 4. Executing idempotent erasure + fencing on `RESEARCH_DB` and verifying receipts before marking `COMPLETED`.
- */
-export async function reconcileResearchConsentRevocation(params: {
-  env: WorkerEnv;
-  revocationId: string;
-  nowMs?: number;
-}): Promise<ResearchConsentRevocationExecutionResult> {
-  const userDbRes = requireUserDb(params.env);
-  if (userDbRes.ok === false) {
-    return {
-      ok: false,
-      statusCode: 503,
-      revocationId: params.revocationId,
-      status: 'DRAINING_PERMITS',
-      completed: false,
-      idempotentReplay: false,
-      revokedConsentRevision: 0,
-      newConsentRevision: 0,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed: 0,
-      outboxItemsTotal: 0,
-      outboxItemsCompleted: 0,
-      erasedEventsCount: 0,
-      receiptIds: [],
-      code: userDbRes.code,
-    };
-  }
-  const userDb = userDbRes.db;
-  const nowMs = params.nowMs ?? Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-
-  const job = await getResearchConsentRevocationJobFromD1(userDb, params.revocationId);
-  if (!job) {
-    return {
-      ok: false,
-      statusCode: 404,
-      revocationId: params.revocationId,
-      status: 'DRAINING_PERMITS',
-      completed: false,
-      idempotentReplay: false,
-      revokedConsentRevision: 0,
-      newConsentRevision: 0,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed: 0,
-      outboxItemsTotal: 0,
-      outboxItemsCompleted: 0,
-      erasedEventsCount: 0,
-      receiptIds: [],
-      code: 'REVOCATION_JOB_NOT_FOUND',
-    };
-  }
-
-  if (job.status === 'COMPLETED') {
-    return {
-      ok: true,
-      statusCode: 200,
-      revocationId: job.revocationId,
-      status: 'COMPLETED',
-      completed: true,
-      idempotentReplay: true,
-      revokedConsentRevision: job.revokedConsentRevision,
-      newConsentRevision: job.newConsentRevision,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed: 0,
-      outboxItemsTotal: job.receiptIds.length,
-      outboxItemsCompleted: job.receiptIds.length,
-      erasedEventsCount: job.erasedEventsCount,
-      receiptIds: job.receiptIds,
-      code: 'CONSENT_REVOCATION_ALREADY_COMPLETED',
-    };
-  }
-
-  // Step 1: Reclaim expired leases (crash recovery) and check active permits for revoked revision
-  const expiredPermitsReclaimed = await expireStaleResearchProcessingPermitsInD1({
-    userDb,
-    uid: job.uid,
-    nowMs,
-  });
-  const activePermitsRemaining = await countActiveResearchProcessingPermitsInD1({
-    userDb,
-    uid: job.uid,
-    maxConsentRevision: job.newConsentRevision,
-    nowMs,
-  });
-
-  if (activePermitsRemaining > 0) {
-    return {
-      ok: true,
-      statusCode: 202,
-      revocationId: job.revocationId,
-      status: 'DRAINING_PERMITS',
-      completed: false,
-      idempotentReplay: false,
-      revokedConsentRevision: job.revokedConsentRevision,
-      newConsentRevision: job.newConsentRevision,
-      activePermitsRemaining,
-      expiredPermitsReclaimed,
-      outboxItemsTotal: 0,
-      outboxItemsCompleted: 0,
-      erasedEventsCount: 0,
-      receiptIds: [],
-      code: 'RESEARCH_PERMITS_DRAINING',
-    };
-  }
-
-  // Step 2: Collect all subject keys (registered + derived across active & rotated HMAC keys)
-  const subjectKeyMap = new Map<string, { subjectKey: string; subjectKeyVersion: string }>();
-  const regRes = await userDb
-    .prepare('SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1')
-    .bind(job.uid)
-    .all<{ subject_key: string; subject_key_version: string }>();
-  for (const row of regRes.results ?? []) {
-    subjectKeyMap.set(`${row.subject_key_version}:${row.subject_key}`, {
-      subjectKey: row.subject_key,
-      subjectKeyVersion: row.subject_key_version,
-    });
-  }
-
-  const derivedRes = await deriveAllSubjectKeysForErasure({ uid: job.uid, env: params.env });
-  if (derivedRes.ok) {
-    for (const key of derivedRes.keys) {
-      subjectKeyMap.set(`${key.subjectKeyVersion}:${key.subjectKey}`, key);
-    }
-  } else if (subjectKeyMap.size === 0 && params.env.RESEARCH_DB) {
-    return {
-      ok: false,
-      statusCode: 503,
-      revocationId: job.revocationId,
-      status: 'PENDING_ERASURE',
-      completed: false,
-      idempotentReplay: false,
-      revokedConsentRevision: job.revokedConsentRevision,
-      newConsentRevision: job.newConsentRevision,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed,
-      outboxItemsTotal: 0,
-      outboxItemsCompleted: 0,
-      erasedEventsCount: 0,
-      receiptIds: [],
-      code: 'code' in derivedRes ? derivedRes.code : 'RESEARCH_HMAC_SECRET_MISSING',
-    };
-  }
-
-  // Step 3: Enqueue durable UID-free outbox rows scoped to `max_consent_revision = job.newConsentRevision`
-  const subjectKeys = Array.from(subjectKeyMap.values());
-  for (const sk of subjectKeys) {
-    const outboxId = `rrevout_${job.revocationId}_${sk.subjectKeyVersion}_${sk.subjectKey.slice(0, 16)}`;
-    await userDb
-      .prepare(
-        `INSERT OR IGNORE INTO research_erasure_outbox (
-          outbox_id, job_id, subject_key, subject_key_version, status,
-          attempt_count, next_retry_at_ms, max_consent_revision, created_at_iso, updated_at_iso
-        ) VALUES (?1, ?2, ?3, ?4, 'PENDING', 0, 0, ?5, ?6, ?7)`,
-      )
-      .bind(outboxId, job.revocationId, sk.subjectKey, sk.subjectKeyVersion, job.newConsentRevision, nowIso, nowIso)
-      .run();
-  }
-
-  await userDb
-    .prepare(
-      `UPDATE research_consent_revocation_jobs
-       SET status = 'PENDING_ERASURE', updated_at_iso = ?1
-       WHERE revocation_id = ?2 AND status = 'DRAINING_PERMITS'`,
-    )
-    .bind(nowIso, job.revocationId)
-    .run();
-
-  if (subjectKeys.length === 0) {
-    await userDb
-      .prepare(
-        `UPDATE research_consent_revocation_jobs
-         SET status = 'COMPLETED', erased_events_count = 0, receipt_ids_json = '[]',
-             updated_at_iso = ?1, completed_at_iso = ?2
-         WHERE revocation_id = ?3`,
-      )
-      .bind(nowIso, nowIso, job.revocationId)
-      .run();
-    return {
-      ok: true,
-      statusCode: 200,
-      revocationId: job.revocationId,
-      status: 'COMPLETED',
-      completed: true,
-      idempotentReplay: false,
-      revokedConsentRevision: job.revokedConsentRevision,
-      newConsentRevision: job.newConsentRevision,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed,
-      outboxItemsTotal: 0,
-      outboxItemsCompleted: 0,
-      erasedEventsCount: 0,
-      receiptIds: [],
-      code: 'CONSENT_REVOCATION_COMPLETED',
-    };
-  }
-
-  // Step 4: Execute idempotent erasure & fencing against RESEARCH_DB for all pending outbox rows
-  const researchDb = resolveResearchDb(params.env);
-  const outboxRowsRes = await userDb
-    .prepare(
-      `SELECT outbox_id, subject_key, subject_key_version, status, attempt_count, max_consent_revision, receipt_id, erased_events_count
-       FROM research_erasure_outbox
-       WHERE job_id = ?1`,
-    )
-    .bind(job.revocationId)
-    .all<{
-      outbox_id: string;
-      subject_key: string;
-      subject_key_version: string;
-      status: string;
-      attempt_count: number;
-      max_consent_revision: number | null;
-      receipt_id: string | null;
-      erased_events_count: number;
-    }>();
-
-  const allOutboxRows = outboxRowsRes.results ?? [];
-  let completedCount = 0;
-  let erasedEventsCount = 0;
-  const receiptIds: string[] = [];
-
-  for (const row of allOutboxRows) {
-    if (row.status === 'COMPLETED' && row.receipt_id) {
-      completedCount += 1;
-      erasedEventsCount += Number(row.erased_events_count || 0);
-      receiptIds.push(row.receipt_id);
-      continue;
-    }
-
-    const attempts = Number(row.attempt_count ?? 0) + 1;
-    if (!researchDb) {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
-      await userDb
-        .prepare(
-          `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
-               last_error_code = 'RESEARCH_DB_UNAVAILABLE', updated_at_iso = ?3
-           WHERE outbox_id = ?4`,
-        )
-        .bind(attempts, nowMs + backoffMs, nowIso, row.outbox_id)
-        .run();
-      continue;
-    }
-
-    try {
-      const erasureRes = await executeResearchSubjectErasure({
-        researchDb,
-        outboxId: row.outbox_id,
-        subjectKey: row.subject_key,
-        subjectKeyVersion: row.subject_key_version,
-        maxConsentRevision: row.max_consent_revision ?? job.newConsentRevision,
-        nowMs,
-      });
-
-      await userDb
-        .prepare(
-          `UPDATE research_erasure_outbox
-           SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
-               erased_events_count = ?3, last_error_code = NULL,
-               updated_at_iso = ?4, completed_at_iso = ?5
-           WHERE outbox_id = ?6`,
-        )
-        .bind(
-          attempts,
-          erasureRes.receiptId,
-          erasureRes.deletedEventsCount,
-          nowIso,
-          erasureRes.completedAtIso,
-          row.outbox_id,
-        )
-        .run();
-
-      completedCount += 1;
-      erasedEventsCount += erasureRes.deletedEventsCount;
-      receiptIds.push(erasureRes.receiptId);
-    } catch {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
-      await userDb
-        .prepare(
-          `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
-               last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?3
-           WHERE outbox_id = ?4`,
-        )
-        .bind(attempts, nowMs + backoffMs, nowIso, row.outbox_id)
-        .run();
-    }
-  }
-
-  // Step 5: Declare final completion ONLY when every outbox entry has a verifiable RESEARCH_DB receipt
-  if (completedCount === allOutboxRows.length && allOutboxRows.length > 0) {
-    await userDb
-      .prepare(
-        `UPDATE research_consent_revocation_jobs
-         SET status = 'COMPLETED', erased_events_count = ?1, receipt_ids_json = ?2,
-             updated_at_iso = ?3, completed_at_iso = ?4
-         WHERE revocation_id = ?5`,
-      )
-      .bind(erasedEventsCount, JSON.stringify(receiptIds), nowIso, nowIso, job.revocationId)
-      .run();
-
-    return {
-      ok: true,
-      statusCode: 200,
-      revocationId: job.revocationId,
-      status: 'COMPLETED',
-      completed: true,
-      idempotentReplay: false,
-      revokedConsentRevision: job.revokedConsentRevision,
-      newConsentRevision: job.newConsentRevision,
-      activePermitsRemaining: 0,
-      expiredPermitsReclaimed,
-      outboxItemsTotal: allOutboxRows.length,
-      outboxItemsCompleted: completedCount,
-      erasedEventsCount,
-      receiptIds,
-      code: 'CONSENT_REVOCATION_COMPLETED',
-    };
-  }
-
-  return {
-    ok: false,
-    statusCode: 202,
-    revocationId: job.revocationId,
-    status: 'PENDING_ERASURE',
-    completed: false,
-    idempotentReplay: false,
-    revokedConsentRevision: job.revokedConsentRevision,
-    newConsentRevision: job.newConsentRevision,
-    activePermitsRemaining: 0,
-    expiredPermitsReclaimed,
-    outboxItemsTotal: allOutboxRows.length,
-    outboxItemsCompleted: completedCount,
-    erasedEventsCount,
-    receiptIds,
-    code: 'RESEARCH_CONSENT_ERASURE_PENDING',
-  };
-}
-
-/**
- * End-to-end research consent revocation orchestrator:
- * 1. Atomically revokes consent in `USER_DB`, bumps `consent_revision`, blocks new permits,
- *    and creates a durable `research_consent_revocation_jobs` record.
- * 2. Runs barrier reconciliation (permit drain -> durable outbox -> idempotent RESEARCH_DB erasure + fence -> receipt).
- */
-export async function revokeUserResearchConsentWithBarrier(params: {
-  env: WorkerEnv;
-  uid: string;
-  actorUid: string;
-  behavioralTelemetryConsent?: boolean;
-  marketingCommunicationsConsent?: boolean;
-  consentVersion?: string;
-  consentSource?: string;
-  nowMs?: number;
-}): Promise<{
-  readonly privacy: D1UserPrivacyConsent;
-  readonly revocation: ResearchConsentRevocationExecutionResult | null;
-}> {
-  const userDbRes = requireUserDb(params.env);
-  if (userDbRes.ok === false) {
-    throw new Error(userDbRes.code);
-  }
-  const nowMs = params.nowMs ?? Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-
-  const privacy = await updateUserPrivacyConsentInD1(userDbRes.db, {
-    uid: params.uid,
-    actorUid: params.actorUid,
-    researchAnalyticsConsent: false,
-    behavioralTelemetryConsent: params.behavioralTelemetryConsent,
-    marketingCommunicationsConsent: params.marketingCommunicationsConsent,
-    consentVersion: params.consentVersion,
-    consentSource: params.consentSource ?? 'account_privacy_api',
-    nowIso,
-  });
-
-  let targetRevocationId = privacy.revocationJobId ?? null;
-  if (!targetRevocationId) {
-    const pendingJobs = await listPendingResearchConsentRevocationsFromD1(userDbRes.db, params.uid);
-    if (pendingJobs.length > 0) {
-      targetRevocationId = pendingJobs[pendingJobs.length - 1].revocationId;
-    }
-  }
-
-  if (!targetRevocationId) {
-    return { privacy, revocation: null };
-  }
-
-  const revocation = await reconcileResearchConsentRevocation({
-    env: params.env,
-    revocationId: targetRevocationId,
-    nowMs,
-  });
-
-  return {
-    privacy: {
-      ...privacy,
-      revocationJobId: targetRevocationId,
-      revocationStatus: revocation.status,
-    },
-    revocation,
   };
 }
 
@@ -1172,6 +587,9 @@ export async function purgeExpiredResearchData(params: {
     .prepare('DELETE FROM research_aggregation_windows WHERE expires_at_iso <= ?1')
     .bind(nowIso)
     .run();
+  if (!evRes.success || !idemRes.success || !aggRes.success) {
+    throw new Error('RESEARCH_RETENTION_PURGE_FAILED');
+  }
 
   return {
     purgedAtIso: nowIso,
@@ -1205,9 +623,22 @@ export interface KAnonymousResearchAggregation {
 }
 
 function assertDayAlignedAggregationWindow(windowStartIso: string, windowEndIso: string): void {
+  const utcMidnightPattern = /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/;
+  if (!utcMidnightPattern.test(windowStartIso) || !utcMidnightPattern.test(windowEndIso)) {
+    throw new AggregationWindowPolicyError(
+      'AGGREGATION_WINDOW_NOT_CANONICAL_UTC',
+      'Aggregation window boundaries must be explicit canonical UTC midnight timestamps ending in .000Z.',
+    );
+  }
   const startMs = Date.parse(windowStartIso);
   const endMs = Date.parse(windowEndIso);
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+  if (
+    !Number.isFinite(startMs) ||
+    !Number.isFinite(endMs) ||
+    new Date(startMs).toISOString() !== windowStartIso ||
+    new Date(endMs).toISOString() !== windowEndIso ||
+    endMs <= startMs
+  ) {
     throw new AggregationWindowPolicyError(
       'INVALID_AGGREGATION_WINDOW',
       'Aggregation windowStartIso and windowEndIso must be valid ISO-8601 timestamps with end > start.',
@@ -1247,7 +678,12 @@ export async function computeKAnonymousResearchAggregation(params: {
   assertDayAlignedAggregationWindow(params.windowStartIso, params.windowEndIso);
 
   const policy = RESEARCH_EVENT_POLICIES[params.eventType];
-  const kThreshold = Math.max(HARD_MIN_K_ANONYMITY, Math.trunc(params.minCohortSize ?? policy.minKAnonymity));
+  if (!policy) {
+    throw new AggregationWindowPolicyError('UNSUPPORTED_RESEARCH_EVENT_TYPE', 'Unsupported research event type.');
+  }
+  const requestedK = Number(params.minCohortSize ?? policy.minKAnonymity);
+  const normalizedK = Number.isSafeInteger(requestedK) ? requestedK : policy.minKAnonymity;
+  const kThreshold = Math.max(HARD_MIN_K_ANONYMITY, normalizedK);
   const nowMs = params.nowMs ?? Date.now();
   const generatedAtIso = new Date(nowMs).toISOString();
   const expiresAtIso = new Date(nowMs + policy.aggregationRetentionDays * 24 * 60 * 60 * 1000).toISOString();
@@ -1256,30 +692,53 @@ export async function computeKAnonymousResearchAggregation(params: {
   const stats = hoodId === null
     ? await params.researchDb
         .prepare(
-          `SELECT COUNT(DISTINCT subject_key) AS distinct_subjects, COUNT(*) AS event_count
-           FROM research_events
-           WHERE event_type = ?1 AND city_id = ?2 AND occurred_at_iso >= ?3 AND occurred_at_iso < ?4 AND expires_at_iso > ?5`,
+          `SELECT COALESCE(MAX(version_stats.distinct_subjects), 0) AS distinct_subjects,
+                  COALESCE(SUM(version_stats.event_count), 0) AS event_count
+           FROM (
+             SELECT subject_key_version,
+                    COUNT(DISTINCT subject_key) AS distinct_subjects,
+                    COUNT(*) AS event_count
+             FROM research_events
+             WHERE event_type = ?1 AND city_id = ?2 AND occurred_at_iso >= ?3 AND occurred_at_iso < ?4 AND expires_at_iso > ?5
+             GROUP BY subject_key_version
+           ) AS version_stats`,
         )
         .bind(params.eventType, params.cityId, params.windowStartIso, params.windowEndIso, generatedAtIso)
         .first<{ distinct_subjects: number; event_count: number }>()
     : await params.researchDb
         .prepare(
-          `SELECT COUNT(DISTINCT subject_key) AS distinct_subjects, COUNT(*) AS event_count
-           FROM research_events
-           WHERE event_type = ?1 AND city_id = ?2 AND hood_id = ?3 AND occurred_at_iso >= ?4 AND occurred_at_iso < ?5 AND expires_at_iso > ?6`,
+          `SELECT COALESCE(MAX(version_stats.distinct_subjects), 0) AS distinct_subjects,
+                  COALESCE(SUM(version_stats.event_count), 0) AS event_count
+           FROM (
+             SELECT subject_key_version,
+                    COUNT(DISTINCT subject_key) AS distinct_subjects,
+                    COUNT(*) AS event_count
+             FROM research_events
+             WHERE event_type = ?1 AND city_id = ?2 AND hood_id = ?3 AND occurred_at_iso >= ?4 AND occurred_at_iso < ?5 AND expires_at_iso > ?6
+             GROUP BY subject_key_version
+           ) AS version_stats`,
         )
         .bind(params.eventType, params.cityId, hoodId, params.windowStartIso, params.windowEndIso, generatedAtIso)
         .first<{ distinct_subjects: number; event_count: number }>();
 
-  const rawDistinct = Number(stats?.distinct_subjects ?? 0);
-  const rawEvents = Number(stats?.event_count ?? 0);
+  if (
+    !stats ||
+    !Number.isSafeInteger(Number(stats.distinct_subjects)) ||
+    !Number.isSafeInteger(Number(stats.event_count)) ||
+    Number(stats.distinct_subjects) < 0 ||
+    Number(stats.event_count) < 0
+  ) {
+    throw new Error('RESEARCH_AGGREGATION_STATS_UNAVAILABLE_OR_INVALID');
+  }
+  const rawDistinct = Number(stats.distinct_subjects);
+  const rawEvents = Number(stats.event_count);
   const kSuppressed = rawDistinct < kThreshold;
 
   const distinctSubjectsCount = kSuppressed ? null : coarsenCount(rawDistinct);
   const eventCount = kSuppressed ? null : coarsenCount(rawEvents);
   const windowId = `ragg_${params.eventType}_${params.cityId}_${hoodId ?? 'all'}_${params.windowStartIso.slice(0, 10)}_${params.windowEndIso.slice(0, 10)}`;
 
-  await params.researchDb
+  const aggregationWrite = await params.researchDb
     .prepare(
       `INSERT OR REPLACE INTO research_aggregation_windows (
         window_id, event_type, city_id, hood_id, window_start_iso, window_end_iso,
@@ -1310,6 +769,7 @@ export async function computeKAnonymousResearchAggregation(params: {
       expiresAtIso,
     )
     .run();
+  if (!aggregationWrite.success) throw new Error('RESEARCH_AGGREGATION_WINDOW_WRITE_FAILED');
 
   return {
     windowId,

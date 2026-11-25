@@ -162,66 +162,78 @@ export async function evaluateTieredWorkerRateLimit(params: {
   remaining: number;
   retryAfterSeconds: number;
 }> {
-  const cleanKey = `${params.action}:${String(params.subjectKey || 'anon').slice(0, 80)}`;
+  const deny = (tierUsed: RateLimitConsistencyTier, retryAfterSeconds: number) => ({
+    allowed: false,
+    tierUsed,
+    remaining: 0,
+    retryAfterSeconds: Math.max(1, Math.trunc(retryAfterSeconds) || 1),
+  });
+  const maxRequests = Number.isSafeInteger(params.maxRequests) && params.maxRequests > 0
+    ? Math.min(params.maxRequests, 1_000_000)
+    : 0;
+  const windowSeconds = Number.isSafeInteger(params.windowSeconds) && params.windowSeconds > 0
+    ? Math.min(params.windowSeconds, 604_800)
+    : 0;
+  if (!maxRequests || !windowSeconds) return deny(params.tier, 60);
+
+  const subject = String(params.subjectKey || 'anon').trim().slice(0, 80) || 'anon';
+  const cleanKey = `${params.action}:${subject}`;
   if (params.tier === 'edge_approximate' && params.edgeLimiter) {
     const res = await params.edgeLimiter.limit({ key: cleanKey });
     return {
       allowed: res.success,
       tierUsed: 'edge_approximate',
       remaining: res.success ? 1 : 0,
-      retryAfterSeconds: res.success ? 0 : params.windowSeconds,
+      retryAfterSeconds: res.success ? 0 : windowSeconds,
     };
   }
 
-  const now = params.nowMs ?? Date.now();
-  const windowMs = Math.max(1000, params.windowSeconds * 1000);
-  if (params.db) {
-    const existing = await params.db
-      .prepare('SELECT counter, window_reset_ms FROM strong_rate_limits WHERE bucket_key = ?1')
-      .bind(cleanKey)
-      .first<{ counter: number; window_reset_ms: number }>();
+  // A durable tier without a durable store must never silently degrade to allow-all.
+  if (!params.db) return deny(params.tier, windowSeconds);
 
-    if (!existing || now >= Number(existing.window_reset_ms)) {
-      const resetAt = now + windowMs;
-      await params.db
-        .prepare('INSERT OR REPLACE INTO strong_rate_limits (bucket_key, counter, window_reset_ms) VALUES (?1, ?2, ?3)')
-        .bind(cleanKey, 1, resetAt)
-        .run();
-      return {
-        allowed: true,
-        tierUsed: 'strong_durable',
-        remaining: Math.max(0, params.maxRequests - 1),
-        retryAfterSeconds: 0,
-      };
-    }
+  const suppliedNow = params.nowMs ?? Date.now();
+  const now = Number.isFinite(suppliedNow) ? Number(suppliedNow) : Date.now();
+  const windowMs = windowSeconds * 1000;
+  const resetAt = now + windowMs;
 
-    const nextCount = Number(existing.counter) + 1;
-    if (nextCount > params.maxRequests) {
-      return {
-        allowed: false,
-        tierUsed: 'strong_durable',
-        remaining: 0,
-        retryAfterSeconds: Math.max(1, Math.ceil((Number(existing.window_reset_ms) - now) / 1000)),
-      };
-    }
+  // One atomic UPSERT/RETURNING statement prevents concurrent read-modify-write
+  // races from collapsing many requests into a single counter increment.
+  const row = await params.db
+    .prepare(
+      `INSERT INTO strong_rate_limits (bucket_key, counter, window_reset_ms)
+       VALUES (?1, 1, ?2)
+       ON CONFLICT(bucket_key) DO UPDATE SET
+         counter = CASE
+           WHEN strong_rate_limits.window_reset_ms <= ?3 THEN 1
+           ELSE MIN(strong_rate_limits.counter + 1, ?4)
+         END,
+         window_reset_ms = CASE
+           WHEN strong_rate_limits.window_reset_ms <= ?3 THEN ?2
+           ELSE strong_rate_limits.window_reset_ms
+         END
+       RETURNING counter, window_reset_ms`,
+    )
+    .bind(cleanKey, resetAt, now, maxRequests + 1)
+    .first<{ counter: number; window_reset_ms: number }>();
 
-    await params.db
-      .prepare('INSERT OR REPLACE INTO strong_rate_limits (bucket_key, counter, window_reset_ms) VALUES (?1, ?2, ?3)')
-      .bind(cleanKey, nextCount, Number(existing.window_reset_ms))
-      .run();
-    return {
-      allowed: true,
-      tierUsed: 'strong_durable',
-      remaining: Math.max(0, params.maxRequests - nextCount),
-      retryAfterSeconds: 0,
-    };
+  if (
+    !row ||
+    !Number.isSafeInteger(Number(row.counter)) ||
+    !Number.isFinite(Number(row.window_reset_ms)) ||
+    Number(row.counter) < 1 ||
+    Number(row.window_reset_ms) <= now
+  ) {
+    return deny('strong_durable', windowSeconds);
   }
 
+  const counter = Number(row.counter);
+  const windowResetMs = Number(row.window_reset_ms);
+  const allowed = counter <= maxRequests;
   return {
-    allowed: true,
-    tierUsed: params.tier,
-    remaining: params.maxRequests,
-    retryAfterSeconds: 0,
+    allowed,
+    tierUsed: 'strong_durable',
+    remaining: allowed ? Math.max(0, maxRequests - counter) : 0,
+    retryAfterSeconds: allowed ? 0 : Math.max(1, Math.ceil((windowResetMs - now) / 1000)),
   };
 }
 

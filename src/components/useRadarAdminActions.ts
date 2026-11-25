@@ -1,15 +1,11 @@
 import React from 'react';
-import { auth, handleFirestoreError, OperationType } from '../firebase';
-import {
-  batchSaveNeighborhoodOverrides,
-  saveFeatureFlags,
-  saveMonetizationDiscount,
-  saveNeighborhoodOverride,
-  type SaveNeighborhoodOverrideInput,
-} from '../data/neighborhoodRemoteRepository'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { persistRestoredStateToFirestore, sanitizeSponsorForOverrideDoc } from '../utils/backupCloudSync';
-export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any): Promise<void> => {
-  const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? sanitizeSponsorForOverrideDoc(rawSponsorVal) : undefined;
+import { MULTI_CITY_CONFIGS, type CityId } from '../data/multiCityData';
+import { approveSponsorRequest, batchSaveNeighborhoodOverrides, buildSanitizedSponsorMap, deleteSponsorRequest, saveFeatureFlags, saveNeighborhoodOverride, updateSponsorRequestExpiry, type SaveNeighborhoodOverrideInput } from '../data/neighborhoodRemoteRepository';
+import { BuyerAlertLeadItem, EvaluatedNeighborhood, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { validateAdminLockPassword } from '../utils/forms/formInputHelpers'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; 
+export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, rawSponsorVal?: any, cityId = 'tehran'): Promise<void> => {
+  const sponsorVal = rawSponsorVal === null ? null : rawSponsorVal !== undefined ? buildSanitizedSponsorMap(rawSponsorVal) : undefined;
   const payload: SaveNeighborhoodOverrideInput = {
+    cityId,
     hoodId: overrideHoodId,
     buyPerSqm: buyVal,
     rahn80m: rahnVal,
@@ -19,10 +15,16 @@ export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal:
   };
   await saveNeighborhoodOverride(payload);
 };
-export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
+export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; activeCity: CityId; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
   adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>; adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number;
   setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; }
-const syncApprovedSponsorRequestsExpiry = async (_hoodId: number, _expiresAtIso: string): Promise<void> => {};
+const syncApprovedSponsorRequestsExpiry = async (hoodId: number, expiresAtIso: string, cityId = 'tehran'): Promise<void> => {
+  const response = await fetch(`/api/v1/market/state?cityId=${encodeURIComponent(cityId)}`, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`MARKET_STATE_HTTP_${response.status}`);
+  const state = await response.json() as { sponsors?: Array<{ id?: string; hoodId?: number; status?: string }> };
+  const requests = (state.sponsors || []).filter((item) => item.hoodId === hoodId && item.status === 'approved');
+  await Promise.all(requests.map((item) => updateSponsorRequestExpiry(String(item.id || '').replace(/^cloud-/, ''), expiresAtIso)));
+};
 export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
   const handleAdminApproveSponsor = async (reqItem: SponsorCrmRequestItem) => {
     if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
@@ -30,21 +32,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     const seedHood = p.evaluatedNeighborhoods.find((n) => n.id === reqItem.hoodId) || p.neighborhoods.find((n) => n.id === reqItem.hoodId) || p.allExpansionSeeds.find((n) => n.id === reqItem.hoodId);
     const baseBuy = seedHood ? ((seedHood as EvaluatedNeighborhood).baseBuyPerSqm ?? seedHood.buyPerSqm) : 100; const baseRahn = seedHood ? Math.max(50, seedHood.rahn80m) : 1000;
     if (String(reqItem.id).startsWith('cloud-')) {
-      const docId = String(reqItem.id).replace(/^cloud-/, '');
       try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-          await fetch('/api/admin/sponsors/approve', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requestId: docId, hoodId: reqItem.hoodId, expiresAtIso: resolvedExpiry }),
-            cache: 'no-store',
-          });
-        }
-        await persistHoodOverrideToCloud(reqItem.hoodId, baseBuy, baseRahn, approvedSponsor);
-      } catch (err) {
-        p.setAdminPriceSavedMsg('خطای دسترسی در تایید اسپانسر (API ادمین).');
-        try { handleFirestoreError(err, OperationType.UPDATE, `sponsorRequests/${docId}`); } catch { return; }
+        await approveSponsorRequest(String(reqItem.id).replace(/^cloud-/, ''), resolvedExpiry, p.activeCity);
+        await persistHoodOverrideToCloud(reqItem.hoodId, baseBuy, baseRahn, approvedSponsor, p.activeCity);
+      } catch {
+        p.setAdminPriceSavedMsg('ثبت تأیید اسپانسر در Cloudflare D1 انجام نشد؛ وضعیت محلی تغییر نکرد.');
+        return;
       }
     }
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.id === reqItem.id ? { ...r, status: 'approved', expiresAtIso: resolvedExpiry } : r)));
@@ -54,127 +47,71 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: تمدید اسپانسر نیازمند احراز هویت ادمین است.'); return; }
     const target = p.evaluatedNeighborhoods.find((n) => n.id === hoodId) || p.neighborhoods.find((n) => n.id === hoodId);
     if (!target?.sponsor) return;
-    const nextExpiry = computeExtendedSponsorExpirationIso(target.sponsor.expiresAtIso, 30); const nextSponsor = sanitizeSponsorForOverrideDoc({ ...target.sponsor, expiresAtIso: nextExpiry })!;
+    const nextExpiry = computeExtendedSponsorExpirationIso(target.sponsor.expiresAtIso, 30); const nextSponsor = buildSanitizedSponsorMap({ ...target.sponsor, expiresAtIso: nextExpiry })!;
     const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; const baseRahn = Math.max(50, target.rahn80m);
-    void persistHoodOverrideToCloud(hoodId, baseBuy, baseRahn, nextSponsor).then(() => syncApprovedSponsorRequestsExpiry(hoodId, nextExpiry)).catch((err) => { p.setAdminPriceSavedMsg('خطا در ثبت تمدید اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} });
+    void persistHoodOverrideToCloud(hoodId, baseBuy, baseRahn, nextSponsor, p.activeCity).then(() => syncApprovedSponsorRequestsExpiry(hoodId, nextExpiry, p.activeCity)).catch(() => { p.setAdminPriceSavedMsg('ثبت تمدید اسپانسر در Cloudflare D1 ناموفق بود.'); });
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.hoodId === hoodId && r.status === 'approved' ? { ...r, expiresAtIso: nextExpiry } : r)));
     p.setNeighborhoods((prev) => prev.some((n) => n.id === hoodId) ? prev.map((n) => (n.id !== hoodId ? n : { ...n, sponsor: nextSponsor })) : [...prev, { ...target, buyPerSqm: baseBuy, sponsor: nextSponsor }]);
   };
-  const handleReleaseHoodSponsor = (hoodId: number) => {
+  const handleReleaseHoodSponsor = async (hoodId: number) => {
     if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: آزادسازی اسپانسر نیازمند احراز هویت ادمین است.'); return; }
-    const pastIso = new Date(Date.now() - 86400000).toISOString(); const target = p.evaluatedNeighborhoods.find((n) => n.id === hoodId) || p.neighborhoods.find((n) => n.id === hoodId);
-    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void persistHoodOverrideToCloud(hoodId, baseBuy, Math.max(50, target.rahn80m), null).then(() => syncApprovedSponsorRequestsExpiry(hoodId, pastIso)).catch((err) => { p.setAdminPriceSavedMsg('خطا در آزادسازی اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} }); }
+    const response = await fetch('/api/v1/admin/market/sponsors/release', {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cityId: p.activeCity, hoodId }),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({})) as { code?: string };
+      p.setAdminPriceSavedMsg(result.code || 'آزادسازی اسپانسر در Cloudflare D1 ناموفق بود.');
+      return;
+    }
+    const pastIso = new Date(Date.now() - 86400000).toISOString();
     p.setSponsorRequests((prev) => (prev || []).map((r) => (r.hoodId === hoodId && r.status === 'approved' ? { ...r, expiresAtIso: pastIso } : r)));
     p.setNeighborhoods((prev) => prev.map((n) => (n.id !== hoodId ? n : { ...n, sponsor: undefined })));
+    p.setAdminPriceSavedMsg('اسپانسر محله در Cloudflare D1 آزاد شد.');
   };
   const handleAdminDeleteSponsorRequest = async (reqId: string) => {
-    if (!p.isVerifiedAdmin) {
-      p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.');
-      return;
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
+    try {
+      if (String(reqId).startsWith('cloud-')) await deleteSponsorRequest(String(reqId).replace(/^cloud-/, ''));
+      p.setSponsorRequests((prev) => (prev || []).filter((r) => r.id !== reqId));
+    } catch {
+      p.setAdminPriceSavedMsg('حذف درخواست اسپانسر از Cloudflare D1 انجام نشد.');
     }
-    if (String(reqId).startsWith('cloud-')) {
-      const docId = String(reqId).replace(/^cloud-/, '');
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-          await fetch('/api/admin/sponsors/release', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requestId: docId }),
-            cache: 'no-store',
-          });
-        }
-      } catch (err) {
-        p.setAdminPriceSavedMsg('خطای دسترسی در حذف اسپانسر ابری (نیاز به سطح دسترسی ادمین).');
-        try { handleFirestoreError(err, OperationType.DELETE, `sponsorRequests/${docId}`); } catch { return; }
-      }
-    }
-    p.setSponsorRequests((prev) => (prev || []).filter((r) => r.id !== reqId));
   };
   const handleAdminDeleteBargain = async (hoodId: number, bargainId: string) => {
-    if (!p.isVerifiedAdmin) {
-      p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.');
-      return;
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
+    try {
+      const cleanId = String(bargainId).replace(/^cloud-/, '');
+      const response = await fetch(`/api/v1/market/bargains/${encodeURIComponent(cleanId)}`, {
+        method: 'DELETE', credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+      });
+      const result = await response.json().catch(() => ({})) as { code?: string };
+      if (!response.ok) throw new Error(result.code || `BARGAIN_DELETE_HTTP_${response.status}`);
+      p.setNeighborhoods((prev) => prev.map((n) => n.id !== hoodId ? n : { ...n, bargains: (n.bargains || []).filter((b) => b.id !== bargainId) }));
+      p.setAdminPriceSavedMsg('آگهی از Cloudflare D1 حذف شد.');
+    } catch (error) {
+      p.setAdminPriceSavedMsg(error instanceof Error ? error.message : 'حذف آگهی انجام نشد.');
     }
-    if (String(bargainId).startsWith('cloud-')) {
-      const docId = String(bargainId).replace(/^cloud-/, '');
-      try {
-        const signedInUser = auth.currentUser;
-        if (signedInUser) {
-          try {
-            const idToken = await signedInUser.getIdToken();
-            const response = await fetch(`/api/object-storage/cleanup-bargain/${encodeURIComponent(docId)}`, {
-              method: 'POST', headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store',
-            });
-            const result: unknown = await response.json();
-            if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
-              p.setAdminPriceSavedMsg('آگهی حذف شد، اما پاکسازی همهٔ رسانه‌های آن تأیید نشد. نتیجه باید دوباره بررسی شود.');
-            }
-          } catch {
-            p.setAdminPriceSavedMsg('آگهی حذف شد، اما سرویس پاکسازی رسانه در دسترس نبود. پاکسازی باید مجدداً اجرا شود.');
-          }
-        } else {
-          p.setAdminPriceSavedMsg('آگهی حذف شد، اما برای پاکسازی رسانه‌ها نشست مدیر در دسترس نبود.');
-        }
-      } catch (err) {
-        p.setAdminPriceSavedMsg('خطای دسترسی در حذف آگهی ابری (نیاز به سطح دسترسی ادمین یا مالک).');
-        try { handleFirestoreError(err, OperationType.DELETE, `bargains/${docId}`); } catch { return; }
-        return;
-      }
-    }
-    p.setNeighborhoods((prev) => {
-      const exists = prev.some((n) => n.id === hoodId);
-      if (!exists) {
-        const seedTarget = p.evaluatedNeighborhoods.find((n) => n.id === hoodId);
-        if (!seedTarget) return prev;
-        return [...prev, { ...seedTarget, buyPerSqm: seedTarget.baseBuyPerSqm ?? seedTarget.buyPerSqm, bargains: (seedTarget.bargains || []).filter((b) => b.id !== bargainId) }];
-      }
-      return prev.map((n) => (n.id !== hoodId ? n : { ...n, bargains: (n.bargains || []).filter((b) => b.id !== bargainId) }));
-    });
   };
   const handleAdminApproveBargain = async (hoodId: number, bargainId: string) => {
-    if (!p.isVerifiedAdmin) {
-      p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.');
-      return;
-    }
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
     const cleanDocId = String(bargainId).replace(/^cloud-/, '');
     try {
-      if (String(bargainId).startsWith('cloud-')) {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-          await fetch('/api/admin/bargains/approve', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bargainId: cleanDocId }),
-            cache: 'no-store',
-          });
-        }
-      }
-      const signedInUser = auth.currentUser;
-      const idToken = signedInUser ? await signedInUser.getIdToken() : '';
-      const approveRes = await fetch('/api/admin/bargains/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
-        body: JSON.stringify({ bargainId: cleanDocId, fromStatus: 'pending', status: 'approved' }),
+      const response = await fetch('/api/v1/admin/market/bargains/approve', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bargainId: cleanDocId }),
       });
-      if (!approveRes.ok) {
-        const errJson = (await approveRes.json().catch(() => null)) as { message?: string } | null;
-        p.setAdminPriceSavedMsg(errJson?.message || 'تغییر محلی/فایراستور انجام شد، اما ثبت تاییدیه روی سرور Express ناموفق بود.');
-        if (!String(bargainId).startsWith('cloud-')) return;
-      } else {
-        p.setAdminPriceSavedMsg('آگهی شکار با موفقیت تأیید شد و در سامانه منتشر گردید.');
-      }
-    } catch (err) {
-      p.setAdminPriceSavedMsg('خطا در تأیید آگهی شکار؛ لطفاً مجدداً تلاش کنید.');
-      try { handleFirestoreError(err, OperationType.UPDATE, `bargains/${cleanDocId}`); } catch { return; }
+      const result = await response.json().catch(() => ({})) as { code?: string };
+      if (!response.ok) throw new Error(result.code || `BARGAIN_APPROVAL_HTTP_${response.status}`);
+      p.setNeighborhoods((prev) => prev.map((n) => n.id !== hoodId ? n : {
+        ...n, bargains: (n.bargains || []).map((b) => (b.id === bargainId ? { ...b, status: 'approved' as const } : b)),
+      }));
+      p.setAdminPriceSavedMsg('آگهی در Cloudflare D1 تأیید و منتشر شد.');
+    } catch (error) {
+      p.setAdminPriceSavedMsg(error instanceof Error ? error.message : 'تأیید آگهی انجام نشد.');
     }
-    p.setNeighborhoods((prev) =>
-      prev.map((n) =>
-        n.id !== hoodId
-          ? n
-          : { ...n, bargains: (n.bargains || []).map((b) => (b.id === bargainId ? { ...b, status: 'approved' as const } : b)) }
-      )
-    );
   };
   const handleDownloadBuyerLeadsCsv = () => {
     if (!p.isVerifiedAdmin) {
@@ -195,12 +132,12 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       return;
     }
     const hoodId = Number(p.adminEditHoodId);
+    const citySeeds = MULTI_CITY_CONFIGS[p.activeCity]?.neighborhoods || [];
     const targetSeed =
-      INITIAL_NEIGHBORHOODS.find((hood) => hood.id === hoodId) ||
-      p.allExpansionSeeds.find((hood) => hood.id === hoodId) ||
-      p.neighborhoods.find((hood) => hood.id === hoodId);
-    if (!targetSeed || hoodId < 1 || hoodId > 999) {
-      p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹ پشتیبانی می‌شوند).');
+      p.neighborhoods.find((hood) => hood.id === hoodId) ||
+      citySeeds.find((hood) => hood.id === hoodId);
+    if (!targetSeed || hoodId < 1 || hoodId > 9999) {
+      p.setAdminPriceSavedMsg('خطا: شناسهٔ محله نامعتبر است (شناسه‌های ۱ تا ۹۹۹۹ پشتیبانی می‌شوند).');
       return;
     }
     const nextBuy = Math.round(Number(p.adminEditBuySqm));
@@ -211,7 +148,7 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     }
     try {
       const currentHood = p.neighborhoods.find((hood) => hood.id === hoodId) || targetSeed;
-      await persistHoodOverrideToCloud(hoodId, nextBuy, nextRahn, currentHood.sponsor);
+      await persistHoodOverrideToCloud(hoodId, nextBuy, nextRahn, currentHood.sponsor, p.activeCity);
       p.setNeighborhoods((prev) => {
         const exists = prev.some((n) => n.id === hoodId);
         if (!exists) return [...prev, { ...targetSeed, buyPerSqm: nextBuy, rahn80m: nextRahn }];
@@ -222,10 +159,9 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
       const unitBuy = convertPricePerSqmToUnit(nextBuy, areaUnit);
       const unitLabel = formatAreaUnitLabel(areaUnit);
       const intlSuffix = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, getStoredRadarLocale())}/${unitLabel})` : '';
-      p.setAdminPriceSavedMsg(`قیمت محله ${targetSeed.name} با موفقیت به هر ${unitLabel} ${toPersianNum(unitBuy)} میلیون${intlSuffix} و رهن ${toPersianNum(nextRahn)} میلیون در فایراستور ذخیره شد.`);
+      p.setAdminPriceSavedMsg(`قیمت محله ${targetSeed.name} با موفقیت به هر ${unitLabel} ${toPersianNum(unitBuy)} میلیون${intlSuffix} و رهن ${toPersianNum(nextRahn)} میلیون در Cloudflare D1 ذخیره شد.`);
     } catch (error) {
-      p.setAdminPriceSavedMsg('خطا در ذخیرهٔ قیمت در فایراستور؛ تغییر در پایگاه داده ثبت نشد.');
-      try { handleFirestoreError(error, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {}
+      p.setAdminPriceSavedMsg(error instanceof Error ? error.message : 'ذخیرهٔ قیمت در Cloudflare D1 ناموفق بود.');
     }
   };
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -258,8 +194,9 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     p.setFeatureFlags(nextFlags);
     try {
       await saveFeatureFlags(nextFlags);
-    } catch (err) {
-      try { handleFirestoreError(err, OperationType.WRITE, 'appConfig/featureFlags'); } catch { /* local */ }
+    } catch {
+      p.setFeatureFlags((prev) => ({ ...prev, [key]: !nextFlags[key] }));
+      p.setAdminPriceSavedMsg('ذخیرهٔ Feature Flag در Cloudflare D1 ناموفق بود؛ مقدار قبلی بازیابی شد.');
     }
   };
   const handleDownloadFullBackupJson = () => {
@@ -311,14 +248,19 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
           if (validated.favoriteHoodIds !== undefined) p.setFavoriteHoodIds(validated.favoriteHoodIds);
           if (validated.featureFlags !== undefined) p.setFeatureFlags(validated.featureFlags);
           try {
-            const cloudSync = await persistRestoredStateToFirestore({
-              restoredNeighborhoods: validated.restoredNeighborhoods,
-              seedNeighborhoods: p.allExpansionSeeds,
-              featureFlags: validated.featureFlags,
-            });
-            p.setBackupStatusMsg({ type: 'success', text: `بازیابی کامل (${toPersianNum(validated.restoredNeighborhoods.length)} محله) انجام و ${toPersianNum(cloudSync.syncedOverridesCount)} تغییر محله${cloudSync.syncedFlags ? ' و پرچم‌های ماژول' : ''} در فایراستور ذخیره شد.` });
-          } catch {
-            p.setBackupStatusMsg({ type: 'success', text: `بازیابی محلی (${toPersianNum(validated.restoredNeighborhoods.length)} محله) انجام شد، اما همگام‌سازی ابری با فایراستور در حال حاضر برقرار نشد.` });
+            const overrides = validated.restoredNeighborhoods.map((hood) => ({
+              cityId: p.activeCity, hoodId: hood.id, buyPerSqm: hood.buyPerSqm, rahn80m: Math.max(50, hood.rahn80m),
+              ...(hood.sponsor ? { sponsor: buildSanitizedSponsorMap(hood.sponsor) } : {}),
+            }));
+            const syncedOverridesCount = await batchSaveNeighborhoodOverrides(overrides);
+            let syncedFlags = false;
+            if (validated.featureFlags) {
+              await saveFeatureFlags(validated.featureFlags);
+              syncedFlags = true;
+            }
+            p.setBackupStatusMsg({ type: 'success', text: `بازیابی و ذخیرهٔ ${toPersianNum(syncedOverridesCount)} تغییر محله${syncedFlags ? ' و Feature Flagها' : ''} در Cloudflare D1 انجام شد.` });
+          } catch (error) {
+            p.setBackupStatusMsg({ type: 'error', text: error instanceof Error ? error.message : 'ذخیرهٔ پشتیبان در Cloudflare D1 ناموفق بود؛ دادهٔ محلی و پایگاه مقصد ممکن است همگام نباشند.' });
           }
         } catch {
           p.setBackupStatusMsg({ type: 'error', text: 'خطا در خواندن فایل پشتیبان؛ لطفاً از سلامت فایل JSON اطمینان حاصل کنید.' });

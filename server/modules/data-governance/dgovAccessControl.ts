@@ -51,50 +51,39 @@ function parseGovernanceRolesHeader(headers: Record<string, string | string[] | 
 export async function resolveDgovPrincipal(
   headers: Record<string, string | string[] | undefined>,
 ): Promise<ResolvedDgovPrincipal> {
-  const admin = await verifyAdminApiAuthorization(headers);
+  // Governance roles are privileged server-side assignments. Never accept
+  // x-governance-roles or any other role claim from an HTTP caller.
+  const admin = await verifyAdminApiAuthorization(headers, process.env, {
+    requirePrimaryBootstrapAdmin: true,
+    disallowStaticToken: true,
+  });
   if (admin.authorized) {
-    const headerRoles = parseGovernanceRolesHeader(headers);
-    const roles: DataGovernanceRole[] =
-      headerRoles.length > 0 ? headerRoles : ['DATA_GOVERNANCE_ADMIN', 'AUDIT_REVIEWER'];
     return {
       authorized: true,
       statusCode: 200,
-      uid: admin.uid,
+      uid: admin.actorUid || admin.uid,
       email: admin.email,
-      roles,
+      roles: ['DATA_GOVERNANCE_ADMIN', 'AUDIT_REVIEWER'],
       isPlatformAdmin: true,
     };
   }
+
   const user = await verifyAuthenticatedUserHeader(headers);
   if (!user.authorized || !user.uid) {
-    return { authorized: false, statusCode: user.statusCode ?? 401, roles: [], isPlatformAdmin: false };
+    return {
+      authorized: false,
+      statusCode: user.statusCode ?? 401,
+      roles: [],
+      isPlatformAdmin: false,
+    };
   }
-  const roles = parseGovernanceRolesHeader(headers);
-  if (roles.length === 0) {
-    return { authorized: false, statusCode: 403, uid: user.uid, email: user.email, roles: [], isPlatformAdmin: false };
-  }
+
   return {
-    authorized: true,
-    statusCode: 200,
+    authorized: false,
+    statusCode: 403,
     uid: user.uid,
     email: user.email,
-    roles,
+    roles: [],
     isPlatformAdmin: false,
   };
-}
-
-export function dgovRoleCanReadResource(
-  roles: readonly DataGovernanceRole[],
-  resource: DgovAdminResource,
-): boolean {
-  const allowed = ROLE_MATRIX[resource];
-  return roles.some((r) => allowed.includes(r));
-}
-
-export function parsePagination(query: Record<string, unknown>): { limit: number; offset: number } {
-  const rawLimit = Number(query.limit);
-  const rawOffset = Number(query.offset);
-  const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 100) : 25;
-  const offset = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
-  return { limit, offset };
 }

@@ -5,7 +5,7 @@ import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY } from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
-import type { ConversationType } from '../../../src/features/communications/types/comms.types';
+import type { ConversationRecord, ConversationType, MessageAttachmentMeta, MessageRecord } from '../../../src/features/communications/types/comms.types';
 import {
   paginateNotifications,
   scrubCommsAdminStats,
@@ -20,6 +20,19 @@ import {
 export interface CommunicationsRoutesOptions {
   checkRateLimit?: (ip: string, bucket: 'general', max: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
+  /**
+   * Server-side resolver for non-support conversations. It must load the
+   * referenced entity, verify creator access, and return the canonical counterparty UID.
+   * Client-supplied counterpartyUid is never an identity source.
+   */
+  resolveContextCounterpartyUid?: (input: {
+    type: ConversationType;
+    contextEntityType: ConversationRecord['contextEntityType'];
+    contextEntityId: string;
+    creatorUid: string;
+  }) => Promise<{ uid: string; displayNameFa?: string; contextTitleFa?: string } | null>;
+  /** Verifies attachment ownership and returns canonical metadata for this sender. */
+  resolveOwnedConversationAttachments?: (uid: string, attachmentIds: string[]) => Promise<MessageAttachmentMeta[]>;
 }
 
 const registeredCommsApps = new WeakSet<Express>();
@@ -44,13 +57,75 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     return auth.uid;
   }
 
+export function toConversationSummary(conversation: ConversationRecord, viewerUid: string) {
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  return {
+    conversationId: conversation.conversationId,
+    type: conversation.type,
+    contextEntityType: conversation.contextEntityType,
+    contextEntityId: conversation.contextEntityId,
+    contextTitleFa: conversation.contextTitleFa,
+    status: conversation.status,
+    participants: conversation.participants.map((participant) => ({
+      uid: participant.uid,
+      displayNameFa: participant.displayNameFa,
+      roleLabelFa: participant.roleLabelFa,
+      senderType: participant.senderType,
+      ...(participant.uid === viewerUid
+        ? {
+            muted: participant.muted,
+            archived: participant.archived,
+            blockedOtherParticipant: participant.blockedOtherParticipant,
+          }
+        : {}),
+    })),
+    lastMessage: lastMessage
+      ? {
+          messageId: lastMessage.messageId,
+          senderUid: lastMessage.senderUid,
+          senderLabelFa: lastMessage.senderLabelFa,
+          bodyFa: lastMessage.bodyFa,
+          status: lastMessage.status,
+          createdAtIso: lastMessage.createdAtIso,
+          attachmentCount: lastMessage.attachments.length,
+        }
+      : null,
+    messageCount: conversation.messages.length,
+    unreadCount: conversation.messages.filter((message) => !message.readByUids.includes(viewerUid)).length,
+    createdAtIso: conversation.createdAtIso,
+    updatedAtIso: conversation.updatedAtIso,
+  };
+}
+
+export function paginateConversationMessages(
+  messages: MessageRecord[],
+  limit: number,
+  beforeMessageId?: string,
+): { ok: true; items: MessageRecord[]; hasMore: boolean; nextCursor: string | null } | { ok: false } {
+  const beforeIndex = beforeMessageId
+    ? messages.findIndex((message) => message.messageId === beforeMessageId)
+    : messages.length;
+  if (beforeIndex < 0) return { ok: false };
+  const startIndex = Math.max(0, beforeIndex - limit);
+  return {
+    ok: true,
+    items: messages.slice(startIndex, beforeIndex),
+    hasMore: startIndex > 0,
+    nextCursor: startIndex > 0 ? messages[startIndex].messageId : null,
+  };
+}
+
   async function requireAdmin(req: Request, res: Response): Promise<string | null> {
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(
+      req.headers as Record<string, string | string[] | undefined>,
+      process.env,
+      { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true },
+    );
     if (!auth.authorized) {
       recordAbuseSignal(getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return null;
     }
-    return auth.email || auth.uid || 'admin-operator';
+    return auth.actorUid || auth.uid || 'verified-primary-admin';
   }
 
   app.get('/api/v1/notifications', async (req: Request, res: Response) => {
@@ -139,31 +214,108 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
 
   app.get('/api/v1/conversations', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
-    const items = serverCommsEngine.conversations.filter((c) => c.participants.some((p) => p.uid === uid));
+    const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+    if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+      res.status(400).json({ status: 'error', code: 'INVALID_PAGE_LIMIT' });
+      return;
+    }
+    const limit = Math.min(rawLimit, 100);
+    const cursor = req.query.before === undefined ? '' : sanitizeInput(String(req.query.before), 120);
+    const conversations = serverCommsEngine.conversations
+      .filter((conversation) => conversation.participants.some((participant) => participant.uid === uid))
+      .sort((a, b) => Date.parse(b.updatedAtIso) - Date.parse(a.updatedAtIso));
+    const beforeIndex = cursor ? conversations.findIndex((conversation) => conversation.conversationId === cursor) : conversations.length;
+    if (beforeIndex < 0) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CURSOR' });
+      return;
+    }
+    const startIndex = Math.max(0, beforeIndex - limit);
+    const page = conversations.slice(startIndex, beforeIndex);
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ status: 'ok', items });
+    res.status(200).json({
+      status: 'ok',
+      items: page.map((conversation) => toConversationSummary(conversation, uid)),
+      hasMore: startIndex > 0,
+      nextCursor: startIndex > 0 ? conversations[startIndex].conversationId : null,
+      limit,
+    });
   });
 
   app.post('/api/v1/conversations', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
-    const convType = (req.body?.type as ConversationType) || 'SUPPORT';
-    const contextEntityId = sanitizeInput(String(req.body?.contextEntityId || ''), 64).trim();
-    const counterpartyUid = convType === 'SUPPORT' ? 'support-desk' : sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
-    if (!contextEntityId || !counterpartyUid || counterpartyUid === uid) {
-      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CONTEXT', messageFa: 'شناسه پرونده و طرف گفت‌وگوی معتبر الزامی است.' });
+    const rawType = req.body?.type === undefined ? 'SUPPORT' : String(req.body.type);
+    const allowedTypes: readonly ConversationType[] = ['SUPPORT', 'LISTING_INQUIRY', 'SERVICE_REQUEST', 'ADMIN_CASE'];
+    if (!allowedTypes.includes(rawType as ConversationType)) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_TYPE' });
       return;
     }
+    const convType = rawType as ConversationType;
+    const expectedContextType: Record<Exclude<ConversationType, 'SYSTEM_CONVERSATION'>, ConversationRecord['contextEntityType']> = {
+      SUPPORT: 'support_ticket',
+      LISTING_INQUIRY: 'listing',
+      SERVICE_REQUEST: 'service_request',
+      ADMIN_CASE: 'admin_case',
+    };
+    const contextEntityType = expectedContextType[convType as Exclude<ConversationType, 'SYSTEM_CONVERSATION'>];
+    const suppliedContextType = req.body?.contextEntityType === undefined
+      ? contextEntityType
+      : String(req.body.contextEntityType);
+    const contextEntityId = sanitizeInput(String(req.body?.contextEntityId || ''), 64).trim();
+    if (!/^[A-Za-z0-9_-]{3,64}$/.test(contextEntityId) || suppliedContextType !== contextEntityType) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CONTEXT', messageFa: 'نوع یا شناسه پرونده معتبر نیست.' });
+      return;
+    }
+
+    let counterparty: { uid: string; displayNameFa?: string; contextTitleFa?: string } | null = null;
+    if (convType === 'SUPPORT') {
+      counterparty = { uid: 'support-desk', displayNameFa: 'پشتیبانی رادار' };
+      const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
+      if (requestedCounterparty && requestedCounterparty !== counterparty.uid) {
+        res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
+        return;
+      }
+    } else {
+      if (!options?.resolveContextCounterpartyUid) {
+        res.status(503).json({ status: 'error', code: 'CONTEXT_OWNER_RESOLVER_UNAVAILABLE' });
+        return;
+      }
+      try {
+        counterparty = await options.resolveContextCounterpartyUid({
+          type: convType,
+          contextEntityType,
+          contextEntityId,
+          creatorUid: uid,
+        });
+      } catch {
+        res.status(503).json({ status: 'error', code: 'CONTEXT_OWNER_LOOKUP_FAILED' });
+        return;
+      }
+      if (!counterparty?.uid || counterparty.uid === uid) {
+        res.status(403).json({ status: 'error', code: 'CONTEXT_ACCESS_FORBIDDEN' });
+        return;
+      }
+      const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
+      if (requestedCounterparty && requestedCounterparty !== counterparty.uid) {
+        res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
+        return;
+      }
+    }
+
     const result = serverCommsEngine.createScopedConversation({
       type: convType,
-      contextEntityType: req.body?.contextEntityType || (convType === 'SUPPORT' ? 'support_ticket' : 'listing'),
+      contextEntityType,
       contextEntityId,
-      contextTitleFa: sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120),
+      contextTitleFa: counterparty.contextTitleFa
+        ? sanitizeInput(counterparty.contextTitleFa, 120)
+        : convType === 'SUPPORT'
+          ? sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120)
+          : 'گفت‌وگوی مرتبط با پرونده',
       creatorUid: uid,
       participants: [
         { uid, displayNameFa: 'کاربر احرازشده', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
         {
-          uid: counterpartyUid,
-          displayNameFa: convType === 'SUPPORT' ? 'پشتیبانی رادار' : sanitizeInput(String(req.body?.counterpartyLabelFa || 'طرف پرونده'), 64),
+          uid: counterparty.uid,
+          displayNameFa: convType === 'SUPPORT' ? 'پشتیبانی رادار' : sanitizeInput(String(counterparty.displayNameFa || 'طرف پرونده'), 64),
           roleLabelFa: convType === 'SUPPORT' ? 'کارشناس پشتیبانی' : 'طرف پرونده',
           senderType: convType === 'SUPPORT' ? 'SUPPORT_AGENT' : 'USER',
           muted: false, archived: false, blockedOtherParticipant: false,
@@ -172,7 +324,7 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     });
     if (!result.ok) { res.status(400).json({ status: 'error', code: result.errorCode }); return; }
     persistServerCommsNow();
-    res.status(201).json({ status: 'ok', conversation: result.conversation });
+    res.status(201).json({ status: 'ok', conversation: toConversationSummary(result.conversation!, uid) });
   });
 
   app.get('/api/v1/conversations/:id', async (req: Request, res: Response) => {
@@ -180,7 +332,7 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
-    res.status(200).json({ status: 'ok', conversation: conv });
+    res.status(200).json({ status: 'ok', conversation: toConversationSummary(conv, uid) });
   });
 
   app.get('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
@@ -188,14 +340,54 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
-    res.status(200).json({ status: 'ok', items: conv.messages });
+    const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+    if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+      res.status(400).json({ status: 'error', code: 'INVALID_PAGE_LIMIT' });
+      return;
+    }
+    const limit = Math.min(rawLimit, 100);
+    const beforeMessageId = req.query.before === undefined ? undefined : sanitizeInput(String(req.query.before), 120);
+    const page = paginateConversationMessages(conv.messages, limit, beforeMessageId);
+    if (!page.ok) {
+      res.status(400).json({ status: 'error', code: 'INVALID_MESSAGE_CURSOR' });
+      return;
+    }
+    res.status(200).json({ status: 'ok', ...page, limit });
   });
 
   app.post('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
     const uid = await requireUser(req, res); if (!uid) return;
+    const requestedAttachments = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+    if (requestedAttachments.length > 5 || requestedAttachments.some((item: unknown) => !item || typeof item !== 'object' || typeof (item as any).attachmentId !== 'string')) {
+      res.status(400).json({ status: 'error', code: 'INVALID_ATTACHMENT_METADATA' });
+      return;
+    }
+    let verifiedAttachments: MessageAttachmentMeta[] = [];
+    if (requestedAttachments.length > 0) {
+      if (!options?.resolveOwnedConversationAttachments) {
+        res.status(503).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_RESOLVER_UNAVAILABLE' });
+        return;
+      }
+      const attachmentIds = requestedAttachments.map((item: any) => sanitizeInput(item.attachmentId, 120));
+      if (attachmentIds.some((id: string) => !/^[A-Za-z0-9_-]{1,120}$/.test(id)) || new Set(attachmentIds).size !== attachmentIds.length) {
+        res.status(400).json({ status: 'error', code: 'INVALID_ATTACHMENT_IDS' });
+        return;
+      }
+      try {
+        verifiedAttachments = await options.resolveOwnedConversationAttachments(uid, attachmentIds);
+      } catch {
+        res.status(503).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_LOOKUP_FAILED' });
+        return;
+      }
+      const verifiedIds = new Set(verifiedAttachments.map((item) => item.attachmentId));
+      if (verifiedAttachments.length !== attachmentIds.length || attachmentIds.some((id: string) => !verifiedIds.has(id))) {
+        res.status(403).json({ status: 'error', code: 'ATTACHMENT_OWNERSHIP_FORBIDDEN' });
+        return;
+      }
+    }
     const result = serverCommsEngine.sendMessage({
       conversationId: req.params.id, senderUid: uid, bodyFa: String(req.body?.bodyFa || ''),
-      attachments: Array.isArray(req.body?.attachments) ? req.body.attachments : [],
+      attachments: verifiedAttachments,
     });
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error', code: result.errorCode }); return; }
     persistServerCommsNow();

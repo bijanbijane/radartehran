@@ -239,73 +239,82 @@ export async function handleHealthAndMetadataRoute(
     const bindings = getTriadDomainBindingDiagnostics(ctx.env);
     const user = requireUserDb(ctx.env);
     const research = requireResearchDb(ctx.env);
-    const neighborhood = requireNeighborhoodDb(ctx.env);
-    if (!user.ok || !research.ok || !neighborhood.ok || bindings.isolationViolation) {
+    const irniClient = createIrniGeographicRpcV2ClientFromEnv(ctx.env);
+    const legacyDirectDbBindingPresent = Boolean(ctx.env.NEIGHBORHOOD_DB);
+    if (!user.ok || !research.ok || bindings.isolationViolation) {
       return jsonWorkerResponse(ctx, 503, {
         status: 'degraded',
         code: 'D1_TRIAD_BINDING_NOT_READY',
-        bindings,
+        bindings: {
+          ...bindings,
+          irniServiceBindingConfigured: irniClient.isConfigured(),
+          irniDirectDbBindingPresent: legacyDirectDbBindingPresent,
+        },
         missing: {
           user: user.ok === false ? user.code : null,
           research: research.ok === false ? research.code : null,
-          neighborhood: neighborhood.ok === false ? neighborhood.code : null,
+          irniRpc: null,
         },
         timestampIso: new Date().toISOString(),
       });
     }
 
-    const [userProbe, researchProbe, neighborhoodProbe, registryHead] = await Promise.all([
+    const [userProbe, researchProbe, irniMetadata] = await Promise.all([
       probeD1Database(user.db),
       probeD1Database(research.db),
-      probeD1Database(neighborhood.db),
-      neighborhood.db.prepare(
-        `SELECT registry_revision,registry_checksum,canonical_entity_count,relationship_count,
-         anchor_count,source_mapping_count,legacy_alias_count,integrity_verified
-         FROM geo_registry_head WHERE singleton_id='current'`,
-      ).first<Record<string, unknown>>(),
+      irniClient.getApprovedRegistryMetadata(),
     ]);
-
-    const registryReady = Boolean(registryHead) &&
-      Number(registryHead?.integrity_verified) === 1 &&
-      Number(registryHead?.canonical_entity_count) > 0;
-    const ready = userProbe.ok && researchProbe.ok && neighborhoodProbe.ok &&
-      userProbe.migrationsApplied >= 6 &&
-      researchProbe.migrationsApplied >= 2 &&
-      neighborhoodProbe.migrationsApplied >= 3 &&
-      registryReady;
+    const registryReady = irniMetadata.ok &&
+      irniMetadata.value.contractVersion === '2.0.0' &&
+      irniMetadata.value.contractState === 'ACTIVE' &&
+      irniMetadata.value.integrityVerified === true &&
+      irniMetadata.value.registryRevision > 0;
+    const ready = userProbe.ok && researchProbe.ok && registryReady &&
+      !legacyDirectDbBindingPresent && irniClient.isConfigured() &&
+      userProbe.migrationsApplied >= 6 && researchProbe.migrationsApplied >= 2;
 
     return jsonWorkerResponse(ctx, ready ? 200 : 503, {
       status: ready ? 'ok' : 'degraded',
-      service: 'radartehran-d1-triad',
+      service: 'radartehran-storage-and-irni-rpc',
       bindings: {
         userDbBound: bindings.userDbBound,
         userDbSource: bindings.userDbSource,
         researchDbBound: bindings.researchDbBound,
-        neighborhoodDbBound: bindings.neighborhoodDbBound,
+        irniServiceBindingConfigured: irniClient.isConfigured(),
+        legacyNeighborhoodDbBindingPresent: legacyDirectDbBindingPresent,
+        irniDirectDbBindingPresent: legacyDirectDbBindingPresent,
         isolationViolation: bindings.isolationViolation,
-        irniDirectDbBindingPresent: bindings.irniDirectDbBindingPresent,
       },
       probes: {
         userDb: userProbe.ok ? 'ok' : 'failed',
         researchDb: researchProbe.ok ? 'ok' : 'failed',
-        neighborhoodDb: neighborhoodProbe.ok ? 'ok' : 'failed',
+        irniRpc: irniMetadata.ok ? 'ok' : 'failed',
       },
       migrationLedgers: {
         userDb: { applied: userProbe.migrationsApplied, requiredAtLeast: 6 },
         researchDb: { applied: researchProbe.migrationsApplied, requiredAtLeast: 2 },
-        neighborhoodDb: { applied: neighborhoodProbe.migrationsApplied, requiredAtLeast: 3 },
+        neighborhoodDb: { status: 'RETIRED_DIRECT_D1_ACCESS' },
       },
-      geographicRegistry: registryHead ? {
+      geographicRegistry: irniMetadata.ok ? {
         status: registryReady ? 'ready' : 'degraded',
-        revision: Number(registryHead.registry_revision),
-        checksum: String(registryHead.registry_checksum),
-        canonicalEntityCount: Number(registryHead.canonical_entity_count),
-        relationshipCount: Number(registryHead.relationship_count),
-        identityAnchorCount: Number(registryHead.anchor_count),
-        sourceMappingCount: Number(registryHead.source_mapping_count),
-        legacyAliasCount: Number(registryHead.legacy_alias_count),
-        integrityVerified: Number(registryHead.integrity_verified) === 1,
-      } : { status: 'not_published' },
+        revision: irniMetadata.value.registryRevision,
+        checksum: irniMetadata.value.registryChecksum,
+        canonicalEntityCount: irniMetadata.value.canonicalEntityCount,
+        relationshipCount: irniMetadata.value.relationshipCount,
+        identityAnchorCount: irniMetadata.value.identityAnchorCount,
+        sourceMappingCount: irniMetadata.value.sourceMappingCount,
+        legacyAliasCount: irniMetadata.value.legacyAliasCount,
+        integrityVerified: irniMetadata.value.integrityVerified,
+      } : {
+        status: 'unavailable',
+        errorCode: irniMetadata.error.code,
+      },
+      missing: {
+        user: userProbe.ok ? null : 'USER_DB_PROBE_FAILED',
+        research: researchProbe.ok ? null : 'RESEARCH_DB_PROBE_FAILED',
+        irniRpc: irniMetadata.ok ? null : irniMetadata.error.code,
+        legacyDirectDbBinding: legacyDirectDbBindingPresent ? 'REMOVE_AFTER_RPC_CUTOVER' : null,
+      },
       timestampIso: new Date().toISOString(),
     });
   }

@@ -37,10 +37,18 @@ import {
 } from '../worker/account-lifecycle/d1InternalRpcNonceStore';
 import {
   acquireMutationPermitInD1,
+  countActiveMutationPermitsInD1,
   blockUserWritesInD1,
+  isUserWriteBlockedInD1,
   releaseMutationPermitInD1,
 } from '../worker/account-lifecycle/d1MutationPermit';
-import { executeAccountDeletionLifecycle } from '../worker/account-lifecycle/workerLifecycleRuntime';
+import {
+  executeAccountDeletionLifecycle,
+  processPendingResearchErasureOutbox,
+  resolveDedicatedLifecycleReceiptSecret,
+} from '../worker/account-lifecycle/workerLifecycleRuntime';
+import { resolveWriteAdmissionFromD1 } from '../worker/account-lifecycle/d1WriteAdmissionResolver';
+import { d1FirstRow } from '../worker/account-lifecycle/d1ResultHelpers';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -66,16 +74,26 @@ import {
   executeResearchSubjectErasure,
   HARD_MIN_K_ANONYMITY,
   ingestResearchEventsBatch,
+  purgeExpiredResearchData,
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
+import { evaluateTieredWorkerRateLimit } from '../worker/cache/kvAndEdgeRateLimiter';
+import {
+  buildR2MediaObjectKey,
+  createSignedR2MediaUrl,
+  isObjectUnderLegalHold,
+  verifySignedR2MediaUrl,
+} from '../worker/storage/r2StorageAdapter';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+const TEST_RECEIPT_SECRET = 'rt_triad_002_receipt_secret_abcdef0123456789abcdef0123456789';
 const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
   failOnSqlContains?: string | null;
+  failResultOnSqlContains?: string | null;
   yieldBeforeBatch?: boolean;
   yieldBeforeFirst?: boolean;
 }
@@ -84,10 +102,12 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
   db: D1Database;
   raw: DatabaseSync;
   setFailOnSqlContains: (pattern: string | null) => void;
+  setFailResultOnSqlContains: (pattern: string | null) => void;
   setYieldBeforeBatch: (enabled: boolean) => void;
 } {
   const raw = new DatabaseSync(':memory:');
   let failPattern: string | null = options.failOnSqlContains ?? null;
+  let failResultPattern: string | null = options.failResultOnSqlContains ?? null;
   let yieldBeforeBatch = Boolean(options.yieldBeforeBatch);
   const yieldBeforeFirst = Boolean(options.yieldBeforeFirst);
 
@@ -120,6 +140,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
       return row as T;
     },
     async all<T = Record<string, unknown>>() {
+      if (failResultPattern && sql.includes(failResultPattern)) {
+        return { results: [], success: false };
+      }
       const prepared = prepareExpanded(sql, boundValues);
       const stmt = raw.prepare(prepared.sql);
       const rows = stmt.all(...(prepared.values as any[])) as T[];
@@ -128,6 +151,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
     async run<T = unknown>() {
       if (failPattern && sql.includes(failPattern)) {
         throw new Error(`INJECTED_SQL_FAILURE:${failPattern}`);
+      }
+      if (failResultPattern && sql.includes(failResultPattern)) {
+        return { results: [] as T[], success: false, meta: { changes: 0 } };
       }
       const prepared = prepareExpanded(sql, boundValues);
       const stmt = raw.prepare(prepared.sql);
@@ -150,7 +176,7 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
       if (yieldBeforeBatch) {
         await new Promise((r) => setTimeout(r, 15));
       }
-      const out: Array<{ results?: T[]; success: boolean; meta?: Record<string, unknown> }> = [];
+      const out: Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }> = [];
       raw.exec('BEGIN IMMEDIATE');
       try {
         for (const stmt of statements) {
@@ -178,6 +204,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
     raw,
     setFailOnSqlContains: (p) => {
       failPattern = p;
+    },
+    setFailResultOnSqlContains: (p) => {
+      failResultPattern = p;
     },
     setYieldBeforeBatch: (v) => {
       yieldBeforeBatch = v;
@@ -451,6 +480,113 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('F-02 & F-03 [P0]: Atomic Permits/Nonces, Write-Block During Drain, Drain Resume & Orphan Cleanup', () => {
+    it('does not replace an active write block owned by a different deletion job', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await blockUserWritesInD1({
+        userDb: sqlite.db,
+        uid: 'uid_conflict_block',
+        jobId: 'job_first',
+        nowIso: new Date().toISOString(),
+      });
+      await assert.rejects(
+        () => blockUserWritesInD1({
+          userDb: sqlite.db,
+          uid: 'uid_conflict_block',
+          jobId: 'job_second',
+          nowIso: new Date().toISOString(),
+        }),
+        /ACCOUNT_WRITE_BLOCK_CONFLICT_OR_STORE_UNAVAILABLE/,
+      );
+      const row = await sqlite.db
+        .prepare('SELECT job_id FROM account_write_blocks WHERE uid = ?1')
+        .bind('uid_conflict_block')
+        .first<{ job_id: string }>();
+      assert.equal(row?.job_id, 'job_first');
+    });
+
+    it('does not treat a legal-hold-blocked deletion job as an active write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await sqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'BLOCKED_LEGAL_HOLD', 'LEGAL_HOLD_CHECK', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        'job_legal_hold_blocked',
+        'uid_legal_hold_blocked',
+        'idem_legal_hold_blocked',
+        'uid_legal_hold_blocked',
+        'USER_REQUESTED_ERASURE',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ).run();
+      const decision = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_legal_hold_blocked');
+      assert.equal(decision.status, 'OPEN');
+    });
+
+    it('fails closed when an active deletion job exists without its write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await sqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'INITIATED', 'WRITE_BLOCK', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        'job_active_without_block',
+        'uid_active_without_block',
+        'idem_active_without_block',
+        'uid_active_without_block',
+        'USER_REQUESTED_ERASURE',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      ).run();
+      const decision = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_active_without_block');
+      assert.equal(decision.status, 'UNAVAILABLE');
+    });
+
+    it('resolves the production USER_DB write-block schema and keeps blocked users closed', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const open = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_write_open');
+      assert.equal(open.status, 'OPEN');
+      await blockUserWritesInD1({
+        userDb: sqlite.db,
+        uid: 'uid_write_closed',
+        jobId: 'job_write_closed',
+        nowIso: new Date().toISOString(),
+      });
+      const closed = await resolveWriteAdmissionFromD1(sqlite.db, 'uid_write_closed');
+      assert.equal(closed.status, 'CLOSED');
+      if (closed.status === 'CLOSED') assert.equal(closed.deletionJobId, 'job_write_closed');
+    });
+
+    it('fails closed when the durable account-write-block schema is unavailable', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.exec('DROP TABLE account_write_blocks');
+      await assert.rejects(
+        () => isUserWriteBlockedInD1(sqlite.db, 'uid_schema_missing'),
+        /no such table:\\s*account_write_blocks/i,
+      );
+    });
+
+    it('rejects lifecycle receipt secrets that are missing, weak, or reused from another security domain', () => {
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({} as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: 'short',
+      } as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET,
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+      } as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+      } as WorkerEnv), TEST_RECEIPT_SECRET);
+    });
+
     it('handles concurrent internal RPC nonce replays atomically without throwing SQLite UNIQUE errors', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
@@ -516,6 +652,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
         FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
         FIREBASE_APP_CHECK_MODE: 'disabled',
       };
@@ -618,13 +755,605 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(reqsLeft.cnt, 0);
 
         // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
-        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
-        const unkeyedHash = await hashUidForComplianceReceipt(uid);
-        assert.notEqual(expectedKeyedHash, unkeyedHash);
+        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RECEIPT_SECRET);
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
+        );
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid, 'short'),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
+        );
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
         clearTestJwksForEdgeAuth();
       }
+    });
+  });
+
+  describe('D1 failure-result fail-closed regressions', () => {
+    it('reconciles a completed outbox when the previous invocation missed the parent-job update', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const nowMs = 1_795_000_000_000;
+      const nowIso = new Date(nowMs).toISOString();
+      const uid = 'uid_outbox_parent_recovery';
+      const jobId = 'adel_outbox_parent_recovery';
+
+      await userSqlite.db.prepare(
+        `INSERT INTO account_deletion_jobs (
+          job_id, uid, idempotency_key, status, stage, requested_by_uid, reason,
+          created_at_iso, updated_at_iso
+        ) VALUES (?1, ?2, ?3, 'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', ?4, ?5, ?6, ?7)`,
+      ).bind(
+        jobId, uid, 'idem_outbox_parent_recovery', uid, 'USER_REQUESTED_ERASURE', nowIso, nowIso,
+      ).run();
+      await userSqlite.db.prepare(
+        `INSERT INTO research_erasure_outbox (
+          outbox_id, job_id, subject_key, subject_key_version, status,
+          attempt_count, next_retry_at_ms, receipt_id, erased_events_count,
+          created_at_iso, updated_at_iso, completed_at_iso
+        ) VALUES (?1, ?2, ?3, ?4, 'COMPLETED', 1, 0, ?5, 7, ?6, ?6, ?6)`,
+      ).bind(
+        'outbox_parent_recovery', jobId, 'subject_key_1234567890', 'v1',
+        'research_receipt_1', nowIso,
+      ).run();
+
+      await processPendingResearchErasureOutbox({
+        userDb: userSqlite.db,
+        researchDb: researchSqlite.db,
+        receiptSecret: TEST_RECEIPT_SECRET,
+        nowMs,
+      });
+
+      const job = userSqlite.raw.prepare(
+        'SELECT status FROM account_deletion_jobs WHERE job_id = ?',
+      ).get(jobId) as { status: string };
+      assert.equal(job.status, 'COMPLETED');
+
+      const receipt = userSqlite.raw.prepare(
+        `SELECT deleted_records_count, evidence_json
+         FROM account_lifecycle_receipts
+         WHERE job_id = ? AND stage = 'RESEARCH_ERASURE_CONFIRMED'`,
+      ).get(jobId) as { deleted_records_count: number; evidence_json: string };
+      assert.equal(receipt.deleted_records_count, 7);
+      assert.deepEqual(JSON.parse(receipt.evidence_json), {
+        completedOutboxItems: 1,
+        erasedEventsTotal: 7,
+      });
+    });
+    it('binds signed R2 URLs to safe object paths, MIME types, methods, and bounded expiry', async () => {
+      const nowSeconds = 1_795_000_000;
+      const signingSecret = 'test-r2-signing-secret-0123456789';
+      const params = {
+        objectId: 'media_12345678',
+        objectKey: 'listings/tehran/hood-1001/image/2026-11/media_12345678.jpg',
+        method: 'GET' as const,
+        mimeType: 'image/jpeg',
+        expiresInSeconds: 3600,
+        signingSecret,
+        nowSeconds,
+      };
+      const signed = await createSignedR2MediaUrl(params);
+      assert.equal(await verifySignedR2MediaUrl({
+        objectId: params.objectId,
+        objectKey: params.objectKey,
+        method: params.method,
+        mimeType: params.mimeType,
+        expSeconds: signed.expiresAtSeconds,
+        signatureHex: signed.signatureHex,
+        signingSecret,
+        nowSeconds,
+      }), true);
+      assert.equal(await verifySignedR2MediaUrl({
+        objectId: params.objectId,
+        objectKey: params.objectKey,
+        method: params.method,
+        mimeType: params.mimeType,
+        expSeconds: signed.expiresAtSeconds + 1,
+        signatureHex: signed.signatureHex,
+        signingSecret,
+        nowSeconds,
+      }), false);
+      await assert.rejects(
+        () => createSignedR2MediaUrl({ ...params, objectKey: 'listings/../private/media_12345678.jpg' }),
+        /MEDIA_OBJECT_KEY_INVALID/,
+      );
+      await assert.rejects(
+        () => createSignedR2MediaUrl({ ...params, expiresInSeconds: Number.NaN }),
+        /MEDIA_SIGNING_TIME_INVALID/,
+      );
+    });
+
+    it('rejects unsafe R2 key components instead of silently coercing them', () => {
+      const validKey = buildR2MediaObjectKey({
+        city: 'TEHRAN',
+        hoodId: 1001,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      });
+      assert.match(validKey, /^listings\/tehran\/hood-1001\/image\/\d{4}-\d{2}\/media_12345678\.jpg$/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'unknown-city',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      }), /MEDIA_CITY_ID_UNSUPPORTED/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 0,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: 'media_12345678',
+      }), /MEDIA_NEIGHBORHOOD_ID_INVALID/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'image/jpeg',
+        objectId: '../secret',
+      }), /MEDIA_OBJECT_ID_INVALID/);
+      assert.throws(() => buildR2MediaObjectKey({
+        city: 'tehran',
+        hoodId: 1,
+        mediaType: 'image',
+        mimeType: 'application/octet-stream',
+        objectId: 'media_12345678',
+      }), /MEDIA_MIME_TYPE_UNSUPPORTED/);
+    });
+
+    it('fails closed when the legal-hold index read is unsuccessful', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT active, reason FROM legal_holds');
+      await assert.rejects(
+        () => isObjectUnderLegalHold(sqlite.db, 'object_legal_hold_read_failure'),
+        /LEGAL_HOLD_LOOKUP_FAILED/,
+      );
+    });
+
+    it('treats malformed retention timestamps as active retention locks', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.prepare(
+        `INSERT INTO media_objects (
+          object_id, owner_uid, bucket_name, storage_key, city_id, hood_id,
+          media_type, mime_type, size_bytes, sha256_checksum, lifecycle_state,
+          deletion_state, legal_hold, retention_until, created_at_iso, updated_at_iso
+        ) VALUES (?, ?, 'radar-test', ?, 'tehran', 1, 'image', 'image/jpeg', 100,
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'ACTIVE', 'ACTIVE', 0, ?, ?, ?)`,
+      ).run(
+        'object_bad_retention',
+        'uid_retention',
+        'listings/tehran/hood-1/image/test/object_bad_retention.jpg',
+        'not-a-valid-timestamp',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      );
+      const result = await isObjectUnderLegalHold(sqlite.db, 'object_bad_retention', Date.now());
+      assert.equal(result.held, true);
+      assert.equal(result.reason, 'MEDIA_RETENTION_TIMESTAMP_INVALID');
+    });
+
+    it('never deletes R2 objects when the D1 ownership scan fails', async () => {
+      const userSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      userSqlite.setFailResultOnSqlContains('SELECT storage_key FROM media_objects');
+      let deleteCalls = 0;
+      const mediaBucket = {
+        list: async () => ({
+          objects: [{
+            key: 'listings/orphan-candidate.jpg',
+            uploaded: new Date('2026-01-01T00:00:00.000Z'),
+            customMetadata: { objectId: 'orphan-candidate' },
+          }],
+          truncated: false,
+        }),
+        delete: async () => { deleteCalls += 1; },
+      } as unknown as R2Bucket;
+      const dispatch = createCanonicalQueueJobDispatcher({
+        USER_DB: userSqlite.db,
+        MEDIA_BUCKET: mediaBucket,
+      });
+      const envelope: RadarQueueEnvelope = {
+        schemaVersion: '1.0',
+        messageId: 'msg_r2_ownership_failure',
+        idempotencyKey: 'idem_r2_ownership_failure',
+        jobType: 'r2_orphan_media_reconcile',
+        createdAtIso: new Date().toISOString(),
+        correlationId: 'corr_r2_ownership_failure',
+        payload: { nowMs: Date.parse('2026-11-25T12:00:00.000Z'), staleThresholdMs: 1000 },
+      };
+      await assert.rejects(
+        () => dispatch(envelope),
+        (err: unknown) => err instanceof QueueJobExecutionError && err.code === 'MEDIA_OBJECT_OWNERSHIP_SCAN_FAILED',
+      );
+      assert.equal(deleteCalls, 0, 'an unavailable ownership index must never be interpreted as an empty active-object set');
+    });
+
+    it('fails closed when a strong durable rate-limit store is missing', async () => {
+      const result = await evaluateTieredWorkerRateLimit({
+        tier: 'strong_durable',
+        action: 'admin_mutation',
+        subjectKey: 'admin-user',
+        maxRequests: 5,
+        windowSeconds: 60,
+      });
+      assert.equal(result.allowed, false);
+      assert.equal(result.tierUsed, 'strong_durable');
+    });
+
+    it('enforces strong durable limits atomically under concurrent requests', async () => {
+      const sqlite = createForensicSqliteD1({ yieldBeforeFirst: true });
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const results = await Promise.all(
+        Array.from({ length: 20 }, () => evaluateTieredWorkerRateLimit({
+          tier: 'strong_durable',
+          action: 'research_ingest',
+          subjectKey: 'same-user',
+          maxRequests: 5,
+          windowSeconds: 60,
+          db: sqlite.db,
+          nowMs: 1_795_000_000_000,
+        })),
+      );
+      assert.equal(results.filter((result) => result.allowed).length, 5);
+      assert.equal(results.filter((result) => !result.allowed).length, 15);
+      const row = sqlite.raw.prepare(
+        'SELECT counter FROM strong_rate_limits WHERE bucket_key = ?',
+      ).get('research_ingest:same-user') as { counter: number };
+      assert.equal(row.counter, 6, 'the denied counter is capped at maxRequests + 1');
+    });
+
+    it('counts concurrent duplicate research ingestion from atomic D1 changes, not optimistic SELECTs', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1({ yieldBeforeBatch: true });
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const uid = 'uid_concurrent_research_idempotency';
+      await updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+      });
+      const params = {
+        env: {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          RESEARCH_HMAC_KEY_VERSION: 'v1',
+        },
+        uid,
+        clientIp: '198.51.100.21',
+        rawEvents: [{
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 12,
+          idempotencyKey: 'concurrent_idempotency_event',
+          payload: { mapZoomBucket: 'z14', viewMode: 'buy' },
+        }],
+      };
+      const [first, second] = await Promise.all([
+        ingestResearchEventsBatch(params),
+        ingestResearchEventsBatch(params),
+      ]);
+      assert.equal(first.ok, true);
+      assert.equal(second.ok, true);
+      if (first.ok && second.ok) {
+        assert.equal(first.acceptedCount + second.acceptedCount, 1);
+        assert.equal(first.deduplicatedCount + second.deduplicatedCount, 1);
+      }
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        1,
+      );
+      const receiptTotals = researchSqlite.raw.prepare(
+        'SELECT SUM(accepted_count) AS accepted, SUM(deduplicated_count) AS deduplicated FROM research_ingestion_receipts',
+      ).get() as { accepted: number; deduplicated: number };
+      assert.equal(receiptTotals.accepted, 1);
+      assert.equal(receiptTotals.deduplicated, 1);
+    });
+
+    it('fails closed when the research subject registry write is unsuccessful', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const uid = 'uid_registry_write_failure';
+      await updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+      });
+      userSqlite.setFailResultOnSqlContains('INSERT OR IGNORE INTO user_research_subject_registry');
+      const result = await ingestResearchEventsBatch({
+        env: {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          RESEARCH_HMAC_KEY_VERSION: 'v1',
+        },
+        uid,
+        clientIp: '198.51.100.20',
+        rawEvents: [{
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 12,
+          idempotencyKey: 'registry_write_failure_event',
+          payload: { mapZoomBucket: 'z14', viewMode: 'buy' },
+        }],
+      });
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.statusCode, 503);
+        assert.equal(result.code, 'RESEARCH_SUBJECT_REGISTRY_WRITE_FAILED');
+      }
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        0,
+      );
+    });
+
+    it('does not erase research events when impacted aggregation scopes cannot be read', async () => {
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      await researchSqlite.db.prepare(
+        `INSERT INTO research_events (
+          event_id, subject_key, subject_key_version, event_type, schema_version,
+          city_id, hood_id, session_bucket, payload_json, occurred_at_iso, ingested_at_iso,
+          expires_at_iso, idempotency_key
+        ) VALUES ('evt_scope_read_failure', 'sk_v1_test', 'v1', 'radar.map.neighborhood_select',
+          1, 'tehran', 12, '2026-11-22', '{}', '2026-11-22T10:00:00.000Z',
+          '2026-11-22T10:00:00.000Z', '2027-01-01T00:00:00.000Z', 'idem_scope_read_failure')`,
+      ).run();
+      researchSqlite.setFailResultOnSqlContains('SELECT DISTINCT event_type, city_id');
+      await assert.rejects(
+        () => executeResearchSubjectErasure({
+          researchDb: researchSqlite.db,
+          outboxId: 'outbox_scope_read_failure',
+          subjectKey: 'sk_v1_test',
+          subjectKeyVersion: 'v1',
+        }),
+        /RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED/,
+      );
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE event_id = ?').get('evt_scope_read_failure') as { cnt: number }).cnt,
+        1,
+      );
+    });
+
+    it('reports retention-purge write failures instead of returning a successful zero-count result', async () => {
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      researchSqlite.setFailResultOnSqlContains('DELETE FROM research_events');
+      await assert.rejects(
+        () => purgeExpiredResearchData({ researchDb: researchSqlite.db }),
+        /RESEARCH_RETENTION_PURGE_FAILED/,
+      );
+    });
+
+    it('audits each changed consent flag and prevents concurrent revision collapse', async () => {
+      const auditSqlite = createForensicSqliteD1();
+      applyMigrations(auditSqlite.raw, 'migrations/user-d1');
+      const uid = 'uid_all_consent_audit';
+      const updated = await updateUserPrivacyConsentInD1(auditSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+        behavioralTelemetryConsent: true,
+        marketingCommunicationsConsent: true,
+      });
+      assert.equal(updated.consentRevision, 1);
+      const auditRows = auditSqlite.raw.prepare(
+        'SELECT consent_type, previous_value, new_value, consent_revision FROM user_privacy_consent_audit WHERE uid = ? ORDER BY consent_type',
+      ).all(uid) as Array<{ consent_type: string; previous_value: number; new_value: number; consent_revision: number }>;
+      assert.deepEqual(auditRows.map((row) => row.consent_type).sort(), [
+        'behavioral_telemetry_consent',
+        'marketing_communications_consent',
+        'research_analytics_consent',
+      ]);
+      assert.ok(auditRows.every((row) => row.previous_value === 0 && row.new_value === 1 && row.consent_revision === 1));
+
+      const concurrentSqlite = createForensicSqliteD1({ yieldBeforeFirst: true });
+      applyMigrations(concurrentSqlite.raw, 'migrations/user-d1');
+      await updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+        uid: 'uid_consent_cas',
+        actorUid: 'uid_consent_cas',
+        researchAnalyticsConsent: true,
+      });
+      concurrentSqlite.setYieldBeforeBatch(true);
+      const concurrent = await Promise.allSettled([
+        updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+          uid: 'uid_consent_cas',
+          actorUid: 'uid_consent_cas',
+          researchAnalyticsConsent: false,
+        }),
+        updateUserPrivacyConsentInD1(concurrentSqlite.db, {
+          uid: 'uid_consent_cas',
+          actorUid: 'uid_consent_cas',
+          behavioralTelemetryConsent: true,
+        }),
+      ]);
+      assert.equal(concurrent.filter((result) => result.status === 'fulfilled').length, 1);
+      const rejected = concurrent.find((result) => result.status === 'rejected');
+      assert.ok(rejected && rejected.status === 'rejected');
+      assert.match(String(rejected.reason), /CONSENT_REVISION_CONFLICT/);
+      const finalRow = concurrentSqlite.raw.prepare(
+        'SELECT consent_revision FROM user_privacy_consents WHERE uid = ?',
+      ).get('uid_consent_cas') as { consent_revision: number };
+      assert.equal(finalRow.consent_revision, 2);
+    });
+
+    it('does not reset a corrupt consent revision to a lower value', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.prepare(
+        `INSERT INTO user_privacy_consents (
+          uid, research_analytics_consent, behavioral_telemetry_consent,
+          marketing_communications_consent, consent_version, consent_revision,
+          consent_source, granted_at_iso, revoked_at_iso, updated_at_iso
+        ) VALUES (?, 1, 0, 0, 'v1', 'not-a-number', 'test', ?, NULL, ?)`,
+      ).run('uid_corrupt_consent_revision', new Date().toISOString(), new Date().toISOString());
+      await assert.rejects(
+        () => updateUserPrivacyConsentInD1(sqlite.db, {
+          uid: 'uid_corrupt_consent_revision',
+          actorUid: 'uid_corrupt_consent_revision',
+          researchAnalyticsConsent: false,
+        }),
+        /CONSENT_REVISION_INVALID/,
+      );
+    });
+
+    it('blocks account writes when the write-block lookup returns success=false', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT uid FROM account_write_blocks');
+      await assert.rejects(
+        () => upsertUserProfileInD1(sqlite.db, { uid: 'uid_write_block_lookup_failure', displayName: 'Blocked' }),
+        /ACCOUNT_WRITE_BLOCK_CHECK_UNAVAILABLE/,
+      );
+      assert.equal(
+        (sqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM user_profiles').get() as { cnt: number }).cnt,
+        0,
+      );
+    });
+
+    it('does not convert unsuccessful D1 reads into missing rows', async () => {
+      const sqlite = createForensicSqliteD1();
+      sqlite.setFailResultOnSqlContains('SELECT 1');
+      await assert.rejects(
+        () => d1FirstRow(sqlite.db, 'SELECT 1'),
+        /D1_QUERY_FAILED/,
+      );
+    });
+
+    it('fails closed when active mutation permit count cannot be read', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT COUNT(*) AS cnt FROM account_mutation_permits');
+      await assert.rejects(
+        () => countActiveMutationPermitsInD1(sqlite.db, 'uid_permit_count_failure'),
+        /ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE/,
+      );
+    });
+
+    it('keeps active mutation permits valid for the maximum Worker request lifetime', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      const nowMs = 1_795_000_000_000;
+      const permit = await acquireMutationPermitInD1({
+        userDb: sqlite.db,
+        uid: 'uid_long_running_mutation',
+        operationName: 'long_upload',
+        ttlMs: 15 * 60_000,
+        nowMs,
+      });
+      assert.equal(permit.ok, true);
+      if (!permit.ok) return;
+      assert.equal(permit.expiresAtMs - nowMs, 15 * 60_000);
+      assert.equal(await countActiveMutationPermitsInD1(sqlite.db, permit.uid, nowMs + 14 * 60_000), 1);
+      assert.equal(await countActiveMutationPermitsInD1(sqlite.db, permit.uid, nowMs + 15 * 60_000), 0);
+    });
+
+    it('does not misclassify a failed permit insert as an account write block', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('INSERT INTO account_mutation_permits');
+      await assert.rejects(
+        () => acquireMutationPermitInD1({
+          userDb: sqlite.db,
+          uid: 'uid_permit_store_failure',
+          operationName: 'test_write',
+        }),
+        /ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE/,
+      );
+    });
+
+    it('does not continue account erasure after an unsuccessful registry read or user-table delete', async () => {
+      const makeFixture = async () => {
+        const userSqlite = createForensicSqliteD1();
+        const researchSqlite = createForensicSqliteD1();
+        applyMigrations(userSqlite.raw, 'migrations/user-d1');
+        applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+        const uid = 'uid_erasure_d1_failure';
+        await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'Regression' });
+        const env: WorkerEnv = {
+          USER_DB: userSqlite.db,
+          RESEARCH_DB: researchSqlite.db,
+          RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+          LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        };
+        return { userSqlite, env, uid };
+      };
+
+      const registryFixture = await makeFixture();
+      registryFixture.userSqlite.setFailResultOnSqlContains(
+        'SELECT subject_key, subject_key_version FROM user_research_subject_registry',
+      );
+      await assert.rejects(
+        () => executeAccountDeletionLifecycle({
+          env: registryFixture.env,
+          uid: registryFixture.uid,
+          actorUid: registryFixture.uid,
+          idempotencyKey: 'idem_registry_read_failure',
+        }),
+        /RESEARCH_SUBJECT_REGISTRY_READ_FAILED/,
+      );
+      assert.ok(
+        registryFixture.userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(registryFixture.uid),
+        'profile must remain when the complete subject-key registry cannot be read',
+      );
+
+      const deleteFixture = await makeFixture();
+      deleteFixture.userSqlite.setFailResultOnSqlContains('DELETE FROM user_profiles');
+      await assert.rejects(
+        () => executeAccountDeletionLifecycle({
+          env: deleteFixture.env,
+          uid: deleteFixture.uid,
+          actorUid: deleteFixture.uid,
+          idempotencyKey: 'idem_user_delete_failure',
+        }),
+        /USER_DB_ERASURE_DELETE_FAILED/,
+      );
+      assert.ok(
+        deleteFixture.userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(deleteFixture.uid),
+        'profile must not be reported as erased when D1 returns success=false',
+      );
+      const block = deleteFixture.userSqlite.raw
+        .prepare('SELECT job_id FROM account_write_blocks WHERE uid = ?')
+        .get(deleteFixture.uid) as { job_id: string } | undefined;
+      assert.ok(block, 'write block must remain active after a partial erasure failure');
+    });
+    it('does not infer an empty research erasure scope from a missing RESEARCH_DB and HMAC key', async () => {
+      const userSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      const uid = 'uid_research_binding_missing';
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'Regression' });
+      const result = await executeAccountDeletionLifecycle({
+        env: {
+          USER_DB: userSqlite.db,
+          LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        },
+        uid,
+        actorUid: uid,
+        idempotencyKey: 'idem_research_binding_missing',
+      });
+      assert.equal(result.ok, false);
+      assert.equal(result.statusCode, 503);
+      assert.match(result.code, /RESEARCH_HMAC_SECRET_MISSING/);
+      assert.ok(
+        userSqlite.raw.prepare('SELECT uid FROM user_profiles WHERE uid = ?').get(uid),
+        'user data must remain while historical research erasure scope is unknown',
+      );
+      assert.ok(
+        userSqlite.raw.prepare('SELECT uid FROM account_write_blocks WHERE uid = ? AND released_at_iso IS NULL').get(uid),
+        'write block must remain active until erasure scope can be established',
+      );
     });
   });
 
@@ -724,6 +1453,17 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           err.retryable === false,
       );
 
+      // Missing consentRevision must not downgrade the queued job to a current-consent-only check.
+      const missingRevision = makeEnvelope('q_missing_rev', 3);
+      missingRevision.payload.consentRevision = undefined;
+      await assert.rejects(
+        () => dispatch(missingRevision),
+        (err: unknown) =>
+          err instanceof QueueJobExecutionError &&
+          err.code === 'INVALID_RESEARCH_INGEST_PAYLOAD' &&
+          err.retryable === false,
+      );
+
       // Matching consentRevision=3 -> accepted!
       const okQueue = await dispatch(makeEnvelope('q_fresh_rev', 3));
       assert.equal(okQueue.affectedCount, 1);
@@ -750,6 +1490,19 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
       const researchSqlite = createForensicSqliteD1();
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+
+      // Explicit timezone-less timestamps must not be interpreted using runtime-local timezone.
+      await assert.rejects(
+        () => computeKAnonymousResearchAggregation({
+          researchDb: researchSqlite.db,
+          eventType: 'radar.map.neighborhood_select',
+          cityId: 'tehran',
+          hoodId: 10,
+          windowStartIso: '2026-11-22T00:00:00.000',
+          windowEndIso: '2026-11-23T00:00:00.000Z',
+        }),
+        (err: unknown) => err instanceof AggregationWindowPolicyError && err.code === 'AGGREGATION_WINDOW_NOT_CANONICAL_UTC',
+      );
 
       // 1. Sub-day / non-midnight window MUST be rejected (Query Differencing protection)
       await assert.rejects(
@@ -798,6 +1551,61 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(agg9.kThreshold, 10);
       assert.equal(agg9.kSuppressed, true);
       assert.equal(agg9.distinctSubjectsCount, null);
+
+      const aggNaN = await computeKAnonymousResearchAggregation({
+        researchDb: researchSqlite.db,
+        eventType: 'radar.map.neighborhood_select',
+        cityId: 'tehran',
+        hoodId: 10,
+        windowStartIso: '2026-11-22T00:00:00.000Z',
+        windowEndIso: '2026-11-23T00:00:00.000Z',
+        minCohortSize: Number.NaN,
+        nowMs: Date.parse('2026-11-22T12:00:00.000Z'),
+      });
+      assert.equal(aggNaN.kThreshold, 10);
+      assert.equal(aggNaN.kSuppressed, true, 'NaN must not bypass the hard k-anonymity floor');
+
+      // A subject present under two HMAC versions is still one person. Counting both
+      // pseudonyms as separate subjects would incorrectly release a cohort of five.
+      const rotationSqlite = createForensicSqliteD1();
+      applyMigrations(rotationSqlite.raw, 'migrations/research-d1');
+      for (let i = 1; i <= 5; i += 1) {
+        for (const version of ['v1', 'v2']) {
+          const rotatedKey = await deriveResearchSubjectKey({
+            uid: `rotation_subject_${i}`,
+            secret: TEST_HMAC_SECRET,
+            keyVersion: version,
+          });
+          assert.equal(rotatedKey.ok, true);
+          if (!rotatedKey.ok) continue;
+          await rotationSqlite.db.prepare(
+            `INSERT INTO research_events (
+              event_id, subject_key, subject_key_version, event_type, schema_version,
+              city_id, hood_id, session_bucket, payload_json, occurred_at_iso,
+              ingested_at_iso, expires_at_iso, idempotency_key
+            ) VALUES (?1, ?2, ?3, 'radar.map.neighborhood_select', 1, 'tehran', 11,
+              '2026-11-22', '{}', ?4, ?4, ?5, ?6)`,
+          ).bind(
+            `rotation_evt_${i}_${version}`,
+            rotatedKey.derived.subjectKey,
+            version,
+            eventTime,
+            expTime,
+            `rotation_idem_${i}_${version}`,
+          ).run();
+        }
+      }
+      const rotationAgg = await computeKAnonymousResearchAggregation({
+        researchDb: rotationSqlite.db,
+        eventType: 'radar.map.neighborhood_select',
+        cityId: 'tehran',
+        hoodId: 11,
+        windowStartIso: '2026-11-22T00:00:00.000Z',
+        windowEndIso: '2026-11-23T00:00:00.000Z',
+        nowMs: Date.parse('2026-11-22T12:00:00.000Z'),
+      });
+      assert.equal(rotationAgg.kSuppressed, true);
+      assert.equal(rotationAgg.distinctSubjectsCount, null);
 
       // 3. Add 3 more subjects (total 12) and then 1 more (total 13) -> both coarsen to 10 (blocks differencing!)
       for (let i = 10; i <= 12; i += 1) {

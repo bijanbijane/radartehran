@@ -4,6 +4,7 @@
  * environment bindings, request context, observability records, and the Phase 2 Migration Register.
  */
 import type { ApiAccessPolicy, ApiRouteMethod } from '../src/utils/expressRouteCatalog';
+import type { IrniGeographicRpcBindingV2 } from './irni/irniGeographicRpcV2Types';
 
 export interface WorkerAssetFetcher {
   fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
@@ -95,7 +96,8 @@ export interface R2Bucket {
   list(options?: {
     prefix?: string;
     limit?: number;
-  }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean }>;
+    cursor?: string;
+  }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean; cursor?: string }>;
 }
 
 export interface QueueMessage<T = unknown> {
@@ -133,12 +135,21 @@ export interface DependencyCompatibilityEntry {
  */
 export interface WorkerEnv {
   readonly ASSETS?: WorkerAssetFetcher;
-  readonly RADAR_API?: WorkerAssetFetcher;
-  readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
   readonly ENVIRONMENT?: DeploymentEnvironmentName;
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
+  readonly KAVENEGAR_API_KEY?: string;
+  readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
+  readonly AUTH_PII_HMAC_SECRET?: string;
+  /** Shared HMAC secret for short-lived Worker -> Express session assertions. */
+  readonly AUTH_INTERNAL_HMAC_SECRET?: string;
+  readonly MARKET_PII_ENCRYPTION_KEY?: string;
+  readonly MARKET_PII_HASH_SECRET?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly FIREBASE_PROJECT_NUMBER?: string;
   readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
@@ -168,13 +179,10 @@ export interface WorkerEnv {
   readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
   readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
   readonly INTERNAL_LIFECYCLE_RPC_SECRET?: string;
-  readonly IRNI_API_BASE_URL?: string;
-  readonly IRNI_API_TOKEN?: string;
-  readonly IRNI_API_HEADER_NAME?: string;
-  readonly IRNI_API_TIMEOUT_MS?: string;
-  readonly IRNI_CACHE_TTL_SECONDS?: string;
-  readonly IRNI_STALE_TTL_SECONDS?: string;
-  readonly IRNI_API_CONTRACT_STATUS?: string;
+  /** Dedicated key for keyed lifecycle compliance receipt digests; never reuse other HMAC secrets. */
+  readonly LIFECYCLE_RECEIPT_HMAC_SECRET?: string;
+  /** Internal read-only Service Binding to IRNI's canonical geography WorkerEntrypoint v2. */
+  readonly IRNI_GEOGRAPHY?: IrniGeographicRpcBindingV2;
   readonly IRNI_PUBLISH_HMAC_SECRET?: string;
   readonly GEO_REGISTRY_EXPECTED_CONTRACT?: string;
   readonly GEO_REGISTRY_EXPECTED_ID_ALGORITHM?: string;
@@ -239,6 +247,7 @@ export type RouteMigrationGroup =
   | 'GROUP_1B_STATELESS_INTELLIGENCE_AND_COMMERCE'
   | 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS'
   | 'GROUP_3_TELEMETRY_AND_EDGE_INGESTION'
+  | 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH'
   | 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS'
   | 'GROUP_5_OBJECT_STORAGE_AND_MEDIA'
   | 'GROUP_6_ADMIN_GOVERNANCE_AND_SYNC';

@@ -6,6 +6,7 @@ import {
   getRequestTraceContext,
   sendCanonicalSuccess,
   sendCanonicalError,
+  verifiedAdminContextMiddleware,
   requireAdminPermission,
   clampPageSize,
   paginateArray,
@@ -573,6 +574,7 @@ export const backupAndRecoveryService = new BackupAndRecoveryService();
 
 export function createBackupAndRecoveryRouter(): express.Router {
   const router = express.Router();
+  router.use(verifiedAdminContextMiddleware);
 
   router.get('/api/admin/recovery/resources', (req, res) => {
     const trace = getRequestTraceContext(req);

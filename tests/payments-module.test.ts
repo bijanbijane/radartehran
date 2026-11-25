@@ -89,8 +89,11 @@ async function runAllTests() {
 
   // Test 3: Payment attempt initiation
   let providerRef = '';
-  await verify('Initiates gateway attempt and transitions intent to REDIRECT_REQUIRED', async () => {
-    const attemptRes = await engine.startPaymentAttempt(intent1Id, 'https://radartehran.ir/callback');
+  await verify('Restricts payment attempts to the authenticated owner of the payment intent', async () => {
+    const forbidden = await engine.startPaymentAttempt(intent1Id, 'https://radartehran.ir/callback', 'attacker_uid');
+    assert.equal(forbidden.success, false);
+    assert.ok(forbidden.errors?.includes('PAYMENT_INTENT_FORBIDDEN'));
+    const attemptRes = await engine.startPaymentAttempt(intent1Id, 'https://radartehran.ir/callback', 'cust_pay_1');
     assert.ok(attemptRes.success);
     assert.ok(attemptRes.attempt);
     assert.ok(attemptRes.redirectUrl?.includes('mock-gateway.local'));
@@ -210,11 +213,21 @@ async function runAllTests() {
       currency: 'IRR',
       descriptionFa: 'بیعانه نقاشی ساختمان',
     });
-    const att2 = await engine.startPaymentAttempt(p2.intent!.id, 'https://radartehran.ir/cb');
+    const att2 = await engine.startPaymentAttempt(p2.intent!.id, 'https://radartehran.ir/cb', 'cust_refund_user');
     await engine.verifyAndProcessCallback({
       intentId: p2.intent!.id,
       providerTransactionReference: att2.attempt!.providerTransactionReference!,
     });
+
+    // 0. A different authenticated user cannot refund this intent.
+    const forbiddenRefund = await engine.executeRefund({
+      paymentIntentId: p2.intent!.id,
+      amount: 5000000,
+      reasonFa: 'unauthorized attempt',
+      requestedByUid: 'attacker_uid',
+    });
+    assert.equal(forbiddenRefund.success, false);
+    assert.ok(forbiddenRefund.errors?.includes('PAYMENT_INTENT_FORBIDDEN'));
 
     // 1. Partial refund of 5,000,000 Rials
     const ref1 = await engine.executeRefund({

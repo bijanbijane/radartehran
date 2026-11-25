@@ -6,6 +6,7 @@ import {
   getRequestTraceContext,
   sendCanonicalSuccess,
   sendCanonicalError,
+  verifiedAdminContextMiddleware,
   requireAdminPermission,
   clampPageSize,
   paginateArray,
@@ -669,6 +670,7 @@ export const cachingAndPerformanceService = new CachingAndPerformanceService();
 
 export function createCachingAndPerformanceRouter(): express.Router {
   const router = express.Router();
+  router.use(verifiedAdminContextMiddleware);
 
   router.get('/api/admin/cache/namespaces', (req, res) => {
     const trace = getRequestTraceContext(req);

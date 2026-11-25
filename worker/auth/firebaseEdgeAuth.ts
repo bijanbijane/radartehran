@@ -114,9 +114,11 @@ async function resolvePublicCryptoKeyByKid(
   }
 
   let rawJwksJson: string | null = null;
+  let loadedFromKv = false;
   if (!forceRefresh && kv) {
     try {
       rawJwksJson = await kv.get('v1:auth:firebase_jwks');
+      loadedFromKv = Boolean(rawJwksJson);
     } catch {
       rawJwksJson = null;
     }
@@ -148,7 +150,12 @@ async function resolvePublicCryptoKeyByKid(
     const parsed = JSON.parse(rawJwksJson) as { keys?: FirebaseJwkKey[] };
     const map = new Map<string, CryptoKey>();
     for (const jwk of parsed.keys ?? []) {
-      if (!jwk.kid || jwk.kty !== 'RSA') continue;
+      if (
+        !jwk.kid ||
+        jwk.kty !== 'RSA' ||
+        (jwk.use !== undefined && jwk.use !== 'sig') ||
+        (jwk.alg !== undefined && jwk.alg !== 'RS256')
+      ) continue;
       const imported = await crypto.subtle.importKey(
         'jwk',
         jwk,
@@ -162,8 +169,17 @@ async function resolvePublicCryptoKeyByKid(
       keysByKid: map,
       expiresAtMs: now + maxAgeSeconds * 1000,
     };
-    return { key: map.get(kid) ?? null };
+    const requestedKey = map.get(kid) ?? null;
+    if (!requestedKey && loadedFromKv && !forceRefresh) {
+      // A cached JWKS can be stale after key rotation. Refresh once before rejecting
+      // a valid token that uses a newly published Google signing key.
+      return resolvePublicCryptoKeyByKid(kid, kv, true);
+    }
+    return { key: requestedKey };
   } catch {
+    if (loadedFromKv && !forceRefresh) {
+      return resolvePublicCryptoKeyByKid(kid, kv, true);
+    }
     return { key: null, dependencyError: true };
   }
 }
@@ -186,15 +202,23 @@ export async function isTokenRevokedOrUserDisabled(
       reason: 'AUTH_REVOCATION_STORE_UNAVAILABLE',
     };
   }
+  if (!Number.isFinite(issuedAtSeconds) || issuedAtSeconds <= 0) {
+    return { revoked: true, unavailable: true, reason: 'AUTH_TOKEN_ISSUED_AT_INVALID' };
+  }
   try {
-    const row = await db
+    const result = await db
       .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1')
       .bind(`revoked_uid:${uid}`)
-      .first<{ watermark_value: string }>();
-    if (!row || !row.watermark_value) {
-      return { revoked: false };
+      .all<{ watermark_value: string }>();
+    if (!result.success) {
+      return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_CHECK_FAILED' };
     }
-    const rawValue = String(row.watermark_value).trim();
+    const row = result.results[0];
+    if (!row) return { revoked: false };
+    const rawValue = String(row.watermark_value ?? '').trim();
+    if (!rawValue) {
+      return { revoked: true, unavailable: true, reason: 'AUTH_REVOCATION_WATERMARK_CORRUPTED' };
+    }
     if (rawValue === 'DISABLED') {
       return { revoked: true, reason: 'USER_ACCOUNT_DISABLED' };
     }

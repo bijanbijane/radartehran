@@ -6,6 +6,7 @@ import {
   getRequestTraceContext,
   sendCanonicalSuccess,
   sendCanonicalError,
+  verifiedAdminContextMiddleware,
   requireAdminPermission,
   clampPageSize,
   paginateArray,
@@ -438,6 +439,7 @@ export const analyticalDataPlatformService = new AnalyticalDataPlatformService()
 
 export function createAnalyticalDataPlatformRouter(): express.Router {
   const router = express.Router();
+  router.use(verifiedAdminContextMiddleware);
 
   router.get('/api/admin/analytics/datasets', (req, res) => {
     const trace = getRequestTraceContext(req);
@@ -475,11 +477,15 @@ export function createAnalyticalDataPlatformRouter(): express.Router {
   router.post('/api/admin/analytics/query', (req, res) => {
     const trace = getRequestTraceContext(req);
     try {
-      requireAdminPermission(req, 'platform.modules.read');
+      const actor = requireAdminPermission(req, 'platform.modules.read');
+      const tenantId = req.body?.tenantId ? String(req.body.tenantId) : undefined;
+      if (tenantId && actor.actorRole !== 'primary_admin') {
+        throw new CoreApiError('TENANT_ISOLATION_VIOLATION', 'Tenant-scoped analytics require primary administrator authorization.', 403);
+      }
       const result = analyticalDataPlatformService.queryDatasetWithPrivacyAndTenantControls({
         datasetCode: String(req.body?.datasetCode || ''),
-        tenantId: req.body?.tenantId ? String(req.body.tenantId) : undefined,
-        isCrossTenantAuthorizedAdmin: Boolean(req.body?.isCrossTenantAuthorizedAdmin),
+        tenantId,
+        isCrossTenantAuthorizedAdmin: actor.actorRole === 'primary_admin',
       });
       sendCanonicalSuccess(res, trace, result);
     } catch (err) {

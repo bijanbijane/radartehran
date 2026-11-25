@@ -17,6 +17,7 @@ export async function guardWorkerApiMutationWriteBlock(ctx: WorkerRequestContext
     expectedProjectId: ctx.env.FIREBASE_PROJECT_ID,
     adminApiSecret: ctx.env.ADMIN_API_SECRET,
     adminEmail: ctx.env.ADMIN_EMAIL,
+    env: ctx.env,
   });
   if (!auth.authenticated || !auth.principal?.uid) return null;
 

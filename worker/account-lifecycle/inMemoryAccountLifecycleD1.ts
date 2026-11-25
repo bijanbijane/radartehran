@@ -6,7 +6,6 @@
 import type { D1DatabaseBinding, D1PreparedStatement, D1Result } from '../db/types.ts';
 import * as Q from './d1Queries.ts';
 import * as DQ from './d1LifecycleDispatchQueries.ts';
-import { SQL_ACQUIRE_D1_MUTATION_PERMIT, SQL_RELEASE_D1_MUTATION_PERMIT } from './d1WriteAdmissionPermit.ts';
 
 type Row = Record<string, unknown>;
 
@@ -111,6 +110,20 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
   }
 
   public runQuery(sql: string, values: unknown[]): { rows: Row[]; changes: number } {
+    if (sql === 'PRAGMA table_info(account_write_blocks)') {
+      return {
+        rows: ['target_uid', 'state', 'active_deletion_job_id', 'blocked_at_iso', 'updated_at_iso', 'reason', 'revision']
+          .map((name) => ({ name })),
+        changes: 0,
+      };
+    }
+    if (sql === 'PRAGMA table_info(lifecycle_internal_rpc_nonces)') {
+      return {
+        rows: ['nonce', 'consumed_at_iso', 'expires_at_ms'].map((name) => ({ name })),
+        changes: 0,
+      };
+    }
+
     const activeJobsForUid = (uid: string): Row[] =>
       Array.from(this.deletionJobs.values()).filter(
         (j) => j.target_uid === uid && (j.completed_at_iso === null || j.completed_at_iso === undefined),
@@ -461,46 +474,11 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
       const row = this.writeBlocks.get(String(values[0]));
       return { rows: row ? [{ state: row.state }] : [], changes: 0 };
     }
-    if (sql === SQL_ACQUIRE_D1_MUTATION_PERMIT.replace(/\s+/g, ' ').trim()) {
-      const permitId = String(values[0]);
-      const targetUid = String(values[1]);
-      const block = this.writeBlocks.get(targetUid);
-      if (block && block.state !== 'ACTIVE_WRITES_ALLOWED') {
-        return { rows: [], changes: 0 };
-      }
-      if (this.mutationPermits.has(permitId)) {
-        throw new Error('MUTATION_PERMIT_ID_CONFLICT');
-      }
-      this.mutationPermits.set(permitId, {
-        permit_id: permitId,
-        target_uid: targetUid,
-        holder_id: values[2],
-        route_signature: values[3],
-        acquired_at_iso: values[4],
-        expires_at_ms: values[5],
-        released_at_iso: null,
-        status: 'ACTIVE',
-      });
-      return { rows: [], changes: 1 };
-    }
-    if (sql === SQL_RELEASE_D1_MUTATION_PERMIT.replace(/\s+/g, ' ').trim()) {
-      const row = this.mutationPermits.get(String(values[1]));
-      if (
-        !row ||
-        row.target_uid !== String(values[2]) ||
-        row.status !== 'ACTIVE' ||
-        row.released_at_iso !== null
-      ) {
-        return { rows: [], changes: 0 };
-      }
-      row.status = 'RELEASED';
-      row.released_at_iso = values[0];
-      return { rows: [], changes: 1 };
-    }
-
     if (
       sql ===
-      'INSERT INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)'
+        'INSERT INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)' ||
+      sql ===
+        'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)'
     ) {
       const nonce = String(values[0]);
       if (this.rpcNonces.has(nonce)) {
@@ -561,7 +539,7 @@ class InMemoryStmt implements D1PreparedStatement {
     return this.run<T>();
   }
 
-  async raw<T = unknown[]>(): Promise<T[]> {
+  async raw<T extends unknown[]>(): Promise<T[]> {
     const res = await this.run<Record<string, unknown>>();
     return res.results.map((r) => Object.values(r)) as T[];
   }

@@ -144,7 +144,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
       return makeStmt(query);
     },
     async batch<T = unknown>(statements: D1PreparedStatement[]) {
-      const out: Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }> = [];
+      const out: Array<{ results?: T[]; success: boolean }> = [];
       raw.exec('BEGIN IMMEDIATE');
       try {
         for (const stmt of statements) {
@@ -152,7 +152,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
           if (!res.success) {
             throw new Error('BATCH_STMT_FAILED');
           }
-          out.push({ results: res.results, success: true, meta: res.meta });
+          out.push({ results: res.results, success: true });
         }
         raw.exec('COMMIT');
         return out;
@@ -233,10 +233,10 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(applied.length, 7);
+      assert.equal(applied.length, 6);
       // Re-applying migrations must be idempotent
       const reapplied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(reapplied.length, 7);
+      assert.equal(reapplied.length, 6);
 
       // Prefer USER_DB over legacy DB
       const bothEnv: WorkerEnv = { USER_DB: userSqlite.db, DB: userSqlite.db, RESEARCH_DB: researchSqlite.db };
@@ -276,7 +276,25 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         areaUnit: 'sqm',
       });
       assert.equal(profile.displayName, 'سارا تهرانی');
+
+      // Migration 0010 adds ON DELETE CASCADE references from marketplace rows to user_profiles.
+      // Profile updates must be UPSERTs, not SQLite REPLACE (DELETE + INSERT), or they erase user data.
+      userSqlite.raw.exec(`
+        PRAGMA foreign_keys = ON;
+        CREATE TABLE profile_cascade_sentinel (
+          child_id TEXT PRIMARY KEY,
+          owner_uid TEXT NOT NULL REFERENCES user_profiles(uid) ON DELETE CASCADE
+        );
+        INSERT INTO profile_cascade_sentinel(child_id, owner_uid) VALUES ('keep-market-data', '${uid}');
+      `);
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'سارا به‌روزشده' });
+      const preservedChild = userSqlite.raw
+        .prepare('SELECT child_id FROM profile_cascade_sentinel WHERE owner_uid = ?')
+        .get(uid) as { child_id: string } | undefined;
+      assert.equal(preservedChild?.child_id, 'keep-market-data');
+
       const fetchedProfile = await getUserProfileFromD1(userSqlite.db, uid);
+      assert.equal(fetchedProfile?.displayName, 'سارا به‌روزشده');
       assert.equal(fetchedProfile?.preferredCity, 'tehran');
 
       const defaultConsent = await getUserPrivacyConsentFromD1(userSqlite.db, uid);
@@ -533,7 +551,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
     it('enforces isolated RESEARCH_DB schema (zero PII columns) and strict allowlist/PII rejection', () => {
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
-      assert.equal(applied.length, 3);
+      assert.equal(applied.length, 2);
 
       const cols = researchSqlite.raw.prepare('PRAGMA table_info(research_events)').all() as Array<{ name: string }>;
       const colNames = cols.map((c) => c.name.toLowerCase());

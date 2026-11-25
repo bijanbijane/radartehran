@@ -8,6 +8,8 @@ import { PRIMARY_BOOTSTRAP_ADMIN_EMAIL } from '../../src/utils/domainSecurityVal
 import { EXPECTED_FIREBASE_PROJECT_ID } from '../../src/utils/serverConfigValidator';
 import { isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from '../../src/utils/security';
 import { verifyFirebaseIdToken, type VerifyFirebaseIdTokenOptions } from './firebaseTokenVerifier';
+import { createWorkerRequestContext } from '../contextAndSecurity';
+import { authenticateWorkerSession, hasRadarSessionCookie } from './sessionAuth';
 import {
   isWorkerProductionEnvironment,
   resolveWorkerAppCheckMode,
@@ -154,7 +156,55 @@ export async function resolveWorkerAuthContext(
     };
   }
 
-  // 2. No bearer token present -> Anonymous request
+  // 2. Prefer a verified Cloudflare-native HttpOnly session when its cookie is present.
+  // A malformed, expired, revoked, or unverifiable session must fail closed; it must not
+  // silently fall back to a second credential in the same request.
+  if (hasRadarSessionCookie(request)) {
+    const sessionContext = createWorkerRequestContext(request, options.env || {});
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method.toUpperCase());
+    const session = await authenticateWorkerSession(sessionContext, isMutation);
+    if (!session.authenticated || !session.uid) {
+      return {
+        authenticated: false,
+        mode: 'cloudflare_d1_session',
+        principal: null,
+        verifiedAtMs: nowMs,
+        correlationId,
+        environment,
+        failureCode: session.reasonCode,
+        failureStatusCode: session.statusCode === 200 ? 401 : session.statusCode,
+        failureReason: session.reasonCode,
+      };
+    }
+    const principal: AuthenticatedWorkerPrincipal = {
+      uid: session.uid,
+      email: session.email || undefined,
+      emailVerified: session.emailVerified,
+      role: session.isPrimaryAdmin ? 'primary_admin' : session.isDelegatedAdmin ? 'delegated_admin' : 'verified_user',
+      authMode: 'cloudflare_d1_session',
+      authTimeSeconds: session.authTimeSeconds || undefined,
+      isPrimaryAdmin: session.isPrimaryAdmin,
+      isDelegatedAdmin: session.isDelegatedAdmin,
+      claims: {
+        uid: session.uid,
+        email: session.email,
+        email_verified: session.emailVerified,
+        phone_number: session.phoneNumber,
+        auth_provider: session.authProvider,
+        isAdmin: session.isAdmin,
+      },
+    };
+    return {
+      authenticated: true,
+      mode: 'cloudflare_d1_session',
+      principal,
+      verifiedAtMs: nowMs,
+      correlationId,
+      environment,
+    };
+  }
+
+  // 3. No bearer token present -> Anonymous request
   if (!rawAuthHeader) {
     return {
       authenticated: false,
@@ -331,21 +381,6 @@ export function evaluateWorkerAuthorization(
   }
 
   const p = authCtx.principal;
-
-  if (req.maxAuthAgeSeconds !== undefined) {
-    const maxAge = req.maxAuthAgeSeconds;
-    const authTime = p.authTimeSeconds;
-    const ageSeconds = typeof authTime === 'number' ? Math.floor(Date.now() / 1000) - authTime : Number.POSITIVE_INFINITY;
-    if (!Number.isSafeInteger(maxAge) || maxAge < 0 || !Number.isFinite(ageSeconds) || ageSeconds < 0 || ageSeconds > maxAge) {
-      return {
-        allowed: false,
-        statusCode: 403,
-        failureCode: 'RECENT_AUTHENTICATION_REQUIRED',
-        reasonFa: 'برای این عملیات احراز هویت مجدد لازم است.',
-        reasonEn: 'Recent authentication is required for this operation.',
-      };
-    }
-  }
 
   if (policy === 'VERIFIED_USER') {
     return {

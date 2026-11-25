@@ -6,6 +6,7 @@ import {
   getRequestTraceContext,
   sendCanonicalSuccess,
   sendCanonicalError,
+  verifiedAdminContextMiddleware,
   requireAdminPermission,
   clampPageSize,
   paginateArray,
@@ -492,6 +493,7 @@ export const platformResilienceService = new PlatformResilienceService();
 
 export function createPlatformResilienceRouter(): express.Router {
   const router = express.Router();
+  router.use(verifiedAdminContextMiddleware);
 
   router.get('/api/admin/resilience/reconciliations', (req, res) => {
     const trace = getRequestTraceContext(req);

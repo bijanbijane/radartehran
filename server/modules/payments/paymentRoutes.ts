@@ -115,7 +115,7 @@ export function createPaymentRouter(
     const intentId = req.params.intentId;
     const callbackUrl = req.body.callbackUrl || `https://radartehran.ir/api/payments/${intentId}/callback`;
 
-    const result = await engine.startPaymentAttempt(intentId, callbackUrl);
+    const result = await engine.startPaymentAttempt(intentId, callbackUrl, auth.principal.uid);
     if (!result.success || !result.attempt) {
       return res.status(400).json(buildErrorEnvelope('VALIDATION_FAILED', result.errors?.join('; ') || 'خطا در هدایت به درگاه پرداخت.', cid));
     }

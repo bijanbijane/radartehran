@@ -56,7 +56,7 @@ export function registerDataGovernanceRoutes(
 
   app.post('/api/v1/data-governance/sources', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) {
       recordAbuseSignal(deps.getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ ok: false, errorFa: 'ثبت منبع داده جدید فقط برای مدیر حاکمیت مجاز است.' });
@@ -80,7 +80,7 @@ export function registerDataGovernanceRoutes(
 
   app.post('/api/v1/data-governance/sources/:id/transition', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) {
       recordAbuseSignal(deps.getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ ok: false, errorFa: 'تغییر وضعیت منبع فقط برای مدیر مجاز است.' });
@@ -120,7 +120,7 @@ export function registerDataGovernanceRoutes(
 
   app.get('/api/v1/data-governance/evidence/:id', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     const out = getServerDgovEngine().getEvidenceForCaller(String(req.params.id), { isAdmin: adminAuth.authorized });
     res.status(out.ok ? 200 : out.errorFa?.includes('یافت نشد') ? 404 : 403).json(out);
   });
@@ -224,14 +224,15 @@ export function registerDataGovernanceRoutes(
 
   app.post('/api/v1/data-governance/reconciliation/resolve', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) {
       recordAbuseSignal(deps.getIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ ok: false, errorFa: 'حل تعارض داده نیازمند احراز هویت مدیر حاکمیت است.' });
       return;
     }
     const body = req.body || {};
-    const reviewerId = sanitizeInput(String(body.reviewerId || auth.uid || auth.email || ''), 80);
+    // Reviewer identity is always derived from verified admin authentication; body.reviewerId is untrusted audit input.
+    const reviewerId = sanitizeInput(String(auth.uid || auth.actorUid || auth.email || 'admin'), 80);
     const out = getServerDgovEngine().resolveConflictCase({
       caseId: String(body.caseId || ''),
       reviewerId,

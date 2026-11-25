@@ -292,6 +292,20 @@ async function runAllTests() {
     const baseUrl = `http://127.0.0.1:${port}`;
 
     try {
+      // Forged identity and admin headers must not authenticate protected mutations.
+      const forgedUser = await fetch(`${baseUrl}/api/v2/property-services/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-uid': 'user_attacker', Authorization: 'Bearer user_attacker' },
+        body: JSON.stringify({ categoryId: 'cat_architect', description: 'spoofed' }),
+      });
+      assert.equal(forgedUser.status, 401);
+      const forgedAdmin = await fetch(`${baseUrl}/api/v2/property-services/admin/credentials/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-role': 'super_admin', 'x-admin-secret': 'admin_verified' },
+        body: JSON.stringify({ providerId: 'provider_1', credentialId: 'credential_1', decision: 'APPROVE' }),
+      });
+      assert.equal(forgedAdmin.status, 403);
+
       // 1. GET categories
       const catRes = await fetch(`${baseUrl}/api/v2/property-services/categories`);
       assert.equal(catRes.status, 200);

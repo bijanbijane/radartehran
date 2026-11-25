@@ -14,7 +14,7 @@ import {
   sanitizeInternalDeepLink,
 } from '../services/commsEngine';
 import { EVENT_POLICY_REGISTRY, renderSafeTemplateText } from '../registries/eventPolicyAndTemplateRegistry';
-import { registerCommunicationsRoutes } from '../../../../server/modules/communications/commsRoutes';
+import { paginateConversationMessages, registerCommunicationsRoutes, toConversationSummary } from '../../../../server/modules/communications/commsRoutes';
 import { resolveRouteFromLocation } from '../../../navigation/url/navigationUrlContract';
 
 test('COMMS-T01/T02: Event ingestion validates transactionCommitted, recipientActive, and enforces idempotency dedupe', () => {
@@ -172,6 +172,34 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   });
   assert.equal(missingContext.ok, false);
 
+  const duplicateParticipant = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-duplicate',
+    contextTitleFa: 'طرف تکراری',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-buyer', displayNameFa: 'طرف دوم جعلی', roleLabelFa: 'مالک', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(duplicateParticipant.ok, false);
+  assert.equal(duplicateParticipant.errorCode, 'INVALID_CONVERSATION_PARTICIPANTS');
+
+  const participantWithoutCreator = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-no-creator',
+    contextTitleFa: 'بدون سازنده',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-seller', displayNameFa: 'مالک', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-other', displayNameFa: 'کاربر دیگر', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(participantWithoutCreator.ok, false);
+  assert.equal(participantWithoutCreator.errorCode, 'INVALID_CONVERSATION_PARTICIPANTS');
+
   const convRes = engine.createScopedConversation({
     type: 'LISTING_INQUIRY',
     contextEntityType: 'listing',
@@ -186,14 +214,42 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   assert.equal(convRes.ok, true);
   const cid = convRes.conversation!.conversationId;
 
+  // Ownership changes must not reuse the previous owner's private conversation.
+  const changedCounterparty = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-99',
+    contextTitleFa: 'استعلام واحد ۹۰ متری پونک',
+    creatorUid: 'u-buyer',
+    participants: [
+      { uid: 'u-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+      { uid: 'u-new-seller', displayNameFa: 'مالک جدید', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+    ],
+  });
+  assert.equal(changedCounterparty.ok, true);
+  assert.notEqual(changedCounterparty.conversation!.conversationId, cid);
+  assert.equal(changedCounterparty.conversation!.participants.some((p) => p.uid === 'u-seller'), false);
+
   // Non-participant IDOR blocked on sendMessage
   assert.equal(engine.sendMessage({ conversationId: cid, senderUid: 'intruder', bodyFa: 'سلام پیام غیرمجاز' }).statusCode, 403);
+  assert.equal(engine.sendMessage({
+    conversationId: cid,
+    senderUid: 'u-buyer',
+    bodyFa: 'پیوست با شناسه نامعتبر',
+    attachments: [{ attachmentId: '../private', fileName: '../../secret.pdf', mimeType: 'application/pdf', sizeBytes: 100 }],
+  }).statusCode, 400);
 
   // Rate limit blocks flooding beyond MAX_MESSAGES_PER_MINUTE_STANDARD
-  for (let i = 0; i < MAX_MESSAGES_PER_MINUTE_STANDARD; i++) {
+  for (let i = 0; i < MAX_MESSAGES_PER_MINUTE_STANDARD - 1; i++) {
     const sent = engine.sendMessage({ conversationId: cid, senderUid: 'u-buyer', bodyFa: `پیام تست شماره ${i + 1}` });
     assert.equal(sent.statusCode, 201);
   }
+  const crossConversationSend = engine.sendMessage({
+    conversationId: changedCounterparty.conversation!.conversationId,
+    senderUid: 'u-buyer',
+    bodyFa: 'پیام در گفت‌وگوی دوم',
+  });
+  assert.equal(crossConversationSend.statusCode, 201);
   const flooded = engine.sendMessage({ conversationId: cid, senderUid: 'u-buyer', bodyFa: 'پیام اضافه اسپم' });
   assert.equal(flooded.statusCode, 429);
 
@@ -207,6 +263,53 @@ test('COMMS-T10/T23/T26/T31: Notification IDOR, XSS/Open-Redirect guard, scoped 
   assert.equal(engine.redactMessage(cid, msgId, 'admin-mod', 'حاوی شماره تماس شخصی'), true);
   assert.equal(convRes.conversation!.messages[0].status, 'REDACTED');
   assert.equal(classifyNotificationDateBucketFa(new Date().toISOString()), 'امروز');
+});
+
+test('COMMS-T35: Conversation summaries hide peer-private flags and message history is paginated', () => {
+  const engine = new CommsCoreStateEngine();
+  const created = engine.createScopedConversation({
+    type: 'LISTING_INQUIRY',
+    contextEntityType: 'listing',
+    contextEntityId: 'lst-summary-1',
+    contextTitleFa: 'آگهی نمونه',
+    creatorUid: 'summary-buyer',
+    participants: [
+      { uid: 'summary-buyer', displayNameFa: 'خریدار', roleLabelFa: 'متقاضی', senderType: 'USER', muted: true, archived: false, blockedOtherParticipant: false },
+      { uid: 'summary-seller', displayNameFa: 'فروشنده', roleLabelFa: 'آگهی‌دهنده', senderType: 'USER', muted: false, archived: true, blockedOtherParticipant: true },
+    ],
+  });
+  assert.equal(created.ok, true);
+  const conversation = created.conversation!;
+  const summary = toConversationSummary(conversation, 'summary-buyer');
+  assert.equal(summary.participants[0].muted, true);
+  assert.equal('muted' in summary.participants[1], false);
+  assert.equal('archived' in summary.participants[1], false);
+  assert.equal('blockedOtherParticipant' in summary.participants[1], false);
+  assert.equal('messages' in summary, false);
+
+  const messages = Array.from({ length: 5 }, (_, index) => ({
+    messageId: `msg-${index + 1}`,
+    conversationId: conversation.conversationId,
+    senderUid: 'summary-buyer',
+    senderType: 'USER' as const,
+    senderLabelFa: 'خریدار',
+    bodyFa: `پیام ${index + 1}`,
+    attachments: [],
+    status: 'SENT' as const,
+    readByUids: ['summary-buyer'],
+    createdAtIso: new Date(1_700_000_000_000 + index * 1000).toISOString(),
+  }));
+  const firstPage = paginateConversationMessages(messages, 2);
+  assert.equal(firstPage.ok, true);
+  if (firstPage.ok) {
+    assert.deepEqual(firstPage.items.map((item) => item.messageId), ['msg-4', 'msg-5']);
+    assert.equal(firstPage.hasMore, true);
+    assert.equal(firstPage.nextCursor, 'msg-4');
+    const secondPage = paginateConversationMessages(messages, 2, firstPage.nextCursor || undefined);
+    assert.equal(secondPage.ok, true);
+    if (secondPage.ok) assert.deepEqual(secondPage.items.map((item) => item.messageId), ['msg-2', 'msg-3']);
+  }
+  assert.equal(paginateConversationMessages(messages, 2, 'missing-cursor').ok, false);
 });
 
 test('COMMS-T38: Routes & Express endpoints enforce auth (fail-closed) and resolve aliases cleanly', async () => {

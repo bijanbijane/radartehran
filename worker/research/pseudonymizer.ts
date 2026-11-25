@@ -145,14 +145,14 @@ export async function deriveAllSubjectKeysForErasure(params: {
 
 /**
  * Produces a keyed HMAC-SHA256 compliance digest of UID (when server secret is available;
- * domain-separated SHA-256 fallback only in secret-free unit contexts).
+ * Dedicated-key HMAC-SHA256 only; missing or weak receipt keys are rejected.
  * Classified as a sensitive pseudonymous compliance digest — NEVER treated as full anonymization.
  */
 export async function hashUidForComplianceReceipt(uid: string, receiptSecret?: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
   const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length >= 16) {
-    return computeHmacSha256Hex(cleanSecret, canonical);
+  if (new TextEncoder().encode(cleanSecret).byteLength < 32) {
+    throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK');
   }
-  return computeSha256Hex(canonical);
+  return computeHmacSha256Hex(cleanSecret, canonical);
 }

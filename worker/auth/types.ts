@@ -9,6 +9,7 @@ import type { DeploymentEnvironmentName } from '../types';
 export type WorkerAuthMode =
   | 'anonymous'
   | 'firebase_id_token'
+  | 'cloudflare_d1_session'
   | 'server_secret_token'
   | 'service_to_service';
 

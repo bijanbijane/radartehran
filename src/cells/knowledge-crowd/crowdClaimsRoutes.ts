@@ -67,6 +67,8 @@ export interface CrowdClaimsRouteSecurityOptions {
   checkRateLimit?: (ip: string, bucket: 'general', maxRequests: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
   verifyUserAuth?: (req: Request) => Promise<{ authorized: boolean; statusCode: number; uid?: string; reason?: string }>;
+  /** Resolves media objects owned by the authenticated contributor. */
+  resolveOwnedEvidenceMediaObjectIds?: (uid: string, objectIds: string[]) => Promise<string[]>;
 }
 
 export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRouteSecurityOptions): void {
@@ -212,8 +214,33 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
           ? Number(body.estimatedPriceSqm)
           : null;
 
+      const requestedEvidenceIds = Array.isArray(body.evidenceMediaObjectIds)
+        ? [...new Set(body.evidenceMediaObjectIds.map((id) => sanitizeInput(String(id), 120)).filter((id) => id.length > 0 && isValidFirestoreDocId(id)))]
+        : [];
+      if (requestedEvidenceIds.length > 10 || (Array.isArray(body.evidenceMediaObjectIds) && requestedEvidenceIds.length !== body.evidenceMediaObjectIds.length)) {
+        res.status(400).json({ status: 'error', code: 'INVALID_EVIDENCE_MEDIA_IDS' });
+        return;
+      }
+      let verifiedEvidenceIds: string[] = [];
+      if (requestedEvidenceIds.length > 0) {
+        if (!options?.resolveOwnedEvidenceMediaObjectIds) {
+          res.status(503).json({ status: 'error', code: 'EVIDENCE_OWNERSHIP_RESOLVER_UNAVAILABLE' });
+          return;
+        }
+        try {
+          verifiedEvidenceIds = await options.resolveOwnedEvidenceMediaObjectIds(authenticatedUid, requestedEvidenceIds);
+        } catch {
+          res.status(503).json({ status: 'error', code: 'EVIDENCE_OWNERSHIP_LOOKUP_FAILED' });
+          return;
+        }
+        const resolvedSet = new Set(verifiedEvidenceIds);
+        if (verifiedEvidenceIds.length !== requestedEvidenceIds.length || requestedEvidenceIds.some((id) => !resolvedSet.has(id))) {
+          res.status(403).json({ status: 'error', code: 'EVIDENCE_MEDIA_OWNERSHIP_FORBIDDEN' });
+          return;
+        }
+      }
+
       const claim = await submitCrowdClaim({
-        claimId: typeof body.claimId === 'string' ? body.claimId : undefined,
         targetLevel,
         cityId: cityRes.cityId,
         hoodId,
@@ -226,15 +253,10 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
         safetyScore: Number.isFinite(Number(body.safetyScore)) ? Number(body.safetyScore) : null,
         slopeType,
         narrativeText,
-        evidenceMediaObjectIds: Array.isArray(body.evidenceMediaObjectIds)
-          ? (body.evidenceMediaObjectIds as string[])
-          : [],
+        evidenceMediaObjectIds: verifiedEvidenceIds,
         authorUid,
         authorDisplayName,
         authorRoleBadge,
-        baseHoodPriceSqmOverride: Number.isFinite(Number(body.baseHoodPriceSqmOverride))
-          ? Number(body.baseHoodPriceSqmOverride)
-          : undefined,
         intlCurrency,
       });
 

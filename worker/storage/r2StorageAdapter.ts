@@ -98,12 +98,29 @@ export function buildR2MediaObjectKey(params: {
   mimeType: string;
   objectId: string;
 }): string {
-  const city = SAFE_CITIES.has(params.city) ? params.city : 'tehran';
-  const hoodId = Math.max(1, Math.min(999, Math.trunc(params.hoodId) || 1));
-  const ext = EXTENSION_BY_MIME[params.mimeType] || (params.mediaType === 'video' ? 'mp4' : 'webp');
+  const city = String(params.city || '').trim().toLowerCase();
+  if (!SAFE_CITIES.has(city)) throw new Error('MEDIA_CITY_ID_UNSUPPORTED');
+
+  const hoodId = Number(params.hoodId);
+  if (!Number.isSafeInteger(hoodId) || hoodId < 1 || hoodId > 9_999) {
+    throw new Error('MEDIA_NEIGHBORHOOD_ID_INVALID');
+  }
+
+  if (params.mediaType !== 'image' && params.mediaType !== 'video') {
+    throw new Error('MEDIA_TYPE_INVALID');
+  }
+  const mimeType = String(params.mimeType || '').trim().toLowerCase();
+  const ext = EXTENSION_BY_MIME[mimeType];
+  if (!ext) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
+
+  const objectId = String(params.objectId || '').trim();
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(objectId)) {
+    throw new Error('MEDIA_OBJECT_ID_INVALID');
+  }
+
   const now = new Date();
   const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  return `listings/${city}/hood-${hoodId}/${params.mediaType}/${ym}/${params.objectId}.${ext}`;
+  return `listings/${city}/hood-${hoodId}/${params.mediaType}/${ym}/${objectId}.${ext}`;
 }
 
 export async function createSignedR2MediaUrl(params: {
@@ -116,7 +133,26 @@ export async function createSignedR2MediaUrl(params: {
   nowSeconds?: number;
 }): Promise<{ signedPath: string; expiresAtSeconds: number; signatureHex: string }> {
   const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
-  const exp = nowSec + Math.max(30, Math.min(3600, Math.trunc(params.expiresInSeconds)));
+  const requestedTtl = Number(params.expiresInSeconds);
+  if (!Number.isSafeInteger(nowSec) || nowSec <= 0 || !Number.isFinite(requestedTtl)) {
+    throw new Error('MEDIA_SIGNING_TIME_INVALID');
+  }
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId)) throw new Error('MEDIA_OBJECT_ID_INVALID');
+  if (params.method !== 'GET' && params.method !== 'PUT') throw new Error('MEDIA_METHOD_INVALID');
+  const extension = EXTENSION_BY_MIME[params.mimeType];
+  if (!extension) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
+  if (
+    !params.objectKey.startsWith('listings/') ||
+    params.objectKey.length > 512 ||
+    params.objectKey.includes('\\') ||
+    params.objectKey.split('/').some((segment) =>
+      !segment || segment === '.' || segment === '..' || !/^[A-Za-z0-9._-]+$/.test(segment),
+    ) ||
+    !params.objectKey.endsWith(`/${params.objectId}.${extension}`)
+  ) throw new Error('MEDIA_OBJECT_KEY_INVALID');
+  const ttlSeconds = Math.max(30, Math.min(3600, Math.trunc(requestedTtl)));
+  const exp = nowSec + ttlSeconds;
+  if (!Number.isSafeInteger(exp)) throw new Error('MEDIA_SIGNING_EXPIRY_INVALID');
   const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${exp}`;
   const signatureHex = await computeHmacSha256Hex(canonical, params.signingSecret);
   const signedPath = `/api/object-storage/file/${encodeURIComponent(params.objectId)}?exp=${exp}&sig=${signatureHex}`;
@@ -134,9 +170,26 @@ export async function verifySignedR2MediaUrl(params: {
   nowSeconds?: number;
 }): Promise<boolean> {
   const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
-  if (!Number.isFinite(params.expSeconds) || params.expSeconds < nowSec) return false;
-  if (!params.signingSecret || !params.signatureHex) return false;
-  const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${Math.trunc(params.expSeconds)}`;
+  if (
+    !Number.isSafeInteger(nowSec) ||
+    nowSec <= 0 ||
+    !Number.isSafeInteger(params.expSeconds) ||
+    params.expSeconds < nowSec ||
+    params.expSeconds > nowSec + 3600 ||
+    !/^[A-Za-z0-9_-]{8,128}$/.test(params.objectId) ||
+    (params.method !== 'GET' && params.method !== 'PUT') ||
+    !params.objectKey.startsWith('listings/') ||
+    params.objectKey.length > 512 ||
+    params.objectKey.includes('\\') ||
+    params.objectKey.split('/').some((segment) =>
+      !segment || segment === '.' || segment === '..' || !/^[A-Za-z0-9._-]+$/.test(segment),
+    ) ||
+    !EXTENSION_BY_MIME[params.mimeType] ||
+    !params.objectKey.endsWith(`/${params.objectId}.${EXTENSION_BY_MIME[params.mimeType]}`) ||
+    !/^[a-f0-9]{64}$/i.test(params.signatureHex) ||
+    !params.signingSecret
+  ) return false;
+  const canonical = `${params.method}\n${params.objectId}\n${params.objectKey}\n${params.mimeType}\n${params.expSeconds}`;
   const expectedHex = await computeHmacSha256Hex(canonical, params.signingSecret);
   return timingSafeEqualHex(expectedHex, params.signatureHex.trim());
 }
@@ -150,26 +203,39 @@ export async function isObjectUnderLegalHold(
   objectId: string,
   nowMs: number = Date.now(),
 ): Promise<{ held: boolean; reason?: string }> {
-  if (!db) {
-    throw new Error('LEGAL_HOLD_DB_UNAVAILABLE');
+  if (!db) throw new Error('LEGAL_HOLD_DB_UNAVAILABLE');
+  if (typeof objectId !== 'string' || !objectId.trim() || objectId.length > 200) {
+    throw new Error('LEGAL_HOLD_OBJECT_ID_INVALID');
   }
-  const holdRow = await db
+  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error('LEGAL_HOLD_TIME_INVALID');
+
+  const holdRows = await db
     .prepare('SELECT active, reason FROM legal_holds WHERE resource_id = ?1')
     .bind(objectId)
-    .first<{ active: number; reason: string }>();
-  if (holdRow && Number(holdRow.active) === 1) {
-    return { held: true, reason: holdRow.reason || 'ACTIVE_LEGAL_HOLD' };
+    .all<{ active: number; reason: string }>();
+  if (!holdRows.success) throw new Error('LEGAL_HOLD_LOOKUP_FAILED');
+  for (const row of holdRows.results ?? []) {
+    const active = Number(row.active);
+    if (active === 1) return { held: true, reason: row.reason || 'ACTIVE_LEGAL_HOLD' };
+    if (active !== 0) return { held: true, reason: 'LEGAL_HOLD_STATE_INVALID' };
   }
-  const mediaRow = await db
+
+  const mediaRows = await db
     .prepare('SELECT legal_hold, retention_until FROM media_objects WHERE object_id = ?1')
     .bind(objectId)
-    .first<{ legal_hold: number; retention_until: string | null }>();
+    .all<{ legal_hold: number; retention_until: string | null }>();
+  if (!mediaRows.success) throw new Error('MEDIA_RETENTION_LOOKUP_FAILED');
+  const mediaRow = mediaRows.results?.[0];
   if (mediaRow) {
-    if (Number(mediaRow.legal_hold) === 1) {
-      return { held: true, reason: 'MEDIA_OBJECT_LEGAL_HOLD' };
-    }
-    if (mediaRow.retention_until && Date.parse(mediaRow.retention_until) > nowMs) {
-      return { held: true, reason: 'MEDIA_OBJECT_RETENTION_LOCK' };
+    const legalHold = Number(mediaRow.legal_hold);
+    if (legalHold === 1) return { held: true, reason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+    if (legalHold !== 0) return { held: true, reason: 'MEDIA_LEGAL_HOLD_STATE_INVALID' };
+    if (mediaRow.retention_until) {
+      const retentionUntilMs = Date.parse(mediaRow.retention_until);
+      if (!Number.isFinite(retentionUntilMs)) {
+        return { held: true, reason: 'MEDIA_RETENTION_TIMESTAMP_INVALID' };
+      }
+      if (retentionUntilMs > nowMs) return { held: true, reason: 'MEDIA_OBJECT_RETENTION_LOCK' };
     }
   }
   return { held: false };

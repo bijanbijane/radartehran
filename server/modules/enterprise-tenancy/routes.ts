@@ -8,7 +8,7 @@
  */
 
 import type { Express, Request, Response } from 'express';
-import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
+import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import {
   createPlatformExecutionContext,
   PlatformApplicationError,
@@ -33,16 +33,29 @@ export async function defaultTenancyActorResolver(req: Request): Promise<Tenancy
   const corrHeader = req.headers['x-correlation-id'];
   const correlationId =
     (Array.isArray(corrHeader) ? corrHeader[0] : corrHeader) || `corr_${Date.now()}`;
+  const headers = req.headers as Record<string, string | string[] | undefined>;
 
-  const adminCheck = await verifyAdminApiAuthorization(
-    req.headers as Record<string, string | string[] | undefined>,
-  );
+  const adminCheck = await verifyAdminApiAuthorization(headers, process.env, {
+    requirePrimaryBootstrapAdmin: true,
+    disallowStaticToken: true,
+  });
   if (adminCheck.authorized) {
     return {
       authenticated: true,
       actorId: adminCheck.actorUid || adminCheck.uid || 'platform-admin',
-      verifiedEmail: adminCheck.email || 'admin@radartehran.ir',
+      verifiedEmail: adminCheck.email || '',
       isPlatformAdmin: true,
+      correlationId,
+    };
+  }
+
+  const userCheck = await verifyAuthenticatedUserHeader(headers);
+  if (userCheck.authorized && userCheck.uid) {
+    return {
+      authenticated: true,
+      actorId: userCheck.uid,
+      verifiedEmail: userCheck.email || '',
+      isPlatformAdmin: false,
       correlationId,
     };
   }

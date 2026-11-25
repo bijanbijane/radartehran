@@ -45,8 +45,12 @@ async function defaultVerifyAdminAuth(req: Request): Promise<boolean> {
   const result = await verifyAdminApiAuthorization(
     req.headers as Record<string, string | string[] | undefined>,
     process.env,
-    { disallowStaticToken: true },
+    { disallowStaticToken: true, requirePrimaryBootstrapAdmin: true },
   );
+  if (result.authorized) {
+    (req as Request & { verifiedAdminUid?: string }).verifiedAdminUid =
+      result.actorUid || result.uid || 'verified-primary-admin';
+  }
   return result.authorized;
 }
 
@@ -217,7 +221,7 @@ export function registerNotificationRoutes(app: Express, options?: NotificationM
     }
 
     const outcome = await eventConsumer.broadcastAdministrativeAnnouncement({
-      adminUid: 'admin_caller',
+      adminUid: (req as Request & { verifiedAdminUid?: string }).verifiedAdminUid || 'verified-primary-admin',
       titleFa,
       messageFa,
       recipientUids,

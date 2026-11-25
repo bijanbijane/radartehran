@@ -6,6 +6,7 @@ import {
   getRequestTraceContext,
   sendCanonicalSuccess,
   sendCanonicalError,
+  verifiedAdminContextMiddleware,
   requireAdminPermission,
   clampPageSize,
   paginateArray,
@@ -504,6 +505,7 @@ export const infrastructureSecurityService = new InfrastructureSecurityService()
 
 export function createInfrastructureSecurityRouter(): express.Router {
   const router = express.Router();
+  router.use(verifiedAdminContextMiddleware);
 
   router.get('/api/admin/security/policies', (req, res) => {
     const trace = getRequestTraceContext(req);

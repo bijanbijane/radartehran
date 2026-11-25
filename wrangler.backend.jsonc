@@ -1,26 +1,5 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "account_id": "5bafb2033937006704e81afcc0b18b38",
-  "env": {
-    "staging": {
-      "name": "radartehran-api-staging",
-      "vars": {
-        "APP_ENV": "staging",
-        "WORKER_ENV": "staging",
-        "APP_URL": "https://radartehran-api-staging.workers.dev",
-        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-        "FIREBASE_APP_CHECK_MODE": "monitor",
-        "RESEARCH_HMAC_KEY_VERSION": "v1",
-        "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
-        "IRNI_API_TIMEOUT_MS": "4000",
-        "IRNI_CACHE_TTL_SECONDS": "300",
-        "IRNI_STALE_TTL_SECONDS": "1800",
-        "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
-        "STAGING_D1_PROVISIONING_STATUS": "BLOCKED_STAGING_DATABASES_NOT_PROVISIONED"
-      },
-      "d1_databases": []
-    }
-  },
   "name": "radartehran-api",
   "main": "worker/index.ts",
   "compatibility_date": "2026-03-01",
@@ -75,5 +54,11 @@
       "migrations_dir": "migrations/research-d1",
       "migrations_table": "d1_migrations"
     },
+  ],
+  "services": [
+    {
+      "binding": "IRNI_GEOGRAPHY",
+      "service": "irni-api"
+    }
   ]
 }

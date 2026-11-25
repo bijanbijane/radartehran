@@ -71,6 +71,9 @@ export async function verifyAndConsumeInternalRpcNonce(params: {
     .bind(nonce, params.issuer.slice(0, 64), expiresAtMs, new Date(nowMs).toISOString())
     .run();
 
+  if (insertRes.success === false) {
+    return { ok: false, statusCode: 503, code: 'INTERNAL_RPC_NONCE_STORE_UNAVAILABLE' };
+  }
   if ((insertRes.meta?.changes ?? 0) !== 1) {
     return { ok: false, statusCode: 409, code: 'INTERNAL_RPC_NONCE_REPLAYED' };
   }
@@ -82,4 +85,72 @@ export async function verifyAndConsumeInternalRpcNonce(params: {
     .run();
 
   return { ok: true };
+}
+
+
+/**
+ * Consumes an already-authenticated write-admission RPC nonce.
+ * Signature/timestamp verification is performed by writeAdmissionRpcAuth before this call.
+ */
+export async function consumeLifecycleRpcNonce(params: {
+  db: D1Database;
+  nonce: string;
+  issuer?: string;
+  nowMs?: number;
+}): Promise<{ consumed: boolean; code?: string }> {
+  const nonce = String(params.nonce || '').trim();
+  if (nonce.length < 12 || nonce.length > 128) {
+    return { consumed: false, code: 'RPC_NONCE_INVALID' };
+  }
+
+  const nowMs = params.nowMs ?? Date.now();
+  const issuer = String(params.issuer || 'express-write-admission').slice(0, 64);
+  const expiresAtMs = nowMs + MAX_RPC_CLOCK_SKEW_MS * 2;
+
+  try {
+    const schema = await params.db
+      .prepare('PRAGMA table_info(lifecycle_internal_rpc_nonces)')
+      .all<{ name: string }>();
+    if (schema.success === false) return { consumed: false, code: 'RPC_NONCE_SCHEMA_UNAVAILABLE' };
+    const columns = new Set((schema.results ?? []).map((column) => column.name));
+
+    const insertRes = columns.has('issuer') && columns.has('created_at_iso')
+      ? await params.db
+          .prepare(
+            'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, issuer, expires_at_ms, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
+          )
+          .bind(nonce, issuer, expiresAtMs, new Date(nowMs).toISOString())
+          .run()
+      : columns.has('consumed_at_iso')
+        ? await params.db
+            .prepare(
+              'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, consumed_at_iso, expires_at_ms) VALUES (?1, ?2, ?3)',
+            )
+            .bind(nonce, new Date(nowMs).toISOString(), expiresAtMs)
+            .run()
+        : null;
+
+    if (!insertRes) return { consumed: false, code: 'RPC_NONCE_SCHEMA_CONTRACT_UNRECOGNIZED' };
+
+    if (insertRes.success === false) {
+      return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+    }
+    if ((insertRes.meta?.changes ?? 0) !== 1) {
+      return { consumed: false, code: 'RPC_NONCE_REPLAYED' };
+    }
+
+    // Cleanup is best-effort; it must not invalidate a successfully consumed nonce.
+    try {
+      await params.db
+        .prepare('DELETE FROM lifecycle_internal_rpc_nonces WHERE expires_at_ms <= ?1')
+        .bind(nowMs)
+        .run();
+    } catch {
+      // Expired rows are harmless and can be removed by a later request.
+    }
+
+    return { consumed: true };
+  } catch {
+    return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+  }
 }

@@ -8,6 +8,7 @@ import { ProfessionalEngine } from './professionalEngine';
 import { ProfessionalSearch } from './professionalSearch';
 import { defaultProfessionalStore, type ProfessionalStore } from './professionalStore';
 import { UnavailableRegistryAdapter, type AuthoritativeRegistryAdapter } from './registryVerificationAdapter';
+import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
 
 export interface RealEstateProfessionalsModuleOptions {
   store?: ProfessionalStore;
@@ -22,19 +23,20 @@ export interface RealEstateProfessionalsModuleOptions {
 
 const registeredApps = new WeakSet<Express>();
 
-function defaultVerifyUserAuth(req: Request): string | null {
-  const headerUid = req.headers['x-user-uid'];
-  if (typeof headerUid === 'string' && headerUid.trim().length > 0) return headerUid.trim();
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.slice(7).trim();
-    if (token.startsWith('user_')) return token;
-  }
-  return null;
+async function defaultVerifyUserAuth(req: Request): Promise<string | null> {
+  const result = await verifyFirebaseUserAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+  );
+  return result.authorized && result.uid ? result.uid : null;
 }
 
-function defaultVerifyAdminAuth(req: Request): boolean {
-  return req.headers['x-admin-role'] === 'super_admin' || req.headers['x-admin-secret'] === 'admin_verified';
+async function defaultVerifyAdminAuth(req: Request): Promise<boolean> {
+  const result = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+    process.env,
+    { disallowStaticToken: true, requirePrimaryBootstrapAdmin: true },
+  );
+  return result.authorized;
 }
 
 export function registerRealEstateProfessionalRoutes(

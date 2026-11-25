@@ -27,6 +27,22 @@ export type AccountDeletionJobStatus =
   | 'COMPLETED'
   | 'FAILED';
 
+export function resolveDedicatedLifecycleReceiptSecret(env: WorkerEnv): string | null {
+  const secret = String(env.LIFECYCLE_RECEIPT_HMAC_SECRET || '').trim();
+  if (new TextEncoder().encode(secret).byteLength < 32) return null;
+  const otherSecrets = [
+    env.INTERNAL_LIFECYCLE_RPC_SECRET,
+    env.RESEARCH_HMAC_SECRET,
+    env.AUTH_INTERNAL_HMAC_SECRET,
+    env.AUTH_PII_HMAC_SECRET,
+    env.MARKET_PII_HASH_SECRET,
+    env.R2_SIGNING_SECRET,
+    env.OBJECT_STORAGE_SIGNING_SECRET,
+    env.IRNI_PUBLISH_HMAC_SECRET,
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+  return otherSecrets.includes(secret) ? null : secret;
+}
+
 export interface AccountDeletionExecutionResult {
   readonly ok: boolean;
   readonly statusCode: 200 | 202 | 409 | 423 | 503;
@@ -69,13 +85,15 @@ export async function processPendingResearchErasureOutbox(params: {
   researchDb?: D1Database;
   jobId?: string;
   nowMs?: number;
-  receiptSecret?: string;
+  receiptSecret: string;
 }): Promise<{
   readonly attempted: number;
   readonly completed: number;
   readonly pending: number;
   readonly erasedEventsTotal: number;
 }> {
+  const receiptSecret = resolveDedicatedLifecycleReceiptSecret({ LIFECYCLE_RECEIPT_HMAC_SECRET: params.receiptSecret } as WorkerEnv);
+  if (!receiptSecret) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED');
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
@@ -96,6 +114,7 @@ export async function processPendingResearchErasureOutbox(params: {
         .bind(nowMs)
         .all<Record<string, unknown>>();
 
+  if (!outboxRowsRes.success) throw new Error('RESEARCH_ERASURE_OUTBOX_READ_FAILED');
   const rows = outboxRowsRes.results ?? [];
   let attempted = 0;
   let completed = 0;
@@ -108,10 +127,6 @@ export async function processPendingResearchErasureOutbox(params: {
     const jobId = String(row.job_id);
     const subjectKey = String(row.subject_key);
     const subjectKeyVersion = String(row.subject_key_version);
-    const maxConsentRevision =
-      row.max_consent_revision === null || row.max_consent_revision === undefined
-        ? null
-        : Number(row.max_consent_revision);
     const attempts = Number(row.attempt_count ?? 0) + 1;
     touchedJobIds.add(jobId);
     attempted += 1;
@@ -137,11 +152,17 @@ export async function processPendingResearchErasureOutbox(params: {
         outboxId,
         subjectKey,
         subjectKeyVersion,
-        maxConsentRevision,
         nowMs,
       });
 
-      await params.userDb
+      // Remove subject key mapping from USER_DB registry ONLY after verifiable RESEARCH_DB receipt
+      const registryDelete = await params.userDb
+        .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
+        .bind(subjectKey, subjectKeyVersion)
+        .run();
+      if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+
+      const outboxComplete = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
            SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
@@ -151,14 +172,8 @@ export async function processPendingResearchErasureOutbox(params: {
         )
         .bind(attempts, erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
         .run();
-
-      // Remove subject key mapping from USER_DB registry ONLY on full account deletion
-      // (max_consent_revision IS NULL) and ONLY after verifiable RESEARCH_DB receipt.
-      if (maxConsentRevision === null) {
-        await params.userDb
-          .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
-          .bind(subjectKey, subjectKeyVersion)
-          .run();
+      if (!outboxComplete.success || (outboxComplete.meta?.changes ?? 0) !== 1) {
+        throw new Error('RESEARCH_ERASURE_OUTBOX_COMPLETION_UNCONFIRMED');
       }
 
       erasedEventsTotal += erasureRes.deletedEventsCount;
@@ -178,73 +193,98 @@ export async function processPendingResearchErasureOutbox(params: {
     }
   }
 
-  // Reconcile parent deletion jobs AND consent revocation jobs: mark COMPLETED only when 0 incomplete outbox entries remain
+  // Recover parent jobs whose outbox items were completed by a previous invocation
+  // but whose parent status update was interrupted.
+  const alreadyCompletedJobs = await params.userDb
+    .prepare(
+      `SELECT j.job_id
+       FROM account_deletion_jobs j
+       WHERE j.status = 'PENDING_RESEARCH_ERASURE'
+         AND EXISTS (SELECT 1 FROM research_erasure_outbox o WHERE o.job_id = j.job_id)
+         AND NOT EXISTS (
+           SELECT 1 FROM research_erasure_outbox o
+           WHERE o.job_id = j.job_id AND o.status != 'COMPLETED'
+         )
+       LIMIT 50`,
+    )
+    .all<{ job_id: string }>();
+  if (!alreadyCompletedJobs.success) throw new Error('RESEARCH_ERASURE_COMPLETED_JOB_SCAN_FAILED');
+  for (const row of alreadyCompletedJobs.results ?? []) {
+    if (row.job_id) touchedJobIds.add(String(row.job_id));
+  }
+
+  // Reconcile parent deletion jobs: mark COMPLETED only when 0 incomplete outbox entries remain
   for (const jobId of touchedJobIds) {
     const remainingRow = await params.userDb
       .prepare(`SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1 AND status != 'COMPLETED'`)
       .bind(jobId)
       .first<{ cnt: number }>();
 
-    if (Number(remainingRow?.cnt ?? 0) === 0) {
+    if (!remainingRow || !Number.isFinite(Number(remainingRow.cnt)) || Number(remainingRow.cnt) < 0) {
+      throw new Error('RESEARCH_ERASURE_OUTBOX_RECONCILIATION_UNAVAILABLE');
+    }
+    if (Number(remainingRow.cnt) === 0) {
       const jobRow = await params.userDb
         .prepare('SELECT uid FROM account_deletion_jobs WHERE job_id = ?1')
         .bind(jobId)
         .first<{ uid: string }>();
+      if (!jobRow?.uid) throw new Error('ACCOUNT_DELETION_JOB_UID_MISSING_DURING_RECONCILIATION');
 
-      if (jobRow?.uid) {
-        const uidHash = await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret);
-        const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
+      const completionSummary = await params.userDb
+        .prepare(
+          `SELECT COUNT(*) AS completed_count,
+                  COALESCE(SUM(erased_events_count), 0) AS erased_events_total
+           FROM research_erasure_outbox
+           WHERE job_id = ?1 AND status = 'COMPLETED'`,
+        )
+        .bind(jobId)
+        .first<{ completed_count: number; erased_events_total: number }>();
+      if (
+        !completionSummary ||
+        !Number.isFinite(Number(completionSummary.completed_count)) ||
+        !Number.isFinite(Number(completionSummary.erased_events_total))
+      ) {
+        throw new Error('RESEARCH_ERASURE_COMPLETION_SUMMARY_UNAVAILABLE');
+      }
 
-        await params.userDb
-          .prepare(
-            `INSERT OR IGNORE INTO account_lifecycle_receipts (
-              receipt_id, job_id, uid_hash, stage, subsystem, status,
-              deleted_records_count, evidence_json, recorded_at_iso
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
-          )
-          .bind(
-            receiptId,
-            jobId,
-            uidHash,
-            'RESEARCH_ERASURE_CONFIRMED',
-            'RESEARCH_DB',
-            'COMPLETED',
-            erasedEventsTotal,
-            JSON.stringify({ completedOutboxItems: completed }),
-            nowIso,
-          )
-          .run();
+      const uidHash = await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret);
+      const receiptId = `rcpt_res_${jobId}`;
 
-        await params.userDb
-          .prepare(
-            `UPDATE account_deletion_jobs
-             SET status = 'COMPLETED', stage = 'COMPLETED', receipt_hash = ?1,
-                 updated_at_iso = ?2, completed_at_iso = ?3
-             WHERE job_id = ?4`,
-          )
-          .bind(uidHash, nowIso, nowIso, jobId)
-          .run();
-      } else {
-        const outboxSummaryRes = await params.userDb
-          .prepare(
-            `SELECT receipt_id, erased_events_count FROM research_erasure_outbox
-             WHERE job_id = ?1 AND status = 'COMPLETED'`,
-          )
-          .bind(jobId)
-          .all<{ receipt_id: string | null; erased_events_count: number }>();
-        const completedRows = outboxSummaryRes.results ?? [];
-        const receiptIds = completedRows.map((r) => String(r.receipt_id || '')).filter(Boolean);
-        const totalErasedForJob = completedRows.reduce((acc, r) => acc + Number(r.erased_events_count || 0), 0);
+      const receiptInsert = await params.userDb
+        .prepare(
+          `INSERT OR IGNORE INTO account_lifecycle_receipts (
+            receipt_id, job_id, uid_hash, stage, subsystem, status,
+            deleted_records_count, evidence_json, recorded_at_iso
+          ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+        )
+        .bind(
+          receiptId,
+          jobId,
+          uidHash,
+          'RESEARCH_ERASURE_CONFIRMED',
+          'RESEARCH_DB',
+          'COMPLETED',
+          Number(completionSummary.erased_events_total),
+          JSON.stringify({
+            completedOutboxItems: Number(completionSummary.completed_count),
+            erasedEventsTotal: Number(completionSummary.erased_events_total),
+          }),
+          nowIso,
+        )
+        .run();
+      if (!receiptInsert.success) throw new Error('RESEARCH_ERASURE_RECEIPT_INSERT_FAILED');
 
-        await params.userDb
-          .prepare(
-            `UPDATE research_consent_revocation_jobs
-             SET status = 'COMPLETED', erased_events_count = ?1, receipt_ids_json = ?2,
-                 updated_at_iso = ?3, completed_at_iso = ?4
-             WHERE revocation_id = ?5 AND status != 'COMPLETED'`,
-          )
-          .bind(totalErasedForJob, JSON.stringify(receiptIds), nowIso, nowIso, jobId)
-          .run();
+      const jobComplete = await params.userDb
+        .prepare(
+          `UPDATE account_deletion_jobs
+           SET status = 'COMPLETED', stage = 'COMPLETED', receipt_hash = ?1,
+               updated_at_iso = ?2, completed_at_iso = ?3
+           WHERE job_id = ?4`,
+        )
+        .bind(uidHash, nowIso, nowIso, jobId)
+        .run();
+      if (!jobComplete.success || (jobComplete.meta?.changes ?? 0) !== 1) {
+        throw new Error('ACCOUNT_DELETION_COMPLETION_UNCONFIRMED');
       }
     }
   }
@@ -283,7 +323,22 @@ export async function executeAccountDeletionLifecycle(params: {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
-  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET || params.env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = resolveDedicatedLifecycleReceiptSecret(params.env);
+  if (!receiptSecret) {
+    return {
+      ok: false,
+      statusCode: 503,
+      jobId: '',
+      status: 'FAILED',
+      idempotentReplay: false,
+      userDbDeletedRecords: 0,
+      outboxItemsQueued: 0,
+      outboxItemsCompleted: 0,
+      researchEventsErased: 0,
+      receiptHash: null,
+      code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_WEAK_OR_REUSED',
+    };
+  }
 
   // 1. Idempotency check (with resumable PENDING_PERMIT_DRAIN support)
   let resumedJobId: string | null = null;
@@ -308,7 +363,10 @@ export async function executeAccountDeletionLifecycle(params: {
       };
     }
     const existingStatus = String(existingJob.status) as AccountDeletionJobStatus;
-    if (existingStatus === 'PENDING_PERMIT_DRAIN') {
+    if (existingStatus === 'PENDING_PERMIT_DRAIN' ||
+        existingStatus === 'INITIATED' ||
+        existingStatus === 'BLOCKED_LEGAL_HOLD') {
+      // Recover interrupted requests and re-evaluate legal holds on retry.
       resumedJobId = String(existingJob.job_id);
     } else {
       return {
@@ -445,6 +503,7 @@ export async function executeAccountDeletionLifecycle(params: {
     .prepare('SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1')
     .bind(params.uid)
     .all<{ subject_key: string; subject_key_version: string }>();
+  if (!regRes.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_READ_FAILED');
   for (const row of regRes.results ?? []) {
     subjectKeyMap.set(`${row.subject_key_version}:${row.subject_key}`, {
       subjectKey: row.subject_key,
@@ -457,8 +516,9 @@ export async function executeAccountDeletionLifecycle(params: {
     for (const k of derivedKeysRes.keys) {
       subjectKeyMap.set(`${k.subjectKeyVersion}:${k.subjectKey}`, k);
     }
-  } else if (subjectKeyMap.size === 0 && params.env.RESEARCH_DB) {
-    // Fail closed if RESEARCH_DB is attached but HMAC secret is missing so we cannot derive erasure key
+  } else if (subjectKeyMap.size === 0) {
+    // An absent RESEARCH_DB binding is not proof that historical research data do not exist.
+    // Without a registry key or derivation secret, erasure scope cannot be established.
     return {
       ok: false,
       statusCode: 503,
@@ -490,12 +550,13 @@ export async function executeAccountDeletionLifecycle(params: {
   let userDbDeletedRecords = 0;
   for (const sql of deleteTables) {
     const res = await userDb.prepare(sql).bind(params.uid).run();
+    if (!res.success) throw new Error('USER_DB_ERASURE_DELETE_FAILED');
     userDbDeletedRecords += res.meta?.changes ?? 0;
   }
 
   const uidHash = await hashUidForComplianceReceipt(params.uid, receiptSecret);
   const userReceiptId = `rcpt_usr_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  await userDb
+  const userReceipt = await userDb
     .prepare(
       `INSERT INTO account_lifecycle_receipts (
         receipt_id, job_id, uid_hash, stage, subsystem, status,
@@ -514,12 +575,13 @@ export async function executeAccountDeletionLifecycle(params: {
       nowIso,
     )
     .run();
+  if (!userReceipt.success) throw new Error('USER_DB_ERASURE_RECEIPT_INSERT_FAILED');
 
   // 8. Enqueue durable UID-FREE research_erasure_outbox items
   const subjectKeys = Array.from(subjectKeyMap.values());
   for (const sk of subjectKeys) {
     const outboxId = `rout_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-    await userDb
+    const outboxInsert = await userDb
       .prepare(
         `INSERT INTO research_erasure_outbox (
           outbox_id, job_id, subject_key, subject_key_version, status,
@@ -528,9 +590,10 @@ export async function executeAccountDeletionLifecycle(params: {
       )
       .bind(outboxId, jobId, sk.subjectKey, sk.subjectKeyVersion, nowIso, nowIso)
       .run();
+    if (!outboxInsert.success) throw new Error('RESEARCH_ERASURE_OUTBOX_INSERT_FAILED');
   }
 
-  await userDb
+  const pendingJobUpdate = await userDb
     .prepare(
       `UPDATE account_deletion_jobs
        SET status = 'PENDING_RESEARCH_ERASURE', stage = 'RESEARCH_ERASURE_OUTBOX',
@@ -539,16 +602,22 @@ export async function executeAccountDeletionLifecycle(params: {
     )
     .bind(uidHash, nowIso, jobId)
     .run();
+  if (!pendingJobUpdate.success || (pendingJobUpdate.meta?.changes ?? 0) !== 1) {
+    throw new Error('ACCOUNT_DELETION_PENDING_STATE_UNCONFIRMED');
+  }
 
   // 9. Attempt immediate Outbox -> RESEARCH_DB Inbox execution (falls back cleanly to retryable PENDING_RESEARCH_ERASURE if RESEARCH_DB fails/absent)
   const researchDb = resolveResearchDb(params.env);
   if (subjectKeys.length === 0) {
-    await userDb
+    const emptyOutboxCompletion = await userDb
       .prepare(
         `UPDATE account_deletion_jobs SET status = 'COMPLETED', stage = 'COMPLETED', updated_at_iso = ?1, completed_at_iso = ?2 WHERE job_id = ?3`,
       )
       .bind(nowIso, nowIso, jobId)
       .run();
+    if (!emptyOutboxCompletion.success || (emptyOutboxCompletion.meta?.changes ?? 0) !== 1) {
+      throw new Error('ACCOUNT_DELETION_EMPTY_OUTBOX_COMPLETION_UNCONFIRMED');
+    }
     return {
       ok: true,
       statusCode: 200,

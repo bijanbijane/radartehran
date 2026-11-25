@@ -3,11 +3,6 @@
  * @description Worker-native D1 Account, Profile, Privacy Consent, Favorites, Saved Searches,
  * Sessions, and Data Requests repository operating strictly on `USER_DB` (never `RESEARCH_DB`).
  */
-import {
-  mapConsentRevocationJobRow,
-  type ResearchConsentRevocationJobRecord,
-  type ResearchConsentRevocationStatus,
-} from '../research/researchConsentBarrier';
 import type { D1Database } from '../types';
 
 export interface D1UserProfile {
@@ -34,8 +29,6 @@ export interface D1UserPrivacyConsent {
   readonly grantedAtIso: string | null;
   readonly revokedAtIso: string | null;
   readonly updatedAtIso: string;
-  readonly revocationJobId?: string | null;
-  readonly revocationStatus?: ResearchConsentRevocationStatus | null;
 }
 
 export interface D1UserSession {
@@ -91,20 +84,23 @@ export class AccountWriteBlockedError extends Error {
 }
 
 export async function assertUserNotWriteBlocked(userDb: D1Database, uid: string): Promise<void> {
-  const row = await userDb
+  const result = await userDb
     .prepare('SELECT uid FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL')
     .bind(uid)
-    .first<{ uid: string }>();
-  if (row) {
+    .all<{ uid: string }>();
+  if (!result.success) throw new Error('ACCOUNT_WRITE_BLOCK_CHECK_UNAVAILABLE');
+  if (result.results.length > 0) {
     throw new AccountWriteBlockedError(uid);
   }
 }
 
 export async function getUserProfileFromD1(userDb: D1Database, uid: string): Promise<D1UserProfile | null> {
-  const row = await userDb
+  const profileRead = await userDb
     .prepare('SELECT * FROM user_profiles WHERE uid = ?1')
     .bind(uid)
-    .first<Record<string, unknown>>();
+    .all<Record<string, unknown>>();
+  if (!profileRead.success) throw new Error('USER_PROFILE_READ_FAILED');
+  const row = profileRead.results[0];
   if (!row) return null;
   return {
     uid: String(row.uid),
@@ -149,12 +145,21 @@ export async function upsertUserProfileInD1(
     updatedAtIso: nowIso,
   };
 
-  await userDb
+  const upsertResult = await userDb
     .prepare(
-      `INSERT OR REPLACE INTO user_profiles (
+      `INSERT INTO user_profiles (
         uid, display_name, preferred_city, preferred_language, area_unit,
         intl_currency, role, account_status, created_at_iso, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+      ON CONFLICT(uid) DO UPDATE SET
+        display_name = excluded.display_name,
+        preferred_city = excluded.preferred_city,
+        preferred_language = excluded.preferred_language,
+        area_unit = excluded.area_unit,
+        intl_currency = excluded.intl_currency,
+        role = excluded.role,
+        account_status = excluded.account_status,
+        updated_at_iso = excluded.updated_at_iso`,
     )
     .bind(
       next.uid,
@@ -170,14 +175,17 @@ export async function upsertUserProfileInD1(
     )
     .run();
 
+  if (upsertResult.success !== true) throw new Error('USER_PROFILE_WRITE_FAILED');
   return next;
 }
 
 export async function getUserPrivacyConsentFromD1(userDb: D1Database, uid: string): Promise<D1UserPrivacyConsent> {
-  const row = await userDb
+  const consentRead = await userDb
     .prepare('SELECT * FROM user_privacy_consents WHERE uid = ?1')
     .bind(uid)
-    .first<Record<string, unknown>>();
+    .all<Record<string, unknown>>();
+  if (!consentRead.success) throw new Error('USER_PRIVACY_CONSENT_READ_FAILED');
+  const row = consentRead.results[0];
   if (!row) {
     return {
       uid,
@@ -192,13 +200,17 @@ export async function getUserPrivacyConsentFromD1(userDb: D1Database, uid: strin
       updatedAtIso: new Date(0).toISOString(),
     };
   }
+  const consentRevision = Number(row.consent_revision ?? 1);
+  if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+    throw new Error('CONSENT_REVISION_INVALID');
+  }
   return {
     uid: String(row.uid),
     researchAnalyticsConsent: Number(row.research_analytics_consent) === 1,
     behavioralTelemetryConsent: Number(row.behavioral_telemetry_consent) === 1,
     marketingCommunicationsConsent: Number(row.marketing_communications_consent) === 1,
     consentVersion: String(row.consent_version || 'v1'),
-    consentRevision: Math.max(1, Number(row.consent_revision ?? 1)),
+    consentRevision,
     consentSource: String(row.consent_source || 'account_settings'),
     grantedAtIso: row.granted_at_iso ? String(row.granted_at_iso) : null,
     revokedAtIso: row.revoked_at_iso ? String(row.revoked_at_iso) : null,
@@ -227,26 +239,60 @@ export async function updateUserPrivacyConsentInD1(
   const nextTelemetry = params.behavioralTelemetryConsent ?? current.behavioralTelemetryConsent;
   const nextMarketing = params.marketingCommunicationsConsent ?? current.marketingCommunicationsConsent;
   const consentVersion = (params.consentVersion ?? current.consentVersion ?? 'v1').trim().slice(0, 24);
-  const nextConsentRevision = (current.consentRevision || 0) + 1;
   const consentSource = (params.consentSource ?? 'account_settings').trim().slice(0, 64);
 
-  const isRevokingResearchConsent = !nextResearch && current.researchAnalyticsConsent;
+  const changes = [
+    {
+      type: 'research_analytics_consent',
+      previous: current.researchAnalyticsConsent,
+      next: nextResearch,
+    },
+    {
+      type: 'behavioral_telemetry_consent',
+      previous: current.behavioralTelemetryConsent,
+      next: nextTelemetry,
+    },
+    {
+      type: 'marketing_communications_consent',
+      previous: current.marketingCommunicationsConsent,
+      next: nextMarketing,
+    },
+  ].filter((entry) => entry.previous !== entry.next);
+
+  if (changes.length === 0 && consentVersion === current.consentVersion && consentSource === current.consentSource) {
+    return current;
+  }
+
+  const nextConsentRevision = current.consentRevision + 1;
+  if (!Number.isSafeInteger(nextConsentRevision)) throw new Error('CONSENT_REVISION_EXHAUSTED');
   let grantedAtIso = current.grantedAtIso;
   let revokedAtIso = current.revokedAtIso;
   if (nextResearch && !current.researchAnalyticsConsent) {
     grantedAtIso = nowIso;
     revokedAtIso = null;
-  } else if (isRevokingResearchConsent) {
+  } else if (!nextResearch && current.researchAnalyticsConsent) {
     revokedAtIso = nowIso;
   }
 
+  // Optimistic compare-and-swap preserves monotonic consent_revision under concurrent updates.
   const upsertStmt = userDb
     .prepare(
-      `INSERT OR REPLACE INTO user_privacy_consents (
+      `INSERT INTO user_privacy_consents (
         uid, research_analytics_consent, behavioral_telemetry_consent,
         marketing_communications_consent, consent_version, consent_revision, consent_source,
         granted_at_iso, revoked_at_iso, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+      ON CONFLICT(uid) DO UPDATE SET
+        research_analytics_consent = excluded.research_analytics_consent,
+        behavioral_telemetry_consent = excluded.behavioral_telemetry_consent,
+        marketing_communications_consent = excluded.marketing_communications_consent,
+        consent_version = excluded.consent_version,
+        consent_revision = excluded.consent_revision,
+        consent_source = excluded.consent_source,
+        granted_at_iso = excluded.granted_at_iso,
+        revoked_at_iso = excluded.revoked_at_iso,
+        updated_at_iso = excluded.updated_at_iso
+      WHERE user_privacy_consents.consent_revision = ?11`,
     )
     .bind(
       params.uid,
@@ -259,52 +305,46 @@ export async function updateUserPrivacyConsentInD1(
       grantedAtIso,
       revokedAtIso,
       nowIso,
+      current.consentRevision,
     );
 
-  const nowMs = Date.parse(nowIso) || Date.now();
-  const auditId = `caud_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  const auditStmt = userDb
-    .prepare(
-      `INSERT INTO user_privacy_consent_audit (
-        audit_id, uid, consent_type, previous_value, new_value,
-        consent_version, consent_revision, actor_uid, source, recorded_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-    )
-    .bind(
-      auditId,
-      params.uid,
-      'research_analytics_consent',
-      current.researchAnalyticsConsent ? 1 : 0,
-      nextResearch ? 1 : 0,
-      consentVersion,
-      nextConsentRevision,
-      params.actorUid,
-      consentSource,
-      nowIso,
-    );
-
-  const batchStmts = [upsertStmt, auditStmt];
-  let revocationJobId: string | null = null;
-  let revocationStatus: ResearchConsentRevocationStatus | null = null;
-
-  if (isRevokingResearchConsent) {
-    revocationJobId = `revc_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-    revocationStatus = 'DRAINING_PERMITS';
-    const revocationJobStmt = userDb
+  const auditStatements = changes.map((entry) => {
+    const auditId = `caud_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    return userDb
       .prepare(
-        `INSERT INTO research_consent_revocation_jobs (
-          revocation_id, uid, revoked_consent_revision, new_consent_revision,
-          status, erased_events_count, receipt_ids_json,
-          created_at_iso, updated_at_iso, completed_at_iso
-        ) VALUES (?1, ?2, ?3, ?4, 'DRAINING_PERMITS', 0, '[]', ?5, ?6, NULL)`,
+        `INSERT INTO user_privacy_consent_audit (
+          audit_id, uid, consent_type, previous_value, new_value,
+          consent_version, consent_revision, actor_uid, source, recorded_at_iso
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10
+        WHERE changes() = 1`,
       )
-      .bind(revocationJobId, params.uid, current.consentRevision, nextConsentRevision, nowIso, nowIso);
-    batchStmts.push(revocationJobStmt);
-  }
+      .bind(
+        auditId,
+        params.uid,
+        entry.type,
+        entry.previous ? 1 : 0,
+        entry.next ? 1 : 0,
+        consentVersion,
+        nextConsentRevision,
+        params.actorUid,
+        consentSource,
+        nowIso,
+      );
+  });
 
-  const results = await userDb.batch(batchStmts);
-  if (results.some((r) => !r.success)) {
+  const results = await userDb.batch([upsertStmt, ...auditStatements]);
+  if (
+    results.length !== 1 + auditStatements.length ||
+    results.some((result) => !result.success)
+  ) {
     throw new Error('PRIVACY_CONSENT_WRITE_FAILED');
+  }
+  if (results[0]?.meta?.changes !== 1) {
+    throw new Error('CONSENT_REVISION_CONFLICT');
+  }
+  if (results.slice(1).some((result) => result.meta?.changes !== 1)) {
+    throw new Error('PRIVACY_CONSENT_AUDIT_WRITE_FAILED');
   }
 
   return {
@@ -318,43 +358,7 @@ export async function updateUserPrivacyConsentInD1(
     grantedAtIso,
     revokedAtIso,
     updatedAtIso: nowIso,
-    revocationJobId,
-    revocationStatus,
   };
-}
-
-export async function getResearchConsentRevocationJobFromD1(
-  userDb: D1Database,
-  revocationId: string,
-): Promise<ResearchConsentRevocationJobRecord | null> {
-  const row = await userDb
-    .prepare('SELECT * FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
-    .bind(revocationId)
-    .first<Record<string, unknown>>();
-  return row ? mapConsentRevocationJobRow(row) : null;
-}
-
-export async function listPendingResearchConsentRevocationsFromD1(
-  userDb: D1Database,
-  uid?: string,
-): Promise<ResearchConsentRevocationJobRecord[]> {
-  const res = uid
-    ? await userDb
-        .prepare(
-          `SELECT * FROM research_consent_revocation_jobs
-           WHERE uid = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
-           ORDER BY created_at_iso ASC LIMIT 25`,
-        )
-        .bind(uid)
-        .all<Record<string, unknown>>()
-    : await userDb
-        .prepare(
-          `SELECT * FROM research_consent_revocation_jobs
-           WHERE status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
-           ORDER BY created_at_iso ASC LIMIT 50`,
-        )
-        .all<Record<string, unknown>>();
-  return (res.results ?? []).map(mapConsentRevocationJobRow);
 }
 
 export async function listUserSessionsFromD1(userDb: D1Database, uid: string): Promise<D1UserSession[]> {
@@ -362,6 +366,7 @@ export async function listUserSessionsFromD1(userDb: D1Database, uid: string): P
     .prepare('SELECT * FROM user_sessions WHERE uid = ?1 ORDER BY last_seen_at_iso DESC LIMIT 50')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_SESSION_LIST_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     sessionId: String(row.session_id),
     uid: String(row.uid),
@@ -389,7 +394,7 @@ export async function upsertUserSessionInD1(
 ): Promise<D1UserSession> {
   await assertUserNotWriteBlocked(userDb, params.uid);
   const nowIso = params.nowIso ?? new Date().toISOString();
-  await userDb
+  const sessionWrite = await userDb
     .prepare(
       `INSERT OR REPLACE INTO user_sessions (
         session_id, uid, device_label, user_agent_summary, ip_prefix,
@@ -407,6 +412,7 @@ export async function upsertUserSessionInD1(
       nowIso,
     )
     .run();
+  if (!sessionWrite.success) throw new Error('USER_SESSION_WRITE_FAILED');
 
   return {
     sessionId: params.sessionId,
@@ -436,6 +442,7 @@ export async function revokeUserSessionInD1(
     )
     .bind('REVOKED', nowIso, params.actorUid, params.sessionId, params.uid)
     .run();
+  if (!res.success) throw new Error('USER_SESSION_REVOKE_FAILED');
   return { revoked: (res.meta?.changes ?? 0) > 0 };
 }
 
@@ -444,6 +451,7 @@ export async function listUserFavoritesFromD1(userDb: D1Database, uid: string): 
     .prepare('SELECT * FROM user_favorites WHERE uid = ?1 ORDER BY created_at_iso DESC LIMIT 100')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_FAVORITES_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     uid: String(row.uid),
     cityId: String(row.city_id),
@@ -460,12 +468,13 @@ export async function upsertUserFavoriteInD1(
   await assertUserNotWriteBlocked(userDb, params.uid);
   const nowIso = params.nowIso ?? new Date().toISOString();
   const note = String(params.note || '').trim().slice(0, 200);
-  await userDb
+  const favoriteWrite = await userDb
     .prepare(
       'INSERT OR REPLACE INTO user_favorites (uid, city_id, hood_id, note, created_at_iso) VALUES (?1, ?2, ?3, ?4, ?5)',
     )
     .bind(params.uid, params.cityId, params.hoodId, note, nowIso)
     .run();
+  if (!favoriteWrite.success) throw new Error('USER_FAVORITE_WRITE_FAILED');
   return { uid: params.uid, cityId: params.cityId, hoodId: params.hoodId, note, createdAtIso: nowIso };
 }
 
@@ -478,6 +487,7 @@ export async function removeUserFavoriteInD1(
     .prepare('DELETE FROM user_favorites WHERE uid = ?1 AND city_id = ?2 AND hood_id = ?3')
     .bind(params.uid, params.cityId, params.hoodId)
     .run();
+  if (!res.success) throw new Error('USER_FAVORITE_DELETE_FAILED');
   return { deleted: (res.meta?.changes ?? 0) > 0 };
 }
 
@@ -486,6 +496,7 @@ export async function listUserDataRequestsFromD1(userDb: D1Database, uid: string
     .prepare('SELECT * FROM user_data_requests WHERE uid = ?1 ORDER BY requested_at_iso DESC LIMIT 50')
     .bind(uid)
     .all<Record<string, unknown>>();
+  if (!res.success) throw new Error('USER_DATA_REQUEST_LIST_READ_FAILED');
   return (res.results ?? []).map((row) => ({
     requestId: String(row.request_id),
     uid: String(row.uid),
@@ -508,7 +519,7 @@ export async function createUserDataRequestInD1(
   const nowIso = params.nowIso ?? new Date().toISOString();
   const requestId = `udr_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const payloadSummaryJson = JSON.stringify(params.summary ?? {}).slice(0, 2000);
-  await userDb
+  const requestWrite = await userDb
     .prepare(
       `INSERT INTO user_data_requests (
         request_id, uid, request_type, status, payload_summary_json,
@@ -517,6 +528,7 @@ export async function createUserDataRequestInD1(
     )
     .bind(requestId, params.uid, params.requestType, 'PENDING', payloadSummaryJson, nowIso, nowIso)
     .run();
+  if (!requestWrite.success) throw new Error('USER_DATA_REQUEST_WRITE_FAILED');
   return {
     requestId,
     uid: params.uid,

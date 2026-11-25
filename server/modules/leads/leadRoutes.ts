@@ -10,6 +10,7 @@ import {
   buildSuccessEnvelope,
   extractAuthenticatedPrincipal,
   resolveCorrelationId,
+  type AuthenticatedPrincipal,
   type CanonicalApiErrorCode,
   type FirebaseTokenVerifierAdapter,
 } from '../core';
@@ -22,6 +23,11 @@ import type {
   PropertyCategory,
 } from './leadTypes';
 
+function resolveTrustedLeadActorRole(principal: AuthenticatedPrincipal): 'ADMIN' | 'PROFESSIONAL' {
+  const claimRole = principal.claims?.platformRole ?? principal.claims?.role;
+  return ['ADMIN', 'primary_admin', 'delegated_admin'].includes(String(claimRole)) ? 'ADMIN' : 'PROFESSIONAL';
+}
+
 export function createLeadRouter(
   engine: LeadEngine,
   tokenVerifier?: FirebaseTokenVerifierAdapter,
@@ -29,30 +35,20 @@ export function createLeadRouter(
   const router = Router();
 
   async function resolvePrincipal(req: Request) {
-    if (!tokenVerifier) {
-      const uid = (req.headers['x-test-uid'] as string) || (req.headers['x-user-id'] as string);
-      const role = (req.headers['x-test-role'] as string) || 'verified_user';
-      if (uid) {
-        return {
-          ok: true,
-          principal: {
-            uid,
-            email: `${uid}@example.com`,
-            emailVerified: true,
-            role: role as any,
-            authMode: 'firebase_id_token' as const,
-            claims: {},
-          },
-        };
-      }
-      return { ok: false, status: 401, failureCode: 'UNAUTHENTICATED' as CanonicalApiErrorCode, reason: 'احراز هویت الزامی است.' };
+    if (!tokenVerifier || typeof tokenVerifier.verifyIdToken !== 'function') {
+      return {
+        ok: false,
+        status: 503,
+        failureCode: 'INTERNAL_ERROR' as CanonicalApiErrorCode,
+        reason: 'سرویس تایید هویت در دسترس نیست (Fail-Closed).',
+      };
     }
     const ext = await extractAuthenticatedPrincipal(req, tokenVerifier, { requireVerifiedEmail: true });
     return {
       ok: ext.ok,
       principal: ext.principal,
       status: ext.status ?? 401,
-      failureCode: (ext.failureCode ? 'UNAUTHENTICATED' : 'UNAUTHENTICATED') as CanonicalApiErrorCode,
+      failureCode: (ext.status === 403 ? 'FORBIDDEN' : (ext.status ?? 401) >= 500 ? 'INTERNAL_ERROR' : 'UNAUTHENTICATED') as CanonicalApiErrorCode,
       reason: ext.reason ?? 'احراز هویت الزامی است.',
     };
   }
@@ -230,9 +226,10 @@ export function createLeadRouter(
 
     const isCustomer = lead.customerAccountUid === auth.principal.uid;
     const isAssignee = lead.currentAssignment?.professionalId === auth.principal.uid || lead.targetProfessionalId === auth.principal.uid;
-    const isAdmin = auth.principal.role === 'primary_admin' || auth.principal.role === 'delegated_admin';
+    const isAdmin = resolveTrustedLeadActorRole(auth.principal) === 'ADMIN';
+    const isAgencyManager = await engine.canManageAgency(auth.principal.uid, lead.targetAgencyId ?? '');
 
-    if (!isCustomer && !isAssignee && !isAdmin) {
+    if (!isCustomer && !isAssignee && !isAdmin && !isAgencyManager) {
       return res.status(403).json(buildErrorEnvelope('FORBIDDEN', 'شما به این سرنخ دسترسی ندارید.', cid));
     }
 
@@ -254,6 +251,12 @@ export function createLeadRouter(
     if (!lead) return res.status(404).json(buildErrorEnvelope('NOT_FOUND', 'سرنخ یافت نشد.', cid));
 
     const isCustomer = lead.customerAccountUid === auth.principal.uid;
+    const isAssignee = lead.currentAssignment?.professionalId === auth.principal.uid || lead.targetProfessionalId === auth.principal.uid;
+    const isAdmin = resolveTrustedLeadActorRole(auth.principal) === 'ADMIN';
+    const isAgencyManager = await engine.canManageAgency(auth.principal.uid, lead.targetAgencyId ?? '');
+    if (!isCustomer && !isAssignee && !isAdmin && !isAgencyManager) {
+      return res.status(403).json(buildErrorEnvelope('FORBIDDEN', 'شما به فعالیت‌های این سرنخ دسترسی ندارید.', cid));
+    }
     const activities = await store.listActivities(req.params.leadId, isCustomer ? 'PUBLIC_CUSTOMER' : undefined);
     return res.json(buildSuccessEnvelope({ activities }, cid));
   });
@@ -265,10 +268,7 @@ export function createLeadRouter(
       return res.status(auth.status || 401).json(buildErrorEnvelope(auth.failureCode, auth.reason, cid));
     }
 
-    const actorRole =
-      auth.principal.role === 'primary_admin' || auth.principal.role === 'delegated_admin'
-        ? 'ADMIN'
-        : (req.headers['x-role'] as any) || 'PROFESSIONAL';
+    const actorRole = resolveTrustedLeadActorRole(auth.principal);
 
     const result = await engine.recordActivity(auth.principal.uid, actorRole, req.params.leadId, {
       activityType: (req.body.activityType as LeadActivityType) || 'INTERNAL_NOTE_ADDED',
@@ -293,7 +293,7 @@ export function createLeadRouter(
     }
 
     const actorRole =
-      auth.principal.role === 'primary_admin' || auth.principal.role === 'delegated_admin' ? 'ADMIN' : 'AGENCY_MANAGER';
+      resolveTrustedLeadActorRole(auth.principal) === 'ADMIN' ? 'ADMIN' : 'AGENCY_MANAGER';
 
     const result = await engine.assignLead(
       auth.principal.uid,
@@ -330,10 +330,7 @@ export function createLeadRouter(
       return res.status(auth.status || 401).json(buildErrorEnvelope(auth.failureCode, auth.reason, cid));
     }
 
-    const actorRole =
-      auth.principal.role === 'primary_admin' || auth.principal.role === 'delegated_admin'
-        ? 'ADMIN'
-        : (req.headers['x-role'] as any) || 'PROFESSIONAL';
+    const actorRole = resolveTrustedLeadActorRole(auth.principal);
 
     const result = await engine.transitionLeadState(auth.principal.uid, actorRole, req.params.leadId, req.body.targetState as LeadLifecycleState, {
       reasonFa: req.body.reasonFa,
@@ -355,10 +352,7 @@ export function createLeadRouter(
       return res.status(auth.status || 401).json(buildErrorEnvelope(auth.failureCode, auth.reason, cid));
     }
 
-    const actorRole =
-      auth.principal.role === 'primary_admin' || auth.principal.role === 'delegated_admin'
-        ? 'ADMIN'
-        : (req.headers['x-role'] as any) || 'PROFESSIONAL';
+    const actorRole = resolveTrustedLeadActorRole(auth.principal);
 
     const result = await engine.accessCustomerContactDetails(auth.principal.uid, actorRole, req.params.leadId, req.body.accessPurposeFa);
     if (!result.success || !result.contact) {
@@ -436,6 +430,11 @@ export function createLeadRouter(
       return res.status(400).json(buildErrorEnvelope('VALIDATION_FAILED', 'شناسه دفتر املاک الزامی است.', cid));
     }
 
+    if (resolveTrustedLeadActorRole(auth.principal) !== 'ADMIN' &&
+        !(await engine.canManageAgency(auth.principal.uid, agencyId))) {
+      return res.status(403).json(buildErrorEnvelope('FORBIDDEN', 'دسترسی مدیریتی به این دفتر احراز نشد.', cid));
+    }
+
     const store = (engine as any).store;
     const branchId = typeof req.query.branchId === 'string' ? req.query.branchId : undefined;
     const unassignedOnly = req.query.unassignedOnly === 'true';
@@ -466,6 +465,16 @@ export function createLeadRouter(
     const professionalId = typeof req.query.professionalId === 'string' ? req.query.professionalId : undefined;
     const windowDays = req.query.windowDays ? Number(req.query.windowDays) : 30;
 
+    const isAdmin = resolveTrustedLeadActorRole(auth.principal) === 'ADMIN';
+    if (!isAdmin && agencyId && !(await engine.canManageAgency(auth.principal.uid, agencyId))) {
+      return res.status(403).json(buildErrorEnvelope('FORBIDDEN', 'دسترسی مدیریتی به این دفتر احراز نشد.', cid));
+    }
+    if (!isAdmin && professionalId && professionalId !== auth.principal.uid) {
+      return res.status(403).json(buildErrorEnvelope('FORBIDDEN', 'فقط مجاز به مشاهده شاخص‌های حساب خود هستید.', cid));
+    }
+    if (!agencyId && !professionalId) {
+      return res.status(400).json(buildErrorEnvelope('VALIDATION_FAILED', 'شناسه دفتر یا مشاور الزامی است.', cid));
+    }
     const metrics = await engine.calculateOperationalMetrics({ agencyId, professionalId, windowDays });
     return res.json(buildSuccessEnvelope({ metrics }, cid));
   });

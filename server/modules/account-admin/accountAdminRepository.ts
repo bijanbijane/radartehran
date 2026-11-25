@@ -159,6 +159,7 @@ export function recordServerSessionActivity(params: {
   const nowIso = new Date().toISOString();
   const existingIdx = list.findIndex((s) => s.tokenDigestPrefix === digest);
   if (existingIdx >= 0) {
+    for (let i = 0; i < list.length; i++) list[i] = { ...list[i], isCurrent: i === existingIdx };
     list[existingIdx] = {
       ...list[existingIdx],
       lastActiveLabelFa: 'هم‌اکنون',

@@ -1,22 +1,22 @@
 import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { sanitizeInput } from './security'; import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver'; import { getValidatedServerConfig, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { runLiveGeminiGatewayInference } from './serverAiGatewayLive'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
   executeAuthorizedMcpTool, } from './dataCommerceMcpAndMonetization'; import { readAndReconcileExecutionState } from './rmepExecutionStateEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const registeredAiCommerceApps = new WeakSet<Express>(); export function registerAiAndCommerceRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string; }
-): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined> ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
+): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true } ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
         code: auth.reason, message: 'مشاهده وضعیت اجرای مهندسی RMEP-001 نیازمند احراز هویت مدیر سیستم است.', }); return; } const rmep = readAndReconcileExecutionState();
-    res.status(200).json({ status: 'ok', ...rmep }); })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); }); app.get('/api/admin/architecture-and-ai-registry', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined>
+    res.status(200).json({ status: 'ok', ...rmep }); })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); }); app.get('/api/admin/architecture-and-ai-registry', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true }
     ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason, message: 'مشاهده مرکز هوش مصنوعی و تجارت داده نیازمند احراز هویت مدیر سیستم است.', }); return; }
     const routing = globalAiRoutingManager.getCurrentConfig(); const gatewayPreview = buildCloudflareAiGatewayEndpoint({ accountId: process.env.CLOUDFLARE_ACCOUNT_ID, gatewayId: process.env.CLOUDFLARE_AI_GATEWAY_ID, provider: 'google-ai-studio', modelId: routing.routes.intelligent_search, }); res.status(200).json({
       status: 'ok', cloudflareAndPortability: evaluateCloudflareRuntimePortability(process.env), aiModels: OFFICIAL_AI_MODEL_REGISTRY, aiRouting: routing,
       aiRoutingAuditTrail: globalAiRoutingManager.getAuditTrail().slice(0, 15), aiGatewayPreview: gatewayPreview, commercialProducts: RADAR_COMMERCIAL_PRODUCTS, exchangeRateReference: REFERENCE_EXCHANGE_RATE,
       monetizationSummary: globalMonetizationLedger.getSummary(), rmepExecutionSummary: readAndReconcileExecutionState(), }); })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); });
   app.post('/api/admin/ai-routing', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) {
       recordAbuseSignal(getClientIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason, message: 'تغییر مسیریابی مدل‌های هوش مصنوعی فقط برای مدیر مجاز است.' });
       return;
     }
     try {
-      const actor = auth.actorEmail || 'verified-admin@radar-tehran.local';
+      const actor = auth.actorEmail || auth.email || auth.actorUid || auth.uid || 'verified-primary-admin';
       const updated = globalAiRoutingManager.updateRouting({
         actorEmail: actor,
         aiGatewayEnabled: typeof req.body?.aiGatewayEnabled === 'boolean' ? req.body.aiGatewayEnabled : undefined,
@@ -30,14 +30,14 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
   })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); });
   app.post('/api/admin/ai-routing/rollback', (req: Request, res: Response) => { void (async () => {
     res.setHeader('Cache-Control', 'no-store');
-    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!auth.authorized) {
       recordAbuseSignal(getClientIp(req), 'auth_failure');
       res.status(auth.statusCode).json({ status: 'error', code: auth.reason, message: 'بازگردانی تنظیمات هوش مصنوعی فقط برای مدیر مجاز است.' });
       return;
     }
     try {
-      const actor = auth.actorEmail || 'verified-admin@radar-tehran.local';
+      const actor = auth.actorEmail || auth.email || auth.actorUid || auth.uid || 'verified-primary-admin';
       const restored = globalAiRoutingManager.rollbackToPreviousConfig(actor);
       pushAuditLog('WARN', `بازگشت (Rollback) تنظیمات مسیریابی هوش مصنوعی به نسخه v${restored.version}`);
       res.status(200).json({ status: 'ok', aiRouting: restored, aiRoutingAuditTrail: globalAiRoutingManager.getAuditTrail().slice(0, 15) });

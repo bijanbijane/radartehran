@@ -139,6 +139,20 @@ describe('Package 1 E2E: Fail-Closed Auth Revocation & Cryptographic App Check',
     assert.equal(authRes.statusCode, 503);
   });
 
+  it('fails closed on empty revocation watermarks and invalid token issue times', async () => {
+    const db = await createMigratedRealSqliteD1();
+    await db.prepare(
+      'INSERT INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)',
+    ).bind('revoked_uid:empty-watermark-user', '', new Date().toISOString()).run();
+    const emptyWatermark = await isTokenRevokedOrUserDisabled('empty-watermark-user', 1_800_000_000, db);
+    assert.equal(emptyWatermark.revoked, true);
+    assert.equal(emptyWatermark.unavailable, true);
+
+    const invalidIssuedAt = await isTokenRevokedOrUserDisabled('user-with-invalid-iat', Number.NaN, db);
+    assert.equal(invalidIssuedAt.revoked, true);
+    assert.equal(invalidIssuedAt.unavailable, true);
+  });
+
   it('2. records canonical D1 revocations (REVOKE_BEFORE, DISABLE_USER, REENABLE_USER) with idempotent audit log', async () => {
     const db = await createMigratedRealSqliteD1();
     const kp = await createRsaPair();

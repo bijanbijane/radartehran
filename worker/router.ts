@@ -7,6 +7,11 @@
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { resolveD1WritePauseState } from './db/writePause';
 import { findMigrationRegisterEntry } from './migrationRegister';
+import { authenticateWorkerSession, hasRadarSessionCookie } from './auth/sessionAuth';
+import { createCloudflareSessionAssertion } from './auth/sessionAssertion';
+import { handleAuthWorkerRoute } from './routes/authRoutes';
+import { handleAccountWorkerRoute } from './routes/accountRoutes';
+import { handleMarketplaceWorkerRoute } from './routes/marketplaceRoutes';
 import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
@@ -16,7 +21,7 @@ import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
 import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
 import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
-import { handleGeographicRegistryRoute } from './routes/geographicRegistryRoutes';
+import { handleIrniCanonicalRpcV2Route } from './routes/irniCanonicalRpcV2Routes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -30,10 +35,15 @@ export async function dispatchWorkerApiOrSeoRequest(
 ): Promise<WorkerRouteDispatchResult | null> {
   const { method, pathname } = ctx;
 
-  // Temporary global D1 write freeze. Keep read-only GETs and CORS preflight available.
+  // Temporary global D1 write freeze. Google OAuth start/callback are GET endpoints
+  // that also write one-time state/session records, so they must obey the same pause.
   const d1WritePause = resolveD1WritePauseState(ctx.env);
+  const isD1MutatingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  const isD1MutatingAuthGet =
+    method.toUpperCase() === 'GET' &&
+    (pathname === '/api/auth/google/start' || pathname === '/api/auth/google/callback');
   if (pathname.startsWith('/api/') &&
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) &&
+      (isD1MutatingMethod || isD1MutatingAuthGet) &&
       d1WritePause.paused) {
     return {
       response: jsonWorkerResponse(ctx, 503, {
@@ -58,6 +68,21 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  // The canonical IRNI facade is always intercepted here, including unsupported methods,
+  // so no request can fall through to the legacy Express or direct-D1 geography paths.
+  const irniCanonicalPath = pathname === '/api/v2/reference/irni/canonical' ||
+    pathname.startsWith('/api/v2/reference/irni/canonical/');
+  if (irniCanonicalPath) {
+    const response = await handleIrniCanonicalRpcV2Route(ctx);
+    if (response) {
+      return {
+        response,
+        routePattern: pathname,
+        migrationStatus: 'IMPLEMENTED',
+      };
+    }
+  }
+
   const internalAdmission = await handleInternalWriteAdmissionRoute(ctx);
   if (internalAdmission) {
     return {
@@ -77,12 +102,80 @@ export async function dispatchWorkerApiOrSeoRequest(
   }
 
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
-  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
+  const conditionallyRoutedAuth =
+    registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  const conditionallyRoutedAccount =
+    registeredMatch?.entry.workerHandlerModule === 'worker/routes/accountRoutes.ts' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  const conditionallyRoutedMarketplace =
+    registeredMatch?.entry.workerHandlerModule === 'worker/routes/marketplaceRoutes.ts' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  if (
+    registeredMatch &&
+    registeredMatch.entry.status !== 'VERIFIED' &&
+    !conditionallyRoutedAuth &&
+    !conditionallyRoutedAccount &&
+    !conditionallyRoutedMarketplace
+  ) {
     const { entry } = registeredMatch;
+    let sessionAssertion: string | undefined;
+
+    // A browser D1 session must be verified at the Worker boundary before an unmigrated
+    // Express route can receive an identity. Invalid cookies never fall back to Firebase
+    // bearer credentials in the same request.
+    if (hasRadarSessionCookie(ctx.request)) {
+      const session = await authenticateWorkerSession(ctx, true);
+      if (!session.authenticated || !session.uid) {
+        return {
+          response: jsonWorkerResponse(ctx, session.statusCode, {
+            status: 'error',
+            code: session.reasonCode,
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+
+      const bridgeSecret = String(ctx.env.AUTH_INTERNAL_HMAC_SECRET || '').trim();
+      if (new TextEncoder().encode(bridgeSecret).byteLength < 32) {
+        return {
+          response: jsonWorkerResponse(ctx, 503, {
+            status: 'error',
+            code: 'AUTH_SESSION_BRIDGE_NOT_CONFIGURED',
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+
+      try {
+        sessionAssertion = await createCloudflareSessionAssertion({
+          request: ctx.request,
+          principal: session,
+          secret: bridgeSecret,
+          correlationId: ctx.correlationId,
+        });
+      } catch {
+        return {
+          response: jsonWorkerResponse(ctx, 503, {
+            status: 'error',
+            code: 'AUTH_SESSION_BRIDGE_SIGNING_FAILED',
+            correlationId: ctx.correlationId,
+          }),
+          routePattern: `${entry.method} ${entry.path}`,
+          migrationStatus: entry.status,
+        };
+      }
+    }
+
     const proxied = await executeSafeStranglerFallback({
       request: ctx.request,
       env: ctx.env,
       correlationId: ctx.correlationId,
+      sessionAssertion,
     });
     if (proxied.status !== 502 && proxied.status !== 508) {
       return {
@@ -115,6 +208,24 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  const authResponse = await handleAuthWorkerRoute(ctx);
+  if (authResponse) {
+    return {
+      response: authResponse,
+      routePattern: pathname,
+      migrationStatus: registeredMatch?.entry.status || 'VERIFIED',
+    };
+  }
+
+  const accountResponse = await handleAccountWorkerRoute(ctx);
+  if (accountResponse) {
+    return {
+      response: accountResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: registeredMatch?.entry.status || 'IMPLEMENTED',
+    };
+  }
+
   const lifecycleResponse = await handleAccountLifecycleRoute(ctx);
   if (lifecycleResponse) {
     return {
@@ -124,12 +235,19 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  const marketplaceResponse = await handleMarketplaceWorkerRoute(ctx);
+  if (marketplaceResponse) {
+    return {
+      response: marketplaceResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: registeredMatch?.entry.status || 'IMPLEMENTED',
+    };
+  }
+
   // Group 1A: Health, OpenAPI, PWA manifest, Sitemap, Robots
   const researchResponse = await handleResearchWorkerRoute(ctx);
   if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
-  const geographicResponse = await handleGeographicRegistryRoute(ctx);
-  if (geographicResponse) return { response: geographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
 
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
