@@ -111,7 +111,7 @@ export function paginateConversationMessages(
     ok: true,
     items: messages.slice(startIndex, beforeIndex),
     hasMore: startIndex > 0,
-    nextCursor: startIndex > 0 ? messages[startIndex - 1].messageId : null,
+    nextCursor: startIndex > 0 ? messages[startIndex].messageId : null,
   };
 }
 
@@ -236,7 +236,7 @@ export function paginateConversationMessages(
       status: 'ok',
       items: page.map((conversation) => toConversationSummary(conversation, uid)),
       hasMore: startIndex > 0,
-      nextCursor: startIndex > 0 ? conversations[startIndex - 1].conversationId : null,
+      nextCursor: startIndex > 0 ? conversations[startIndex].conversationId : null,
       limit,
     });
   });
