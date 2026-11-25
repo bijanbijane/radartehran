@@ -227,7 +227,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
       .bind(evt.idempotencyKey, evt.eventType, nowIso, evt.expiresAtIso);
 
     const batchResults = await params.researchDb.batch([insertEventStmt, insertIdemStmt]);
-    if (batchResults.some((r) => !r.success)) {
+    if (batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
       throw new Error('RESEARCH_DB_ATOMIC_WRITE_FAILED');
     }
     acceptedCount += 1;
