@@ -667,17 +667,31 @@ export async function computeKAnonymousResearchAggregation(params: {
   const stats = hoodId === null
     ? await params.researchDb
         .prepare(
-          `SELECT COUNT(DISTINCT subject_key) AS distinct_subjects, COUNT(*) AS event_count
-           FROM research_events
-           WHERE event_type = ?1 AND city_id = ?2 AND occurred_at_iso >= ?3 AND occurred_at_iso < ?4 AND expires_at_iso > ?5`,
+          `SELECT COALESCE(MAX(version_stats.distinct_subjects), 0) AS distinct_subjects,
+                  COALESCE(SUM(version_stats.event_count), 0) AS event_count
+           FROM (
+             SELECT subject_key_version,
+                    COUNT(DISTINCT subject_key) AS distinct_subjects,
+                    COUNT(*) AS event_count
+             FROM research_events
+             WHERE event_type = ?1 AND city_id = ?2 AND occurred_at_iso >= ?3 AND occurred_at_iso < ?4 AND expires_at_iso > ?5
+             GROUP BY subject_key_version
+           ) AS version_stats`,
         )
         .bind(params.eventType, params.cityId, params.windowStartIso, params.windowEndIso, generatedAtIso)
         .first<{ distinct_subjects: number; event_count: number }>()
     : await params.researchDb
         .prepare(
-          `SELECT COUNT(DISTINCT subject_key) AS distinct_subjects, COUNT(*) AS event_count
-           FROM research_events
-           WHERE event_type = ?1 AND city_id = ?2 AND hood_id = ?3 AND occurred_at_iso >= ?4 AND occurred_at_iso < ?5 AND expires_at_iso > ?6`,
+          `SELECT COALESCE(MAX(version_stats.distinct_subjects), 0) AS distinct_subjects,
+                  COALESCE(SUM(version_stats.event_count), 0) AS event_count
+           FROM (
+             SELECT subject_key_version,
+                    COUNT(DISTINCT subject_key) AS distinct_subjects,
+                    COUNT(*) AS event_count
+             FROM research_events
+             WHERE event_type = ?1 AND city_id = ?2 AND hood_id = ?3 AND occurred_at_iso >= ?4 AND occurred_at_iso < ?5 AND expires_at_iso > ?6
+             GROUP BY subject_key_version
+           ) AS version_stats`,
         )
         .bind(params.eventType, params.cityId, hoodId, params.windowStartIso, params.windowEndIso, generatedAtIso)
         .first<{ distinct_subjects: number; event_count: number }>();
