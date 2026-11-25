@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createWorkerRequestContext } from '../worker/contextAndSecurity';
 import { findMigrationRegisterEntry } from '../worker/migrationRegister';
+import { dispatchWorkerApiOrSeoRequest } from '../worker/router';
 import { IrniGeographicRpcV2Client } from '../worker/irni/irniGeographicRpcV2Client';
 import type {
   IrniGeographicRpcBindingV2,
@@ -178,6 +179,16 @@ describe('Radar IRNI geographic RPC v2 consumer', () => {
     const body = await json(response);
     assert.equal(body.contractVersion, '2.0.0');
     assert.equal((body.data as Record<string, unknown>).registryRevision, 19);
+  });
+
+  it('dispatches the registered implemented route to the IRNI RPC handler instead of Express fallback', async () => {
+    const ctx = context('GET', '/api/v2/reference/irni/canonical/metadata', binding());
+    const dispatched = await dispatchWorkerApiOrSeoRequest(ctx);
+    assert.ok(dispatched);
+    assert.equal(dispatched.response.status, 200);
+    assert.equal(dispatched.migrationStatus, 'IMPLEMENTED');
+    const body = await json(dispatched.response);
+    assert.equal(body.contractVersion, '2.0.0');
   });
 
   it('rejects mutations and missing binding without local or HTTPS fallback', async () => {
