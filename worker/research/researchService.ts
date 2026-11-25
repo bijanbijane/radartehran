@@ -233,7 +233,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     acceptedCount += 1;
   }
 
-  await params.researchDb
+  const receiptInsert = await params.researchDb
     .prepare(
       `INSERT INTO research_ingestion_receipts (
         receipt_id, batch_id, accepted_count, deduplicated_count, rejected_count, recorded_at_iso
