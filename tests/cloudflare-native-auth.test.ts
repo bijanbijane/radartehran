@@ -169,6 +169,20 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.statusCode, 200);
   });
 
+  it('rejects malformed expiry timestamps and future-issued sessions', async () => {
+    const malformedExpiry = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
+      expires_at_iso: 'not-a-date',
+    }))));
+    assert.equal(malformedExpiry.authenticated, false);
+    assert.equal(malformedExpiry.reasonCode, 'SESSION_INVALID');
+
+    const futureIssued = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
+      created_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    }))));
+    assert.equal(futureIssued.authenticated, false);
+    assert.equal(futureIssued.reasonCode, 'SESSION_INVALID');
+  });
+
   it('requires recent authentication when a sensitive route explicitly opts in', async () => {
     const staleContext = makeContext(makeD1(sessionRow({
       created_at_iso: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
