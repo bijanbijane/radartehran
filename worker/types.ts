@@ -181,8 +181,6 @@ export interface WorkerEnv {
   readonly INTERNAL_LIFECYCLE_RPC_SECRET?: string;
   /** Dedicated HMAC key for lifecycle receipts; must differ from all other application secrets. */
   readonly LIFECYCLE_RECEIPT_HMAC_SECRET?: string;
-  /** Dedicated key for keyed lifecycle compliance receipt digests; never reuse other HMAC secrets. */
-  readonly LIFECYCLE_RECEIPT_HMAC_SECRET?: string;
   /** Internal read-only Service Binding to IRNI's canonical geography WorkerEntrypoint v2. */
   readonly IRNI_GEOGRAPHY?: IrniGeographicRpcBindingV2;
   readonly IRNI_PUBLISH_HMAC_SECRET?: string;
