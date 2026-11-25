@@ -14,6 +14,7 @@ import {
 } from '../../server/modules/account-lifecycle/writeAdmissionRpcContract.ts';
 import { verifyWriteAdmissionRpcRequest } from '../../server/modules/account-lifecycle/writeAdmissionRpcAuth.ts';
 import { resolveWriteAdmissionFromD1 } from '../account-lifecycle/d1WriteAdmissionResolver.ts';
+import { resolveUserDb } from '../db/bindingResolver.ts';
 import { consumeLifecycleRpcNonce } from '../account-lifecycle/d1InternalRpcNonceStore.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
@@ -31,10 +32,11 @@ export async function handleInternalWriteAdmissionRoute(ctx: WorkerRequestContex
       code: 'RPC_SECRET_NOT_CONFIGURED',
     });
   }
-  if (!ctx.env.DB) {
+  const userDb = resolveUserDb(ctx.env);
+  if (!userDb) {
     return jsonWorkerResponse(ctx, 503, {
       status: 'error',
-      code: 'D1_BINDING_UNAVAILABLE',
+      code: 'USER_DB_BINDING_UNAVAILABLE',
     });
   }
 
@@ -69,7 +71,7 @@ export async function handleInternalWriteAdmissionRoute(ctx: WorkerRequestContex
     return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'TARGET_UID_INVALID' });
   }
 
-  const db = ctx.env.DB as unknown as D1DatabaseBinding;
+  const db = userDb as unknown as D1DatabaseBinding;
   const nonceResult = await consumeLifecycleRpcNonce({ db, nonce });
   if (!nonceResult.consumed) {
     const status = nonceResult.code === 'RPC_NONCE_REPLAYED' ? 409 : 503;
