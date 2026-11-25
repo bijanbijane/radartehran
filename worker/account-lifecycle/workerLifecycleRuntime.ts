@@ -516,8 +516,9 @@ export async function executeAccountDeletionLifecycle(params: {
     for (const k of derivedKeysRes.keys) {
       subjectKeyMap.set(`${k.subjectKeyVersion}:${k.subjectKey}`, k);
     }
-  } else if (subjectKeyMap.size === 0 && params.env.RESEARCH_DB) {
-    // Fail closed if RESEARCH_DB is attached but HMAC secret is missing so we cannot derive erasure key
+  } else if (subjectKeyMap.size === 0) {
+    // An absent RESEARCH_DB binding is not proof that historical research data do not exist.
+    // Without a registry key or derivation secret, erasure scope cannot be established.
     return {
       ok: false,
       statusCode: 503,
