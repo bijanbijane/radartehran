@@ -10,7 +10,7 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
   });
   lines.push(``, `ℹ️ این ارقام میانگین داده‌های پیکربندی هستند و جایگزین کارشناسی رسمی یا استعلام ثبتی نمی‌شوند.`);
   return lines.join("\n"); } const registeredUtilityApps = new WeakSet<Express>(); const safeUtilAsync = (fn: (req: Request, res: Response) => Promise<void>) => (req: Request, res: Response) => { void fn(req, res).catch(() => { if (!res.headersSent) res.status(500).json({ status: "error", code: "INTERNAL_UTILITY_ERROR" }); }); }; export function registerUtilityRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string }
-): void { if (registeredUtilityApps.has(app)) return; registeredUtilityApps.add(app); const { checkRateLimit, getClientIp } = deps; const verifyAdminAuth = async (req: Request) => { const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>); if (!authCheck.authorized) recordAbuseSignal(getClientIp(req), "auth_failure"); return { ok: authCheck.authorized, status: authCheck.statusCode, message: authCheck.reason || "ADMIN_AUTH_REQUIRED" }; }; registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp }); registerCrowdClaimsRoutes(app, { checkRateLimit, getClientIp }); registerSocioeconomicRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); registerAiIngestionRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); registerTelemetryModuleRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); app.post("/api/contract-check", safeUtilAsync(async (req: Request, res: Response) => { const clientIp = getClientIp(req); if (!checkRateLimit(clientIp, "ai", 12, 10 * 60 * 1000)) { res.status(429).json({ status: "error", message: "تعداد درخواست‌های بررسی حقوقی بیش از حد مجاز است. لطفاً چند دقیقه دیگر تلاش کنید." }); return; } const rawClause = sanitizeInput(req.body?.clauseText || req.body?.contractText || "", 2500); const contractType = req.body?.contractType === "rent" ? "اجاره‌نامه" : "مبایعه‌نامه خرید"; const areaUnit: AreaUnit = "sqm"; const intlCurrency: IntlCurrencyCode = "IRT"; if (!rawClause || rawClause.length < 10) { res.status(400).json({ status: "error", message: "لطفاً متن بند قرارداد را وارد کنید (حداقل ۱۰ کاراکتر)." }); return; }
+): void { if (registeredUtilityApps.has(app)) return; registeredUtilityApps.add(app); const { checkRateLimit, getClientIp } = deps; const verifyAdminAuth = async (req: Request) => { const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true }); if (!authCheck.authorized) recordAbuseSignal(getClientIp(req), "auth_failure"); return { ok: authCheck.authorized, status: authCheck.statusCode, message: authCheck.reason || "ADMIN_AUTH_REQUIRED" }; }; registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp }); registerCrowdClaimsRoutes(app, { checkRateLimit, getClientIp }); registerSocioeconomicRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); registerAiIngestionRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); registerTelemetryModuleRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth }); app.post("/api/contract-check", safeUtilAsync(async (req: Request, res: Response) => { const clientIp = getClientIp(req); if (!checkRateLimit(clientIp, "ai", 12, 10 * 60 * 1000)) { res.status(429).json({ status: "error", message: "تعداد درخواست‌های بررسی حقوقی بیش از حد مجاز است. لطفاً چند دقیقه دیگر تلاش کنید." }); return; } const rawClause = sanitizeInput(req.body?.clauseText || req.body?.contractText || "", 2500); const contractType = req.body?.contractType === "rent" ? "اجاره‌نامه" : "مبایعه‌نامه خرید"; const areaUnit: AreaUnit = "sqm"; const intlCurrency: IntlCurrencyCode = "IRT"; if (!rawClause || rawClause.length < 10) { res.status(400).json({ status: "error", message: "لطفاً متن بند قرارداد را وارد کنید (حداقل ۱۰ کاراکتر)." }); return; }
     const localRuleResult = runLocalLegalRuleEngine(rawClause, contractType, areaUnit, intlCurrency);
     const injectionCheck = detectPromptInjection(rawClause); if (injectionCheck.blocked) {
       pushAuditLog("WARN", `تلاش تزریق پرامپت در بررسی حقوقی قرارداد مسدود شد (${injectionCheck.reason}).`);
@@ -49,7 +49,7 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
       res.status(validation.statusCode).json({ status: "error", sent: false, deliveryState: "permanently_failed", code: validation.code, message: validation.errorMessage });
       return;
     }
-    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!authCheck.authorized) {
       recordAbuseSignal(clientIp, "auth_failure");
       res.status(authCheck.statusCode).json({ status: "error", sent: false, deliveryState: "unauthorized", code: authCheck.reason, message: "ارسال مستقیم به کانال تلگرام نیازمند احراز هویت مدیر سیستم است." });
@@ -88,7 +88,7 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
   }));
   app.get(["/api/admin/buyer-alerts", "/api/admin/crm/leads"], safeUtilAsync(async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-store");
-    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!authCheck.authorized) {
       recordAbuseSignal(getClientIp(req), "auth_failure");
       res.status(authCheck.statusCode).json({ status: "error", code: authCheck.reason, message: "مشاهده لیست خریداران نیازمند احراز هویت مدیر سیستم است." });
@@ -182,7 +182,7 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     res.status(200).json({ status: "ok" }); });
   app.get("/api/v1/telemetry/policy", (_req: Request, res: Response) => { res.setHeader("Cache-Control", "public, max-age=60"); res.status(200).json({ status: "ok", policy: getServerTelemetryPolicy() }); });
   app.post("/api/admin/telemetry-policy", safeUtilAsync(async (req: Request, res: Response) => {
-    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!authCheck.authorized) { recordAbuseSignal(getClientIp(req), "auth_failure"); res.status(authCheck.statusCode).json({ status: "error", code: authCheck.reason }); return; }
     const updated = updateServerTelemetryPolicy((req.body || {}) as Record<string, unknown>);
     if (!updated.valid) { res.status(400).json({ status: "error", code: updated.code, message: updated.messageFa }); return; }
@@ -194,7 +194,7 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     res.status(202).json({ status: "accepted", ...result });
   });
   app.get("/api/admin/telemetry-status", safeUtilAsync(async (req: Request, res: Response) => {
-    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, { requirePrimaryBootstrapAdmin: true, disallowStaticToken: true });
     if (!authCheck.authorized) { recordAbuseSignal(getClientIp(req), "auth_failure"); res.status(authCheck.statusCode).json({ status: "error", code: authCheck.reason }); return; }
     res.status(200).json(getServerTelemetryStatusReport());
   }));
