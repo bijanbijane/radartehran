@@ -84,11 +84,12 @@ export class AccountWriteBlockedError extends Error {
 }
 
 export async function assertUserNotWriteBlocked(userDb: D1Database, uid: string): Promise<void> {
-  const row = await userDb
+  const result = await userDb
     .prepare('SELECT uid FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL')
     .bind(uid)
-    .first<{ uid: string }>();
-  if (row) {
+    .all<{ uid: string }>();
+  if (!result.success) throw new Error('ACCOUNT_WRITE_BLOCK_CHECK_UNAVAILABLE');
+  if (result.results.length > 0) {
     throw new AccountWriteBlockedError(uid);
   }
 }
