@@ -457,6 +457,31 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('F-02 & F-03 [P0]: Atomic Permits/Nonces, Write-Block During Drain, Drain Resume & Orphan Cleanup', () => {
+    it('does not replace an active write block owned by a different deletion job', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      await blockUserWritesInD1({
+        userDb: sqlite.db,
+        uid: 'uid_conflict_block',
+        jobId: 'job_first',
+        nowIso: new Date().toISOString(),
+      });
+      await assert.rejects(
+        () => blockUserWritesInD1({
+          userDb: sqlite.db,
+          uid: 'uid_conflict_block',
+          jobId: 'job_second',
+          nowIso: new Date().toISOString(),
+        }),
+        /ACCOUNT_WRITE_BLOCK_CONFLICT_OR_STORE_UNAVAILABLE/,
+      );
+      const row = await sqlite.db
+        .prepare('SELECT job_id FROM account_write_blocks WHERE uid = ?1')
+        .bind('uid_conflict_block')
+        .first<{ job_id: string }>();
+      assert.equal(row?.job_id, 'job_first');
+    });
+
     it('resolves the production USER_DB write-block schema and keeps blocked users closed', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
