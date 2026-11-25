@@ -77,6 +77,7 @@ import {
   resolveKAnonymityMinCohort,
 } from '../worker/research/researchService';
 import { evaluateTieredWorkerRateLimit } from '../worker/cache/kvAndEdgeRateLimiter';
+import { isObjectUnderLegalHold } from '../worker/storage/r2StorageAdapter';
 import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../worker/types';
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
@@ -817,6 +818,38 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         erasedEventsTotal: 7,
       });
     });
+    it('fails closed when the legal-hold index read is unsuccessful', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.setFailResultOnSqlContains('SELECT active, reason FROM legal_holds');
+      await assert.rejects(
+        () => isObjectUnderLegalHold(sqlite.db, 'object_legal_hold_read_failure'),
+        /LEGAL_HOLD_LOOKUP_FAILED/,
+      );
+    });
+
+    it('treats malformed retention timestamps as active retention locks', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.prepare(
+        `INSERT INTO media_objects (
+          object_id, owner_uid, media_type, mime_type, size_bytes, storage_key,
+          lifecycle_state, deletion_state, legal_hold, retention_until,
+          created_at_iso, updated_at_iso
+        ) VALUES (?, ?, 'image', 'image/jpeg', 100, ?, 'ACTIVE', NULL, 0, ?, ?, ?)`,
+      ).run(
+        'object_bad_retention',
+        'uid_retention',
+        'listings/tehran/hood-1/image/test/object_bad_retention.jpg',
+        'not-a-valid-timestamp',
+        new Date().toISOString(),
+        new Date().toISOString(),
+      );
+      const result = await isObjectUnderLegalHold(sqlite.db, 'object_bad_retention', Date.now());
+      assert.equal(result.held, true);
+      assert.equal(result.reason, 'MEDIA_RETENTION_TIMESTAMP_INVALID');
+    });
+
     it('never deletes R2 objects when the D1 ownership scan fails', async () => {
       const userSqlite = createForensicSqliteD1();
       applyMigrations(userSqlite.raw, 'migrations/user-d1');
