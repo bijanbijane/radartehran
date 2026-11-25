@@ -38,9 +38,13 @@ import {
 import {
   acquireMutationPermitInD1,
   blockUserWritesInD1,
+  isUserWriteBlockedInD1,
   releaseMutationPermitInD1,
 } from '../worker/account-lifecycle/d1MutationPermit';
-import { executeAccountDeletionLifecycle } from '../worker/account-lifecycle/workerLifecycleRuntime';
+import {
+  executeAccountDeletionLifecycle,
+  resolveDedicatedLifecycleReceiptSecret,
+} from '../worker/account-lifecycle/workerLifecycleRuntime';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -72,6 +76,7 @@ import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../wo
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+const TEST_RECEIPT_SECRET = 'rt_triad_002_receipt_secret_abcdef0123456789abcdef0123456789';
 const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
@@ -451,6 +456,32 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('F-02 & F-03 [P0]: Atomic Permits/Nonces, Write-Block During Drain, Drain Resume & Orphan Cleanup', () => {
+    it('fails closed when the durable account-write-block schema is unavailable', async () => {
+      const sqlite = createForensicSqliteD1();
+      applyMigrations(sqlite.raw, 'migrations/user-d1');
+      sqlite.raw.exec('DROP TABLE account_write_blocks');
+      await assert.rejects(
+        () => isUserWriteBlockedInD1(sqlite.db, 'uid_schema_missing'),
+        /no such table:\\s*account_write_blocks/i,
+      );
+    });
+
+    it('rejects lifecycle receipt secrets that are missing, weak, or reused from another security domain', () => {
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({} as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: 'short',
+      } as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET,
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+      } as WorkerEnv), null);
+      assert.equal(resolveDedicatedLifecycleReceiptSecret({
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
+        INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
+      } as WorkerEnv), TEST_RECEIPT_SECRET);
+    });
+
     it('handles concurrent internal RPC nonce replays atomically without throwing SQLite UNIQUE errors', async () => {
       const sqlite = createForensicSqliteD1();
       applyMigrations(sqlite.raw, 'migrations/user-d1');
@@ -516,6 +547,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
         FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
         FIREBASE_APP_CHECK_MODE: 'disabled',
       };
@@ -618,7 +650,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(reqsLeft.cnt, 0);
 
         // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
-        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
+        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RECEIPT_SECRET);
         await assert.rejects(
           () => hashUidForComplianceReceipt(uid),
           /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
