@@ -558,9 +558,9 @@ describe('Worker error-message redaction', () => {
     assert.equal(result.includes('abc.def.ghi'), false);
     assert.equal(result.includes(jwt), false);
     assert.equal(result.includes(email), false);
-    assert.match(result, /Bearer \\[REDACTED\\]/);
-    assert.match(result, /\\[REDACTED_JWT\\]/);
-    assert.match(result, /\\[REDACTED_EMAIL\\]/);
+    assert.ok(result.includes('Bearer [REDACTED]'));
+    assert.ok(result.includes('[REDACTED_JWT]'));
+    assert.ok(result.includes('[REDACTED_EMAIL]'));
   });
 
   it('redacts case-insensitively and enforces the 240-character log limit', () => {
