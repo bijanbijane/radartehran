@@ -114,16 +114,18 @@ async function handleFirestoreD1ProjectionSync(
       syncedRows += 1;
     }
 
-    await userDb
+    const cityWatermark = await userDb
       .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
       .bind(`d1_projection_sync:${cityId}`, String(sliceLimit), nowIso)
       .run();
+    if (!cityWatermark.success) throw new QueueJobExecutionError('D1_PROJECTION_WATERMARK_WRITE_FAILED', 'Unable to persist city projection watermark.', true);
   }
 
-  await userDb
+  const projectionWatermark = await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('d1_projection_sync:last_run', nowIso, nowIso)
     .run();
+  if (!projectionWatermark.success) throw new QueueJobExecutionError('D1_PROJECTION_WATERMARK_WRITE_FAILED', 'Unable to persist projection completion watermark.', true);
 
   if (env.RADAR_KV) {
     const workerEnv = env.ENVIRONMENT || env.APP_ENV || env.WORKER_ENV || 'staging';
@@ -167,20 +169,32 @@ async function handleExpiredChunkUploadSessionCleanup(
   const nowIso = new Date(nowMs).toISOString();
 
   const expiredRes = await userDb
-    .prepare('SELECT session_id FROM upload_sessions WHERE created_at_ms < ?1')
+    .prepare('SELECT session_id FROM upload_sessions WHERE created_at_ms < ?1 ORDER BY created_at_ms ASC LIMIT 100')
     .bind(cutoffMs)
     .all<{ session_id: string }>();
+  if (!expiredRes.success) {
+    throw new QueueJobExecutionError('UPLOAD_SESSION_EXPIRY_SCAN_FAILED', 'Unable to read expired upload sessions.', true);
+  }
 
   const expiredIds = (expiredRes.results ?? []).map((r) => r.session_id);
   for (const sid of expiredIds) {
-    await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
-    await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sid).run();
+    const chunksDelete = await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
+    if (!chunksDelete.success) {
+      throw new QueueJobExecutionError('UPLOAD_SESSION_CHUNK_DELETE_FAILED', 'Unable to remove expired upload chunks.', true);
+    }
+    const sessionDelete = await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sid).run();
+    if (!sessionDelete.success) {
+      throw new QueueJobExecutionError('UPLOAD_SESSION_DELETE_FAILED', 'Unable to remove expired upload session.', true);
+    }
   }
 
-  await userDb
+  const cleanupWatermark = await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('expired_chunk_upload_session_cleanup:last_run', String(expiredIds.length), nowIso)
     .run();
+  if (!cleanupWatermark.success) {
+    throw new QueueJobExecutionError('UPLOAD_SESSION_CLEANUP_WATERMARK_FAILED', 'Unable to persist cleanup watermark.', true);
+  }
 
   return {
     jobType: 'expired_chunk_upload_session_cleanup',
@@ -392,6 +406,9 @@ async function handleTelemetryArchiveFlush(
   const watermarks = await userDb
     .prepare('SELECT watermark_key, watermark_value, updated_at_iso FROM sync_watermarks ORDER BY updated_at_iso DESC LIMIT 20')
     .all<{ watermark_key: string; watermark_value: string; updated_at_iso: string }>();
+  if (!watermarks.success) {
+    throw new QueueJobExecutionError('TELEMETRY_WATERMARK_READ_FAILED', 'Unable to read telemetry archive watermarks.', true);
+  }
 
   const archivePayload = {
     schemaVersion: '1.0',
@@ -410,10 +427,13 @@ async function handleTelemetryArchiveFlush(
     },
   });
 
-  await userDb
+  const archiveWatermark = await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('telemetry_archive_flush:last_run', archiveKey, nowIso)
     .run();
+  if (!archiveWatermark.success) {
+    throw new QueueJobExecutionError('TELEMETRY_ARCHIVE_WATERMARK_WRITE_FAILED', 'Unable to persist telemetry archive watermark.', true);
+  }
 
   return {
     jobType: 'telemetry_archive_flush',
@@ -438,16 +458,19 @@ async function handleResearchEventIngestJob(
     );
   }
   const subjectKey = String(envelope.payload?.subjectKey || '').trim();
-  const subjectKeyVersion = String(envelope.payload?.subjectKeyVersion || 'v1').trim();
-  const expectedConsentRevision =
-    typeof envelope.payload?.consentRevision === 'number' && Number.isInteger(envelope.payload.consentRevision)
-      ? envelope.payload.consentRevision
-      : undefined;
+  const subjectKeyVersion = String(envelope.payload?.subjectKeyVersion || '').trim();
+  const expectedConsentRevision = envelope.payload?.consentRevision;
   const rawEvents = Array.isArray(envelope.payload?.events) ? envelope.payload.events : [];
-  if (!subjectKey || !subjectKey.startsWith('sk_') || rawEvents.length === 0) {
+  if (
+    !/^sk_[A-Za-z0-9._-]{8,200}$/.test(subjectKey) ||
+    !/^[A-Za-z0-9._-]{1,32}$/.test(subjectKeyVersion) ||
+    !Number.isSafeInteger(expectedConsentRevision) ||
+    Number(expectedConsentRevision) < 1 ||
+    rawEvents.length === 0
+  ) {
     throw new QueueJobExecutionError(
       'INVALID_RESEARCH_INGEST_PAYLOAD',
-      'research_event_ingest requires pseudonymized subjectKey (sk_*) and non-empty events',
+      'research_event_ingest requires a valid pseudonymized subject key, key version, positive consent revision, and non-empty events',
       false,
     );
   }
@@ -481,6 +504,7 @@ async function handleResearchEventIngestJob(
     subjectKey,
     subjectKeyVersion,
     events: validated,
+    rejectedCount: rawEvents.length - validated.length,
   });
   return {
     jobType: 'research_event_ingest',
