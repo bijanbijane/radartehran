@@ -126,8 +126,18 @@ export async function authenticateWorkerSession(
     const uid = String(row.uid || '');
     if (!uid) return unauthenticated('SESSION_INVALID');
 
+    const nowMs = Date.now();
     const createdAtMs = Date.parse(String(row.created_at_iso || ''));
-    if (!Number.isFinite(createdAtMs)) return unauthenticated('SESSION_INVALID');
+    const expiresAtMs = Date.parse(String(row.expires_at_iso || ''));
+    if (
+      !Number.isFinite(createdAtMs) ||
+      createdAtMs <= 0 ||
+      createdAtMs > nowMs + 60_000 ||
+      !Number.isFinite(expiresAtMs) ||
+      expiresAtMs <= nowMs
+    ) {
+      return unauthenticated('SESSION_INVALID');
+    }
     const createdAtSeconds = Math.floor(createdAtMs / 1000);
     const revocationWatermark = row.revocation_watermark;
     if (revocationWatermark === 'DISABLED') return unauthenticated('ACCOUNT_DISABLED');
