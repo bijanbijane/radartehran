@@ -272,7 +272,21 @@ export class CommsCoreStateEngine {
     contextTitleFa: string; creatorUid: string; participants: ConversationParticipantRecord[];
   }): { ok: boolean; errorCode?: string; conversation?: ConversationRecord } {
     if (!ALLOWED_DIRECT_CONVERSATION_TYPES.includes(input.type) || !input.contextEntityId.trim()) return { ok: false, errorCode: 'CONTEXT_REQUIRED_NO_OPEN_CHAT' };
-    if (!input.participants || input.participants.length < 2) return { ok: false, errorCode: 'PARTICIPANTS_REQUIRED' };
+    const allowedContextTypes = new Set<ConversationRecord['contextEntityType']>([
+      'service_request', 'listing', 'support_ticket', 'admin_case', 'system',
+    ]);
+    if (!input.creatorUid?.trim() || !allowedContextTypes.has(input.contextEntityType)) {
+      return { ok: false, errorCode: 'INVALID_CONVERSATION_CONTEXT' };
+    }
+    if (!input.participants || input.participants.length < 2 || input.participants.length > 10) {
+      return { ok: false, errorCode: 'PARTICIPANTS_REQUIRED' };
+    }
+    const participantUids = input.participants.map((participant) => String(participant.uid || '').trim());
+    if (participantUids.some((participantUid) => !participantUid) ||
+        new Set(participantUids).size !== participantUids.length ||
+        !participantUids.includes(input.creatorUid)) {
+      return { ok: false, errorCode: 'INVALID_CONVERSATION_PARTICIPANTS' };
+    }
     const existing = this.conversations.find(
       (c) => c.type === input.type && c.contextEntityId === input.contextEntityId && c.participants.some((p) => p.uid === input.creatorUid),
     );
