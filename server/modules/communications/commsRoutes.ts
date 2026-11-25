@@ -30,7 +30,7 @@ export interface CommunicationsRoutesOptions {
     contextEntityType: ConversationRecord['contextEntityType'];
     contextEntityId: string;
     creatorUid: string;
-  }) => Promise<string | null>;
+  }) => Promise<{ uid: string; displayNameFa?: string; contextTitleFa?: string } | null>;
 }
 
 const registeredCommsApps = new WeakSet<Express>();
@@ -180,11 +180,11 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
       return;
     }
 
-    let counterpartyUid: string | null = null;
+    let counterparty: { uid: string; displayNameFa?: string; contextTitleFa?: string } | null = null;
     if (convType === 'SUPPORT') {
-      counterpartyUid = 'support-desk';
+      counterparty = { uid: 'support-desk', displayNameFa: 'پشتیبانی رادار' };
       const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
-      if (requestedCounterparty && requestedCounterparty !== counterpartyUid) {
+      if (requestedCounterparty && requestedCounterparty !== counterparty.uid) {
         res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
         return;
       }
@@ -193,18 +193,23 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
         res.status(503).json({ status: 'error', code: 'CONTEXT_OWNER_RESOLVER_UNAVAILABLE' });
         return;
       }
-      counterpartyUid = await options.resolveContextCounterpartyUid({
-        type: convType,
-        contextEntityType,
-        contextEntityId,
-        creatorUid: uid,
-      });
-      if (!counterpartyUid || counterpartyUid === uid) {
+      try {
+        counterparty = await options.resolveContextCounterpartyUid({
+          type: convType,
+          contextEntityType,
+          contextEntityId,
+          creatorUid: uid,
+        });
+      } catch {
+        res.status(503).json({ status: 'error', code: 'CONTEXT_OWNER_LOOKUP_FAILED' });
+        return;
+      }
+      if (!counterparty?.uid || counterparty.uid === uid) {
         res.status(403).json({ status: 'error', code: 'CONTEXT_ACCESS_FORBIDDEN' });
         return;
       }
       const requestedCounterparty = sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
-      if (requestedCounterparty && requestedCounterparty !== counterpartyUid) {
+      if (requestedCounterparty && requestedCounterparty !== counterparty.uid) {
         res.status(403).json({ status: 'error', code: 'COUNTERPARTY_MISMATCH' });
         return;
       }
@@ -214,13 +219,17 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
       type: convType,
       contextEntityType,
       contextEntityId,
-      contextTitleFa: sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120),
+      contextTitleFa: counterparty.contextTitleFa
+        ? sanitizeInput(counterparty.contextTitleFa, 120)
+        : convType === 'SUPPORT'
+          ? sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120)
+          : 'گفت‌وگوی مرتبط با پرونده',
       creatorUid: uid,
       participants: [
         { uid, displayNameFa: 'کاربر احرازشده', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
         {
-          uid: counterpartyUid,
-          displayNameFa: convType === 'SUPPORT' ? 'پشتیبانی رادار' : sanitizeInput(String(req.body?.counterpartyLabelFa || 'طرف پرونده'), 64),
+          uid: counterparty.uid,
+          displayNameFa: convType === 'SUPPORT' ? 'پشتیبانی رادار' : sanitizeInput(String(counterparty.displayNameFa || 'طرف پرونده'), 64),
           roleLabelFa: convType === 'SUPPORT' ? 'کارشناس پشتیبانی' : 'طرف پرونده',
           senderType: convType === 'SUPPORT' ? 'SUPPORT_AGENT' : 'USER',
           muted: false, archived: false, blockedOtherParticipant: false,
