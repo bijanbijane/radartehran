@@ -65,6 +65,27 @@ describe('CASPER-03 Hub Express Routes & End-to-End Proxy Integration', () => {
     return { app, client };
   }
 
+  it('0. Presence-only Authorization and CASPER headers do not authenticate the default guard', async () => {
+    const app = express();
+    app.use(express.json());
+    const client = new CasperHubClient({ env: testEnv, fetchImpl: async () => new Response('{}', { status: 200 }) });
+    registerCasperHubRoutes(app, { client });
+    const server = app.listen(0);
+    const port = (server.address() as { port: number }).port;
+    try {
+      for (const headers of [
+        { Authorization: 'Bearer arbitrary-unverified-token' },
+        { 'x-admin-token': 'anything' },
+        { 'x-casper-session': 'anything' },
+      ]) {
+        const res = await fetch(`http://127.0.0.1:${port}/api/casper-hub/whoami`, { headers });
+        assert.notEqual(res.status, 200, 'Unverified header presence must never grant CASPER HUB access');
+      }
+    } finally {
+      server.close();
+    }
+  });
+
   it('1. GET /api/casper-hub/whoami rejects unauthenticated requests with 401', async () => {
     const { app } = setupApp();
     const server = app.listen(0);
