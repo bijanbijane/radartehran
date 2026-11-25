@@ -98,12 +98,29 @@ export function buildR2MediaObjectKey(params: {
   mimeType: string;
   objectId: string;
 }): string {
-  const city = SAFE_CITIES.has(params.city) ? params.city : 'tehran';
-  const hoodId = Math.max(1, Math.min(999, Math.trunc(params.hoodId) || 1));
-  const ext = EXTENSION_BY_MIME[params.mimeType] || (params.mediaType === 'video' ? 'mp4' : 'webp');
+  const city = String(params.city || '').trim().toLowerCase();
+  if (!SAFE_CITIES.has(city)) throw new Error('MEDIA_CITY_ID_UNSUPPORTED');
+
+  const hoodId = Number(params.hoodId);
+  if (!Number.isSafeInteger(hoodId) || hoodId < 1 || hoodId > 9_999) {
+    throw new Error('MEDIA_NEIGHBORHOOD_ID_INVALID');
+  }
+
+  if (params.mediaType !== 'image' && params.mediaType !== 'video') {
+    throw new Error('MEDIA_TYPE_INVALID');
+  }
+  const mimeType = String(params.mimeType || '').trim().toLowerCase();
+  const ext = EXTENSION_BY_MIME[mimeType];
+  if (!ext) throw new Error('MEDIA_MIME_TYPE_UNSUPPORTED');
+
+  const objectId = String(params.objectId || '').trim();
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(objectId)) {
+    throw new Error('MEDIA_OBJECT_ID_INVALID');
+  }
+
   const now = new Date();
   const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  return `listings/${city}/hood-${hoodId}/${params.mediaType}/${ym}/${params.objectId}.${ext}`;
+  return `listings/${city}/hood-${hoodId}/${params.mediaType}/${ym}/${objectId}.${ext}`;
 }
 
 export async function createSignedR2MediaUrl(params: {
