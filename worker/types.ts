@@ -178,13 +178,6 @@ export interface WorkerEnv {
   readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
   readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
   readonly INTERNAL_LIFECYCLE_RPC_SECRET?: string;
-  readonly IRNI_API_BASE_URL?: string;
-  readonly IRNI_API_TOKEN?: string;
-  readonly IRNI_API_HEADER_NAME?: string;
-  readonly IRNI_API_TIMEOUT_MS?: string;
-  readonly IRNI_CACHE_TTL_SECONDS?: string;
-  readonly IRNI_STALE_TTL_SECONDS?: string;
-  readonly IRNI_API_CONTRACT_STATUS?: string;
   /** Internal read-only Service Binding to IRNI's canonical geography WorkerEntrypoint v2. */
   readonly IRNI_GEOGRAPHY?: IrniGeographicRpcBindingV2;
   readonly IRNI_PUBLISH_HMAC_SECRET?: string;
