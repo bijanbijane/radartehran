@@ -2,7 +2,7 @@ name: Radar Backend Triad & Frontend Service Binding
 
 on:
   push:
-    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001, migration/firebase-retirement-mainline-2026-11-24, migration/cloudflare-express-session-bridge-2026-11-24]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
