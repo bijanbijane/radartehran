@@ -79,7 +79,7 @@ export type {
   UpsertBuyerAlertInput,
 };
 
-interface MarketStateResponse {
+interface MarketStateResponse extends ApiResponse {
   status?: string;
   cityId?: string;
   bargains?: Array<Record<string, unknown>>;
@@ -426,26 +426,43 @@ export function subscribeToSponsorRequests(
   }, onUpdate, onError, cityId);
 }
 
-export async function createSponsorRequest(reqDocId: string, input: CreateSponsorRequestInput): Promise<void> {
+export interface CreateSponsorRequestResult {
+  requestId: string;
+  requestStatus: 'pending' | 'approved';
+  trackingCode: string;
+  monthlyTariffMillion: number;
+  totalPayableMillion: number;
+  durationDays: 30 | 90;
+}
+
+export async function createSponsorRequest(input: CreateSponsorRequestInput): Promise<CreateSponsorRequestResult> {
   const uid = await currentSessionUid();
   if (!uid) throw new Error('AUTH_REQUIRED');
-  await requestJson('/api/v1/market/sponsor-requests', {
+  const payload = await requestJson<ApiResponse & {
+    requestId?: string; requestStatus?: string; trackingCode?: string;
+    monthlyTariffMillion?: number; totalPayableMillion?: number; durationDays?: number;
+  }>('/api/v1/market/sponsor-requests', {
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey('sponsor') },
     body: JSON.stringify({
-      cityId: input.cityId || 'tehran',
-      hoodId: input.hoodId,
-      hoodName: input.hoodName,
-      agencyName: input.agencyName,
-      phone: normalizeIranMobilePhone(input.phone),
-      specialty: input.specialty,
-      experienceYears: input.experienceYears,
-      monthlyTariffMillion: input.monthlyTariffMillion,
-      planMonths: input.planMonths,
-      totalPayableMillion: input.totalPayableMillion,
-      trackingCode: input.trackingCode || reqDocId,
+      cityId: input.cityId || 'tehran', hoodId: input.hoodId, hoodName: input.hoodName,
+      agencyName: input.agencyName, phone: normalizeIranMobilePhone(input.phone),
+      specialty: input.specialty, experienceYears: input.experienceYears, planMonths: input.planMonths,
     }),
   });
+  const requestId = String(payload.requestId || '');
+  const trackingCode = String(payload.trackingCode || '');
+  const monthlyTariffMillion = Number(payload.monthlyTariffMillion);
+  const totalPayableMillion = Number(payload.totalPayableMillion);
+  const durationDays = Number(payload.durationDays);
+  if (!requestId || !trackingCode || !Number.isFinite(monthlyTariffMillion) ||
+      !Number.isFinite(totalPayableMillion) || (durationDays !== 30 && durationDays !== 90)) {
+    throw new Error('INVALID_SPONSOR_CREATE_RESPONSE');
+  }
+  return {
+    requestId, requestStatus: payload.requestStatus === 'approved' ? 'approved' : 'pending',
+    trackingCode, monthlyTariffMillion, totalPayableMillion, durationDays,
+  };
 }
 
 async function findSponsorRequest(docId: string, cityId = 'tehran'): Promise<Record<string, unknown>> {
@@ -482,7 +499,7 @@ export function subscribeToBuyerAlerts(
     hoodName: String(row.hoodName || ''),
     fullName: String(row.fullName || ''),
     phone: String(row.phone || ''),
-    dealType: row.dealType === 'اجاره' ? 'اجاره' : 'خرید',
+    dealType: (row.dealType === 'اجاره' ? 'اجاره' : 'خرید') as 'اجاره' | 'خرید',
     maxBudgetText: String(row.maxBudgetText || ''),
     createdAtFa: String(row.createdAtFa || 'ثبت ابری'),
     createdAtIso: String(row.createdAtIso || ''),
@@ -495,16 +512,18 @@ export function subscribeToBuyerAlerts(
 export async function upsertBuyerAlertLead(input: UpsertBuyerAlertInput): Promise<string> {
   const uid = await currentSessionUid();
   if (!uid || uid !== input.userId) throw new Error('AUTH_REQUIRED');
-  const digits = normalizeDigitsToEnglish(input.maxBudgetText).replace(/[^0-9.]/g, '');
-  const maxBudgetMillion = Number(digits);
-  if (!Number.isFinite(maxBudgetMillion) || maxBudgetMillion <= 0) throw new Error('INVALID_BUYER_ALERT_BUDGET');
+  const maxBudgetMillion = Number(input.maxBudgetMillion);
+  if (!Number.isFinite(maxBudgetMillion) || maxBudgetMillion <= 0 || maxBudgetMillion > 100_000_000) {
+    throw new Error('INVALID_BUYER_ALERT_BUDGET');
+  }
+  if (input.privacyConsent !== true) throw new Error('BUYER_ALERT_CONSENT_REQUIRED');
   const payload = await requestJson<ApiResponse & { alertId?: string }>('/api/v1/market/buyer-alerts', {
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey('buyer-alert') },
     body: JSON.stringify({
       cityId: input.cityId || 'tehran', hoodId: input.hoodId, hoodName: input.hoodName, fullName: input.fullName,
       phone: normalizeIranMobilePhone(input.phone), dealType: input.dealType, maxBudgetMillion,
-      privacyConsent: true, consentVersion: input.consentVersion || 'buyer-alert-2026-10-v1',
+      privacyConsent: input.privacyConsent, consentVersion: input.consentVersion || 'buyer-alert-2026-10-v1',
     }),
   });
   return String(payload.alertId || `${uid}_hood_${input.hoodId}`);

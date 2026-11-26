@@ -39,6 +39,7 @@ import {
   extractSingleSecurityHeader,
   redactFirebaseCredentialError,
   verifyAndDeduplicateTelegramWebhook,
+  verifyAdminApiAuthorization,
 } from '../src/utils/serverAdminAndTelegramSecurity';
 import {
   buildProductionContentSecurityPolicyHeader,
@@ -186,19 +187,6 @@ import {
   validateImageDimensionsAndAnimationLimits,
   validateMediaCrossOriginAndDeliveryPolicy,
 } from '../src/utils/privacyAndDataLifecycle861To880';
-import {
-  AUTHORITATIVE_FIREBASE_WEB_APP_ID,
-  FIREBASE_APP_CHECK_RESOURCE_MATRIX,
-  buildProtectedApiRequestHeaders,
-  detectAccidentalDebugTokenExposure,
-  evaluateStagedAppCheckRolloutReadiness,
-  getAppCheckObservabilitySummary,
-  resetAppCheckSecurityStateForTests,
-  resolveAppCheckEnvironmentPolicy,
-  resolveRouteAppCheckPolicy,
-  verifyAndEnforceAppCheckAndAuthSeparation,
-} from '../src/utils/firebaseAppCheckSecurity901To920';
-
 async function runAllRemediationTests(): Promise<void> {
   // 1. Tasks 421–500: Domain, Firestore Rules, Composite Indexes, Pricing, GeoJSON, CSPRNG
   assert.equal(EXPECTED_FIREBASE_PROJECT_ID, 'gen-lang-client-0713157837');
@@ -900,254 +888,32 @@ async function runAllRemediationTests(): Promise<void> {
   );
 
   // -------------------------------------------------------------------------
-  // Section 11: Tasks 901–920 (Firebase App Check Security & Enforcement)
+  // Section 11: Cloudflare-native session authentication (Firebase App Check retired)
   // -------------------------------------------------------------------------
-  assert.ok(FIREBASE_APP_CHECK_RESOURCE_MATRIX.length >= 6);
-  const rtdbEntry = FIREBASE_APP_CHECK_RESOURCE_MATRIX.find((r) => r.resourceId === 'firebase-realtime-database');
-  const fnEntry = FIREBASE_APP_CHECK_RESOURCE_MATRIX.find((r) => r.resourceId === 'firebase-cloud-functions');
-  assert.equal(rtdbEntry?.existsInRepository, false);
-  assert.equal(fnEntry?.existsInRepository, false);
+  const missingCloudflareSession = await verifyAdminApiAuthorization({});
+  assert.equal(missingCloudflareSession.authorized, false);
+  assert.equal(missingCloudflareSession.statusCode, 401);
+  assert.equal(missingCloudflareSession.reason, 'CLOUDFLARE_SESSION_REQUIRED');
 
-  // Tasks 902, 903, 904, 905, 915: Environment policy & debug token containment
-  const prodPolicy = resolveAppCheckEnvironmentPolicy({
-    nodeEnv: 'production',
-    isProductionBuild: true,
-    viteRecaptchaEnterpriseSiteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
-    viteAppCheckDebugToken: 'accidental-debug-token-in-prod',
-    allowAppCheckDebugInDev: true,
+  const retiredStaticAdminToken = await verifyAdminApiAuthorization({
+    'x-admin-token': 'legacy-static-admin-token',
   });
-  assert.equal(prodPolicy.providerType, 'recaptcha_enterprise');
-  assert.equal(prodPolicy.debugModeAllowed, false);
-  assert.equal(prodPolicy.effectiveDebugToken, null);
-  assert.equal(prodPolicy.isTokenAutoRefreshEnabled, true);
-  assert.ok(prodPolicy.warnings.includes('DEBUG_TOKEN_IGNORED_IN_PRODUCTION'));
+  assert.equal(retiredStaticAdminToken.authorized, false);
+  assert.equal(retiredStaticAdminToken.statusCode, 403);
+  assert.equal(retiredStaticAdminToken.reason, 'STATIC_ADMIN_TOKEN_RETIRED');
 
-  const debugExposureCheck = detectAccidentalDebugTokenExposure({
-    VITE_FIREBASE_APPCHECK_DEBUG_TOKEN: 'secret-debug-token',
-    FIREBASE_APP_CHECK_DEBUG_SECRET: 'ci-secret-token',
-    VITE_APP_NAME: 'RadarTehran',
-  });
-  assert.equal(debugExposureCheck.safeForProductionBundle, false);
-  assert.deepEqual(debugExposureCheck.exposedKeys.sort(), [
-    'FIREBASE_APP_CHECK_DEBUG_SECRET',
-    'VITE_FIREBASE_APPCHECK_DEBUG_TOKEN',
-  ]);
-
-  // Task 906 & 908: Route policy classification & X-Firebase-AppCheck header construction
-  const webhookPolicy = resolveRouteAppCheckPolicy('POST', '/api/telegram/webhook');
-  assert.equal(webhookPolicy.classification, 'webhook_signature_authenticated');
-  assert.equal(webhookPolicy.requiresAppCheckToken, false);
-
-  const uploadCommitPolicy = resolveRouteAppCheckPolicy('POST', '/api/object-storage/upload-session/s1/commit');
-  assert.equal(uploadCommitPolicy.requiresAppCheckToken, true);
-  assert.equal(uploadCommitPolicy.requiresLimitedUseToken, true);
-
-  const reqHeaders = await buildProtectedApiRequestHeaders({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session/s1/commit',
-    bearerIdToken: 'id-token-xyz',
-    getAppCheckToken: async (opts) => (opts?.limitedUse ? 'limited.jwt.token' : 'standard.jwt.token'),
-  });
-  assert.equal(reqHeaders.headers['X-Firebase-AppCheck'], 'limited.jwt.token');
-  assert.equal(reqHeaders.usedLimitedUseToken, true);
-
-  // Tasks 907, 909, 910, 918, 919: Custom backend App Check verification, replay protection & Auth separation
-  resetAppCheckSecurityStateForTests();
-  const nowSec = Math.floor(Date.now() / 1000);
-
-  // 1. Missing App Check token on enforced route
-  const missingTokenRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session',
-    headers: {},
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'user_123',
-      email: 'user@example.com',
-      emailVerified: true,
-      isAdmin: false,
-    },
-  });
-  assert.equal(missingTokenRes.allowed, false);
-  assert.equal(missingTokenRes.httpStatus, 401);
-  assert.equal(missingTokenRes.errorCode, 'APP_CHECK_TOKEN_MISSING');
-
-  // 2. Malformed App Check token
-  const malformedTokenRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session',
-    headers: { 'x-firebase-appcheck': 'not-a-jwt' },
-    enforcementMode: 'enforced',
-  });
-  assert.equal(malformedTokenRes.allowed, false);
-  assert.equal(malformedTokenRes.errorCode, 'APP_CHECK_TOKEN_MALFORMED');
-
-  // 3. Valid App Check token WITHOUT user authentication on an authenticated route -> rejected by Auth (401)
-  const appCheckOnlyNoAuthRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session',
-    headers: { 'x-firebase-appcheck': 'header.payload.signature_valid_1' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: false,
-      uid: null,
-      email: null,
-      emailVerified: false,
-      isAdmin: false,
-    },
-    adminVerifier: async () => ({
-      appId: '1:935427453422:web:25817d32df713f2a68deff',
-      projectNumber: '935427453422',
-      projectId: 'gen-lang-client-0713157837',
-      exp: nowSec + 600,
-      iat: nowSec - 10,
-    }),
-  });
-  assert.equal(appCheckOnlyNoAuthRes.allowed, false);
-  assert.equal(appCheckOnlyNoAuthRes.httpStatus, 401);
-  assert.equal(appCheckOnlyNoAuthRes.errorCode, 'AUTH_REQUIRED_DESPITE_VALID_APP_CHECK');
-  assert.equal(appCheckOnlyNoAuthRes.isolatedContext.appCheckClaims.verified, true);
-  assert.equal(appCheckOnlyNoAuthRes.isolatedContext.authIdentity.authenticated, false);
-
-  // 4. Valid App Check + Valid non-admin Auth on Admin route -> rejected by RBAC (403)
-  const nonAdminWithAppCheckRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/admin/backup/export',
-    headers: { 'x-firebase-appcheck': 'header.payload.signature_valid_admin_attempt' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'regular_user_1',
-      email: 'regular@example.com',
-      emailVerified: true,
-      isAdmin: false,
-    },
-    adminVerifier: async () => ({
-      appId: '1:935427453422:web:25817d32df713f2a68deff',
-      projectNumber: '935427453422',
-      projectId: 'gen-lang-client-0713157837',
-      exp: nowSec + 600,
-      iat: nowSec - 10,
-      alreadyConsumed: false,
-    }),
-  });
-  assert.equal(nonAdminWithAppCheckRes.allowed, false);
-  assert.equal(nonAdminWithAppCheckRes.httpStatus, 403);
-  assert.equal(nonAdminWithAppCheckRes.errorCode, 'ADMIN_ROLE_REQUIRED_DESPITE_VALID_APP_CHECK');
-
-  // 5. Wrong App ID -> rejected (403)
-  const wrongAppIdRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session',
-    headers: { 'x-firebase-appcheck': 'header.payload.wrong_app_id' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'user_123',
-      email: 'user@example.com',
-      emailVerified: true,
-      isAdmin: false,
-    },
-    adminVerifier: async () => ({
-      appId: '1:999999999999:web:deadbeef',
-      projectNumber: '935427453422',
-      projectId: 'gen-lang-client-0713157837',
-      exp: nowSec + 600,
-      iat: nowSec - 10,
-    }),
-  });
-  assert.equal(wrongAppIdRes.allowed, false);
-  assert.equal(wrongAppIdRes.errorCode, 'APP_CHECK_APP_ID_MISMATCH');
-
-  // 6. Valid limited-use token succeeds once, then replay is rejected (Task 909)
-  const validCommitRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session/s1/commit',
-    headers: { 'x-firebase-appcheck': 'header.payload.one_time_commit_token' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'user_123',
-      email: 'user@example.com',
-      emailVerified: true,
-      isAdmin: false,
-    },
-    adminVerifier: async () => ({
-      appId: '1:935427453422:web:25817d32df713f2a68deff',
-      projectNumber: '935427453422',
-      projectId: 'gen-lang-client-0713157837',
-      exp: nowSec + 600,
-      iat: nowSec - 5,
-      alreadyConsumed: false,
-    }),
-  });
-  assert.equal(validCommitRes.allowed, true);
-  assert.equal(validCommitRes.errorCode, 'OK');
-
-  const replayedCommitRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session/s1/commit',
-    headers: { 'x-firebase-appcheck': 'header.payload.one_time_commit_token' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'user_123',
-      email: 'user@example.com',
-      emailVerified: true,
-      isAdmin: false,
-    },
-    adminVerifier: async () => ({
-      appId: '1:935427453422:web:25817d32df713f2a68deff',
-      projectNumber: '935427453422',
-      projectId: 'gen-lang-client-0713157837',
-      exp: nowSec + 600,
-      iat: nowSec - 5,
-      alreadyConsumed: false,
-    }),
-  });
-  assert.equal(replayedCommitRes.allowed, false);
-  assert.equal(replayedCommitRes.errorCode, 'APP_CHECK_TOKEN_REPLAYED');
-
-  // 7. Fail-closed when verifier throws error on critical route (Task 919)
-  const verifierOutageRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/admin/backup/restore',
-    headers: { 'x-firebase-appcheck': 'header.payload.outage_token' },
-    enforcementMode: 'enforced',
-    authContext: {
-      authenticated: true,
-      uid: 'admin_1',
-      email: 'radio837isf@gmail.com',
-      emailVerified: true,
-      isAdmin: true,
-    },
-    adminVerifier: async () => {
-      throw new Error('Firebase App Check JWKS endpoint unreachable');
-    },
-  });
-  assert.equal(verifierOutageRes.allowed, false);
-  assert.equal(verifierOutageRes.httpStatus, 503);
-  assert.equal(verifierOutageRes.errorCode, 'APP_CHECK_VERIFIER_UNAVAILABLE_FAIL_CLOSED');
-
-  // 8. Observability & Rollout Readiness (Tasks 916 & 917)
-  const obsSummary = getAppCheckObservabilitySummary();
-  assert.ok(obsSummary.totalEvaluated >= 7);
-  const rolloutReady = evaluateStagedAppCheckRolloutReadiness({
-    totalRequestsSampled: 500,
-    verifiedAppCheckCount: 498,
-    missingOrInvalidCount: 2,
-    outdatedClientCount: 0,
-    debugTokenDetectedInProd: false,
-  });
-  assert.equal(rolloutReady.readyForStrictEnforcement, true);
+  const ambiguousAdminToken = extractSingleSecurityHeader(
+    { 'x-admin-token': ['first-token', 'second-token'] },
+    'x-admin-token',
+  );
+  assert.equal(ambiguousAdminToken.ok, false);
 
   // 9. Autonomous Security Remediation Protocol (SEC-FINDING-001 .. SEC-FINDING-005 & Persistent State)
   const {
     verifyX402PaymentHeaders,
     signX402PaymentContextForVerification,
     resetX402ReplayCacheForTests,
-  } = await import('../src/utils/dataCommerceMcpAndMonetization');
+  } = await import('../src/utils/x402PaymentVerification.server');
   const {
     sanitizeOverpassNeighborhoodName,
     computeApproxHexRing,
@@ -1386,7 +1152,7 @@ async function runAllRemediationTests(): Promise<void> {
     /BACKUP_ENVELOPE_MALFORMED_PARAMETERS/,
   );
 
-  // SEC-FINDING-023 & SEC-FINDING-024: IdempotencyLedger circular/depth safety & App Check array/CRLF header rejection
+  // SEC-FINDING-023 & SEC-FINDING-024: IdempotencyLedger circular/depth safety & legacy auth header array/CRLF injection rejection
   const { computeCanonicalPayloadFingerprint, OptimisticConcurrencyStore } = await import('../src/utils/serverIdempotencyAndConcurrency');
   const circularPayload: Record<string, unknown> = { a: 1 };
   circularPayload.self = circularPayload;
@@ -1404,14 +1170,11 @@ async function runAllRemediationTests(): Promise<void> {
   assert.equal(occRes.ok, true);
   assert.equal(({} as Record<string, unknown>).polluted, undefined);
 
-  const crlfAppCheckRes = await verifyAndEnforceAppCheckAndAuthSeparation({
-    method: 'POST',
-    pathname: '/api/object-storage/upload-session',
-    headers: { 'x-firebase-appcheck': 'header.payload.sig\r\nX-Injected: 1' },
-    enforcementMode: 'enforced',
-  });
-  assert.equal(crlfAppCheckRes.allowed, false);
-  assert.equal(crlfAppCheckRes.errorCode, 'APP_CHECK_TOKEN_MALFORMED');
+  const crlfAdminHeader = extractSingleSecurityHeader(
+    { 'x-admin-token': 'token\r\nX-Injected: 1' },
+    'x-admin-token',
+  );
+  assert.equal(crlfAdminHeader.ok, false, 'Admin auth headers must reject CRLF injection');
 
   // SEC-FINDING-026..028: PortableMemoryStorageAdapter & DistributedTraceCollector bounds, OrphanAudit symlink guard, and LegalRuleEngine sanitization
   const { PortableMemoryStorageAdapter, DistributedTraceCollector } = await import('../src/utils/serverStoragePortabilityAndTracing');
@@ -1864,7 +1627,7 @@ async function runAllRemediationTests(): Promise<void> {
   assert.ok(Array.isArray(secState.remediations) && secState.remediations.length >= 52);
   assert.equal(secState.completion_status, 'REMEDIATION_COMPLETE_WITH_RECORDED_RESIDUAL_RISKS');
 
-  console.log('[PASS] security-remediation-421-840.test.ts: All Tasks 421–920 + SEC-FINDING-001..052 security, mutation, fuzz, storage, auth, email/SMS, privacy, media lifecycle, App Check, and DR drill assertions passed.');
+  console.log('[PASS] security-remediation-421-840.test.ts: All Tasks 421–920 + SEC-FINDING-001..052 security, mutation, fuzz, storage, auth, email/SMS, privacy, media lifecycle, Cloudflare session auth, and DR drill assertions passed.');
 }
 
 runAllRemediationTests().catch((err) => {

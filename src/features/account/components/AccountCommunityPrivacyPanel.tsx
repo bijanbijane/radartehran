@@ -1,6 +1,6 @@
 /** @file src/features/account/components/AccountCommunityPrivacyPanel.tsx — Server-Backed /account/community Privacy Settings & Appeals */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { Eye, Lock, LogIn, Scale, ShieldCheck } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';

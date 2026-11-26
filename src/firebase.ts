@@ -2,8 +2,6 @@
  * @fileoverview Compatibility shell for legacy Firestore diagnostics only.
  * Authentication is provided by the Cloudflare D1 session client; Firebase Auth and App Check are not initialized.
  */
-import { initializeApp, type FirebaseApp } from 'firebase/app';
-import firebaseConfig from '../firebase-applet-config.json';
 import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
 import { CLIENT_FIRESTORE_FORBIDDEN } from './platform/data/clientDataPolicy';
 import {
@@ -25,9 +23,13 @@ import {
   type WriteSyncState,
 } from './utils/firestoreConnectionState';
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './utils/areaUnit';
-import { getAuthClient } from './platform/auth';
+import { getAuthClient, subscribeAuthState, type AuthUserSnapshot } from './platform/auth';
 
-export const app: FirebaseApp = initializeApp(firebaseConfig);
+/** Compatibility facade: no Firebase SDK is initialized or imported. */
+export const auth = {
+  get currentUser(): AuthUserSnapshot | null { return getAuthClient().getUser(); },
+  onAuthStateChanged: subscribeAuthState,
+};
 
 /** @deprecated Client Firestore is forbidden; retained only for legacy type surface. */
 export type Firestore = never;

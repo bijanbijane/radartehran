@@ -1,6 +1,6 @@
 /** @file src/features/account/components/AccountContributionsAndServicesPanel.tsx — My Listings, Service Requests & Account-Synced Knowledge Bookmarks */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { Archive, BookMarked, Briefcase, Building2, MessageSquarePlus, Trash2 } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';

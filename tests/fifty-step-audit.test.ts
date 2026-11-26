@@ -450,26 +450,63 @@ export async function runFiftyStepAudit(): Promise<void> {
     uiStateSrc.includes('setShowSuperModulesModal(false)');
   assertStep(39, 'UX', 'Escape key dismisses FutureSuperModulesModal', hasEscapeHandler, 'Escape handler closes super modules modal');
 
-  // Step 40: Tools popover button in App.tsx or FloatingTopBar.tsx opens FutureSuperModulesModal
+  // Step 40: Tools popover exposes the unified /tools workspace entry.
   const topBarSrc = fs.existsSync('src/components/FloatingTopBar.tsx')
     ? fs.readFileSync('src/components/FloatingTopBar.tsx', 'utf8')
     : '';
   const hasToolsButton =
-    appSrc.includes('ابرماژول‌ها و جعبه ابزار جامع مسکن') ||
-    topBarSrc.includes('ابرماژول‌ها و جعبه ابزار جامع مسکن');
-  assertStep(40, 'UX', 'Tools popover contains Super-Modules entry button', hasToolsButton, 'Button present in Tools menu');
+    topBarSrc.includes('همه ابزارها و محاسبه‌گرها') &&
+    topBarSrc.includes('href="/tools"') &&
+    topBarSrc.includes("onNavigateView('tools')") &&
+    topBarSrc.includes('setShowToolsPopover(false)');
+  assertStep(
+    40,
+    'UX',
+    'Tools popover exposes the unified tools workspace and closes after navigation',
+    hasToolsButton,
+    'Unified /tools navigation entry, route dispatch and popover close behavior verified',
+  );
 
   // =========================================================================
   // DOMAIN E: BUILD, LINT, FIREBASE & TEST SUITE INTEGRITY (Steps 41–50)
   // =========================================================================
 
-  // Step 41: firebase.json configuration targets port 8088 and rules files
-  const fbJson = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
-  assertStep(41, 'Config', 'firebase.json emulator port isolated to 8088', fbJson.emulators?.firestore?.port === 8088 && INITIAL_NEIGHBORHOODS.length >= 35, 'Port 8088 and neighborhood count verified');
+  // Step 41: Local Cloudflare Worker uses isolated local D1 databases and canonical migration ledgers.
+  const parseAuditJsonc = (raw: string) => JSON.parse(raw.replace(/,\s*([}\]])/g, '$1'));
+  const localWrangler = parseAuditJsonc(fs.readFileSync('wrangler.local.jsonc', 'utf8'));
+  const localD1Bindings = localWrangler.d1_databases ?? [];
+  const localUserDb = localD1Bindings.find((d: { binding: string }) => d.binding === 'USER_DB');
+  const localLegacyAlias = localD1Bindings.find((d: { binding: string }) => d.binding === 'DB');
+  const localResearchDb = localD1Bindings.find((d: { binding: string }) => d.binding === 'RESEARCH_DB');
+  const localD1IsolationVerified =
+    localWrangler.main === 'worker/index.ts' &&
+    localUserDb?.database_id === localLegacyAlias?.database_id &&
+    localUserDb?.database_id !== localResearchDb?.database_id &&
+    localUserDb?.migrations_dir === 'migrations/user-d1' &&
+    localResearchDb?.migrations_dir === 'migrations/research-d1' &&
+    fs.existsSync('migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql') &&
+    fs.existsSync('migrations/research-d1/0001_research_schema_and_events.sql');
+  assertStep(41, 'Config', 'Local Cloudflare Worker has isolated USER_DB/RESEARCH_DB and canonical migration ledgers',
+    localD1IsolationVerified, 'Local D1 bindings, compatibility alias and both migration directories verified');
 
-  // Step 42: .firebaserc contains production project identifier
-  const fbRc = JSON.parse(fs.readFileSync('.firebaserc', 'utf8'));
-  assertStep(42, 'Config', '.firebaserc targets gen-lang-client-0713157837', fbRc.projects?.default === 'gen-lang-client-0713157837', 'Project id verified');
+  // Step 42: Production backend Wrangler config pins the Cloudflare account and physical D1 identity.
+  const backendWrangler = parseAuditJsonc(fs.readFileSync('wrangler.backend.jsonc', 'utf8'));
+  const backendD1Bindings = backendWrangler.d1_databases ?? [];
+  const backendUserDb = backendD1Bindings.find((d: { binding: string }) => d.binding === 'USER_DB');
+  const backendLegacyAlias = backendD1Bindings.find((d: { binding: string }) => d.binding === 'DB');
+  const backendResearchDb = backendD1Bindings.find((d: { binding: string }) => d.binding === 'RESEARCH_DB');
+  const irniServiceBinding = (backendWrangler.services ?? []).find((s: { binding: string }) => s.binding === 'IRNI_GEOGRAPHY');
+  const backendIdentityVerified =
+    backendWrangler.name === 'radartehran-api' &&
+    backendWrangler.account_id === '5bafb2033937006704e81afcc0b18b38' &&
+    backendWrangler.main === 'worker/index.ts' &&
+    backendUserDb?.database_id === backendLegacyAlias?.database_id &&
+    backendUserDb?.database_id !== backendResearchDb?.database_id &&
+    backendUserDb?.migrations_dir === 'migrations/user-d1' &&
+    backendResearchDb?.migrations_dir === 'migrations/research-d1' &&
+    irniServiceBinding?.service === 'irni-api';
+  assertStep(42, 'Config', 'Backend Worker targets the expected account, isolated D1 databases and IRNI service binding',
+    backendIdentityVerified, 'Production account/worker identity and database/service binding metadata verified');
 
   // Step 43: server.ts mounts express and vite middlewares
   const serverSrc = readServerEntrySource(process.cwd());
@@ -496,9 +533,12 @@ export async function runFiftyStepAudit(): Promise<void> {
   const hasSmokeTest = fs.existsSync('tests/browser-smoke.test.ts');
   assertStep(48, 'Test', 'Playwright browser smoke suite exists', hasSmokeTest, 'tests/browser-smoke.test.ts verified');
 
-  // Step 49: Firestore rules test suite presence
-  const hasRulesTest = fs.existsSync('firestore.rules.test.ts');
-  assertStep(49, 'Test', 'Firestore rules behavioral unit test exists', hasRulesTest, 'firestore.rules.test.ts verified');
+  // Step 49: Native D1 identity/session migration and regression coverage
+  const hasNativeSessionMigration = fs.existsSync('migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql');
+  const hasNativeSessionTests = fs.existsSync('tests/cloudflare-native-auth.test.ts') && fs.existsSync('tests/cloudflare-worker-native-auth-failclosed.test.ts');
+  assertStep(49, 'Test', 'Cloudflare D1 native session migration and fail-closed regression tests exist',
+    hasNativeSessionMigration && hasNativeSessionTests,
+    'USER_DB identity migration and D1 session/fail-closed tests verified');
 
   // Step 50: Implementation checkpoint documented
   const hasCheckpoint = fs.existsSync('docs/implementation-checkpoint.md');

@@ -8,7 +8,7 @@ import { ProfessionalEngine } from './professionalEngine';
 import { ProfessionalSearch } from './professionalSearch';
 import { defaultProfessionalStore, type ProfessionalStore } from './professionalStore';
 import { UnavailableRegistryAdapter, type AuthoritativeRegistryAdapter } from './registryVerificationAdapter';
-import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
+import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 
 export interface RealEstateProfessionalsModuleOptions {
   store?: ProfessionalStore;
@@ -24,7 +24,7 @@ export interface RealEstateProfessionalsModuleOptions {
 const registeredApps = new WeakSet<Express>();
 
 async function defaultVerifyUserAuth(req: Request): Promise<string | null> {
-  const result = await verifyFirebaseUserAuthorization(
+  const result = await verifyAuthenticatedUserHeader(
     req.headers as Record<string, string | string[] | undefined>,
   );
   return result.authorized && result.uid ? result.uid : null;

@@ -9,22 +9,11 @@ export interface WorkerRouteAuthCompatibilityResult {
   readonly reasonCode: string;
 }
 
-/**
- * Transitional route authentication for Worker endpoints still serving legacy Firebase
- * clients while browser sessions move to Cloudflare D1.
- *
- * A present Radar session cookie is handled first and fail-closed by
- * resolveWorkerAuthContext; it can never fall back to a Bearer credential.
- * Legacy Firebase Bearer requests continue to require App Check on sensitive routes.
- * Admin-only legacy handlers retain primary-admin-only semantics.
- */
+/** D1 session-only route authentication. The historical module name is retained for imports. */
 export async function authenticateWorkerRouteCompat(
   ctx: WorkerRequestContext,
-  options: { requireAppCheck?: boolean } = {},
 ): Promise<WorkerRouteAuthCompatibilityResult> {
   const resolved = await resolveWorkerAuthContext(ctx.request, {
-    expectedProjectId: ctx.env.FIREBASE_PROJECT_ID,
-    requireAppCheck: options.requireAppCheck === true,
     env: ctx.env,
   });
   const principal = resolved.principal;

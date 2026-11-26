@@ -108,7 +108,7 @@ export class IrniGeographicRpcV2Client {
       return { ok: false, error: result.error };
     }
     const result = await this.getApprovedRegistryMetadata();
-    if (!result.ok) return { ok: false, error: result.error };
+    if (result.ok === false) return { ok: false, error: result.error };
     const metadata = result.value;
     if (
       metadata.contractVersion !== '2.0.0' ||
@@ -140,7 +140,7 @@ export class IrniGeographicRpcV2Client {
     result: IrniRpcResult<T>,
     metadata: IrniRpcMetadataV2,
   ): IrniRpcResult<T> {
-    if (!result.ok) return result;
+    if (result.ok === false) return result;
     if (
       result.value.registryRevision !== metadata.registryRevision ||
       result.value.registryChecksum !== metadata.registryChecksum
@@ -168,7 +168,7 @@ export class IrniGeographicRpcV2Client {
       return failure('VALIDATION_FAILURE', 'شناسه canonical معتبر نیست.');
     }
     const gate = await this.gate(expectedRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
     const result = await this.invoke(
       () => this.binding!.getApprovedEntityByCanonicalId(id, expectedRevision),
       isApprovedEntity,
@@ -195,7 +195,7 @@ export class IrniGeographicRpcV2Client {
       (query.kind === 'RADAR_LEGACY_ALIAS' && !isVersionedRadarAlias(query))
     ) return failure('VALIDATION_FAILURE', 'نوع یا مقدار شناسه برای حل canonical معتبر نیست.');
     const gate = await this.gate(expectedRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
     const result = await this.invoke(
       () => this.binding!.resolveIdentifier(query, expectedRevision),
       isResolution,
@@ -224,7 +224,7 @@ export class IrniGeographicRpcV2Client {
       page.sortDirection !== undefined && page.sortDirection !== 'ASC' && page.sortDirection !== 'DESC'
     ) return failure('VALIDATION_FAILURE', 'پارامترهای صفحه‌بندی خارج از قرارداد مجاز هستند.');
     const gate = await this.gate(expectedRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
     const result = await this.invoke(
       () => this.binding!.listApprovedEntitiesPaginated(filter, page, expectedRevision),
       isEntityPage,
@@ -240,7 +240,7 @@ export class IrniGeographicRpcV2Client {
       return failure('VALIDATION_FAILURE', 'شناسه موجودیت برای دریافت روابط معتبر نیست.');
     }
     const gate = await this.gate(expectedRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
     const result = await this.invoke(
       () => this.binding!.listApprovedRelationshipsForEntity(id, expectedRevision),
       isRelationshipSnapshot,
@@ -256,7 +256,7 @@ export class IrniGeographicRpcV2Client {
       return failure('VALIDATION_FAILURE', 'namespace شناسه legacy معتبر نیست.');
     }
     const gate = await this.gate(expectedRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
     const result = await this.invoke(
       () => this.binding!.listApprovedLegacyAliases(systemCode as IrniRpcLegacySystemCode | undefined, expectedRevision),
       isAliasSnapshot,

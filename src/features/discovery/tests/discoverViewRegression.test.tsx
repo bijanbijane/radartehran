@@ -122,5 +122,5 @@ test('Stage 192: buildNeighborhoodIntelligenceProfile & NeighborhoodIntelligence
   );
 
   assert.match(html, /شناسنامه جامع محله/);
-  assert.match(html, /باز کردن پرونده ۱۱ بخشی محله/);
+  assert.match(html, /مشاهده شناسنامه تکمیلی محله/);
 });

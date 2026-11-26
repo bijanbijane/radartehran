@@ -834,7 +834,8 @@ async function runSuite(): Promise<void> {
       'Admin AI/utility routes and market pulse cache must track auth_failure abuse signals, rate-limit /api/telegram-digest, and sanitize hydrated serverAuditLogs',
     );
 
-    const { verifyX402PaymentHeaders, executeAuthorizedMcpTool, signX402PaymentContextForVerification } = await import('../src/utils/dataCommerceMcpAndMonetization');
+    const { verifyX402PaymentHeaders, signX402PaymentContextForVerification } = await import('../src/utils/x402PaymentVerification.server');
+    const { executeAuthorizedMcpTool } = await import('../src/utils/dataCommerceMcpAndMonetization');
     const testSecret = 'x402_test_secret_key_for_op189_verification';
     const numericTsContextJson = JSON.stringify({
       productId: 'tehran_neighborhood_price_index_v1',
@@ -933,7 +934,8 @@ async function runSuite(): Promise<void> {
     const privateTilePolicy = resolveUpstreamTileCachePolicy({
       get: (name: string) => (name === 'cache-control' ? 'private, max-age=900000' : name === 'etag' ? '"abc\r\ndef"' : null),
     });
-    assert.equal(privateTilePolicy.cacheControl.startsWith('public,'), true, 'resolveUpstreamTileCachePolicy must replace upstream private cache-control with public policy');
+    assert.equal(privateTilePolicy.cacheable, false, 'resolveUpstreamTileCachePolicy must not store upstream private tiles in a shared cache');
+    assert.match(privateTilePolicy.cacheControl, /private/i, 'resolveUpstreamTileCachePolicy must preserve the upstream private restriction');
     assert.equal(privateTilePolicy.etag, '"abcdef"', 'resolveUpstreamTileCachePolicy must strip CR/LF from ETag');
 
     const { clampLatLngRing } = await import('../src/utils/serverBoundaryProtocol');
@@ -1146,15 +1148,14 @@ async function runSuite(): Promise<void> {
       store: new InMemoryJournalStore(),
     });
     assert.equal(syncEmptyObj.journalSyncedCount, 1, 'syncDeletionJournalReconciliationMetrics must safely handle empty objectId on blocked invalid records');
-    const { verifyAndEnforceAppCheckAndAuthSeparation } = await import('../src/utils/firebaseAppCheckSecurity901To920');
-    const nanExpAppCheck = await verifyAndEnforceAppCheckAndAuthSeparation({
+    const { resolveWorkerAuthContext } = await import('../worker/auth/authorizationPolicy');
+    const retiredFirebaseBearer = await resolveWorkerAuthContext(new Request('https://radartehran.ir/api/contract-check', {
       method: 'POST',
-      pathname: '/api/contract-check',
-      headers: { 'x-firebase-appcheck': 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl' },
-      enforcementMode: 'enforced',
-      adminVerifier: async () => ({ appId: '1:935427453422:web:25817d32df713f2a68deff', exp: Number.NaN, iat: 1000 }),
-    });
-    assert.equal(nanExpAppCheck.allowed, false, 'verifyAndEnforceAppCheckAndAuthSeparation must reject NaN exp');
+      headers: { Authorization: 'Bearer legacy-firebase-id-token-fixture' },
+    }), { env: { APP_URL: 'https://radartehran.ir' } });
+    assert.equal(retiredFirebaseBearer.authenticated, false);
+    assert.equal(retiredFirebaseBearer.failureCode, 'FIREBASE_BEARER_TOKEN_RETIRED',
+      'A Firebase ID token must never establish a native Worker session');
     const { validateOutboundServiceDestinationUrl, validateAndCreateBackgroundJob } = await import('../src/utils/telegramAndAsyncJobSecurity801To820');
     assert.equal(validateOutboundServiceDestinationUrl('https://localhost./webhook').allowed, false, 'validateOutboundServiceDestinationUrl must reject trailing-dot localhost.');
     assert.equal(

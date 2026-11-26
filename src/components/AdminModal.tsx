@@ -57,11 +57,9 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     try {
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (idToken) {
-        headers.Authorization = `Bearer ${idToken}`;
-      }
+
       const res = await fetch(`/api/send-telegram?city=${encodeURIComponent(activeCity)}`, {
         method: 'POST',
         headers,
@@ -112,9 +110,15 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
               <Lock className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
-              <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-                {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
-              </h2>
+              {asPageView ? (
+                <h1 className="text-base font-bold text-[var(--color-text-primary)]">
+                  {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
+                </h1>
+              ) : (
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+                  {isVerifiedAdmin ? 'پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)' : 'درگاه ورود مدیران رادار تهران'}
+                </h2>
+              )}
               {isVerifiedAdmin && (
                 <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] tabular-nums">
                   نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م

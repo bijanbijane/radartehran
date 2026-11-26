@@ -70,7 +70,7 @@ function normalizeFeatureFlags(raw: Record<string, unknown> | null | undefined):
       if (key in DEFAULT_FEATURE_FLAGS && typeof value === 'boolean') next[key] = value;
     }
   }
-  return next as FeatureFlags;
+  return next as unknown as FeatureFlags;
 }
 
 function normalizeBargain(value: unknown): BargainListing | null {
@@ -263,7 +263,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
           if (!bargain || !Number.isInteger(hoodId) || hoodId < 1) continue;
           (groupedBargains[hoodId] ||= []).push(bargain);
         }
-        for (const list of Object.values(groupedBargains)) list.sort(sortBargainListingsByCreatedAt);
+        for (const [hoodId, list] of Object.entries(groupedBargains)) groupedBargains[Number(hoodId)] = sortBargainListingsByCreatedAt(list);
         setCloudBargainsByHood(groupedBargains);
 
         const sponsors = (Array.isArray(payload.sponsors) ? payload.sponsors : [])

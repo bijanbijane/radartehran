@@ -70,7 +70,7 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
 
         {activeTopic && (
           <section className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3">
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">محتوای مرتبط با «{activeTopic.titleFa}»</h3>
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">محتوای مرتبط با «{activeTopic.titleFa}»</h2>
             {topicPosts.length === 0 && topicQuestions.length === 0 ? (
               <p className="text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">هنوز گفت‌وگویی با این برچسب موضوعی ثبت نشده است.</p>
             ) : (
@@ -101,10 +101,10 @@ export const CommunityTopicsAndSpatialTab: React.FC<Props> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2.5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
               <LineChart className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>شاخص رسمی سامانه برای محله {selectedHood.name}</span>
-            </h3>
+            </h2>
             <button type="button" onClick={onOpenHoodMarket} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
               تحلیل بازار محله
             </button>

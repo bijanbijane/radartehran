@@ -61,6 +61,8 @@ export interface InitiateDeletionJobRequest {
   targetUid: string;
   targetEmail?: string;
   reason?: string;
+  /** Stable server-generated ID reserved in the user DB write barrier before job creation. */
+  jobId?: string;
 }
 
 export interface ExecuteDeletionStepOptions {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { AuthUserSnapshot } from '../../platform/auth/core/authClient';
 import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
-import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
+
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
 import { type CityId, getAllMultiCityNeighborhoods } from '../../data/multiCityData';
@@ -41,7 +42,7 @@ import { AccountFavoriteNeighborhoodsSection } from '../../features/account/comp
 import { AccountSidebarNav } from '../../features/account/components/AccountSidebarNav';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 export interface ProductUserSpaceViewProps {
-  currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
+  currentUser: AuthUserSnapshot | null; onGoogleSignIn: () => void; onSignOut: () => void;
   favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
   activeCity?: CityId; selectedHood?: EvaluatedNeighborhood; activeSubTab?: AccountSubTabId;
@@ -108,7 +109,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     const scope = includeLocalWorkspace ? 'combined_account_and_workspace' : 'server_account';
     const requestId = generateStableAccountId('dreq');
     try {
-      const serverRes = await requestAccountServerExport({ getToken: () => p.currentUser!.getIdToken(), expectedUid: p.currentUser.uid });
+      const serverRes = await requestAccountServerExport({ currentUser: p.currentUser, expectedUid: p.currentUser.uid });
       if (serverRes.ok === false) {
         const failRes = serverRes as Extract<typeof serverRes, { ok: false }>;
         recordDataRequest('export', 'failed', { uid: effectiveUid, requestId, scope, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
@@ -139,7 +140,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     setBusyAction('delete'); setPrivacyNotice(null); setDeleteLayers(null);
     const requestId = generateStableAccountId('dreq');
     try {
-      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, deleteFirebaseUserFn: (u) => deleteUser(u as FirebaseUser) });
+      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser });
       if (res.ok === false && !res.data) {
         const failRes = res as Extract<typeof res, { ok: false }>;
         recordDataRequest('delete', 'failed', { uid: effectiveUid, requestId, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });

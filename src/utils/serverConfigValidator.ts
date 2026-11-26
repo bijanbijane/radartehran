@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import fs from 'node:fs'; import dns from 'node:dns'; import { fileURLToPath } from 'node:url'; import path from 'node:path'; import { PRIMARY_BOOTSTRAP_ADMIN_EMAIL } from './domainSecurityValidators.ts'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit.ts'; import { API_ENDPOINT_CONTRACTS } from './expressRouteCatalog.ts'; export type { ApiAccessPolicy, ApiEndpointContract } from './expressRouteCatalog.ts'; export { API_ENDPOINT_CONTRACTS }; interface AppletFirebaseConfigJson { projectId: string; firestoreDatabaseId: string; apiKey?: string; authDomain?: string; }
+import crypto from 'node:crypto'; import fs from 'node:fs'; import dns from 'node:dns'; import { fileURLToPath } from 'node:url'; import path from 'node:path'; import { PRIMARY_BOOTSTRAP_ADMIN_EMAIL } from './domainSecurityValidators.ts'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit.ts'; import { API_ENDPOINT_CONTRACTS } from './expressRouteCatalog.ts'; import { RADAR_SESSION_COOKIE } from '../../worker/auth/sessionAuth.ts'; export type { ApiAccessPolicy, ApiEndpointContract } from './expressRouteCatalog.ts'; export { API_ENDPOINT_CONTRACTS }; interface AppletFirebaseConfigJson { projectId: string; firestoreDatabaseId: string; apiKey?: string; authDomain?: string; }
 function loadAuthoritativeFirebaseConfig(): AppletFirebaseConfigJson { try { const currentDir = path.dirname(fileURLToPath(import.meta.url)); const configPath = path.resolve(currentDir, '../../firebase-applet-config.json'); const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as Partial<AppletFirebaseConfigJson>; if (typeof parsed.projectId === 'string' && parsed.projectId.trim() && typeof parsed.firestoreDatabaseId === 'string' && parsed.firestoreDatabaseId.trim()) { return { projectId: parsed.projectId.trim(), firestoreDatabaseId: parsed.firestoreDatabaseId.trim(), apiKey: parsed.apiKey, authDomain: parsed.authDomain }; } } catch { /* Fallback to provisioned project & database constants */ }
   return { projectId: 'gen-lang-client-0713157837', firestoreDatabaseId: 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a' }; } const AUTHORITATIVE_FIREBASE_CONFIG = loadAuthoritativeFirebaseConfig(); export const EXPECTED_FIREBASE_PROJECT_ID = 'gen-lang-client-0713157837'; export const EXPECTED_FIRESTORE_DATABASE_ID = 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a'; export const AUTHORITATIVE_FIREBASE_PROJECT_ID = EXPECTED_FIREBASE_PROJECT_ID; export const AUTHORITATIVE_FIRESTORE_DATABASE_ID = EXPECTED_FIRESTORE_DATABASE_ID; export const DEFAULT_BOOTSTRAP_ADMIN_EMAIL = PRIMARY_BOOTSTRAP_ADMIN_EMAIL; export const TELEGRAM_MAX_MESSAGE_LENGTH = 4096; export interface ValidatedServerConfig { port: number; appUrl: string | null; geminiApiKey: string | null; geminiModel: string; geminiConfigured: boolean; telegramBotToken: string | null; telegramChannelId: string | null; telegramConfigured: boolean;
   telegramWebhookSecret: string | null; adminEmail: string; adminApiSecret: string | null; firebaseProjectId: string; firestoreDatabaseId: string; } export function isPlaceholderValue(val: string | undefined): boolean { if (!val) return true; const trimmed = val.trim(); if (!trimmed) return true; const upper = trimmed.toUpperCase(); return ( upper.startsWith('MY_') || upper.startsWith('YOUR_') || upper === 'PLACEHOLDER' || upper === 'TODO' || upper === 'CHANGEME' || upper === 'UNDEFINED' || upper === 'NULL' ); } export function isPrivateOrReservedIpLiteral(host: string): boolean { const clean = host.trim().toLowerCase().replace(/^\[|\]$/g, ''); if ( clean === 'localhost' || clean.endsWith('.localhost') || clean.endsWith('.local') || clean.endsWith('.internal') ||
@@ -238,7 +238,42 @@ export function buildOpenApiSpecification(baseUrl = 'http://localhost:3000', are
   const paths: Record<string, Record<string, unknown>> = {};
   for (const ep of API_ENDPOINT_CONTRACTS) {
     if (!paths[ep.path]) paths[ep.path] = {};
-    const xAuthLevel = ep.adminOnly ? 'admin_only' : ep.authRequired ? 'verified_firebase_user' : 'public';
+    const xAuthLevel = ep.adminOnly ? 'admin_only' : ep.authRequired ? 'verified_cloudflare_session' : 'public';
     paths[ep.path][ep.method.toLowerCase()] = {
       summary: ep.summary,
-      'x-access-policy': ep.accessPolicy, 'x-auth-level': xAuthLevel, 'x-rate-limit-per-minute': ep.rateLimitPerMinute, security: ep.authRequired ? [{ BearerAuth: [] }] : [], responses: { '200': { description: 'Successful operation' }, '400': { description: 'Validation error' }, ...(ep.authRequired ? { '401': { description: 'Unauthorized' }, '403': { description: 'Forbidden' } } : {}), '404': { description: 'Route or resource not found' }, '429': { description: 'Rate limit exceeded' }, }, }; } return { openapi: '3.1.0', info: { title: 'Tehran & Multi-City Housing Radar API', version: '3.2.0', description: 'Authoritative API contract for Tehran Housing Radar (رادار هوشمند مسکن)', 'x-display-area-unit': formatAreaUnitLabel(areaUnit), 'x-reference-valuation-intl': formatMillionTomanAsIntlCurrency(120, intlCurrency, 'en') }, servers: [{ url: baseUrl }], paths, }; }
+      'x-access-policy': ep.accessPolicy,
+      'x-auth-level': xAuthLevel,
+      'x-rate-limit-per-minute': ep.rateLimitPerMinute,
+      security: ep.authRequired ? [{ CloudflareSessionCookie: [] }] : [],
+      responses: {
+        '200': { description: 'Successful operation' },
+        '400': { description: 'Validation error' },
+        ...(ep.authRequired ? { '401': { description: 'Unauthorized' }, '403': { description: 'Forbidden' } } : {}),
+        '404': { description: 'Route or resource not found' },
+        '429': { description: 'Rate limit exceeded' },
+      },
+    };
+  }
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'Tehran & Multi-City Housing Radar API',
+      version: '3.2.0',
+      description: 'Authoritative API contract for Tehran Housing Radar (رادار هوشمند مسکن). Authenticated endpoints require the opaque, D1-backed Cloudflare session cookie; Firebase Bearer tokens are not accepted.',
+      'x-display-area-unit': formatAreaUnitLabel(areaUnit),
+      'x-reference-valuation-intl': formatMillionTomanAsIntlCurrency(120, intlCurrency, 'en'),
+    },
+    servers: [{ url: baseUrl }],
+    components: {
+      securitySchemes: {
+        CloudflareSessionCookie: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: RADAR_SESSION_COOKIE,
+          description: 'Opaque HttpOnly D1-backed session cookie issued by the Cloudflare Worker. Same-origin browser credentials are required; clients must not supply a UID or Firebase Bearer token.',
+        },
+      },
+    },
+    paths,
+  };
+}

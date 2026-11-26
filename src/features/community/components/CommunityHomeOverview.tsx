@@ -69,7 +69,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => onSwitchTab('guidelines')}
-            className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+            className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             <span>آیین‌نامه رفتار و اعتراض</span>
@@ -102,7 +102,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
               <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گفت‌وگوهای برگزیده (رتبه‌بندی چندعاملی مرتبط با {selectedHood.name})</span>
             </h3>
-            <button type="button" onClick={() => onSwitchTab('discussions')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer">
+            <button type="button" onClick={() => onSwitchTab('discussions')} className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline inline-flex items-center gap-1 cursor-pointer">
               <span>همه گفت‌وگوها</span><ArrowLeft className="w-3 h-3" />
             </button>
           </div>
@@ -134,7 +134,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
           <div className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">پرسش‌های نیازمند پاسخ تخصصی</h3>
-              <button type="button" onClick={() => onSwitchTab('questions')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
+              <button type="button" onClick={() => onSwitchTab('questions')} className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                 مشاهده پرسش‌ها
               </button>
             </div>
@@ -155,7 +155,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
           <div className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">اصلاحات داده در صف ممیزی</h3>
-              <button type="button" onClick={() => onSwitchTab('data_contribution')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
+              <button type="button" onClick={() => onSwitchTab('data_contribution')} className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                 ثبت اصلاح داده
               </button>
             </div>
@@ -176,7 +176,7 @@ export const CommunityHomeOverview: React.FC<Props> = ({
           <div className="p-4 rounded-[14px] bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2.5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">موضوعات تخصصی فعال</h3>
-              <button type="button" onClick={() => onSwitchTab('topics')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer tabular-nums">
+              <button type="button" onClick={() => onSwitchTab('topics')} className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer tabular-nums">
                 همه {toPersianNum(topics.length)} موضوع
               </button>
             </div>

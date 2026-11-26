@@ -28,13 +28,12 @@ import {
 import {
   auditDatasetCommercialEligibility,
   buildX402PaymentChallenge,
-  signX402PaymentContextForVerification,
-  verifyX402PaymentHeaders,
   MonetizationLedgerAndSimulator,
   executeAuthorizedMcpTool,
   AUTHORIZED_MCP_TOOL_DESCRIPTORS,
   MANDATORY_PAYMENT_SIMULATION_BANNER,
 } from '../src/utils/dataCommerceMcpAndMonetization';
+import { signX402PaymentContextForVerification, verifyX402PaymentHeaders } from '../src/utils/x402PaymentVerification.server';
 import {
   verifyMasterPromptIntegrity,
   validateRmepExecutionState,
@@ -285,13 +284,16 @@ async function runTests() {
   assert.equal(promptVerification.matchesPinnedBaseline, true);
 
   const reconciledState = readAndReconcileExecutionState();
-  assert.equal(
-    reconciledState.reconciled,
-    true,
-    `RMEP EXECUTION-STATE discrepancies: ${reconciledState.discrepancies.join(', ')}`
-  );
   assert.equal(reconciledState.state?.program_id, 'RMEP-001');
-  assert.equal(reconciledState.state?.program_status, 'COMPLETED_WITH_EVIDENCE');
+  assert.equal(reconciledState.state?.program_status, 'PARTIALLY_VERIFIED');
+  assert.equal(reconciledState.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
+  assert.equal(reconciledState.state?.current_workstream.task_status, 'IN_PROGRESS');
+  assert.equal(reconciledState.state?.checkpoint.resume_status, 'READY');
+  // Reconciliation means the checkpoint, evidence and current architecture agree.
+  // It does not mean the full migration is complete; Phase 6 remains PARTIALLY_VERIFIED.
+  assert.equal(reconciledState.reconciled, true, reconciledState.discrepancies.join('; '));
+  assert.equal(reconciledState.discrepancies.length, 0);
+  assert.equal(reconciledState.state?.phase_statuses.phase_6, 'PARTIALLY_VERIFIED');
 
   // Verify secret rejection in declarative state
   if (reconciledState.state) {

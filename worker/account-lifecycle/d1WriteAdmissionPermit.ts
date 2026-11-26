@@ -113,3 +113,23 @@ export async function releaseD1MutationPermit(params: {
     );
   }
 }
+
+export async function countActiveD1MutationPermits(params: {
+  db: D1DatabaseBinding;
+  targetUid: string;
+  nowMs?: number;
+}): Promise<number> {
+  const targetUid = params.targetUid.trim();
+  const nowMs = params.nowMs ?? Date.now();
+  if (!targetUid || targetUid.length > 128 || !Number.isSafeInteger(nowMs) || nowMs < 0) {
+    throw new D1MutationPermitError('INVALID_MUTATION_PERMIT_INPUT', 'Mutation permit count request is invalid.', 400);
+  }
+  const result = await params.db.prepare(
+    "SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE target_uid = ?1 AND status = 'ACTIVE' AND released_at_iso IS NULL AND expires_at_ms > ?2",
+  ).bind(targetUid, nowMs).first<{ cnt: number }>();
+  const count = Number(result?.cnt);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new D1MutationPermitError('MUTATION_PERMIT_COUNT_UNAVAILABLE', 'Active mutation permits could not be counted.', 503);
+  }
+  return count;
+}

@@ -43,7 +43,7 @@ export interface UseLeafletRadarMapParams {
 }
 
 const readDomDarkClass = (): boolean => typeof document !== 'undefined' && (document.documentElement.classList.contains('apple-dark') || document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-radar-theme') === 'dark');
-const getIsDarkMap = (mapTileStyle: MapTileServerId, domDark: boolean): boolean => mapTileStyle === 'carto_dark' || mapTileStyle === 'satellite' || domDark;
+const getIsDarkMap = (_mapTileStyle: MapTileServerId, domDark: boolean): boolean => domDark;
 
 export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const { shouldMountMap = true, activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick, navigationIntentRef, onMapAutoSwitchCity, onGeoContextStatusChange } = params;

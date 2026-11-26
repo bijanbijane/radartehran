@@ -27,7 +27,39 @@ export function evaluateStranglerFallbackSafety(params: {
     return { allowed: false, reasonCode: 'FALLBACK_DISABLED' };
   }
   const originUrl = String(params.env.STRANGLER_ORIGIN_URL || '').trim();
-  if (!originUrl.startsWith('https://')) {
+  let origin: URL | null = null;
+  try {
+    origin = new URL(originUrl);
+  } catch {
+    origin = null;
+  }
+  const runtimeEnv = String(params.env.WORKER_ENV || params.env.ENVIRONMENT || params.env.APP_ENV || 'development')
+    .trim().toLowerCase();
+  const secureOrigin = origin?.protocol === 'https:';
+  const isolatedLocalDockerOrigin =
+    runtimeEnv === 'development' &&
+    origin?.protocol === 'http:' &&
+    origin.hostname === 'radar-main' &&
+    origin.port === '3000' &&
+    origin.pathname === '/' &&
+    !origin.username &&
+    !origin.password &&
+    !origin.search &&
+    !origin.hash;
+  // Native macOS development runs Express on a loopback-only port. Permit this one
+  // exact origin only in development; do not broaden to localhost, arbitrary ports,
+  // LAN addresses, or HTTP in staging/production.
+  const isolatedNativeLoopbackOrigin =
+    runtimeEnv === 'development' &&
+    origin?.protocol === 'http:' &&
+    origin.hostname === '127.0.0.1' &&
+    origin.port === '3001' &&
+    origin.pathname === '/' &&
+    !origin.username &&
+    !origin.password &&
+    !origin.search &&
+    !origin.hash;
+  if (!secureOrigin && !isolatedLocalDockerOrigin && !isolatedNativeLoopbackOrigin) {
     return { allowed: false, reasonCode: 'ORIGIN_URL_NOT_CONFIGURED' };
   }
   const currentHop = Number(params.request.headers.get(WORKER_HOP_HEADER) || '0');

@@ -8,8 +8,8 @@ export interface NeighborhoodOverrideDto { hoodId: number; buyPerSqm?: number; r
 export interface SaveNeighborhoodOverrideInput { cityId?: string; hoodId: number; buyPerSqm: number; rahn80m: number; pros?: string; cons?: string; sponsor?: Neighborhood['sponsor']; }
 export interface CreateBargainInput { cityId?: string; hoodId: number; hoodName?: string; title: string; type: 'خرید' | 'اجاره'; sqm: number; priceText: string; discountPercent: number; buyerProfitText: string; street: string; imageUrl?: string; imageUrls?: string[]; videoUrl?: string; objectStorageBucket?: string; objectStorageKeys?: string[]; objectStorageObjectIds?: string[]; }
 export interface SubmitResidentVoteInput { cityId?: string; hoodId: number; hoodName: string; userId: string; userDisplayName: string; air: number; powerWater: number; internet: number; metro: number; security: number; flatTerrain: number; comment: string; locationVerified: boolean; }
-export interface UpsertBuyerAlertInput { cityId?: string; userId: string; hoodId: number; hoodName: string; fullName: string; phone: string; dealType: 'خرید' | 'اجاره'; maxBudgetText: string; consentVersion?: string; }
-export interface CreateSponsorRequestInput { cityId?: string; hoodId: number; hoodName: string; agencyName: string; phone: string; specialty: string; experienceYears: number; monthlyTariffMillion: number; planMonths: 1 | 3; totalPayableMillion: number; trackingCode: string; expiresAtIso: string; status: 'pending' | 'approved'; }
+export interface UpsertBuyerAlertInput { cityId?: string; userId: string; hoodId: number; hoodName: string; fullName: string; phone: string; dealType: 'خرید' | 'اجاره'; maxBudgetMillion: number; privacyConsent: boolean; consentVersion?: string; }
+export interface CreateSponsorRequestInput { cityId?: string; hoodId: number; hoodName: string; agencyName: string; phone: string; specialty: string; experienceYears: number; planMonths: 1 | 3; }
 export interface SaveUserPreferencesInput { cityId?: string; userId: string; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number; targetSqm: number; workHubId: string; favoriteHoodIds: number[]; }
 export interface ParsedUserPreferences { mode?: 'rent' | 'buy'; deposit?: number; monthlyRent?: number; buyTotalBudget?: number; targetSqm?: number; workHubId?: string; favoriteHoodIds: number[]; }
 const overrideCacheByHoodId = new Map<string, string>();
@@ -54,7 +54,7 @@ export function buildSanitizedSponsorMap(s?: Neighborhood['sponsor']): Neighborh
 }
 export function buildSanitizedOverridePayload(input: SaveNeighborhoodOverrideInput): Record<string, unknown> {
   const hoodId = Math.round(Number(input.hoodId));
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) throw new Error('INVALID_HOOD_ID');
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) throw new Error('INVALID_HOOD_ID');
   const cleanSponsor = buildSanitizedSponsorMap(input.sponsor);
   return sanitizePayload({
     hoodId,
@@ -83,7 +83,7 @@ export function mapFirestoreDocToOverride(
   const explicitHoodId = d.hoodId !== undefined && d.hoodId !== null ? Number(d.hoodId) : NaN;
   if (Number.isInteger(docSuffixNum) && Number.isInteger(explicitHoodId) && docSuffixNum !== explicitHoodId) return null;
   const hoodId = Number.isInteger(explicitHoodId) ? explicitHoodId : docSuffixNum;
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) return null;
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) return null;
   const buyPerSqm = typeof d.buyPerSqm === 'number' && d.buyPerSqm >= 10 && d.buyPerSqm <= 5000 ? d.buyPerSqm : undefined;
   const rahn80m = typeof d.rahn80m === 'number' && d.rahn80m >= 0 && d.rahn80m <= 100000 ? d.rahn80m : undefined;
   const pros = typeof d.pros === 'string' && d.pros.trim() ? d.pros.slice(0, 400) : undefined;
@@ -148,7 +148,7 @@ export function mergeNeighborhoodOverridesIntoList(
 }
 export function mapFirestoreDocToBargain(docId: string, d: Record<string, any>): { hoodId: number; listing: BargainListing } | null {
   const hoodId = Number(d.hoodId);
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999 || typeof d.title !== 'string' || typeof d.priceText !== 'string' || typeof d.street !== 'string') {
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999 || typeof d.title !== 'string' || typeof d.priceText !== 'string' || typeof d.street !== 'string') {
     return null;
   }
   const imageUrls = Array.isArray(d.imageUrls) ? d.imageUrls.filter((u: unknown): u is string => typeof u === 'string' && u.length <= 500).slice(0, 5) : undefined;
@@ -211,7 +211,7 @@ export function buildSanitizedVotePayload(input: SubmitResidentVoteInput): {
 }
 export function mapFirestoreDocToVote(docId: string, d: Record<string, any>): ResidentVoteDoc | null {
   const hoodId = Number(d.hoodId);
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) return null;
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) return null;
   const validScore = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 10 ? v : 7);
   return {
     id: docId, hoodId,
@@ -230,7 +230,7 @@ export function mapFirestoreDocToSponsorRequest(
   nowMs: number
 ): { item: SponsorCrmRequestItem; activeSponsor?: NeighborhoodSponsor } | null {
   const hoodId = Number(d.hoodId);
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999 || typeof d.agencyName !== 'string' || typeof d.phone !== 'string') return null;
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999 || typeof d.agencyName !== 'string' || typeof d.phone !== 'string') return null;
   const status = d.status === 'approved' ? 'approved' : 'pending';
   const planMonths = d.planMonths === 3 ? 3 : 1;
   const createdDate = typeof d.createdAt?.toDate === 'function' ? d.createdAt.toDate() : null;
@@ -258,7 +258,7 @@ export function mapFirestoreDocToSponsorRequest(
 }
 export function mapFirestoreDocToBuyerLead(docId: string, d: Record<string, any>, nowMs: number): BuyerAlertLeadItem | null {
   const hoodId = Number(d.hoodId);
-  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999 || typeof d.fullName !== 'string' || typeof d.phone !== 'string') return null;
+  if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999 || typeof d.fullName !== 'string' || typeof d.phone !== 'string') return null;
   const expDate = typeof d.expiresAt?.toDate === 'function' ? d.expiresAt.toDate() : null;
   if (expDate && expDate.getTime() <= nowMs) return null;
   const createdDate = typeof d.createdAt?.toDate === 'function' ? d.createdAt.toDate() : null;

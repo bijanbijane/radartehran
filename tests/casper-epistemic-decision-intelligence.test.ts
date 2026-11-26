@@ -931,6 +931,7 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     assert.equal(zeroMadSummary.evaluatedObservations.find((o) => o.id === 'obs-5-true-outlier')?.isOutlier, true);
 
     // 2. Server Valuation Seal clamps floor <= totalFloors and cryptographically verifies HMAC signature
+    const testSealSecret = 'a'.repeat(64);
     const seal = computeServerValuationSeal({
       cityId: 'tehran',
       hoodId: 1,
@@ -938,14 +939,14 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       buildYear: 1402,
       floor: 14,
       totalFloors: 5,
-    });
+    }, { sealSecret: testSealSecret });
     assert.equal(seal.hedonicValuation.floor, 5, 'Floor must be clamped to totalFloors (5)');
-    assert.equal(verifyServerValuationSeal(seal), true, 'Valid server seal must pass cryptographic verification');
+    assert.equal(verifyServerValuationSeal(seal, { sealSecret: testSealSecret }), true, 'Valid server seal must pass cryptographic verification');
     assert.equal(
       verifyServerValuationSeal({
         ...seal,
         hedonicValuation: { ...seal.hedonicValuation, hedonicTotalMillion: seal.hedonicValuation.hedonicTotalMillion + 500 },
-      }),
+      }, { sealSecret: testSealSecret }),
       false,
       'Tampered valuation payload must fail cryptographic seal verification',
     );

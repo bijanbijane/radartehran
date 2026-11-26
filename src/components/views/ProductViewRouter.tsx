@@ -24,6 +24,7 @@ const ProductUserSpaceView = React.lazy(() => import('./ProductUserSpaceView').t
 const ProductSecondaryHubView = React.lazy(() => import('./ProductSecondaryHubView').then((m) => ({ default: m.ProductSecondaryHubView })));
 const ProductAdminMonitoringView = React.lazy(() => import('./ProductAdminMonitoringView').then((m) => ({ default: m.ProductAdminMonitoringView })));
 const NeighborhoodDetailView = React.lazy(() => import('./NeighborhoodDetailView').then((m) => ({ default: m.NeighborhoodDetailView })));
+const UnifiedSearchPage = React.lazy(() => import('../../features/search/pages/UnifiedSearchPage').then((m) => ({ default: m.UnifiedSearchPage })));
 
 export interface ProductViewRouterProps {
   primaryView: PrimaryViewId; ui: any;
@@ -42,7 +43,7 @@ export interface ProductViewRouterProps {
 export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const { primaryView, ui, evaluatedNeighborhoods, selectedHood, handleSelectNeighborhood, onSplitMapModeChange } = p;
   const homeContentFirst = primaryView === 'home';
-  const supportsSplitMap = (primaryView === 'discover' && ui.activeSubTab !== 'registry') || primaryView === 'properties';
+  const supportsSplitMap = (primaryView === 'discover' && ui.activeSubTab !== 'registry' && ui.activeSubTab !== 'search') || primaryView === 'properties';
   const [splitMapMode, setSplitMapMode] = React.useState<boolean>(false);
   const effectiveSplitMap = supportsSplitMap && splitMapMode;
   React.useEffect(() => {
@@ -69,6 +70,20 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const secondaryTabs = resolveSecondaryTabsForView(primaryView); const effectiveSubTab = resolveEffectiveSubTab(primaryView, ui.activeSubTab);
   const activeCityName = resolveActiveCityDisplayName(p.activeCity, isEn);
   const navigateTo = (view: PrimaryViewId, subTab?: ModuleSubTabId) => { ui.setActiveSubTab?.(subTab); ui.setPrimaryView(view); };
+  const handleSearchEntitySelection = (entityType: string, entityId: string) => {
+    const safeId = encodeURIComponent(entityId.trim());
+    if (!safeId || typeof window === 'undefined') return;
+    const targetPath = entityType === 'property' || entityType === 'listing'
+      ? `/properties/${safeId}`
+      : entityType === 'neighborhood'
+        ? `/areas/${safeId}`
+        : entityType === 'service'
+          ? `/services/providers/${safeId}`
+          : entityType === 'market-analytics'
+            ? '/market'
+            : '/areas';
+    window.location.assign(targetPath);
+  };
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : '';
   const isNeighborhoodDetailSlug =
@@ -133,7 +148,9 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
       />
     );
   } else if (primaryView === 'discover') {
-    content = effectiveSubTab === 'registry' ? (
+    content = effectiveSubTab === 'search' ? (
+      <UnifiedSearchPage cityId={p.activeCity} areaUnit={areaUnit} onSelectEntity={handleSearchEntitySelection} />
+    ) : effectiveSubTab === 'registry' ? (
       <GeographicRegistryView />
     ) : isNeighborhoodDetailSlug ? (
       <NeighborhoodDetailView

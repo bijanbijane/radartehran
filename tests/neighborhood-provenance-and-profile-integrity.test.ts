@@ -85,15 +85,16 @@ test('Stage 26.3: AnalyticsPlatformEngine returns UNAVAILABLE when observed data
   assert.equal(simSnap.distribution?.uniqueEntityCount, 9);
 });
 
-test('Stage 26.4: buildNeighborhoodIntelligenceProfile returns operational boundary status and separates asking price from optional dealPricePerSqm', () => {
+test('Stage 26.4: buildNeighborhoodIntelligenceProfile blocks unverified area claims and separates asking price from the optional negotiation scenario', () => {
   assert.equal(formatNullSafeMetricValue(null), '—');
   assert.equal(formatNullSafeMetricValue(0), '۰');
   assert.equal(evaluateMarketSampleAdequacy(8).adequate, false);
 
   const hood = EVALUATED_HOODS[0];
   const profileWithoutDeal = buildNeighborhoodIntelligenceProfile(hood, EVALUATED_HOODS, 'tehran');
-  assert.equal(profileWithoutDeal.boundary.status, 'operational');
-  assert.ok(profileWithoutDeal.boundary.statusLabelFa.includes('عملیاتی'));
+  assert.equal(profileWithoutDeal.boundary.status, 'under-review');
+  assert.equal(profileWithoutDeal.boundary.areaKm2, null);
+  assert.ok(profileWithoutDeal.boundary.statusLabelFa.includes('تأیید و مساحت‌سنجی نشده'));
   const askingWithoutDeal = profileWithoutDeal.quickMetrics.find((m) => m.id === 'asking-median');
   assert.equal(askingWithoutDeal?.comparisonLabel, undefined, 'comparisonLabel must be undefined when dealPricePerSqm is omitted');
 

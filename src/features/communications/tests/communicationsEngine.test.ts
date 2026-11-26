@@ -14,7 +14,8 @@ import {
   sanitizeInternalDeepLink,
 } from '../services/commsEngine';
 import { EVENT_POLICY_REGISTRY, renderSafeTemplateText } from '../registries/eventPolicyAndTemplateRegistry';
-import { paginateConversationMessages, registerCommunicationsRoutes, toConversationSummary } from '../../../../server/modules/communications/commsRoutes';
+import { registerCommunicationsRoutes } from '../../../../server/modules/communications/commsRouteRegistrar';
+import { paginateConversationMessages, toConversationSummary } from '../../../../server/modules/communications/commsRoutes';
 import { resolveRouteFromLocation } from '../../../navigation/url/navigationUrlContract';
 
 test('COMMS-T01/T02: Event ingestion validates transactionCommitted, recipientActive, and enforces idempotency dedupe', () => {

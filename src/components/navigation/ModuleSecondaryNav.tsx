@@ -94,7 +94,7 @@ export const ModuleSecondaryNav: React.FC<ModuleSecondaryNavProps> = ({
       )}
       {showModuleTabs && tabs && onSelectSubTab && (
         <nav
-          aria-label={isEn ? 'Module sections' : 'زیرصفحات بخش'}
+          aria-label={isEn ? 'Module sections' : primaryView === 'contributions' ? 'بخش‌های جامعه کاربران' : 'زیرصفحات بخش'}
           className="max-w-[1320px] mx-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5"
         >
           {tabs.map((tab) => {

@@ -148,7 +148,7 @@ export async function authenticateWorkerSession(
       const revokedBeforeSeconds = parsedWatermark >= 1_000_000_000_000
         ? Math.floor(parsedWatermark / 1000)
         : parsedWatermark;
-      if (!Number.isSafeInteger(revokedBeforeSeconds) || revokedBeforeSeconds < 1 || createdAtSeconds <= revokedBeforeSeconds) {
+      if (!Number.isSafeInteger(revokedBeforeSeconds) || revokedBeforeSeconds < 1 || createdAtMs < (revokedBeforeSeconds + 1) * 1000) {
         return unauthenticated('SESSION_REVOKED');
       }
     }

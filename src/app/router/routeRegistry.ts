@@ -1,5 +1,14 @@
-import { AppShellLayoutKind } from '../application-shell';
-import { AppRole, PermissionKey } from '../../platform/auth';
+/**
+ * Compatibility projection for legacy AppShell RouteDefinitions.
+ * Canonical route metadata lives in PUBLIC_ROUTES and ADMIN_ROUTES; this file
+ * derives the old registration shape so existing error-boundary consumers
+ * do not maintain a competing route table.
+ */
+import type { AppShellLayoutKind } from '../application-shell';
+import type { AppRole, PermissionKey } from '../../platform/auth';
+import { ADMIN_ROUTES } from '../../navigation/registry/admin.routes';
+import { PUBLIC_ROUTES } from '../../navigation/registry/public.routes';
+import type { RouteDefinition } from '../../navigation/registry/route.types';
 
 export interface RouteRegistration {
   id: string;
@@ -14,90 +23,34 @@ export interface RouteRegistration {
   lazyBoundary: boolean;
 }
 
-export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = [
-  {
-    id: 'radar-map',
-    path: '/',
-    titleFa: 'نقشه هوشمند و رادار قیمت مسکن تهران',
-    layout: 'main',
-    requiresAuth: false,
-    lazyBoundary: false,
-  },
-  {
-    id: 'auth-login',
-    path: '/login',
-    canonicalRedirectPath: '/account',
-    titleFa: 'ورود به حساب کاربری رادار تهران',
-    layout: 'public',
-    requiresAuth: false,
-    guestOnly: true,
-    lazyBoundary: true,
-  },
-  {
-    id: 'profile',
-    path: '/profile',
-    canonicalRedirectPath: '/account/profile',
-    titleFa: 'پروفایل و پرتفوی شخصی',
-    layout: 'authenticated',
-    requiresAuth: true,
-    lazyBoundary: true,
-  },
-  {
-    id: 'saved-searches',
-    path: '/saved-searches',
-    canonicalRedirectPath: '/account/saved-searches',
-    titleFa: 'جستجوهای ذخیره‌شده و هشدارها',
-    layout: 'authenticated',
-    requiresAuth: true,
-    lazyBoundary: true,
-  },
-  {
-    id: 'escrow-deals',
-    path: '/escrow',
-    canonicalRedirectPath: '/tools',
-    titleFa: 'معاملات امن و حساب امانی',
-    layout: 'authenticated',
-    requiresAuth: true,
-    requiredPermissions: ['escrow:initiate'],
-    lazyBoundary: true,
-  },
-  {
-    id: 'agency-workspace',
-    path: '/agency/workspace',
-    canonicalRedirectPath: '/services/agencies',
-    titleFa: 'میزکار آژانس املاک و مشاوران',
-    layout: 'authenticated',
-    requiresAuth: true,
-    allowedRoles: ['agency_agent', 'agency_admin', 'admin'],
-    requiredPermissions: ['lead:manage'],
-    lazyBoundary: true,
-  },
-  {
-    id: 'service-workspace',
-    path: '/service/orders',
-    canonicalRedirectPath: '/services',
-    titleFa: 'میزکار ارائه‌دهندگان خدمات ملکی',
-    layout: 'authenticated',
-    requiresAuth: true,
-    allowedRoles: ['service_provider', 'admin'],
-    requiredPermissions: ['service_order:fulfill'],
-    lazyBoundary: true,
-  },
-  {
-    id: 'admin-governance',
-    path: '/admin/governance',
-    canonicalRedirectPath: '/admin',
-    titleFa: 'پنل حاکمیت و مدیریت رادار تهران',
-    layout: 'admin',
-    requiresAuth: true,
-    allowedRoles: ['admin'],
-    requiredPermissions: ['admin:governance'],
-    lazyBoundary: true,
-  },
-] as const;
+const CANONICAL_ROUTES: readonly RouteDefinition[] = [...PUBLIC_ROUTES, ...ADMIN_ROUTES];
+
+function toRegistration(route: RouteDefinition, path: string, aliasIndex: number): RouteRegistration {
+  const isAlias = aliasIndex > 0;
+  const layout: AppShellLayoutKind = route.path === '/' ? 'main' : route.shell === 'admin' ? 'admin' : 'public';
+  return {
+    id: isAlias ? `${route.id}:alias:${aliasIndex}` : route.id,
+    path,
+    canonicalRedirectPath: isAlias ? route.path : undefined,
+    titleFa: route.titleFa,
+    layout,
+    requiresAuth: route.shell === 'admin' || route.requiredPermissions.length > 0,
+    requiredPermissions: [...route.requiredPermissions] as PermissionKey[],
+    lazyBoundary: route.path !== '/',
+  };
+}
+
+export const CENTRAL_ROUTE_REGISTRY: readonly RouteRegistration[] = CANONICAL_ROUTES.flatMap((route) => {
+  const paths = [route.path, ...(route.aliases ?? [])];
+  return paths.map((path, index) => toRegistration(route, path, index));
+});
 
 export function findRegisteredRoute(path: string): RouteRegistration | undefined {
-  return CENTRAL_ROUTE_REGISTRY.find(
-    (r) => r.path === path || (r.path !== '/' && path.startsWith(r.path))
-  ) ?? CENTRAL_ROUTE_REGISTRY[0];
+  const normalized = path.replace(/\/+$/, '') || '/';
+  const exact = CENTRAL_ROUTE_REGISTRY.find((route) => route.path === normalized);
+  if (exact) return exact;
+  return CENTRAL_ROUTE_REGISTRY
+    .filter((route) => route.path !== '/' && normalized.startsWith(`${route.path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0]
+    ?? CENTRAL_ROUTE_REGISTRY.find((route) => route.path === '/');
 }

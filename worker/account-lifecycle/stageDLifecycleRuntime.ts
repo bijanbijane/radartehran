@@ -313,7 +313,7 @@ function createRuntime(env: WorkerEnv): {
       mediaBucket: env.MEDIA_BUCKET,
       bucketName: String(env.R2_MEDIA_BUCKET_NAME || '__UNCONFIGURED_MEDIA_BUCKET__').trim(),
     }),
-    authAdapter: createWorkerFailClosedAuthAdapter(),
+    authAdapter: createWorkerFailClosedAuthAdapter(userDb as unknown as D1DatabaseBinding),
     batchReceiptRecorder: new D1AccountDeletionBatchReceiptRecorder(store),
     telemetryErasureAdapter: createWorkerTelemetryAdapter(db),
   });
@@ -394,7 +394,7 @@ function buildLifecycleEnvelope(row: {
     targetUid: row.targetUid,
     operation: row.operationType,
   });
-  if (!payload.ok) {
+  if (payload.ok === false) {
     throw new AccountLifecycleError(
       'INVALID_PAGINATION_OPTIONS',
       'Invalid persisted lifecycle queue payload: ' + payload.reason,
@@ -408,10 +408,10 @@ function buildLifecycleEnvelope(row: {
     jobType: ACCOUNT_LIFECYCLE_QUEUE_JOB_TYPE,
     createdAtIso: new Date().toISOString(),
     correlationId: (row.correlationId || 'acl_corr_' + row.eventId).slice(0, 128),
-    payload: payload.payload,
+    payload: { ...payload.payload },
   };
   const validated = validateQueueEnvelope(candidate);
-  if (!validated.valid) {
+  if (validated.valid === false) {
     throw new AccountLifecycleError(
       'INVALID_PAGINATION_OPTIONS',
       'Invalid lifecycle queue envelope: ' + validated.reason,

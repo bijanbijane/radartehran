@@ -167,21 +167,6 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
     return { viewId: matched.viewId, subTab: resolvedSub, isUnknownPath: false, isLegacyTehranPath: false };
   }
 
-  // Legacy shell & shortcut redirects (zero dead-route 404s)
-  const LEGACY_REDIRECTS: Record<string, { viewId: RouteDestinationId; subTab?: ModuleSubTabId }> = {
-    '/login': { viewId: 'userspace', subTab: 'overview' },
-    '/profile': { viewId: 'userspace', subTab: 'profile' },
-    '/saved-searches': { viewId: 'userspace', subTab: 'saved_searches' },
-    '/escrow': { viewId: 'tools', subTab: 'all' },
-    '/service/orders': { viewId: 'services', subTab: 'all' },
-    '/agency/workspace': { viewId: 'services', subTab: 'agencies' },
-    '/tools/compare': { viewId: 'tools', subTab: 'compare_areas' },
-  };
-  const redirected = LEGACY_REDIRECTS[candidatePath];
-  if (redirected) {
-    return { viewId: redirected.viewId, subTab: redirected.subTab, isUnknownPath: false, isLegacyTehranPath: false };
-  }
-
   // Legacy ?view= query support on root path
   const qView = params.get('view')?.trim().toLowerCase();
   if (candidatePath === '/' && qView && VIEW_ALIASES[qView]) {

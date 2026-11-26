@@ -24,30 +24,30 @@ For durable operator decisions, verified technical knowledge, and session resump
    - **Leaflet HTML**: Always escape dynamic strings inside `L.divIcon` and `marker.bindTooltip` using `escapeHtmlAttr()` from `src/utils/security.ts`.
    - **Multi-City Links**: Always generate external Divar listing links via `buildExternalDivarUrl(city, mode, hoodName)` from `src/utils/security.ts`.
    - **Server Disk I/O & Secrets**: Use debounced asynchronous atomic writes (`0o600`) in `src/utils/serverMarketPulseEngine.ts`, `src/utils/serverRuntimeEnvStore.ts`, and `src/utils/serverObjectStorage.ts`. Never persist `SECRET_ENV_KEYS` or buyer PII (`buyerLeads`) to `.cache-data.json` or `.runtime-config.json`.
-   - **Client data plane (RT-DATA-001)**: The browser SPA must **not** import `firebase/firestore`. Use `src/firebase.ts` for Auth only; persist and sync via Express `/api/*` and `src/platform/data/clientDataPolicy.ts` (`CLIENT_FIRESTORE_FORBIDDEN`). Server/admin Firestore remains on the backend.
+   - **Canonical identity/data plane (RT-DATA-001 / Firebase retirement)**: The browser SPA must not import Firebase SDK packages. `src/firebase.ts` is a compatibility facade over `src/platform/auth` and Cloudflare D1 opaque HttpOnly sessions; it does not initialize Firebase. Google login is handled by Worker OIDC (`worker/routes/authRoutes.ts`), and protected writes use same-origin cookies plus server-side origin/idempotency checks. Canonical user and marketplace state is in Cloudflare D1 (`migrations/user-d1`); Worker readiness is authoritative for D1/OIDC/R2. Remaining `firebase-admin`/Firestore code in legacy Express modules is migration debt, not the canonical identity or marketplace data plane. Do not route new writes to Firestore.
 
 4. **Mandatory Verification Commands**:
-   Always run these checks before completing any task:
+   For authentication, Worker, D1, or backend changes, run the applicable regression gates before completion:
    ```bash
-   npm run lint
+   npm run test:auth
+   npm run test:cloudflare
+   npm run test:security
+   npm run typecheck --workspace=radartehran-frontend
+   npm run typecheck --workspace=radartehran-api
+   ./node_modules/.bin/tsc --noEmit -p tsconfig.worker.json
+   npm run build --workspace=radartehran-frontend
+   npm run build --workspace=radartehran-api
+   npx wrangler deploy --dry-run --config wrangler.local.jsonc
    npm run arch:check
-   npm test
-   npm run test:contracts
-   npm run test:mutation
-   npm run test:e2e
-   npm run test:smoke
-   npx tsx tests/stress-50-cycles.test.ts
-   npx tsx tests/object-storage-upload-auth.test.ts
-   npx tsx tests/object-storage-security.test.ts
-   npx tsx tests/object-storage-range.test.ts
-   npm run build
    ```
+   Run domain-specific contracts, mutation, E2E, smoke, stress, object-storage, geography, and lifecycle suites when touched. `npm test` is the broader repository gate and must not be represented as passed unless every constituent command completed successfully. Firestore Rules tests are historical only; they do not validate the canonical D1 data plane.
 
 5. **AI-Agent Contribution & Documentation Sync Protocol (Prompt 558)**:
-   - **Inspect Before Writing**: Always inspect the actual files (`server.ts`, `firestore.rules`, `firebase-blueprint.json`, `src/types/models.ts`) before claiming any behavior or updating docs.
+   - **Inspect Before Writing**: Inspect the actual route, Worker handler, binding type, D1 migration, tests, and runtime configuration before claiming behavior or updating docs. `firestore.rules` and `firebase-blueprint.json` are retained as historical migration artifacts only.
    - **Synchronize Contracts & Docs in the Same Turn**:
      - If an Express route changes, update `API_ENDPOINT_CONTRACTS` (`src/utils/serverConfigValidator.ts`) and `RADAR_API_ROUTE_INVENTORY` (`src/utils/apiContractsAndSerializationEngine.ts`).
-     - If a Firestore collection or rule changes, update `firestore.rules`, `firebase-blueprint.json`, `docs/system-architecture.md`, and `docs/security.md`.
+     - If a D1 table, index, or invariant changes, update the relevant `migrations/user-d1/*.sql` file, Worker repository, schema tests, and `docs/system-architecture.md` / `docs/security.md`.
+     - If Firebase-retirement or Google OIDC/session contracts change, update `src/platform/auth`, `worker/auth`, `worker/routes/authRoutes.ts`, native auth tests, `wrangler.local.jsonc`, and deployment documentation as applicable.
      - If an environment variable changes, update `.env.example`, `RUNTIME_ENV_KEYS` (`src/utils/serverRuntimeEnvStore.ts`), and `docs/deployment.md`.
    - **Zero Secret Leakage**: Never write raw API keys, tokens, or PII into code comments, test fixtures, or Markdown files.
    - **Evidence-Based Reporting**: Every completion summary must list exact modified files, verification commands actually executed, and any remaining external prerequisites.

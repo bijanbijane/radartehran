@@ -29,7 +29,6 @@ import {
   revokeUserSessionInD1,
   updateUserPrivacyConsentInD1,
   upsertUserProfileInD1,
-  upsertUserSessionInD1,
 } from '../worker/account/d1AccountRepository';
 import {
   signInternalLifecycleRpc,
@@ -49,12 +48,8 @@ import {
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
 import { resolveWriteAdmissionFromD1 } from '../worker/account-lifecycle/d1WriteAdmissionResolver';
 import { d1FirstRow } from '../worker/account-lifecycle/d1ResultHelpers';
-import {
-  clearTestJwksForEdgeAuth,
-  isTokenRevokedOrUserDisabled,
-  recordUserRevocationInD1,
-  registerTestJwkForEdgeAuth,
-} from '../worker/auth/firebaseEdgeAuth';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
+import { RADAR_SESSION_COOKIE, sha256Hex } from '../worker/auth/sessionAuth';
 import {
   hasUserResearchBindingCollision,
   requireResearchDb,
@@ -89,7 +84,6 @@ import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../wo
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
 const TEST_RECEIPT_SECRET = 'rt_triad_002_receipt_secret_abcdef0123456789abcdef0123456789';
-const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
   failOnSqlContains?: string | null;
@@ -232,44 +226,17 @@ function applyMigrations(raw: DatabaseSync, relDir: string): string[] {
   return files;
 }
 
-function base64UrlEncode(input: string | Uint8Array): string {
-  const buf = typeof input === 'string' ? Buffer.from(input, 'utf-8') : Buffer.from(input);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-async function createSignedTestFirebaseJwt(params: { uid: string; email?: string; nowSec?: number }) {
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      modulusLength: 2048,
-      publicExponent: new Uint8Array([1, 0, 1]),
-      hash: 'SHA-256',
-    },
-    true,
-    ['sign', 'verify'],
-  );
-  const kid = `test_kid_${crypto.randomUUID().slice(0, 8)}`;
-  registerTestJwkForEdgeAuth(kid, keyPair.publicKey);
-  const nowSec = params.nowSec ?? Math.floor(Date.now() / 1000);
-  const headerB64 = base64UrlEncode(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const payloadB64 = base64UrlEncode(
-    JSON.stringify({
-      iss: `https://securetoken.google.com/${TEST_PROJECT_ID}`,
-      aud: TEST_PROJECT_ID,
-      sub: params.uid,
-      iat: nowSec - 10,
-      auth_time: nowSec - 10,
-      exp: nowSec + 3600,
-      email: params.email ?? `${params.uid}@example.com`,
-      email_verified: true,
-    }),
-  );
-  const sigBuf = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    keyPair.privateKey,
-    new TextEncoder().encode(`${headerB64}.${payloadB64}`),
-  );
-  return `${headerB64}.${payloadB64}.${base64UrlEncode(new Uint8Array(sigBuf))}`;
+async function createNativeSessionForTest(userDb: D1Database, uid: string, sessionId = crypto.randomUUID()): Promise<string> {
+  const tokenBytes = crypto.getRandomValues(new Uint8Array(48));
+  const token = Buffer.from(tokenBytes).toString('base64url');
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiresAtIso = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+  const result = await userDb.prepare(
+    'INSERT INTO user_sessions (session_id, uid, device_label, user_agent_summary, ip_prefix, status, created_at_iso, last_seen_at_iso, token_hash, expires_at_iso, auth_provider) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8, ?9, ?10)',
+  ).bind(sessionId, uid, 'test', 'Node test', '', 'ACTIVE', nowIso, await sha256Hex(token), expiresAtIso, 'google').run();
+  if (result.success !== true || result.meta?.changes !== 1) throw new Error('TEST_NATIVE_SESSION_CREATE_FAILED');
+  return token;
 }
 
 function createMinimalR2Bucket(): R2Bucket {
@@ -474,7 +441,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       assert.equal(c10.applied, true);
       assert.equal(c10.idempotentReplay, false);
       assert.equal(c10.statusCode, 200);
-      const disabledCheck = await isTokenRevokedOrUserDisabled('uid_fail_wm', 1_760_000_000, sqlite.db);
+      const disabledCheck = await isUserAuthDisabledOrRevoked('uid_fail_wm', 1_760_000_000, sqlite.db);
       assert.equal(disabledCheck.revoked, true);
     });
   });
@@ -567,7 +534,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       sqlite.raw.exec('DROP TABLE account_write_blocks');
       await assert.rejects(
         () => isUserWriteBlockedInD1(sqlite.db, 'uid_schema_missing'),
-        /no such table:\\s*account_write_blocks/i,
+        /no such table:\s*account_write_blocks/i,
       );
     });
 
@@ -643,7 +610,6 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
 
       const uid = 'uid_drain_lifecycle_01';
-      const jwt = await createSignedTestFirebaseJwt({ uid });
       const env: WorkerEnv = {
         USER_DB: userSqlite.db,
         DB: userSqlite.db,
@@ -653,13 +619,10 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
         LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
-        FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
-        FIREBASE_APP_CHECK_MODE: 'disabled',
       };
 
-      try {
-        await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
-        await upsertUserSessionInD1(userSqlite.db, { sessionId: 'sess_drain_1', uid });
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'مریم' });
+      const sessionToken = await createNativeSessionForTest(userSqlite.db, uid, 'sess_drain_1');
         await createUserDataRequestInD1(userSqlite.db, { uid, requestType: 'EXPORT' });
 
         // Seed upload_session + upload_session_chunks to verify orphan cleanup
@@ -700,7 +663,8 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           new Request('https://radartehran.ir/api/object-storage/upload-init', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${jwt}`,
+              cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}`,
+              origin: 'https://radartehran.ir',
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ fileName: 'pic.jpg', mimeType: 'image/jpeg', totalSizeBytes: 1000 }),
@@ -714,7 +678,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const deleteMediaRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/object-storage/file/obj_valid_123456', {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}`, origin: 'https://radartehran.ir' },
           }),
           env,
         );
@@ -765,9 +729,6 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING_OR_WEAK/,
         );
         assert.equal(del2.receiptHash, expectedKeyedHash);
-      } finally {
-        clearTestJwksForEdgeAuth();
-      }
     });
   });
 
@@ -1515,7 +1476,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
             windowStartIso: '2026-11-22T01:15:00.000Z',
             windowEndIso: '2026-11-22T02:15:00.000Z',
           }),
-        (err: unknown) => err instanceof AggregationWindowPolicyError && err.code === 'AGGREGATION_WINDOW_NOT_DAY_ALIGNED',
+        (err: unknown) => err instanceof AggregationWindowPolicyError && err.code === 'AGGREGATION_WINDOW_NOT_CANONICAL_UTC',
       );
 
       // 2. Insert 9 subjects -> even if caller passes minCohortSize=5, HARD_MIN_K_ANONYMITY=10 suppresses!
@@ -1759,46 +1720,72 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
   });
 
   describe('F-06 & F-08 [P0/P1]: Binding Split-Brain Isolation, Config Parity, Route Non-Hijacking & Express Parity', () => {
-    it('detects split-brain USER_DB!=DB and DB===RESEARCH_DB collisions and migration dir mismatches', () => {
+    it('enforces runtime domain isolation and validates physical USER_DB/DB alias parity from Wrangler metadata', () => {
       const dbA = createForensicSqliteD1().db;
       const dbB = createForensicSqliteD1().db;
       const dbC = createForensicSqliteD1().db;
 
-      // USER_DB valid + DB === RESEARCH_DB -> MUST fail closed
-      const envDbResearchCollision: WorkerEnv = { USER_DB: dbA, DB: dbB, RESEARCH_DB: dbB };
-      assert.equal(hasUserResearchBindingCollision(envDbResearchCollision), true);
-      assert.equal(requireUserDb(envDbResearchCollision).ok, false);
-      assert.equal(requireResearchDb(envDbResearchCollision).ok, false);
+      // Runtime bindings are opaque objects. The canonical USER_DB and RESEARCH_DB
+      // are isolated; Miniflare may wrap two aliases to the same physical D1 separately.
+      const envDbResearchCollision: WorkerEnv = { USER_DB: dbA, DB: dbB, RESEARCH_DB: dbC };
+      assert.equal(hasUserResearchBindingCollision(envDbResearchCollision), false);
+      assert.equal(requireUserDb(envDbResearchCollision).ok, true);
+      assert.equal(requireResearchDb(envDbResearchCollision).ok, true);
 
-      // USER_DB !== DB split-brain -> MUST fail closed
-      const envSplitBrain: WorkerEnv = { USER_DB: dbA, DB: dbB, RESEARCH_DB: dbC };
-      assert.equal(hasUserResearchBindingCollision(envSplitBrain), true);
-      assert.equal(requireUserDb(envSplitBrain).ok, false);
+      const envPhysicalResearchCollision: WorkerEnv = { USER_DB: dbA, DB: dbB, RESEARCH_DB: dbA };
+      assert.equal(hasUserResearchBindingCollision(envPhysicalResearchCollision), true);
+      assert.equal(requireUserDb(envPhysicalResearchCollision).ok, false);
+      assert.equal(requireResearchDb(envPhysicalResearchCollision).ok, false);
 
-      // Config validator catches migrations_dir mismatch between USER_DB and legacy DB alias
       const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
-      const mutated = parseJsonc(raw, 'wrangler.backend.jsonc');
-      const legacyDb = mutated.d1_databases.find((d: { binding: string }) => d.binding === 'DB');
-      legacyDb.migrations_dir = 'migrations/d1';
-      const check = validateBackendWranglerConfig(mutated, { skipFsChecks: true });
-      assert.equal(check.ok, false);
-      assert.ok(check.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_MIGRATIONS_DIR_MISMATCH')));
+      const base = parseJsonc(raw, 'wrangler.backend.jsonc');
+      const baseUser = base.d1_databases.find((d: { binding: string }) => d.binding === 'USER_DB');
+      const baseLegacy = base.d1_databases.find((d: { binding: string }) => d.binding === 'DB');
+      const baseResearch = base.d1_databases.find((d: { binding: string }) => d.binding === 'RESEARCH_DB');
+
+      // The compatibility alias must match the canonical D1 physical ID and name.
+      const aliasIdMismatch = parseJsonc(raw, 'wrangler.backend.jsonc');
+      aliasIdMismatch.d1_databases.find((d: { binding: string }) => d.binding === 'DB').database_id = 'different-physical-database-id';
+      const aliasIdCheck = validateBackendWranglerConfig(aliasIdMismatch, { skipFsChecks: true });
+      assert.equal(aliasIdCheck.ok, false);
+      assert.ok(aliasIdCheck.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_ALIAS_MISMATCH')));
+
+      const aliasNameMismatch = parseJsonc(raw, 'wrangler.backend.jsonc');
+      aliasNameMismatch.d1_databases.find((d: { binding: string }) => d.binding === 'DB').database_name = 'different-user-database';
+      const aliasNameCheck = validateBackendWranglerConfig(aliasNameMismatch, { skipFsChecks: true });
+      assert.equal(aliasNameCheck.ok, false);
+      assert.ok(aliasNameCheck.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_NAME_MISMATCH')));
+
+      const migrationMismatch = parseJsonc(raw, 'wrangler.backend.jsonc');
+      migrationMismatch.d1_databases.find((d: { binding: string }) => d.binding === 'DB').migrations_dir = 'migrations/d1';
+      const migrationCheck = validateBackendWranglerConfig(migrationMismatch, { skipFsChecks: true });
+      assert.equal(migrationCheck.ok, false);
+      assert.ok(migrationCheck.errors.some((e: string) => e.startsWith('USER_DB_AND_DB_MIGRATIONS_DIR_MISMATCH')));
+
+      const physicalDomainCollision = parseJsonc(raw, 'wrangler.backend.jsonc');
+      const user = physicalDomainCollision.d1_databases.find((d: { binding: string }) => d.binding === 'USER_DB');
+      const research = physicalDomainCollision.d1_databases.find((d: { binding: string }) => d.binding === 'RESEARCH_DB');
+      research.database_id = user.database_id;
+      const domainCheck = validateBackendWranglerConfig(physicalDomainCollision, { skipFsChecks: true });
+      assert.equal(domainCheck.ok, false);
+      assert.ok(domainCheck.errors.includes('USER_DB_AND_RESEARCH_DB_SAME_PHYSICAL_ID_FORBIDDEN'));
+
+      assert.ok(baseUser && baseLegacy && baseResearch);
     });
 
     it('returns 404 for unknown /api/account/* paths and preserves Express field parity aliases', async () => {
       const userSqlite = createForensicSqliteD1();
       applyMigrations(userSqlite.raw, 'migrations/user-d1');
       const uid = 'uid_parity_01';
-      const jwt = await createSignedTestFirebaseJwt({ uid });
       const env: WorkerEnv = {
         USER_DB: userSqlite.db,
         DB: userSqlite.db,
-        FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
-        FIREBASE_APP_CHECK_MODE: 'disabled',
+        APP_URL: 'https://radartehran.ir',
       };
+      await upsertUserProfileInD1(userSqlite.db, { uid, displayName: 'آزمون' });
+      const sessionToken = await createNativeSessionForTest(userSqlite.db, uid);
 
-      try {
-        // Unknown /api/account/* route must return 404 even WITHOUT auth or DB (never hijack with 401/503)
+      // Unknown /api/account/* route must return 404 even WITHOUT auth or DB (never hijack with 401/503)
         const unknownRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/does-not-exist', { method: 'GET' }),
           {},
@@ -1809,12 +1796,12 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const patchProfile = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/profile', {
             method: 'PATCH',
-            headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+            headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}`, origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
             body: JSON.stringify({ displayName: 'کاوه', preferredCityId: 'isfahan' }),
           }),
           env,
         );
-        assert.equal(patchProfile.status, 200);
+        assert.equal(patchProfile.status, 200, await patchProfile.clone().text());
         const profileJson = (await patchProfile.json()) as { profile: { preferredCity: string } };
         assert.equal(profileJson.profile.preferredCity, 'isfahan');
 
@@ -1822,7 +1809,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         const patchPrivacy = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/privacy', {
             method: 'PATCH',
-            headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+            headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}`, origin: 'https://radartehran.ir', 'Content-Type': 'application/json' },
             body: JSON.stringify({
               researchAnalyticsConsent: true,
               privacySafeTelemetryEnabled: true,
@@ -1842,7 +1829,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         // GET /api/account/sessions & /api/account/data-requests return both canonical and Express `items` keys
         const sessRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/sessions', {
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}` },
           }),
           env,
         );
@@ -1852,16 +1839,13 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
 
         const drRes = await workerEntrypoint.fetch(
           new Request('https://radartehran.ir/api/account/data-requests', {
-            headers: { Authorization: `Bearer ${jwt}` },
+            headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}` },
           }),
           env,
         );
         assert.equal(drRes.status, 200);
         const drJson = (await drRes.json()) as { requests: unknown[]; items: unknown[] };
         assert.ok(Array.isArray(drJson.requests) && Array.isArray(drJson.items));
-      } finally {
-        clearTestJwksForEdgeAuth();
-      }
     });
   });
 });

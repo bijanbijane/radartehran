@@ -2,7 +2,7 @@
 /** OP-DEC-001 FX parity: formatMillionTomanAsIntlCurrency (via ExperienceModeToggle / AreaUnitToggle). */
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Globe, Map as MapIcon, MapPin, Moon, Search, Sun, User } from 'lucide-react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot as FirebaseUser } from '../../platform/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { CANONICAL_BRAND_EN, CANONICAL_BRAND_FA } from '../../utils/geo/cityGeospatialResolver';
 import { PrimaryViewId } from '../../utils/areaUnit';

@@ -110,8 +110,8 @@ async function handleFirestoreD1ProjectionSync(
         buy_per_sqm_million: hood.buyPerSqm,
         deal_per_sqm_million: dealPerSqm,
         rahn_80m_million: hood.rahn80m,
-        aqi: hood.aqi ?? 80,
-        investment_score: hood.growthScore ?? 75,
+        aqi: Math.round(100 - hood.air * 8),
+        investment_score: Math.round((hood.metro + hood.security + hood.internet + hood.flatTerrain) / 4 * 10),
         firestore_version_iso: nowIso,
         projected_at_iso: nowIso,
       });
@@ -665,7 +665,7 @@ export function buildCanonicalCronEnvelopes(params: {
       payload: basePayload,
     };
     const validated = validateQueueEnvelope(candidate);
-    if (!validated.valid) {
+    if (validated.valid === false) {
       throw new Error(`CANONICAL_CRON_ENVELOPE_INVALID:${validated.reason}`);
     }
     return validated.envelope;

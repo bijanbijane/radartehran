@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput } from './security'; import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver'; import { resolveCityIdForNeighborhood } from '../data/multiCityData'; import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, registerPublisherPersistenceHooks, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { executeDurableAccountDeletion } from './accountDeletionExecutor'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
+import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput } from './security'; import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver'; import { resolveCityIdForNeighborhood } from '../data/multiCityData'; import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, registerPublisherPersistenceHooks, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { executeDurableAccountDeletion } from './accountDeletionExecutor'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
   sqm: number; displayAreaText?: string; dealType: 'خرید' | 'اجاره'; priceMillions: number; priceText: string; priceIntlText?: string; discountPercent: number; buyerProfitText: string; lifecycleState: ListingLifecycleState; contactPhone?: string; contactVisibility: 'publicly_visible' | 'reveal_on_action' | 'authorized_only' | 'not_available'; priceHistory: ListingPriceHistoryEntry[]; createdAtIso: string;
   updatedAtIso: string; expiresAtIso: string; } export interface ServerDataCorrectionRecord { id: string; cityId: string; neighborhoodId: number;
   neighborhoodName: string; category: string; currentDisplayedValue: string; proposedCorrectedValue: string; evidenceNote: string; reporterUid: string | null; status: 'pending_review' | 'approved' | 'rejected'; createdAtIso: string; reviewedAtIso: string | null; }
@@ -27,18 +27,33 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   app.get('/api/health/liveness', (_req: Request, res: Response) => { res.setHeader('Cache-Control', 'no-store'); res.status(200).json({ ok: true,
       probe: 'liveness', state: globalBackendLifecycle.getState(), uptimeSeconds: Math.round(process.uptime()), });
   }); app.get('/api/health/readiness', (_req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store'); const accepting = globalBackendLifecycle.isAcceptingTraffic();
-    res.status(accepting ? 200 : 503).json({
-      ok: accepting, probe: 'readiness', state: globalBackendLifecycle.getState(), activeRequests: globalBackendLifecycle.getActiveRequestsCount(),
+    res.setHeader('Cache-Control', 'no-store');
+    const accepting = globalBackendLifecycle.isAcceptingTraffic();
+    const localPersistenceAdaptersEnabled = [
+      process.env.RADAR_REPOSITORY_LOCAL_JSON,
+      process.env.RADAR_MEDIA_METADATA_LOCAL_ONLY,
+      process.env.RADAR_OBJECT_METADATA_LOCAL_INDEX,
+    ].some((value) => value === '1');
+    // Express owns no D1/R2 bindings. The Cloudflare Worker is the authoritative
+    // dependency probe; process acceptance must never masquerade as data readiness.
+    res.status(503).json({
+      ok: false,
+      probe: 'readiness',
+      state: accepting ? 'DEPENDENCIES_NOT_VERIFIED' : globalBackendLifecycle.getState(),
+      code: accepting ? 'EDGE_DEPENDENCIES_NOT_VERIFIED' : 'BACKEND_DRAINING',
+      activeRequests: globalBackendLifecycle.getActiveRequestsCount(),
+      localPersistenceAdaptersEnabled,
+      readinessAuthority: 'cloudflare_worker',
       services: {
-        firebase: { configured: true, databaseEngine: 'Cloud Firestore' },
-        cloudDatabase: { d1Ready: accepting, objectStorageReady: accepting },
+        authentication: { provider: 'cloudflare_d1_session', verifiedBy: 'cloudflare_worker', verified: false },
+        database: { provider: 'cloudflare_d1', verifiedBy: 'cloudflare_worker', verified: false },
+        objectStorage: { provider: 'r2_or_configured_object_store', verifiedBy: 'cloudflare_worker', verified: false },
       },
     });
   });
   app.get('/api/my-bargains', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) {
       recordAbuseSignal(getClientIp(req), 'auth_failure'); const err = buildCanonicalApiErrorResponse({
         code: 'AUTH_REQUIRED', category: 'authentication',
@@ -54,7 +69,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.post('/api/my-bargains', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED', message: 'ورود به حساب الزامی است.' }); return; }
     const rawId = sanitizeInput(req.body?.id || `brg_${Date.now()}`, 80);
     if (!isValidFirestoreDocId(rawId)) { res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_ID', message: 'شناسه آگهی معتبر نیست.' }); return; }
@@ -109,7 +124,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.patch('/api/my-bargains/:id', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(
+    const auth = await verifyAuthenticatedUserHeader(
       req.headers as Record<string, string | string[] | undefined>,
     );
     const adminAuth = await verifyAdminApiAuthorization(
@@ -177,7 +192,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.delete('/api/my-bargains/:id', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(
+    const auth = await verifyAuthenticatedUserHeader(
       req.headers as Record<string, string | string[] | undefined>,
     );
     const adminAuth = await verifyAdminApiAuthorization(
@@ -221,7 +236,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       res.status(404).json({ status: 'error', code: 'LISTING_UNAVAILABLE' });
       return;
     }
-    const auth = await verifyFirebaseUserAuthorization(
+    const auth = await verifyAuthenticatedUserHeader(
       req.headers as Record<string, string | string[] | undefined>,
     );
     if (auth.uid && !checkAccountQuota(auth.uid, 'contact_reveal', 20, 15 * 60 * 1000)) {
@@ -243,7 +258,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       res.status(429).json({ status: 'error', code: 'CORRECTION_RATE_LIMIT_EXCEEDED' });
       return;
     }
-    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     const cityCheck = resolveCityParamOrReject(req.body?.cityId, { allowOmittedDefault: 'tehran' });
     if (!cityCheck.ok) { res.status(400).json({ status: 'error', code: cityCheck.code, message: cityCheck.messageFa }); return; }
     const cityId = cityCheck.cityId;
@@ -280,7 +295,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.get('/api/account/export-data', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' }); return; }
     const ownListings = Array.from(serverPublishedBargains.values()).filter((b) => b.ownerUid === auth.uid);
     const firestoreLeads = await reconcileUserBuyerAlertsInFirestore(auth.uid, 'export', req.headers.authorization);
@@ -301,7 +316,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.post('/api/account/delete', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' }); return; }
     if (req.body?.confirmDelete !== true) { res.status(400).json({ status: 'error', code: 'EXPLICIT_CONFIRMATION_REQUIRED', message: 'تأیید صریح حذف حساب کاربری الزامی است.' }); return; }
     await reconcileUserBuyerAlertsInFirestore(auth.uid, 'delete', req.headers.authorization);

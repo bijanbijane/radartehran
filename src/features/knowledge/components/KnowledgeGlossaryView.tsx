@@ -80,7 +80,7 @@ export const KnowledgeGlossaryView: React.FC<KnowledgeGlossaryViewProps> = ({
                   </span>
                   <span className="text-[10.5px] text-[var(--color-text-muted)] font-medium" dir="ltr">{term.termEn}</span>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{term.termFa}</h3>
+                <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{term.termFa}</h2>
                 <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] text-xs">{term.shortDefinitionFa}</p>
                 <div className="p-2.5 rounded-[8px] bg-[#FFF4E5]/70 dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-[11px] text-[#875000] dark:text-amber-200 font-medium">
                   تمایز حیاتی: {term.usageDistinctionFa}

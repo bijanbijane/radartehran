@@ -27,7 +27,7 @@ function makeResult(objectId: string, state: DeletePhase, retryable: boolean, er
     state,
     retryable,
     ...(errorCode ? { errorCode } : {}),
-    displayAreaUnitLabel: formatAreaUnitLabel(options?.areaUnit ?? 'sqm'),
+    displayAreaUnitLabel: options?.areaUnit === 'sqft' ? formatAreaUnitLabel('sqft') + ' (ft²)' : formatAreaUnitLabel('sqm') + ' (m²)',
     referenceValuationIntlText: formatMillionTomanAsIntlCurrency(options?.referenceValuationMillionToman ?? 0, options?.intlCurrency ?? 'USD', 'en'),
   };
 }

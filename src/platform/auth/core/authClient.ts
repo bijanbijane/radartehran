@@ -206,3 +206,10 @@ export function getAuthClient(): AuthClient {
 export async function getCurrentAuthSession(): Promise<AuthUserSnapshot | null> {
   return getAuthClient().refreshSession();
 }
+
+/** Subscribe to the canonical Cloudflare D1-backed browser session. */
+export function subscribeAuthState(listener: (user: AuthUserSnapshot | null) => void): () => void {
+  const client = getAuthClient();
+  listener(client.getUser());
+  return client.subscribe((_state, user) => listener(user));
+}

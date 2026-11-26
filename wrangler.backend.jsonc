@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "radartehran-api",
+  "account_id": "5bafb2033937006704e81afcc0b18b38",
   "main": "worker/index.ts",
   "compatibility_date": "2026-03-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -30,6 +31,16 @@
       "FIREBASE_APP_CHECK_MODE": "enforced",
       "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
       "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
+    }
+  },
+  "env": {
+    "staging": {
+      "name": "radartehran-api-staging",
+      "vars": {
+        "APP_ENV": "staging",
+        "WORKER_ENV": "staging",
+        "APP_URL": "https://staging.invalid"
+      }
     }
   },
   "d1_databases": [

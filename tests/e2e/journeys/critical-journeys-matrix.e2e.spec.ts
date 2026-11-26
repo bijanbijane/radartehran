@@ -41,6 +41,11 @@ test.describe('Critical Product Journeys (@smoke @critical @regression)', () => 
     await waitForLayoutStabilization(page);
     await assertRtlLayout(page);
 
+    // The landing page shows a static map preview; enter the interactive Leaflet map before asserting map state.
+    await page.getByTestId('home-primary-cta-map').click();
+    await expect(page).toHaveURL(/\/map/);
+    await expect(page.locator('.leaflet-container')).toBeVisible();
+
     // 3. Full 5-city round-trip: Tehran -> Karaj -> Mashhad -> Isfahan -> Shiraz -> Tehran
     let previousCity = FIVE_CITY_ROUND_TRIP[0];
     await assertActiveCityData(page, previousCity);
@@ -54,15 +59,15 @@ test.describe('Critical Product Journeys (@smoke @critical @regression)', () => 
     }
 
     // 4. Direct URL hydration & reload isolation check on Karaj -> Mashhad
-    await page.goto('/?city=karaj', { waitUntil: 'domcontentloaded' });
+    await page.goto('/map?city=karaj', { waitUntil: 'domcontentloaded' });
     await waitForLayoutStabilization(page);
-    await expect(page.locator('header')).toContainText('رادار کرج');
+    await expect(page.getByTestId('global-active-city-label')).toHaveText('کرج');
     await assertActiveCityData(page, 'karaj');
     await assertNoCrossCityDataLeakage(page, 'karaj', 'tehran');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForLayoutStabilization(page);
-    await expect(page.locator('header')).toContainText('رادار کرج');
+    await expect(page.getByTestId('global-active-city-label')).toHaveText('کرج');
     expect(new URL(page.url()).searchParams.get('city')).toBe('karaj');
 
     expect(uncaughtErrors).toEqual([]);
@@ -76,9 +81,10 @@ test.describe('Critical Product Journeys (@smoke @critical @regression)', () => 
     const openApi = await openApiRes.json();
     expect(openApi.openapi).toMatch(/^3\./);
 
-    // Unauthenticated admin runtime-config access must fail closed (401/403)
+    // Unauthenticated admin runtime-config access must fail closed. A 429 is also a closed boundary when the local rate-limit bucket is already exhausted.
     const adminRes = await request.get('/api/admin/runtime-config');
-    expect([401, 403]).toContain(adminRes.status());
+    expect([401, 403, 429]).toContain(adminRes.status());
+    expect(adminRes.ok()).toBe(false);
   });
 
   test('Journey 3 (@critical @regression): BUG-001/004 URL+Favorites preservation & BUG-002 Community subsections routing round-trip', async ({
@@ -118,15 +124,15 @@ test.describe('Critical Product Journeys (@smoke @critical @regression)', () => 
     await expect(page).toHaveURL(/#thread-1/);
 
     // Switch subsection via UI tab and verify canonical URL updates
-    await page.getByTestId('community-tab-questions').click();
-    await expect(page).toHaveURL(/\/community\/questions/);
+    await page.getByTestId('community-tab-submit').click();
+    await expect(page).toHaveURL(/\/community\/contribute/);
 
     await page.getByTestId('community-tab-research_proposals').click();
     await expect(page).toHaveURL(/\/community\/research/);
 
     // Browser Back & Forward must synchronize URL and keep CommunityHub mounted without 404
     await page.goBack();
-    await expect(page).toHaveURL(/\/community\/questions/);
+    await expect(page).toHaveURL(/\/community\/contribute/);
     await expect(communityNav).toBeVisible();
 
     await page.goForward();

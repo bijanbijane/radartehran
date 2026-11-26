@@ -176,6 +176,7 @@ export const DESKTOP_MEGA_MENU_GROUPS: readonly MegaMenuGroup[] = [
 
 export const DISCOVER_SECONDARY_TABS: readonly SecondaryTabDefinition<DiscoverSubTabId>[] = [
   { id: 'results', labelFa: 'محله‌های بازار', labelEn: 'Market Areas', path: '/areas' },
+  { id: 'search', labelFa: 'جست‌وجوی سراسری', labelEn: 'Global Search', path: '/search' },
   { id: 'registry', labelFa: 'شاخص جغرافیایی استان‌ها', labelEn: 'Geographic Registry', path: '/areas/registry' },
 ];
 

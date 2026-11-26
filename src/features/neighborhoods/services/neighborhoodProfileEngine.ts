@@ -2,11 +2,14 @@ import type { EvaluatedNeighborhood, Neighborhood } from '../../../data/neighbor
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
 import {
   buildNeighborhoodListingSamples,
-  isLiveDivarBargainId,
   lookupMatchingDatedReferencePrice,
 } from '../../../data/neighborhoodListingSamples';
 import type { AggregatedMarketMetrics } from '../../../data/realMarketPriceAggregator';
 import type { DataQuality } from '../../home/types/home.types';
+import {
+  evaluateNeighborhoodProfileBoundary,
+  type NeighborhoodProfileBoundaryEvidence,
+} from '../profile-contract/neighborhoodProfileEvidenceContract';
 import {
   convertPricePerSqmToUnitRaw,
   formatMillionTomanAsIntlCurrency,
@@ -25,11 +28,13 @@ export type ContributionModerationStatus = 'Submitted' | 'UnderReview' | 'NeedsE
 
 export interface NeighborhoodIdentity {
   id: string; slug: string; canonicalPath: string; name: string;
+  canonicalGeographicEntityId: string | null;
   alternativeNames: string[]; cityId: string; zone: string; subdistrict?: string;
 }
 export interface NeighborhoodBoundary {
-  boundaryId: string; neighborhoodId: string; version: string; status: BoundaryStatus;
-  statusLabelFa: string; areaKm2: number; centroid: [number, number]; source: string; effectiveFrom: string;
+  boundaryId: string | null; neighborhoodId: string; version: number | null; status: BoundaryStatus;
+  statusLabelFa: string; areaKm2: number | null; areaQuality: 'OFFICIAL_GEOMETRY_DERIVED_APPROXIMATION' | 'REVIEWED_GEOMETRY_DERIVED_APPROXIMATION' | 'UNAVAILABLE';
+  centroid: [number, number]; source: string; effectiveFrom: string;
 }
 export interface NeighborhoodMetric {
   id: string; title: string; value: number | null; formattedValue: string; unit: string;
@@ -42,7 +47,7 @@ export interface NeighborhoodContent {
 export interface RelatedNeighborhoodRef {
   id: number; name: string; zone: string;
   relationType: 'adjacent_shared_boundary' | 'nearby_geodesic_radius';
-  relationBadgeFa: string; distanceKm: number; avgPriceDiffPct: number;
+  relationBadgeFa: string; distanceKm: number; avgPriceDiffPct: number | null;
 }
 export interface LandUseShareItem { id: string; labelFa: string; sharePercent: number; layerId: string; }
 export interface ServiceAmenityGroup {
@@ -62,7 +67,8 @@ export interface NeighborhoodSampleBreakdown {
   observedSampleCount: number;
   validSampleCount: number;
   rejectedFraudCount: number;
-  syntheticSampleCount: number;
+  /** Null means source-level classification was not supplied; it is not evidence of zero synthetic records. */
+  syntheticSampleCount: number | null;
 }
 export interface NeighborhoodIntelligenceProfile {
   identity: NeighborhoodIdentity; boundary: NeighborhoodBoundary; maturityLevel: ProfileMaturityLevel; maturityLabelFa: string;
@@ -89,19 +95,22 @@ export function formatNullSafeMetricValue(value: number | null | undefined, form
 export function evaluateNeighborhoodMaturity(
   hood: AnyNeighborhoodInput,
   validSampleCount = 0,
-  qualityContext?: { verifiedTransactionCount?: number; hasSpatialPolygons?: boolean; sourceTrustScore?: number },
+  qualityContext?: { publicationState?: 'PUBLISHED' | 'PROVISIONAL' | 'DRAFT'; verifiedDomainCount?: number },
 ): { level: ProfileMaturityLevel; labelFa: string } {
-  const hasRichNarrative = Boolean(hood.pros?.trim() && hood.cons?.trim());
-  const safeValid = Math.max(0, Math.round(validSampleCount));
-  const verifiedTx = qualityContext?.verifiedTransactionCount ?? 0;
-  const hasPolygons = Boolean(qualityContext?.hasSpatialPolygons);
-  const sourceTrust = qualityContext?.sourceTrustScore ?? 0;
-  if (hasRichNarrative && safeValid >= 30 && verifiedTx > 0 && hasPolygons && sourceTrust >= 0.7) {
-    return { level: 'Research-ready', labelFa: 'آماده پژوهش (Research-ready)' };
+  // Narrative text and listing volume are not a completeness or trust score.
+  // Until domain-level readiness is supplied by the evidence pipeline, stay conservative.
+  void hood;
+  void validSampleCount;
+  if (qualityContext?.publicationState === 'PUBLISHED') {
+    return { level: 'Research-ready', labelFa: 'آماده انتشار پژوهشی (با تأیید دامنه‌ها)' };
   }
-  if (hasRichNarrative && safeValid >= 12) return { level: 'Detailed', labelFa: 'تکمیل‌شده (Detailed)' };
-  if (hasRichNarrative || safeValid >= 1) return { level: 'Developing', labelFa: 'در حال تکمیل (Developing)' };
-  return { level: 'Basic', labelFa: 'پایه (Basic)' };
+  if (qualityContext?.publicationState === 'PROVISIONAL') {
+    return { level: 'Detailed', labelFa: 'تکمیل‌شده مشروط' };
+  }
+  if ((qualityContext?.verifiedDomainCount ?? 0) > 0) {
+    return { level: 'Developing', labelFa: 'در حال تکمیل' };
+  }
+  return { level: 'Basic', labelFa: 'پایه؛ شواهد دامنه‌ای ناکافی' };
 }
 
 export function evaluateMarketSampleAdequacy(
@@ -115,17 +124,15 @@ export function evaluateMarketSampleAdequacy(
       warningFa: 'تعداد نمونه معتبر برای تحلیل آماری کافی نیست؛ نمونه‌های نمایشی در محاسبه لحاظ نمی‌شوند.',
     };
   }
-  if (validSampleSize < 30 || verifiedTransactionCount === 0) {
-    return {
-      adequate: true,
-      quality: 'estimated',
-      warningFa:
-        verifiedTransactionCount === 0
-          ? 'حجم نمونه آگهی قابل تحلیل است اما معامله ثبت‌شده در این نسخه موجود نیست؛ شاخص‌ها برآوردی هستند.'
-          : 'حجم نمونه متوسط است؛ میانه استنباطی با بازه اطمینان نمایش داده می‌شود.',
-    };
-  }
-  return { adequate: true, quality: 'verified', warningFa: null };
+  return {
+    adequate: true,
+    quality: 'estimated',
+    warningFa: validSampleSize < 30
+      ? 'حجم نمونه از آستانه غربالگری مقدماتی عبور کرده است؛ این امر به‌تنهایی اعتبار استنباطی یا قیمت معامله را اثبات نمی‌کند.'
+      : verifiedTransactionCount > 0
+        ? 'نمونه آگهی برای توصیف بازار قابل استفاده است؛ داده آگهی و معاملات قطعی دو شاخص مستقل‌اند و نباید در یک میانه ادغام شوند.'
+        : 'حجم نمونه مشاهده‌شده بیشتر است، اما هنوز فقط قیمت پیشنهادی را توصیف می‌کند؛ معامله قطعی ثبت‌شده در این ورودی موجود نیست.',
+  };
 }
 
 function haversineDistanceKm(a: [number, number], b: [number, number]): number {
@@ -146,6 +153,7 @@ export function buildNeighborhoodIntelligenceProfile(
     locale?: RadarLocale;
     marketMetrics?: AggregatedMarketMetrics | null;
     exchangeRateRef?: RuntimeExchangeRateReference | null;
+    approvedBoundaryEvidence?: NeighborhoodProfileBoundaryEvidence | null;
   },
 ): NeighborhoodIntelligenceProfile {
   const areaUnit = options?.areaUnit ?? 'sqm';
@@ -161,9 +169,10 @@ export function buildNeighborhoodIntelligenceProfile(
   const slug = `hood-${hood.id}`, canonicalPath = `/areas/${normalizedCityId}/neighborhoods/${slug}`;
 
   const rawBargains = Array.isArray(hood.bargains) ? hood.bargains : [];
-  const syntheticSampleCount = rawBargains.filter((b) => !isLiveDivarBargainId(b?.id)).length;
   const derivedLiveSamples = buildNeighborhoodListingSamples(hood);
   const mm = options?.marketMetrics;
+  // Unknown or non-Divar IDs are not automatically synthetic; only the aggregator may classify origin.
+  const syntheticSampleCount = mm?.syntheticSampleCount ?? null;
   const rawInputCount = mm?.rawInputCount ?? rawBargains.length;
   const observedSampleCount = mm?.observedSampleCount ?? derivedLiveSamples.length;
   const validSampleCount = mm?.eligibleObservedCount ?? derivedLiveSamples.length;
@@ -177,11 +186,7 @@ export function buildNeighborhoodIntelligenceProfile(
   };
 
   const sampleEval = evaluateMarketSampleAdequacy(validSampleCount, mm?.verifiedTransactionCount ?? 0);
-  const maturity = evaluateNeighborhoodMaturity(hood, validSampleCount, {
-    verifiedTransactionCount: mm?.verifiedTransactionCount ?? 0,
-    hasSpatialPolygons: false,
-    sourceTrustScore: validSampleCount > 0 ? 0.5 : 0.25,
-  });
+  const maturity = evaluateNeighborhoodMaturity(hood, validSampleCount);
   const hasExplicitDealPrice = typeof dealPricePerSqm === 'number' && Number.isFinite(dealPricePerSqm) && dealPricePerSqm > 0;
 
   const sameCityNeighbors = allNeighborhoods.filter(
@@ -191,34 +196,40 @@ export function buildNeighborhoodIntelligenceProfile(
     .map((item) => ({
       item,
       distKm: haversineDistanceKm([hood.lat, hood.lng], [item.lat, item.lng]),
-      priceDiffPct: hood.buyPerSqm > 0 ? Math.round(((item.buyPerSqm - hood.buyPerSqm) / hood.buyPerSqm) * 100) : 0,
+      // Different internal reference prices are not a comparable market series.
+      priceDiffPct: null,
     }))
     .sort((a, b) => a.distKm - b.distKm);
 
   const adjacentNeighborhoods: RelatedNeighborhoodRef[] = [];
   const nearbyNeighborhoods: RelatedNeighborhoodRef[] = othersWithDist
     .slice(0, 6)
-    .map((e) => ({ id: e.item.id, name: e.item.name, zone: e.item.zone, relationType: 'nearby_geodesic_radius', relationBadgeFa: 'محله نزدیک (شعاع مکانی)', distanceKm: e.distKm, avgPriceDiffPct: e.priceDiffPct }));
+    .map((e) => ({ id: e.item.id, name: e.item.name, zone: e.item.zone, relationType: 'nearby_geodesic_radius', relationBadgeFa: 'محله نزدیک (فاصله مرکز تا مرکز)', distanceKm: e.distKm, avgPriceDiffPct: e.priceDiffPct }));
 
-  const unitAsk = Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10;
+  const observedAskMedian = mm?.askingMedianFromObserved ?? null;
+  const hasObservedAskMedian = typeof observedAskMedian === 'number' && Number.isFinite(observedAskMedian) && observedAskMedian > 0;
+  const askReference = hasObservedAskMedian ? observedAskMedian : hood.buyPerSqm;
+  const unitAsk = Math.round(convertPricePerSqmToUnitRaw(askReference, areaUnit) * 10) / 10;
   const unitDeal = hasExplicitDealPrice ? Math.round(convertPricePerSqmToUnitRaw(dealPricePerSqm!, areaUnit) * 10) / 10 : null;
   const fxTag = (m: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(m, intlCurrency, locale, options?.exchangeRateRef)})` : '');
   const datedRef = lookupMatchingDatedReferencePrice(normalizedCityId, hood.id, hood.buyPerSqm);
   const quickMetrics: NeighborhoodMetric[] = [
     {
       id: 'asking-median',
-      title: sampleEval.adequate ? 'میانه قیمت پیشنهادی فروش' : 'قیمت مرجع داخلی هر مترمربع',
+      title: hasObservedAskMedian ? 'میانه قیمت پیشنهادی آگهی‌های مشاهده‌شده' : 'مرجع داخلی قیمت پیشنهادی هر مترمربع',
       value: unitAsk > 0 ? unitAsk : null,
       formattedValue: unitAsk > 0
         ? `${formatNullSafeMetricValue(unitAsk, (v) => formatMillionTomanAsIntlCurrency(v, 'IRT', locale))}${fxTag(unitAsk)}`
         : '—',
       unit: areaUnit === 'sqft' ? 'تومان / فوت مربع' : 'تومان / مترمربع',
-      period: observedSampleCount > 0 ? 'تجمیع نمونه زنده' : datedRef ? `مرجع داخلی · بازبینی ${datedRef.asOfJalali}` : 'بدون تاریخ به‌روزرسانی',
+      period: hasObservedAskMedian
+        ? `آگهی‌های مشاهده‌شده · ${validSampleCount} نمونه`
+        : datedRef ? `مرجع داخلی · بازبینی ${datedRef.asOfJalali}` : 'مرجع داخلی بدون تاریخ مشاهده در این پرونده',
       comparisonLabel: unitDeal !== null
         ? `سناریو v6.4 (غیرثبتی): ${formatMillionTomanAsIntlCurrency(unitDeal, 'IRT', locale)}${fxTag(unitDeal)}`
         : undefined,
       sampleSize: validSampleCount,
-      dataQuality: sampleEval.quality,
+      dataQuality: hasObservedAskMedian ? sampleEval.quality : 'estimated',
     },
     {
       id: 'active-supply',
@@ -241,25 +252,43 @@ export function buildNeighborhoodIntelligenceProfile(
     },
   ];
 
-  const prosList = hood.pros ? hood.pros.split('،').map((s) => s.trim()).filter(Boolean) : [];
-  const consList = hood.cons ? hood.cons.split('،').map((s) => s.trim()).filter(Boolean) : [];
   const updatedAt = '—';
 
   return {
-    identity: { id: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`, slug, canonicalPath, name: hood.name, alternativeNames: [`محدوده ${hood.name}`, `پهنه مطالعاتی ${hood.zone}`], cityId: normalizedCityId, zone: hood.zone },
-    boundary: {
-      boundaryId: `BND-${normalizedCityId.toUpperCase()}-${hood.id}-V2`, neighborhoodId: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`, version: 'v2.4-2026',
-      status: 'operational',
-      statusLabelFa: 'مرز عملیاتی تحلیل بازار (برآورد هندسی تقریبی)',
-      areaKm2: Number(((Math.PI * (hood.radius / 1000) ** 2) * 0.78).toFixed(2)),
-      centroid: [hood.lat, hood.lng], source: `شعاع داخلی محدوده (برآورد هندسی تقریبی) · رادار ${cityNameFa}`, effectiveFrom: '—',
+    identity: {
+      id: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`, slug, canonicalPath, name: hood.name,
+      canonicalGeographicEntityId: hood.geographicEntityId ?? null,
+      alternativeNames: [], cityId: normalizedCityId, zone: hood.zone,
     },
+    boundary: (() => {
+      const decision = evaluateNeighborhoodProfileBoundary({
+        expectedGeographicEntityId: hood.geographicEntityId,
+        expectedCityId: normalizedCityId,
+        expectedLegacyNeighborhoodId: hood.id,
+        evidence: options?.approvedBoundaryEvidence,
+      });
+      const evidence = options?.approvedBoundaryEvidence;
+      return {
+        boundaryId: decision.eligible ? evidence!.versionId : null,
+        neighborhoodId: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`,
+        version: decision.eligible ? evidence!.version : null,
+        status: !decision.eligible ? 'under-review' : decision.officialBoundary ? 'official' : 'operational',
+        statusLabelFa: decision.eligible
+          ? decision.officialBoundary ? 'مرز رسمی و بازبینی‌شده' : 'مرز عملیاتی بازبینی‌شده؛ غیررسمی'
+          : 'پوشش عملیاتی نقشه؛ مرز محله تأیید و مساحت‌سنجی نشده است',
+        areaKm2: decision.areaAnalysisAllowed ? decision.areaSqKm : null,
+        areaQuality: decision.areaQuality,
+        centroid: [hood.lat, hood.lng],
+        source: decision.eligible ? evidence!.sourceReference : 'مرجع هندسی معتبر به پروفایل متصل نشده است',
+        effectiveFrom: decision.eligible ? evidence!.reviewedAtIso ?? '—' : '—',
+      };
+    })(),
     maturityLevel: maturity.level, maturityLabelFa: maturity.labelFa,
     cityMismatchWarningFa,
     content: {
-      summary: `محله ${hood.name} در ${cityNameFa} (${hood.zone}) با شاخص کیفیت هوا ${hood.air}/۱۰ و دسترسی حمل‌ونقل ${hood.metro}/۱۰ به عنوان محدوده عملیاتی ارزیابی شده است.`,
-      strengths: prosList, challenges: consList,
-      urbanNotes: ['تفکیک شاخص مرجع محله از ارزش‌گذاری ملک منفرد (Hedonic) الزامی است.'],
+      summary: `این پرونده برای محله ${hood.name} در شهر ${cityNameFa} ساخته شده است. اعداد و شاخص‌ها فقط در صورت اتصال به مشاهده دارای منبع، تاریخ مرجع، سطح جغرافیایی و روش‌شناسی تأییدشده منتشر می‌شوند.`,
+      strengths: [], challenges: [],
+      urbanNotes: ['اطلاعات توصیفی موجود در کاتالوگ محله، تا زمان اتصال به منبع و چرخه بازبینی، محتوای تحلیلی تأییدشده محسوب نمی‌شود.'],
       editorialStatus: updatedAt === '—' ? 'draft' : 'published', updatedAt,
     },
     quickMetrics, sampleBreakdown, marketSampleAdequate: sampleEval.adequate, marketSampleWarningFa: sampleEval.warningFa,

@@ -1,7 +1,6 @@
 /**
  * RT-FE-NAVIGATION-ARCHITECTURE-014 — Canonical unified navigation registry (single owner).
  */
-import { CENTRAL_ROUTE_REGISTRY, type RouteRegistration } from '../../app/router/routeRegistry';
 import { ADMIN_ROUTES } from './admin.routes';
 import { PUBLIC_ROUTES } from './public.routes';
 import type { ModuleSubTabId, RouteDefinition, RouteDestinationId } from './route.types';
@@ -143,22 +142,21 @@ export function listUnifiedRoutesByView(viewId: RouteDestinationId): UnifiedRout
   return UNIFIED_NAVIGATION_ROUTES.filter((r) => r.viewId === viewId && r.status !== 'disabled');
 }
 
-export function findAppShellRouteRegistration(pathname: string): RouteRegistration | undefined {
-  return CENTRAL_ROUTE_REGISTRY.find(
-    (r) => r.path === pathname || (r.path !== '/' && pathname.startsWith(`${r.path}/`)),
-  );
-}
-
 export function resolveNavigationOwnership(pathname: string): {
-  owner: 'unified_navigation' | 'app_shell' | 'dynamic';
+  owner: 'unified_navigation' | 'dynamic';
   route?: UnifiedRouteDefinition;
-  shell?: RouteRegistration;
 } {
-  const unified = findUnifiedRouteByPath(pathname);
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  const unified = findUnifiedRouteByPath(normalized);
   if (unified) return { owner: 'unified_navigation', route: unified };
-  const shell = findAppShellRouteRegistration(pathname);
-  if (shell) return { owner: 'app_shell', shell };
-  if (pathname.startsWith('/areas/') || pathname.startsWith('/community/members/')) {
+  if (
+    normalized.startsWith('/areas/') ||
+    normalized.startsWith('/neighborhoods/') ||
+    normalized.startsWith('/community/members/') ||
+    normalized.startsWith('/properties/') ||
+    normalized.startsWith('/knowledge/articles/') ||
+    normalized.startsWith('/services/providers/')
+  ) {
     return { owner: 'dynamic' };
   }
   return { owner: 'unified_navigation' };

@@ -135,6 +135,8 @@ export interface DependencyCompatibilityEntry {
  */
 export interface WorkerEnv {
   readonly ASSETS?: WorkerAssetFetcher;
+  /** Service Binding from the frontend edge Worker to the backend Radar API Worker. */
+  readonly RADAR_API?: WorkerAssetFetcher;
   readonly ENVIRONMENT?: DeploymentEnvironmentName;
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
@@ -150,13 +152,7 @@ export interface WorkerEnv {
   readonly AUTH_INTERNAL_HMAC_SECRET?: string;
   readonly MARKET_PII_ENCRYPTION_KEY?: string;
   readonly MARKET_PII_HASH_SECRET?: string;
-  readonly FIREBASE_PROJECT_ID?: string;
-  readonly FIREBASE_PROJECT_NUMBER?: string;
-  readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
-  readonly FIREBASE_APP_CHECK_APP_ID?: string;
-  readonly FIREBASE_APP_CHECK_DEBUG_ALLOWLIST?: string;
   readonly ADMIN_EMAIL?: string;
-  readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
   readonly R2_MEDIA_BUCKET_NAME?: string;
   readonly R2_SIGNING_SECRET?: string;
@@ -165,6 +161,8 @@ export interface WorkerEnv {
   readonly OBJECT_STORAGE_MAX_VIDEO_MB?: string;
   readonly STRANGLER_FALLBACK_ENABLED?: string;
   readonly STRANGLER_ORIGIN_URL?: string;
+  /** Explicit local-only bypass to exercise D1 marketplace handlers without enabling production cutover. */
+  readonly LOCAL_D1_MARKETPLACE_ENABLED?: string;
   readonly MEDIA_BUCKET?: R2Bucket;
   /** Canonical User Database binding (`radar-user-db`). Preferred over legacy alias `DB`. */
   readonly USER_DB?: D1Database;
@@ -215,7 +213,6 @@ export interface WorkerRequestContext {
   routeId: string;
   implementationId: string;
   auth?: import('./auth/types').WorkerAuthContext;
-  appCheck?: import('./auth/types').WorkerAppCheckContext;
 }
 
 export interface WorkerObservabilityRecord {

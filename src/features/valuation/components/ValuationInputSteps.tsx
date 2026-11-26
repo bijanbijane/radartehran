@@ -260,9 +260,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
               ))}
             </div>
             <div className="flex flex-wrap gap-4 pt-2 border-t border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] font-bold">
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasParking} onChange={(e) => setFieldUser('amenities', { hasParking: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>پارکینگ سندی</span></label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasElevator} onChange={(e) => setFieldUser('amenities', { hasElevator: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>آسانسور</span></label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasStorage} onChange={(e) => setFieldUser('amenities', { hasStorage: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>انباری سندی</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasParking} onChange={(e) => setFieldUser('amenities', { hasParking: e.target.checked })} className="h-6 w-6 shrink-0 accent-[var(--color-brand-600)]" /><span>پارکینگ سندی</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasElevator} onChange={(e) => setFieldUser('amenities', { hasElevator: e.target.checked })} className="h-6 w-6 shrink-0 accent-[var(--color-brand-600)]" /><span>آسانسور</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasStorage} onChange={(e) => setFieldUser('amenities', { hasStorage: e.target.checked })} className="h-6 w-6 shrink-0 accent-[var(--color-brand-600)]" /><span>انباری سندی</span></label>
             </div>
           </div>
 

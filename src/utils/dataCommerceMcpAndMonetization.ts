@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import { calculateHedonicValuation, FAST_SALE_FACTOR, getCurrentJalaliYear } from '../data/hedonicPricingEngine'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, type CityId } from '../data/multiCityData'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const MANDATORY_PAYMENT_SIMULATION_BANNER = 'SIMULATION — NO REAL PAYMENT OR SETTLEMENT' as const; export interface CommercialDatasetAuditResult { datasetId: string; distributable: boolean; httpStatusIfRequested: 200 | 402 | 403; reasonCode: 'APPROVED_AGGREGATED_INDEX' | 'FORBIDDEN_PII_OR_PRIVATE_DATA' | 'UNVERIFIED_DATASET'; provenance: string; }
+import { calculateHedonicValuation, FAST_SALE_FACTOR, getCurrentJalaliYear } from '../data/hedonicPricingEngine'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, type CityId } from '../data/multiCityData'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const MANDATORY_PAYMENT_SIMULATION_BANNER = 'SIMULATION — NO REAL PAYMENT OR SETTLEMENT' as const; export interface CommercialDatasetAuditResult { datasetId: string; distributable: boolean; httpStatusIfRequested: 200 | 402 | 403; reasonCode: 'APPROVED_AGGREGATED_INDEX' | 'FORBIDDEN_PII_OR_PRIVATE_DATA' | 'UNVERIFIED_DATASET'; provenance: string; }
 const PROHIBITED_PII_DATASETS = new Set([ 'buyerLeads', 'buyer_alerts', 'sponsorRequests', 'bargainOwners', 'private_user_drafts', 'user_phones', ]); const APPROVED_COMMERCIAL_DATASETS = new Set([ 'tehran_neighborhood_price_index_v1', 'multicity_housing_summary_v1', 'hedonic_valuation_api_v1', 'mcp_authorized_market_tools_v1', ]); export function auditDatasetCommercialEligibility(datasetId: string): CommercialDatasetAuditResult { const cleanId = (datasetId || '').trim(); if (PROHIBITED_PII_DATASETS.has(cleanId) || /phone|lead|pii|private|owner/i.test(cleanId)) { return { datasetId: cleanId, distributable: false, httpStatusIfRequested: 403, reasonCode: 'FORBIDDEN_PII_OR_PRIVATE_DATA', provenance: 'Restricted User / CRM Data — Never Commercially Distributable', }; }
   if (APPROVED_COMMERCIAL_DATASETS.has(cleanId)) { return { datasetId: cleanId, distributable: true, httpStatusIfRequested: 200, reasonCode: 'APPROVED_AGGREGATED_INDEX', provenance: 'Radar Tehran Aggregated & Validated Market Index (Zero PII)', }; }
   return { datasetId: cleanId, distributable: false, httpStatusIfRequested: 403, reasonCode: 'UNVERIFIED_DATASET', provenance: 'Unverified dataset identifier', }; } export interface ExchangeRateReference { source: string; usdToTomanRate: number; recordedAtIso: string; isStaleWarningFa: string; conversionPolicyFa: string; }
@@ -26,6 +26,13 @@ export interface X402ChallengeResult {
     exchangeRateRef: ExchangeRateReference; messageFa: string; displayAreaUnitLabel?: string; referenceValuationIntlText?: string;
   };
 }
+function encodeBase64Utf8(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 export function buildX402PaymentChallenge(
   productId: string,
   areaUnit?: AreaUnit,
@@ -40,7 +47,7 @@ export function buildX402PaymentChallenge(
   return {
     httpStatus: 402,
     headers: {
-      'PAYMENT-REQUIRED': Buffer.from(JSON.stringify(challengePayload), 'utf-8').toString('base64'),
+      'PAYMENT-REQUIRED': encodeBase64Utf8(JSON.stringify(challengePayload)),
       'Cache-Control': 'no-store',
     },
     body: {
@@ -52,66 +59,6 @@ export function buildX402PaymentChallenge(
       referenceValuationIntlText: formatMillionTomanAsIntlCurrency(14500, resolvedCurrency, 'fa', REFERENCE_EXCHANGE_RATE),
     },
   };
-}
-export function signX402PaymentContextForVerification(
-  paymentContextJson: string,
-  secretKey: string
-): string {
-  return crypto.createHmac('sha256', secretKey).update(paymentContextJson).digest('hex');
-}
-const consumedX402ProofDigests = new Map<string, number>();
-const X402_REPLAY_TTL_MS = 10 * 60 * 1000;
-export function resetX402ReplayCacheForTests(): void { consumedX402ProofDigests.clear(); }
-export function verifyX402PaymentHeaders(params: {
-  paymentContextHeader?: string; paymentSignatureHeader?: string; expectedProductId: string;
-  verificationSecret?: string; nowMs?: number; allowReplayForTests?: boolean;
-}): {
-  verified: boolean; httpStatus: 200 | 402 | 503;
-  failureCode?: 'PAYMENT_REQUIRED' | 'INVALID_PAYMENT_PROOF' | 'PAYMENT_REJECTED' | 'VERIFIER_UNCONFIGURED';
-} {
-  if (!params.paymentContextHeader || !params.paymentSignatureHeader) {
-    return { verified: false, httpStatus: 402, failureCode: 'PAYMENT_REQUIRED' };
-  }
-  const rawSecret = (params.verificationSecret || process.env.X402_HMAC_SECRET || process.env.X402_SIGNING_SECRET || '').trim();
-  const secret = (rawSecret.length >= 16 || process.env.NODE_ENV === 'test') ? rawSecret : '';
-  if (!secret) return { verified: false, httpStatus: 503, failureCode: 'VERIFIER_UNCONFIGURED' };
-  try {
-    const decoded = Buffer.from(params.paymentContextHeader, 'base64').toString('utf-8');
-    const expectedSig = signX402PaymentContextForVerification(decoded, secret);
-    const sigBuf = Buffer.from(params.paymentSignatureHeader, 'utf-8');
-    const expBuf = Buffer.from(expectedSig, 'utf-8');
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-      return { verified: false, httpStatus: 402, failureCode: 'INVALID_PAYMENT_PROOF' };
-    }
-    const parsed = JSON.parse(decoded) as Record<string, unknown>;
-    const expectedProduct = RADAR_COMMERCIAL_PRODUCTS.find((p) => p.productId === params.expectedProductId);
-    const minRequiredMicros = expectedProduct ? expectedProduct.pricePerRequestUsdMicros : 1;
-    const paidMicros = Number(parsed.amountUsdMicros);
-    if (parsed.productId !== params.expectedProductId || !Number.isFinite(paidMicros) || paidMicros < minRequiredMicros) {
-      return { verified: false, httpStatus: 402, failureCode: 'PAYMENT_REJECTED' };
-    }
-    const now = params.nowMs ?? Date.now();
-    if (parsed.timestampIso !== undefined) {
-      const tsMs = typeof parsed.timestampIso === 'string' ? Date.parse(parsed.timestampIso) : NaN;
-      if (!Number.isFinite(tsMs) || now - tsMs > X402_REPLAY_TTL_MS || tsMs - now > 2 * 60 * 1000) {
-        return { verified: false, httpStatus: 402, failureCode: 'PAYMENT_REJECTED' };
-      }
-    }
-    if (!params.allowReplayForTests) {
-      for (const [k, expAt] of consumedX402ProofDigests.entries()) { if (now >= expAt) consumedX402ProofDigests.delete(k); }
-      const proofDigest = crypto.createHash('sha256').update(`${params.paymentContextHeader}.${params.paymentSignatureHeader}`).digest('hex');
-      const existingExp = consumedX402ProofDigests.get(proofDigest);
-      if (existingExp && now < existingExp) return { verified: false, httpStatus: 402, failureCode: 'PAYMENT_REJECTED' };
-      if (consumedX402ProofDigests.size >= 5000) {
-        const oldest = consumedX402ProofDigests.keys().next().value;
-        if (oldest) consumedX402ProofDigests.delete(oldest);
-      }
-      consumedX402ProofDigests.set(proofDigest, now + X402_REPLAY_TTL_MS);
-    }
-    return { verified: true, httpStatus: 200 };
-  } catch {
-    return { verified: false, httpStatus: 402, failureCode: 'INVALID_PAYMENT_PROOF' };
-  }
 }
 export class MonetizationLedgerAndSimulator {
   private totalRequests = 0;

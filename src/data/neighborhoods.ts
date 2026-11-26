@@ -234,17 +234,7 @@ export function withoutDemonstrationBuyerLeads(items: BuyerAlertLeadItem[]): Buy
 export function withoutDemonstrationSponsorRequests(items: SponsorCrmRequestItem[]): SponsorCrmRequestItem[] {
   return items.filter((item) => item && !isDemonstrationSponsorRequest(item));
 }
-export type FreeKeylessTileServerId = 'voyager' | 'osm_hot' | 'carto_dark' | 'osm' | 'satellite'; export type MapTileServerId = 'neshan' | FreeKeylessTileServerId; export const FREE_KEYLESS_TILE_SERVERS: Record<
-  FreeKeylessTileServerId, { url: string; label: string; next: FreeKeylessTileServerId }
-> = { osm: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    label: 'نقشه استاندارد OpenStreetMap (رایگان و بدون کلید)', next: 'satellite', }, satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    label: 'نقشه ماهواره‌ای (Satellite View)', next: 'carto_dark', }, carto_dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    label: 'نقشه حالت تاریک (Dark Mode)', next: 'osm_hot', }, osm_hot: {
-    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-    label: 'نقشه OpenStreetMap HOT (رایگان و پرجزئیات)', next: 'voyager', }, voyager: { url: '/api/osm-tile/{z}/{x}/{y}.png', label: 'پروکسی مستقیم OpenStreetMap سرور (ضد تحریم و بدون محدودیت)', next: 'osm', }, }; export function parseInitialUrlParams(): { initialHoodId: number; initialCompareId1: number; initialCompareId2: number; initialShowCompare: boolean; initialCity?: 'tehran' | 'karaj' | 'mashhad' | 'isfahan' | 'shiraz'; invalidCityParam?: string; initialMode?: 'rent' | 'buy'; initialDeposit?: number; initialMonthlyRent?: number; initialBuyBudget?: number; initialTargetSqm?: number; initialWorkHubId?: string; hasUrlBudgetParams?: boolean; } { if (typeof window === 'undefined') { return { initialHoodId: 5, initialCompareId1: 5, initialCompareId2: 14, initialShowCompare: false, }; }
+export type FreeKeylessTileServerId = 'voyager' | 'osm'; export type MapTileServerId = 'neshan' | FreeKeylessTileServerId; export const FREE_KEYLESS_TILE_SERVERS: Record<FreeKeylessTileServerId, { url: string; label: string; next: FreeKeylessTileServerId }> = { osm: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', label: 'نقشه استاندارد OpenStreetMap (رایگان و بدون کلید)', next: 'voyager' }, voyager: { url: '/api/osm-tile/{z}/{x}/{y}.png', label: 'پروکسی سروری OpenStreetMap با کش و محدودیت نرخ', next: 'osm' } }; export function parseInitialUrlParams(): { initialHoodId: number; initialCompareId1: number; initialCompareId2: number; initialShowCompare: boolean; initialCity?: 'tehran' | 'karaj' | 'mashhad' | 'isfahan' | 'shiraz'; invalidCityParam?: string; initialMode?: 'rent' | 'buy'; initialDeposit?: number; initialMonthlyRent?: number; initialBuyBudget?: number; initialTargetSqm?: number; initialWorkHubId?: string; hasUrlBudgetParams?: boolean; } { if (typeof window === 'undefined') { return { initialHoodId: 5, initialCompareId1: 5, initialCompareId2: 14, initialShowCompare: false, }; }
   try { const params = new URLSearchParams(window.location.search); const cityRaw = (params.get('city') || '').trim().toLowerCase(); const initialCity =
       cityRaw === 'tehran' || cityRaw === 'karaj' || cityRaw === 'mashhad' || cityRaw === 'isfahan' || cityRaw === 'shiraz'
         ? cityRaw

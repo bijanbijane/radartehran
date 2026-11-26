@@ -36,6 +36,9 @@ function makeD1() {
         async first<T = Record<string, unknown>>(): Promise<T | null> {
           statements.push(record);
           if (sql.includes('SELECT s.session_id')) return sessionRow as T;
+          if (sql.includes('INSERT INTO strong_rate_limits') && sql.includes('RETURNING counter, window_reset_ms')) {
+            return { counter: 1, window_reset_ms: Date.now() + 60_000 } as T;
+          }
           if (sql.includes('SELECT counter, window_reset_ms')) return null;
           if (sql.includes('INSERT INTO neighborhood_votes') && sql.includes('RETURNING vote_id')) return { vote_id: 'vote-canonical' } as T;
           return null;
@@ -57,8 +60,8 @@ function makeD1() {
   return { db: db as unknown as D1Database, statements };
 }
 
-function makeContext(body: Record<string, unknown>, origin = 'https://radartehran.ir'): WorkerRequestContext {
-  const request = new Request('https://radartehran.ir/api/v1/market/votes', {
+function makeContext(body: Record<string, unknown>, origin = 'https://radartehran.ir', pathname = '/api/v1/market/votes'): WorkerRequestContext {
+  const request = new Request('https://radartehran.ir' + pathname, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -76,7 +79,7 @@ function makeContext(body: Record<string, unknown>, origin = 'https://radartehra
     requestId: 'market-test-request',
     correlationId: 'market-test-correlation',
     method: 'POST',
-    pathname: '/api/v1/market/votes',
+    pathname,
     clientIp: '192.0.2.10',
     trustedEdgeIp: true,
     environment: 'development',
@@ -199,5 +202,26 @@ describe('Cloudflare D1 marketplace vote writes', () => {
     assert.equal(response.status, 400);
     const payload = await response.json() as { code: string };
     assert.equal(payload.code, 'INVALID_VOTE_PAYLOAD');
+  });
+});
+
+
+describe('Cloudflare D1 buyer-alert consent gate', () => {
+  it('rejects a valid authenticated buyer alert when explicit privacy consent is absent', async () => {
+    const ctx = makeContext({
+      cityId: 'tehran',
+      hoodId: 12,
+      fullName: 'کاربر آزمایشی',
+      phone: '09121234567',
+      dealType: 'خرید',
+      maxBudgetMillion: 9000,
+      privacyConsent: false,
+      consentVersion: 'buyer-alert-2026-10-v1',
+    }, 'https://radartehran.ir', '/api/v1/market/buyer-alerts');
+    const response = await handleMarketplaceWorkerRoute(ctx);
+    assert.ok(response);
+    assert.equal(response.status, 400);
+    const payload = await response.json() as { code: string };
+    assert.equal(payload.code, 'INVALID_BUYER_ALERT');
   });
 });

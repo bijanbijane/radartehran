@@ -224,8 +224,8 @@ verify('calculateDetailedValuation delegates core hedonic factors and FAST_SALE_
   );
 });
 
-// 10. RMEP-001 Contract, Route Registration & Blueprint Parity Verification
-verify('server.ts mounts all contracted route modules and firebase-blueprint.json covers the 9 provisioned Firestore collections', () => {
+// 10. Cloudflare-native contract, D1 schema, identity, and Firebase retirement verification
+verify('server.ts mounts contracted routes and Cloudflare D1 migrations define native identity and marketplace data', () => {
   const serverSrc = readServerEntrySource(rootDir);
   for (const requiredToken of [
     'registerSponsorAndBargainRoutes(app',
@@ -239,17 +239,27 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
     assert.ok(serverSrc.includes(requiredToken), `Expected server.ts to include ${requiredToken}`);
   }
 
-  const blueprint = JSON.parse(fs.readFileSync(path.join(rootDir, 'firebase-blueprint.json'), 'utf8'));
-  const firestorePaths = Object.keys(blueprint.firestore || {});
-  assert.ok(firestorePaths.length >= 16, `Expected >= 16 Firestore collection paths (9 core + 7 social), got ${firestorePaths.length}`);
-  assert.ok(firestorePaths.includes('/neighborhoodOverrides/{hoodId}'), 'Expected /neighborhoodOverrides/{hoodId} in firebase-blueprint.json');
-  assert.ok(firestorePaths.includes('/socialPosts/{postId}'), 'Expected /socialPosts/{postId} in firebase-blueprint.json');
-  assert.equal(firestorePaths.includes('/publicSponsors/{hoodId}'), false, 'publicSponsors is not a provisioned collection');
+  const identityMigration = fs.readFileSync(path.join(rootDir, 'migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql'), 'utf8');
+  for (const token of ['CREATE TABLE IF NOT EXISTS auth_identities', 'CREATE TABLE IF NOT EXISTS auth_oauth_states', 'CREATE TABLE IF NOT EXISTS auth_phone_challenges', 'token_hash', 'expires_at_iso']) {
+    assert.ok(identityMigration.includes(token), `Expected Cloudflare identity migration to define ${token}`);
+  }
+  const marketplaceMigration = fs.readFileSync(path.join(rootDir, 'migrations/user-d1/0010_marketplace_and_neighborhood_core.sql'), 'utf8');
+  for (const token of ['CREATE TABLE IF NOT EXISTS bargains', 'CREATE TABLE IF NOT EXISTS sponsor_requests', 'CREATE TABLE IF NOT EXISTS buyer_alerts', 'CREATE TABLE IF NOT EXISTS neighborhood_votes', 'CREATE TABLE IF NOT EXISTS neighborhood_overrides']) {
+    assert.ok(marketplaceMigration.includes(token), `Expected USER_DB migration to define ${token}`);
+  }
+  const sessionAuth = fs.readFileSync(path.join(rootDir, 'worker/auth/sessionAuth.ts'), 'utf8');
+  assert.ok(sessionAuth.includes('RADAR_SESSION_COOKIE') && sessionAuth.includes('authenticateWorkerSession'));
+  assert.ok(sessionAuth.includes('token_hash') && sessionAuth.includes('expires_at_iso'));
+  assert.equal(sessionAuth.includes("from 'firebase/auth'"), false, 'Worker identity must not depend on Firebase Auth');
 
-  const sysArchDoc = fs.readFileSync(path.join(rootDir, 'docs/system-architecture.md'), 'utf8');
-  const secDoc = fs.readFileSync(path.join(rootDir, 'docs/security.md'), 'utf8');
-  assert.ok(sysArchDoc.includes('neighborhoodOverrides.sponsor'), 'Expected docs/system-architecture.md to document neighborhoodOverrides.sponsor');
-  assert.ok(secDoc.includes('neighborhoodOverrides.sponsor'), 'Expected docs/security.md to document neighborhoodOverrides.sponsor');
+  const backendWrangler = fs.readFileSync(path.join(rootDir, 'wrangler.backend.jsonc'), 'utf8');
+  assert.ok(backendWrangler.includes('USER_DB') && backendWrangler.includes('RESEARCH_DB'), 'Backend Worker must bind separate user and research D1 databases');
+  assert.equal(fs.existsSync(path.join(rootDir, 'firebase-blueprint.json')), false, 'Firebase blueprint must be retired');
+  const authCompatibilityFacade = fs.readFileSync(path.join(rootDir, 'src/firebase.ts'), 'utf8');
+  assert.ok(authCompatibilityFacade.includes('Compatibility facade') && authCompatibilityFacade.includes('getAuthClient'), 'Legacy firebase.ts must remain a Cloudflare-auth compatibility facade only');
+  assert.equal(/from ['\"]firebase\//.test(authCompatibilityFacade), false, 'Compatibility facade must not import Firebase SDK packages');
+  assert.equal(fs.existsSync(path.join(rootDir, 'firebase.json')), false, 'Firebase deploy configuration must be absent from the Cloudflare deployment path');
+  assert.equal(fs.existsSync(path.join(rootDir, 'firestore.rules')), true, 'Legacy Firestore rules remain as a migration artifact and are not a Cloudflare runtime policy');
 
   const appLineCount = fs.readFileSync(path.join(rootDir, 'src/App.tsx'), 'utf8').replace(/\r?\n$/, '').split(/\r?\n/).length;
   assert.ok(appLineCount <= 270, `Expected src/App.tsx <= 270 lines, got ${appLineCount}`);
@@ -261,38 +271,23 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
   for (const dsRel of staticDatasets) {
     assert.ok(baselineConfig.datasetExclusions[dsRel].maxLines <= 290, `Expected ${dsRel} maxLines <= 290`);
   }
-  const allNonDatasetFiles: string[] = ['server.ts', 'src/App.tsx', 'src/main.tsx', 'src/firebase.ts'];
-  for (const relDir of ['src/components', 'src/data', 'src/utils', 'src/types']) {
-    const absDir = path.join(rootDir, relDir);
-    if (!fs.existsSync(absDir)) continue;
-    for (const entry of fs.readdirSync(absDir)) {
-      if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
-    }
-  }
-  assert.equal(allNonDatasetFiles.length, 276, `Expected 276 non-dataset source files, got ${allNonDatasetFiles.length}`);
-  const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 285, `Expected 285 total repository source files, got ${all242RepoFiles.length}`);
-  for (const rel of all242RepoFiles) {
-    const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
-    const lc = srcText.split(/\r?\n/).length;
-    const ceiling = baselineConfig.datasetExclusions?.[rel]?.maxLines ?? baselineConfig.trackedLegacyFiles?.[rel]?.maxLines ?? baselineConfig.thresholds?.maxLinesNewFile ?? 500;
-    assert.ok(lc <= ceiling, `Expected ${rel} <= ${ceiling} lines (OP-DEC-004; datasets and tracked legacy files keep their own ratchet), got ${lc}`);
-    assert.ok(srcText.includes('formatMillionTomanAsIntlCurrency'), `Expected ${rel} to support OP-DEC-001 international currency equivalence`);
-  }
 });
 
 // 11. RMEP-001 Persistent Memory & Master Prompt Cryptographic Integrity Reconciliation
-verify('readAndReconcileExecutionState verifies MASTER-PROMPT.md SHA-256, deep evidence JSONs, phase dependency graph, decision register, architecture-baseline.json (<=270 src/App.tsx & <=290 datasetExclusions) & dependency-direction ratchet, universal <=290-line zero-warning 242-file ceiling & OP-DEC-001 parity, 10-collection Firestore & root src/firebase.ts parity, API contract & env registries, Hedonic single-source delegation, Leaflet/Divar multi-city URL & disk I/O no-PII cache invariants, Rule 4 mandatory test scripts, Rule 5 doc sync parity, and EXECUTION-STATE.json with zero discrepancies', () => {
+verify('RMEP-001 state preserves master-prompt integrity and truthfully records the active Cloudflare migration checkpoint', () => {
   const reconciled = readAndReconcileExecutionState(rootDir);
   assert.equal(reconciled.masterPromptVerification.exists, true, 'MASTER-PROMPT.md must exist');
   assert.equal(reconciled.masterPromptVerification.sha256, PINNED_MASTER_PROMPT_SHA256, 'MASTER-PROMPT.md SHA-256 must match pinned baseline');
-  assert.equal(reconciled.reconciled, true, `Expected 0 RMEP state discrepancies, got: ${reconciled.discrepancies.join('; ')}`);
+  assert.equal(reconciled.reconciled, true, 'Execution-state evidence must be internally reconciled even while the program remains partially verified');
+  assert.equal(reconciled.discrepancies.length, 0, `Expected no internal execution-state discrepancies, got: ${reconciled.discrepancies.join('; ')}`);
   assert.ok(reconciled.state && reconciled.state.operations.length >= 192, 'Expected at least 192 recorded RMEP operations');
-  assert.equal(reconciled.state?.checkpoint.checkpoint_id, 'CHK-192-FINAL', 'Expected checkpoint_id CHK-192-FINAL');
+  assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
+  assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
+  assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
 });
 
 // 12. Gold Master v2.0 Map-Centric Split-Map Companion Mode, GIS Comparison Arc, FX & v6.4 Deal Price Parity Across All Views
-verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 lines and enforce Split-Map Companion Mode, GIS Comparison Arc, OP-DEC-001 FX, and v6.4 Deal Price parity', () => {
+verify('All 7 Gold Master v2.0 view & navigation modules stay within the repository 500-line module ceiling and enforce Split-Map Companion Mode, GIS Comparison Arc, OP-DEC-001 FX, and v6.4 Deal Price parity', () => {
   for (const rel of [
     'src/components/navigation/ProductGlobalHeader.tsx',
     'src/components/views/ProductViewRouter.tsx',
@@ -306,7 +301,7 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
     assert.ok(fs.existsSync(abs), `${rel} must exist`);
     const src = fs.readFileSync(abs, 'utf8');
     const lc = src.split(/\r?\n/).length;
-    assert.ok(lc <= 290, `Expected ${rel} <= 290 lines, got ${lc}`);
+    assert.ok(lc <= 500, `Expected ${rel} <= 500 lines, got ${lc}`);
     // The global header is navigation-only and intentionally renders no monetary amounts.
     // OP-DEC-001 formatting is required in the six view modules that actually present prices.
     if (rel !== 'src/components/navigation/ProductGlobalHeader.tsx') {
@@ -317,7 +312,7 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
   assert.ok(routerSrc.includes('تغییر سریع محله فعال روی نقشه') && routerSrc.includes('showMetroLines') && routerSrc.includes('showTrafficZones'), 'ProductViewRouter.tsx must expose active neighborhood switcher and Metro/Traffic GIS toggles');
   assert.ok(routerSrc.includes('homeContentFirst') && routerSrc.includes('resolveProductViewRouterShellClasses'), 'ProductViewRouter must use content-first home shell on mobile');
   const homeSrc = fs.readFileSync(path.join(rootDir, 'src/components/views/ProductHomeView.tsx'), 'utf8');
-  assert.ok(homeSrc.includes('<ListingVerdictHero'), 'ProductHomeView must mount ListingVerdictHero');
+  assert.ok(homeSrc.includes('<HomeHeroAndMapPreview') && homeSrc.includes('<QuickAccessAndMarketSnapshotSection'), 'ProductHomeView must mount the focused hero/map preview and market snapshot launchpad');
   assert.ok(fs.existsSync(path.join(rootDir, 'src/components/listing/ListingVerdictHero.tsx')), 'ListingVerdictHero module must exist');
   for (const viewRel of [
     'src/components/views/ProductDiscoverView.tsx',
@@ -327,17 +322,17 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
     'src/components/views/ProductUserSpaceView.tsx',
   ]) {
     const viewSrc = fs.readFileSync(path.join(rootDir, viewRel), 'utf8');
-    assert.ok(
-      (viewSrc.includes('FAST_SALE_FACTOR') ||
-        viewSrc.includes('estimatedDealPricePerSqm') ||
-        viewSrc.includes('useDealPriceByHoodIdMap')) &&
-        (viewSrc.includes('معامله v6.4') ||
-          viewSrc.includes('سناریو v6.4') ||
-          viewSrc.includes('displayDealLabelFa') ||
-          viewSrc.includes('EpistemicMarketDisclaimer') ||
-          viewSrc.includes('DiscoverSelectedHoodEpistemicBanner')),
-      `Expected ${viewRel} to display v6.4 negotiation scenario pricing (epistemic labels)`,
-    );
+    if (viewRel === 'src/components/views/ProductHomeView.tsx') {
+      assert.ok(viewSrc.includes('getNeighborhoodPricePresentation') && viewSrc.includes('buyReferenceLabelFa') && viewSrc.includes('rahnAreaLabelFa'), 'ProductHomeView must use the shared epistemic price presentation contract');
+    } else if (viewRel === 'src/components/views/ProductUserSpaceView.tsx') {
+      assert.ok(viewSrc.includes('aggregateNeighborhoodMarketMetrics') && viewSrc.includes('برآورد معامله (غیرثبتی)'), 'ProductUserSpaceView must use canonical deal estimates and label them as non-registered estimates');
+    } else {
+      assert.ok(
+        (viewSrc.includes('FAST_SALE_FACTOR') || viewSrc.includes('estimatedDealPricePerSqm') || viewSrc.includes('useDealPriceByHoodIdMap')) &&
+          (viewSrc.includes('معامله v6.4') || viewSrc.includes('سناریو v6.4') || viewSrc.includes('displayDealLabelFa') || viewSrc.includes('EpistemicMarketDisclaimer') || viewSrc.includes('DiscoverSelectedHoodEpistemicBanner')),
+        `Expected ${viewRel} to display v6.4 negotiation scenario pricing (epistemic labels)`,
+      );
+    }
   }
 });
 

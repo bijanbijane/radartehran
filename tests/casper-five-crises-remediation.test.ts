@@ -17,7 +17,6 @@ import {
   CITY_DEFAULT_CENTERS,
 } from '../src/utils/geolocationGuard';
 import { sanitizeSponsorForOverrideDoc } from '../src/utils/backupCloudSync';
-import { resolveBrowserAppCheckSiteKey, initClientAppCheckIfConfigured } from '../src/utils/clientAppCheck';
 import {
   assertValidPolicyStateTransition,
   assertValidClaimStateTransition,
@@ -163,17 +162,18 @@ test('Crisis #4: sanitizeSponsorForOverrideDoc strips UI-only fields incompatibl
   assert.deepEqual(Object.keys(sanitized!).sort(), ['experienceYears', 'expiresAtIso', 'name', 'phone', 'planType', 'specialty']);
 });
 
-test('Crisis #5: Client App Check resolves configured keys safely and skips placeholders/SSR', () => {
-  assert.equal(resolveBrowserAppCheckSiteKey({ VITE_FIREBASE_APP_CHECK_SITE_KEY: 'YOUR_SITE_KEY' }), null);
-  assert.equal(resolveBrowserAppCheckSiteKey({ VITE_FIREBASE_APP_CHECK_SITE_KEY: '6LeTestEnterpriseSiteKey12345' }), '6LeTestEnterpriseSiteKey12345');
-  assert.equal(initClientAppCheckIfConfigured({} as never, { VITE_FIREBASE_APP_CHECK_SITE_KEY: '6LeTestEnterpriseSiteKey12345' }), null);
-  const clientAppCheckSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/clientAppCheck.ts'), 'utf-8');
-  assert.ok(!clientAppCheckSrc.includes('firebase-admin'));
-  assert.ok(!clientAppCheckSrc.includes('node:crypto'));
-  const firebaseBootstrapSrc = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf-8');
-  assert.match(firebaseBootstrapSrc, /VITE_FIREBASE_APP_CHECK_SITE_KEY:\s*String\(firebaseConfig\.recaptchaSiteKey\s*\|\|\s*''\)/);
-  const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8')) as { recaptchaSiteKey?: string };
-  assert.equal(typeof firebaseConfig.recaptchaSiteKey, 'string', 'Firebase applet config must expose the public App Check site-key slot');
+test('Crisis #5: Native D1 session facade replaces Firebase browser authentication', () => {
+  const frontendPackage = fs.readFileSync(path.join(process.cwd(), 'apps/frontend/package.json'), 'utf-8');
+  const frontendFacade = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf-8');
+  const authClient = fs.readFileSync(path.join(process.cwd(), 'src/platform/auth/core/authClient.ts'), 'utf-8');
+  const workerPolicy = fs.readFileSync(path.join(process.cwd(), 'worker/auth/authorizationPolicy.ts'), 'utf-8');
+  assert.ok(frontendFacade.includes('getAuthClient'));
+  assert.ok(frontendFacade.includes('subscribeAuthState'));
+  assert.ok(!/from ['"]firebase\//.test(frontendFacade));
+  assert.ok(authClient.includes('startGoogleLogin'));
+  assert.ok(workerPolicy.includes('FIREBASE_BEARER_TOKEN_RETIRED'));
+  assert.ok(workerPolicy.includes('STATIC_ADMIN_TOKEN_RETIRED'));
+  assert.ok(!frontendPackage.includes('"firebase"'));
 });
 
 test('Restored property insurance state machine enforces monotonic policy/claim transitions and settlement limits', () => {

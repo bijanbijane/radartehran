@@ -5,7 +5,7 @@ import type { Express, Request, Response } from 'express';
 import express from 'express';
 import {
   verifyAdminApiAuthorization,
-  verifyFirebaseUserAuthorization,
+  verifyAuthenticatedUserHeader,
 } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import {
   createMediaModuleFacade,
@@ -55,7 +55,7 @@ export function registerMediaModuleRoutes(app: Express, options?: MediaRoutesOpt
 
   const requireVerifiedUser = async (req: Request, res: Response, next: () => void): Promise<void> => {
     try {
-      const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+      const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
       if (!auth.authorized || !auth.uid) {
         if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuse(resolveIp(req), 'auth_failure');
         res.setHeader('Cache-Control', 'no-store');
@@ -162,7 +162,7 @@ export function registerMediaModuleRoutes(app: Express, options?: MediaRoutesOpt
       const authHeader = req.headers.authorization;
       let actor = null as { uid: string; isAdmin: boolean } | null;
       if (authHeader) {
-        const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+        const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
         if (auth.authorized && auth.uid) actor = { uid: auth.uid, isAdmin: false };
       }
       const rangeHeader = typeof req.headers.range === 'string' ? req.headers.range : undefined;

@@ -1,6 +1,6 @@
 /** @file src/features/admin/components/AdminCommunityModerationPanel.tsx — Server-Authoritative Community Governance, Data Apply & Appeals Queue */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { CheckCircle2, Database, Lock, Scale, ShieldAlert, XCircle } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import {

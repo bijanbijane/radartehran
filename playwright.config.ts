@@ -3,8 +3,11 @@ import { defineConfig } from '@playwright/test';
 
 const LOCAL_HEADLESS_SHELL =
   '/ms-playwright/chromium_headless_shell-1247/chrome-headless-shell-linux64/chrome-headless-shell';
-
-const executablePath = fs.existsSync(LOCAL_HEADLESS_SHELL) ? LOCAL_HEADLESS_SHELL : undefined;
+const MAC_SYSTEM_CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const executablePath = fs.existsSync(LOCAL_HEADLESS_SHELL)
+  ? LOCAL_HEADLESS_SHELL
+  : fs.existsSync(MAC_SYSTEM_CHROME) ? MAC_SYSTEM_CHROME : undefined;
+const SMOKE_BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3001';
 
 export default defineConfig({
   testDir: './tests',
@@ -18,7 +21,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
   use: {
-    baseURL: process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000',
+    baseURL: SMOKE_BASE_URL,
     headless: true,
     locale: 'fa-IR',
     viewport: { width: 1680, height: 960 },
@@ -31,7 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'npm run dev',
-    url: 'http://127.0.0.1:3000/api/healthz',
+    url: `${SMOKE_BASE_URL}/api/healthz`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

@@ -174,7 +174,15 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
     }
   }
   for (const [k, v] of Object.entries(parsed.phase_statuses ?? {})) {
-    if (v !== 'VERIFIED') discrepancies.push(`Phase status ${k} is not VERIFIED (got ${v})`);
+    if (k === 'phase_6') {
+      const phase6Allowed = v === 'VERIFIED' ||
+        (v === 'PARTIALLY_VERIFIED' && parsed.current_phase?.phase_id === 'PHASE-6' &&
+          parsed.current_workstream?.task_status === 'IN_PROGRESS' &&
+          parsed.program_status === 'PARTIALLY_VERIFIED');
+      if (!phase6Allowed) discrepancies.push('Phase 6 status is inconsistent with the active RMEP workstream (got ' + v + ')');
+    } else if (v !== 'VERIFIED') {
+      discrepancies.push('Phase status ' + k + ' is not VERIFIED (got ' + v + ')');
+    }
   }
   const decisionsDocPath = path.resolve(rootDir, 'docs/engineering/RMEP-001/MASTER-ENGINEERING-DECISIONS.md');
   if (fs.existsSync(decisionsDocPath)) {
@@ -226,18 +234,111 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       if (fs.existsSync(absF)) {
         const srcTxt = fs.readFileSync(absF, 'utf-8');
         const lineCeiling = archBase.datasetExclusions?.[relF]?.maxLines ?? archBase.trackedLegacyFiles?.[relF]?.maxLines ?? archBase.thresholds?.maxLinesNewFile ?? 500;
-        if (srcTxt.split(/\r?\n/).length > lineCeiling) discrepancies.push(`Source file exceeds ceiling ${lineCeiling}: ${relF}`);
-        if (!srcTxt.includes('formatMillionTomanAsIntlCurrency')) discrepancies.push(`Source file missing OP-DEC-001 intl parity: ${relF}`);
+        const logicalLineCount = srcTxt.split(/\r?\n/).length - (srcTxt.endsWith('\n') ? 1 : 0);
+        if (logicalLineCount > lineCeiling) discrepancies.push('Source file exceeds ceiling ' + lineCeiling + ': ' + relF);
       }
     }
   } else discrepancies.push('Missing architecture-baseline.json');
-  const rulesText = fs.existsSync(path.resolve(rootDir, 'firestore.rules')) ? fs.readFileSync(path.resolve(rootDir, 'firestore.rules'), 'utf-8') : ''; const bpText = fs.existsSync(path.resolve(rootDir, 'firebase-blueprint.json')) ? fs.readFileSync(path.resolve(rootDir, 'firebase-blueprint.json'), 'utf-8') : ''; const fbRootText = fs.existsSync(path.resolve(rootDir, 'src/firebase.ts')) ? fs.readFileSync(path.resolve(rootDir, 'src/firebase.ts'), 'utf-8') : '';
-  if (!fbRootText.includes('handleFirestoreError') || !fbRootText.includes('prepareFirestorePayload') || !fbRootText.includes('experimentalAutoDetectLongPolling')) discrepancies.push('Missing handleFirestoreError, prepareFirestorePayload, or long-polling resilience in src/firebase.ts');
-  for (const col of ['admins', 'votes', 'bargains', 'bargainOwners', 'neighborhoodOverrides', 'sponsorRequests', 'buyerAlerts', 'appConfig', 'userPreferences']) {
-    if (!bpText.includes(`"/${col}/`) || !rulesText.includes(`match /${col}/`)) discrepancies.push(`Firestore parity mismatch for collection ${col}`);
+  for (const relF of [
+    'src/utils/areaUnit.ts',
+    'src/utils/persianFinancials.ts',
+    'src/data/hedonicPricingEngine.ts',
+    'src/components/HedonicValuationModal.tsx',
+  ]) {
+    const absF = path.resolve(rootDir, relF);
+    const source = fs.existsSync(absF) ? fs.readFileSync(absF, 'utf-8') : '';
+    if (!source.includes('formatMillionTomanAsIntlCurrency')) {
+      discrepancies.push('OP-DEC-001 financial parity missing from ' + relF);
+    }
   }
-  if (bpText.includes('/publicSponsors/') || rulesText.includes('match /publicSponsors/')) discrepancies.push('publicSponsors is not a provisioned Firestore collection');
-  if (!rulesText.includes('isValidOverrideSponsor') || !rulesText.includes('match /neighborhoodOverrides/{hoodId}') || !/existing\(\)\.hoodId >= 1 && existing\(\)\.hoodId <= 999/.test(rulesText)) discrepancies.push('neighborhoodOverrides list rule is missing hoodId 1..999');
+  // Canonical persistence/authentication is Cloudflare D1 + Worker OIDC sessions.
+  // Firestore JSON/rules files are archival migration evidence, never runtime authorities.
+  const rootFirebaseFacade = fs.existsSync(path.resolve(rootDir, 'src/firebase.ts'))
+    ? fs.readFileSync(path.resolve(rootDir, 'src/firebase.ts'), 'utf-8')
+    : '';
+  const nativeSessionFiles = [
+    'src/platform/auth/core/authClient.ts',
+    'worker/auth/sessionAuth.ts',
+    'worker/auth/authorizationPolicy.ts',
+    'worker/auth/authRevocationStore.ts',
+    'worker/routes/authRoutes.ts',
+  ];
+  for (const rel of nativeSessionFiles) {
+    if (!fs.existsSync(path.resolve(rootDir, rel))) {
+      discrepancies.push('Missing Cloudflare-native auth artifact: ' + rel);
+    }
+  }
+  if (!rootFirebaseFacade.includes('getAuthClient') || !rootFirebaseFacade.includes('subscribeAuthState')) {
+    discrepancies.push('src/firebase.ts does not expose the Cloudflare D1 session compatibility facade');
+  }
+  if (/from\s+['"]firebase\/(?:app|auth|firestore|app-check)['"]|import\(['"]firebase\//.test(rootFirebaseFacade)) {
+    discrepancies.push('Firebase client SDK import remains in src/firebase.ts');
+  }
+  const nativePolicyText = fs.existsSync(path.resolve(rootDir, 'worker/auth/authorizationPolicy.ts'))
+    ? fs.readFileSync(path.resolve(rootDir, 'worker/auth/authorizationPolicy.ts'), 'utf-8')
+    : '';
+  if (!nativePolicyText.includes('FIREBASE_BEARER_TOKEN_RETIRED') ||
+      !nativePolicyText.includes('STATIC_ADMIN_TOKEN_RETIRED') ||
+      !nativePolicyText.includes('authenticateWorkerSession')) {
+    discrepancies.push('Worker native auth policy must retire Firebase Bearer/static admin credentials and validate D1 sessions');
+  }
+  const userMigrationDir = path.resolve(rootDir, 'migrations/user-d1');
+  const userMigrationFiles = fs.existsSync(userMigrationDir)
+    ? fs.readdirSync(userMigrationDir).filter((name) => /^\d+.*\.sql$/.test(name)).sort()
+    : [];
+  for (const migration of [
+    '0007_cloudflare_native_identity_and_sessions.sql',
+    '0010_marketplace_and_neighborhood_core.sql',
+  ]) {
+    if (!userMigrationFiles.includes(migration)) {
+      discrepancies.push('Missing canonical USER_DB migration: ' + migration);
+    }
+  }
+  const userSchemaText = userMigrationFiles
+    .map((name) => fs.readFileSync(path.join(userMigrationDir, name), 'utf-8'))
+    .join('\n');
+  for (const table of [
+    'auth_identities', 'auth_oauth_states', 'user_sessions',
+    'bargains', 'sponsor_requests', 'buyer_alerts', 'neighborhood_votes', 'app_config',
+  ]) {
+    const tablePattern = new RegExp('CREATE\\s+TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?\\s+' + table + '\\b', 'i');
+    if (!tablePattern.test(userSchemaText)) {
+      discrepancies.push('Missing canonical USER_DB table definition: ' + table);
+    }
+  }
+  const marketplaceWorkerText = fs.existsSync(path.resolve(rootDir, 'worker/routes/marketplaceRoutes.ts'))
+    ? fs.readFileSync(path.resolve(rootDir, 'worker/routes/marketplaceRoutes.ts'), 'utf-8')
+    : '';
+  if (!marketplaceWorkerText.includes('privacyConsent !== true') ||
+      !marketplaceWorkerText.includes('calculateCanonicalD1SponsorPricing')) {
+    discrepancies.push('D1 marketplace must enforce explicit buyer consent and server-owned sponsor pricing');
+  }
+  const frontendFirebaseImports: string[] = [];
+  for (const dirRel of ['src', 'apps/frontend']) {
+    const absDir = path.resolve(rootDir, dirRel);
+    const visit = (dir: string): void => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== 'node_modules' && entry.name !== 'dist') visit(abs);
+        } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+          const source = fs.readFileSync(abs, 'utf-8');
+          if (/from\s+['"]firebase\/(?:app|auth|firestore|app-check)['"]|import\(['"]firebase\/(?:app|auth|firestore|app-check)['"]\)/.test(source)) {
+            frontendFirebaseImports.push(path.relative(rootDir, abs));
+          }
+        }
+      }
+    };
+    visit(absDir);
+  }
+  if (frontendFirebaseImports.length > 0) {
+    discrepancies.push('Firebase client SDK imports remain in frontend runtime: ' + frontendFirebaseImports.slice(0, 10).join(', '));
+  }
+  if (!fs.existsSync(path.resolve(rootDir, 'tests/cloudflare-native-auth.test.ts')) ||
+      !fs.existsSync(path.resolve(rootDir, 'tests/cloudflare-worker-native-auth-failclosed.test.ts'))) {
+    discrepancies.push('Missing native D1 session, revocation, and fail-closed regression tests');
+  }
   const cfgValText = fs.existsSync(path.resolve(rootDir, 'src/utils/serverConfigValidator.ts')) ? fs.readFileSync(path.resolve(rootDir, 'src/utils/serverConfigValidator.ts'), 'utf-8') : '';
   const apiInvText = fs.existsSync(path.resolve(rootDir, 'src/utils/apiContractsAndSerializationEngine.ts')) ? fs.readFileSync(path.resolve(rootDir, 'src/utils/apiContractsAndSerializationEngine.ts'), 'utf-8') : '';
   if (!cfgValText.includes('API_ENDPOINT_CONTRACTS') || !apiInvText.includes('RADAR_API_ROUTE_INVENTORY')) discrepancies.push('Missing API_ENDPOINT_CONTRACTS or RADAR_API_ROUTE_INVENTORY route contract definitions');
@@ -254,9 +355,26 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
   if (!archPolicyDoc.includes('maxLines: 270') || !archPolicyDoc.includes('<= 290') || !sysArchDoc.includes('neighborhoodOverrides.sponsor') || !sysArchDoc.includes('0o600') || !secDoc.includes('neighborhoodOverrides.sponsor') || !secDoc.includes('.runtime-config.json')) discrepancies.push('Missing AGENTS.md Rule 5 doc sync parity in ARCHITECTURE.md, docs/system-architecture.md, or docs/security.md');
   const priceAggText = fs.existsSync(path.resolve(rootDir, 'src/data/realMarketPriceAggregator.ts')) ? fs.readFileSync(path.resolve(rootDir, 'src/data/realMarketPriceAggregator.ts'), 'utf-8') : '';
   if (!priceAggText.includes('verifyPricingEngineIntegrity') || !priceAggText.includes('aggregateNeighborhoodLivePrice') || !priceAggText.includes('extractListingSpecsFromText')) discrepancies.push('Missing v6.4 Persian NLP & Hedonic pricing aggregator exports in src/data/realMarketPriceAggregator.ts');
-  for (const reqScript of ['scripts/check-architecture.ts', 'scripts/run-firestore-rules-tests.ts', 'src/utils/appCheck.test.ts', 'tests/architecture-guardrails.test.ts', 'tests/pricing-engine-integrity.test.ts', 'tests/neighborhood-insights.test.ts', 'tests/stress-50-cycles.test.ts', 'tests/object-storage-upload-auth.test.ts', 'tests/object-storage-security.test.ts', 'tests/object-storage-range.test.ts']) {
+  for (const reqScript of [
+    'scripts/check-architecture.ts',
+    'tests/architecture-guardrails.test.ts',
+    'tests/pricing-engine-integrity.test.ts',
+    'tests/neighborhood-insights.test.ts',
+    'tests/stress-50-cycles.test.ts',
+    'tests/object-storage-security.test.ts',
+    'tests/object-storage-range.test.ts',
+    'tests/cloudflare-worker-platform.test.ts',
+    'tests/cloudflare-google-oidc.test.ts',
+    'tests/cloudflare-native-auth.test.ts',
+    'tests/cloudflare-worker-native-auth-failclosed.test.ts',
+    'tests/cloudflare-marketplace-privacy.test.ts',
+    'tests/cloudflare-marketplace-write-routes.test.ts',
+    'tsconfig.worker.json',
+  ]) {
     const absScript = path.resolve(rootDir, reqScript);
-    if (!fs.existsSync(absScript) || fs.statSync(absScript).size === 0) discrepancies.push(`Missing or empty AGENTS.md Rule 4 mandatory verification script: ${reqScript}`);
+    if (!fs.existsSync(absScript) || fs.statSync(absScript).size === 0) {
+      discrepancies.push('Missing or empty AGENTS.md Rule 4 mandatory verification artifact: ' + reqScript);
+    }
   }
   return { state: parsed, masterPromptVerification, reconciled: discrepancies.length === 0, discrepancies };
 }

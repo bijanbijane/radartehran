@@ -1,5 +1,6 @@
-import React from 'react'; import { signInWithPopup, type User as FirebaseUser } from 'firebase/auth'; import { auth, googleProvider } from '../firebase';
-import { createBargainWithOwner, createSponsorRequest, saveUserPreferences, submitResidentVote, upsertBuyerAlertLead } from '../data/neighborhoodRemoteRepository'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, getHoodMonthlySponsorTariff, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { formatBrandCityTitle } from '../utils/geo/cityGeospatialResolver'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, recordDiagnosticEvent, sanitizeInput } from '../utils/security'; import { isValidNormalizedIranianMobile, normalizeIranianMobileInput } from '../utils/forms/formInputHelpers'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeCityLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
+import React from 'react'; import type { AuthUserSnapshot as FirebaseUser } from '../platform/auth'; import { getAuthClient } from '../platform/auth';
+import { createBargainWithOwner, createSponsorRequest, saveUserPreferences, submitResidentVote, upsertBuyerAlertLead } from '../data/neighborhoodRemoteRepository'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { formatBrandCityTitle } from '../utils/geo/cityGeospatialResolver'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { parseMillionTomanBudgetInput } from '../utils/persianFinancials'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, recordDiagnosticEvent, sanitizeInput } from '../utils/security'; import { isValidNormalizedIranianMobile, normalizeIranianMobileInput } from '../utils/forms/formInputHelpers'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeCityLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
   targetSqm: number; workHubId: string; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood; selectedHoodId: number; setSelectedHoodId: React.Dispatch<React.SetStateAction<number>>; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; setMobileSheetOpen: React.Dispatch<React.SetStateAction<boolean>>; setActiveTab: React.Dispatch<React.SetStateAction<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote'>>; setShowGoldPins: React.Dispatch<React.SetStateAction<boolean>>; mapInstanceRef: React.MutableRefObject<any>; allExpansionSeeds: Neighborhood[]; bargainHoodId: number; bargainType: 'خرید' | 'اجاره'; bargainSqm: number; bargainTitle: string; setBargainTitle: React.Dispatch<React.SetStateAction<string>>; bargainStreet: string; setBargainStreet: React.Dispatch<React.SetStateAction<string>>; bargainProposedPrice: number; bargainUploadedMedia: ListingMediaObject[]; setBargainUploadedMedia: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; setBargainSubmitMsg: React.Dispatch<React.SetStateAction<{ type: 'error' | 'success'; text: string } | null>>;
   targetBargainHood: EvaluatedNeighborhood | Neighborhood; liveBargainCheck: { maxAllowedFor10Percent: number; discountPercent: number; isEligible: boolean; buyerProfitMillion: number }; sponsorHoodId: number; sponsorAgencyName: string; sponsorPhone: string; sponsorSpecialty: string; sponsorExpYears: number; sponsorPlanMonths: 1 | 3; sponsorTrackingCode: string; setSponsorTrackingCode: React.Dispatch<React.SetStateAction<string>>; setSponsorSubmitMsg: React.Dispatch<React.SetStateAction<string>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; alertHoodId: number; alertFullName: string; setAlertFullName: React.Dispatch<React.SetStateAction<string>>; alertPhone: string; setAlertPhone: React.Dispatch<React.SetStateAction<string>>; alertDealType: 'خرید' | 'اجاره'; alertMaxBudget: string; setAlertSubmitMsg: React.Dispatch<React.SetStateAction<string>>;
   buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>;
@@ -66,8 +67,8 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setBargainSubmitMsg({ type: 'error', text: 'ثبت آگهی در پایگاه داده انجام نشد. لطفاً اتصال و سطح دسترسی حساب خود را بررسی کنید.' });
       return;
     }
-    let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try { const idToken = await p.currentUser.getIdToken(); const response = await fetch('/api/object-storage/attach-to-bargain', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try { const response = await fetch('/api/object-storage/attach-to-bargain', {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           cache: 'no-store', body: JSON.stringify({ bargainId: bargainDocId, objectIds: objectStorageObjectIds }), }); const result: unknown = await response.json(); if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
           mediaAssociationWarning = ' آگهی ثبت شد، اما اتصال رسانه‌ها برای پاکسازی خودکار تأیید نشد؛ موضوع نیازمند بررسی است.'; }
       } catch { mediaAssociationWarning = ' آگهی ثبت شد، ولی ثبت ارتباط رسانه‌ها با سرور انجام نشد؛ موضوع نیازمند بررسی است.'; } }
@@ -83,54 +84,57 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       return; }
     const targetHood = p.evaluatedNeighborhoods.find((n) => n.id === p.sponsorHoodId) || p.neighborhoods.find((n) => n.id === p.sponsorHoodId) || p.evaluatedNeighborhoods[0]; const cleanPhone = cleanIranianMobile(p.sponsorPhone) || sanitizeInput(p.sponsorPhone, 30);
     const cleanSpec = (sanitizeInput(p.sponsorSpecialty, 140) || `کارشناس رسمی خرید و اجاره در ${targetHood.name}`).slice(0, 140);
-    const expYears = Math.min(60, Math.max(1, Number(p.sponsorExpYears) || 10)); const tariff = getHoodMonthlySponsorTariff(targetHood);
-    const activePlanMonths: 1 | 3 = p.featureFlags.enableSponsorBilling ? p.sponsorPlanMonths : 1; const totalPayableMillion = activePlanMonths === 3 ? Math.round(tariff * 3 * 0.8 * 10) / 10 : tariff;
-    const cleanTracking = sanitizeInput(p.sponsorTrackingCode, 60) || `TR-${Date.now().toString().slice(-6)}`;
-    const durationDays = activePlanMonths === 3 ? 90 : 30; const expiresAtIso = new Date(Date.now() + durationDays * 86400000).toISOString();
-    const initialSponsorStatus: 'pending' | 'approved' = p.isVerifiedAdmin ? 'approved' : 'pending';
-    const newCrmItem: SponsorCrmRequestItem = {
-      id: `crm-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
-      agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec,
-      experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths,
-      totalPayableMillion, trackingCode: cleanTracking, expiresAtIso,
-      status: initialSponsorStatus, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
-    };
-    if (!p.currentUser || !p.currentUser.emailVerified) { p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.'); return; }
-    let reqDocId = `${p.currentUser.uid}_${Date.now()}`; let persistedOnServer = false;
+    const expYears = Math.min(60, Math.max(1, Number(p.sponsorExpYears) || 10));
+    const activePlanMonths: 1 | 3 = p.featureFlags.enableSponsorBilling ? p.sponsorPlanMonths : 1;
+    if (!p.currentUser || (!p.currentUser.emailVerified && p.currentUser.authProvider !== 'phone')) {
+      p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.');
+      return;
+    }
+    const operationCity = resolveCityIdForNeighborhood(targetHood.id) || p.activeCity;
+    let createResult;
     try {
-      const idToken = await p.currentUser.getIdToken();
-      const operationCity = resolveCityIdForNeighborhood(targetHood.id);
-      const apiRes = await fetch('/api/sponsors/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ hoodId: targetHood.id, hoodName: targetHood.name, city: operationCity, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, planMonths: activePlanMonths }), cache: 'no-store' });
-      const apiJson = (await apiRes.json().catch(() => null)) as { status?: string; message?: string; request?: { id?: string; monthlyTariffMillion?: number; totalPayableMillion?: number; trackingCode?: string } } | null;
-      if (apiRes.status === 400 || apiRes.status === 409) { p.setSponsorSubmitMsg(apiJson?.message || 'اطلاعات درخواست اسپانسر نامعتبر است.'); return; }
-      if (apiRes.ok && apiJson?.status === 'ok' && apiJson.request) {
-        persistedOnServer = true; if (apiJson.request.id) reqDocId = apiJson.request.id; if (typeof apiJson.request.monthlyTariffMillion === 'number') newCrmItem.monthlyTariffMillion = apiJson.request.monthlyTariffMillion; if (typeof apiJson.request.totalPayableMillion === 'number') newCrmItem.totalPayableMillion = apiJson.request.totalPayableMillion; if (apiJson.request.trackingCode) newCrmItem.trackingCode = apiJson.request.trackingCode; newCrmItem.id = `cloud-${reqDocId}`;
-        
-      }
-    } catch { /* fallback to Firestore SDK */ }
-    if (!persistedOnServer) {
-      try {
-        await createSponsorRequest(reqDocId, { hoodId: targetHood.id, hoodName: targetHood.name, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, expiresAtIso, status: initialSponsorStatus });
-      } catch (err) {
-        p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
-        recordDiagnosticEvent('Sponsors', `sponsor_request_write_failed:${reqDocId}`, 'fallback');
-        return;
-      }
+      createResult = await createSponsorRequest({
+        cityId: operationCity,
+        hoodId: targetHood.id,
+        hoodName: targetHood.name,
+        agencyName: cleanAgency,
+        phone: cleanPhone,
+        specialty: cleanSpec,
+        experienceYears: expYears,
+        planMonths: activePlanMonths,
+      });
+    } catch (err) {
+      p.setSponsorSubmitMsg(err instanceof Error && err.message === 'MARKET_NEIGHBORHOOD_NOT_FOUND'
+        ? 'دادهٔ مرجع این محله هنوز در D1 آماده نیست؛ درخواست اسپانسر ثبت نشد.'
+        : 'ثبت درخواست اسپانسر در Cloudflare D1 انجام نشد.');
+      recordDiagnosticEvent('Sponsors', 'sponsor_request_d1_write_failed', 'fallback');
+      return;
     }
+    const initialSponsorStatus: 'pending' | 'approved' = createResult.requestStatus;
+    const newCrmItem: SponsorCrmRequestItem = {
+      id: 'cloud-' + createResult.requestId,
+      hoodId: targetHood.id,
+      hoodName: targetHood.name,
+      agencyName: cleanAgency,
+      phone: cleanPhone,
+      specialty: cleanSpec,
+      experienceYears: expYears,
+      monthlyTariffMillion: createResult.monthlyTariffMillion,
+      planMonths: activePlanMonths,
+      totalPayableMillion: createResult.totalPayableMillion,
+      trackingCode: createResult.trackingCode,
+      expiresAtIso: undefined,
+      status: initialSponsorStatus,
+      createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
+    };
     p.setSponsorRequests((prev) => [newCrmItem, ...(prev || [])]);
-    if (initialSponsorStatus === 'approved') {
-      const planType = p.featureFlags.enableSponsorBilling ? (activePlanMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free';
-      const newSponsorObj = { name: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, expiresAtIso, planType: planType as 'free' | 'paid_1m' | 'paid_3m' };
-      await persistHoodOverrideToCloud(targetHood.id, (targetHood as EvaluatedNeighborhood).baseBuyPerSqm ?? targetHood.buyPerSqm, Math.max(50, targetHood.rahn80m), newSponsorObj).catch(() => {});
-      p.setNeighborhoods((prev) => !prev.some((n) => n.id === p.sponsorHoodId)
-        ? [...prev, { ...targetHood, buyPerSqm: targetHood.baseBuyPerSqm ?? targetHood.buyPerSqm, sponsor: newSponsorObj }]
-        : prev.map((n) => (n.id !== p.sponsorHoodId ? n : { ...n, sponsor: newSponsorObj })));
-    }
     p.setSelectedHoodId(p.sponsorHoodId);
     p.setSponsorSubmitMsg(
-      initialSponsorStatus === 'approved'
-        ? `فاکتور ${toPersianNum(activePlanMonths)} ماهه (${toPersianNum(totalPayableMillion)} میلیون تومان - کد پیگیری: ${cleanTracking}) در پنل CRM ثبت شد و تابلوی انحصاری «حامی رسمی محله ${targetHood.name}» به مدت ${toPersianNum(durationDays)} روز فعال گردید.`
-        : `درخواست اسپانسری ${toPersianNum(activePlanMonths)} ماهه (${toPersianNum(totalPayableMillion)} میلیون تومان - کد پیگیری: ${cleanTracking}) برای محله ${targetHood.name} ثبت شد و پس از تایید مدیریت فعال می‌گردد.`
+      'درخواست اسپانسری ' + toPersianNum(activePlanMonths) + ' ماهه (' +
+      toPersianNum(createResult.totalPayableMillion) + ' میلیون تومان؛ تعرفه ماهانه ' +
+      toPersianNum(createResult.monthlyTariffMillion) + ' میلیون تومان؛ کد پیگیری ' +
+      createResult.trackingCode + ') برای محله ' + targetHood.name +
+      ' در D1 ثبت شد و پس از تأیید مدیریت برای ' + toPersianNum(createResult.durationDays) + ' روز فعال می‌شود.',
     );
     p.setSponsorTrackingCode('');
     if (p.mapInstanceRef.current) p.mapInstanceRef.current.flyTo([targetHood.lat, targetHood.lng], 13, { duration: 0.6 });
@@ -138,7 +142,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
   const handleRegisterBuyerAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSavingBuyerAlert) return;
-    if (!p.currentUser || !p.currentUser.emailVerified) {
+    if (!p.currentUser || (!p.currentUser.emailVerified && p.currentUser.authProvider !== 'phone')) {
       p.setAlertSubmitMsg('ثبت شماره خریدار نیازمند ورود به حساب کاربری تأییدشده است.'); return;
     }
     if (!p.alertPhone.trim() || !p.alertFullName.trim()) {
@@ -150,56 +154,57 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     if (!isValidNormalizedIranianMobile(cleanPhone) || !isValidIranianMobile(cleanPhone) || cleanName.trim().length < 2) {
       p.setAlertSubmitMsg('لطفاً نام و شماره موبایل معتبر ۱۱ رقمی ایران (شروع با ۰۹) وارد نمایید.'); return;
     }
-    const cleanBudget = (sanitizeInput(p.alertMaxBudget, 120) || 'متناسب با میانگین محله').slice(0, 120);
-    setIsSavingBuyerAlert(true); p.setAlertSubmitMsg('در حال ثبت امن درخواست...');
+    const maxBudgetMillion = parseMillionTomanBudgetInput(p.alertMaxBudget);
+    if (maxBudgetMillion === null) {
+      p.setAlertSubmitMsg('بودجه را با واحد روشن وارد کنید؛ مثلاً ۱۱ میلیارد تومان یا ۱۱۰۰۰ میلیون تومان.');
+      return;
+    }
+    const formElement = e.currentTarget as HTMLFormElement;
+    const privacyConsent = new FormData(formElement).get('buyer-alert-privacy-consent') === 'on';
+    if (!privacyConsent) {
+      p.setAlertSubmitMsg('برای ذخیره امن اطلاعات تماس، رضایت صریح شما الزامی است.');
+      return;
+    }
+    setIsSavingBuyerAlert(true);
+    p.setAlertSubmitMsg('در حال ثبت امن درخواست...');
     try {
-      const idToken = await p.currentUser.getIdToken();
-      let serverErrorMessage = '';
-      try {
-        const response = await fetch('/api/buyer-alerts', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-          body: JSON.stringify({
-            city: resolveCityIdForNeighborhood(targetHood.id), hoodId: targetHood.id, hoodName: targetHood.name,
-            fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget,
-            privacyConsent: true, consentVersion: 'buyer-alert-2026-10-v1',
-          }),
-          cache: 'no-store',
-        });
-        const result = (await response.json().catch(() => null)) as { status?: string; message?: string; durable?: boolean } | null;
-        if (response.ok && result?.status === 'ok' && result?.durable === true) {
-          if (p.isVerifiedAdmin) {
-            p.setBuyerLeads((prev) => [{
-              id: `lead-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
-              fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType,
-              maxBudgetText: cleanBudget, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
-            }, ...(prev || [])]);
-          }
-          p.setAlertSubmitMsg(result.message || `درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-          p.setAlertFullName(''); p.setAlertPhone('');
-          return;
-        }
-        if (!response.ok || result?.status !== 'ok' || result?.durable !== true) {
-          serverErrorMessage = result?.message || '';
-        }
-      } catch { /* Network failure: proceed to repository fallback below */ }
-      try {
-        await upsertBuyerAlertLead({
-          userId: p.currentUser.uid,
+      await upsertBuyerAlertLead({
+        cityId: resolveCityIdForNeighborhood(targetHood.id) || p.activeCity,
+        userId: p.currentUser.uid,
+        hoodId: targetHood.id,
+        hoodName: targetHood.name,
+        fullName: cleanName,
+        phone: cleanPhone,
+        dealType: p.alertDealType,
+        maxBudgetMillion,
+        privacyConsent,
+        consentVersion: 'buyer-alert-2026-10-v1',
+      });
+      if (p.isVerifiedAdmin) {
+        p.setBuyerLeads((prev) => [{
+          id: 'lead-' + Date.now(),
           hoodId: targetHood.id,
           hoodName: targetHood.name,
           fullName: cleanName,
           phone: cleanPhone,
           dealType: p.alertDealType,
-          maxBudgetText: cleanBudget,
-        });
-        p.setAlertSubmitMsg(`درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-        p.setAlertFullName('');
-        p.setAlertPhone('');
-      } catch {
-        p.setAlertSubmitMsg(serverErrorMessage || 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.');
+          maxBudgetText: p.alertMaxBudget,
+          createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
+        }, ...(prev || [])]);
       }
-    } catch {
-      p.setAlertSubmitMsg('ارتباط با سرور برقرار نشد؛ درخواست شما ثبت نشد.');
+      p.setAlertSubmitMsg('درخواست شما با شماره ' + toPersianNum(cleanPhone) +
+        ' برای محلهٔ ' + targetHood.name + ' در Cloudflare D1 ثبت شد.');
+      p.setAlertFullName('');
+      p.setAlertPhone('');
+    } catch (err) {
+      const errorCode = err instanceof Error ? err.message : '';
+      p.setAlertSubmitMsg(errorCode === 'AUTH_REQUIRED'
+        ? 'نشست کاربری معتبر نیست؛ دوباره وارد شوید.'
+        : errorCode === 'BUYER_ALERT_CONSENT_REQUIRED'
+          ? 'برای ثبت درخواست، رضایت صریح حریم خصوصی الزامی است.'
+          : errorCode === 'INVALID_BUYER_ALERT_BUDGET'
+            ? 'بودجه باید عددی معتبر با واحد میلیارد یا میلیون تومان باشد.'
+            : 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.');
     } finally { setIsSavingBuyerAlert(false); }
   };
   const submitVoteData = async (locationVerified: boolean, statusMsg: string) => {
@@ -215,8 +220,8 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setVoteStatus({ type: 'warning', text: 'رأی مهمان در میانگین مشترک محله ثبت نمی‌شود. برای اثرگذاری، با حساب کاربری تأییدشده وارد شوید.' });
       return;
     }
-    if (!p.currentUser.emailVerified) {
-      p.setVoteStatus({ type: 'warning', text: 'برای ثبت رأی در فضای ابری، ایمیل حساب کاربری شما باید تأیید شده باشد.' });
+    if (!p.currentUser.emailVerified && p.currentUser.authProvider !== 'phone') {
+      p.setVoteStatus({ type: 'warning', text: 'برای ثبت رأی در فضای ابری، حساب کاربری شما باید تأیید شده باشد.' });
       return;
     }
     try {
@@ -293,8 +298,8 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     if (!targetUid) {
       const envCheck = detectBrowserEnvironment();
       if (envCheck.isRestrictedWebView) { p.setPrefsMessage(envCheck.recommendedActionPersian); return; }
-      try { const cred = await signInWithPopup(auth, googleProvider); targetUid = cred.user?.uid; } catch { return; }
-      if (!targetUid) return;
+      try { getAuthClient().startGoogleLogin(window.location.pathname + window.location.search); } catch { p.setPrefsMessage('شروع ورود گوگل انجام نشد؛ دوباره تلاش کنید.'); }
+      return;
     }
     p.setSavingPrefs(true);
     try {

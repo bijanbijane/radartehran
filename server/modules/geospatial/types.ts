@@ -79,6 +79,10 @@ export interface BoundaryVersionRecord {
   version: number;
   status: 'ACTIVE' | 'SUPERSEDED' | 'PENDING_REVIEW' | 'REJECTED';
   geometry: PolygonGeometry;
+  /** Server-computed digest of the exact persisted GeoJSON geometry. Legacy records may omit it and fail profile eligibility. */
+  geometrySha256?: string;
+  /** GeoJSON coordinates are only profile-eligible when the stored CRS is explicit. */
+  geometryCrs?: 'EPSG:4326' | 'UNKNOWN';
   simplifiedGeometry: PolygonGeometry;
   boundingBox: { minLat: number; maxLat: number; minLng: number; maxLng: number };
   sourceProvenance: string;
@@ -284,6 +288,51 @@ export interface GeospatialObservabilityMetrics {
   geocodingErrorsCount: number;
 }
 
+export type ProfileBoundaryAuthority =
+  | 'OFFICIAL_PRIMARY'
+  | 'OFFICIAL_DERIVED'
+  | 'VERIFIED_SECONDARY'
+  | 'REVIEWED_COMMUNITY'
+  | 'ALGORITHMIC'
+  | 'UNKNOWN';
+
+export type ProfileBoundaryVerificationStatus =
+  | 'VERIFIED_OFFICIAL_PRIMARY'
+  | 'VERIFIED_OFFICIAL_DERIVED'
+  | 'VERIFIED_INTERNATIONAL_STANDARD'
+  | 'VERIFIED_SECONDARY_GAZETTEER'
+  | 'PROVISIONAL_UNVERIFIED'
+  | 'DISPUTED'
+  | 'REQUIRES_REVIEW'
+  | 'NOT_VERIFIED';
+
+export interface CanonicalNeighborhoodProfileIdentity {
+  geographicEntityId: string;
+  cityId: string;
+  legacyNeighborhoodId: number;
+  level: 'neighborhood' | 'district' | 'city';
+  identityStatus: 'CONFIRMED_CANONICAL' | 'DISPUTED' | 'RETIRED' | 'UNVERIFIED';
+  verificationStatus: ProfileBoundaryVerificationStatus;
+}
+
+export interface TrustedNeighborhoodBoundarySource {
+  sourceProvenance: string;
+  sourceReference: string;
+  authority: ProfileBoundaryAuthority;
+  crs: 'EPSG:4326' | 'UNKNOWN';
+  verificationStatus: ProfileBoundaryVerificationStatus;
+}
+
+export interface NeighborhoodProfileBoundaryResolvers {
+  /** Must read from the authoritative canonical geography registry, not from request payloads. */
+  resolveIdentity(input: {
+    cityId: string;
+    legacyNeighborhoodId: number;
+  }): Promise<CanonicalNeighborhoodProfileIdentity | null>;
+  /** Must resolve source metadata from a trusted source registry, not from the boundary record itself. */
+  resolveSource(sourceProvenance: string): Promise<TrustedNeighborhoodBoundarySource | null>;
+}
+
 export interface GeospatialModuleDependencies {
   geographyService?: GeographyService;
   valuationService?: ValuationService;
@@ -294,6 +343,7 @@ export interface GeospatialModuleDependencies {
   auditLogger?: AuditLoggerAdapter;
   rateLimiter?: RateLimiterAdapter;
   telemetry?: TelemetryAdapter;
+  neighborhoodProfileBoundaryResolvers?: NeighborhoodProfileBoundaryResolvers;
   primaryAdminEmails?: string[];
   now?: () => Date;
 }

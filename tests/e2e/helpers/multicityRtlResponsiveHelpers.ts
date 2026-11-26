@@ -72,25 +72,34 @@ export async function waitForLayoutStabilization(page: Page): Promise<void> {
 }
 
 /**
- * Switches city through the real visible desktop city switcher group (`role="group" name="کلان‌شهرها"`)
+ * Switches city through the real visible city selector (`data-testid="global-city-switcher"`) and its accessible listbox
  * without `{ force: true }`, and verifies URL, `aria-pressed` state, header brand, and document title.
  */
 export async function switchCityAndAssertContext(page: Page, targetCityId: CityId): Promise<void> {
   const cfg = MULTI_CITY_CONFIGS[targetCityId];
-  const cityGroup = page.getByRole('group', { name: 'کلان‌شهرها' });
-  await expect(cityGroup).toBeVisible();
+  const citySwitcher = page.getByTestId('global-city-switcher');
+  await expect(citySwitcher).toBeVisible();
+  await citySwitcher.click();
+  const cityListbox = page.getByRole('listbox', { name: 'انتخاب کلان‌شهر' });
+  await expect(cityListbox).toBeVisible();
 
-  const targetButton = cityGroup.getByRole('button', { name: cfg.nameFa, exact: true });
+  const targetButton = cityListbox.getByRole('option', { name: cfg.nameFa, exact: true });
   await expect(targetButton).toBeVisible();
   await targetButton.click();
 
-  // Active state on target button & inactive on all other 4 cities
-  await expect(targetButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(citySwitcher).toHaveAttribute('aria-expanded', 'false');
+  await expect(citySwitcher).toHaveAttribute('aria-label', `انتخاب شهر (فعال: ${cfg.nameFa})`);
+
+  // Reopen the native city listbox to verify selected and unselected states after navigation.
+  await citySwitcher.click();
+  const verifiedCityListbox = page.getByRole('listbox', { name: 'انتخاب کلان‌شهر' });
+  await expect(verifiedCityListbox.getByRole('option', { name: cfg.nameFa, exact: true })).toHaveAttribute('aria-selected', 'true');
   for (const otherId of SUPPORTED_CITY_IDS) {
     if (otherId === targetCityId) continue;
-    const otherBtn = cityGroup.getByRole('button', { name: MULTI_CITY_CONFIGS[otherId].nameFa, exact: true });
-    await expect(otherBtn).toHaveAttribute('aria-pressed', 'false');
+    const otherOption = verifiedCityListbox.getByRole('option', { name: MULTI_CITY_CONFIGS[otherId].nameFa, exact: true });
+    await expect(otherOption).toHaveAttribute('aria-selected', 'false');
   }
+  await citySwitcher.click();
 
   // URL synchronization check
   if (targetCityId === 'tehran') {

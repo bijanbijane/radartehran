@@ -22,7 +22,7 @@ export async function handleResearchWorkerRoute(ctx: WorkerRequestContext): Prom
 
   // 1. POST /api/v1/research/events — authenticated user with server-side consent verification
   if (method === 'POST' && pathname === '/api/v1/research/events') {
-    const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: false });
+    const auth = await authenticateWorkerRouteCompat(ctx);
     if (!auth.authenticated || !auth.uid) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
         status: 'error',
@@ -77,7 +77,7 @@ export async function handleResearchWorkerRoute(ctx: WorkerRequestContext): Prom
 
   // 2. GET /api/v1/research/aggregates — admin-gated k-anonymity aggregation
   if (method === 'GET' && pathname === '/api/v1/research/aggregates') {
-    const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: true });
+    const auth = await authenticateWorkerRouteCompat(ctx);
     if (!auth.authenticated || !auth.isAdmin) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 403 : auth.statusCode, {
         status: 'error',
@@ -137,7 +137,7 @@ export async function handleResearchWorkerRoute(ctx: WorkerRequestContext): Prom
 
   // 3. POST /api/v1/research/retention/purge — admin-gated expiration cleanup
   if (method === 'POST' && pathname === '/api/v1/research/retention/purge') {
-    const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: true });
+    const auth = await authenticateWorkerRouteCompat(ctx);
     if (!auth.authenticated || !auth.isAdmin) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 403 : auth.statusCode, {
         status: 'error',

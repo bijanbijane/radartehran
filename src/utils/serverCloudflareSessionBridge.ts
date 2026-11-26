@@ -222,7 +222,7 @@ export function createCloudflareSessionBridgeMiddleware(
       workerHop: readSingleHeader(req.headers['x-radar-worker-hop']) || undefined,
     }, env.AUTH_INTERNAL_HMAC_SECRET, now());
 
-    if (!verified.ok) {
+    if (verified.ok === false) {
       res.setHeader('Cache-Control', 'no-store');
       res.status(verified.statusCode).json({ status: 'error', code: verified.code });
       return;

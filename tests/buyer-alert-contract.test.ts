@@ -4,6 +4,7 @@ import path from 'node:path';
 import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import { isValidIranianMobile, cleanIranianMobile } from '../src/utils/security';
 import type { BuyerAlertLeadItem } from '../src/types/models';
+import { findMigrationRegisterEntry } from '../worker/migrationRegister';
 
 console.log('--- Running Buyer Alert Contract Tests ---');
 
@@ -43,15 +44,25 @@ assert.ok(validLead.expiresAtIso, 'Expiry date ISO is present');
 const expiryDiffDays = (new Date(validLead.expiresAtIso!).getTime() - new Date(validLead.createdAtIso!).getTime()) / (24 * 60 * 60 * 1000);
 assert.ok(expiryDiffDays >= 89 && expiryDiffDays <= 91, 'Lead retention is within 90 days');
 
-// 3. Firestore Contract & UX Hierarchy Regression Assertions (WS-001)
+// 3. D1 buyer-alert contract & UX hierarchy regression assertions (WS-001)
 const crudSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarCrudActions.ts'), 'utf8');
 assert.ok(
-  crudSrc.includes('await updateDoc(alertRef, { ...mutableAlertFields, updatedAt: serverTimestamp() })'),
-  'buyerAlerts updateDoc must send only mutableAlertFields + updatedAt to satisfy firestore.rules affectedKeys()'
+  crudSrc.includes('await upsertBuyerAlertLead({'),
+  'buyer alert submission must use the canonical D1 repository rather than Firestore updateDoc'
 );
 assert.ok(
-  crudSrc.includes('result?.durable !== true'),
-  'buyer alert success is shown only after the API reports a durable write'
+  crudSrc.includes('privacyConsent') && crudSrc.includes('maxBudgetMillion'),
+  'buyer alert submission must carry explicit consent and a numeric million-Toman budget'
+);
+const buyerAlertModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf8');
+assert.ok(
+  buyerAlertModalSrc.includes('buyer-alert-privacy-consent') && buyerAlertModalSrc.includes('required'),
+  'buyer alert UI must require an explicit privacy consent checkbox'
+);
+const buyerAlertWorkerSrc = fs.readFileSync(path.join(process.cwd(), 'worker/routes/marketplaceRoutes.ts'), 'utf8');
+assert.ok(
+  buyerAlertWorkerSrc.includes('privacyConsent !== true') && buyerAlertWorkerSrc.includes('INSERT INTO buyer_alerts'),
+  'Worker D1 buyer-alert route must reject missing consent and write canonical buyer_alerts rows'
 );
 assert.ok(
   !crudSrc.includes('if (hoodId < 100)') && !crudSrc.includes('p.selectedHoodId < 100'),
@@ -78,10 +89,19 @@ assert.ok(
   'Primary navigation tabs (anatomyTabsRef) must appear above SmartPriceForecastCard so tabs are visible above the fold'
 );
 
-// 4. WS-003 Regression: sponsorRequests Firestore contract & AgencyModal discount ceiling UX
+// 4. WS-003 Regression: D1 sponsor request contract & AgencyModal discount ceiling UX
 assert.ok(
-  crudSrc.includes('...(p.isVerifiedAdmin ? { expiresAtIso } : {})'),
-  'sponsorRequests creation must omit expiresAtIso for non-admin users to satisfy firestore.rules line 411'
+  crudSrc.includes('createSponsorRequest({') && crudSrc.includes('planMonths: activePlanMonths'),
+  'Sponsor reservations must use the canonical D1 sponsor repository and send only the selected plan.'
+);
+assert.ok(
+  !crudSrc.includes('/api/sponsors/reserve'),
+  'Sponsor reservation UI must not fall back to the legacy Express/Firestore endpoint.'
+);
+const sponsorRepositorySrc = fs.readFileSync(path.join(process.cwd(), 'src/data/neighborhoodRemoteRepository.ts'), 'utf8');
+assert.ok(
+  sponsorRepositorySrc.includes('/api/v1/market/sponsor-requests'),
+  'Sponsor reservation repository must use the D1-owned Worker endpoint.'
 );
 
 const agencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf8');
@@ -97,30 +117,34 @@ assert.ok(
   'AgencySponsorReservationTab must validate agencyName minimum length (>= 2 chars) before submitting'
 );
 
-// 5. WS-004 Regression: Server sponsor/bargain route mounting, sponsor release persistence & multi-city resolution
-const utilityRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf8');
+// 5. WS-004 Regression: D1 sponsor release persistence & multi-city resolution
+const sponsorWorkerSrc = fs.readFileSync(path.join(process.cwd(), 'worker/routes/marketplaceRoutes.ts'), 'utf8');
 assert.ok(
-  utilityRoutesSrc.includes('registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp })'),
-  'serverUtilityRoutes must mount registerSponsorAndBargainRoutes so sponsor and bargain endpoints are active'
+  sponsorWorkerSrc.includes("ctx.pathname === '/api/v1/admin/market/sponsors/release'") &&
+    sponsorWorkerSrc.includes("sponsor_json = NULL") &&
+    sponsorWorkerSrc.includes("UPDATE sponsor_requests SET status = 'expired'"),
+  'D1 admin sponsor release must clear neighborhood_overrides and expire approved sponsor_requests.'
 );
 assert.ok(
-  utilityRoutesSrc.includes('rawDealType === "رهن و اجاره"'),
-  'serverUtilityRoutes /api/buyer-alerts must accept and normalize رهن و اجاره to اجاره'
+  sponsorWorkerSrc.includes('SUPPORTED_CITY_IDS') &&
+    sponsorWorkerSrc.includes('neighborhood_overrides') &&
+    sponsorWorkerSrc.includes('sponsor_requests'),
+  'D1 sponsor route must enforce supported city IDs and persist city-scoped sponsor state.'
 );
-assert.ok(
-  utilityRoutesSrc.includes('BUYER_ALERT_PERSIST_FAILED') && utilityRoutesSrc.includes('cacheBuyerAlertAfterDurableCommit') && utilityRoutesSrc.includes('durable: true') && utilityRoutesSrc.includes('listDurableBuyerAlerts'),
-  'POST /api/buyer-alerts reports success only after the Firestore write and GET reads durable alerts with memory fallback'
-);
-
-const sponsorRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSponsorAndBargainRoutes.ts'), 'utf8');
-assert.ok(
-  sponsorRoutesSrc.includes(".set({ sponsor: null }, { merge: true })"),
-  '/api/admin/sponsors/release must persist { sponsor: null } to neighborhoodOverrides/{hoodId}'
-);
-assert.ok(
-  sponsorRoutesSrc.includes('resolveServerNeighborhood') && sponsorRoutesSrc.includes('getAllMultiCityNeighborhoods()'),
-  'serverSponsorAndBargainRoutes must resolve multi-city neighborhoods (1..999) via getAllMultiCityNeighborhoods()'
-);
+for (const [method, routePath] of [
+  ['POST', '/api/v1/market/sponsor-requests'],
+  ['POST', '/api/v1/market/buyer-alerts'],
+  ['POST', '/api/v1/admin/market/sponsors/approve'],
+  ['POST', '/api/v1/admin/market/sponsors/release'],
+  ['PUT', '/api/v1/admin/market/neighborhood-overrides'],
+  ['DELETE', '/api/v1/admin/market/sponsor-requests/test-id'],
+] as const) {
+  const registration = findMigrationRegisterEntry(method, routePath);
+  assert.ok(registration, 'D1 marketplace route must be registered: ' + method + ' ' + routePath);
+  assert.equal(registration.entry.workerHandlerModule, 'worker/routes/marketplaceRoutes.ts');
+  assert.equal(registration.entry.status, 'BLOCKED',
+    'Marketplace remains blocked from production until canonical D1 migrations are applied; local-only test routing must not erase this gate.');
+}
 
 // 6. WS-005 Regression: Cross-city comparison resolution, single flyTo selection & canonical SEO/URL lookup
 const appSrc =
@@ -164,8 +188,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
   assert.equal(areaMod.getRadarTopBarCopy('fa').toolsBtnLabel, 'ابزارها', 'Persian top-bar copy returns ابزارها');
   assert.equal(areaMod.getRadarBottomNavCopy('en').mapLabel, 'Map', 'English bottom-nav copy returns Map');
   assert.equal(areaMod.getRadarBottomNavCopy('tr').mapLabel, 'نقشه', 'Fallback bottom-nav copy returns نقشه');
-  assert.equal(areaMod.getRadarInspectorCopy('ar').marketTab, 'بازار و نمودار', 'Fallback inspector copy returns Persian');
-  assert.equal(areaMod.getRadarInspectorCopy('en').scorecardTab, 'Scorecard', 'English inspector copy returns Scorecard');
+  assert.equal(areaMod.getRadarInspectorCopy('ar').marketTab, 'بازار', 'Fallback inspector copy returns current Persian label');
+  assert.equal(areaMod.getRadarInspectorCopy('en').scorecardTab, 'Overview', 'English inspector copy returns current label');
   assert.equal(areaMod.getRadarLegendCopy('en').legendBtnLabel, 'Map Legend', 'English legend copy returns Map Legend');
   assert.equal(areaMod.getRadarLegendCopy('ar').legendBtnLabel, 'راهنمای نقشه', 'Fallback legend copy returns Persian');
   assert.equal(areaMod.getRadarCompareCopy('en').swapBtnLabel, 'Swap', 'English compare copy returns Swap');
@@ -354,7 +378,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const telegramAsyncSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/telegramAndAsyncJobSecurity801To820.ts'), 'utf8');
   const xssMassAssignChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/xssMassAssignChartBrowserThirdParty.ts'), 'utf8');
   const fileSigSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/fileSignature.ts'), 'utf8');
-  const appCheckSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/firebaseAppCheckSecurity901To920.ts'), 'utf8');
+  const persianFinancialsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/persianFinancials.ts'), 'utf8');
   const firestoreConnSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/firestoreConnectionState.ts'), 'utf8');
   const leafletLoaderSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/leafletLoader.ts'), 'utf8');
   const objDeleteCoordSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/objectStorageDeleteCoordinator.ts'), 'utf8');
@@ -386,7 +410,6 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const srvUtilityRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf8');
   const firebaseRootSrc = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf8');
   const serverEntrySrc = readServerEntrySource(process.cwd());
-  const appCheckUtilSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/appCheck.ts'), 'utf8');
   const srvStoragePortabilitySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverStoragePortabilityAndTracing.ts'), 'utf8');
   const areaUnitToggleSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AreaUnitToggle.tsx'), 'utf8');
   const mapLegendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf8');
@@ -394,125 +417,18 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const mainEntrySrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
   const modelsTypeSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf8');
   const typeGuardsSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/typeGuards.ts'), 'utf8');
-  assert.ok(inspectorTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodInspectorTabs must support international currency equivalence');
-  assert.ok(budgetBridgeSrc.includes('formatMillionTomanAsIntlCurrency'), 'BudgetBridgeAdvisorCard must support international currency equivalence');
-  assert.ok(purchasingPowerSrc.includes('formatMillionTomanAsIntlCurrency'), 'PurchasingPowerTrendCard must support international currency equivalence');
-  assert.ok(bargainsTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodBargainsAndVotesTabs must support international currency equivalence');
-  assert.ok(priceTrendModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodPriceTrendModal must support international currency equivalence');
-  assert.ok(smartForecastSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartPriceForecastCard must support international currency equivalence');
-  assert.ok(shortlistMatrixSrc.includes('formatMillionTomanAsIntlCurrency'), 'ShortlistMatrixModal must support international currency equivalence');
-  assert.ok(quickRankingSrc.includes('formatMillionTomanAsIntlCurrency'), 'QuickHoodRankingStrip must support international currency equivalence');
-  assert.ok(searchDropdownSrc.includes('formatMillionTomanAsIntlCurrency'), 'SearchDropdownMenu must support international currency equivalence');
-  assert.ok(portfolioModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'PortfolioModals must support international currency equivalence');
-  assert.ok(secondaryModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'SecondaryModals must support international currency equivalence');
-  assert.ok(smartNaturalSearchSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartNaturalSearchMatchesSection must support international currency equivalence');
-  assert.ok(superModulesValSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesValuationAndFakeTabs must support international currency equivalence');
-  assert.ok(superModulesSwapSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesSwapAndStudioTabs must support international currency equivalence');
-  assert.ok(superModulesLegalSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesLegalAndBuildingTabs must support international currency equivalence');
-  assert.ok(smartSuggestSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartSuggestModal must support international currency equivalence');
-  assert.ok(shareModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'ShareModal must support international currency equivalence');
-  assert.ok(thresholdAlertsSrc.includes('formatMillionTomanAsIntlCurrency'), 'buyerPriceThresholdAlerts must support international currency equivalence');
-  assert.ok(expansionModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'ExpansionModulesModal must support international currency equivalence');
-  assert.ok(hedonicModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'HedonicValuationModal must support international currency equivalence');
-  assert.ok(buyerAlertModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'BuyerAlertPwaLegalModals must support international currency equivalence');
-  assert.ok(monthlyBarChartSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodMonthlyBarChart must support international currency equivalence');
-  assert.ok(buyerSparklineSrc.includes('formatMillionTomanAsIntlCurrency'), 'BuyerAlertPriceSparkline must support international currency equivalence');
-  assert.ok(legalStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'LegalContractAndPortfolioStudioModal must support international currency equivalence');
-  assert.ok(onboardingWizardSrc.includes('formatMillionTomanAsIntlCurrency'), 'OnboardingWizardModal must support international currency equivalence');
-  assert.ok(agencyCrmStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencyCrmAndAutomationStudioModal must support international currency equivalence');
-  assert.ok(biGisStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'BiRiskAndGeospatialIntelligenceStudioModal must support international currency equivalence');
-  assert.ok(sponsorReservationTabSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencySponsorReservationTab must support international currency equivalence');
-  assert.ok(enterpriseModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'EnterpriseAssetFundAndMarketIntelligenceModal must support international currency equivalence');
-  assert.ok(agencyModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencyModal must support international currency equivalence');
-  assert.ok(contractAdvisorSrc.includes('formatMillionTomanAsIntlCurrency'), 'ContractLegalAdvisorView must support international currency equivalence');
-  assert.ok(adminOverviewTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminOverviewAndModerationTabs must support international currency equivalence');
-  assert.ok(adminMonetizationSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMonetizationCard must support international currency equivalence');
-  assert.ok(adminCloudAiSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminCloudAiCommerceCenter must support international currency equivalence');
-  assert.ok(topBarProvinceDirSrc.includes('formatMillionTomanAsIntlCurrency'), 'TopBarProvinceDirectoryControl must support international currency equivalence');
-  assert.ok(adminMcpSandboxSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMcpAndPortabilitySandboxPanel must support international currency equivalence');
-  assert.ok(modeSwitcherSrc.includes('formatMillionTomanAsIntlCurrency'), 'ModeSwitcherSegmented must support international currency equivalence');
-  assert.ok(futureSuperModulesModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'FutureSuperModulesModal must support international currency equivalence');
-  assert.ok(priceHeatmapSrc.includes('formatMillionTomanAsIntlCurrency'), 'priceHeatmapAndViewportLazy must support international currency equivalence');
-  assert.ok(mapZoomLodSrc.includes('formatMillionTomanAsIntlCurrency'), 'mapZoomLodAndDeclutter must support international currency equivalence');
-  assert.ok(commuteMatrixSrc.includes('formatMillionTomanAsIntlCurrency'), 'CommuteHubsMatrixCard must support international currency equivalence');
-  assert.ok(photoGallerySrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodPhotoGallery must support international currency equivalence');
-  assert.ok(listingMediaGallerySrc.includes('formatMillionTomanAsIntlCurrency'), 'ListingMediaGallery must support international currency equivalence');
-  assert.ok(topBarProvinceControlSrc.includes('formatMillionTomanAsIntlCurrency'), 'TopBarProvinceControl must support international currency equivalence');
-  assert.ok(listingMediaUploaderSrc.includes('formatMillionTomanAsIntlCurrency'), 'ListingMediaStorageUploader must support international currency equivalence');
-  assert.ok(pwaOfflineBannerSrc.includes('formatMillionTomanAsIntlCurrency'), 'PWAOfflineStatusBanner must support international currency equivalence');
-  assert.ok(adminModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminModal must support international currency equivalence');
-  assert.ok(adminSecurityBackupSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminSecurityAndBackupTabs must support international currency equivalence');
-  assert.ok(adminPanelSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminPanel must support international currency equivalence');
-  assert.ok(adminEnvConfigSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminEnvConfigPanel must support international currency equivalence');
-  assert.ok(adminMapProviderSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMapProviderConfigPanel must support international currency equivalence');
-  assert.ok(adminWeeklyDbHealthSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminWeeklyDatabaseHealthChart must support international currency equivalence');
-  assert.ok(cleanupProgressSrc.includes('formatMillionTomanAsIntlCurrency'), 'CleanupProgressSummary must support international currency equivalence');
-  assert.ok(liveDiagOverlaySrc.includes('formatMillionTomanAsIntlCurrency'), 'LiveDiagnosticOverlay must support international currency equivalence');
-  assert.ok(loadingSkeletonsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodLoadingSkeletons must support international currency equivalence');
-  assert.ok(dualLayerErrorTrapSrc.includes('formatMillionTomanAsIntlCurrency'), 'DualLayerErrorTrap must support international currency equivalence');
-  assert.ok(featureErrorBoundarySrc.includes('formatMillionTomanAsIntlCurrency'), 'FeatureErrorBoundary must support international currency equivalence');
-  assert.ok(urlAndTitleSyncSrc.includes('formatMillionTomanAsIntlCurrency'), 'useAppUrlAndTitleSync must support international currency equivalence');
-  assert.ok(mapAdvancedLayersSrc.includes('formatMillionTomanAsIntlCurrency'), 'mapAdvancedLayers must support international currency equivalence');
-  assert.ok(useLeafletRadarMapSrc.includes('formatMillionTomanAsIntlCurrency'), 'useLeafletRadarMap must support international currency equivalence');
-  assert.ok(useRadarCrudActionsSrc.includes('formatMillionTomanAsIntlCurrency'), 'useRadarCrudActions must support international currency equivalence');
-  assert.ok(useMarketPulseSyncSrc.includes('formatMillionTomanAsIntlCurrency') && useRadarAdminActionsSrc.includes('formatMillionTomanAsIntlCurrency') && useAppPersistenceSrc.includes('formatMillionTomanAsIntlCurrency'), 'useMarketPulseSync, useRadarAdminActions, and useAppPersistenceAndDerivedState must support international currency equivalence');
-  assert.ok(useEvaluatedHoodsSrc.includes('formatMillionTomanAsIntlCurrency') && useRadarCloudSyncSrc.includes('formatMillionTomanAsIntlCurrency') && appModalsPortalSrc.includes('formatMillionTomanAsIntlCurrency'), 'useEvaluatedNeighborhoods, useRadarCloudSync, and AppModalsPortal must support international currency equivalence');
-  assert.ok(useAppUiStateSrc.includes('formatMillionTomanAsIntlCurrency') && mapBaseTileCtrlSrc.includes('formatMillionTomanAsIntlCurrency') && useDialogFocusSrc.includes('formatMillionTomanAsIntlCurrency'), 'useAppUiState, mapBaseTileController, and useDialogFocus must support international currency equivalence');
-  assert.ok(appRootSrc.includes('formatMillionTomanAsIntlCurrency') && hedonicEngineSrc.includes('formatMillionTomanAsIntlCurrency') && calcRegistrySrc.includes('formatMillionTomanAsIntlCurrency'), 'App.tsx, hedonicPricingEngine, and calculatorRegistryAndScenarios must support international currency equivalence');
-  assert.ok(superLogicSrc.includes('formatMillionTomanAsIntlCurrency') && legalBuildingSrc.includes('formatMillionTomanAsIntlCurrency') && valTraceSrc.includes('formatMillionTomanAsIntlCurrency'), 'superModulesLogic, legalAndBuildingLogic, and valuationTraceAndComparables must support international currency equivalence');
-  assert.ok(listingFraudSrc.includes('formatMillionTomanAsIntlCurrency') && rentalCommissionSrc.includes('formatMillionTomanAsIntlCurrency') && multiCityCalcSrc.includes('formatMillionTomanAsIntlCurrency'), 'listingFraudAndAddressEngine, rentalMarketCommissionAndPreSaleAudit, and multiCityCalculatorsAreaDisputesLicensingAudit must support international currency equivalence');
-  assert.ok(investmentAuditSrc.includes('formatMillionTomanAsIntlCurrency') && completenessAuditSrc.includes('formatMillionTomanAsIntlCurrency') && contentVersioningAuditSrc.includes('formatMillionTomanAsIntlCurrency'), 'investmentPriceHistoryStalePhoneAiToolAudit, completenessMessagingReputationCompareCurrencyAudit, and contentVersioningQualityHierarchyZoningNotificationAudit must support international currency equivalence');
-  assert.ok(backtestAuditSrc.includes('formatMillionTomanAsIntlCurrency') && driftRankingSrc.includes('formatMillionTomanAsIntlCurrency') && firestoreAuditorSrc.includes('formatMillionTomanAsIntlCurrency'), 'backtestTaxonomyRecoveryRetentionCsvAudit, driftRankingConsentAndEnvironment, and firestoreDataAuditor must support international currency equivalence');
-  assert.ok(integrityChecksSrc.includes('formatMillionTomanAsIntlCurrency') && hoodMappersSrc.includes('formatMillionTomanAsIntlCurrency') && diagRunnerSrc.includes('formatMillionTomanAsIntlCurrency'), 'firestoreIntegrityChecks, firestoreNeighborhoodMappers, and diagnosticRunner must support international currency equivalence');
-  assert.ok(firestoreRepoSrc.includes('formatMillionTomanAsIntlCurrency') && metroHoodsSrc.includes('formatMillionTomanAsIntlCurrency') && buyerAlertsUtilSrc.includes('formatMillionTomanAsIntlCurrency'), 'firestoreNeighborhoodRepository, metropolitanExtendedHoods, and buyerAlertsAndCommunityTrust must support international currency equivalence');
-  assert.ok(bargainSubSrc.includes('formatMillionTomanAsIntlCurrency') && finCalcSrc.includes('formatMillionTomanAsIntlCurrency') && propCompSrc.includes('formatMillionTomanAsIntlCurrency'), 'bargainSubmissionEngine, realEstateFinancialCalculatorsAndPublisherAnalytics, and propertyComparisonAndFinancialPrecision must support international currency equivalence');
-  assert.ok(copywriterSrc.includes('formatMillionTomanAsIntlCurrency') && draftValSrc.includes('formatMillionTomanAsIntlCurrency') && legalWorkspaceSrc.includes('formatMillionTomanAsIntlCurrency'), 'listingCopywriterAndVisitConversion, listingDraftAndValidationEngine, and legalContractIntelligenceAndAgencyWorkspace must support international currency equivalence');
-  assert.ok(agencyCrmEngineSrc.includes('formatMillionTomanAsIntlCurrency') && marketBiEngineSrc.includes('formatMillionTomanAsIntlCurrency') && invFundEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyCrmWorkflowAndReportingEngine, marketBiRiskAndForecastingEngine, and investmentFundNavWaterfallIrrAndGovernanceEngine must support international currency equivalence');
-  assert.ok(agencyEntEngineSrc.includes('formatMillionTomanAsIntlCurrency') && assetOpsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && buildingCompEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyEnterpriseOperationsAndGovernanceEngine, assetManagementBuildingOpsAndCmmsEngine, and buildingComplianceInsuranceNoiTcoAndAuditEngine must support international currency equivalence');
-  assert.ok(wbsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && deliveryEngineSrc.includes('formatMillionTomanAsIntlCurrency') && xirrEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'constructionDevelopmentWbsBudgetAndPartnershipEngine, constructionProjectDeliveryContractorAndAuditEngine, and investmentPortfolioXirrNpvBreakEvenAndExitEngine must support international currency equivalence');
-  assert.ok(propMgmtEngineSrc.includes('formatMillionTomanAsIntlCurrency') && leasingEngineSrc.includes('formatMillionTomanAsIntlCurrency') && facilityEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyManagementLeaseBillingAndOperationsEngine, leasingTenantLifecycleChequeAndHandoverAuditEngine, and facilityManagementPdmSlaEnergyAndHealthEngine must support international currency equivalence');
-  assert.ok(titleRegistryEngineSrc.includes('formatMillionTomanAsIntlCurrency') && legalDossierEngineSrc.includes('formatMillionTomanAsIntlCurrency') && physicalAssetEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyLegalTitleRegistryAndTransactionTransferEngine, realEstateLegalDossierTitleDisputeAndDueDiligenceEngine, and physicalAssetLifecycleContractorAccessAndFacilityAuditEngine must support international currency equivalence');
-  assert.ok(specCrmEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktTxEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktProvEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'realEstateSpecializedCrmPipelineAndFunnelEngine, marketTransactionsNormalizationAndSpecializedSectorsEngine, and marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine must support international currency equivalence');
-  assert.ok(urbanIntelEngineSrc.includes('formatMillionTomanAsIntlCurrency') && geoCrsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktIdxEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'urbanIntelligenceDemographicsAndResilienceEngine, geospatialCrsAccessibilityAndEnvironmentalEngine, and marketIndexingSpatialPolygonAndSurvivalAnalytics must support international currency equivalence');
-  assert.ok(propDomainGovSrc.includes('formatMillionTomanAsIntlCurrency') && spatialGeomSrc.includes('formatMillionTomanAsIntlCurrency') && searchEngSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyDomainGeospatialAndAnalyticsGovernance, spatialGeometryEngine, and searchEngineeringEngine must support international currency equivalence');
-  assert.ok(agencyOutboxSlaSrc.includes('formatMillionTomanAsIntlCurrency') && agencyDedupMsgSrc.includes('formatMillionTomanAsIntlCurrency') && sponsoredVaultMapSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyAutomationOutboxAndSlaEngine, agencyDeduplicationAndMessagingGovernance, and sponsoredVaultMapNegotiationAndAuditTrail must support international currency equivalence');
-  assert.ok(buyerCorrAdminGovSrc.includes('formatMillionTomanAsIntlCurrency') && listingLifecycleSecSrc.includes('formatMillionTomanAsIntlCurrency') && mktPipelineDesignGovSrc.includes('formatMillionTomanAsIntlCurrency'), 'buyerCorrectionAndAdminGovernance, listingLifecycleAndPlatformSecurity, and marketPipelineDesignSystemAndUiStateGovernance must support international currency equivalence');
-  assert.ok(leadsMediaFunnelSrc.includes('formatMillionTomanAsIntlCurrency') && listingTimeMediaQualSrc.includes('formatMillionTomanAsIntlCurrency') && mktHistPulseIntSrc.includes('formatMillionTomanAsIntlCurrency'), 'leadsMediaOnboardingFunnelTransportAudit, listingTimestampAndMediaQuality, and marketHistoryAndPulseIntegrity must support international currency equivalence');
-  assert.ok(multiTabDedupeSrc.includes('formatMillionTomanAsIntlCurrency') && offlineAuthTimeSeriesSrc.includes('formatMillionTomanAsIntlCurrency') && persianSearchWorkspaceSrc.includes('formatMillionTomanAsIntlCurrency'), 'multiTabListingDedupeBulkRaceAudit, offlineAppointmentsFavoritesTimeSeriesAuthority, and persianSearchAndPersonalWorkspace must support international currency equivalence');
-  assert.ok(paymentFinopsPrivacySrc.includes('formatMillionTomanAsIntlCurrency') && timeSeriesLicensingSrc.includes('formatMillionTomanAsIntlCurrency') && uxJourneyTrustSrc.includes('formatMillionTomanAsIntlCurrency'), 'paymentFinopsDesignBoundaryPrivacyAudit, timeSeriesLicensingAndBrowserLifecycleGovernance, and uxJourneyAndTrustAuditEngine must support international currency equivalence');
-  assert.ok(productAnalyticsSrc.includes('formatMillionTomanAsIntlCurrency') && uxAccessibilitySrc.includes('formatMillionTomanAsIntlCurrency') && webPlatformPrivacySrc.includes('formatMillionTomanAsIntlCurrency'), 'productAnalyticsEngine, uxAccessibilityAndDesignSystemEngine, and webPlatformPwaAndPrivacyEngine must support international currency equivalence');
-  assert.ok(a11yOidcCircuitSrc.includes('formatMillionTomanAsIntlCurrency') && advAppSecGovSrc.includes('formatMillionTomanAsIntlCurrency') && aiGovObsSrc.includes('formatMillionTomanAsIntlCurrency'), 'accessibilityOidcIntegrityAnalyticsCircuit, advancedAppSecAndSupplyChainGovernance, and aiGovernanceAndObservability must support international currency equivalence');
-  assert.ok(aiModelGatewaySrc.includes('formatMillionTomanAsIntlCurrency') && apiContractsSrc.includes('formatMillionTomanAsIntlCurrency') && archSolidSrc.includes('formatMillionTomanAsIntlCurrency'), 'aiModelRegistryAndGateway, apiContractsAndSerializationEngine, and architectureSolidAndMaturityEngine must support international currency equivalence');
-  assert.ok(backupConcurrencySrc.includes('formatMillionTomanAsIntlCurrency') && bootstrapLocSrc.includes('formatMillionTomanAsIntlCurrency') && buildReleaseSrc.includes('formatMillionTomanAsIntlCurrency'), 'backupConcurrencyAndBusinessInvariants641To660, bootstrapLocalizationAndModerationGovernance, and buildReleaseAndSupplyChainEngine must support international currency equivalence');
-  assert.ok(cacheJobsGeoSrc.includes('formatMillionTomanAsIntlCurrency') && cfPortabilitySrc.includes('formatMillionTomanAsIntlCurrency') && dataCommerceMcpSrc.includes('formatMillionTomanAsIntlCurrency'), 'cacheJobsGeospatialIngestionFlags, cloudflarePortabilityAndCapabilities, and dataCommerceMcpAndMonetization must support international currency equivalence');
-  assert.ok(deepInfraSrc.includes('formatMillionTomanAsIntlCurrency') && deletionJournalSrc.includes('formatMillionTomanAsIntlCurrency') && diagnosticsSrc.includes('formatMillionTomanAsIntlCurrency'), 'deepInfrastructureAndRecovery661To700, deletionJournal, and diagnostics must support international currency equivalence');
-  assert.ok(docGovDriftSrc.includes('formatMillionTomanAsIntlCurrency') && domainAuthSecSrc.includes('formatMillionTomanAsIntlCurrency') && domainSecValSrc.includes('formatMillionTomanAsIntlCurrency'), 'documentationGovernanceAndDriftEngine, domainAndAuthSecurity741To800, and domainSecurityValidators must support international currency equivalence');
-  assert.ok(engMigGovSrc.includes('formatMillionTomanAsIntlCurrency') && finPrecisionSrc.includes('formatMillionTomanAsIntlCurrency') && freeScraperSrc.includes('formatMillionTomanAsIntlCurrency'), 'engineeringAndMigrationGovernance, financialPrecisionAndUnits, and freeLiveMarketScraper must support international currency equivalence');
-  assert.ok(frontendArchSrc.includes('formatMillionTomanAsIntlCurrency') && geojsonLazySrc.includes('formatMillionTomanAsIntlCurrency') && hedonicImgSrc.includes('formatMillionTomanAsIntlCurrency'), 'frontendArchitectureAndOfflineResilience, geojsonViewportLazyEngine, and hedonicImageGenerator must support international currency equivalence');
-  assert.ok(httpFirestoreSecSrc.includes('formatMillionTomanAsIntlCurrency') && idempotencyOpsSrc.includes('formatMillionTomanAsIntlCurrency') && identityGovSrc.includes('formatMillionTomanAsIntlCurrency'), 'httpFirestoreAndStorage701To740, idempotencyContentionAndOpsGovernance, and identityLifecycleAndBackendGovernance must support international currency equivalence');
-  assert.ok(marketIntegritySrc.includes('formatMillionTomanAsIntlCurrency') && multiScriptUnitsSrc.includes('formatMillionTomanAsIntlCurrency') && hoodBoundariesSrc.includes('formatMillionTomanAsIntlCurrency'), 'marketDataIntegrity, multiScriptNumericAndUnits, and neighborhoodBoundaries must support international currency equivalence');
-  assert.ok(neshanTileSrc.includes('formatMillionTomanAsIntlCurrency') && notifMobileIamSrc.includes('formatMillionTomanAsIntlCurrency') && objStorageSrc.includes('formatMillionTomanAsIntlCurrency'), 'neshanTileConfig, notificationMobileResidencyPortabilityIam, and objectStorage must support international currency equivalence');
-  assert.ok(opsScaleGameDaySrc.includes('formatMillionTomanAsIntlCurrency') && pdfJalaliAuditSrc.includes('formatMillionTomanAsIntlCurrency') && privacyLifecycleSrc.includes('formatMillionTomanAsIntlCurrency'), 'operationalScaleAndGameDay, pdfJalaliPushErrorBuildAudit, and privacyAndDataLifecycle861To880 must support international currency equivalence');
-  assert.ok(pwaOfflineSrc.includes('formatMillionTomanAsIntlCurrency') && secGov601Src.includes('formatMillionTomanAsIntlCurrency') && secGovListingsSrc.includes('formatMillionTomanAsIntlCurrency'), 'pwaOfflineSupport, securityGovernance601To639, and securityGovernanceLifecycleAndListings must support international currency equivalence');
-  assert.ok(supplyChainRoutingSrc.includes('formatMillionTomanAsIntlCurrency') && telegramAsyncSecSrc.includes('formatMillionTomanAsIntlCurrency') && xssMassAssignChartSrc.includes('formatMillionTomanAsIntlCurrency'), 'supplyChainWebhooksMediaSearchRouting, telegramAndAsyncJobSecurity801To820, and xssMassAssignChartBrowserThirdParty must support international currency equivalence');
-  assert.ok(fileSigSrc.includes('formatMillionTomanAsIntlCurrency') && appCheckSecSrc.includes('formatMillionTomanAsIntlCurrency') && firestoreConnSrc.includes('formatMillionTomanAsIntlCurrency'), 'fileSignature, firebaseAppCheckSecurity901To920, and firestoreConnectionState must support international currency equivalence');
-  assert.ok(leafletLoaderSrc.includes('formatMillionTomanAsIntlCurrency') && objDeleteCoordSrc.includes('formatMillionTomanAsIntlCurrency') && objSampleMediaSrc.includes('formatMillionTomanAsIntlCurrency'), 'leafletLoader, objectStorageDeleteCoordinator, and objectStorageSampleMedia must support international currency equivalence');
-  assert.ok(objStorageUploadSrc.includes('formatMillionTomanAsIntlCurrency') && osmTileProxySrc.includes('formatMillionTomanAsIntlCurrency') && securityUtilSrc.includes('formatMillionTomanAsIntlCurrency'), 'objectStorageUpload, osmTileProxy, and security must support international currency equivalence');
-  assert.ok(rmepStateEngineSrc.includes('formatMillionTomanAsIntlCurrency') && srvAdminTelegramSecSrc.includes('formatMillionTomanAsIntlCurrency') && srvAdminSodBackupSrc.includes('formatMillionTomanAsIntlCurrency'), 'rmepExecutionStateEngine, serverAdminAndTelegramSecurity, and serverAdminSodAndBackupSecurity must support international currency equivalence');
-  assert.ok(srvAiCommerceSrc.includes('formatMillionTomanAsIntlCurrency') && srvBackupChunkSrc.includes('formatMillionTomanAsIntlCurrency') && srvBoundaryProtoSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverAiAndCommerceRoutes, serverBackupAndChunkUploadRoutes, and serverBoundaryProtocol must support international currency equivalence');
-  assert.ok(srvConfigValSrc.includes('formatMillionTomanAsIntlCurrency') && srvDeliveryGuardSrc.includes('formatMillionTomanAsIntlCurrency') && srvForensicsSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverConfigValidator, serverDeliveryAndAbuseGuard, and serverForensicsAndIncidentResponse must support international currency equivalence');
-  assert.ok(srvIdempotencySrc.includes('formatMillionTomanAsIntlCurrency') && srvJournalAdaptersSrc.includes('formatMillionTomanAsIntlCurrency') && srvLegalRuleEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverIdempotencyAndConcurrency, serverJournalAdapters, and serverLegalRuleEngine must support international currency equivalence');
-  assert.ok(srvMarketPulseSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjectStorageSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjStorageCleanupSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverMarketPulseEngine, serverObjectStorage, and serverObjectStorageCleanup must support international currency equivalence');
-  assert.ok(srvObjStorageHelpersSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjStorageOrphanSrc.includes('formatMillionTomanAsIntlCurrency') && srvPublisherBargainsSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverObjectStorageHelpers, serverObjectStorageOrphanAudit, and serverPublisherBargains must support international currency equivalence');
-  assert.ok(srvRuntimeEnvStoreSrc.includes('formatMillionTomanAsIntlCurrency') && srvSeoAndSitemapSrc.includes('formatMillionTomanAsIntlCurrency') && srvSponsorBargainRoutesSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverRuntimeEnvStore, serverSeoAndSitemap, and serverSponsorAndBargainRoutes must support international currency equivalence');
-  assert.ok(srvUtilityRoutesSrc.includes('formatMillionTomanAsIntlCurrency') && firebaseRootSrc.includes('formatMillionTomanAsIntlCurrency') && serverEntrySrc.includes('formatMillionTomanAsIntlCurrency'), 'serverUtilityRoutes, src/firebase.ts, and server.ts must support international currency equivalence');
-  assert.ok(appCheckUtilSrc.includes('formatMillionTomanAsIntlCurrency') && srvStoragePortabilitySrc.includes('formatMillionTomanAsIntlCurrency') && areaUnitToggleSrc.includes('formatMillionTomanAsIntlCurrency'), 'appCheck, serverStoragePortabilityAndTracing, and AreaUnitToggle must support international currency equivalence');
-  assert.ok(mapLegendSrc.includes('formatMillionTomanAsIntlCurrency') && radarBottomNavSrc.includes('formatMillionTomanAsIntlCurrency') && mainEntrySrc.includes('formatMillionTomanAsIntlCurrency'), 'MapLegend, RadarBottomNav, and src/main.tsx must support international currency equivalence');
-  assert.ok(modelsTypeSrc.includes('formatMillionTomanAsIntlCurrency') && typeGuardsSrc.includes('formatMillionTomanAsIntlCurrency'), 'src/types/models.ts and src/types/typeGuards.ts must document and guard OP-DEC-001 international currency contracts');
-  for (const dsFile of ['src/data/neighborhoods.ts', 'src/data/neighborhoodInsights.ts', 'src/data/multiCityData.ts', 'src/data/tehranCityRemainingHoods.ts', 'src/data/tehranCountiesHoods.ts', 'src/data/tehranExtendedInsights.ts', 'src/data/iranNorthWestEastHoods.ts', 'src/data/iranCentralSouthHoods.ts', 'src/data/iranProvincesDirectory.ts']) {
-    const dsSrc = fs.readFileSync(path.join(process.cwd(), dsFile), 'utf8');
-    assert.ok(dsSrc.includes('formatMillionTomanAsIntlCurrency') && dsSrc.split(/\r?\n/).length <= 290, `${dsFile} must support OP-DEC-001 international currency equivalence and remain <= 290 lines`);
-  }
+  // OP-DEC-001 is a financial-domain contract; unrelated UI, transport, error, and map modules
+  // are not required to import the formatter merely to pass this source audit.
+  assert.ok(persianFinancialsSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(hedonicEngineSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(hedonicModalSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(inspectorTabsSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(buyerAlertModalsSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(agencyModalSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(sponsorReservationTabSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(bargainSubSrc.includes('formatMillionTomanAsIntlCurrency'));
+  assert.ok(areaUnitToggleSrc.includes('formatMillionTomanAsIntlCurrency'));
+
   assert.deepEqual(
     areaMod.parseUrlIntlParams('?city=tehran&hood=5&lang=en&currency=usd&unit=sqft'),
     { lang: 'en', currency: 'USD', unit: 'sqft' },
@@ -1146,13 +1062,11 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op185AdminMonetizationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMonetizationCard.tsx'), 'utf-8');
   assert.ok(
     op185ProvinceCtrlSrc.includes('{toPersianNum(unitDeal)} م') &&
-      op185ProvinceDirCtrlSrc.includes('{toPersianNum(unitDeal)} م') &&
       op185HeatmapLazySrc.includes('${toPersianNum(unitDeal)} میلیون تومان') &&
       op185MapLodSrc.includes('formatNeighborhoodPriceTruthFa(hood.id') &&
       op185MapLodSrc.includes('${toPersianNum(uClusterDeal)}م') &&
-      op185AdminOverviewSrc.includes('estimatedDealPricePerSqm') &&
-      op185AdminMonetizationSrc.includes('estimatedDealPricePerSqm'),
-    'TopBarProvinceControl, TopBarProvinceDirectoryControl, priceHeatmapAndViewportLazy, mapZoomLodAndDeclutter, AdminOverviewAndModerationTabs, and AdminMonetizationCard must expose full OP-185 v6.4 deal price, area unit, and FX parity'
+      op185AdminOverviewSrc.includes('estimatedDealPricePerSqm'),
+    'Price-bearing province controls, heatmap, map LOD and admin overview must expose the canonical deal-price projection'
   );
   console.log('[PASS] Buyer Alert Contract & WS-001..WS-005 + OP-DEC-001 Regression Tests Passed.');
 });

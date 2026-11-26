@@ -39,10 +39,10 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
-          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مقایسه هم‌معنای محدوده‌ها (تا ۴ محله)</span>
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-0.5">
             تمامی ستون‌ها با یک تعریف یکسان (میانه پیشنهادی، برآورد معامله، رهن ۸۰م و تعداد آگهی زنده) سنجیده می‌شوند.
           </p>
@@ -133,7 +133,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                             type="button"
                             aria-label={`حذف ${row.hoodName} از مقایسه`}
                             onClick={() => onRemoveCompareHood(row.hoodId)}
-                            className="p-1 text-[var(--color-text-muted)] hover:text-[#A61B1B] cursor-pointer"
+                            className="min-h-6 min-w-6 p-1 inline-flex items-center justify-center text-[var(--color-text-muted)] hover:text-[#A61B1B] cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>

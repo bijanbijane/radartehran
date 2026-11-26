@@ -34,7 +34,21 @@ export function createLocalD1DatabaseSimulator(): D1Database {
       const normalized = sql.replace(/\s+/g, ' ').trim();
       let row: Record<string, unknown> | null = null;
 
-      if (normalized.startsWith('SELECT id, name, applied_at FROM d1_migrations WHERE name')) {
+      if (normalized.startsWith('INSERT INTO strong_rate_limits (bucket_key, counter, window_reset_ms)')) {
+        const bucketKey = String(boundValues[0]);
+        const resetAt = Number(boundValues[1]);
+        const now = Number(boundValues[2]);
+        const cap = Number(boundValues[3]);
+        const existing = rateLimits.get(bucketKey);
+        const counter = existing && existing.window_reset_ms > now
+          ? Math.min(existing.counter + 1, cap)
+          : 1;
+        const windowResetMs = existing && existing.window_reset_ms > now
+          ? existing.window_reset_ms
+          : resetAt;
+        rateLimits.set(bucketKey, { bucket_key: bucketKey, counter, window_reset_ms: windowResetMs });
+        row = { counter, window_reset_ms: windowResetMs };
+      } else if (normalized.startsWith('SELECT id, name, applied_at FROM d1_migrations WHERE name')) {
         row = (d1Migrations.get(String(boundValues[0])) as unknown as Record<string, unknown>) ?? null;
       } else if (normalized.startsWith('SELECT watermark_value FROM sync_watermarks')) {
         row = (watermarks.get(String(boundValues[0])) as unknown as Record<string, unknown>) ?? null;
@@ -100,6 +114,10 @@ export function createLocalD1DatabaseSimulator(): D1Database {
       const normalized = sql.replace(/\s+/g, ' ').trim();
       if (normalized.startsWith('SELECT id, name, applied_at FROM d1_migrations')) {
         return { results: Array.from(d1Migrations.values()) as unknown as T[], success: true };
+      }
+      if (normalized.startsWith('SELECT active, reason FROM legal_holds WHERE resource_id = ?1')) {
+        const row = legalHolds.get(String(boundValues[0]));
+        return { results: row ? [row as unknown as T] : [], success: true };
       }
       if (normalized.startsWith('SELECT watermark_key, watermark_value, updated_at_iso FROM sync_watermarks')) {
         return { results: Array.from(watermarks.values()) as unknown as T[], success: true };

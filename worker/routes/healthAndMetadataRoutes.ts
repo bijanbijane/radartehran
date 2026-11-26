@@ -4,28 +4,17 @@
  * PWA manifest, XML sitemap, robots.txt, and SSR dynamic SEO metadata injection.
  * Zero dependency on `express`, `firebase-admin`, `sharp`, or filesystem persistence.
  */
-import {
-  getAllMultiCityNeighborhoods,
-  getValidatedCityConfig,
-  resolveCityIdForNeighborhood,
-} from '../../src/data/multiCityData';
-import { toPersianNum } from '../../src/data/neighborhoods';
-import { seoForDatedCompare, seoForDatedHood, seoFromPublicPath, tehranSitemapEntries } from '../../src/data/neighborhoodListingSamples';
-import {
-  formatAreaUnitLabel,
-  formatMillionTomanAsIntlCurrency,
-  type AreaUnit,
-  type IntlCurrencyCode,
-} from '../../src/utils/areaUnit';
-import { validateCityParam } from '../../src/utils/security';
+import { tehranSitemapEntries } from '../../src/data/neighborhoodListingSamples';
+import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../../src/utils/areaUnit';
 import { buildOpenApiSpecification } from '../../src/utils/serverConfigValidator';
-import { resolveCanonicalBaseUrl } from '../../src/utils/serverDeliveryAndAbuseGuard';
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from '../contextAndSecurity';
 import { getMigrationProgressSummary } from '../migrationRegister';
 import { getTriadDomainBindingDiagnostics, requireNeighborhoodDb, requireResearchDb, requireUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerRequestContext } from '../types';
+import { createIrniGeographicRpcV2ClientFromEnv } from '../irni/irniGeographicRpcV2Client';
+import { escapeXml, resolveWorkerBaseUrl } from './workerSeoHtml';
 
-const workerBootTimestampMs = Date.now();
+let workerBootTimestampMs: number | null = null;
 
 async function probeD1Database(db: D1Database): Promise<{ ok: boolean; migrationsApplied: number }> {
   try {
@@ -41,191 +30,7 @@ async function probeD1Database(db: D1Database): Promise<{ ok: boolean; migration
 }
 
 
-export function resolveWorkerBaseUrl(ctx: WorkerRequestContext): string {
-  return resolveCanonicalBaseUrl(ctx.env.APP_URL, ctx.environment);
-}
-
-export function escapeXml(unsafe: string): string {
-  return String(unsafe)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-export function escapeHtmlText(raw: string): string {
-  return String(raw).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-export function escapeHtmlAttribute(raw: string): string {
-  return String(raw)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-export function serializeSafeJsonLd(jsonLdObj: Record<string, unknown>): string {
-  return JSON.stringify(jsonLdObj)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
-}
-
-export function injectWorkerDynamicSeoHtml(
-  html: string,
-  url: URL,
-  baseUrl: string,
-  areaUnit: AreaUnit = 'sqm',
-  intlCurrency: IntlCurrencyCode = 'USD'
-): string {
-  try {
-    const allHoods = getAllMultiCityNeighborhoods();
-    const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
-    const compareParam = url.searchParams.get('compare') || '';
-    const hoodParam = url.searchParams.has('hood') ? Number(url.searchParams.get('hood')) : 0;
-    const rawCity = url.searchParams.get('city');
-    const cityParam = rawCity ? validateCityParam(rawCity, 'tehran') : null;
-
-    const applyMetaSwap = (
-      title: string,
-      desc: string,
-      canonicalUrl: string,
-      jsonLdObj?: Record<string, unknown>
-    ): string => {
-      const safeTitleText = escapeHtmlText(title);
-      const safeTitleAttr = escapeHtmlAttribute(title);
-      const safeDescAttr = escapeHtmlAttribute(desc);
-      const safeUrlAttr = escapeHtmlAttribute(canonicalUrl);
-      let updated = html
-        .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${safeTitleText}</title>`)
-        .replace(
-          /property="og:title"\s+content="[^"]*"/,
-          () => `property="og:title" content="${safeTitleAttr}"`
-        )
-        .replace(
-          /name="description"\s+content="[^"]*"/,
-          () => `name="description" content="${safeDescAttr}"`
-        )
-        .replace(
-          /property="og:description"\s+content="[^"]*"/,
-          () => `property="og:description" content="${safeDescAttr}"`
-        )
-        .replace(/rel="canonical"\s+href="[^"]*"/, () => `rel="canonical" href="${safeUrlAttr}"`)
-        .replace(
-          /property="og:url"\s+content="[^"]*"/,
-          () => `property="og:url" content="${safeUrlAttr}"`
-        );
-      if (jsonLdObj) {
-        const serializedJsonLd = serializeSafeJsonLd(jsonLdObj);
-        updated = updated.replace(
-          '</head>',
-          () => `<script type="application/ld+json">${serializedJsonLd}</script>\n</head>`
-        );
-      }
-      return updated;
-    };
-    const pathCard = seoFromPublicPath(url.pathname);
-    if (pathCard) {
-      const canonicalUrl = `${baseUrl}${pathCard.path}`;
-      return applyMetaSwap(pathCard.title, pathCard.description, canonicalUrl, {
-        '@context': 'https://schema.org', '@type': 'WebPage', name: pathCard.title, description: pathCard.description, url: canonicalUrl,
-      });
-    }
-
-    if (/^\d{1,4}-\d{1,4}$/.test(compareParam)) {
-      const [id1, id2] = compareParam.split('-').map((x) => Number(x.trim()));
-      const h1 = allHoods.find((h) => h.id === id1);
-      const h2 = allHoods.find((h) => h.id === id2);
-      if (h1 && h2 && h1.id !== h2.id) {
-        const resolvedCity = resolveCityIdForNeighborhood(h1.id) || cityParam || 'tehran';
-        const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
-        const dated = resolvedCity === 'tehran' ? seoForDatedCompare(h1.id, h2.id) : null;
-        const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}compare=${h1.id}-${h2.id}`;
-        const title = dated?.title ?? `مقایسه محله ${h1.name} و ${h2.name} | قیمت مسکن، رهن و کیفیت زندگی | رادار تهران`;
-        const desc = dated?.description ?? `مقایسه تحلیلی محله ${h1.name} (متری ${toPersianNum(h1.buyPerSqm)} م، رهن ${toPersianNum(h1.rahn80m)} م) با محله ${h2.name} (متری ${toPersianNum(h2.buyPerSqm)} م، رهن ${toPersianNum(h2.rahn80m)} م) به همراه نمودار روند و ترافیک.`;
-        return applyMetaSwap(title, desc, canonicalUrl, {
-          '@context': 'https://schema.org',
-          '@type': 'ItemList',
-          name: title,
-          description: desc,
-          itemListElement: [
-            {
-              '@type': 'Place',
-              position: 1,
-              name: h1.name,
-              geo: { '@type': 'GeoCoordinates', latitude: h1.lat, longitude: h1.lng },
-            },
-            {
-              '@type': 'Place',
-              position: 2,
-              name: h2.name,
-              geo: { '@type': 'GeoCoordinates', latitude: h2.lat, longitude: h2.lng },
-            },
-          ],
-        });
-      }
-    }
-
-    if (Number.isInteger(hoodParam) && hoodParam >= 1) {
-      const h = allHoods.find((item) => item.id === hoodParam);
-      if (h) {
-        const resolvedCity = resolveCityIdForNeighborhood(h.id) || cityParam || 'tehran';
-        const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
-        const dated = resolvedCity === 'tehran' ? seoForDatedHood(h.id) : null;
-        const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}hood=${h.id}`;
-        const title = dated?.title ?? `قیمت مسکن، رهن و کارنامه محله ${h.name} (${h.zone}) | رادار تهران`;
-        const desc = dated?.description ?? `برآورد قیمت خرید آپارتمان در ${h.name}: متری ${toPersianNum(h.buyPerSqm)} میلیون تومان | رهن کامل ۸۰ متری: ${toPersianNum(h.rahn80m)} میلیون تومان | بررسی ترافیک، هوا و مدارس ${h.name}.`;
-        return applyMetaSwap(title, desc, canonicalUrl, {
-          '@context': 'https://schema.org',
-          '@type': 'Place',
-          name: `محله ${h.name} (${h.zone})`,
-          description: desc,
-          url: canonicalUrl,
-          geo: { '@type': 'GeoCoordinates', latitude: h.lat, longitude: h.lng },
-          additionalProperty: [
-            {
-              '@type': 'PropertyValue',
-              name: `میانگین پایه خرید هر ${displayAreaUnitLabel} (میلیون تومان)`,
-              value: h.buyPerSqm,
-              alternateName: formatMillionTomanAsIntlCurrency(h.buyPerSqm, intlCurrency, 'en'),
-            },
-            {
-              '@type': 'PropertyValue',
-              name: 'میانگین پایه رهن کامل ۸۰ متری (میلیون تومان)',
-              value: h.rahn80m,
-            },
-          ],
-        });
-      }
-    }
-
-    if (cityParam && cityParam !== 'tehran') {
-      const cityCfg = getValidatedCityConfig(cityParam);
-      const title = `رادار مسکن و اجاره ${cityCfg.nameFa} | نقشه قیمت و کیفیت زندگی محله‌ها`;
-      const desc = `بررسی قیمت خرید، رهن و اجاره، کیفیت هوا و ترافیک در ${toPersianNum(cityCfg.neighborhoods.length)} محله شاخص ${cityCfg.nameFa}.`;
-      return applyMetaSwap(title, desc, `${baseUrl}/?city=${cityParam}`, {
-        '@context': 'https://schema.org',
-        '@type': 'Place',
-        name: cityCfg.nameFa,
-        description: desc,
-        url: `${baseUrl}/?city=${cityParam}`,
-        geo: {
-          '@type': 'GeoCoordinates',
-          latitude: cityCfg.center[0],
-          longitude: cityCfg.center[1],
-        },
-      });
-    }
-  } catch {
-    // Preserve raw HTML on any unexpected parsing failure
-  }
-  return html;
-}
+export { escapeXml, escapeHtmlText, escapeHtmlAttribute, serializeSafeJsonLd, injectWorkerDynamicSeoHtml, resolveWorkerBaseUrl } from './workerSeoHtml';
 
 export async function handleHealthAndMetadataRoute(
   ctx: WorkerRequestContext
@@ -233,7 +38,13 @@ export async function handleHealthAndMetadataRoute(
   const { method, pathname, url } = ctx;
   if (method !== 'GET') return null;
 
-  const uptimeSeconds = Math.max(0, Math.round((Date.now() - workerBootTimestampMs) / 1000));
+  const requestNowMs = Date.now();
+  // Cloudflare may evaluate module top-level code in a deterministic startup context.
+  // Capture the first real request timestamp lazily, inside the Worker request lifecycle.
+  if (workerBootTimestampMs === null || workerBootTimestampMs > requestNowMs) {
+    workerBootTimestampMs = requestNowMs;
+  }
+  const uptimeSeconds = Math.max(0, Math.floor((requestNowMs - workerBootTimestampMs) / 1000));
 
   if (pathname === '/api/health/database-triad') {
     const bindings = getTriadDomainBindingDiagnostics(ctx.env);
@@ -295,7 +106,7 @@ export async function handleHealthAndMetadataRoute(
         researchDb: { applied: researchProbe.migrationsApplied, requiredAtLeast: 2 },
         neighborhoodDb: { status: 'RETIRED_DIRECT_D1_ACCESS' },
       },
-      geographicRegistry: irniMetadata.ok ? {
+      geographicRegistry: irniMetadata.ok === true ? {
         status: registryReady ? 'ready' : 'degraded',
         revision: irniMetadata.value.registryRevision,
         checksum: irniMetadata.value.registryChecksum,
@@ -312,7 +123,7 @@ export async function handleHealthAndMetadataRoute(
       missing: {
         user: userProbe.ok ? null : 'USER_DB_PROBE_FAILED',
         research: researchProbe.ok ? null : 'RESEARCH_DB_PROBE_FAILED',
-        irniRpc: irniMetadata.ok ? null : irniMetadata.error.code,
+        irniRpc: irniMetadata.ok === true ? null : irniMetadata.error.code,
         legacyDirectDbBinding: legacyDirectDbBindingPresent ? 'REMOVE_AFTER_RPC_CUTOVER' : null,
       },
       timestampIso: new Date().toISOString(),
@@ -337,7 +148,7 @@ export async function handleHealthAndMetadataRoute(
       ok: true,
       status: 'ok',
       runtime: 'cloudflare-workers',
-      registeredRoutesCount: 89,
+      registeredRoutesCount: getMigrationProgressSummary().totalCatalogRoutes,
       uptimeSeconds,
       timestampIso: new Date().toISOString(),
       displayAreaUnitLabel: formatAreaUnitLabel('sqm'),
@@ -355,37 +166,90 @@ export async function handleHealthAndMetadataRoute(
   }
 
   if (pathname === '/api/health/readiness') {
-    if (ctx.env.DB) {
-      const { inspectD1OperationalDiagnostics } = await import('../db/d1SchemaAndMigrations');
-      const diag = await inspectD1OperationalDiagnostics(ctx.env.DB);
-      if (!diag.allCanonicalMigrationsApplied) {
-        return jsonWorkerResponse(ctx, 503, {
-          ok: false,
-          code: 'REQUIRED_D1_MIGRATION_PENDING',
-          probe: 'readiness',
-          state: 'DEGRADED',
-          migrationReadiness: {
-            allCanonicalMigrationsApplied: false,
-            pendingMigrations: diag.pendingMigrations,
-          },
-        });
-      }
-      return jsonWorkerResponse(ctx, 200, {
-        ok: true,
+    const userDb = ctx.env.USER_DB;
+    if (!userDb) {
+      return jsonWorkerResponse(ctx, 503, {
+        ok: false,
+        code: 'USER_DB_NOT_BOUND',
         probe: 'readiness',
-        state: 'READY',
-        activeRequests: 1,
-        migrationReadiness: {
-          allCanonicalMigrationsApplied: true,
-          pendingMigrations: diag.pendingMigrations,
+        state: 'DEGRADED',
+        dependencies: {
+          userDb: { bound: false, ready: false },
+          googleOidc: {
+            configured: Boolean(ctx.env.GOOGLE_OAUTH_CLIENT_ID && ctx.env.GOOGLE_OAUTH_CLIENT_SECRET),
+          },
+          expressSessionBridge: { configured: false },
         },
       });
     }
-    return jsonWorkerResponse(ctx, 200, {
-      ok: true,
+
+    const userDbProbe = await probeD1Database(userDb);
+    const requiredTables = [
+      'auth_identities',
+      'auth_oauth_states',
+      'user_sessions',
+      'bargains',
+      'sponsor_requests',
+      'buyer_alerts',
+      'neighborhood_votes',
+    ];
+    const missingTables: string[] = [];
+    for (const table of requiredTables) {
+      try {
+        const row = await userDb.prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?1 LIMIT 1",
+        ).bind(table).first<{ name: string }>();
+        if (!row?.name) missingTables.push(table);
+      } catch {
+        missingTables.push(table);
+      }
+    }
+
+    const googleOidcConfigured = Boolean(
+      String(ctx.env.GOOGLE_OAUTH_CLIENT_ID || '').trim() &&
+      String(ctx.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim() &&
+      String(ctx.env.GOOGLE_OAUTH_REDIRECT_URI || '').trim(),
+    );
+    const expressBridgeSecretConfigured =
+      new TextEncoder().encode(String(ctx.env.AUTH_INTERNAL_HMAC_SECRET || '')).byteLength >= 32;
+    const userDbReady = userDbProbe.ok && missingTables.length === 0;
+    const pendingMigrations = [
+      ...(!userDbProbe.ok ? ['d1_migrations_or_d1_connectivity'] : []),
+      ...missingTables,
+    ];
+    const ready = userDbReady && googleOidcConfigured && expressBridgeSecretConfigured;
+    const failureCode = !userDbReady
+      ? 'REQUIRED_D1_MIGRATION_PENDING'
+      : !googleOidcConfigured
+        ? 'GOOGLE_OIDC_NOT_CONFIGURED'
+        : !expressBridgeSecretConfigured
+          ? 'AUTH_INTERNAL_HMAC_SECRET_NOT_CONFIGURED'
+          : null;
+
+    return jsonWorkerResponse(ctx, ready ? 200 : 503, {
+      ok: ready,
+      code: failureCode,
       probe: 'readiness',
-      state: 'READY',
+      state: ready ? 'READY' : 'DEGRADED',
       activeRequests: 1,
+      migrationReadiness: {
+        allCanonicalMigrationsApplied: userDbReady,
+        migrationsApplied: userDbProbe.migrationsApplied,
+        pendingMigrations,
+      },
+      dependencies: {
+        userDb: {
+          bound: true,
+          ready: userDbReady,
+          migrationsApplied: userDbProbe.migrationsApplied,
+          missingTables,
+        },
+        googleOidc: { configured: googleOidcConfigured },
+        expressSessionBridge: { configured: expressBridgeSecretConfigured },
+        researchDb: { bound: Boolean(ctx.env.RESEARCH_DB), requiredForResearchFeatures: true },
+        neighborhoodDb: { bound: Boolean(ctx.env.NEIGHBORHOOD_DB), requiredForGeographicReplicaFeatures: true },
+        mediaBucket: { bound: Boolean(ctx.env.MEDIA_BUCKET), requiredForMediaFeatures: true },
+      },
     });
   }
 

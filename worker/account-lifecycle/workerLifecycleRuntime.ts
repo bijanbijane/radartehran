@@ -12,7 +12,7 @@
  * - Preserves minimal compliance deletion receipts using keyed HMAC-SHA256 `uid_hash`
  *   (sensitive pseudonymous compliance digest; never claims cross-D1 single-transaction atomicity).
  */
-import { recordUserRevocationInD1 } from '../auth/firebaseEdgeAuth';
+import { recordUserRevocationInD1 } from '../auth/authRevocationStore';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt } from '../research/pseudonymizer';
 import { executeResearchSubjectErasure } from '../research/researchService';
@@ -371,7 +371,7 @@ export async function executeAccountDeletionLifecycle(params: {
     } else {
       return {
         ok: existingStatus === 'COMPLETED' || existingStatus === 'PENDING_RESEARCH_ERASURE',
-        statusCode: existingStatus === 'COMPLETED' ? 200 : existingStatus === 'BLOCKED_LEGAL_HOLD' ? 423 : 202,
+        statusCode: existingStatus === 'COMPLETED' ? 200 : 202,
         jobId: String(existingJob.job_id),
         status: existingStatus,
         idempotentReplay: true,

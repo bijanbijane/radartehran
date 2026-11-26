@@ -1,0 +1,292 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "city", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "offeredTotalMillion", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdByUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sponsorRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sponsorRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "expiresAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "buyerAlerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "hoodId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "activeParticipantUids", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "transactionOffers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "transactionId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "topicId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialComments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "postId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFollows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scope", "order": "ASCENDING" },
+        { "fieldPath": "targetId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFollows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "followerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "topicId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "normalizedSearchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "normalizedSearchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "legal_ai_suggestions_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetEntityType", "order": "ASCENDING" },
+        { "fieldPath": "targetEntityId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialModerationCases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialModerationEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialModerationAppeals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "real_estate_transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "propertyId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "real_estate_transaction_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "transactionId", "order": "ASCENDING" },
+        { "fieldPath": "recordedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dispute_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "propertyReferenceId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dispute_case_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseId", "order": "ASCENDING" },
+        { "fieldPath": "recordedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "property_ownership_rights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "propertyId", "order": "ASCENDING" },
+        { "fieldPath": "partyId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "brokerage_mandates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "propertyId", "order": "ASCENDING" },
+        { "fieldPath": "partyId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

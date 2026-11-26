@@ -3,16 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import {
-  clearTestJwksForEdgeAuth,
-  registerTestJwkForEdgeAuth,
-  verifyFirebaseIdTokenOnEdge,
-} from '../worker/auth/firebaseEdgeAuth';
-import {
-  GOOGLE_FIREBASE_APP_CHECK_JWKS_URL,
-  injectMockJwksKeysForTests,
-  resetJwksCacheForTests,
-} from '../worker/auth/jwksClient';
+import { authenticateWorkerSession, RADAR_SESSION_COOKIE, sha256Hex } from '../worker/auth/sessionAuth';
 import {
   AUTHORITATIVE_D1_MIGRATIONS_TABLE,
   buildD1SessionBookmarkHeader,
@@ -49,6 +40,7 @@ import {
 } from '../worker/telemetry/workerTelemetryEngine';
 import { evaluateStranglerFallbackSafety, WORKER_HOP_HEADER } from '../worker/stranglerFallback';
 import workerEntrypoint from '../worker/index';
+import { getMigrationProgressSummary } from '../worker/migrationRegister';
 import type {
   D1Database,
   D1PreparedStatement,
@@ -57,6 +49,7 @@ import type {
   QueueMessage,
   WorkerEnv,
   WorkerExecutionContext,
+  WorkerRequestContext,
 } from '../worker/types';
 import type { D1DatabaseBinding } from '../worker/db/types';
 import {
@@ -124,21 +117,40 @@ function createRealSqliteD1Database(): D1Database {
   };
 }
 
-function toBase64Url(bytes: Uint8Array | string): string {
-  const buf = typeof bytes === 'string' ? Buffer.from(bytes, 'utf-8') : Buffer.from(bytes);
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+async function applyUserD1Migrations(db: D1Database): Promise<void> {
+  const migrationsDir = path.join(process.cwd(), 'migrations/user-d1');
+  const files = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort();
+  for (const file of files) {
+    await db.exec(fs.readFileSync(path.join(migrationsDir, file), 'utf8'));
+  }
 }
 
-async function signTestFirebaseJwt(
-  privateKey: CryptoKey,
-  kid: string,
-  payload: Record<string, unknown>,
+async function seedCloudflareSession(
+  db: D1Database,
+  params: { uid: string; email: string; isAdmin?: boolean },
 ): Promise<string> {
-  const headerB64 = toBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-  const payloadB64 = toBase64Url(JSON.stringify(payload));
-  const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, signingInput);
-  return `${headerB64}.${payloadB64}.${toBase64Url(new Uint8Array(sig))}`;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const expiresIso = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = await sha256Hex(token);
+  await db.prepare(
+    `INSERT INTO user_profiles (uid, display_name, account_status, created_at_iso, updated_at_iso)
+     VALUES (?1, ?2, 'ACTIVE', ?3, ?3)`,
+  ).bind(params.uid, 'Cloudflare Session Test', nowIso).run();
+  await db.prepare(
+    `INSERT INTO auth_identities
+      (provider, provider_subject, uid, email, email_verified, phone_e164, created_at_iso, last_authenticated_at_iso)
+     VALUES ('google', ?1, ?2, ?3, 1, NULL, ?4, ?4)`,
+  ).bind(`google-${params.uid}`, params.uid, params.email, nowIso).run();
+  await db.prepare(
+    `INSERT INTO user_sessions
+      (session_id, uid, device_label, user_agent_summary, ip_prefix, status,
+       created_at_iso, last_seen_at_iso, revoked_at_iso, revoked_by_uid,
+       token_hash, expires_at_iso, auth_provider)
+     VALUES (?1, ?2, 'test', 'cloudflare-native-test', '', 'ACTIVE', ?3, ?3, NULL, NULL, ?4, ?5, 'google')`,
+  ).bind(`sess_${params.uid}`, params.uid, nowIso, tokenHash, expiresIso).run();
+  return token;
 }
 
 async function runSuite(): Promise<void> {
@@ -179,106 +191,56 @@ async function runSuite(): Promise<void> {
     console.log('  ✅ 1. First-class Cloudflare R2 provider, auto region, and account endpoint resolution verified');
   }
 
-  // 2. WebCrypto RS256 Firebase JWT verification on Edge
+  // 2. Cloudflare-native opaque D1 session authentication (no Firebase ID token/App Check)
   {
-    clearTestJwksForEdgeAuth();
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-    registerTestJwkForEdgeAuth('test-kid-1', keyPair.publicKey);
-    const db = createLocalD1DatabaseSimulator();
-    await runD1MigrationsIdempotently(db);
+    const sessionDb = createRealSqliteD1Database();
+    await applyUserD1Migrations(sessionDb);
+    const sessionToken = await seedCloudflareSession(sessionDb, {
+      uid: 'uid_cloudflare_admin',
+      email: 'radio837isf@gmail.com',
+    });
+    const appUrl = 'https://radartehran-staging.bijanbijane-1.workers.dev';
+    const request = new Request(`${appUrl}/api/auth/session`, {
+      headers: { cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}` },
+    });
     const env: WorkerEnv = {
       WORKER_ENV: 'staging',
-      FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
+      APP_URL: appUrl,
       ADMIN_EMAIL: 'radio837isf@gmail.com',
-      DB: db,
+      USER_DB: sessionDb,
+      DB: sessionDb,
     };
-    const nowSec = Math.floor(Date.now() / 1000);
-    const validAdminJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_admin_01',
-      email: 'radio837isf@gmail.com',
-      email_verified: true,
-      iat: nowSec - 60,
-      exp: nowSec + 1800,
-      auth_time: nowSec - 60,
-    });
-    resetJwksCacheForTests();
-    injectMockJwksKeysForTests(GOOGLE_FIREBASE_APP_CHECK_JWKS_URL, {
-      'test-appcheck-kid-1': keyPair.publicKey,
-    });
-    const validAppCheckJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-appcheck-kid-1', {
-      iss: 'https://firebaseappcheck.googleapis.com/935427453422',
-      aud: ['projects/935427453422', 'projects/gen-lang-client-0713157837'],
-      sub: '1:935427453422:web:25817d32df713f2a68deff',
-      app_id: '1:935427453422:web:25817d32df713f2a68deff',
-      iat: nowSec - 30,
-      exp: nowSec + 1800,
-    });
-    const verified = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${validAdminJwt}`,
-      appCheckHeader: validAppCheckJwt,
-      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
-      nowSeconds: nowSec,
-    });
-    assert.equal(verified.authenticated, true);
-    assert.equal(verified.isAdmin, true);
-    assert.equal(verified.appCheckVerified, true);
-
-    const forgedAppCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${validAdminJwt}`,
-      appCheckHeader: 'eyJhbGciOiJSUzI1NiJ9.eyJhcHAiOiJyYWRhciJ9.c2ln',
-      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
-      nowSeconds: nowSec,
-    });
-    assert.equal(forgedAppCheck.authenticated, false);
-    assert.equal(forgedAppCheck.appCheckVerified, false);
-    assert.equal(forgedAppCheck.statusCode, 401);
-
-    const expiredJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_user_02',
-      email: 'user@example.com',
-      email_verified: true,
-      iat: nowSec - 3600,
-      exp: nowSec - 120,
-    });
-    const expiredCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${expiredJwt}`,
+    const ctx: WorkerRequestContext = {
+      request,
       env,
-      nowSeconds: nowSec,
-    });
-    assert.equal(expiredCheck.authenticated, false);
-    assert.equal(expiredCheck.reasonCode, 'JWT_EXPIRED');
+      url: new URL(request.url),
+      requestId: 'session-test',
+      correlationId: 'session-test-correlation',
+      method: 'GET',
+      pathname: '/api/auth/session',
+      clientIp: '192.0.2.10',
+      trustedEdgeIp: true,
+      environment: 'staging',
+      startedAtMs: Date.now(),
+      routeId: 'test-session-auth',
+      implementationId: 'cloudflare-d1-session',
+    };
+    const principal = await authenticateWorkerSession(ctx);
+    assert.equal(principal.authenticated, true);
+    assert.equal(principal.uid, 'uid_cloudflare_admin');
+    assert.equal(principal.authProvider, 'google');
+    assert.equal(principal.emailVerified, true);
+    assert.equal(principal.isAdmin, true);
 
-    const unverifiedEmailJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_unverified',
-      email: 'unverified@example.com',
-      email_verified: false,
-      iat: nowSec - 10,
-      exp: nowSec + 600,
+    const noCookieRequest = new Request(`${appUrl}/api/auth/session`);
+    const noCookiePrincipal = await authenticateWorkerSession({
+      ...ctx,
+      request: noCookieRequest,
+      url: new URL(noCookieRequest.url),
     });
-    const unverifiedCheck = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: `Bearer ${unverifiedEmailJwt}`,
-      env,
-      nowSeconds: nowSec,
-    });
-    assert.equal(unverifiedCheck.authenticated, false);
-    assert.equal(unverifiedCheck.statusCode, 403);
-    assert.equal(unverifiedCheck.reasonCode, 'EMAIL_NOT_VERIFIED');
-    console.log('  ✅ 2. WebCrypto RS256 Firebase JWT & App Check edge verification (valid, expired, unverified) verified');
+    assert.equal(noCookiePrincipal.authenticated, false);
+    assert.equal(noCookiePrincipal.reasonCode, 'UNAUTHENTICATED');
+    console.log('  ✅ 2. Cloudflare D1 opaque session authentication, verified identity and fail-closed no-cookie path');
   }
 
   // 3. Single authoritative D1 migration ledger (d1_migrations), SQL SHA-256 parity, projections, and bookmarks
@@ -620,7 +582,7 @@ async function runSuite(): Promise<void> {
     const utc0030 = Date.UTC(2026, 10, 8, 0, 30, 0);
     const tehranMorning = convertUtcScheduledTimeToTehranWallClock(utc0030);
     assert.equal(tehranMorning.tehranFormatted, '04:00 Asia/Tehran');
-    assert.equal(tehranMorning.matchedScheduleTask, 'morning_cleanup_only');
+    assert.equal(tehranMorning.matchedScheduleTask, 'morning_market_and_d1_sync');
 
     // UTC 18:30 -> 22:00 Asia/Tehran
     const utc1830 = Date.UTC(2026, 10, 8, 18, 30, 0);
@@ -652,13 +614,94 @@ async function runSuite(): Promise<void> {
     assert.equal(postDecision.allowed, false);
     assert.equal(postDecision.reasonCode, 'MUTATION_MISSING_IDEMPOTENCY_KEY');
 
+    const localWorkerReq = new Request('http://localhost:8787/api/v1/market/state?cityId=tehran');
+    const localWorkerDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'development',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://radar-main:3000',
+      },
+    });
+    assert.equal(localWorkerDecision.allowed, true, 'only the isolated local Compose Express service may use HTTP');
+
+    const stagingHttpDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'staging',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://radar-main:3000',
+      },
+    });
+    assert.equal(stagingHttpDecision.allowed, false);
+    assert.equal(stagingHttpDecision.reasonCode, 'ORIGIN_URL_NOT_CONFIGURED');
+
+    const untrustedLocalHttpDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'development',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://127.0.0.1:3000',
+      },
+    });
+    assert.equal(untrustedLocalHttpDecision.allowed, false);
+
+    const nativeLoopbackDevDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'development',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://127.0.0.1:3001',
+      },
+    });
+    assert.equal(nativeLoopbackDevDecision.allowed, true,
+      'only the exact native macOS development Express loopback origin may use HTTP');
+
+    const loopbackWorkerPortDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'development',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://127.0.0.1:8787',
+      },
+    });
+    assert.equal(loopbackWorkerPortDecision.allowed, false,
+      'the Worker ingress port must never be accepted as its own HTTP fallback origin');
+
+    const wrongNativePortDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'development',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://127.0.0.1:3002',
+      },
+    });
+    assert.equal(wrongNativePortDecision.allowed, false);
+
+    const nativeLoopbackStagingDecision = evaluateStranglerFallbackSafety({
+      request: localWorkerReq,
+      env: {
+        WORKER_ENV: 'staging',
+        STRANGLER_FALLBACK_ENABLED: 'true',
+        STRANGLER_ORIGIN_URL: 'http://127.0.0.1:3001',
+      },
+    });
+    assert.equal(nativeLoopbackStagingDecision.allowed, false);
+    assert.equal(nativeLoopbackStagingDecision.reasonCode, 'ORIGIN_URL_NOT_CONFIGURED');
+
     const sqliteDb = createRealSqliteD1Database();
     await runD1MigrationsIdempotently(sqliteDb);
+    await applyUserD1Migrations(sqliteDb);
     const env: WorkerEnv = {
       WORKER_ENV: 'staging',
-      FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
+      APP_URL: 'https://radartehran-staging.bijanbijane-1.workers.dev',
+      GOOGLE_OAUTH_CLIENT_ID: 'test-google-client-id',
+      GOOGLE_OAUTH_CLIENT_SECRET: 'test-google-client-secret',
+      GOOGLE_OAUTH_REDIRECT_URI: 'https://radartehran-staging.bijanbijane-1.workers.dev/api/auth/google/callback',
+      AUTH_INTERNAL_HMAC_SECRET: 'test-local-worker-express-session-bridge-secret-with-enough-entropy',
       ADMIN_EMAIL: 'radio837isf@gmail.com',
       DB: sqliteDb,
+      USER_DB: sqliteDb,
       MEDIA_BUCKET: createLocalR2BucketSimulator(),
       RADAR_KV: createLocalKvNamespaceSimulator(),
     };
@@ -675,30 +718,18 @@ async function runSuite(): Promise<void> {
     const healthJson = (await healthRes.json()) as { ok: boolean; runtime: string; registeredRoutesCount: number };
     assert.equal(healthJson.ok, true);
     assert.equal(healthJson.runtime, 'cloudflare-workers');
-    assert.equal(healthJson.registeredRoutesCount, 88);
+    assert.ok(Number.isSafeInteger(healthJson.uptimeSeconds) && healthJson.uptimeSeconds >= 0 && healthJson.uptimeSeconds < 86_400,
+      'Worker isolate uptime must be a bounded duration, never a Unix timestamp');
+    assert.equal(healthJson.registeredRoutesCount, getMigrationProgressSummary().totalCatalogRoutes, 'Health route count must match the authoritative migration/route catalog');
 
-    // Verify D1-backed chunked upload lifecycle on Worker router
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    );
-    registerTestJwkForEdgeAuth('test-kid-router', keyPair.publicKey);
-    const nowSec = Math.floor(Date.now() / 1000);
-    const adminJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-router', {
-      iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-      aud: 'gen-lang-client-0713157837',
-      sub: 'uid_admin_edge',
+    // Verify D1-backed chunked upload lifecycle using an opaque Cloudflare session cookie.
+    const appUrl = 'https://radartehran-staging.bijanbijane-1.workers.dev';
+    const routerEnv: WorkerEnv = { ...env, USER_DB: sqliteDb, APP_URL: appUrl };
+    const sessionToken = await seedCloudflareSession(sqliteDb, {
+      uid: 'uid_admin_edge',
       email: 'radio837isf@gmail.com',
-      email_verified: true,
-      iat: nowSec - 30,
-      exp: nowSec + 1800,
     });
+    const sessionCookie = `${RADAR_SESSION_COOKIE}=${sessionToken}`;
     const validWebpBytes = new Uint8Array([
       0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00,
       0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20,
@@ -708,7 +739,8 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-init', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: sessionCookie,
+          Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -720,7 +752,7 @@ async function runSuite(): Promise<void> {
           hoodId: 1,
         }),
       }),
-      env,
+      routerEnv,
       execCtx,
     );
     assert.equal(initRes.status, 200);
@@ -733,7 +765,8 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-chunk', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: sessionCookie,
+          Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -742,7 +775,7 @@ async function runSuite(): Promise<void> {
           base64Data: Buffer.from(validWebpBytes).toString('base64'),
         }),
       }),
-      env,
+      routerEnv,
       execCtx,
     );
     assert.equal(chunkRes.status, 200);
@@ -751,12 +784,13 @@ async function runSuite(): Promise<void> {
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/object-storage/upload-complete', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${adminJwt}`,
+          Cookie: sessionCookie,
+          Origin: appUrl,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ sessionId: initJson.sessionId }),
       }),
-      env,
+      routerEnv,
       execCtx,
     );
     assert.equal(completeRes.status, 200);
@@ -766,9 +800,9 @@ async function runSuite(): Promise<void> {
     // Verify Section 16 & 25 operationalVisibility admin diagnostics
     const diagRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/admin/worker-diagnostics', {
-        headers: { Authorization: `Bearer ${adminJwt}` },
+        headers: { Cookie: sessionCookie },
       }),
-      env,
+      routerEnv,
       execCtx,
     );
     assert.equal(diagRes.status, 200);
@@ -907,33 +941,70 @@ async function runSuite(): Promise<void> {
     const unmigratedDb = createRealSqliteD1Database();
     const unmigratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
-      { ...env, DB: unmigratedDb },
+      { ...env, DB: unmigratedDb, USER_DB: unmigratedDb },
       execCtx,
     );
     assert.equal(unmigratedReadinessRes.status, 503);
     const unmigratedJson = (await unmigratedReadinessRes.json()) as {
       ok: boolean;
-      code: string;
-      migrationReadiness: { allCanonicalMigrationsApplied: boolean; pendingMigrations: string[] };
+      probe: string;
+      state: string;
+      dependencies: { userDb: { bound: boolean; ready: boolean; migrationsApplied: number; missingTables: string[] } };
     };
     assert.equal(unmigratedJson.ok, false);
-    assert.equal(unmigratedJson.code, 'REQUIRED_D1_MIGRATION_PENDING');
-    assert.equal(unmigratedJson.migrationReadiness.allCanonicalMigrationsApplied, false);
-    assert.equal(unmigratedJson.migrationReadiness.pendingMigrations.length, 3);
+    assert.equal(unmigratedJson.probe, 'readiness');
+    assert.equal(unmigratedJson.state, 'DEGRADED');
+    assert.equal(unmigratedJson.dependencies.userDb.bound, true);
+    assert.equal(unmigratedJson.dependencies.userDb.ready, false);
+    assert.equal(unmigratedJson.dependencies.userDb.migrationsApplied, 0);
+    assert.ok(unmigratedJson.dependencies.userDb.missingTables.length > 0);
 
+    const unconfiguredEnv: WorkerEnv = {
+      ...env,
+      GOOGLE_OAUTH_CLIENT_ID: undefined,
+      GOOGLE_OAUTH_CLIENT_SECRET: undefined,
+      GOOGLE_OAUTH_REDIRECT_URI: undefined,
+      AUTH_INTERNAL_HMAC_SECRET: undefined,
+    };
     const migratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
-      env,
+      unconfiguredEnv,
       execCtx,
     );
-    assert.equal(migratedReadinessRes.status, 200);
+    assert.equal(migratedReadinessRes.status, 503, 'Readiness remains degraded until Google OIDC and the session bridge are configured');
     const migratedJson = (await migratedReadinessRes.json()) as {
       ok: boolean;
-      migrationReadiness: { allCanonicalMigrationsApplied: boolean; pendingMigrations: string[] };
+      probe: string;
+      state: string;
+      dependencies: {
+        userDb: { bound: boolean; ready: boolean; missingTables: string[] };
+        googleOidc: { configured: boolean };
+        expressSessionBridge: { configured: boolean };
+      };
     };
-    assert.equal(migratedJson.ok, true);
-    assert.equal(migratedJson.migrationReadiness.allCanonicalMigrationsApplied, true);
-    assert.equal(migratedJson.migrationReadiness.pendingMigrations.length, 0);
+    assert.equal(migratedJson.ok, false);
+    assert.equal(migratedJson.probe, 'readiness');
+    assert.equal(migratedJson.state, 'DEGRADED');
+    assert.equal(migratedJson.dependencies.userDb.ready, true);
+    assert.equal(migratedJson.dependencies.userDb.missingTables.length, 0);
+    assert.equal(migratedJson.dependencies.googleOidc.configured, false);
+    assert.equal(migratedJson.dependencies.expressSessionBridge.configured, false);
+
+    const readyRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
+      routerEnv,
+      execCtx,
+    );
+    assert.equal(readyRes.status, 200);
+    const readyJson = (await readyRes.json()) as { ok: boolean; dependencies: {
+      userDb: { ready: boolean };
+      googleOidc: { configured: boolean };
+      expressSessionBridge: { configured: boolean };
+    } };
+    assert.equal(readyJson.ok, true);
+    assert.equal(readyJson.dependencies.userDb.ready, true);
+    assert.equal(readyJson.dependencies.googleOidc.configured, true);
+    assert.equal(readyJson.dependencies.expressSessionBridge.configured, true);
 
     // Ensure no runtime DDL execution exists in worker runtime entrypoints
     for (const runtimeFile of ['worker/index.ts', 'worker/router.ts', 'worker/queues/queueAndCronProcessor.ts']) {
@@ -944,7 +1015,7 @@ async function runSuite(): Promise<void> {
 
     const notFoundApiRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/non-existent-route'),
-      env,
+      routerEnv,
       execCtx,
     );
     assert.equal(notFoundApiRes.status, 404);

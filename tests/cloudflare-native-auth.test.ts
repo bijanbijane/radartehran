@@ -280,8 +280,9 @@ describe('Cloudflare-native session authentication', () => {
   it('rejects sessions issued in the same Unix second as the revocation watermark', async () => {
     const createdAtMs = Date.now() - 2_000;
     const createdAtSeconds = Math.floor(createdAtMs / 1000);
+    const sameSecondTimestampMs = createdAtSeconds * 1000 + 850;
     const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow({
-      created_at_iso: new Date(createdAtMs + 850).toISOString(),
+      created_at_iso: new Date(sameSecondTimestampMs).toISOString(),
       revocation_watermark: String(createdAtSeconds),
     }))));
     assert.equal(result.authenticated, false);
@@ -333,7 +334,7 @@ describe('Cloudflare-native session authentication', () => {
       'A'.repeat(64),
       { ADMIN_EMAIL: 'verified@example.com' },
     );
-    const result = await authenticateWorkerRouteCompat(context, { requireAppCheck: true });
+    const result = await authenticateWorkerRouteCompat(context);
     assert.equal(result.authenticated, true);
     assert.equal(result.uid, 'usr_test_1');
     assert.equal(result.isAdmin, true);
@@ -346,7 +347,7 @@ describe('Cloudflare-native session authentication', () => {
       makeD1(sessionRow({ delegated_admin: 1 })),
       'A'.repeat(64),
     );
-    const result = await authenticateWorkerRouteCompat(context, { requireAppCheck: true });
+    const result = await authenticateWorkerRouteCompat(context);
     assert.equal(result.authenticated, true);
     assert.equal(result.uid, 'usr_test_1');
     assert.equal(result.isAdmin, false);

@@ -12,6 +12,7 @@ import {
   getNeighborhoodMarketReport,
 } from '../src/data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../src/data/multiCityData';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import {
   getNeighborhoodDeepInsight,
   checkDirectMetroCommute,
@@ -283,7 +284,6 @@ function runWave5_87Debugs(): number {
     'src/data/neighborhoodInsights.ts',
     'src/data/neighborhoods.ts',
     'src/App.tsx',
-    'server.ts',
     'firestore.rules',
   ];
 
@@ -295,6 +295,11 @@ function runWave5_87Debugs(): number {
     count++;
     totalChecksPassed++;
   }
+
+  const serverEntrySource = readServerEntrySource(process.cwd());
+  assert(serverEntrySource.length > 200, 'Wave5: Canonical server entry (apps/api/server.ts) non-empty');
+  count++;
+  totalChecksPassed++;
 
   const appSource = [
     fs.readFileSync(path.resolve(process.cwd(), 'src/App.tsx'), 'utf-8'),

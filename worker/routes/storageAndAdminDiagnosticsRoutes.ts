@@ -22,7 +22,7 @@ export const WORKER_DEPENDENCY_COMPATIBILITY_MATRIX: readonly DependencyCompatib
     packageName: 'firebase-admin',
     currentUsage: 'Node-only gRPC Firebase Auth & Firestore SDK',
     officialStatus: 'NOT_SUPPORTED',
-    edgeReplacement: 'worker/auth/firebaseEdgeAuth.ts WebCrypto RS256 + Firestore REST',
+    edgeReplacement: 'worker/auth/sessionAuth.ts + worker/auth/authRevocationStore.ts (Cloudflare D1 opaque sessions)',
   },
   {
     packageName: 'sharp',
@@ -44,7 +44,7 @@ export async function handleStorageAndAdminWorkerRoute(
   const { method, pathname, env, request } = ctx;
 
   if (method === 'GET' && pathname === '/api/admin/worker-diagnostics') {
-    const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: true });
+    const auth = await authenticateWorkerRouteCompat(ctx);
     if (!auth.authenticated || !auth.isAdmin) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 403 : auth.statusCode, {
         status: 'error',

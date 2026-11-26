@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PUBLIC_ROUTES } from './registry/public.routes';
 import { ADMIN_ROUTES, ADMIN_SIDEBAR_SECTIONS } from './registry/admin.routes';
+import { CENTRAL_ROUTE_REGISTRY, findRegisteredRoute } from '../app/router/routeRegistry';
 import {
   UNIFIED_NAVIGATION_ROUTE_COUNT,
   UNIFIED_NAVIGATION_ROUTES,
@@ -42,7 +43,11 @@ test('RT-FE-NAV-014: Unified registry integrity, ownership, and role visibility'
   assert.deepEqual(issues, [], `Registry audit issues: ${JSON.stringify(issues)}`);
   assert.ok(findUnifiedRouteByPath('/market/prices'));
   assert.equal(resolveNavigationOwnership('/market/prices').owner, 'unified_navigation');
-  assert.equal(resolveNavigationOwnership('/login').owner, 'app_shell');
+  assert.equal(resolveNavigationOwnership('/login').owner, 'unified_navigation');
+  assert.equal(findUnifiedRouteByPath('/login')?.id, 'account.overview');
+  assert.equal(findRegisteredRoute('/login')?.canonicalRedirectPath, '/account');
+  assert.equal(findRegisteredRoute('/account/profile')?.id, 'account.profile');
+  assert.ok(CENTRAL_ROUTE_REGISTRY.length > UNIFIED_NAVIGATION_ROUTE_COUNT, 'AppShell compatibility registry must be a derived projection with aliases');
 
   const adminRoutes = UNIFIED_NAVIGATION_ROUTES.filter((r) => r.shell === 'admin');
   const adminVisible = filterVisibleNavigationRoutes(adminRoutes, {
@@ -392,6 +397,12 @@ test('AUD-004/AUD-005/AUD-011/AUD-016: canonical routes, tools sub-routes, servi
   assert.equal(resolveRouteFromLocation('/legal/terms', '').subTab, 'legal_terms');
   assert.equal(resolveRouteFromLocation('/login', '').viewId, 'userspace');
   assert.equal(resolveRouteFromLocation('/profile', '').subTab, 'profile');
+  assert.equal(resolveRouteFromLocation('/saved-searches', '').subTab, 'saved_searches');
+  assert.equal(resolveRouteFromLocation('/escrow', '').viewId, 'tools');
+  assert.equal(resolveRouteFromLocation('/agency/workspace', '').subTab, 'agencies');
+  assert.equal(resolveRouteFromLocation('/service/orders', '').viewId, 'services');
+  assert.equal(resolveRouteFromLocation('/tools/compare', '').subTab, 'compare_areas');
+  assert.equal(resolveRouteFromLocation('/admin/governance', '').viewId, 'admin');
   assert.equal(resolveRouteFromLocation('/community/contribute', '').viewId, 'contributions');
   assert.equal(resolveRouteFromLocation('/contributions/submit', '').subTab, 'submit');
 

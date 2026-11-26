@@ -1,6 +1,6 @@
 /** @file src/features/admin/components/AdminPlatformIntelligenceHub.tsx — Stages 6–28 Unified Platform Intelligence, Governance & Gateway Hub */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { Activity, Cpu, Database, Globe, Power, Scale, ShieldCheck } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import {

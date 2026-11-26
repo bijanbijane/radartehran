@@ -265,7 +265,7 @@ async function runSecurityTests(): Promise<void> {
     'Task 2.8 - Server rejects missing Authorization header (401)',
     !unauthServer.authorized &&
       unauthServer.statusCode === 401 &&
-      unauthServer.reason === 'MISSING_BEARER_TOKEN',
+      unauthServer.reason === 'CLOUDFLARE_SESSION_REQUIRED',
     `Reason: ${unauthServer.reason}`
   );
 
@@ -277,8 +277,8 @@ async function runSecurityTests(): Promise<void> {
     'Task 2.9 - Invalid server admin secret is rejected (403)',
     !invalidSecretCheck.authorized &&
       invalidSecretCheck.statusCode === 403 &&
-      invalidSecretCheck.reason === 'INVALID_ADMIN_SECRET',
-    'Invalid x-admin-token rejected with 403 INVALID_ADMIN_SECRET'
+      invalidSecretCheck.reason === 'STATIC_ADMIN_TOKEN_RETIRED',
+    'Legacy x-admin-token is rejected with 403 STATIC_ADMIN_TOKEN_RETIRED'
   );
 
   const malformedJwtCheck = await verifyAdminApiAuthorization(
@@ -289,8 +289,8 @@ async function runSecurityTests(): Promise<void> {
     'Task 2.10 - Malformed JWT is rejected before Admin SDK verification (401)',
     !malformedJwtCheck.authorized &&
       malformedJwtCheck.statusCode === 401 &&
-      malformedJwtCheck.reason === 'MALFORMED_JWT',
-    'Malformed JWT rejected with 401 MALFORMED_JWT'
+      malformedJwtCheck.reason === 'CLOUDFLARE_SESSION_REQUIRED',
+    'Bearer headers cannot establish a session; Cloudflare session is required'
   );
 
   const oversizedJwtCheck = await verifyAdminApiAuthorization(
@@ -301,8 +301,8 @@ async function runSecurityTests(): Promise<void> {
     'Task 2.11 - Oversized JWT is rejected before Admin SDK verification (401)',
     !oversizedJwtCheck.authorized &&
       oversizedJwtCheck.statusCode === 401 &&
-      oversizedJwtCheck.reason === 'INVALID_JWT_LENGTH',
-    'Oversized JWT rejected with 401 INVALID_JWT_LENGTH'
+      oversizedJwtCheck.reason === 'CLOUDFLARE_SESSION_REQUIRED',
+    'Oversized legacy bearer token cannot establish a Cloudflare session'
   );
 
   const secretAuthResult = await verifyAdminApiAuthorization(
@@ -311,10 +311,10 @@ async function runSecurityTests(): Promise<void> {
   );
   assertCondition(
     'Task 2.14 - Configured server secret authorizes admin request',
-    secretAuthResult.authorized &&
-      secretAuthResult.statusCode === 200 &&
-      secretAuthResult.reason === 'AUTHORIZED_SERVER_SECRET',
-    'Server secret override should remain functional'
+    !secretAuthResult.authorized &&
+      secretAuthResult.statusCode === 403 &&
+      secretAuthResult.reason === 'STATIC_ADMIN_TOKEN_RETIRED',
+    'Static server admin secret is retired and cannot authorize requests'
   );
 
   const fakeJwt = buildTestJwt({
@@ -334,7 +334,7 @@ async function runSecurityTests(): Promise<void> {
   assertCondition(
     'Task 2.15 - Simulated JWT signature is not trusted',
     !fakeJwtResult.authorized && fakeJwtResult.statusCode !== 200,
-    'Only tokens verified by Firebase Admin SDK or ADMIN_API_SECRET may pass'
+    'A Firebase ID token cannot establish the required Cloudflare D1 session'
   );
 
   assertCondition(

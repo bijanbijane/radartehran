@@ -3,7 +3,7 @@
   "program_id": "RMEP-001",
   "program_version": "4.1",
   "execution_mode": "AUTONOMOUS_SEQUENTIAL",
-  "program_status": "COMPLETED_WITH_EVIDENCE",
+  "program_status": "PARTIALLY_VERIFIED",
   "approved_master_prompt": {
     "path": "docs/engineering/RMEP-001/MASTER-PROMPT.md",
     "approved_commit": "FILESYSTEM_PINNED_SHA256",
@@ -19,22 +19,22 @@
   },
   "current_phase": {
     "phase_id": "PHASE-6",
-    "phase_name": "Production Readiness & Final Verification",
-    "phase_status": "VERIFIED"
+    "phase_name": "Cloudflare-native migration and final verification",
+    "phase_status": "PARTIALLY_VERIFIED"
   },
   "current_workstream": {
-    "workstream_id": "WS-6.4",
-    "workstream_name": "Final Engineering Report & Execution State Lock",
-    "task_id": "P6-T4",
-    "task_status": "VERIFIED"
+    "workstream_id": "WS-CLOUDFLARE-NATIVE-MIGRATION",
+    "workstream_name": "Firebase retirement, D1 session auth, backend and UI verification",
+    "task_id": "P6-CF-NATIVE-001",
+    "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-192-FINAL",
-    "checkpoint_timestamp_utc": "2026-11-05T16:40:00.000Z",
-    "last_safe_operation": "Completed OP-191: Executed Gold Edition 6.0 Batch 5 Storage Range/Migration Parity, Upload Magic-Byte & Single-Label Host Guard, OSM Tile Cache Header Sanitization, Boundary Ring Step Guard, Cumulative Legal Risk Scoring & Zero-Width/Encoded Security Hardening across serverStoragePortabilityAndTracing.ts, objectStorageUpload.ts, osmTileProxy.ts, serverBoundaryProtocol.ts, serverLegalRuleEngine.ts, security.ts, and domainSecurityValidators.ts",
-    "last_completed_operation": "Completed OP-192: Executed Gold Edition 6.0 Batch 6 90-Day Buyer Lead Retention Pruning, AI Contract RiskScore Parity, Schema Migration Downgrade Guard, Cascade Media Deduplication, Upload-Init MIME Validation, Terminal Journal Lease Cleanup & Storage Record Integer/Extension Hardening across serverUtilityRoutes.ts, serverSponsorAndBargainRoutes.ts, serverBackupAndChunkUploadRoutes.ts, serverObjectStorageCleanup.ts, serverObjectStorageOrphanAudit.ts, serverObjectStorageHelpers.ts, serverJournalAdapters.ts, deletionJournal.ts, and objectStorageDeleteCoordinator.ts (Resilience Verification OP-217: Rebuilt policyAndClaimStateMachineEngine.ts with canonical CoreApiError VALIDATION_FAILED)",
-    "next_exact_action": "WS-CASPER-37 (OP-235) is fully verified in workspace. Root-cause identification & structural remediation: eliminated root-cause division-by-zero/negative-area vulnerability in synthesizeExecutiveDecisionReport (src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts, 263 lines <= 290) via safeTargetSqm = Math.max(20, targetSqm || 80); safeguarded targetCapital in generateCasperMacroPortfolioDossier (src/cells/decision-epistemology/macroPortfolioArbitrageEngine.ts, 274 lines <= 290) via safeSqm = Math.max(20, targetSqm || 80); bounded localIdempotencyLedger memory via 100-entry FIFO eviction in server/modules/casper-hub/casperHubRoutes.ts (213 lines <= 290); verified with 68/68 domain regressions, 35/35 decision-intelligence tests, 17/17 mutation tests (100%), 12/12 architecture guardrails (<=290 lines across all 328 source files, 0 errors, 0 warnings), 3/3 Playwright E2E tests, 10/10 headless Chromium browser smoke workflows, and TypeScript compiler check (npm run lint = 0 errors). Checkpoint id strictly remains CHK-192-FINAL.",
-    "resume_status": "COMPLETED"
+    "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
+    "checkpoint_timestamp_utc": "2026-11-25T22:15:00.000Z",
+    "last_safe_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
+    "last_completed_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
+    "next_exact_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
+    "resume_status": "READY"
   },
   "execution_history": {
     "completed_tasks": [
@@ -234,12 +234,16 @@
       "P6-FRONTEND-AUTONOMOUS-ELEVATION-AND-VERIFICATION",
       "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION"
     ],
-    "in_progress_tasks": [],
+    "in_progress_tasks": [
+      "CLOUDFLARE_NATIVE_AUTH_FIREBASE_RETIREMENT",
+      "RADAR_WORKER_TYPECHECK_AND_UI_E2E_REMEDIATION",
+      "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT"
+    ],
     "verified_commits": [
       "f8b066f76c9053ce9b3c53fb136b9ec34fc57f7a",
       "5e577f861de711ffcd77cd455ea79d41d553e0b"
     ],
-    "uncommitted_changes_summary": "All RMEP-001 phases and OP-001..OP-192 verified on workspace filesystem"
+    "uncommitted_changes_summary": "OP-193 is complete locally on docker/main-debug-2026-11-25. Changes include D1-native browser/Worker session authentication, retired Firebase client/Worker auth code, D1 marketplace sponsor and buyer-alert writes with server-owned pricing and explicit consent, Worker typecheck and platform regressions, readiness and IRNI v2 route fixes, and RMEP evidence reconciliation. Changes remain uncommitted and local. No production migrations, deployment, commit, push, PR or merge was performed. Docker Desktop was unavailable for the final local Worker+D1 runtime integration. Legacy Express Firestore adapters remain. RMEP operation OP-193 is recorded as locally verified; phase 6 remains partially verified."
   },
   "phase_statuses": {
     "phase_1": "VERIFIED",
@@ -247,7 +251,7 @@
     "phase_3": "VERIFIED",
     "phase_4": "VERIFIED",
     "phase_5": "VERIFIED",
-    "phase_6": "VERIFIED"
+    "phase_6": "PARTIALLY_VERIFIED"
   },
   "operations": [
     {
@@ -1799,6 +1803,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-05T16:40:00.000Z"
+    },
+    {
+      "operation_id": "OP-193",
+      "phase": "PHASE-6",
+      "description": "Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-25T22:15:00.000Z"
     }
   ],
   "tests": [
@@ -1855,6 +1867,60 @@
       "exit_code": 0,
       "outcome": "PASSED",
       "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
+    },
+    {
+      "test_name": "Cloudflare-native Google OIDC and D1 session auth",
+      "command": "npm run test:auth",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-2/evidence.json"
+    },
+    {
+      "test_name": "D1 marketplace privacy, server sponsor pricing and budget parser",
+      "command": "tsx --test tests/persian-financial-budget-parser.test.ts tests/cloudflare-marketplace-sponsor-pricing.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts tests/cloudflare-marketplace-write-routes.test.ts",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-2/evidence.json"
+    },
+    {
+      "test_name": "Cloudflare Worker platform integration",
+      "command": "tsx tests/cloudflare-worker-platform.test.ts",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+    },
+    {
+      "test_name": "Express readiness regression",
+      "command": "tsx --test tests/express-readiness-probe.test.ts",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+    },
+    {
+      "test_name": "IRNI v2 route registry and malformed URL safety",
+      "command": "tsx --test tests/irni-canonical-rpc-route.test.ts",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+    },
+    {
+      "test_name": "Worker runtime typecheck",
+      "command": "tsc --noEmit -p tsconfig.worker.json",
+      "environment": "local-node",
+      "timestamp_utc": "2026-11-25T22:15:00.000Z",
+      "exit_code": 0,
+      "outcome": "PASSED",
+      "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
     }
   ],
   "engineering_decisions": [
@@ -1903,7 +1969,7 @@
   ],
   "final_report_path": "docs/engineering/RMEP-001/FINAL-ENGINEERING-REPORT.md",
   "resume_instructions": {
-    "resume_from_task_id": "COMPLETED",
+    "resume_from_task_id": "P6-CF-NATIVE-001",
     "do_not_repeat": [
       "P0-BOOTSTRAP-AND-SHA256-LOCK",
       "P1-BACKEND-API-AND-RMEP-STATE-ENGINE",
@@ -2099,11 +2165,13 @@
       "P6-GOLD-EDITION-60-STORAGE-MAGIC-BYTES-OSM-BOUNDARY-LEGAL-AND-SECURITY",
       "P6-GOLD-EDITION-60-SCHEMA-MIGRATION-CASCADE-JOURNAL-AND-STORAGE-HELPERS",
       "P6-FRONTEND-AUTONOMOUS-ELEVATION-AND-VERIFICATION",
-      "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION"
+      "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION",
+      "P6-CF-NATIVE-MIGRATION-AND-AUTH",
+      "P6-REMAINING-FIRESTORE-TO-D1-BACKEND-PORT"
     ],
     "must_verify_before_resume": [
       "Verify MASTER-PROMPT.md SHA-256 matches 4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
     ],
-    "next_action": "Review FINAL-ENGINEERING-REPORT.md; authorize production deployment when ready."
+    "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass."
   }
 }

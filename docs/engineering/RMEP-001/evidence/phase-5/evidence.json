@@ -1,26 +1,47 @@
 {
   "phase_id": "PHASE-5-INTEGRATION-SECURITY",
   "status": "VERIFIED",
-  "verified_at": "2026-11-02T00:39:00.000Z",
+  "verified_at": "2026-11-25T22:15:00.000Z",
   "artifacts_inspected": [
-    "src/utils/security.ts",
-    "scripts/check-architecture.ts",
-    "src/utils/rmepExecutionStateEngine.ts",
-    "tests/object-storage-security.test.ts",
-    "tests/object-storage-upload-auth.test.ts"
+    "src/utils/serverAdminAndTelegramSecurity.ts",
+    "src/utils/serverCloudflareSessionBridge.ts",
+    "src/utils/serverPublisherBargains.ts",
+    "worker/auth/authorizationPolicy.ts",
+    "worker/auth/routeAuthCompat.ts",
+    "worker/routes/authRoutes.ts",
+    "worker/routes/marketplaceRoutes.ts",
+    "worker/routes/healthAndMetadataRoutes.ts",
+    "worker/stranglerFallback.ts",
+    "tests/cloudflare-worker-native-auth-failclosed.test.ts",
+    "tests/cloudflare-worker-platform.test.ts",
+    "tests/cloudflare-marketplace-privacy.test.ts",
+    "tests/express-readiness-probe.test.ts",
+    "tests/irni-canonical-rpc-route.test.ts"
   ],
   "checks": [
     {
-      "name": "Architecture & Security Invariant Check",
-      "command": "npm run arch:check",
+      "name": "Worker platform integration, readiness, D1, R2 legal hold, queue/KV and Strangler fallback",
+      "command": "./node_modules/.bin/tsx tests/cloudflare-worker-platform.test.ts",
       "exit_code": 0,
-      "summary": "Verified Hedonic single source of truth, Leaflet HTML escaping via escapeHtmlAttr, external Divar URL whitelisting, and 0o600 secret-free disk persistence."
+      "summary": "Full Worker platform suite passed, including D1 migrations/session checks, R2 upload/delete legal-hold enforcement, KV/SWR, Queue/DLQ, rate limits, local-only HTTP fallback, chunk upload and Worker readiness."
     },
     {
-      "name": "Master Prompt SHA-256 & Declarative State Validation",
-      "command": "npx tsx tests/cloudflare-ai-commerce-architecture.test.ts",
+      "name": "Express readiness separation",
+      "command": "./node_modules/.bin/tsx --test tests/express-readiness-probe.test.ts",
       "exit_code": 0,
-      "summary": "Verified MASTER-PROMPT.md SHA-256 (4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63) and secret rejection in EXECUTION-STATE.json."
+      "summary": "1/1 assertion passed: Express process acceptance no longer claims D1, identity or object storage readiness without Worker verification."
+    },
+    {
+      "name": "Canonical IRNI v2 route ownership and malformed URL handling",
+      "command": "./node_modules/.bin/tsx --test tests/irni-canonical-rpc-route.test.ts",
+      "exit_code": 0,
+      "summary": "2/2 assertions passed; migration registry points to the actual v2 Worker handler and malformed percent encoding fails safely."
+    },
+    {
+      "name": "Worker source typecheck",
+      "command": "./node_modules/.bin/tsc --noEmit -p tsconfig.worker.json",
+      "exit_code": 0,
+      "summary": "Worker runtime source typechecked without errors."
     }
   ]
 }

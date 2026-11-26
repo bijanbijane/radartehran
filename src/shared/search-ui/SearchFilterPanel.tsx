@@ -55,7 +55,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
       className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 text-right dark:border-[var(--color-border-subtle)] dark:bg-[var(--color-bg-surface)]"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">فیلترهای دقیق</h3>
+        <h2 className="text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">فیلترهای دقیق</h2>
         <button
           type="button"
           onClick={() => {

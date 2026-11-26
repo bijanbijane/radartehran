@@ -33,9 +33,9 @@ export const RentAnalyticsSection: React.FC<RentAnalyticsSectionProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)] pb-3">
         <div>
-          <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">
+          <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">
             تحلیل تفکیکی ودیعه، اجاره ماهانه و بازده اجاره در {geoScopeFa}
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-0.5">
             مقادیر خام ودیعه و اجاره بدون مخلوط‌کردن نمایش داده می‌شوند · وضعیت:{' '}
             {INDICATOR_STATUS_LABELS_FA[rentBreakdown.status]}

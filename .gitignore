@@ -27,3 +27,7 @@ test-results/
 .cache/account-lifecycle-express-journal.v1.json
 **/.wrangler/
 .cache/
+
+# Local Wrangler secrets (never commit)
+.dev.vars
+.dev.vars.*

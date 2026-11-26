@@ -91,7 +91,15 @@ export function BuyerAlertPwaLegalModals({
                 allMatches={activeMatches} onAddSubscription={handleAddSub} onRemoveSubscription={handleRemoveSub}
               />
             </div>
-            <form noValidate onSubmit={onRegisterBuyerAlert} className="space-y-3 text-xs">
+            <form noValidate onSubmit={(e) => {
+              const formData = new FormData(e.currentTarget);
+              if (formData.get('buyer-alert-privacy-consent') !== 'on') {
+                e.preventDefault();
+                setAlertSubmitMsg?.('برای ذخیره امن شماره تماس و ارسال هشدار، رضایت صریح شما الزامی است.');
+                return;
+              }
+              onRegisterBuyerAlert(e);
+            }} className="space-y-3 text-xs">
               <div className="apple-grouped-card bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/60 p-3 text-emerald-900 dark:text-emerald-300 leading-relaxed rounded-xl">
                 درخواست شما برای دریافت هشدار در صورت ثبت فایل واجد شرایط ذخیره می‌شود. ارسال خودکار پیامک در حال حاضر فعال نیست و ثبت درخواست به‌معنای تضمین یافتن ملک در زمان مشخص نیست.
               </div>
@@ -160,10 +168,20 @@ export function BuyerAlertPwaLegalModals({
                   <input
                     type="text" aria-label="حداکثر بودجه مد نظر" maxLength={90} value={alertMaxBudget}
                     onChange={(e) => { setAlertSubmitMsg?.(''); setAlertMaxBudget(sanitizeLiveText(e.target.value, 90)); }}
-                    placeholder="مثلاً: ۱۰ میلیارد خرید یا ۱.۵ میلیارد رهن کامل"
+                    placeholder="مثلاً: ۱۰ میلیارد تومان یا ۱۲۰۰۰ میلیون تومان"
                     className="w-full bg-white dark:bg-[var(--color-bg-muted)] border border-slate-200/80 dark:border-[var(--color-border-strong)] rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
                   />
                 </div>
+                <label className="flex items-start gap-2 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] bg-white/80 dark:bg-[var(--color-bg-elevated)] p-3 leading-relaxed cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="buyer-alert-privacy-consent"
+                    required
+                    className="mt-0.5 accent-emerald-600"
+                    onChange={() => setAlertSubmitMsg?.('')}
+                  />
+                  <span>رضایت می‌دهم نام و شماره تماس من برای همین هشدار در Cloudflare D1 به‌صورت رمزنگاری‌شده ذخیره شود. می‌دانم درخواست پس از پایان مهلت نگهداری منقضی می‌شود و ارسال خودکار پیامک فعلاً فعال نیست.</span>
+                </label>
               </div>
               {alertSubmitMsg && (
                 <div

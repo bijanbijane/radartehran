@@ -87,3 +87,19 @@ export async function resolveDgovPrincipal(
     isPlatformAdmin: false,
   };
 }
+
+export function dgovRoleCanReadResource(
+  roles: readonly DataGovernanceRole[],
+  resource: DgovAdminResource,
+): boolean {
+  const allowed = ROLE_MATRIX[resource];
+  return roles.some((role) => allowed.includes(role));
+}
+
+export function parsePagination(query: Record<string, unknown>): { limit: number; offset: number } {
+  const rawLimit = Number(query.limit);
+  const rawOffset = Number(query.offset);
+  const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 100) : 25;
+  const offset = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+  return { limit, offset };
+}

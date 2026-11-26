@@ -13,12 +13,7 @@ export async function guardWorkerApiMutationWriteBlock(ctx: WorkerRequestContext
   if (!MUTATION_HTTP_METHODS.has(ctx.method.toUpperCase())) return null;
   if (isLifecycleExemptPath(ctx.pathname, ctx.method)) return null;
 
-  const auth = await resolveWorkerAuthContext(ctx.request, {
-    expectedProjectId: ctx.env.FIREBASE_PROJECT_ID,
-    adminApiSecret: ctx.env.ADMIN_API_SECRET,
-    adminEmail: ctx.env.ADMIN_EMAIL,
-    env: ctx.env,
-  });
+  const auth = await resolveWorkerAuthContext(ctx.request, { env: ctx.env });
   if (!auth.authenticated || !auth.principal?.uid) return null;
 
   return enforceWorkerMutationWriteBlock(ctx, auth.principal.uid);

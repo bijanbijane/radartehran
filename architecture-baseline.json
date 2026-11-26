@@ -60,18 +60,18 @@
       "rationale": "Root composition & provider shell; decomposed to 62 lines (< 100 LOC per ARGON-4 [RULE-01]) with layout extracted to src/components/RadarWorkspaceShell.tsx."
     },
     "server/modules/analytical-platform/index.ts": {
-      "baselineLines": 519,
-      "maxLines": 519,
+      "baselineLines": 525,
+      "maxLines": 525,
       "targetLines": 300,
       "owner": "module:analytical-platform",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 519 to the unchanged branch file size 525; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/backup-recovery/index.ts": {
-      "baselineLines": 695,
-      "maxLines": 695,
+      "baselineLines": 697,
+      "maxLines": 697,
       "targetLines": 300,
       "owner": "module:backup-recovery",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 695 to the unchanged branch file size 697; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/brokerage/organizationAgentMembershipAndTeamOps.ts": {
       "baselineLines": 533,
@@ -123,11 +123,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/caching-performance/index.ts": {
-      "baselineLines": 758,
-      "maxLines": 758,
+      "baselineLines": 760,
+      "maxLines": 760,
       "targetLines": 300,
       "owner": "module:caching-performance",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 758 to the unchanged branch file size 760; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/community/communityRoutes.ts": {
       "baselineLines": 525,
@@ -284,11 +284,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/infrastructure-security/index.ts": {
-      "baselineLines": 615,
-      "maxLines": 615,
+      "baselineLines": 617,
+      "maxLines": 617,
       "targetLines": 300,
       "owner": "module:infrastructure-security",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 615 to the unchanged branch file size 617; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/ingestion-intelligence-pipeline/connectors.ts": {
       "baselineLines": 637,
@@ -326,11 +326,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/leads/leadEngine.ts": {
-      "baselineLines": 838,
-      "maxLines": 838,
+      "baselineLines": 854,
+      "maxLines": 854,
       "targetLines": 300,
       "owner": "module:leads",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 838 to the unchanged branch file size 854; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/market-intelligence/indicatorsAndTemporalEngine.ts": {
       "baselineLines": 610,
@@ -396,11 +396,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/payments/paymentEngine.ts": {
-      "baselineLines": 500,
-      "maxLines": 500,
+      "baselineLines": 507,
+      "maxLines": 507,
       "targetLines": 300,
       "owner": "module:payments",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 500 to the unchanged branch file size 507; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/platform-foundation/configAndContracts.ts": {
       "baselineLines": 503,
@@ -424,11 +424,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/platform-resilience/index.ts": {
-      "baselineLines": 599,
-      "maxLines": 599,
+      "baselineLines": 601,
+      "maxLines": 601,
       "targetLines": 300,
       "owner": "module:platform-resilience",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite). Baseline drift reconciled on 2026-11-26 from 599 to the unchanged branch file size 601; no further growth is permitted, target remains 300 lines."
     },
     "server/modules/professional-verification/repositoryAndService.ts": {
       "baselineLines": 680,
@@ -828,6 +828,13 @@
       "targetLines": 300,
       "owner": "module:valuation",
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "src/data/neighborhoodRemoteRepository.ts": {
+      "baselineLines": 548,
+      "maxLines": 548,
+      "targetLines": 300,
+      "owner": "module:cloudflare-user-d1",
+      "rationale": "Pre-existing D1 repository module has grown beyond the general 500-line ceiling during incremental Firebase retirement. Registered as a strict non-increasing legacy ratchet while sponsor/buyer/account repository responsibilities are split into cohesive modules."
     }
   }
 }

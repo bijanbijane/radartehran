@@ -50,7 +50,7 @@ import {
   executeAccountDeletionLifecycle,
   processPendingResearchErasureOutbox,
 } from '../worker/account-lifecycle/workerLifecycleRuntime';
-import { isTokenRevokedOrUserDisabled, recordUserRevocationInD1 } from '../worker/auth/firebaseEdgeAuth';
+import { isUserAuthDisabledOrRevoked, recordUserRevocationInD1 } from '../worker/auth/authRevocationStore';
 import {
   getTriadDomainBindingDiagnostics,
   requireResearchDb,
@@ -59,10 +59,7 @@ import {
   resolveUserDb,
 } from '../worker/db/bindingResolver';
 import workerEntrypoint from '../worker/index';
-import {
-  IRNI_KV_CACHE_PREFIX,
-  IrniNeighborhoodReferenceClient,
-} from '../worker/irni/irniNeighborhoodClient';
+import { IrniGeographicRpcV2Client } from '../worker/irni/irniGeographicRpcV2Client';
 import {
   deriveAllSubjectKeysForErasure,
   deriveResearchSubjectKey,
@@ -144,7 +141,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
       return makeStmt(query);
     },
     async batch<T = unknown>(statements: D1PreparedStatement[]) {
-      const out: Array<{ results?: T[]; success: boolean }> = [];
+      const out: Array<{ results?: T[]; success: boolean; meta?: { duration?: number; changes?: number } }> = [];
       raw.exec('BEGIN IMMEDIATE');
       try {
         for (const stmt of statements) {
@@ -152,7 +149,7 @@ function createRealSqliteD1(options: { failOnSqlContains?: string } = {}): {
           if (!res.success) {
             throw new Error('BATCH_STMT_FAILED');
           }
-          out.push({ results: res.results, success: true });
+          out.push({ results: res.results, success: true, meta: res.meta });
         }
         raw.exec('COMMIT');
         return out;
@@ -234,10 +231,10 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(applied.length, 6);
+      assert.equal(applied.length, 11);
       // Re-applying migrations must be idempotent
       const reapplied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(reapplied.length, 6);
+      assert.equal(reapplied.length, 11);
 
       // Prefer USER_DB over legacy DB
       const bothEnv: WorkerEnv = { USER_DB: userSqlite.db, DB: userSqlite.db, RESEARCH_DB: researchSqlite.db };
@@ -313,7 +310,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const auditCount = userSqlite.raw
         .prepare('SELECT COUNT(*) AS cnt FROM user_privacy_consent_audit WHERE uid = ?')
         .get(uid) as { cnt: number };
-      assert.equal(auditCount.cnt, 1);
+      assert.equal(auditCount.cnt, 2, 'Each changed consent dimension is recorded independently');
 
       await upsertUserSessionInD1(userSqlite.db, { sessionId: 'sess_1', uid, deviceLabel: 'Chrome macOS' });
       const sessionsBefore = await listUserSessionsFromD1(userSqlite.db, uid);
@@ -434,7 +431,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(retryRes.statusCode, 200);
 
       // Verify revocation is actually enforced
-      const revCheck = await isTokenRevokedOrUserDisabled('uid_atomic_test', 1_749_999_999, userSqlite.db);
+      const revCheck = await isUserAuthDisabledOrRevoked('uid_atomic_test', 1_749_999_999, userSqlite.db);
       assert.equal(revCheck.revoked, true);
 
       // 3. Identical replay returns 200 idempotentReplay: true
@@ -552,7 +549,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
     it('enforces isolated RESEARCH_DB schema (zero PII columns) and strict allowlist/PII rejection', () => {
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
-      assert.equal(applied.length, 2);
+      assert.equal(applied.length, 3);
 
       const cols = researchSqlite.raw.prepare('PRAGMA table_info(research_events)').all() as Array<{ name: string }>;
       const colNames = cols.map((c) => c.name.toLowerCase());
@@ -766,7 +763,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
       // Verify USER_DB PII was purged & auth disabled
       assert.equal(await getUserProfileFromD1(userSqlite.db, uid), null);
-      const revCheck = await isTokenRevokedOrUserDisabled(uid, Math.floor(Date.now() / 1000), userSqlite.db);
+      const revCheck = await isUserAuthDisabledOrRevoked(uid, Math.floor(Date.now() / 1000), userSqlite.db);
       assert.equal(revCheck.revoked, true);
 
       // Verify research_erasure_outbox contains ZERO raw UID
@@ -818,7 +815,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         .run();
 
       const res = await executeAccountDeletionLifecycle({
-        env: { USER_DB: userSqlite.db },
+        env: { USER_DB: userSqlite.db, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET },
         uid,
         actorUid: uid,
         idempotencyKey: 'del_legal_hold_01',
@@ -916,134 +913,35 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
     });
   });
 
-  describe('12.3 IRNI Neighborhood Reference Client — Read-Only, Resilience, Cache & Fail-Closed Contract', () => {
-    it('fails closed with BLOCKED_EXTERNAL_IRNI_CONTRACT when IRNI URL/token is missing', async () => {
-      const unconfigured = new IrniNeighborhoodReferenceClient({});
+  describe('12.3 IRNI Geographic RPC v2 — Read-Only, Versioned and Fail-Closed Contract', () => {
+    it('fails closed without the internal Service Binding and never falls back to HTTPS or local data', async () => {
+      const unconfigured = new IrniGeographicRpcV2Client();
       assert.equal(unconfigured.isConfigured(), false);
-      const res = await unconfigured.getProvinces();
-      assert.equal(res.ok, false);
-      if (!res.ok) {
-        assert.equal(res.code, 'BLOCKED_EXTERNAL_IRNI_CONTRACT');
-        assert.equal(res.statusCode, 503);
-        assert.ok((res.requiredExternalPrerequisites?.length ?? 0) >= 2);
+      const result = await unconfigured.getApprovedRegistryMetadata();
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.error.code, 'STORAGE_UNAVAILABLE');
+        assert.equal(result.error.details?.failureCode, 'IRNI_RPC_BINDING_UNAVAILABLE');
       }
 
-      // Worker HTTP route rejects non-GET with 405 IRNI_REFERENCE_READ_ONLY
-      const postRes = await workerEntrypoint.fetch(
-        new Request('https://radartehran.ir/api/v1/reference/irni/provinces', { method: 'POST' }),
+      const response = await workerEntrypoint.fetch(
+        new Request('https://radartehran.ir/api/v2/reference/irni/canonical/metadata'),
         {},
       );
-      assert.equal(postRes.status, 405);
-      const postBody = (await postRes.json()) as { code: string };
-      assert.equal(postBody.code, 'IRNI_REFERENCE_READ_ONLY');
+      assert.equal(response.status, 503);
+      const body = await response.json() as { code: string; details?: { failureCode?: string } };
+      assert.equal(body.code, 'STORAGE_UNAVAILABLE');
+      assert.equal(body.details?.failureCode, 'IRNI_RPC_BINDING_UNAVAILABLE');
     });
 
-    it('validates schema, caches under isolated v1:irni_ref: prefix, handles stale/circuit/timeout/retry cleanly', async () => {
-      const memKv = createMemoryKv();
-      let nowMs = 1_760_000_000_000;
-      let calls = 0;
-      let mode: 'ok' | 'flaky_once' | 'bad_schema' | 'timeout' | 'down' = 'flaky_once';
-
-      const fakeFetch: typeof fetch = async (input, init) => {
-        calls += 1;
-        assert.equal(init?.method, 'GET', 'IRNI client must ONLY execute GET');
-        const headers = init?.headers as Record<string, string>;
-        assert.equal(headers.Authorization, 'Bearer irni_server_secret_token_1234567890');
-
-        if (mode === 'flaky_once' && calls === 1) {
-          return new Response('Upstream error', { status: 502 });
-        }
-        if (mode === 'bad_schema') {
-          return new Response(JSON.stringify({ items: [{ bad: true }] }), { status: 200 });
-        }
-        if (mode === 'timeout') {
-          const err = new Error('Timed out');
-          err.name = 'TimeoutError';
-          throw err;
-        }
-        if (mode === 'down') {
-          return new Response('Service Unavailable', { status: 503 });
-        }
-
-        const urlStr = String(input);
-        if (urlStr.includes('/v1/neighborhoods/nh_12')) {
-          return new Response(
-            JSON.stringify({
-              item: { id: 'nh_12', cityId: 'tehran', nameFa: 'سعادت‌آباد', districtCode: '2' },
-            }),
-            { status: 200, headers: { 'x-irni-contract-version': '1.2' } },
-          );
-        }
-        return new Response(
-          JSON.stringify({
-            items: [{ id: 'prov_08', code: '08', nameFa: 'تهران', nameEn: 'Tehran' }],
-            pagination: { page: 1, pageSize: 50, totalItems: 1, totalPages: 1, nextCursor: null },
-          }),
-          { status: 200, headers: { 'x-irni-contract-version': '1.2' } },
-        );
-      };
-
-      const client = new IrniNeighborhoodReferenceClient({
-        baseUrl: 'https://api.irni.example.ir',
-        apiToken: 'irni_server_secret_token_1234567890',
-        kv: memKv.kv,
-        fetchImpl: fakeFetch,
-        nowFn: () => nowMs,
-        cacheTtlSeconds: 60,
-        staleTtlSeconds: 180,
-        maxRetries: 1,
-        circuitFailureThreshold: 2,
-      });
-
-      // 1. Flaky first 502 recovers via bounded retry -> MISS + cached under v1:irni_ref:
-      const prov1 = await client.getProvinces();
-      assert.equal(prov1.ok, true);
-      assert.equal(calls, 2);
-      if (prov1.ok) {
-        assert.equal(prov1.data.items[0].nameFa, 'تهران');
-        assert.equal(prov1.data.provenance.source, 'IRNI');
-        assert.equal(prov1.data.provenance.contractVersion, '1.2');
-        assert.equal(prov1.data.provenance.cacheStatus, 'MISS');
-      }
-      assert.ok(memKv.keys().every((k) => k.startsWith(IRNI_KV_CACHE_PREFIX)));
-      assert.ok(memKv.keys().every((k) => !k.startsWith('v1:auth:')));
-
-      // 2. Subsequent call within TTL hits KV cache (0 additional fetch calls)
-      const prov2 = await client.getProvinces();
-      assert.equal(prov2.ok, true);
-      assert.equal(calls, 2);
-      if (prov2.ok) assert.equal(prov2.data.provenance.cacheStatus, 'HIT');
-
-      // 3. Advance past fresh TTL into stale window while upstream is down -> serves STALE
-      nowMs += 90_000;
-      mode = 'down';
-      const provStale = await client.getProvinces();
-      assert.equal(provStale.ok, true);
-      if (provStale.ok) assert.equal(provStale.data.provenance.cacheStatus, 'STALE');
-
-      // 4. Advance past stale window -> MUST reject with IRNI_STALE_DATA_REJECTED
-      nowMs += 200_000;
-      const provExpired = await client.getProvinces();
-      assert.equal(provExpired.ok, false);
-      if (!provExpired.ok) assert.equal(provExpired.code, 'IRNI_STALE_DATA_REJECTED');
-
-      // 5. Circuit is now open after consecutive failures -> uncached endpoint returns IRNI_CIRCUIT_OPEN
-      const circuitRes = await client.getNeighborhoodById('nh_12');
-      assert.equal(circuitRes.ok, false);
-      if (!circuitRes.ok) assert.equal(circuitRes.code, 'IRNI_CIRCUIT_OPEN');
-
-      // 6. Advance past circuit cooldown & test schema validation failure (which re-opens circuit), then cooldown & timeout
-      nowMs += 60_000;
-      mode = 'bad_schema';
-      const badSchema = await client.getNeighborhoodById('nh_12');
-      assert.equal(badSchema.ok, false);
-      if (!badSchema.ok) assert.equal(badSchema.code, 'IRNI_SCHEMA_VALIDATION_FAILED');
-
-      nowMs += 60_000;
-      mode = 'timeout';
-      const timedOut = await client.getNeighborhoodById('nh_12');
-      assert.equal(timedOut.ok, false);
-      if (!timedOut.ok) assert.equal(timedOut.code, 'IRNI_REQUEST_TIMEOUT');
+    it('rejects non-GET operations at the public IRNI facade', async () => {
+      const response = await workerEntrypoint.fetch(
+        new Request('https://radartehran.ir/api/v2/reference/irni/canonical/metadata', { method: 'POST' }),
+        {},
+      );
+      assert.equal(response.status, 405);
+      const body = await response.json() as { code: string };
+      assert.equal(body.code, 'IRNI_CANONICAL_REFERENCE_READ_ONLY');
     });
   });
 
@@ -1109,7 +1007,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
           const full = path.join(dir, entry.name);
           if (entry.isDirectory()) out.push(...walk(full));
-          else if (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) out.push(full);
+          else if ((entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.spec.ts')) out.push(full);
         }
         return out;
       };

@@ -139,7 +139,7 @@ export function evaluateRumPercentileBudget(params: {
 
   return {
     measurementSource: params.measurementSource,
-    sampleCount: totalSamples,
+    sampleCount: completeCoreVitalsSampleCount,
     withinBudget: failingMetrics.length === 0,
     verdict,
     failingMetrics,

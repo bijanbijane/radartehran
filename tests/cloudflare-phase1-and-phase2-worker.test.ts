@@ -82,6 +82,7 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
       'worker/router.ts',
       'worker/index.ts',
       'worker/routes/healthAndMetadataRoutes.ts',
+      'worker/routes/neighborhoodBoundaryRoutes.ts',
       'worker/routes/intelligenceAndCommerceRoutes.ts',
       'worker/routes/edgePlatformAndStorageRoutes.ts',
       'worker/routes/objectStorageRoutes.ts',
@@ -140,10 +141,12 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
       new Request('https://radartehran.ir/api/health/readiness'),
       env
     );
-    assert.equal(readyRes.status, 200);
+    assert.equal(readyRes.status, 503, 'Readiness must fail closed when USER_DB is not bound');
     const readyBody = (await readyRes.json()) as Record<string, unknown>;
-    assert.equal(readyBody.ok, true);
+    assert.equal(readyBody.ok, false);
+    assert.equal(readyBody.code, 'USER_DB_NOT_BOUND');
     assert.equal(readyBody.probe, 'readiness');
+    assert.equal(readyBody.state, 'DEGRADED');
   });
 
   it('4. serves static assets and SPA fallback with dynamic SSR SEO metadata injection (?hood=, ?compare=, ?city=)', async () => {
@@ -226,13 +229,13 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
 
 describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Group 1B)', () => {
   it('6. verifies complete Route Inventory & Migration Control Register covering all Express routes + /api/health', () => {
-    assert.equal(ROUTE_MIGRATION_CONTROL_REGISTER.length, REGISTERED_API_ROUTES.length + 1);
+    assert.equal(ROUTE_MIGRATION_CONTROL_REGISTER.length, REGISTERED_API_ROUTES.length + 16);
     const summary = getMigrationProgressSummary();
-    assert.equal(summary.totalCatalogRoutes, REGISTERED_API_ROUTES.length + 1);
-    // Group 1A (8) + Group 1B (12) + Group 4 Account USER_DB (7) + Group 5 Storage (9) = 36
-    assert.equal(summary.verifiedWorkerRoutes, 36);
-    assert.equal(summary.unmountedEnterpriseModules, 10);
-    assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 10);
+    assert.equal(summary.totalCatalogRoutes, REGISTERED_API_ROUTES.length + 16);
+    // Verified groups currently contain 9 Group 1A, 12 Group 1B, and 9 Group 5 routes; USER_DB routes remain blocked until parity gates pass.
+    assert.equal(summary.verifiedWorkerRoutes, 30);
+    assert.equal(summary.unmountedEnterpriseModules, 9);
+    assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 9);
 
     // Parameterized route matching check
     const dossierMatch = findMigrationRegisterEntry(
@@ -351,7 +354,11 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
 
   it('9. verifies Group 1B Commerce, x402 challenge/simulation, MCP tools, Valuation Seal, and Telemetry Policy parity', async () => {
     resetWorkerRateLimitWindowsForTests();
-    const env: WorkerEnv = { ENVIRONMENT: 'production', APP_URL: 'https://radartehran.ir' };
+    const env: WorkerEnv = {
+      ENVIRONMENT: 'production',
+      APP_URL: 'https://radartehran.ir',
+      VALUATION_SEAL_SECRET: 'a'.repeat(64),
+    };
 
     // Commerce Catalog
     const catalogRes = await workerEntrypoint.fetch(

@@ -9,7 +9,7 @@ import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../u
 import { resolveCityIdForNeighborhood } from '../../data/multiCityData';
 import { isValidFirestoreDocId, sanitizeInput } from '../../utils/security';
 import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from '../../utils/geo/cityGeospatialResolver';
-import { verifyFirebaseUserAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
+import { verifyAuthenticatedUserHeader } from '../../utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../utils/serverDeliveryAndAbuseGuard';
 import { IdempotencyLedger } from '../../utils/serverIdempotencyAndConcurrency';
 import {
@@ -92,7 +92,7 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
         }
         return custom;
       }
-      const r = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+      const r = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
       return { authorized: r.authorized, statusCode: r.statusCode, uid: r.uid, reason: r.reason };
     } catch {
       return { authorized: false, statusCode: 503, reason: 'AUTH_PROVIDER_UNAVAILABLE' };

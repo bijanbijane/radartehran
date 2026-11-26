@@ -8,8 +8,8 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
     const currentUser = auth.currentUser; if (!currentUser) { setLoading(false); return; }
     setLoading(true); setErrorMsg(null);
     try {
-      const idToken = await currentUser.getIdToken();
-      const res = await fetch('/api/admin/env-config', { headers: idToken ? { Authorization: `Bearer ${idToken}` } : {} });
+
+      const res = await fetch('/api/admin/env-config', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
       if (!res.ok) throw new Error('عدم دسترسی به وضعیت متغیرهای محیطی سرور');
       const data = (await res.json()) as PublicRuntimeEnvReport & { values?: Record<string, any> };
       if (data && data.status === 'ok') {
@@ -23,14 +23,14 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
   const handleSaveEnv = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setStatusMsg(null); setErrorMsg(null);
     try {
-      const currentUser = auth.currentUser; const idToken = currentUser ? await currentUser.getIdToken() : '';
+      const currentUser = auth.currentUser;
       const updates: Record<string, string | number> = {
         GEMINI_MODEL: geminiModel.trim(), TELEGRAM_CHANNEL_ID: telegramChannelId.trim(), OBJECT_STORAGE_PROVIDER: storageProvider,
         OBJECT_STORAGE_REGION: storageRegion.trim(), OBJECT_STORAGE_PUBLIC_BASE_URL: storagePublicUrl.trim(),
         OBJECT_STORAGE_MAX_IMAGE_MB: Number(maxImageMb) || 5, OBJECT_STORAGE_MAX_VIDEO_MB: Number(maxVideoMb) || 50,
       };
       const res = await fetch('/api/admin/env-config', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) }, body: JSON.stringify({ updates }),
+        method: 'POST', headers: { 'Content-Type': 'application/json',  }, body: JSON.stringify({ updates }),
       });
       const data = await res.json();
       if (!res.ok || data?.status !== 'ok') throw new Error(data?.message || 'خطا در ذخیره متغیرهای عملیاتی سرور');

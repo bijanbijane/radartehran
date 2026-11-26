@@ -1,13 +1,13 @@
 import crypto from 'node:crypto';
-import { getCloudflareSessionContext } from './serverCloudflareSessionBridge'; import { getApps, initializeApp, type App as FirebaseAdminApp } from 'firebase-admin/app'; import { getAuth, type DecodedIdToken } from 'firebase-admin/auth'; import { getAppCheck } from 'firebase-admin/app-check'; import { getFirestore, type Firestore as AdminFirestore } from 'firebase-admin/firestore'; import type { CityId } from '../types/models'; import { sanitizeInput, isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from './security'; import { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID, } from './serverConfigValidator'; import { runLocalLegalRuleEngine as runCanonicalLegalRuleEngine } from './serverLegalRuleEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID }; export const SUPPORTED_CITY_IDS: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const; export const TELEGRAM_MAX_MESSAGE_LENGTH = 900; export function isValidCityId(value: unknown): value is CityId { return typeof value === 'string' && (SUPPORTED_CITY_IDS as readonly string[]).includes(value); }
+import { getCloudflareSessionContext } from './serverCloudflareSessionBridge'; import { getApps, initializeApp, type App as FirebaseAdminApp } from 'firebase-admin/app'; import { getFirestore, type Firestore as AdminFirestore } from 'firebase-admin/firestore'; import type { CityId } from '../types/models'; import { sanitizeInput, isBootstrapAdminEmail, normalizeCanonicalEmailIdentity } from './security'; import { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID, } from './serverConfigValidator'; import { runLocalLegalRuleEngine as runCanonicalLegalRuleEngine } from './serverLegalRuleEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export { getValidatedServerConfig, EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID }; export const SUPPORTED_CITY_IDS: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const; export const TELEGRAM_MAX_MESSAGE_LENGTH = 900; export function isValidCityId(value: unknown): value is CityId { return typeof value === 'string' && (SUPPORTED_CITY_IDS as readonly string[]).includes(value); }
 export function constantTimeSecretMatch(provided: string, expected: string): boolean { if (!provided || !expected) return false; const hashA = crypto.createHash('sha256').update(provided, 'utf8').digest(); const hashB = crypto.createHash('sha256').update(expected, 'utf8').digest(); return crypto.timingSafeEqual(hashA, hashB) && provided.length === expected.length; } export function redactFirebaseCredentialError(err: unknown): string { const raw = err instanceof Error ? err.message : String(err || 'FIREBASE_ADMIN_ERROR'); return raw
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[^\r\n"]*/g, '[REDACTED_PRIVATE_KEY]')
     .replace(/"?private_key"?\s*:\s*"[^"]+"/gi, '"private_key":"[REDACTED]"')
     .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED_API_KEY]')
     .slice(0, 240); } export interface AdminAuthVerificationResult { authorized: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; actorUid?: string; actorEmail?: string; authTimeSeconds?: number; }
-export interface VerifiedUserAuthResult { authorized: boolean; authenticated: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; authTimeSeconds?: number; authSource?: 'cloudflare_session' | 'firebase_id_token'; isAdmin?: boolean; isPrimaryAdmin?: boolean; isDelegatedAdmin?: boolean; }
-export interface AdminAuthOptions { verifyIdTokenFn?: (idToken: string) => Promise<DecodedIdToken>; checkDelegatedAdminFn?: (uid: string, email: string) => Promise<boolean>; requirePrimaryBootstrapAdmin?: boolean; disallowStaticToken?: boolean; maxAuthAgeSeconds?: number; nowSeconds?: number; } const ADMIN_APP_NAME_PREFIX = 'radar-user-auth'; export function getFirebaseAdminApp(projectId: string, env: Record<string, string | undefined> = process.env): FirebaseAdminApp { if (env.PREVENT_PROD_FIREBASE_IN_TEST === 'true' && projectId === EXPECTED_FIREBASE_PROJECT_ID && !env.FIRESTORE_EMULATOR_HOST) { throw new Error('TEST_ISOLATION_GUARD: Production Firebase project access is blocked when PREVENT_PROD_FIREBASE_IN_TEST=true without emulator.'); }
+export interface VerifiedUserAuthResult { authorized: boolean; authenticated: boolean; statusCode: 200 | 400 | 401 | 403 | 503; reason: string; uid?: string; email?: string; authTimeSeconds?: number; authSource?: 'cloudflare_session'; isAdmin?: boolean; isPrimaryAdmin?: boolean; isDelegatedAdmin?: boolean; }
+export interface AdminAuthOptions { requirePrimaryBootstrapAdmin?: boolean; /** @deprecated Static admin tokens are always rejected. */ disallowStaticToken?: boolean; maxAuthAgeSeconds?: number; nowSeconds?: number; } const ADMIN_APP_NAME_PREFIX = 'radar-user-auth'; export function getFirebaseAdminApp(projectId: string, env: Record<string, string | undefined> = process.env): FirebaseAdminApp { if (env.PREVENT_PROD_FIREBASE_IN_TEST === 'true' && projectId === EXPECTED_FIREBASE_PROJECT_ID && !env.FIRESTORE_EMULATOR_HOST) { throw new Error('TEST_ISOLATION_GUARD: Production Firebase project access is blocked when PREVENT_PROD_FIREBASE_IN_TEST=true without emulator.'); }
   const appName = `${ADMIN_APP_NAME_PREFIX}-${projectId}`;
   return getApps().find((app) => app.name === appName) || initializeApp({ projectId }, appName); }
 export function getFirebaseAdminFirestoreForServer(env: Record<string, string | undefined> = process.env): AdminFirestore { const config = getValidatedServerConfig(env); return getFirestore(getFirebaseAdminApp(config.firebaseProjectId, env), config.firestoreDatabaseId); }
@@ -51,270 +51,130 @@ export function isDelegatedAdminDocument(adminData: Record<string, unknown> | un
   return adminData.revoked !== true && adminData.disabled !== true;
 }
 export async function verifyAuthenticatedUserHeader(
-  headers: Record<string, string | string[] | undefined>,
-  env: Record<string, string | undefined> = process.env,
-  customVerifyIdToken?: (idToken: string) => Promise<DecodedIdToken>,
+  _headers: Record<string, string | string[] | undefined>,
+  _env: Record<string, string | undefined> = process.env,
 ): Promise<VerifiedUserAuthResult> {
-  const cloudflareSession = getCloudflareSessionContext();
-  if (cloudflareSession) {
-    const verifiedGoogleIdentity = cloudflareSession.authProvider === 'google'
-      && cloudflareSession.emailVerified
-      && Boolean(cloudflareSession.email);
-    const verifiedPhoneIdentity = cloudflareSession.authProvider === 'phone'
-      && Boolean(cloudflareSession.phoneNumber);
-    if (!verifiedGoogleIdentity && !verifiedPhoneIdentity) {
-      return {
-        authorized: false,
-        authenticated: false,
-        statusCode: 403,
-        reason: 'CLOUDFLARE_SESSION_IDENTITY_UNVERIFIED',
-        uid: cloudflareSession.uid,
-      };
-    }
+  const principal = getCloudflareSessionContext();
+  if (!principal) {
+    return { authorized: false, authenticated: false, statusCode: 401, reason: 'CLOUDFLARE_SESSION_REQUIRED' };
+  }
+
+  const verifiedGoogle = principal.authProvider === 'google'
+    && principal.emailVerified
+    && Boolean(principal.email);
+  const verifiedPhone = principal.authProvider === 'phone'
+    && Boolean(principal.phoneNumber);
+  if (!verifiedGoogle && !verifiedPhone) {
     return {
-      authorized: true,
-      authenticated: true,
-      statusCode: 200,
-      reason: 'VERIFIED_CLOUDFLARE_SESSION',
-      uid: cloudflareSession.uid,
-      email: cloudflareSession.email || undefined,
-      authTimeSeconds: cloudflareSession.authTimeSeconds || undefined,
-      authSource: 'cloudflare_session',
-      isAdmin: cloudflareSession.isAdmin,
-      isPrimaryAdmin: cloudflareSession.isPrimaryAdmin,
-      isDelegatedAdmin: cloudflareSession.isDelegatedAdmin,
+      authorized: false,
+      authenticated: false,
+      statusCode: 403,
+      reason: 'CLOUDFLARE_SESSION_IDENTITY_UNVERIFIED',
+      uid: principal.uid,
     };
   }
 
-  const config = getValidatedServerConfig(env);
-  const authHeaderResult = extractSingleSecurityHeader(headers, 'authorization');
-  if (!authHeaderResult.ok) return { authorized: false, authenticated: false, statusCode: 400, reason: authHeaderResult.reason };
-  const rawAuthHeader = authHeaderResult.value || '';
-  if (!rawAuthHeader.toLowerCase().startsWith('bearer ')) return { authorized: false, authenticated: false, statusCode: 401, reason: 'MISSING_BEARER_TOKEN' };
-  const idToken = rawAuthHeader.slice(7).trim();
-  if (idToken.length === 0 || idToken.length > 12_000 || /\s/.test(idToken)) return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_JWT_LENGTH' };
-  const segments = idToken.split('.');
-  if (segments.length !== 3 || segments.some((segment) => segment.length === 0)) return { authorized: false, authenticated: false, statusCode: 401, reason: 'MALFORMED_JWT' };
-  let decoded: DecodedIdToken;
-  try {
-    if (customVerifyIdToken) {
-      decoded = await customVerifyIdToken(idToken);
-    } else {
-      const authClient = getAuth(getFirebaseAdminApp(config.firebaseProjectId, env));
-      decoded = await authClient.verifyIdToken(idToken, true);
-    }
-  } catch (verifyErr: unknown) {
-    const code = typeof (verifyErr as { code?: unknown })?.code === 'string' ? (verifyErr as { code: string }).code : '';
-    const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr || '');
-    if (code === 'auth/id-token-revoked') return { authorized: false, authenticated: false, statusCode: 401, reason: 'TOKEN_REVOKED' };
-    if (code === 'auth/user-disabled') return { authorized: false, authenticated: false, statusCode: 401, reason: 'USER_ACCOUNT_DISABLED' };
-    if (code === 'auth/id-token-expired' || code === 'auth/argument-error' || code === 'auth/invalid-id-token') {
-      return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
-    }
-    const isTransient = code === 'auth/internal-error' || code === 'app/network-error' || code === 'app/invalid-credential' || /ETIMEDOUT|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|503|UNAVAILABLE|network|timeout|credential/i.test(msg);
-    if (isTransient) return { authorized: false, authenticated: false, statusCode: 503, reason: 'FIREBASE_AUTH_DEPENDENCY_UNAVAILABLE' };
-    return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
-  }
-  if (decoded.aud !== config.firebaseProjectId || decoded.iss !== `https://securetoken.google.com/${config.firebaseProjectId}`) {
-    return { authorized: false, authenticated: false, statusCode: 401, reason: 'TOKEN_PROJECT_MISMATCH' };
-  }
-  const uid = typeof decoded.uid === 'string' && decoded.uid ? decoded.uid : decoded.sub;
-  if (typeof uid !== 'string' || !uid.trim()) return { authorized: false, authenticated: false, statusCode: 401, reason: 'MISSING_SUBJECT_UID' };
-  if (decoded.email_verified !== true) return { authorized: false, authenticated: false, statusCode: 403, reason: 'EMAIL_NOT_VERIFIED', uid };
-  const email = normalizeCanonicalEmailIdentity(decoded.email);
-  if (!email) return { authorized: false, authenticated: false, statusCode: 403, reason: 'MISSING_EMAIL_CLAIM', uid };
-  const authTimeSeconds = typeof decoded.auth_time === 'number' && Number.isFinite(decoded.auth_time)
-    ? decoded.auth_time
-    : typeof decoded.iat === 'number' && Number.isFinite(decoded.iat)
-      ? decoded.iat
-      : undefined;
-  return { authorized: true, authenticated: true, statusCode: 200, reason: 'VERIFIED_USER', uid, email, authTimeSeconds, authSource: 'firebase_id_token' };
+  return {
+    authorized: true,
+    authenticated: true,
+    statusCode: 200,
+    reason: 'VERIFIED_CLOUDFLARE_SESSION',
+    uid: principal.uid,
+    email: principal.email || undefined,
+    authTimeSeconds: principal.authTimeSeconds || undefined,
+    authSource: 'cloudflare_session',
+    isAdmin: principal.isAdmin,
+    isPrimaryAdmin: principal.isPrimaryAdmin,
+    isDelegatedAdmin: principal.isDelegatedAdmin,
+  };
 }
-export const verifyFirebaseUserAuthorization = verifyAuthenticatedUserHeader;
+
 export async function verifyAdminApiAuthorization(
   headers: Record<string, string | string[] | undefined>,
-  env: Record<string, string | undefined> = process.env,
+  _env: Record<string, string | undefined> = process.env,
   options: AdminAuthOptions = {},
 ): Promise<AdminAuthVerificationResult> {
-  const adminTokenHeaderResult = extractSingleSecurityHeader(headers, 'x-admin-token');
-  if (!adminTokenHeaderResult.ok) return { authorized: false, statusCode: 400, reason: adminTokenHeaderResult.reason };
-  const authHeaderResult = extractSingleSecurityHeader(headers, 'authorization');
-  if (!authHeaderResult.ok) return { authorized: false, statusCode: 400, reason: authHeaderResult.reason };
+  const adminTokenHeader = extractSingleSecurityHeader(headers, 'x-admin-token');
+  if (!adminTokenHeader.ok) return { authorized: false, statusCode: 400, reason: adminTokenHeader.reason };
+  if (adminTokenHeader.value) {
+    return { authorized: false, statusCode: 403, reason: 'STATIC_ADMIN_TOKEN_RETIRED' };
+  }
 
-  // A verified Cloudflare context is already rooted in a Worker-validated D1 session.
-  // Keep this path independent of Firebase configuration and Firestore role lookups.
-  if (getCloudflareSessionContext()) {
-    const userAuth = await verifyAuthenticatedUserHeader(headers, env, options.verifyIdTokenFn);
-    if (!userAuth.authenticated || !userAuth.uid || !userAuth.email || userAuth.authSource !== 'cloudflare_session') {
-      return {
-        authorized: false,
-        statusCode: userAuth.statusCode,
-        reason: userAuth.reason || 'CLOUDFLARE_SESSION_AUTH_REQUIRED',
-        uid: userAuth.uid,
-        actorUid: userAuth.uid,
-      };
-    }
-
-    if (typeof options.maxAuthAgeSeconds === 'number' && options.maxAuthAgeSeconds > 0) {
-      const nowSec = options.nowSeconds ?? Math.floor(Date.now() / 1000);
-      const sessionAuthSec = userAuth.authTimeSeconds ?? 0;
-      if (!sessionAuthSec || nowSec - sessionAuthSec > options.maxAuthAgeSeconds) {
-        return {
-          authorized: false,
-          statusCode: 403,
-          reason: 'RECENT_AUTHENTICATION_REQUIRED',
-          uid: userAuth.uid,
-          email: userAuth.email,
-          actorUid: userAuth.uid,
-          actorEmail: userAuth.email,
-        };
-      }
-    }
-
-    const isPrimaryAdmin = userAuth.isPrimaryAdmin === true;
-    const isDelegatedAdmin = userAuth.isDelegatedAdmin === true;
-    const roleClaimsConsistent = userAuth.isAdmin === (isPrimaryAdmin || isDelegatedAdmin);
-    if (!roleClaimsConsistent) {
-      return {
-        authorized: false,
-        statusCode: 403,
-        reason: 'CLOUDFLARE_ADMIN_ROLE_CLAIMS_INCONSISTENT',
-        uid: userAuth.uid,
-        email: userAuth.email,
-        actorUid: userAuth.uid,
-        actorEmail: userAuth.email,
-      };
-    }
-
-    if (!userAuth.isAdmin || (!isPrimaryAdmin && !isDelegatedAdmin)) {
-      return {
-        authorized: false,
-        statusCode: 403,
-        reason: 'NOT_ADMIN_USER',
-        uid: userAuth.uid,
-        email: userAuth.email,
-        actorUid: userAuth.uid,
-        actorEmail: userAuth.email,
-      };
-    }
-
-    if (options.requirePrimaryBootstrapAdmin && !isPrimaryAdmin) {
-      return {
-        authorized: false,
-        statusCode: 403,
-        reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
-        uid: userAuth.uid,
-        email: userAuth.email,
-        actorUid: userAuth.uid,
-        actorEmail: userAuth.email,
-      };
-    }
-
+  const userAuth = await verifyAuthenticatedUserHeader(headers);
+  if (!userAuth.authenticated || !userAuth.uid || !userAuth.email || userAuth.authSource !== 'cloudflare_session') {
     return {
-      authorized: true,
-      statusCode: 200,
-      reason: isPrimaryAdmin ? 'AUTHORIZED_BOOTSTRAP_ADMIN' : 'AUTHORIZED_DELEGATED_ADMIN',
+      authorized: false,
+      statusCode: userAuth.statusCode,
+      reason: userAuth.reason || 'CLOUDFLARE_SESSION_AUTH_REQUIRED',
+      uid: userAuth.uid,
+      actorUid: userAuth.uid,
+    };
+  }
+
+  if (typeof options.maxAuthAgeSeconds === 'number' && options.maxAuthAgeSeconds > 0) {
+    const nowSec = options.nowSeconds ?? Math.floor(Date.now() / 1000);
+    const sessionAuthSec = userAuth.authTimeSeconds ?? 0;
+    if (!sessionAuthSec || nowSec - sessionAuthSec > options.maxAuthAgeSeconds) {
+      return {
+        authorized: false,
+        statusCode: 403,
+        reason: 'RECENT_AUTHENTICATION_REQUIRED',
+        uid: userAuth.uid,
+        email: userAuth.email,
+        actorUid: userAuth.uid,
+        actorEmail: userAuth.email,
+      };
+    }
+  }
+
+  const isPrimaryAdmin = userAuth.isPrimaryAdmin === true;
+  const isDelegatedAdmin = userAuth.isDelegatedAdmin === true;
+  if (userAuth.isAdmin !== (isPrimaryAdmin || isDelegatedAdmin)) {
+    return {
+      authorized: false,
+      statusCode: 403,
+      reason: 'CLOUDFLARE_ADMIN_ROLE_CLAIMS_INCONSISTENT',
       uid: userAuth.uid,
       email: userAuth.email,
       actorUid: userAuth.uid,
       actorEmail: userAuth.email,
-      authTimeSeconds: userAuth.authTimeSeconds,
     };
   }
-
-  const config = getValidatedServerConfig(env);
-  const rawAdminSecretHeader = adminTokenHeaderResult.value || '';
-  if (rawAdminSecretHeader.length > 0 && !authHeaderResult.value) {
-    if (options.requirePrimaryBootstrapAdmin || options.disallowStaticToken) {
-      return { authorized: false, statusCode: 403, reason: 'STATIC_ADMIN_TOKEN_FORBIDDEN_FOR_OPERATION' };
-    }
-    if (config.adminApiSecret && constantTimeSecretMatch(rawAdminSecretHeader, config.adminApiSecret)) {
-      return {
-        authorized: true, statusCode: 200, reason: 'AUTHORIZED_SERVER_SECRET',
-        uid: 'server-secret-admin', email: config.adminEmail, actorUid: 'server-secret-admin', actorEmail: config.adminEmail,
-      };
-    }
-    return { authorized: false, statusCode: 403, reason: 'INVALID_ADMIN_SECRET' };
-  }
-  if (rawAdminSecretHeader.length > 0 && config.adminApiSecret && !constantTimeSecretMatch(rawAdminSecretHeader, config.adminApiSecret)) {
-    return { authorized: false, statusCode: 403, reason: 'INVALID_ADMIN_SECRET' };
-  }
-
-  const userAuth = await verifyAuthenticatedUserHeader(headers, env, options.verifyIdTokenFn);
-  if (!userAuth.authenticated || !userAuth.uid || !userAuth.email) {
-    return { authorized: false, statusCode: userAuth.statusCode, reason: userAuth.reason, uid: userAuth.uid, actorUid: userAuth.uid };
-  }
-  if (typeof options.maxAuthAgeSeconds === 'number' && options.maxAuthAgeSeconds > 0) {
-    const nowSec = options.nowSeconds ?? Math.floor(Date.now() / 1000);
-    const tokenAuthSec = userAuth.authTimeSeconds ?? 0;
-    if (!tokenAuthSec || nowSec - tokenAuthSec > options.maxAuthAgeSeconds) {
-      return {
-        authorized: false, statusCode: 403, reason: 'RECENT_AUTHENTICATION_REQUIRED',
-        uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email,
-      };
-    }
-  }
-
-  if (isBootstrapAdminEmail(userAuth.email) || userAuth.email === config.adminEmail) {
+  if (!userAuth.isAdmin || (!isPrimaryAdmin && !isDelegatedAdmin)) {
     return {
-      authorized: true, statusCode: 200, reason: 'AUTHORIZED_BOOTSTRAP_ADMIN',
-      uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email, authTimeSeconds: userAuth.authTimeSeconds,
+      authorized: false,
+      statusCode: 403,
+      reason: 'NOT_ADMIN_USER',
+      uid: userAuth.uid,
+      email: userAuth.email,
+      actorUid: userAuth.uid,
+      actorEmail: userAuth.email,
     };
   }
-  if (options.requirePrimaryBootstrapAdmin) {
+  if (options.requirePrimaryBootstrapAdmin && !isPrimaryAdmin) {
     return {
-      authorized: false, statusCode: 403, reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
-      uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email,
+      authorized: false,
+      statusCode: 403,
+      reason: 'DELEGATED_ADMIN_FORBIDDEN_FOR_PRIMARY_OPERATION',
+      uid: userAuth.uid,
+      email: userAuth.email,
+      actorUid: userAuth.uid,
+      actorEmail: userAuth.email,
     };
   }
-  try {
-    let isDelegated = false;
-    if (options.checkDelegatedAdminFn) {
-      isDelegated = await options.checkDelegatedAdminFn(userAuth.uid, userAuth.email);
-    } else {
-      const adminSnap = await getFirebaseAdminFirestoreForServer(env).collection('admins').doc(userAuth.uid).get();
-      if (adminSnap.exists) isDelegated = isDelegatedAdminDocument(adminSnap.data() as Record<string, unknown> | undefined, userAuth.email);
-    }
-    if (isDelegated) {
-      return {
-        authorized: true, statusCode: 200, reason: 'AUTHORIZED_DELEGATED_ADMIN',
-        uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email, authTimeSeconds: userAuth.authTimeSeconds,
-      };
-    }
-  } catch {
-    return { authorized: false, statusCode: 403, reason: 'ADMIN_ROLE_LOOKUP_FAILED', uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email };
-  }
-  return { authorized: false, statusCode: 403, reason: 'NOT_ADMIN_USER', uid: userAuth.uid, email: userAuth.email, actorUid: userAuth.uid, actorEmail: userAuth.email };
+
+  return {
+    authorized: true,
+    statusCode: 200,
+    reason: isPrimaryAdmin ? 'AUTHORIZED_BOOTSTRAP_ADMIN' : 'AUTHORIZED_DELEGATED_ADMIN',
+    uid: userAuth.uid,
+    email: userAuth.email,
+    actorUid: userAuth.uid,
+    actorEmail: userAuth.email,
+    authTimeSeconds: userAuth.authTimeSeconds,
+  };
 }
 
-export type AppCheckEnforcementMode = 'disabled' | 'monitor' | 'enforced';
-export interface AppCheckVerificationResult { allowed: boolean; mode: AppCheckEnforcementMode; statusCode: 200 | 401 | 403; reason: string; }
-export async function verifyFirebaseAppCheckHeader(
-  headers: Record<string, string | string[] | undefined>,
-  env: Record<string, string | undefined> = process.env,
-  customVerifyAppCheckFn?: (token: string) => Promise<{ appId: string }>,
-): Promise<AppCheckVerificationResult> {
-  const isProd = env.NODE_ENV === 'production';
-  const rawMode = (env.FIREBASE_APP_CHECK_MODE || 'disabled').trim().toLowerCase();
-  const mode: AppCheckEnforcementMode = rawMode === 'enforced' ? 'enforced' : rawMode === 'monitor' ? 'monitor' : 'disabled';
-  const debugHeader = extractSingleSecurityHeader(headers, 'x-firebase-appcheck-debug');
-  if (isProd && debugHeader.ok && debugHeader.value) return { allowed: false, mode, statusCode: 403, reason: 'APP_CHECK_DEBUG_TOKEN_FORBIDDEN_IN_PRODUCTION' };
-  if (mode === 'disabled') return { allowed: true, mode, statusCode: 200, reason: 'APP_CHECK_DISABLED' };
-  const headerRes = extractSingleSecurityHeader(headers, 'x-firebase-appcheck');
-  if (!headerRes.ok) return { allowed: false, mode, statusCode: 401, reason: 'AMBIGUOUS_APP_CHECK_HEADER' };
-  const token = headerRes.value || '';
-  if (!token || token.length < 20 || token.length > 8192) {
-    return mode === 'monitor' ? { allowed: true, mode, statusCode: 200, reason: 'APP_CHECK_MONITOR_MISSING_TOKEN' } : { allowed: false, mode, statusCode: 401, reason: 'MISSING_APP_CHECK_TOKEN' };
-  }
-  try {
-    const config = getValidatedServerConfig(env);
-    if (customVerifyAppCheckFn) await customVerifyAppCheckFn(token);
-    else await getAppCheck(getFirebaseAdminApp(config.firebaseProjectId, env)).verifyToken(token);
-    return { allowed: true, mode, statusCode: 200, reason: 'APP_CHECK_VERIFIED' };
-  } catch {
-    return mode === 'monitor' ? { allowed: true, mode, statusCode: 200, reason: 'APP_CHECK_MONITOR_INVALID_TOKEN' } : { allowed: false, mode, statusCode: 401, reason: 'INVALID_APP_CHECK_TOKEN' };
-  }
-}
 export type TelegramPayloadValidationErrorCode = 'UNSUPPORTED_CONTENT_TYPE' | 'INVALID_JSON_OBJECT' | 'FORBIDDEN_CLIENT_CREDENTIALS' | 'UNEXPECTED_PAYLOAD_FIELD' | 'INVALID_CITY' | 'MESSAGE_TOO_LONG';
 export type TelegramPayloadValidationResult =
   | { valid: true; city: CityId; customText: string; statusCode?: 400 | 415; code?: TelegramPayloadValidationErrorCode; messageFa?: string; errorMessage?: string }
@@ -396,4 +256,3 @@ export function runLocalLegalRuleEngine(
   void formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en');
   return runCanonicalLegalRuleEngine(clauseText, contractType, areaUnit, intlCurrency, referenceValuationMillionToman);
 }
-export { requireAppCheckToken, createRequireAppCheckTokenMiddleware } from './appCheckServerMiddleware';

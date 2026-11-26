@@ -20,10 +20,10 @@ export type RouteDestinationId =
 
 export type NavGroupClassification = 'primary' | 'more' | 'account' | 'administrative';
 
-export type DiscoverSubTabId = 'results' | 'registry';
+export type DiscoverSubTabId = 'search' | 'results' | 'registry';
 export type MarketSubTabId = 'overview' | 'prices' | 'rent' | 'supply' | 'compare' | 'reports';
 export type PropertiesSubTabId = 'all' | 'buy' | 'rent' | 'commercial' | 'office';
-export type ToolsSubTabId = 'all' | 'valuation' | 'budget_fit' | 'verifier' | 'compare_props' | 'compare_areas' | 'calculators';
+export type ToolsSubTabId = 'all' | 'valuation' | 'budget_fit' | 'verifier' | 'compare_props' | 'compare_areas' | 'calculators' | 'lab';
 export type AccountSubTabId =
   | 'overview'
   | 'profile'

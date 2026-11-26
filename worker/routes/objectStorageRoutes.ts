@@ -27,7 +27,7 @@ import {
 import { handleChunkedAndDirectUploadRoutes } from './objectStorageUploadHandlers';
 
 async function authenticateUploadCaller(ctx: WorkerRequestContext) {
-  return authenticateWorkerRouteCompat(ctx, { requireAppCheck: true });
+  return authenticateWorkerRouteCompat(ctx);
 }
 
 export async function handleObjectStorageRoute(
@@ -118,7 +118,7 @@ export async function handleObjectStorageRoute(
     } else if (record.target_type === 'bargain' && record.target_id) {
       authorized = true;
     } else {
-      const auth = await authenticateWorkerRouteCompat(ctx, { requireAppCheck: false });
+      const auth = await authenticateWorkerRouteCompat(ctx);
       if (auth.authenticated && (auth.uid === record.owner_uid || auth.isAdmin)) {
         authorized = true;
       } else {
@@ -246,7 +246,7 @@ export async function handleObjectStorageRoute(
     });
   }
   const bucketRes = resolveWorkerMediaBucketName(env);
-  if (!bucketRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
+  if (bucketRes.ok === false) return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
 
   const auth = await authenticateUploadCaller(ctx);
   if (!auth.authenticated || !auth.uid) {
@@ -275,7 +275,7 @@ export async function handleObjectStorageRoute(
   // 4E. POST /api/object-storage/attach-to-bargain
   if (pathname === '/api/object-storage/attach-to-bargain') {
     const parsed = await readValidatedJsonBody(request, 64 * 1024);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code, message: parsed.messageFa });
     }
     const bargainId = String(parsed.body.bargainId || '').trim();

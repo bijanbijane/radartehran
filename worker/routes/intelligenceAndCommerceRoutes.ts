@@ -26,8 +26,8 @@ import {
   buildX402PaymentChallenge,
   executeAuthorizedMcpTool,
   globalMonetizationLedger,
-  verifyX402PaymentHeaders,
 } from '../../src/utils/dataCommerceMcpAndMonetization';
+import { verifyX402PaymentHeaders } from '../../src/utils/x402PaymentVerification.server';
 import { sanitizeInput, validateCityParam } from '../../src/utils/security';
 import {
   checkWorkerRateLimit,

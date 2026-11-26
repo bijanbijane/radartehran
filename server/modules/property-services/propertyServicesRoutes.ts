@@ -8,7 +8,7 @@ import { ServiceCategoryRegistry } from './propertyServicesCategories';
 import { PropertyServicesEngine } from './propertyServicesEngine';
 import { PropertyServicesSearch } from './propertyServicesSearch';
 import { defaultPropertyServicesStore, type PropertyServicesStore } from './propertyServicesStore';
-import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
+import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 
 export interface PropertyServicesModuleOptions {
   store?: PropertyServicesStore;
@@ -24,7 +24,7 @@ export interface PropertyServicesModuleOptions {
 const registeredApps = new WeakSet<Express>();
 
 async function defaultVerifyUserAuth(req: Request): Promise<string | null> {
-  const result = await verifyFirebaseUserAuthorization(
+  const result = await verifyAuthenticatedUserHeader(
     req.headers as Record<string, string | string[] | undefined>,
   );
   return result.authorized && result.uid ? result.uid : null;

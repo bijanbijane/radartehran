@@ -58,6 +58,56 @@ export function createGeospatialRouter(
     }
   });
 
+  // Read-only profile boundary evidence. Missing registries or unreviewed legacy records remain blocked.
+  router.get('/neighborhood-boundaries/:cityId/:hoodId/profile-evidence', async (req: Request, res: Response) => {
+    const cid = resolveCorrelationId(req);
+    try {
+      const cityId = String(req.params.cityId ?? '').trim();
+      const hoodId = Number(req.params.hoodId);
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cityId)
+        || !Number.isSafeInteger(hoodId)
+        || hoodId < 1
+        || hoodId > 9999) {
+        throw new CoreApiError('VALIDATION_FAILED', 400, 'Invalid city or neighborhood identifier.');
+      }
+      const result = await service.getNeighborhoodProfileBoundaryReadModel({ cityId, hoodId });
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.status(200).json(buildSuccessEnvelope(result, cid));
+    } catch (err) {
+      handleRouteError(res, err, cid);
+    }
+  });
+
+  // Boundary approval is an authenticated, independent second-person action.
+  router.post('/neighborhood-boundaries/:cityId/:hoodId/versions/:versionId/approve', async (req: Request, res: Response) => {
+    const cid = resolveCorrelationId(req);
+    try {
+      const { isAdmin, uid } = await checkIsAdmin(req);
+      if (!isAdmin || !uid) {
+        throw new CoreApiError('FORBIDDEN', 403, 'Only an authorized administrator can review a neighborhood boundary.');
+      }
+      const cityId = String(req.params.cityId ?? '').trim();
+      const hoodId = Number(req.params.hoodId);
+      const versionId = String(req.params.versionId ?? '').trim();
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cityId)
+        || !Number.isSafeInteger(hoodId)
+        || hoodId < 1
+        || hoodId > 9999
+        || !/^[a-zA-Z0-9_-]{1,128}$/.test(versionId)) {
+        throw new CoreApiError('VALIDATION_FAILED', 400, 'Invalid boundary approval identifier.');
+      }
+      const approved = await service.approveNeighborhoodBoundary({
+        entityId: `hood:${cityId}:${hoodId}`,
+        versionId,
+        reviewerUid: uid,
+      });
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json(buildSuccessEnvelope(approved, cid));
+    } catch (err) {
+      handleRouteError(res, err, cid);
+    }
+  });
+
   // Spatial listing search
   router.post('/search', (req: Request, res: Response) => {
     const cid = resolveCorrelationId(req);

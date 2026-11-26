@@ -90,6 +90,12 @@ export function resolveRoutePageMeta(input: RoutePageMetaInput): ResolvedRoutePa
         description: `نقشه هوشمند قیمت متری، رهن و اجاره، دسترسی مترو و شاخص کیفیت هوا در محله‌های ${cityNameFa}.`,
       };
     case 'discover':
+      if (subTab === 'search') {
+        return {
+          title: `جست‌وجوی سراسری محله، ملک و خدمات | ${brandFa}`,
+          description: `جست‌وجو در محله‌ها، آگهی‌ها، املاک، ساختمان‌ها، خدمات تخصصی و گزارش‌های تحلیلی ${brandFa}.`,
+        };
+      }
       if (subTab === 'registry') {
         return {
           title: `مرجع جغرافیایی محله‌ها و تقسیمات ایران | ${brandFa}`,

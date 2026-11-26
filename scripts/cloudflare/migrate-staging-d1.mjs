@@ -119,11 +119,13 @@ export function validateStagingD1TargetAndMigrations({
   }
 
   const d1List = staging.d1_databases;
-  if (!Array.isArray(d1List) || d1List.length !== 1) {
-    throw new Error('INVALID_STAGING_D1_ARRAY: env.staging.d1_databases must contain exactly 1 database binding');
+  if (!Array.isArray(d1List) || d1List.filter((entry) => entry?.binding === 'DB').length !== 1) {
+    throw new Error('INVALID_STAGING_D1_ARRAY: env.staging.d1_databases must contain exactly one legacy DB migration target');
   }
 
-  const d1Config = d1List[0];
+  // The Cloudflare-native architecture may bind USER_DB and RESEARCH_DB alongside the
+  // legacy DB during migration. This script is narrowly scoped to the explicit DB binding.
+  const d1Config = d1List.find((entry) => entry?.binding === 'DB');
   const dbName = String(d1Config?.database_name || '').trim();
   const dbId = String(d1Config?.database_id || '').trim();
   const migDir = String(d1Config?.migrations_dir || '').trim();

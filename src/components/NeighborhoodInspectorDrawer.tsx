@@ -46,10 +46,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                 {snapMode === 'peek' ? <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" /> : <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />}
                 <span>{snapMode === 'peek' ? 'کامل' : 'نیمه'}</span>
               </button>
-              {setMapTileStyle && ( <button type="button" onClick={() => setMapTileStyle((prev) => (prev === 'satellite' ? 'neshan' : 'satellite'))} className={`min-h-[44px] md:min-h-[34px] px-2.5 py-1 rounded-[8px] border text-xs font-bold cursor-pointer whitespace-nowrap inline-flex items-center gap-1 ${mapTileStyle === 'satellite' ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'bg-[var(--color-bg-subtle)] border-[var(--color-border-subtle)] text-[var(--color-text-primary)]'}`}>
-                  {mapTileStyle === 'satellite' ? <Map className="w-3.5 h-3.5" aria-hidden="true" /> : <Satellite className="w-3.5 h-3.5" aria-hidden="true" />}
-                  <span>{mapTileStyle === 'satellite' ? 'نقشه' : 'ماهواره'}</span>
-                </button> )}
+
               <button type="button" onClick={() => { setMobileSheetOpen(false); if (onBackToList && !isOverlayOnSecondaryView) onBackToList(); else if (!isOverlayOnSecondaryView) setDesktopCollapsed(true); }} className="min-h-[44px] md:min-h-[34px] px-2.5 py-1 rounded-[8px] bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-0.5 cursor-pointer whitespace-nowrap">
                 <span>{isEn ? 'Close' : 'بستن'}</span><X className="w-3.5 h-3.5 stroke-[1.75]" aria-hidden="true" />
               </button>

@@ -36,7 +36,12 @@ import {
   pickActiveBoundaryVersion,
   pickLatestBoundaryVersion,
 } from './geospatialBoundaryReadModel';
-import { executeUpsertNeighborhoodBoundary, type UpsertNeighborhoodBoundaryParams } from './geospatialBoundaryMutations';
+import {
+  executeApproveNeighborhoodBoundary,
+  executeUpsertNeighborhoodBoundary,
+  type ApproveNeighborhoodBoundaryParams,
+  type UpsertNeighborhoodBoundaryParams,
+} from './geospatialBoundaryMutations';
 import { resolvePointInBoundaryStore } from './geospatialPointResolution';
 import {
   executeFindNearbyPointsOfInterest,
@@ -46,6 +51,7 @@ import {
 import { executeGetGeographicOverlay, executeUpsertGeographicOverlay } from './geospatialOverlayAccess';
 import { executeForwardGeocode, type GeocodeCacheEntry } from './geospatialForwardGeocode';
 import { executeImportGeographicDataset, type ImportGeographicDatasetParams } from './geospatialDatasetImport';
+import { buildNeighborhoodProfileBoundaryReadModel } from './neighborhoodProfileBoundaryReadModel';
 
 export function createGeospatialService(deps: GeospatialModuleDependencies = {}) {
   const geoService = deps.geographyService ?? defaultGeographyService;
@@ -117,12 +123,36 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     });
   }
 
+  async function approveNeighborhoodBoundary(params: ApproveNeighborhoodBoundaryParams) {
+    return executeApproveNeighborhoodBoundary({
+      input: params,
+      boundaryHistoryByEntity,
+      activeBoundaryLocks,
+      nowIso: nowFn().toISOString(),
+      invalidateGeoCaches,
+      persistRuntime,
+    });
+  }
+
   function getActiveBoundary(entityId: string): BoundaryVersionRecord | null {
     return pickActiveBoundaryVersion(boundaryHistoryByEntity.get(entityId) ?? []);
   }
 
   function getLatestBoundaryVersion(entityId: string): BoundaryVersionRecord | null {
     return pickLatestBoundaryVersion(boundaryHistoryByEntity.get(entityId) ?? []);
+  }
+
+  async function getNeighborhoodProfileBoundaryReadModel(params: {
+    cityId: string;
+    hoodId: number;
+  }) {
+    const entityId = `hood:${params.cityId}:${params.hoodId}`;
+    return buildNeighborhoodProfileBoundaryReadModel({
+      boundary: getActiveBoundary(entityId),
+      expectedCityId: params.cityId,
+      expectedLegacyNeighborhoodId: params.hoodId,
+      resolvers: deps.neighborhoodProfileBoundaryResolvers,
+    });
   }
 
   function detectBoundaryOverlaps(cityId: string, level: BoundaryVersionRecord['level'] = 'neighborhood') {
@@ -287,8 +317,10 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       method: 'geodesic_straight_line_haversine' as const,
     }),
     upsertNeighborhoodBoundary,
+    approveNeighborhoodBoundary,
     getActiveBoundary,
     getLatestBoundaryVersion,
+    getNeighborhoodProfileBoundaryReadModel,
     listBoundaryVersions: (entityId: string) => structuredClone(boundaryHistoryByEntity.get(entityId) ?? []),
     detectBoundaryOverlaps,
     resolvePointToGeography,

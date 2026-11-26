@@ -5,7 +5,7 @@ import { getHoodMonthlySponsorTariff, INITIAL_NEIGHBORHOODS, type Neighborhood }
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { sanitizeInput, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security';
 import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver';
-import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity';
+import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity';
 import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse';
 import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard';
 import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers';
@@ -61,7 +61,6 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
   const runSafeAsync = (res: Response, fn: () => Promise<void>) => { void fn().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR', message: 'خطای داخلی در پردازش درخواست رخ داد.' }); }); };
   app.post('/api/sponsors/reserve', (req: Request, res: Response) => { runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const ip = getClientIp(req); if (!checkRateLimit(ip, 'lead', 10, 10 * 60 * 1000)) { res.status(429).json({ status: 'error', code: 'SPONSOR_RATE_LIMIT_EXCEEDED', message: 'تعداد درخواست‌های رزرو اسپانسر بیش از حد مجاز است.' }); return; }
-      const appCheck = await verifyFirebaseAppCheckHeader(req.headers as Record<string, string | string[] | undefined>, process.env); if (!appCheck.allowed) { res.status(appCheck.statusCode).json({ status: 'error', code: appCheck.reason, message: 'توکن App Check معتبر نیست.' }); return; }
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env); if (!userAuth.authenticated || !userAuth.uid || !userAuth.email) { recordAbuseSignal(ip, 'auth_failure'); res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason, message: 'برای ثبت درخواست اسپانسرینگ، ورود با حساب کاربری تاییدشده الزامی است.' }); return; }
       if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) { res.status(400).json({ status: 'error', code: 'INVALID_BODY', message: 'ساختار درخواست نامعتبر است.' }); return; }
       for (const k of Object.keys(req.body as Record<string, unknown>)) { if (!ALLOWED_SPONSOR_RESERVE_KEYS.has(k)) { res.status(400).json({ status: 'error', code: 'FORBIDDEN_CLIENT_PRICING_OR_STATUS_FIELD', message: `ارسال فیلد غیرمجاز (${sanitizeInput(k, 24)}) از سمت کلاینت مسدود است؛ تعرفه و انقضا فقط روی سرور محاسبه می‌شود.` }); return; } }

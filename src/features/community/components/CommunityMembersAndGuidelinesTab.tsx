@@ -1,6 +1,6 @@
 /** @file src/features/community/components/CommunityMembersAndGuidelinesTab.tsx — Server-Backed Public Profiles, Contribution Timeline, User Follow Graph & Policy Guidelines (RT-SOCIAL-IMPL-008 & RT-SOCIAL-IMPL-009) */
 import React, { useMemo } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { ArrowRight, Award, BadgeCheck, BookOpen, RefreshCw, ShieldCheck, UserCheck, UserPlus } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { useCommunityProfile } from '../hooks/useCommunityProfile';

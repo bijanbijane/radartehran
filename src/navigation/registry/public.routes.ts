@@ -13,9 +13,14 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'نقشه تعاملی', breadcrumbEn: 'Interactive Map', mobileVisibility: 'bottom_bar', status: 'active',
   },
   {
-    id: 'areas', viewId: 'discover', path: '/areas', aliases: ['/discover', '/search'], parentId: 'home',
+    id: 'areas', viewId: 'discover', path: '/areas', aliases: ['/discover'], parentId: 'home',
     titleFa: 'محله‌ها', titleEn: 'Neighborhoods', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'محله‌ها', breadcrumbEn: 'Neighborhoods', mobileVisibility: 'bottom_bar', status: 'active',
+  },
+  {
+    id: 'search.global', viewId: 'discover', subTab: 'search', path: '/search', parentId: 'areas',
+    titleFa: 'جست‌وجوی سراسری', titleEn: 'Global Search', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'primary', breadcrumbFa: 'جست‌وجوی سراسری', breadcrumbEn: 'Global Search', mobileVisibility: 'more_sheet', status: 'active',
   },
   {
     id: 'areas.registry', viewId: 'discover', subTab: 'registry', path: '/areas/registry', aliases: ['/knowledge/methodology/geographic-registry'], parentId: 'areas',
@@ -78,7 +83,7 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'اداری', breadcrumbEn: 'Office', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'tools.all', viewId: 'tools', subTab: 'all', path: '/tools', parentId: 'home',
+    id: 'tools.all', viewId: 'tools', subTab: 'all', path: '/tools', aliases: ['/escrow'], parentId: 'home',
     titleFa: 'ابزارها', titleEn: 'Tools', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'ابزارها', breadcrumbEn: 'Tools', mobileVisibility: 'more_sheet', status: 'active',
   },
@@ -103,9 +108,14 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'مقایسه املاک', breadcrumbEn: 'Compare Properties', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'tools.compare_areas', viewId: 'tools', subTab: 'compare_areas', path: '/tools/compare-areas', parentId: 'tools.all',
+    id: 'tools.compare_areas', viewId: 'tools', subTab: 'compare_areas', path: '/tools/compare-areas', aliases: ['/tools/compare'], parentId: 'tools.all',
     titleFa: 'مقایسه محله‌ها', titleEn: 'Compare Areas', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'مقایسه محله‌ها', breadcrumbEn: 'Compare Areas', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
+    id: 'tools.lab', viewId: 'tools', subTab: 'lab', path: '/tools/lab', parentId: 'tools.all',
+    titleFa: 'آزمایشگاه رابط کاربری', titleEn: 'UI Design Lab', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'more', breadcrumbFa: 'آزمایشگاه رابط کاربری', breadcrumbEn: 'UI Design Lab', mobileVisibility: 'hidden', status: 'beta',
   },
   {
     id: 'tools.calculators', viewId: 'tools', subTab: 'calculators', path: '/tools/calculators', parentId: 'tools.all',
@@ -113,7 +123,7 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'محاسبه‌گرها', breadcrumbEn: 'Calculators', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'services', viewId: 'services', subTab: 'all', path: '/services', parentId: 'home',
+    id: 'services', viewId: 'services', subTab: 'all', path: '/services', aliases: ['/service/orders'], parentId: 'home',
     titleFa: 'خدمات تخصصی', titleEn: 'Services', shell: 'public', requiredPermissions: [],
     navigationGroup: 'more', breadcrumbFa: 'خدمات تخصصی', breadcrumbEn: 'Services', mobileVisibility: 'more_sheet', status: 'active',
   },
@@ -133,7 +143,7 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'more', breadcrumbFa: 'کارشناسی فنی', breadcrumbEn: 'Inspection', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'services.agencies', viewId: 'services', subTab: 'agencies', path: '/services/agencies', parentId: 'services',
+    id: 'services.agencies', viewId: 'services', subTab: 'agencies', path: '/services/agencies', aliases: ['/agency/workspace'], parentId: 'services',
     titleFa: 'دفاتر و مشاوران محله', titleEn: 'Local Agencies', shell: 'public', requiredPermissions: [],
     navigationGroup: 'more', breadcrumbFa: 'مشاوران محله', breadcrumbEn: 'Agencies', mobileVisibility: 'hidden', status: 'active',
   },
@@ -245,12 +255,12 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'more', breadcrumbFa: 'راستی‌آزمایی', breadcrumbEn: 'Verify', mobileVisibility: 'hidden', status: 'active',
   },
   {
-    id: 'account.overview', viewId: 'userspace', subTab: 'overview', path: '/account', aliases: ['/userspace'], parentId: 'home',
+    id: 'account.overview', viewId: 'userspace', subTab: 'overview', path: '/account', aliases: ['/userspace', '/login'], parentId: 'home',
     titleFa: 'حساب کاربری', titleEn: 'Account', shell: 'public', requiredPermissions: [],
     navigationGroup: 'account', breadcrumbFa: 'حساب کاربری', breadcrumbEn: 'Account', mobileVisibility: 'more_sheet', status: 'active',
   },
   {
-    id: 'account.profile', viewId: 'userspace', subTab: 'profile', path: '/account/profile', parentId: 'account.overview',
+    id: 'account.profile', viewId: 'userspace', subTab: 'profile', path: '/account/profile', aliases: ['/profile'], parentId: 'account.overview',
     titleFa: 'پروفایل کاربری', titleEn: 'Profile', shell: 'public', requiredPermissions: [],
     navigationGroup: 'account', breadcrumbFa: 'پروفایل', breadcrumbEn: 'Profile', mobileVisibility: 'hidden', status: 'active',
   },
@@ -270,7 +280,7 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
   },
   {
     id: 'account.saved_searches', viewId: 'userspace', subTab: 'saved_searches', path: '/account/saved-searches',
-    aliases: ['/account/search-history', '/account/saved/searches'],
+    aliases: ['/account/search-history', '/account/saved/searches', '/saved-searches'],
     parentId: 'account.overview',
     titleFa: 'جست‌وجوهای ذخیره‌شده', titleEn: 'Saved Searches', shell: 'public', requiredPermissions: [],
     navigationGroup: 'account', breadcrumbFa: 'جست‌وجوها', breadcrumbEn: 'Saved Searches', mobileVisibility: 'hidden', status: 'active',

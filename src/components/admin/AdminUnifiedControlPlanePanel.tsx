@@ -51,10 +51,6 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
 
   const getHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
     return headers;
   };
 

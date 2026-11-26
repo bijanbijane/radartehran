@@ -1,6 +1,6 @@
 /** @file src/features/admin/components/AdminGovernanceModerationWorkspace.tsx — Stage 81 & 86 Server-Authoritative Content, Knowledge & Service Moderation */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { CheckCircle2, FileWarning, MessageSquareWarning, ShieldAlert, XCircle } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { loadListingReports, loadMyListings } from '../../properties/services/listingService';

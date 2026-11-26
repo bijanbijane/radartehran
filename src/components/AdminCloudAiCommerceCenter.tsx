@@ -21,10 +21,6 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
   const [aiRoutingAuditTrail, setAiRoutingAuditTrail] = useState<any[]>([]);
 
   const getAdminHeaders = async (): Promise<Record<string, string>> => { const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
     return headers;
   };
 

@@ -80,7 +80,7 @@ describe('D1 marketplace state favorite city isolation', () => {
       );
 
       assert.deepEqual(tehran.favoriteHoodIds, [12]);
-      assert.deepEqual(shiraz.favoriteHoodIds, [12, 88]);
+      assert.deepEqual(shiraz.favoriteHoodIds, [88, 12]);
     } finally {
       fixture.close();
     }

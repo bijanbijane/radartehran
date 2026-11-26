@@ -1,25 +1,32 @@
 {
   "phase_id": "PHASE-2-DATABASE",
   "status": "VERIFIED",
-  "verified_at": "2026-11-02T00:36:00.000Z",
+  "verified_at": "2026-11-25T22:15:00.000Z",
   "artifacts_inspected": [
-    "firestore.rules",
-    "firestore.indexes.json",
-    "firebase-blueprint.json",
-    "firestore.rules.test.ts"
+    "migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql",
+    "migrations/user-d1/0010_marketplace_and_neighborhood_core.sql",
+    "worker/auth/sessionAuth.ts",
+    "worker/auth/authRevocationStore.ts",
+    "worker/marketplace/d1MarketplaceRepository.ts",
+    "worker/marketplace/d1MarketplaceMutations.ts",
+    "tests/cloudflare-native-auth.test.ts",
+    "tests/cloudflare-marketplace-state.test.ts",
+    "tests/cloudflare-marketplace-write-routes.test.ts",
+    "tests/cloudflare-marketplace-sponsor-pricing.test.ts",
+    "tests/persian-financial-budget-parser.test.ts"
   ],
   "checks": [
     {
-      "name": "Firestore Security Rules Matrix & Schema Validation",
-      "command": "npm run test:rules",
+      "name": "D1-native Google OIDC/session, revocation and fail-closed contract",
+      "command": "npm run test:auth",
       "exit_code": 0,
-      "summary": "All 5 collections (market_cache, bargains, votes, sponsor_inquiries, users) verified for RBAC, field bounds, and Hedonic fast-sale invariant."
+      "summary": "62/62 assertions passed across Google OIDC/PKCE, D1 opaque sessions, revocation, cookie handling, CSRF/origin and retired Firebase bearer rejection."
     },
     {
-      "name": "Composite Index Coverage",
-      "command": "node -e \"JSON.parse(require('fs').readFileSync('firestore.indexes.json','utf8'))\"",
+      "name": "D1 marketplace privacy, consent, sponsor pricing and budget-unit tests",
+      "command": "./node_modules/.bin/tsx --test tests/persian-financial-budget-parser.test.ts tests/cloudflare-marketplace-sponsor-pricing.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts tests/cloudflare-marketplace-write-routes.test.ts",
       "exit_code": 0,
-      "summary": "Verified composite indexes for bargains, votes (hoodId + createdAtIso), and sponsor_inquiries."
+      "summary": "27/27 assertions passed; user/city isolation, encrypted PII, idempotency, explicit privacy consent, server-derived sponsor price/tracking and million-Toman budget parsing."
     }
   ]
 }

@@ -4,6 +4,7 @@
  */
 
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from './areaUnit';
+import { normalizeDigitsToAscii } from './forms/formInputHelpers';
 
 const PERSIAN_DIGITS = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
 const ARABIC_DIGITS = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
@@ -29,6 +30,35 @@ export function normalizeFinancialInput(raw: string | number | null | undefined)
 
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) && parsed > 0 && parsed <= MAX_MILLION_TOMAN_INPUT ? parsed : 0;
+}
+
+
+
+/**
+ * Parses a user-facing budget such as "۱۱ میلیارد تومان" or "۱۲۰۰۰ میلیون تومان"
+ * into D1's canonical unit: million tomans. Unitless and ambiguous inputs are rejected.
+ */
+export function parseMillionTomanBudgetInput(raw: unknown): number | null {
+  if (typeof raw !== 'string' || raw.trim().length === 0 || raw.length > 120) return null;
+  const normalized = normalizeDigitsToAscii(raw)
+    .replace(/[٫]/g, '.')
+    .replace(/[٬،]/g, ',')
+    .trim();
+  if (/(?:^|[\s(])[-−]\s*[0-9]/.test(normalized)) return null;
+  const amountMatch = normalized.match(/(?<![A-Za-z0-9])([0-9]+(?:[.,][0-9]+)?)(?![A-Za-z0-9])/);
+  if (!amountMatch) return null;
+
+  const amount = Number(amountMatch[1].replace(/,/g, ''));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const text = normalized.toLowerCase();
+  const billionUnit = /میلیارد|billion|bn/.test(text);
+  const millionUnit = /میلیون|million|mn/.test(text);
+  if (billionUnit === millionUnit) return null;
+
+  const millionToman = amount * (billionUnit ? 1000 : 1);
+  if (!Number.isFinite(millionToman) || millionToman <= 0 || millionToman > MAX_MILLION_TOMAN_INPUT) return null;
+  return Number(millionToman.toFixed(2));
 }
 
 export type FinancialInputContext = 'TOTAL_BUY_PRICE' | 'DEPOSIT_OR_UNIT';

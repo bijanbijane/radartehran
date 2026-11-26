@@ -7,6 +7,7 @@ export const ADMIN_ROUTES: readonly RouteDefinition[] = [
     viewId: 'admin',
     subTab: 'overview',
     path: '/admin',
+    aliases: ['/admin/governance'],
     titleFa: 'نمای کلی مدیریت',
     titleEn: 'Admin Overview',
     shell: 'admin',

@@ -1,4 +1,4 @@
-/** @file src/components/navigation/MobileMoreSheet.tsx — Categorized Mobile Bottom Sheet for More Menu (RT-UI-NAV-001 Section 9, Zero Admin Leakage) */
+/** @file src/components/navigation/MobileMoreSheet.tsx — Categorized Mobile Bottom Sheet for More Menu (RT-UI-NAV-001, Accessible Dialog Lifecycle) */
 import React from 'react';
 import {
   SlidersHorizontal, User, Briefcase, BookOpen, MessageSquarePlus, Home, Compass,
@@ -24,6 +24,23 @@ export interface MobileMoreSheetProps {
   onOpenVisitedLog: () => void;
 }
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function getVisibleFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => (
+    !element.hasAttribute('disabled')
+    && element.getAttribute('aria-hidden') !== 'true'
+    && element.getClientRects().length > 0
+  ));
+}
+
 export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
   open,
   onClose,
@@ -34,6 +51,11 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
   onOpenVisitedLog,
 }) => {
   const isEn = locale === 'en';
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = React.useRef<HTMLElement | null>(null);
+  const closeRef = React.useRef(onClose);
+  closeRef.current = onClose;
+
   const destinations: {
     id: PrimaryViewId;
     labelFa: string;
@@ -51,16 +73,58 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
   ];
 
   React.useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
+    if (!open) return undefined;
+
+    const activeElement = document.activeElement;
+    previouslyFocusedRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+
+    const initialFocusFrame = window.requestAnimationFrame(() => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = getVisibleFocusableElements(dialog);
+      (focusable[0] ?? dialog).focus();
+    });
+
+    const handleDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = getVisibleFocusableElements(dialog);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      if (event.shiftKey && (current === first || !dialog.contains(current))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (current === last || !dialog.contains(current))) {
+        event.preventDefault();
+        first.focus();
       }
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+
+    document.addEventListener('keydown', handleDocumentKeyDown);
+    return () => {
+      window.cancelAnimationFrame(initialFocusFrame);
+      document.removeEventListener('keydown', handleDocumentKeyDown);
+      const previouslyFocused = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (previouslyFocused?.isConnected && !previouslyFocused.hasAttribute('disabled')) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -72,23 +136,26 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
         className="md:hidden fixed inset-0 z-[39] bg-slate-950/40 backdrop-blur-[2px]"
       />
       <div
+        ref={dialogRef}
         id="radar-mobile-more-menu"
         dir={isEn ? 'ltr' : 'rtl'}
         role="dialog"
         aria-modal="true"
         aria-label={isEn ? 'More sections' : 'بخش‌های بیشتر'}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose();
-        }}
+        aria-describedby="radar-mobile-more-description"
+        tabIndex={-1}
         style={{ bottom: 'calc(4.25rem + var(--safe-bottom))' }}
-        className={`md:hidden fixed inset-x-3 z-[41] max-h-[72dvh] overflow-y-auto p-3.5 rounded-[16px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-2xl space-y-3.5 transition-all duration-150 ${
-          open ? 'visible opacity-100 translate-y-0 pointer-events-auto' : 'invisible opacity-0 translate-y-2 pointer-events-none'
-        }`}
+        className="md:hidden fixed inset-x-3 z-[41] max-h-[72dvh] overflow-y-auto p-3.5 rounded-[16px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-2xl space-y-3.5 transition-all duration-150 visible opacity-100 translate-y-0 pointer-events-auto"
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-2">
-          <span className="text-sm font-bold text-[var(--color-text-primary)]">
-            {isEn ? 'All Platform Modules' : 'سایر بخش‌ها و خدمات تخصصی'}
-          </span>
+          <div className="min-w-0">
+            <span className="text-sm font-bold text-[var(--color-text-primary)]">
+              {isEn ? 'All Platform Modules' : 'سایر بخش‌ها و خدمات تخصصی'}
+            </span>
+            <span id="radar-mobile-more-description" className="sr-only">
+              {isEn ? 'Choose a platform section. Keyboard focus stays inside this dialog until it closes.' : 'یک بخش از سامانه را انتخاب کنید. تا زمان بسته‌شدن پنجره، تمرکز صفحه‌کلید در همین پنجره باقی می‌ماند.'}
+            </span>
+          </div>
           <button
             type="button"
             onClick={onClose}

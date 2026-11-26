@@ -106,11 +106,13 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   const markerStateAttr = `data-marker-state="${markerState}"`;
   if (tier === 'dot' || zoom < 12) {
     const dotSize = isSelected ? 16 : zoom <= 10 ? 10 : 12;
+    // Keep the visual dot compact while meeting WCAG 2.2 AA's 24×24 CSS-pixel minimum target size.
+    const hitTargetSize = Math.max(24, dotSize + 8);
     const ringBorder = isSelected ? (isDarkMap ? '2.5px solid #38bdf8' : '2.5px solid #0f172a') : hasSponsor ? '2px solid #fbbf24' : isDarkMap ? '2px solid rgba(255,255,255,0.92)' : '2px solid #ffffff';
     const dotShadow = isSelected ? '0 0 14px rgba(16,185,129,0.95), 0 0 0 4px rgba(56,189,248,0.35)' : `0 2px 6px rgba(0,0,0,0.45), 0 0 0 2px ${stroke}33`;
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="dot" ${markerStateAttr} style="display:inline-block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${pillBg};border:${ringBorder};box-shadow:${dotShadow};transition:transform 0.15s ease;"></span><span class="hood-text-label" style="display:none;opacity:0;">${safeHoodName}</span><span class="hood-price-label" style="display:none;opacity:0;"></span></div>`,
-      iconSize: [dotSize + 8, dotSize + 8], iconAnchor: [(dotSize + 8) / 2, (dotSize + 8) / 2],
+      iconSize: [hitTargetSize, hitTargetSize], iconAnchor: [hitTargetSize / 2, hitTargetSize / 2],
     };
   }
   const sponsorStar = hasSponsor ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fde047;margin-left:2px;font-size:12px;">★</span>` : '';

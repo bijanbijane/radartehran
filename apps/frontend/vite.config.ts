@@ -64,14 +64,6 @@ export default defineConfig(({ command, mode }) => {
       dedupe: [
         'react',
         'react-dom',
-        'firebase',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/app-check',
-        '@firebase/app',
-        '@firebase/auth',
-        '@firebase/component',
-        '@firebase/app-check',
       ],
     },
     optimizeDeps: {
@@ -82,13 +74,6 @@ export default defineConfig(({ command, mode }) => {
         'lucide-react',
         'recharts',
         'd3-scale',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/app-check',
-        '@firebase/app',
-        '@firebase/auth',
-        '@firebase/component',
-        '@firebase/app-check',
       ],
     },
     build: {
@@ -101,7 +86,6 @@ export default defineConfig(({ command, mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('firebase')) return 'vendor-firebase-auth';
               if (id.includes('d3-')) return 'vendor-d3';
               if (id.includes('recharts') || id.includes('victory-vendor')) return 'vendor-charts';
               if (id.includes('lucide-react')) return 'vendor-icons';

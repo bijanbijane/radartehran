@@ -1,0 +1,78 @@
+name: radartehran-main
+services:
+  radar-main:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: radartehran:main-dev
+    container_name: radartehran-main-local
+    init: true
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .dev.vars
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      RADAR_REPOSITORY_LOCAL_JSON: "1"
+      RADAR_MEDIA_METADATA_LOCAL_ONLY: "1"
+      RADAR_OBJECT_METADATA_LOCAL_INDEX: "1"
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - .:/app:cached
+      - /Users/Home/.npm/_cacache:/root/.npm/_cacache:cached
+      - radar_main_node_modules:/app/node_modules
+      - radar_main_cache:/app/.cache
+      - radar_main_media:/app/.object-storage-bucket
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    stop_grace_period: 10s
+  radar-worker:
+    image: radartehran:main-dev
+    container_name: radartehran-worker-local
+    init: true
+    restart: unless-stopped
+    working_dir: /app
+    depends_on:
+      radar-main:
+        condition: service_healthy
+    env_file:
+      - .dev.vars
+    environment:
+      NODE_ENV: development
+    command:
+      - sh
+      - -lc
+      - >-
+        npx wrangler d1 migrations apply USER_DB --local
+        --config wrangler.local.jsonc
+        --persist-to .wrangler/local-worker-state
+        &&
+        exec npx wrangler dev
+        --config wrangler.local.jsonc
+        --ip 0.0.0.0
+        --port 8787
+        --persist-to .wrangler/local-worker-state
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - .:/app:cached
+      - /Users/Home/.npm/_cacache:/root/.npm/_cacache:cached
+      - radar_main_node_modules:/app/node_modules
+      - radar_worker_wrangler_state:/app/.wrangler/local-worker-state
+    stop_grace_period: 10s
+
+volumes:
+  radar_main_node_modules:
+  radar_main_cache:
+  radar_main_media:
+  radar_worker_wrangler_state:

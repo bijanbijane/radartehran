@@ -47,7 +47,7 @@ test('native D1 session upload uses same-origin credentials without a Firebase B
   }
 });
 
-test('legacy upload compatibility preserves Bearer and App Check headers when explicitly supplied', async () => {
+test('native D1 session upload never forwards retired Firebase Bearer or App Check credentials', async () => {
   const originalFetch = globalThis.fetch;
   let capturedInit: RequestInit | undefined;
 
@@ -60,7 +60,6 @@ test('legacy upload compatibility preserves Bearer and App Check headers when ex
   }) as typeof fetch;
 
   try {
-    const token = 'legacy-firebase-token-for-transition-tests-1234567890';
     await uploadMediaToObjectStorage({
       fileName: 'listing-photo.jpg',
       mimeType: 'image/jpeg',
@@ -68,13 +67,11 @@ test('legacy upload compatibility preserves Bearer and App Check headers when ex
       dataBase64: 'Zm9v',
       hoodId: 1,
       city: 'tehran',
-      idToken: token,
-      appCheckHeaders: { 'X-Firebase-AppCheck': 'app-check-test-token' },
     });
 
     const headers = new Headers(capturedInit?.headers);
-    assert.equal(headers.get('authorization'), `Bearer ${token}`);
-    assert.equal(headers.get('x-firebase-appcheck'), 'app-check-test-token');
+    assert.equal(headers.get('authorization'), null);
+    assert.equal(headers.get('x-firebase-appcheck'), null);
     assert.equal(capturedInit?.credentials, 'same-origin');
   } finally {
     globalThis.fetch = originalFetch;

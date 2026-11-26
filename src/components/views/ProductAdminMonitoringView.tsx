@@ -1,8 +1,8 @@
 /** @file src/components/views/ProductAdminMonitoringView.tsx — Independent Admin Shell with 6-Section RTL Sidebar (< 220 lines) */
 import React, { useEffect, useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { getAuthClient } from '../../platform/auth';
 import { Database, FileText, LayoutDashboard, LogOut, Menu, Shield, Users, Wrench, X } from 'lucide-react';
-import { auth, googleProvider } from '../../firebase';
+
 import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId, CityId } from '../../data/neighborhoods';
 import type { FeatureFlags, SystemHealthData } from '../../types/models';
 import { AdminModal } from '../AdminModal';
@@ -62,9 +62,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     }
     ui.setLoadingSystemHealth(true);
     try {
-      const idToken = await p.currentUser.getIdToken();
-      if (!idToken) { ui.setSystemHealth(null); return; }
-      const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' });
+      const res = await fetch('/api/system-health', { credentials: 'same-origin', cache: 'no-store' });
       if (!res.ok) { ui.setSystemHealth(null); return; }
       const payload: unknown = await res.json();
       if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') {
@@ -157,14 +155,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         )}
 
         <section className={`flex-1 min-w-0 p-4 sm:p-6 space-y-4 ${!p.isVerifiedAdmin ? 'flex flex-col items-center justify-center py-10' : ''}`}>
-          {!p.isVerifiedAdmin ? (
-            <div className="w-full max-w-xl mx-auto space-y-3 text-center">
-              <h1 className="text-2xl sm:text-[28px] font-bold leading-[1.35] text-[var(--color-text-primary)]">ورود امن مدیران سامانه</h1>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                دسترسی به ابزارهای پایش، مدیریت محتوا و تنظیمات سامانه تنها پس از تأیید هویت مدیر مجاز فعال می‌شود.
-              </p>
-            </div>
-          ) : (
+          {p.isVerifiedAdmin ? (
             <>
               <div className="p-3.5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div>
@@ -248,7 +239,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                 <AdminSecurityAndAuditCenter section={currentSection} isVerifiedAdmin={p.isVerifiedAdmin} activeRole={governanceRole} />
               )}
             </>
-          )}
+          ) : null}
 
           <AdminModal
             open={true} asPageView={true} onClose={p.onBackToMap}
@@ -274,15 +265,11 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             backupStatusMsg={ui.backupStatusMsg} isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
             onGoogleSignIn={() => {
               ui.setAdminPassError('');
-              signInWithPopup(auth, googleProvider).catch((err) =>
-                ui.setAdminPassError(
-                  err?.code === 'auth/popup-blocked'
-                    ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.'
-                    : err?.code === 'auth/popup-closed-by-user'
-                      ? 'پنجره ورود گوگل بسته شد.'
-                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.',
-                ),
-              );
+              try {
+                getAuthClient().startGoogleLogin(window.location.pathname + window.location.search);
+              } catch {
+                ui.setAdminPassError('شروع ورود گوگل انجام نشد؛ دوباره تلاش کنید.');
+              }
             }}
             onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
             mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}

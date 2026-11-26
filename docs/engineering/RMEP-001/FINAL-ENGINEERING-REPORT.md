@@ -186,3 +186,10 @@ Per RMEP-001 Section 4 (`NON-NEGOTIABLE SAFETY & AUTHORIZATION BOUNDARIES`), the
 ## N. Recommended Next Post-RMEP Enhancements
 1. Provision live Cloudflare R2 + Workers AI credentials in staging to benchmark edge inference latency against the built-in Gemini/deterministic fallback gateway.
 2. Connect a live Iranian payment gateway (Zarinpal / Shaparak) or Stripe merchant webhook to mint persistent HTTP 402 commerce entitlements in Firestore.
+
+
+## Continuation checkpoint CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK
+- Timestamp UTC: 2026-11-25T22:15:00.000Z
+- Completed operation: OP-193 (D1-native OIDC/session auth, Worker Firebase auth/App Check retirement, D1-only sponsor and buyer-alert client flows, Worker typecheck and platform regressions, readiness/IRNI registry corrections, RMEP evidence reconciliation).
+- Verification: native auth suite 62/62; D1 marketplace/privacy/budget tests 27/27; Worker Platform integration PASS; Express readiness 1/1; IRNI route registry 2/2; frontend/API typechecks PASS; Worker typecheck PASS; frontend/API builds PASS; Worker dry-run PASS.
+- Remaining: Docker local Worker+USER_DB runtime and Google callback, full root/security suite, residual Express Firestore data adapters. Phase 6 remains PARTIALLY_VERIFIED; no deploy/commit/push/merge.

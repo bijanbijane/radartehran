@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeFirebaseCustomClaims } from './firebaseIdTokenClaims';
 import { resolveIdentity } from './identityResolver';
 import { resolveProfile } from './profileResolver';
 import { resolveRoleAndPermissions } from '../authorization/permissionResolver';
@@ -11,28 +10,6 @@ import {
   searchNavigationDiscovery,
 } from '../../../navigation/discovery/navigationDiscoveryCatalog';
 import { UNIFIED_NAVIGATION_ROUTES } from '../../../navigation/registry/unifiedNavigationRegistry';
-
-test('RT-FE-NAV-017: sanitizes recognized Firebase custom claims and rejects unknown values', () => {
-  assert.deepEqual(
-    sanitizeFirebaseCustomClaims({
-      role: 'admin',
-      roles: ['admin', 'buyer', 'totally_fake_role'],
-      revokedPermissions: ['admin:governance', 'not:a:permission'],
-      permissionVersion: 3.8,
-      isAdmin: true,
-      arbitrary: 'ignored',
-    }),
-    {
-      role: 'admin',
-      roles: ['admin', 'buyer'],
-      revokedPermissions: ['admin:governance'],
-      permissionVersion: 3,
-    },
-  );
-
-  assert.deepEqual(sanitizeFirebaseCustomClaims({ role: 42, roles: 'nope' }), {});
-  assert.deepEqual(sanitizeFirebaseCustomClaims(null), {});
-});
 
 test('RT-FE-NAV-017: profile display fields never grant admin navigation permissions', () => {
   const identity = resolveIdentity({
@@ -151,8 +128,8 @@ test('RT-FE-NAV-017: global search discovery respects token-derived navigation c
 });
 
 test('RT-FE-NAV-017: account role switch uses distinct claim sets (no cross-user privilege bleed)', () => {
-  const userA = sanitizeFirebaseCustomClaims({ role: 'admin', roles: ['admin'] });
-  const userB = sanitizeFirebaseCustomClaims({ role: 'buyer', roles: ['buyer'] });
+  const userA = ({ role: 'admin', roles: ['admin'] });
+  const userB = ({ role: 'buyer', roles: ['buyer'] });
   const accessA = resolveRoleAndPermissions(
     resolveIdentity({ uid: 'a', email: 'a@x.com', phoneNumber: null, displayName: null, emailVerified: true, customClaims: userA }),
     resolveProfile(null),

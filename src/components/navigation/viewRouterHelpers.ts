@@ -39,8 +39,8 @@ export function resolveEffectiveSubTab(
   if (viewId === 'knowledge' && (activeSubTab === 'legal_privacy' || activeSubTab === 'legal_terms')) {
     return activeSubTab;
   }
-  if (viewId === 'tools' && activeSubTab === 'compare_props') {
-    return 'compare_props';
+  if (viewId === 'tools' && (activeSubTab === 'compare_props' || activeSubTab === 'lab')) {
+    return activeSubTab;
   }
   if (viewId === 'contributions' && activeSubTab && PRESERVED_COMMUNITY_SUBTABS.has(activeSubTab)) {
     return activeSubTab;

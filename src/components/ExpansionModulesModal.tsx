@@ -26,9 +26,8 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
     } catch { finishTimer('fallback'); } finally { clearTimeout(timeoutId); setLoadingTelegram(false); } }; useEffect(() => { if (activeModal === 'telegram') {
       fetchTelegramDigest(activeCity); }
   }, [activeModal, activeCity]); const handleSendToTelegramWebhook = async (e: React.FormEvent) => { e.preventDefault(); if (sendingTelegram) return; const tgErr = validateTelegramPostText(telegramText); if (tgErr) { setTgSendStatus({ type: 'error', text: tgErr }); return; } setSendingTelegram(true); setTgSendStatus(null);
-    const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); try { const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+    const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (idToken) headers.Authorization = `Bearer ${idToken}`;
       const res = await fetch(`/api/send-telegram?city=${encodeURIComponent(activeCity)}`, {
         method: 'POST', headers,
         body: JSON.stringify({ city: activeCity, text: telegramText }),

@@ -130,7 +130,9 @@ export class SearchIndexAndOrchestratorEngine {
 
     const degradedSet = new Set<SearchScope>(params.degradedScopes || []);
     const allVisibleDocs = Array.from(this.documents.values())
-      .filter((doc) => isDocumentEligibleForPublicIndex(doc))
+      // Public-index eligibility applies to public documents only. Private/account/admin documents
+      // are filtered by the caller-authorization contract below, not discarded before owner access.
+      .filter((doc) => doc.visibility !== 'PUBLIC' || isDocumentEligibleForPublicIndex(doc))
       .filter((doc) => canCallerAccessSearchDocument(doc, caller))
       .filter((doc) => !degradedSet.has(doc.scope))
       .map((doc) => sanitizeDocumentLocationForCaller(doc, caller));

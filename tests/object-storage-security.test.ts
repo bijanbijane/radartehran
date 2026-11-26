@@ -13,12 +13,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
+import { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
-import express from 'express';
+import express, { type Express } from 'express';
 import sharp from 'sharp';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth, type DecodedIdToken } from 'firebase-admin/auth';
+import { createCloudflareSessionBridgeMiddleware } from '../src/utils/serverCloudflareSessionBridge';
+import { createCloudflareSessionAssertion } from '../worker/auth/sessionAssertion';
+import type { WorkerSessionPrincipal } from '../worker/auth/sessionAuth';
 
 import {
   classifyStoredObjectReference,
@@ -42,6 +44,46 @@ import {
 import {
   buildListingObjectKey,
 } from '../src/utils/objectStorage';
+
+const TEST_SESSION_BRIDGE_SECRET = 'object-storage-quota-test-session-bridge-secret';
+
+function installTestSessionBridge(app: Express): void {
+  app.use((req, _res, next) => {
+    const uidHeader = req.headers['x-test-uid'];
+    const uid = typeof uidHeader === 'string' && uidHeader.trim() ? uidHeader.trim() : 'owner-user-a';
+    const primaryAdmin = req.headers['x-test-primary-admin'] === 'true';
+    const correlationId = 'quota-test-' + randomUUID();
+    const principal: WorkerSessionPrincipal = {
+      authenticated: true,
+      uid,
+      email: primaryAdmin ? 'radio837isf@gmail.com' : uid + '@example.com',
+      emailVerified: true,
+      phoneNumber: null,
+      displayName: primaryAdmin ? 'Primary Admin' : 'Test User',
+      isAdmin: primaryAdmin,
+      isPrimaryAdmin: primaryAdmin,
+      isDelegatedAdmin: false,
+      authProvider: 'google',
+      authTimeSeconds: Math.floor(Date.now() / 1000),
+      statusCode: 200,
+      reasonCode: 'SESSION_VERIFIED',
+    };
+    void createCloudflareSessionAssertion({
+      request: new Request(new URL(req.originalUrl, 'https://radartehran.test').toString(), { method: req.method }),
+      principal,
+      secret: TEST_SESSION_BRIDGE_SECRET,
+      correlationId,
+    }).then((assertion) => {
+      req.headers['x-radar-session-assertion'] = assertion;
+      req.headers['x-radar-worker-hop'] = '1';
+      req.headers['x-correlation-id'] = correlationId;
+      next();
+    }).catch(next);
+  });
+  app.use(createCloudflareSessionBridgeMiddleware({
+    AUTH_INTERNAL_HMAC_SECRET: TEST_SESSION_BRIDGE_SECRET,
+  }));
+}
 
 const rootDir = process.cwd();
 
@@ -443,22 +485,22 @@ addTest('Atomic writer rejects an empty buffer', async () => {
 // 7. Static checks for security-sensitive HTTP route contracts
 // ---------------------------------------------------------------------------
 
-addTest('Upload endpoint requires verified Firebase authentication', () => {
+addTest('Upload endpoint requires a verified Cloudflare D1 session', () => {
   assert.match(
     storageSource,
-    /app\.post\(['"]\/api\/object-storage\/upload['"],\s*requireVerifiedFirebaseUser,\s*uploadJsonParser/,
+    /app\.post\(['"]\/api\/object-storage\/upload['"],\s*requireVerifiedCloudflareSession,\s*uploadJsonParser/,
   );
 
   assert.match(
     storageSource,
-    /verifyFirebaseUserAuthorization/,
+    /verifyAuthenticatedUserHeader/,
   );
 });
 
 addTest('Upload endpoint binds the uploaded object to the authenticated UID', () => {
   assert.match(
     storageSource,
-    /const ownerUid = res\.locals\.firebaseUid/,
+    /const ownerUid = res\.locals\.cloudflareUid/,
   );
 
   assert.match(
@@ -495,7 +537,7 @@ addTest('Deletion endpoint verifies admin/user authorization and ownership', () 
   const deleteSource = storageSource.slice(deleteStart);
 
   assert.match(deleteSource, /verifyAdminApiAuthorization/);
-  assert.match(deleteSource, /verifyFirebaseUserAuthorization/);
+  assert.match(deleteSource, /verifyAuthenticatedUserHeader/);
   assert.match(deleteSource, /removed\.ownerUid\s*===\s*userAuth\.uid/);
   assert.match(deleteSource, /if\s*\(!isAdmin\s*&&\s*!isOwner\)/);
 });
@@ -640,51 +682,27 @@ function makeQuotaFixtureRecord(
   };
 }
 
-function createTestJwt(payload: Record<string, unknown>, sig = 'valid_sig'): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  return `${header}.${body}.${sig}`;
-}
-
 addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, and 300-file global quota', async () => {
-  const projectId = 'gen-lang-client-0713157837';
-  const nowSec = Math.floor(Date.now() / 1000);
+  const sessionSecret = 'object-storage-quota-test-session-bridge-secret';
+  const sessionPrincipal: WorkerSessionPrincipal = {
+    authenticated: true,
+    uid: 'owner-user-a',
+    email: 'owner-a@example.com',
+    emailVerified: true,
+    phoneNumber: null,
+    displayName: 'User A',
+    isAdmin: false,
+    isPrimaryAdmin: false,
+    isDelegatedAdmin: false,
+    authProvider: 'google',
+    authTimeSeconds: Math.floor(Date.now() / 1000),
+    statusCode: 200,
+    reasonCode: 'SESSION_VERIFIED',
+  };
   const bucketDir = path.join(process.cwd(), '.object-storage-bucket');
   const indexFile = path.join(bucketDir, 'index.json');
   await fs.promises.mkdir(bucketDir, { recursive: true });
   const backupIndex = await fs.promises.readFile(indexFile, 'utf-8').catch(() => null);
-
-  process.env.FIREBASE_PROJECT_ID = projectId;
-  const appName = `radar-user-auth-${projectId}`;
-  const fbApp =
-    getApps().find((a) => a.name === appName) ?? initializeApp({ projectId }, appName);
-  const authClient = getAuth(fbApp);
-  const originalVerifyIdToken = authClient.verifyIdToken.bind(authClient);
-
-  authClient.verifyIdToken = async (token: string): Promise<DecodedIdToken> => {
-    const parts = token.split('.');
-    if (parts.length !== 3 || parts[2] !== 'valid_sig') {
-      throw { code: 'auth/invalid-id-token' };
-    }
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as Record<
-      string,
-      unknown
-    >;
-    const uid = String(payload.uid ?? payload.user_id ?? payload.sub ?? '');
-    return { ...payload, uid } as unknown as DecodedIdToken;
-  };
-
-  const userAToken = createTestJwt({
-    iss: `https://securetoken.google.com/${projectId}`,
-    aud: projectId,
-    auth_time: nowSec - 60,
-    user_id: 'owner-user-a',
-    sub: 'owner-user-a',
-    iat: nowSec - 60,
-    exp: nowSec + 3600,
-    email: 'owner-a@example.com',
-    email_verified: true,
-  });
 
   const validJpegBuffer = await sharp({
     create: {
@@ -698,6 +716,7 @@ addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, 
     .toBuffer();
 
   const app = express();
+  installTestSessionBridge(app);
   registerObjectStorageRoutes(app, () => {});
   const apiServer = http.createServer(app);
   await new Promise<void>((resolve) => apiServer.listen(0, '127.0.0.1', resolve));
@@ -730,7 +749,6 @@ addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           mediaType: 'image',
@@ -780,7 +798,6 @@ addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           mediaType: 'image',
@@ -850,7 +867,6 @@ addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           mediaType: 'image',
@@ -864,7 +880,6 @@ addTest('Integration: per-owner 30-file quota, 299-slot concurrent upload race, 
 
     assert.equal(globalQuotaRes.status, 507);
   } finally {
-    authClient.verifyIdToken = originalVerifyIdToken;
     if (backupIndex !== null) {
       await fs.promises.writeFile(indexFile, backupIndex, 'utf-8').catch(() => {});
     } else {
@@ -920,34 +935,10 @@ addTest('Validates optional bargainId and deletionState on StoredObjectRecord an
 });
 
 addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-attached media, pending_delete 404 block, and two-phase cleanup-bargain', async () => {
-  const projectId = 'gen-lang-client-0713157837';
-  const nowSec = Math.floor(Date.now() / 1000);
   const bucketDir = path.join(process.cwd(), '.object-storage-bucket');
   const indexFile = path.join(bucketDir, 'index.json');
   await fs.promises.mkdir(bucketDir, { recursive: true });
   const backupIndex = await fs.promises.readFile(indexFile, 'utf-8').catch(() => null);
-
-  process.env.FIREBASE_PROJECT_ID = projectId;
-  process.env.ADMIN_API_SECRET = 'test-admin-secret-9876543210';
-
-  const appName = `radar-user-auth-${projectId}`;
-  const fbApp =
-    getApps().find((a) => a.name === appName) ?? initializeApp({ projectId }, appName);
-  const authClient = getAuth(fbApp);
-  const originalVerifyIdToken = authClient.verifyIdToken.bind(authClient);
-
-  authClient.verifyIdToken = async (token: string): Promise<DecodedIdToken> => {
-    const parts = token.split('.');
-    if (parts.length !== 3 || parts[2] !== 'valid_sig') {
-      throw { code: 'auth/invalid-id-token' };
-    }
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as Record<
-      string,
-      unknown
-    >;
-    const uid = String(payload.uid ?? payload.user_id ?? payload.sub ?? '');
-    return { ...payload, uid } as unknown as DecodedIdToken;
-  };
 
   // Mock Firestore documents in the admin Firestore instance
   const { getFirebaseAdminFirestoreForServer } = await import(
@@ -972,30 +963,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
     }),
   });
 
-  const userAToken = createTestJwt({
-    iss: `https://securetoken.google.com/${projectId}`,
-    aud: projectId,
-    auth_time: nowSec - 60,
-    user_id: 'owner-user-a',
-    sub: 'owner-user-a',
-    iat: nowSec - 60,
-    exp: nowSec + 3600,
-    email: 'owner-a@example.com',
-    email_verified: true,
-  });
-
-  const userBToken = createTestJwt({
-    iss: `https://securetoken.google.com/${projectId}`,
-    aud: projectId,
-    auth_time: nowSec - 60,
-    user_id: 'owner-user-b',
-    sub: 'owner-user-b',
-    iat: nowSec - 60,
-    exp: nowSec + 3600,
-    email: 'owner-b@example.com',
-    email_verified: true,
-  });
-
   const mediaA1 = makeQuotaFixtureRecord(0, 'owner-user-a');
   const mediaA2 = makeQuotaFixtureRecord(1, 'owner-user-a');
   const mediaB1 = makeQuotaFixtureRecord(2, 'owner-user-b');
@@ -1004,6 +971,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
   const fileB1Path = path.join(bucketDir, mediaB1.localFileName);
 
   const app = express();
+  installTestSessionBridge(app);
   registerObjectStorageRoutes(app, () => {});
   const apiServer = http.createServer(app);
   await new Promise<void>((resolve) => apiServer.listen(0, '127.0.0.1', resolve));
@@ -1043,7 +1011,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userBToken}`,
+          'x-test-uid': 'owner-user-b',
         },
         body: JSON.stringify({
           bargainId: bargainBId,
@@ -1073,7 +1041,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           bargainId: bargain1Id,
@@ -1089,7 +1056,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
       {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${userAToken}`,
         },
       },
     );
@@ -1111,7 +1077,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
       {
         method: 'DELETE',
         headers: {
-          'x-admin-token': 'test-admin-secret-9876543210',
+          'x-test-primary-admin': 'true',
         },
       },
     );
@@ -1133,7 +1099,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           bargainId: bargain2Id,
@@ -1160,7 +1125,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userAToken}`,
         },
         body: JSON.stringify({
           bargainId: bargain2Id,
@@ -1176,7 +1140,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
       {
         method: 'POST',
         headers: {
-          'x-admin-token': 'test-admin-secret-9876543210',
+          'x-test-primary-admin': 'true',
         },
       },
     );
@@ -1195,7 +1159,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
       {
         method: 'POST',
         headers: {
-          'x-admin-token': 'test-admin-secret-9876543210',
+          'x-test-primary-admin': 'true',
         },
       },
     );
@@ -1235,7 +1199,7 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
       {
         method: 'POST',
         headers: {
-          'x-admin-token': 'test-admin-secret-9876543210',
+          'x-test-primary-admin': 'true',
         },
       },
     );
@@ -1266,7 +1230,6 @@ addTest('Integration: attach-to-bargain, 409 block on direct DELETE of bargain-a
   } finally {
     (adminDb as unknown as { collection: typeof originalCollection }).collection =
       originalCollection;
-    authClient.verifyIdToken = originalVerifyIdToken;
     delete process.env.ADMIN_API_SECRET;
     await fs.promises.unlink(fileA1Path).catch(() => {});
     await fs.promises.unlink(fileA2Path).catch(() => {});

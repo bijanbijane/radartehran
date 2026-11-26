@@ -23,7 +23,7 @@ export interface ResolvedNeighborhoodDbResult { readonly ok: true; readonly db: 
 
 function userDb(env: WorkerEnv): D1Database | undefined { return env.USER_DB ?? env.DB; }
 
-/** USER_DB and legacy DB are aliases; RESEARCH_DB and NEIGHBORHOOD_DB must be physically isolated. */
+/** Runtime binding isolation. USER_DB resolves through its canonical binding or the legacy DB alias. */
 export function hasUserResearchBindingCollision(env: WorkerEnv): boolean {
   const user = userDb(env);
   if (user && env.RESEARCH_DB && user === env.RESEARCH_DB) return true;

@@ -539,8 +539,8 @@ class InMemoryStmt implements D1PreparedStatement {
     return this.run<T>();
   }
 
-  async raw<T extends unknown[]>(): Promise<T[]> {
+  async raw<T = unknown[]>(): Promise<T[]> {
     const res = await this.run<Record<string, unknown>>();
-    return res.results.map((r) => Object.values(r)) as T[];
+    return res.results.map((r) => Object.values(r)) as unknown as T[];
   }
 }

@@ -20,14 +20,14 @@ export const MarketReportList: React.FC<MarketReportListProps> = ({
       className="space-y-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+        <h2 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
           <FileText className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>گزارش‌های تحلیلی و جمع‌بندی محدوده</span>
-        </h3>
+        </h2>
         <button
           type="button"
           onClick={onOpenMethodology}
-          className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer"
+          className="min-h-11 px-2 text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer"
         >
           مشاهده جزئیات روش‌شناسی
         </button>
@@ -42,7 +42,7 @@ export const MarketReportList: React.FC<MarketReportListProps> = ({
             <div className="text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] tabular-nums">
               {rep.scopeLabelFa} · {rep.periodLabelFa} · {toPersianNum(rep.sampleCount)} نمونه · {INDICATOR_STATUS_LABELS_FA[rep.status]}
             </div>
-            <h4 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{rep.titleFa}</h4>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">{rep.titleFa}</h3>
             <p className="text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] leading-relaxed">{rep.summaryFa}</p>
             <ul className="space-y-1 text-xs text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] list-disc pr-4">
               {rep.keyTakeawaysFa.map((tk, i) => (

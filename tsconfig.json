@@ -4,7 +4,9 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": [
+      "vite/client"
+    ],
     "lib": [
       "ES2022",
       "DOM",
@@ -31,6 +33,15 @@
     "dist",
     "node_modules",
     "server/modules/**/__tests__",
-    "server/modules/**/tests"
+    "server/modules/**/tests",
+    "tests/**",
+    "**/tests/**",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "test-results/**",
+    "playwright-report/**"
   ]
 }

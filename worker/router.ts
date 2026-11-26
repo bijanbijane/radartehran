@@ -22,6 +22,7 @@ import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiW
 import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
 import { handleIrniCanonicalRpcV2Route } from './routes/irniCanonicalRpcV2Routes';
+import { handleNeighborhoodBoundaryResolveRoute } from './routes/neighborhoodBoundaryRoutes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -101,6 +102,15 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
+  const neighborhoodBoundaryResponse = await handleNeighborhoodBoundaryResolveRoute(ctx);
+  if (neighborhoodBoundaryResponse) {
+    return {
+      response: neighborhoodBoundaryResponse,
+      routePattern: 'POST /api/neighborhood-boundaries/resolve',
+      migrationStatus: 'IMPLEMENTED',
+    };
+  }
+
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   const conditionallyRoutedAuth =
     registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
@@ -108,9 +118,12 @@ export async function dispatchWorkerApiOrSeoRequest(
   const conditionallyRoutedAccount =
     registeredMatch?.entry.workerHandlerModule === 'worker/routes/accountRoutes.ts' &&
     registeredMatch.entry.status === 'IMPLEMENTED';
+  const localD1MarketplaceEnabled =
+    ctx.environment === 'development' &&
+    String(ctx.env.LOCAL_D1_MARKETPLACE_ENABLED || '').trim().toLowerCase() === 'true';
   const conditionallyRoutedMarketplace =
     registeredMatch?.entry.workerHandlerModule === 'worker/routes/marketplaceRoutes.ts' &&
-    registeredMatch.entry.status === 'IMPLEMENTED';
+    (registeredMatch.entry.status === 'IMPLEMENTED' || localD1MarketplaceEnabled);
   if (
     registeredMatch &&
     registeredMatch.entry.status !== 'VERIFIED' &&

@@ -27,6 +27,7 @@ import {
   SearchWorkspaceStateManager,
 } from '../services/searchWorkspaceService';
 import { DataGovernanceEngine } from '../../data-governance/services/dataGovernanceEngine';
+import { INITIAL_SEARCH_DOCUMENTS } from '../fixtures/demoSearchDocuments';
 import {
   buildPublicProvenanceContract,
   compareEntityVersionsDiff,
@@ -77,7 +78,7 @@ test('Stage 27 & 30 (RT-UI-SEARCH-001): Persian Normalization, ZWNJ, Digits, Typ
 });
 
 test('Stage 27 & 30 (RT-UI-SEARCH-001): Security Visibility, Location Precision, Index Tombstone & Saved Search Alerts', () => {
-  const engine = new SearchIndexAndOrchestratorEngine();
+  const engine = new SearchIndexAndOrchestratorEngine(INITIAL_SEARCH_DOCUMENTS);
   const pubRes = engine.executeSearch({ rawQuery: '', scope: 'ALL', caller: { isAuthenticated: false } });
   assert.ok(pubRes.results.every((r) => r.document.visibility === 'PUBLIC'));
   assert.ok(!pubRes.results.some((r) => r.document.id === 'doc-private-owner-draft-999'));

@@ -111,7 +111,7 @@ export class IrniGeographicRpcClient {
     }
 
     const metadata = await this.getApprovedRegistryMetadata();
-    if (!metadata.ok) return { ok: false, error: metadata.error };
+    if (metadata.ok === false) return { ok: false, error: metadata.error };
 
     if (
       metadata.value.contractState !== 'ACTIVE' ||
@@ -162,7 +162,7 @@ export class IrniGeographicRpcClient {
     result: IrniGeographicPersistenceResult<T>,
     expectedMetadata: IrniGeographicRegistryMetadata,
   ): IrniGeographicPersistenceResult<T> {
-    if (!result.ok) return result;
+    if (result.ok === false) return result;
 
     if (result.value.registryRevision !== expectedMetadata.registryRevision) {
       return {
@@ -212,7 +212,7 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
 
     return this.invoke(
       () => this.binding!.getApprovedEntityByCanonicalId(
@@ -236,13 +236,13 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
 
     const result = await this.invoke(
       () => this.binding!.resolveIdentifier(query, expectedRegistryRevision),
       isResolution,
     );
-    if (!result.ok) return result;
+    if (result.ok === false) return result;
 
     if (result.value.registryRevision !== gate.metadata.registryRevision) {
       return {
@@ -276,7 +276,7 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
 
     const result = await this.invoke(
       () => this.binding!.listApprovedEntitiesPaginated(
@@ -302,7 +302,7 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (!gate.ok) return { ok: false, error: gate.error };
+    if (gate.ok === false) return { ok: false, error: gate.error };
 
     const result = await this.invoke(
       () => this.binding!.listApprovedRelationshipsForEntity(

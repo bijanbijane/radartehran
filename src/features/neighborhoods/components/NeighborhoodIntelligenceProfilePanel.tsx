@@ -10,7 +10,8 @@ import {
   type NeighborhoodMarketTabId,
 } from '../services/neighborhoodProfileEngine';
 import type { AggregatedMarketMetrics } from '../../../data/realMarketPriceAggregator';
-import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency } from '../../../utils/areaUnit';
+import type { NeighborhoodProfileBoundaryEvidence } from '../profile-contract/neighborhoodProfileEvidenceContract';
+
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 import { toPersianDigits } from '../../../utils/persianBidiFormat';
 
@@ -20,6 +21,8 @@ export interface NeighborhoodIntelligenceProfilePanelProps {
   allNeighborhoods?: readonly AnyNeighborhoodInput[];
   dealPricePerSqm?: number;
   marketMetrics?: AggregatedMarketMetrics | null;
+  /** Must come from a read-only backend endpoint returning the ACTIVE, reviewed boundary version. */
+  approvedBoundaryEvidence?: NeighborhoodProfileBoundaryEvidence | null;
 }
 
 const MARKET_TAB_LABELS_FA: Record<NeighborhoodMarketTabId, string> = {
@@ -31,7 +34,7 @@ const MARKET_TAB_LABELS_FA: Record<NeighborhoodMarketTabId, string> = {
 };
 
 export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntelligenceProfilePanelProps> = ({
-  hood, cityId = 'tehran', allNeighborhoods = [], dealPricePerSqm, marketMetrics,
+  hood, cityId = 'tehran', allNeighborhoods = [], dealPricePerSqm, marketMetrics, approvedBoundaryEvidence,
 }) => {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -48,9 +51,9 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
       allNeighborhoods.length ? allNeighborhoods : [hood],
       cityId,
       dealPricePerSqm,
-      { areaUnit, intlCurrency, locale: radarLocale, marketMetrics, exchangeRateRef: rateState.snapshot },
+      { areaUnit, intlCurrency, locale: radarLocale, marketMetrics, exchangeRateRef: rateState.snapshot, approvedBoundaryEvidence },
     ),
-    [hood, allNeighborhoods, cityId, dealPricePerSqm, marketMetrics, areaUnit, intlCurrency, radarLocale, rateState.snapshot],
+    [hood, allNeighborhoods, cityId, dealPricePerSqm, marketMetrics, approvedBoundaryEvidence, areaUnit, intlCurrency, radarLocale, rateState.snapshot],
   );
 
   return (
@@ -68,8 +71,8 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
           <span className="rounded-[6px] bg-[var(--color-bg-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-secondary)]">
             {profile.boundary.statusLabelFa}
           </span>
-          <span className="rounded-[6px] bg-[var(--color-success-bg)] px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
-            پوشش داده: {profile.maturityLabelFa}
+          <span className="rounded-[6px] bg-[var(--color-bg-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-secondary)]">
+            بلوغ پرونده: {profile.maturityLabelFa}
           </span>
         </div>
         <button
@@ -146,33 +149,26 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
               <p className="leading-6 font-medium text-[var(--color-text-primary)]">{profile.content.summary}</p>
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-[6px] bg-[var(--color-bg-muted)] px-2.5 py-1">
-                  برآورد هندسی تقریبی مساحت محدوده: {toPersianDigits(profile.boundary.areaKm2)} کیلومترمربع
+                  {profile.boundary.areaKm2 === null
+                    ? 'مساحت محله: مرز معتبر و بازبینی‌شده برای محاسبه متصل نیست'
+                    : `${profile.boundary.areaQuality === 'OFFICIAL_GEOMETRY_DERIVED_APPROXIMATION' ? 'مساحت تقریبی محاسبه‌شده از هندسه رسمی' : 'مساحت تقریبی محاسبه‌شده از هندسه عملیاتی بازبینی‌شده'}: ${toPersianDigits(profile.boundary.areaKm2)} کیلومترمربع`}
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-success-bg)]/50 p-3">
-                  <div className="font-bold text-[var(--color-success)] mb-1.5">نقاط قوت شاخص</div>
-                  <ul className="list-disc list-inside space-y-1 leading-6">
-                    {profile.content.strengths.map((s, idx) => <li key={idx}>{s}</li>)}
-                  </ul>
-                </div>
-                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-warning-bg)]/50 p-3">
-                  <div className="font-bold text-[var(--color-warning)] mb-1.5">چالش‌ها و محدودیت‌های محله</div>
-                  <ul className="list-disc list-inside space-y-1 leading-6">
-                    {profile.content.challenges.map((c, idx) => <li key={idx}>{c}</li>)}
-                  </ul>
-                </div>
+              <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 text-[var(--color-text-muted)] leading-6">
+                نقاط قوت و چالش‌های محله فقط پس از اتصال به شواهد مکانی، منبع مشخص و بازبینی تحریریه منتشر می‌شوند. در حال حاضر محتوای تأییدشده‌ای برای این بخش متصل نیست.
               </div>
             </div>
           )}
 
           {activeSection === 'market' && (
             <div className="space-y-3 text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="بخش‌های بازار محله">
                 {(['sale', 'rent', 'supply', 'price-distribution', 'historical-changes'] as const).map((tabId) => (
                   <button
                     key={tabId}
                     type="button"
+                    role="tab"
+                    aria-selected={marketTab === tabId}
                     onClick={() => setMarketTab(tabId)}
                     className={`min-h-[40px] md:min-h-[32px] rounded-[7px] px-2.5 py-1 text-xs font-bold cursor-pointer ${
                       marketTab === tabId
@@ -190,18 +186,37 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                   <span>{profile.marketSampleWarningFa}</span>
                 </div>
               )}
-              <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 space-y-1.5">
-                <div className="font-bold text-[var(--color-text-primary)]">
-                  تحلیل بخش «{MARKET_TAB_LABELS_FA[marketTab]}» — تفکیک از ارزش‌گذاری تک‌ملک
+              {marketTab === 'sale' && (
+                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 space-y-1.5">
+                  <div className="font-bold text-[var(--color-text-primary)]">فروش: قیمت پیشنهادی آگهی در برابر مرجع داخلی</div>
+                  <p className="text-[var(--color-text-secondary)] leading-6">
+                    {profile.quickMetrics.find((metric) => metric.id === 'asking-median')?.title}: {profile.quickMetrics.find((metric) => metric.id === 'asking-median')?.formattedValue ?? '—'}.
+                    این عدد فقط وقتی میانه قیمت پیشنهادی است که از نمونه آگهی‌های مشاهده‌شده محاسبه شده باشد؛ معادل قیمت معامله یا ارزش‌گذاری یک ملک نیست.
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">نمونه معتبر: {toPersianDigits(profile.sampleBreakdown.validSampleCount)}</p>
                 </div>
-                <p className="text-[var(--color-text-secondary)] leading-6">
-                  شاخص پایه محله ({formatMillionTomanAsIntlCurrency(Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10, 'IRT', radarLocale)}
-                  {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit), intlCurrency, radarLocale, rateState.snapshot)}` : ''} بر {areaUnit === 'sqft' ? 'فوت مربع' : 'مترمربع'}) معیار مکانی است و جایگزین ارزش‌گذاری هدونیک تک‌ملک نمی‌شود.
-                </p>
-                <div className="text-xs text-[var(--color-text-muted)] pt-1 tabular-nums">
-                  نمونه‌های ارزیابی‌شده: ورودی خام {toPersianDigits(profile.sampleBreakdown.rawInputCount)} · مشاهده‌شده {toPersianDigits(profile.sampleBreakdown.observedSampleCount)} · معتبر {toPersianDigits(profile.sampleBreakdown.validSampleCount)}
+              )}
+              {marketTab === 'rent' && (
+                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 text-[var(--color-text-muted)] leading-6">
+                  داده اجاره ماهانه و ودیعه باید از هم جدا بمانند و هر دو منبع و دوره مستقل داشته باشند. سری معتبر اجاره برای این پرونده هنوز متصل نیست.
                 </div>
-              </div>
+              )}
+              {marketTab === 'supply' && (
+                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 text-[var(--color-text-secondary)] leading-6">
+                  آگهی معتبر مشاهده‌شده: {profile.quickMetrics.find((metric) => metric.id === 'active-supply')?.formattedValue ?? '—'}.
+                  این شمارش فقط پوشش منابع مشاهده‌شده را نشان می‌دهد و معادل کل موجودی مسکن محله نیست.
+                </div>
+              )}
+              {marketTab === 'price-distribution' && (
+                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 text-[var(--color-text-muted)] leading-6">
+                  توزیع قیمت تا زمان وجود رکوردهای یکتای آگهی، واحد پول و متراژ معتبر، قواعد حذف تکرار و کفایت نمونه نمایش داده نمی‌شود.
+                </div>
+              )}
+              {marketTab === 'historical-changes' && (
+                <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3 text-[var(--color-text-muted)] leading-6">
+                  روند تاریخی نیازمند تاریخچه تغییرناپذیر مشاهده‌ها در چند مقطع زمانی است. یک مقدار جاری یا مرجع داخلی به‌تنهایی سری زمانی تولید نمی‌کند.
+                </div>
+              )}
             </div>
           )}
 
@@ -244,8 +259,10 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                 </button>
                 <button
                   type="button"
+                  disabled={!profile.amenities.some((amenity) => amenity.walkingNetworkMeters !== null)}
                   onClick={() => setDistanceMode('walking_network')}
-                  className={`min-h-[40px] md:min-h-[32px] rounded-[7px] px-2.5 py-1 font-bold cursor-pointer ${
+                  aria-disabled={!profile.amenities.some((amenity) => amenity.walkingNetworkMeters !== null)}
+                  className={`min-h-[40px] md:min-h-[32px] rounded-[7px] px-2.5 py-1 font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                     distanceMode === 'walking_network' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]'
                   }`}
                 >
@@ -295,15 +312,15 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
             <div className="rounded-[10px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] p-3.5 space-y-2 text-xs">
               <div className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" />
-                <span>رویدادها و مشارکت‌های تأییدشده ساکنان</span>
+                <span>تاریخچه تحولات شهری و تغییرات مرز</span>
               </div>
-              {profile.contributions.length === 0 ? (
-                <p className="text-[var(--color-text-muted)]">مشارکت یا رویداد تأییدشده‌ای برای این محله ثبت نشده است.</p>
+              {profile.historicalTimeline.length === 0 ? (
+                <p className="text-[var(--color-text-muted)]">سری زمانی مستند برای تغییرات کالبدی، کاربری یا مرزبندی این محله هنوز متصل نیست. تاریخچه مشارکت کاربران باید در جریان جداگانه نمایش داده شود.</p>
               ) : (
                 <div className="space-y-1.5">
-                  {profile.contributions.map((c) => (
-                    <div key={c.id} className="leading-6 text-[var(--color-text-secondary)]">
-                      <span className="font-bold text-[var(--color-brand-fg)]">[{c.streamLabelFa}]</span> {c.textFa}
+                  {profile.historicalTimeline.map((entry, index) => (
+                    <div key={`${entry.year}-${index}`} className="leading-6 text-[var(--color-text-secondary)]">
+                      <span className="font-bold text-[var(--color-brand-fg)]">{entry.year} · {entry.changeNatureLabelFa}</span> {entry.titleFa} — {entry.descriptionFa}
                     </div>
                   ))}
                 </div>
@@ -319,8 +336,8 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
               </div>
               <p className="text-[var(--color-text-secondary)] leading-6">
                 {activeSection === 'environment'
-                  ? profile.content.summary
-                  : `پوشش محدوده: ${profile.boundary.statusLabelFa} · وضعیت بلوغ پرونده: ${profile.maturityLabelFa}. داده‌های قیمت بر پایه آگهی‌های مشاهده‌شده و پروفایل مرجع تفکیک شده‌اند و جایگزین استعلام ثبتی نیستند.`}
+                  ? 'شاخص‌های محیطی مانند آلودگی هوا، نویز، دمای سطح و پوشش سبز باید با ایستگاه یا لایه مکانی، بازه زمانی و روش سنجش مستقل نمایش داده شوند. داده مستند محیطی برای این پرونده هنوز متصل نیست.'
+                  : `وضعیت مرز: ${profile.boundary.statusLabelFa}. مرجع: ${profile.boundary.source}. سطح بلوغ پرونده: ${profile.maturityLabelFa}. عدد مساحت فقط در صورت مرز فعال و بازبینی‌شده محاسبه شده است؛ مرز نمایشی نقشه مدرک مساحت رسمی نیست.`}
               </p>
             </div>
           )}

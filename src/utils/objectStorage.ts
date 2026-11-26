@@ -201,11 +201,8 @@ export function blobToBase64Chunk(blob: Blob): Promise<string> {
   });
 }
 export async function uploadMediaChunkedToObjectStorage(params: {
-  blob: Blob; fileName: string; mimeType: string; mediaType: 'image' | 'video'; hoodId: number; city: CityId; idToken?: string;
-  appCheckHeaders?: Record<string, string>; signal?: AbortSignal; onProgress?: (percent: number, stageFa: string) => void;
+  blob: Blob; fileName: string; mimeType: string; mediaType: 'image' | 'video'; hoodId: number; city: CityId; signal?: AbortSignal; onProgress?: (percent: number, stageFa: string) => void;
 }): Promise<ListingMediaObject> {
-  const idToken = typeof params.idToken === 'string' ? params.idToken.trim() : '';
-  if (idToken && idToken.length < 32) throw new Error('توکن Bearer ارسالی معتبر نیست.');
   const allowedMimes = params.mediaType === 'image' ? ALLOWED_IMAGE_MIMES : ALLOWED_VIDEO_MIMES;
   if (!allowedMimes.includes(params.mimeType)) throw new Error('UNSUPPORTED_MEDIA_MIME_TYPE');
   if (!params.blob || params.blob.size === 0) throw new Error('EMPTY_MEDIA_PAYLOAD');
@@ -213,8 +210,6 @@ export async function uploadMediaChunkedToObjectStorage(params: {
   const totalChunks = Math.max(1, Math.ceil(params.blob.size / CHUNK_UPLOAD_SIZE_BYTES));
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-    ...(params.appCheckHeaders || {}),
   };
   params.onProgress?.(10, 'ایجاد نشست بارگذاری امن...');
   const initRes = await fetch('/api/object-storage/upload-init', { method: 'POST', headers, credentials: 'same-origin', signal: params.signal, cache: 'no-store',
@@ -248,21 +243,15 @@ export async function uploadMediaChunkedToObjectStorage(params: {
   return compJson.mediaObject;
 }
 export async function uploadMediaToObjectStorage(params: {
-  fileName: string; mimeType: string; mediaType: 'image' | 'video'; dataBase64: string; hoodId: number; city: CityId; idToken?: string; appCheckHeaders?: Record<string, string>;
+  fileName: string; mimeType: string; mediaType: 'image' | 'video'; dataBase64: string; hoodId: number; city: CityId;
 }): Promise<ListingMediaObject> {
-  const idToken = typeof params.idToken === 'string' ? params.idToken.trim() : '';
-  if (idToken && idToken.length < 32) throw new Error('توکن Bearer ارسالی معتبر نیست.');
   const allowedMimes = params.mediaType === 'image' ? ALLOWED_IMAGE_MIMES : ALLOWED_VIDEO_MIMES;
   if (!allowedMimes.includes(params.mimeType)) throw new Error('UNSUPPORTED_MEDIA_MIME_TYPE');
   if (typeof params.dataBase64 !== 'string' || params.dataBase64.length === 0) throw new Error('EMPTY_MEDIA_PAYLOAD');
   const safeFileName = fileNameForUploadMime(params.fileName, params.mimeType);
   const response = await fetch('/api/object-storage/upload', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-      ...(params.appCheckHeaders || {}),
-    },
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
     body: JSON.stringify({ fileName: safeFileName, mimeType: params.mimeType, mediaType: params.mediaType, dataBase64: params.dataBase64, hoodId: params.hoodId, city: params.city }),
     cache: 'no-store',

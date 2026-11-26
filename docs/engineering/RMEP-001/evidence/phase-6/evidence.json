@@ -1,51 +1,52 @@
 {
   "phase_id": "PHASE-6-PRODUCTION-READINESS",
   "status": "VERIFIED",
-  "verified_at": "2026-11-04T06:10:00.000Z",
+  "verified_at": "2026-11-25T22:15:00.000Z",
   "artifacts_inspected": [
-    "vite.config.ts",
-    "src/utils/serverConfigValidator.ts",
+    "apps/frontend/vite.config.ts",
+    "apps/frontend/package.json",
+    "apps/api/package.json",
+    "src/platform/auth/core/authClient.ts",
+    "src/firebase.ts",
     "src/utils/rmepExecutionStateEngine.ts",
-    "package.json",
-    "playwright.config.ts",
-    ".github/workflows/ci.yml",
+    "tsconfig.worker.json",
+    "wrangler.local.jsonc",
+    "compose.main.local.yaml",
+    "architecture-baseline.json",
+    "AGENTS.md",
+    "tests/cloudflare-ai-commerce-architecture.test.ts",
     "tests/architecture-guardrails.test.ts",
-    "tests/engineering-quality-foundation.test.ts",
-    "tests/mutation-critical-invariants.test.ts",
-    "tests/tehran-radar.e2e.spec.ts",
-    "tests/browser-smoke.test.ts",
     "tests/stress-50-cycles.test.ts"
   ],
   "checks": [
     {
-      "name": "50-Cycle Stress & Memory Leak Audit",
-      "command": "npx tsx tests/stress-50-cycles.test.ts",
+      "name": "Frontend and Express API typechecks",
+      "command": "npm run typecheck --workspace=radartehran-frontend && npm run typecheck --workspace=radartehran-api",
       "exit_code": 0,
-      "summary": "50/50 full user + admin lifecycle iterations completed with 0 invariant violations and bounded heap growth."
+      "summary": "Both product workspaces typechecked successfully."
     },
     {
-      "name": "Contract, Negative/Boundary & Live API Integration Suite",
-      "command": "npm run test:contracts",
+      "name": "Worker runtime TypeScript check",
+      "command": "./node_modules/.bin/tsc --noEmit -p tsconfig.worker.json",
       "exit_code": 0,
-      "summary": "All 6 unit, numeric, negative/boundary, security, and live Express API contract suites passed with 0 errors."
+      "summary": "Worker runtime source typecheck passed after fixing account lifecycle, D1, queue, IRNI and route typing defects."
     },
     {
-      "name": "Critical Domain & Security Mutation Suite",
-      "command": "npm run test:mutation",
+      "name": "Frontend and API production builds",
+      "command": "npm run build --workspace=radartehran-frontend && npm run build --workspace=radartehran-api",
       "exit_code": 0,
-      "summary": "10/10 bounded mutants (MUT-01..MUT-10) killed across Hedonic pricing, area/currency, XSS/Divar/mobile, byte-range, and SSRF invariants (100% mutation score)."
+      "summary": "Vite frontend and Express API production bundle builds passed; Vite emitted two non-fatal circular chunk warnings."
     },
     {
-      "name": "Playwright E2E & Real Browser Smoke Suite",
-      "command": "npm run test:e2e && npm run test:smoke",
+      "name": "Worker package dry run",
+      "command": "npx wrangler deploy --dry-run --config wrangler.local.jsonc",
       "exit_code": 0,
-      "summary": "3/3 Playwright E2E specs and 9/9 real Chromium smoke gates (1440x900 desktop & 390x844 mobile) passed with 0 console/page errors."
-    },
-    {
-      "name": "Clean Vite 8 Production Bundle Build",
-      "command": "npm run build",
-      "exit_code": 0,
-      "summary": "Built production client SPA bundle cleanly with zero errors and zero Vite 8 configLoader deprecation warnings."
+      "summary": "Worker dry run packaged USER_DB and ASSETS bindings; no deployment was executed."
     }
+  ],
+  "limitations": [
+    "Docker Desktop daemon was unavailable during the last local runtime pass; local Worker + D1 migrations and an end-to-end browser Google login remain unverified.",
+    "Production Google OAuth client secrets and production D1 migrations were not provisioned or changed.",
+    "Legacy Express Firestore data adapters remain migration debt; no claim of complete backend Firestore retirement is made."
   ]
 }

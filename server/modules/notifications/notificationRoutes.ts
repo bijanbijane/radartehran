@@ -12,7 +12,7 @@ import { validateNotificationPreferencesUpdate } from './notificationValidator';
 
 import {
   verifyAdminApiAuthorization,
-  verifyFirebaseUserAuthorization,
+  verifyAuthenticatedUserHeader,
 } from '../../../src/utils/serverAdminAndTelegramSecurity';
 
 export interface NotificationModuleOptions {
@@ -32,7 +32,7 @@ const registeredApps = new WeakSet<Express>();
  * Spoofable headers (x-user-uid, x-admin-role, x-admin-secret, Bearer user_*) are strictly rejected.
  */
 async function defaultVerifyUserAuth(req: Request): Promise<string | null> {
-  const result = await verifyFirebaseUserAuthorization(
+  const result = await verifyAuthenticatedUserHeader(
     req.headers as Record<string, string | string[] | undefined>,
   );
   return result.authorized && result.uid ? result.uid : null;

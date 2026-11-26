@@ -1,7 +1,7 @@
 import { formatMillionTomanAsIntlCurrency } from './areaUnit.ts';
 
 export type ApiAccessPolicy = 'PUBLIC' | 'VERIFIED_USER' | 'RESOURCE_OWNER_OR_ADMIN' | 'ADMIN' | 'PRIMARY_ADMIN';
-export type ApiRouteMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+export type ApiRouteMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface ApiEndpointContract { method: ApiRouteMethod; path: string; summary: string; authRequired: boolean; adminOnly: boolean; accessPolicy: ApiAccessPolicy; rateLimitPerMinute: number; }
 export interface RegisteredApiRoute extends ApiEndpointContract { sourceFile: string; authLevel: 'PUBLIC' | 'FIREBASE_AUTHENTICATED_USER' | 'VERIFIED_ADMIN_ONLY'; rateLimitBucket: 'general' | 'sync' | 'ai' | 'lead' | 'upload' | 'call_track' | 'tile_proxy'; usedByFrontend: boolean; businessPurpose: string; }
 function route(method: ApiRouteMethod, path: string, sourceFile: string, access: ApiAccessPolicy, rate: number, bucket: RegisteredApiRoute['rateLimitBucket'], usedByFrontend: boolean, summary: string): RegisteredApiRoute {
@@ -10,7 +10,7 @@ function route(method: ApiRouteMethod, path: string, sourceFile: string, access:
   return { method, path, sourceFile, summary, authRequired: access !== 'PUBLIC', adminOnly, accessPolicy: access, rateLimitPerMinute: rate, authLevel, rateLimitBucket: bucket, usedByFrontend, businessPurpose: summary };
 }
 const S = 'server.ts', AI = 'src/utils/serverAiAndCommerceRoutes.ts', BK = 'src/utils/serverBackupAndChunkUploadRoutes.ts', OB = 'src/utils/serverObjectStorage.ts', PB = 'src/utils/serverPublisherBargains.ts', SP = 'src/utils/serverSponsorAndBargainRoutes.ts', UT = 'src/utils/serverUtilityRoutes.ts';
-const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts', SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts', IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts', TM = 'server/modules/telemetry/telemetryRoutes.ts', PF = 'server/modules/platform-foundation/routes.ts', CM = 'server/modules/community/communityRoutes.ts', CMN = 'server/modules/communications/commsRoutes.ts', SGA = 'server/modules/search/globalSearchAndGovernanceGateway.ts', DGV = 'server/modules/data-governance/dgovRoutes.ts', ANL = 'server/modules/analytics-research/analyticsRoutes.ts', AA = 'server/modules/account-admin/accountAdminRoutes.ts', TS = 'server/modules/trust-safety/mountTrustSafetyRoutes.ts', UPR = 'server/modules/platform-foundation/unifiedPlatformRoutes.ts', LR = 'server/modules/legal-regulatory/routes.ts', RET = 'server/modules/real-estate-transactions/routes.ts', DSP = 'server/modules/dispute-resolution/canonicalDisputeRoutes.ts';
+const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts', SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts', IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts', TM = 'server/modules/telemetry/telemetryRoutes.ts', PF = 'server/modules/platform-foundation/routes.ts', CM = 'server/modules/community/communityRoutes.ts', CMN = 'server/modules/communications/commsRoutes.ts', SGA = 'server/modules/search/globalSearchAndGovernanceGateway.ts', DGV = 'server/modules/data-governance/dgovRoutes.ts', ANL = 'server/modules/analytics-research/analyticsRoutes.ts', AA = 'server/modules/account-admin/accountAdminRoutes.ts', TS = 'server/modules/trust-safety/mountTrustSafetyRoutes.ts', UPR = 'server/modules/platform-foundation/unifiedPlatformRoutes.ts', LR = 'server/modules/legal-regulatory/routes.ts', RET = 'server/modules/real-estate-transactions/routes.ts', DSP = 'server/modules/dispute-resolution/canonicalDisputeRoutes.ts', KN = 'server/modules/knowledge/knowledgeRoutes.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/auth/google/start', 'worker/routes/authRoutes.ts', 'PUBLIC', 10, 'general', true, 'Start Google OpenID Connect sign-in'),
   route('GET', '/api/auth/google/callback', 'worker/routes/authRoutes.ts', 'PUBLIC', 10, 'general', false, 'Complete Google OpenID Connect sign-in'),
@@ -30,7 +30,7 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/market-pulse', S, 'PUBLIC', 180, 'general', true, 'Read-only market pulse; refresh=1 is admin-only'),
   route('GET', '/api/v1/market/state', 'worker/routes/marketplaceRoutes.ts', 'PUBLIC', 90, 'general', true, 'D1-backed neighborhood marketplace state'),
   route('POST', '/api/v1/market/votes', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 20, 'lead', true, 'D1-backed authenticated neighborhood vote'),
-  route('PUT', '/api/v1/market/preferences', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 30, 'account', true, 'D1-backed user preferences and favorites'),
+  route('PUT', '/api/v1/market/preferences', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 30, 'general', true, 'D1-backed user preferences and favorites'),
   route('POST', '/api/v1/market/bargains', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 12, 'lead', true, 'Create a D1-owned marketplace listing'),
   route('POST', '/api/v1/market/sponsor-requests', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 8, 'lead', true, 'Create a D1-owned sponsor request'),
   route('POST', '/api/v1/market/buyer-alerts', 'worker/routes/marketplaceRoutes.ts', 'VERIFIED_USER', 5, 'lead', true, 'Create a D1-owned buyer alert'), route('POST', '/api/sync-real-prices', S, 'ADMIN', 3, 'sync', true, 'Admin deep market synchronization'),
@@ -232,4 +232,24 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/disputes/cases/:caseId/proposals', DSP, 'VERIFIED_USER', 20, 'general', false, 'Propose bilateral dispute settlement'), route('POST', '/api/disputes/proposals/:proposalId/accept', DSP, 'VERIFIED_USER', 20, 'general', false, 'Record party acceptance of bilateral settlement proposal'),
   route('POST', '/api/disputes/cases/:caseId/transition', DSP, 'VERIFIED_USER', 20, 'general', false, 'Transition dispute case status with server-derived role check'), route('POST', '/api/disputes/cases/:caseId/resolve', DSP, 'VERIFIED_USER', 15, 'general', false, 'Resolve dispute case with non-court legal boundary flags'),
   route('GET', '/api/disputes/cases/:caseId/timeline', DSP, 'VERIFIED_USER', 60, 'general', false, 'Read append-only dispute case timeline'),
+  // Knowledge center public read surface and authenticated account/editorial APIs.
+  route('GET', '/api/knowledge/publications', KN, 'PUBLIC', 120, 'general', true, 'List public knowledge publications with validated pagination and filters'),
+  route('GET', '/api/knowledge/publications/:slugOrId', KN, 'PUBLIC', 120, 'general', true, 'Read public knowledge publication and source lineage'),
+  route('GET', '/api/knowledge/publications/:id/versions', KN, 'PUBLIC', 120, 'general', true, 'Read public publication version history'),
+  route('GET', '/api/knowledge/publications/:id/sources', KN, 'PUBLIC', 120, 'general', true, 'Read public publication source records'),
+  route('GET', '/api/knowledge/publications/:id/status', KN, 'PUBLIC', 120, 'general', true, 'Read public publication release status'),
+  route('POST', '/api/knowledge/publications/:id/corrections', KN, 'VERIFIED_USER', 20, 'lead', true, 'Submit authenticated correction proposal to a knowledge publication'),
+  route('GET', '/api/knowledge/data-briefs', KN, 'PUBLIC', 120, 'general', true, 'Read public knowledge data briefs'),
+  route('GET', '/api/knowledge/glossary', KN, 'PUBLIC', 120, 'general', true, 'Search the public Persian knowledge glossary'),
+  route('GET', '/api/account/knowledge/saved', KN, 'VERIFIED_USER', 60, 'general', true, 'Read caller saved knowledge bookmarks'),
+  route('POST', '/api/account/knowledge/saved', KN, 'VERIFIED_USER', 20, 'general', true, 'Save a knowledge publication to the caller account'),
+  route('DELETE', '/api/account/knowledge/saved/:publicationId', KN, 'RESOURCE_OWNER_OR_ADMIN', 20, 'general', true, 'Remove caller-owned knowledge bookmark'),
+  route('GET', '/api/account/valuations', KN, 'VERIFIED_USER', 60, 'general', true, 'Read caller valuation reports'),
+  route('POST', '/api/account/valuations', KN, 'VERIFIED_USER', 20, 'general', true, 'Save a valuation report to the caller account'),
+  route('GET', '/api/account/valuations/:id', KN, 'RESOURCE_OWNER_OR_ADMIN', 60, 'general', true, 'Read one caller-owned valuation report'),
+  route('DELETE', '/api/account/valuations/:id', KN, 'RESOURCE_OWNER_OR_ADMIN', 20, 'general', true, 'Delete one caller-owned valuation report'),
+  route('GET', '/api/admin/knowledge/publications', KN, 'ADMIN', 60, 'general', true, 'Admin knowledge publication and correction queue'),
+  route('POST', '/api/admin/knowledge/publications/:id/transition', KN, 'ADMIN', 20, 'general', true, 'Transition editorial publication lifecycle with role policy'),
+  route('POST', '/api/admin/knowledge/publications/:id/versions', KN, 'ADMIN', 10, 'general', true, 'Publish a new version under release-manager policy'),
+  route('POST', '/api/admin/knowledge/corrections/:id/status', KN, 'ADMIN', 20, 'general', true, 'Review and transition knowledge correction status'),
 ]; export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES; export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/')); export function registeredRouteCatalogLabel(): string { return formatMillionTomanAsIntlCurrency(REGISTERED_API_ROUTES.length, 'USD', 'en'); }

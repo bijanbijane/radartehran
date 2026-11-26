@@ -12,20 +12,8 @@ export function clampLatLngRing( rawRing: [number, number][], maxPoints = 120, )
   return out;
 }
 
-export function computeApproxHexRing(lat: number, lng: number, areaSqKm = 2.5, seedId = 1): [number, number][] {
-  const safeLat = Number.isFinite(lat) ? Math.min(41, Math.max(24, lat)) : 35.7219;
-  const safeLng = Number.isFinite(lng) ? Math.min(64, Math.max(43, lng)) : 51.3347;
-  const radiusKm = Math.min(3.5, Math.max(0.6, Math.sqrt(Math.max(0.2, areaSqKm) / Math.PI)));
-  const latDeg = radiusKm / 111.0;
-  const lngDeg = radiusKm / Math.max(20, 111.0 * Math.cos((safeLat * Math.PI) / 180));
-  const ring: [number, number][] = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i + ((seedId % 7) * 0.05);
-    ring.push([Number((safeLat + latDeg * Math.sin(angle)).toFixed(5)), Number((safeLng + lngDeg * Math.cos(angle)).toFixed(5))]);
-  }
-  ring.push([ring[0][0], ring[0][1]]);
-  return ring;
-}
+export { computeApproxHexRing } from './geo/approximateBoundaryGeometry';
+import { computeApproxHexRing } from './geo/approximateBoundaryGeometry';
 
 interface ResolveQueryInput { id: number; name: string; cityNameFa: string; lat: number; lng: number; areaSqKm?: number; }
 const serverBoundaryMemoryCache = new Map<string, { ring: [number, number][]; source: BoundarySourceId; updatedAtMs: number }>();
@@ -202,7 +190,7 @@ export function registerBoundaryProtocolRoutes(app: Express): void {
         {
           hoodId: number;
           name: string;
-          source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'voronoi_urban_tessellation';
+          source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'computed_hex_fallback';
           sourceLabelFa: string;
           coordinates: [number, number][];
           updatedAtIso: string;
@@ -234,13 +222,13 @@ export function registerBoundaryProtocolRoutes(app: Express): void {
               ? 'osm_nominatim_geojson'
               : cached?.source === 'osm_overpass_polygon'
                 ? 'osm_overpass_relation'
-                : 'voronoi_urban_tessellation',
+                : 'computed_hex_fallback',
           sourceLabelFa:
             cached?.source === 'osm_nominatim_polygon'
               ? 'مرز ثبت‌شده OpenStreetMap (Nominatim)'
               : cached?.source === 'osm_overpass_polygon'
                 ? 'مرز ثبت‌شده OpenStreetMap (Overpass)'
-                : 'تسهیم هندسی شهری (Voronoi)',
+                : 'هندسهٔ تقریبی شش‌ضلعی (نه مرز رسمی)',
           coordinates,
           updatedAtIso: nowIso,
         };

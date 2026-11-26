@@ -1,6 +1,6 @@
 /** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stages 81, 83 & 85 Server-Backed Knowledge Base with /knowledge/articles/:slug Deep Links (AUD-004, AUD-007, AUD-011, AUD-014, AUD-015) */
 import React, { useEffect, useMemo, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot as User } from '../../../platform/auth';
 import { BookOpen, Info, RefreshCw, Search } from 'lucide-react';
 import type { CityId } from '../../../data/multiCityData';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';

@@ -44,10 +44,10 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           <MapProviderStatusBadge />
           <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-2 space-y-1">
             <div className="text-[10.5px] font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">تامین‌کننده تایل نقشه (Map Provider):</div>
-            <div className="grid grid-cols-4 gap-1 text-[10px]">
+            <div className="grid grid-cols-2 gap-1 text-[10px]">
               {[
-                { id: 'neshan' as const, label: 'نشان' }, { id: 'osm' as const, label: 'OSM' }, { id: 'satellite' as const, label: 'ماهواره' },
-                { id: 'carto_dark' as const, label: 'تاریک' }, ].map((st) => (
+                { id: 'neshan' as const, label: 'نشان' }, { id: 'osm' as const, label: 'OSM' },
+              ].map((st) => (
                 <button key={st.id} type="button" onClick={() => selectMapProviderStyle(st.id)} className={`py-1 px-1 rounded-lg font-bold border transition cursor-pointer ${providerState.effectiveProvider === st.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] border-slate-200 dark:border-[var(--color-border-strong)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)]'}`}>
                   {st.label}
                 </button> ))}

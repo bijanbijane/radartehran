@@ -245,7 +245,9 @@ describe('Stage 16 (RT-UI-LAYERS-001) & Stage 17 (RT-UI-NEIGHBORHOOD-001) Layer 
 
     const profile = buildNeighborhoodIntelligenceProfile(MOCK_HOODS[0], MOCK_HOODS, 'tehran', 198);
     assert.equal(profile.identity.canonicalPath, '/areas/tehran/neighborhoods/hood-1');
-    assert.equal(profile.boundary.status, 'operational');
+    assert.equal(profile.boundary.status, 'under-review');
+    assert.equal(profile.boundary.areaKm2, null, 'a map display radius is not a reviewed neighborhood polygon');
+    assert.equal(profile.identity.canonicalGeographicEntityId, null, 'legacy numeric IDs are not canonical IRNI IDs');
     assert.equal(NEIGHBORHOOD_SECTION_NAV_8.length, 8);
     const censusMetric = profile.quickMetrics.find((m) => m.id === 'official-census-household')!;
     assert.equal(censusMetric.value, null);

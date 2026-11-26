@@ -12,7 +12,8 @@ export type RadarQueueJobType =
   | 'telemetry_archive_flush'
   | 'research_event_ingest'
   | 'research_subject_erasure'
-  | 'research_retention_purge';
+  | 'research_retention_purge'
+  | 'account_lifecycle_deletion_step';
 
 export interface RadarQueueEnvelope<TPayload = Record<string, unknown>> {
   schemaVersion: '1.0';
@@ -40,6 +41,7 @@ export const VALID_JOB_TYPES = new Set<RadarQueueJobType>([
   'research_event_ingest',
   'research_subject_erasure',
   'research_retention_purge',
+  'account_lifecycle_deletion_step',
 ]);
 
 export const DEFAULT_JOB_LEASE_DURATION_MS = 60_000;

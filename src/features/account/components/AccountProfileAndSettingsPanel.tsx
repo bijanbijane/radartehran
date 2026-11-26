@@ -1,6 +1,6 @@
 /** @file src/features/account/components/AccountProfileAndSettingsPanel.tsx — Profile, Multi-Role Switcher, Privacy, Sessions, Export & Deletion */
 import React, { useEffect, useRef, useState } from 'react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot as FirebaseUser } from '../../../platform/auth';
 import { Briefcase, CheckCircle2, Download, Info, Laptop, Lock, ShieldCheck, Trash2, UserCheck } from 'lucide-react';
 import {
   DATA_REQUEST_STATUS_LABELS,

@@ -36,7 +36,7 @@ const TARGET_PROFILE: CommunityProfile = {
 };
 
 function makeFakeUser(uid: string): AuthUserSnapshot {
-  return { uid, email: null, phoneNumber: null, displayName: null, emailVerified: false, authProvider: 'unknown' };
+  return { uid, email: null, phoneNumber: null, displayName: null, emailVerified: false, authProvider: 'unknown', providerIds: [], isAnonymous: false };
 }
 
 test('FOLLOW-021..FOLLOW-022: SSR renders Follow button for signed-in non-owner, and hides it for guest or self', () => {

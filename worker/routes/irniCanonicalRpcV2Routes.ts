@@ -24,7 +24,7 @@ function statusFor(code: IrniRpcError['code']): number {
   }
 }
 function respond<T>(ctx: WorkerRequestContext, result: RpcResult<T>): Response {
-  if (result.ok) {
+  if (result.ok === true) {
     return jsonWorkerResponse(ctx, 200, {
       status: 'ok',
       contractVersion: '2.0.0',
@@ -114,44 +114,45 @@ export async function handleIrniCanonicalRpcV2Route(ctx: WorkerRequestContext): 
     const query = parseIdentifier(ctx);
     const revision = positiveInteger(ctx, 'expectedRevision', true);
     if (!query) return badRequest(ctx, 'نوع یا مقدار شناسه برای حل canonical نامعتبر است.');
-    if (!revision.ok) return revision.response;
+    if (revision.ok === false) return revision.response;
     return respond(ctx, await client.resolveIdentifier(query, revision.value!));
   }
 
   if (resource === 'aliases') {
     const revision = positiveInteger(ctx, 'expectedRevision', true);
-    if (!revision.ok) return revision.response;
+    if (revision.ok === false) return revision.response;
     const system = optionalString(ctx, 'legacySystemCode', 128);
-    if (!system.ok) return system.response;
+    if (system.ok === false) return system.response;
     return respond(ctx, await client.listApprovedLegacyAliases(system.value, revision.value!));
   }
 
   if (resource === 'entities') {
     const revision = positiveInteger(ctx, 'expectedRevision', true);
-    if (!revision.ok) return revision.response;
+    if (revision.ok === false) return revision.response;
     const limit = positiveInteger(ctx, 'limit', false, MAX_PAGE);
-    if (!limit.ok) return limit.response;
+    if (limit.ok === false) return limit.response;
     const cursor = optionalString(ctx, 'cursor', MAX_CURSOR);
-    if (!cursor.ok) return cursor.response;
+    if (cursor.ok === false) return cursor.response;
     const sortBy = optionalString(ctx, 'sortBy', 64);
-    if (!sortBy.ok) return sortBy.response;
+    if (sortBy.ok === false) return sortBy.response;
     if (sortBy.value && !['canonicalNameFa', 'geographicEntityId', 'issuedOrderIndex'].includes(sortBy.value)) {
       return badRequest(ctx, 'فیلد مرتب‌سازی در allowlist مجاز نیست.');
     }
-    const sortDirection = ctx.url.searchParams.get('sortDirection') || undefined;
-    if (sortDirection !== undefined && sortDirection !== 'ASC' && sortDirection !== 'DESC') {
+    const sortDirectionRaw = ctx.url.searchParams.get('sortDirection') || undefined;
+    if (sortDirectionRaw !== undefined && sortDirectionRaw !== 'ASC' && sortDirectionRaw !== 'DESC') {
       return badRequest(ctx, 'sortDirection فقط می‌تواند ASC یا DESC باشد.');
     }
+    const sortDirection = sortDirectionRaw as 'ASC' | 'DESC' | undefined;
     const entityType = optionalString(ctx, 'entityType', 128);
-    if (!entityType.ok) return entityType.response;
+    if (entityType.ok === false) return entityType.response;
     const classification = optionalString(ctx, 'classificationSystemId', 256);
-    if (!classification.ok) return classification.response;
+    if (classification.ok === false) return classification.response;
     const parent = optionalString(ctx, 'parentGeographicEntityId', MAX_ID);
-    if (!parent.ok) return parent.response;
+    if (parent.ok === false) return parent.response;
     const province = optionalString(ctx, 'provinceGeographicEntityId', MAX_ID);
-    if (!province.ok) return province.response;
+    if (province.ok === false) return province.response;
     const canonicalNameQuery = optionalString(ctx, 'canonicalNameQuery', 80);
-    if (!canonicalNameQuery.ok) return canonicalNameQuery.response;
+    if (canonicalNameQuery.ok === false) return canonicalNameQuery.response;
     return respond(ctx, await client.listApprovedEntitiesPaginated(
       {
         ...(entityType.value ? { entityType: entityType.value } : {}),
@@ -178,7 +179,7 @@ export async function handleIrniCanonicalRpcV2Route(ctx: WorkerRequestContext): 
     const id = parsePathId(segments[1] || '');
     if (!id) return badRequest(ctx, 'شناسه canonical در مسیر نامعتبر است.');
     const revision = positiveInteger(ctx, 'expectedRevision', true);
-    if (!revision.ok) return revision.response;
+    if (revision.ok === false) return revision.response;
     if (segments.length === 3) return respond(ctx, await client.listApprovedRelationshipsForEntity(id, revision.value!));
     return respond(ctx, await client.getApprovedEntityByCanonicalId(id, revision.value!));
   }

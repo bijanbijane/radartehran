@@ -46,7 +46,7 @@ export function isDurableObjectMetadataProductionMode(
   return isProductionApiRuntime(env);
 }
 
-async function isSafeRecord(value: unknown): Promise<value is StoredObjectRecord> {
+async function isSafeRecord(value: unknown): Promise<boolean> {
   const { isSafeStoredObjectRecord } = await import('./serverObjectStorageHelpers');
   return isSafeStoredObjectRecord(value);
 }
@@ -56,7 +56,7 @@ async function docToRecord(data: Record<string, unknown> | undefined): Promise<S
   if (data.schemaVersion === STORED_OBJECT_METADATA_SCHEMA && (await isSafeRecord(data.record))) {
     return data.record as StoredObjectRecord;
   }
-  if (await isSafeRecord(data)) return data as StoredObjectRecord;
+  if (await isSafeRecord(data)) return data as unknown as StoredObjectRecord;
   return null;
 }
 

@@ -7,7 +7,6 @@ export * from './session/sessionRecovery';
 export * from './session/sessionExpiry';
 export * from './session/sessionManager';
 export * from './identity/identityResolver';
-export * from './identity/firebaseIdTokenClaims';
 export * from './identity/profileResolver';
 export * from './authorization/roleResolver';
 export * from './authorization/permissionResolver';

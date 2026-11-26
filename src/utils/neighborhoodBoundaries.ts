@@ -12,7 +12,7 @@ export interface NeighborhoodGeoJSONFeature {
   geometry: { type: 'Polygon'; coordinates: [number, number][][]; };
 }
 export interface AuthoritativeBoundaryRecord {
-  hoodId: number; name: string; source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'voronoi_urban_tessellation';
+  hoodId: number; name: string; source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'computed_hex_fallback';
   sourceLabelFa: string; coordinates: [number, number][]; geojson?: NeighborhoodGeoJSONFeature; updatedAtIso: string;
 }
 export interface ZoomAdaptivePolygonStyle {

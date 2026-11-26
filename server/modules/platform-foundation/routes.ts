@@ -65,7 +65,7 @@ export async function defaultPlatformAdminAuthVerifier(
   req: Request,
   requiredPermission: 'platform:admin:read' | 'platform:admin:write',
 ): Promise<PlatformAdminAuthIdentity> {
-  const auth = await verifyAdminApiAuthorization(req);
+  const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
   if (!auth.authorized) {
     return {
       authorized: false,

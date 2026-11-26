@@ -45,7 +45,11 @@ export const UnifiedSearchPage: React.FC<UnifiedSearchPageProps> = ({
   const [activeSuggestionIdx, setActiveSuggestionIdx] = useState(0);
 
   return (
-    <section dir="rtl" aria-label="صفحه جست‌وجو و کشف یکپارچه" className="mx-auto max-w-6xl space-y-4 p-4 text-right">
+    <section dir="rtl" aria-labelledby="unified-search-heading" className="mx-auto max-w-6xl space-y-4 p-4 text-right" data-testid="unified-search-page">
+      <header className="space-y-1 border-b border-[var(--color-border-subtle)] pb-3">
+        <h1 id="unified-search-heading" className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)]">جست‌وجوی سراسری رادار تهران</h1>
+        <p className="text-sm text-[var(--color-text-muted)]">جست‌وجو در محله‌ها، آگهی‌ها، املاک، ساختمان‌ها، خدمات تخصصی و تحلیل بازار در یک مسیر یکپارچه.</p>
+      </header>
       <div className="relative">
         <SearchInput
           value={request.rawQuery}
@@ -133,9 +137,9 @@ export const UnifiedSearchPage: React.FC<UnifiedSearchPageProps> = ({
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <h4 className="line-clamp-2 text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
+                <h3 className="line-clamp-2 text-sm font-bold text-slate-900 dark:text-[var(--color-text-primary)]">
                   {hit.titleFa}
-                </h4>
+                </h3>
                 <span className="shrink-0 text-xs text-slate-500 dark:text-[var(--color-text-muted)]">
                   {hit.cityNameFa}
                 </span>

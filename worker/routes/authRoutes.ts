@@ -323,7 +323,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
   const { method, pathname, request, env } = ctx;
   if (!pathname.startsWith('/api/auth/')) return null;
   const dbRes = requireUserDb(env);
-  if (!dbRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: dbRes.code });
+  if (dbRes.ok === false) return jsonWorkerResponse(ctx, 503, { status: 'error', code: dbRes.code });
   const db = dbRes.db;
   const requiresPhoneSchema = pathname.startsWith('/api/auth/phone/');
   if (!await isAuthSchemaReady(db, requiresPhoneSchema)) {
@@ -413,7 +413,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
   if (method === 'POST' && pathname === '/api/auth/phone/start') {
     if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
     const parsed = await readValidatedJsonBody(request, 4 * 1024);
-    if (!parsed.ok) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
+    if (parsed.ok === false) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
     const phone = normalizePhone(parsed.body.phone);
     if (!phone) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_PHONE_NUMBER' });
     const piiHashSecret = String(env.AUTH_PII_HMAC_SECRET || '').trim();
@@ -454,7 +454,7 @@ export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<
   if (method === 'POST' && pathname === '/api/auth/phone/verify') {
     if (!validMutationOrigin(ctx)) return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ORIGIN_FORBIDDEN' });
     const parsed = await readValidatedJsonBody(request, 4 * 1024);
-    if (!parsed.ok) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
+    if (parsed.ok === false) return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code });
     const challengeId = typeof parsed.body.challengeId === 'string' ? parsed.body.challengeId.trim() : '';
     const code = typeof parsed.body.code === 'string' ? parsed.body.code.trim() : '';
     if (!/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{4,10}$/.test(code)) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_OTP_INPUT' });

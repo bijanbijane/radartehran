@@ -55,6 +55,7 @@ function resolveToolsHeading(subTab: ToolsSubTabId | undefined, isEn: boolean): 
     case 'compare_areas': return isEn ? 'Neighborhood Comparison Matrix' : 'مقایسه تحلیلی محله‌ها';
     case 'compare_props': return isEn ? 'Side-by-Side Property Comparison' : 'مقایسه کنار هم دو ملک';
     case 'calculators': return isEn ? 'Mortgage, Commission & Rent Calculators' : 'محاسبه‌گرهای وام، کمیسیون و رهن';
+    case 'lab': return isEn ? 'Radar UI Design Lab' : 'آزمایشگاه طراحی رابط رادار';
     default: return isEn ? 'Real Estate Transaction Toolkit' : 'ابزارها و محاسبه‌گرهای هوشمند مسکن';
   }
 }
@@ -68,15 +69,16 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode] = useExperienceMode();
   const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
-  const devQueryActive = typeof window !== 'undefined' && typeof window.location?.search === 'string' && new URLSearchParams(window.location.search).get('dev') === '1';
-  const canAccessUiLab = isRadarUiLabAvailable(isDevEnvironment === true || devQueryActive);
+  // The laboratory is restricted by the actual Vite development environment, never by a user-controlled URL flag.
+  const canAccessUiLab = isRadarUiLabAvailable(isDevEnvironment);
   const displayDealLabelFa = isEn ? 'Estimated Deal' : 'برآورد معامله';
   const safeTargetSqm = sanitizeContractTargetSqm(targetSqm);
   const initialContractTotalMillion = calculateContractInitialTotalMillion(selectedHood?.buyPerSqm, safeTargetSqm);
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showExtendedCatalog, setShowExtendedCatalog] = useState<boolean>(false);
-  const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false), [showUiLab, setShowUiLab] = useState<boolean>(false);
+  const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
+  const isUiLabRoute = activeSubTab === 'lab';
   const [showValuationWorkspace, setShowValuationWorkspace] = useState<boolean>(activeSubTab === 'valuation');
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
   const [showVerifierModal, setShowVerifierModal] = useState<boolean>(false), [showContractShieldModal, setShowContractShieldModal] = useState<boolean>(false);
@@ -84,7 +86,8 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const showDedicatedSubWorkspace = Boolean(activeSubTab && activeSubTab !== 'all');
 
   useEffect(() => {
-    if (activeSubTab === 'valuation') { setActiveCat('financial'); setShowValuationWorkspace(true); }
+    if (activeSubTab === 'lab') { setActiveCat('all'); setShowValuationWorkspace(false); }
+    else if (activeSubTab === 'valuation') { setActiveCat('financial'); setShowValuationWorkspace(true); }
     else if (activeSubTab === 'calculators' || activeSubTab === 'budget_fit' || activeSubTab === 'verifier') { setActiveCat('financial'); setShowValuationWorkspace(false); }
     else if (activeSubTab === 'compare_props' || activeSubTab === 'compare_areas') { setActiveCat('decision'); setShowValuationWorkspace(false); }
     else { setActiveCat('all'); setShowValuationWorkspace(false); }
@@ -207,6 +210,12 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           </p>
         </div>
 
+        {canAccessUiLab && activeSubTab !== 'lab' && (
+          <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => {
+            if (onSelectSubTab) onSelectSubTab('lab');
+            else if (typeof window !== 'undefined') window.location.assign('/tools/lab');
+          }} className="min-h-[44px] px-3 py-1.5 rounded-lg border border-[var(--color-border-strong)] text-sm font-bold text-[var(--color-brand-fg)] self-start lg:self-auto">{isEn ? 'Open development lab' : 'ورود به آزمایشگاه توسعه'}</button>
+        )}
         {!showDedicatedSubWorkspace && (
           <div className="p-3.5 rounded-2xl bg-[var(--color-brand-soft)]/70 border border-[var(--color-brand-600)]/25 text-sm space-y-2 w-full lg:w-auto lg:min-w-[300px]">
             <div className="flex items-center justify-between gap-2">
@@ -332,9 +341,6 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
                   <span>{shouldRenderExtendedCatalog ? 'بستن فهرست ابزارهای تکمیلی' : `نمایش ${fmtCount(toolCounts.total)} ابزار تخصصی و تکمیلی`}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${shouldRenderExtendedCatalog ? 'rotate-180' : ''}`} />
                 </button>
-                {canAccessUiLab && (
-                  <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`min-h-[44px] md:min-h-[40px] px-3 py-1.5 rounded-[8px] text-sm font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-strong)] text-[var(--color-brand-fg)]'}`}>Radar UI Lab</button>
-                )}
               </div>
             </div>
 
@@ -349,8 +355,26 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </>
       )}
 
-      {canAccessUiLab && showUiLab && (
-        <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} isDevEnvironment={isDevEnvironment === true || devQueryActive} /></React.Suspense>
+      {isUiLabRoute && canAccessUiLab && (
+        <section data-testid="radar-ui-lab-route" aria-label={isEn ? 'Radar UI Design Lab' : 'آزمایشگاه طراحی رابط رادار'} className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-3 sm:p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[var(--color-text-primary)]">{isEn ? 'Experimental UI Lab' : 'آزمایشگاه مستقل و آزمایشی رابط کاربری'}</h2>
+              <p className="text-sm text-[var(--color-text-muted)]">{isEn ? 'Development-only visual experiments, isolated from public decision tools.' : 'آزمایش‌های بصری فقط در محیط توسعه؛ جدا از ابزارهای تصمیم‌گیری عمومی.'}</p>
+            </div>
+            <button type="button" onClick={() => onSelectSubTab?.('all')} className="min-h-[44px] px-3 rounded-lg border border-[var(--color-border-strong)] text-sm font-bold text-[var(--color-text-primary)]">{isEn ? 'Back to tools' : 'بازگشت به ابزارها'}</button>
+          </div>
+          <React.Suspense fallback={<div className="p-4 text-sm text-[var(--color-text-muted)]">{isEn ? 'Loading UI lab…' : 'در حال بارگذاری آزمایشگاه رابط…'}</div>}>
+            <RadarUiLabPanel onClose={() => onSelectSubTab?.('all')} isDevEnvironment={canAccessUiLab} />
+          </React.Suspense>
+        </section>
+      )}
+      {isUiLabRoute && !canAccessUiLab && (
+        <section role="alert" data-testid="radar-ui-lab-unavailable" className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-bg-muted)] p-5 space-y-3">
+          <h2 className="font-bold text-[var(--color-text-primary)]">{isEn ? 'Development environment required' : 'آزمایشگاه فقط در محیط توسعه در دسترس است'}</h2>
+          <p className="text-sm text-[var(--color-text-secondary)]">{isEn ? 'This experimental workspace is not part of the public production tools catalogue.' : 'این محیط آزمایشی بخشی از کاتالوگ ابزارهای عمومی نسخهٔ عملیاتی نیست.'}</p>
+          <button type="button" onClick={() => onSelectSubTab?.('all')} className="min-h-[44px] px-4 rounded-lg bg-[var(--color-brand-600)] text-white text-sm font-bold">{isEn ? 'Return to tools' : 'بازگشت به ابزارها'}</button>
+        </section>
       )}
       {showEmbeddedLab && (
         <div className="rounded-2xl border border-[var(--color-brand-600)]/40 p-4 bg-[var(--color-brand-soft)]/35 space-y-3" data-testid="decision-lab-panel">

@@ -25,14 +25,12 @@ export async function reconcileAmbiguousBargainCommit(
   _db: unknown,
   bargainId: string,
   expectedUserId: string,
-  getIdToken?: () => Promise<string>,
 ): Promise<{ persisted: boolean; ownerVerified: boolean; status: 'confirmed_persisted' | 'confirmed_absent' | 'outcome_unknown' }> {
-  if (!bargainId || !expectedUserId || !getIdToken) {
+  if (!bargainId || !expectedUserId) {
     return { persisted: false, ownerVerified: false, status: 'confirmed_absent' };
   }
   try {
-    const token = await getIdToken();
-    const res = await fetch('/api/my-bargains', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    const res = await fetch('/api/my-bargains', { credentials: 'same-origin', cache: 'no-store' });
     if (!res.ok) return { persisted: false, ownerVerified: false, status: 'outcome_unknown' };
     const body = (await res.json()) as { items?: { id: string; ownerUid?: string }[] };
     const found = (body.items || []).find((x) => x.id === bargainId);
@@ -49,7 +47,8 @@ export async function reconcileAmbiguousBargainCommit(
 export async function attachMediaToPublishedBargain(params: {
   bargainId: string;
   objectIds: readonly string[];
-  getIdToken: () => Promise<string>;
+  /** @deprecated Authentication is carried by the HttpOnly same-origin session cookie. */
+  getIdToken?: () => Promise<string>;
   fetchImpl?: typeof fetch;
 }): Promise<{
   ok: boolean;
@@ -63,13 +62,9 @@ export async function attachMediaToPublishedBargain(params: {
   }
   const fetchFn = params.fetchImpl ?? fetch;
   try {
-    const idToken = await params.getIdToken();
     const res = await fetchFn('/api/object-storage/attach-to-bargain', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-      },
+      headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
       body: JSON.stringify({
         bargainId: cleanBargainId,
         objectIds: cleanIds,
@@ -122,6 +117,7 @@ export async function syncPublishedBargainToExpressServer(params: {
   objectStorageBucket?: string;
   objectStorageKeys?: string[];
   objectStorageObjectIds?: string[];
+  /** @deprecated Authentication is carried by the HttpOnly same-origin session cookie. */
   getIdToken?: () => Promise<string>;
   fetchImpl?: typeof fetch;
 }): Promise<{
@@ -132,16 +128,10 @@ export async function syncPublishedBargainToExpressServer(params: {
   const fetchFn = params.fetchImpl ?? fetch;
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (params.getIdToken) {
-      try {
-        const token = await params.getIdToken();
-        if (token) headers.Authorization = `Bearer ${token}`;
-      } catch {
-      }
-    }
     const res = await fetchFn('/api/bargains', {
       method: 'POST',
       headers,
+      credentials: 'same-origin',
       body: JSON.stringify({
         id: params.id,
         city: params.city,
@@ -187,7 +177,6 @@ export interface PublisherOwnedBargainItem extends BargainListing {
   ownerUserId?: string;
 }
 export async function fetchMyPublishedBargains(
-  getIdToken: () => Promise<string>,
   fetchImpl: typeof fetch = fetch
 ): Promise<{
   ok: boolean;
@@ -195,10 +184,7 @@ export async function fetchMyPublishedBargains(
   errorMessageFa?: string;
 }> {
   try {
-    const token = await getIdToken();
-    const res = await fetchImpl('/api/my-bargains', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetchImpl('/api/my-bargains', { credentials: 'same-origin', cache: 'no-store' });
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
       return {
@@ -233,7 +219,8 @@ export async function updateMyPublishedBargain(params: {
     imageUrl?: string;
     imageUrls?: string[];
   };
-  getIdToken: () => Promise<string>;
+  /** @deprecated Authentication is carried by the HttpOnly same-origin session cookie. */
+  getIdToken?: () => Promise<string>;
   fetchImpl?: typeof fetch;
 }): Promise<{
   ok: boolean;
@@ -251,10 +238,9 @@ export async function updateMyPublishedBargain(params: {
   }
   const fetchFn = params.fetchImpl ?? fetch;
   try {
-    const token = await params.getIdToken();
     const res = await fetchFn(`/api/my-bargains/${encodeURIComponent(cleanId)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
       body: JSON.stringify(params.updates),
     });
     const body = await res.json().catch(() => ({}));
@@ -266,7 +252,8 @@ export async function updateMyPublishedBargain(params: {
 }
 export async function deleteMyPublishedBargain(params: {
   bargainId: string;
-  getIdToken: () => Promise<string>;
+  /** @deprecated Authentication is carried by the HttpOnly same-origin session cookie. */
+  getIdToken?: () => Promise<string>;
   fetchImpl?: typeof fetch;
 }): Promise<{
   ok: boolean;
@@ -277,10 +264,9 @@ export async function deleteMyPublishedBargain(params: {
   if (!cleanId || !/^[A-Za-z0-9_-]{3,128}$/.test(cleanId)) return { ok: false, errorMessageFa: 'شناسه آگهی نامعتبر است.' };
   const fetchFn = params.fetchImpl ?? fetch;
   try {
-    const token = await params.getIdToken();
     const res = await fetchFn(`/api/my-bargains/${encodeURIComponent(cleanId)}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'same-origin',
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, errorMessageFa: body?.error || 'حذف آگهی انجام نشد.' };
