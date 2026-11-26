@@ -205,8 +205,8 @@ export function validateNipsGoldenReference(input: unknown): readonly NipsGolden
   }
 
   const rules = input.profileRules;
-  if (!Array.isArray(rules) ||
-      NIPS_REQUIRED_GOLDEN_PROFILE_RULES.some((rule) => !rules.includes(rule))) {
+  if (!isRecord(rules) ||
+      NIPS_REQUIRED_GOLDEN_PROFILE_RULES.some((rule) => rules[rule] !== true)) {
     issues.push({
       code: 'MISSING_PROFILE_RULE',
       path: 'profileRules',
