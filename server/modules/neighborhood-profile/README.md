@@ -1,6 +1,6 @@
 # NIPS Backend Profile Structure — v1
 
-**Status:** Backend domain schema scaffold; no persistence, API, ingestion, or production integration.
+**Status:** Runtime foundation implemented on a feature branch; production persistence/API integration remains blocked on the shared NIPS database and IRNI read-contract decisions.
 **Scope:** One canonical neighborhood profile. This is not a user profile and does not replace IRNI.
 **Design rule:** Begin from a clean profile contract. Legacy frontend profile structures are not authoritative schema inputs.
 
@@ -139,3 +139,16 @@ The next engineering stage is to review this schema against actual IRNI, Source 
 - Publication readiness is product/audience/version-specific. The default public profile policy requires identity, geography, and evidence to be READY; optional domains may be READY, PARTIAL, UNAVAILABLE, or explicitly NOT_APPLICABLE.
 - Optional domains are not required to contain a metric merely to publish the profile. A policy may set per-required-domain minimum metric counts and a maximum blocked-metric count.
 - A published snapshot is validated against the exact policy supplied by the assembler. Persist the policy version and decision with the publication record; do not treat this default as a production approval.
+
+
+## 10. Runtime foundation added (2026-11-26)
+
+The implementation now includes:
+- Explicit mapping of the twelve NIPS catalog categories / 120 variable IDs into the fourteen profile domains. The \`history\` domain is cross-cutting rather than a catalog category.
+- Golden Reference structural validation; the fixture cannot be treated as real neighborhood data.
+- Strict deterministic JSON serialization and SHA-256 snapshot content hashing.
+- Confirmed-identity-gated profile assembly and profile/readiness validation.
+- Separate publication decisions, immutable snapshot repository port and compare-and-swap activation contract.
+- Public allow-list serialization that suppresses values without PUBLIC_REDISTRIBUTION or DERIVED_ONLY evidence permission.
+
+The repository port is intentionally not wired to USER_DB or RESEARCH_DB. No authorized shared NIPS database binding or migration ownership is registered yet. A production adapter, route mounting and migrations remain blocked until those contracts are approved and integration-tested. See \`docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-BACKEND-IMPLEMENTATION-FOUNDATION-V1.md\`.
