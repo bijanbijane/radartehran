@@ -76,7 +76,9 @@
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend",
-    "test:nips": "tsx --test tests/nips-neighborhood-profile-schema.test.ts tests/nips-backend-runtime-foundation.test.ts"
+    "test:nips": "tsx --test tests/nips-neighborhood-profile-schema.test.ts tests/nips-backend-runtime-foundation.test.ts",
+    "test:irni-geographic-rpc": "tsx --test tests/irni-geographic-rpc-client.test.ts",
+    "typecheck:irni-geographic-rpc": "tsc --noEmit -p tsconfig.irni-geographic-rpc.json"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.3.0",
