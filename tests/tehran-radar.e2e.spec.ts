@@ -168,6 +168,45 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
+    // A cancelled touch gesture must not be applied by a later pointerup event.
+    const cancelBox = await sheetHandle.boundingBox();
+    expect(cancelBox).not.toBeNull();
+    const cancelX = cancelBox!.x + cancelBox!.width / 2;
+    await sheetHandle.dispatchEvent('pointerdown', {
+      pointerId: 42,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      clientX: cancelX,
+      clientY: 200,
+    });
+    await sheetHandle.dispatchEvent('pointercancel', {
+      pointerId: 42,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      clientX: cancelX,
+      clientY: 260,
+    });
+    await sheetHandle.dispatchEvent('pointerup', {
+      pointerId: 42,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      clientX: cancelX,
+      clientY: 260,
+    });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await sheetHandle.click();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'collapsed');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'false');
+    await sheetHandle.click();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
     const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
     await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
     const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
