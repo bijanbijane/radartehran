@@ -13,7 +13,7 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "qa/triad-regression-coverage-2026-11-27",
-    "head_commit": "a488f9750211d9afec46d4ed33258c47e70171f2",
+    "head_commit": "0de55ae176fb25001ed4e09c62fdc8077ef72cc8",
     "working_tree_status": "REMOTE_BRANCH_COMMITTED; LOCAL_CHECKOUT_UNAVAILABLE",
     "last_verified_commit": "a488f9750211d9afec46d4ed33258c47e70171f2"
   },
@@ -30,11 +30,12 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-195-CI-WORKFLOW-SCRIPT-REPAIR",
-    "checkpoint_timestamp_utc": "2026-11-27T10:03:45.000Z",
-    "last_safe_operation": "OP-194 committed to the existing QA branch: corrected .github/workflows/cloudflare-native-auth-validation.yml to invoke the existing npm run test:auth script; confirmed the exact file content and branch tip through GitHub.",
-    "last_completed_operation": "OP-193 remains the last fully verified engineering package. OP-194 is implemented but not test-verified.",
-    "next_exact_action": "Restore local or GitHub Actions job execution; run npm run test:auth, npm run test:triad, write-pause, Cloudflare, security and root suites. Then resume Phase 6 residual Express Firestore-to-D1 domain migrations in isolated, backward-compatible packages.",
-    "resume_status": "BLOCKED_BY_VERIFICATION_ENVIRONMENT"
+    "checkpoint_timestamp_utc": "2026-11-27T10:07:15.000Z",
+    "last_safe_operation": "OP-195: Created and read-back-verified RMEP remediation, blockers, next-actions documents; reconciled QA execution state, defect register, and progress log. OP-194 fixed the invalid native-auth CI script in the existing PR #71 branch.",
+    "last_completed_operation": "OP-193 remains the last fully test-verified engineering code package. OP-194 is implemented and GitHub read-back verified but remains not test-verified.",
+    "next_exact_action": "Restore GitHub Actions job diagnostics or the authorized MacBook runner. Execute npm run test:auth, npm run test:triad, npx tsx --test worker/db/writePause.test.ts, npm run test:cloudflare, npm run test:security and broad backend type/build/architecture checks. Only after test execution resumes, continue domain-by-domain residual Express Firestore-to-D1 retirement.",
+    "resume_status": "BLOCKED_BY_VERIFICATION_ENVIRONMENT",
+    "state_update_parent_commit": "0de55ae176fb25001ed4e09c62fdc8077ef72cc8"
   },
   "execution_history": {
     "completed_tasks": [
@@ -1820,6 +1821,14 @@
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T10:03:45.000Z"
+    },
+    {
+      "operation_id": "OP-195",
+      "phase": "PHASE-6",
+      "description": "Create missing persistent remediation/blocker/next-action records and reconcile QA execution state, defect register, and QA progress log against the actual GitHub branch and latest unobservable workflow failures.",
+      "status": "COMPLETED_AND_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T10:07:15.000Z"
     }
   ],
   "tests": [
@@ -1945,15 +1954,15 @@
       "id": "BLK-CI-RUNNER-001",
       "status": "BLOCKED",
       "severity": "HIGH",
-      "summary": "GitHub Actions jobs terminate before exposing steps or logs; the workflow runner/root cause remains unconfirmed.",
-      "evidence": "Latest PR #71 runs 45978898737, 45978898927, 45978898828, 45978898874, and 45978898800; jobs expose no step list or log URL. Log retrieval previously returned 404 BlobNotFound."
+      "summary": "GitHub Actions jobs report failure before exposing usable step output or job logs; exact root cause unconfirmed.",
+      "evidence": "PR #71 workflow runs 45978898737, 45978898927, 45978898828, 45978898874, and 45978898800; returned job payloads lacked steps/logs. A prior log retrieval attempt returned 404 BlobNotFound."
     },
     {
       "id": "BLK-LOCAL-RUNNER-001",
       "status": "BLOCKED",
       "severity": "HIGH",
-      "summary": "The linked MacBook Desktop Commander device is offline, preventing local test execution.",
-      "evidence": "Device ae251c1c-bfb2-441d-8716-ffa91b6e4ae5 reported Offline (last seen 20h before inspection)."
+      "summary": "The authorized MacBook Desktop Commander device is offline; local test execution is unavailable.",
+      "evidence": "Device ae251c1c-bfb2-441d-8716-ffa91b6e4ae5 reported Offline when listed during this session."
     }
   ],
   "pending_authorization": [
@@ -2196,9 +2205,10 @@
     "must_verify_before_resume": [
       "Verify MASTER-PROMPT.md SHA-256 matches 4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
     ],
-    "next_action": "Restore a runnable local or GitHub Actions environment; first execute npm run test:auth, npm run test:triad, npx tsx --test worker/db/writePause.test.ts, npm run test:cloudflare and npm run test:security. Do not mark OP-194 verified until the auth suite runs successfully. Then continue residual Express Firestore-to-D1 migration by domain, preserving current legacy fallback until an equivalent D1 adapter and tests exist.",
+    "next_action": "Restore local/CI runner, then run auth, D1 triad, write-pause, Cloudflare, security and broad backend quality gates. Do not resume risky Firestore-to-D1 mutation work until a reproducible verification environment is available.",
     "current_branch": "qa/triad-regression-coverage-2026-11-27",
     "current_head_commit": "a488f9750211d9afec46d4ed33258c47e70171f2",
-    "last_session_status": "OP-194 IMPLEMENTED_BUT_NOT_VERIFIED; CI AND LOCAL EXECUTION BLOCKED"
+    "last_session_status": "OP-194 IMPLEMENTED_BUT_NOT_VERIFIED; OP-195 PERSISTENT RECORDS COMPLETED; APPLICATION TESTS BLOCKED",
+    "current_head_commit_before_state_update": "0de55ae176fb25001ed4e09c62fdc8077ef72cc8"
   }
 }
