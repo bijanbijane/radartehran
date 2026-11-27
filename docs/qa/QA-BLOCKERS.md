@@ -27,3 +27,10 @@ No production credentials, production data, deployment, migration, secret rotati
    - The checked-in `bun.lock` root workspace is named `react-example`, while `package.json` is `radartehran`; root dependency groups also differ. The repository's npm lockfile is the intended source for the `npm run build` workflow.
    - Correction committed in this QA branch: remove the stale Bun lockfile and pin `packageManager` to `npm@10.9.2`. This is intended to make Workers Builds select npm and use `package-lock.json`.
    - Pending: verify a new Preview build reaches dependency installation and the frontend build command. No successful build is claimed.
+
+
+5. **GitHub Actions dispatch rejection — root cause not yet accessible**
+   - Five latest runs on observed PR head `757322b10e5090b2889a2089e79834f4f8000143` fail in 1–2 seconds with `runner_id=0`, empty runner name, and zero steps. This confirms no runner executed the jobs; it does not identify why dispatch was rejected.
+   - The repository is private and the linked GitHub connector can read repository metadata and workflow jobs, but its fetch interface rejected the Actions settings and check-run annotations endpoints. Repository metadata confirms admin permission, not billing eligibility or Actions policy.
+   - Cloudflare's public status is not a substitute for this diagnosis. Next evidence required: inspect each failed job's check-run annotations, repository/account Actions policy, and billing/usage for the run date; if no actionable annotation appears, provide the run IDs and workflow YAML to GitHub Support.
+   - Official GitHub troubleshooting guidance: review billing errors, Actions activity metrics, runner troubleshooting, and workflow logs; GitHub Support requests workflow-run URLs and workflow files for diagnosis.
