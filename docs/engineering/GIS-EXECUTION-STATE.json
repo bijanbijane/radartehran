@@ -18,7 +18,10 @@
     "Verified read-only D1 SELECT, JSON and math probes; documented that RTree runtime support remains unverified because introspection/EXPLAIN was denied by the REST query surface.",
     "Corrected GIS ownership documentation to align with the NIPS ERD proposal for a dedicated radar-profile-db; no database was created.",
     "Hardened point resolution, profile reads and boundary mutations against multiple ACTIVE versions within one entity history; added regression tests for fail-closed assignment and independent repair.",
-    "Verified the current branch HEAD and exact-SHA GitHub Actions workflow/job conclusions; job logs were unavailable, so no automated test result is claimed."
+    "Verified the current branch HEAD and exact-SHA GitHub Actions workflow/job conclusions; job logs were unavailable, so no automated test result is claimed.",
+    "Added strict MultiPolygon component topology validation: reject touching/intersecting components and overlapping filled interiors; preserve valid island-in-hole cases.",
+    "Added regression tests for overlapping/touching MultiPolygon components and valid disjoint/island-in-hole components.",
+    "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck."
   ],
   "not_verified": [
     "Execution of npm run test:geospatial on branch HEAD b2c7265fda504af48726a19317c420058efbeef7",
@@ -27,7 +30,9 @@
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
     "Authoritative Tehran neighborhood polygon dataset, license and CRS",
-    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories"
+    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories",
+    "Execution of the new dedicated GIS workflow on the latest commit",
+    "Focused geospatial suite and repository TypeScript typecheck on the latest commit"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -35,8 +40,8 @@
   "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "NOT_VERIFIED",
-    "reason": "On HEAD b2c7265fda504af48726a19317c420058efbeef7, PR-triggered workflow runs concluded failure: path-detect, broad TypeScript/architecture/unit/storage/stress/build, D1/Worker binding, IRNI RPC and native-auth jobs. Dependent contracts/API/frontend/E2E jobs were skipped. GitHub job-log retrieval returned BlobNotFound, so it is not established that npm run test:geospatial executed. The authorized Desktop Commander MacBook is offline."
+    "status": "PENDING_DEDICATED_CI",
+    "reason": "A branch-scoped GIS workflow was added to isolate geospatial tests from broad PR workflows. Awaiting its exact-SHA run; no test is marked passed yet."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -69,7 +74,7 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore an online execution runner; execute npm run test:geospatial, npm run test:unit, lint, architecture checks, typechecks and build on HEAD b2c7265fda504af48726a19317c420058efbeef7. Do not provision radar-profile-db or alter production bindings until ownership and authorization are explicitly approved.",
+  "next_exact_action": "Inspect the dedicated GIS workflow run on the latest branch SHA. If it starts, resolve test/typecheck failures; if it fails before steps, recover runner/Actions diagnostics or use an online local runner.",
   "blockers": [
     "No online execution runner; Desktop Commander MacBook offline; current exact-SHA GitHub Actions workflows fail, and their logs cannot be retrieved.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
@@ -121,5 +126,6 @@
     ],
     "job_log_retrieval": "BlobNotFound",
     "interpretation": "Workflow failure is confirmed, but GIS test execution and the underlying runner failure cause are not confirmed."
-  }
+  },
+  "latest_branch_sha_at_record": "pending-after-documentation-commit"
 }
