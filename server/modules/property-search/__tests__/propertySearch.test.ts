@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   InMemorySearchCacheAdapter,
+  matchesSearchFilters,
   PropertySearchService,
   PropertySearchValidationError,
   SearchQueryValidator,
@@ -290,6 +291,31 @@ describe('Property Search & Discovery Backend Module', () => {
       assert.ok(tehranHood.aggregations);
       assert.equal(tehranHood.aggregations.totalMatches, 2);
       assert.ok(tehranHood.aggregations.categoryBuckets.length > 0);
+    });
+
+    it('excludes approximate neighborhood-centroid coordinates from precise spatial filters', () => {
+      const approximate = {
+        ...SAMPLE_LISTINGS[0],
+        coordinates: { lat: 35.78, lng: 51.37, isApproximate: true },
+      };
+      assert.equal(
+        matchesSearchFilters(approximate, {
+          boundingBox: { minLat: 35.77, maxLat: 35.79, minLng: 51.36, maxLng: 51.38 },
+        }),
+        false,
+      );
+      assert.equal(
+        matchesSearchFilters(approximate, {
+          nearLocation: { lat: 35.78, lng: 51.37, radiusMeters: 1000 },
+        }),
+        false,
+      );
+      assert.equal(
+        matchesSearchFilters(SAMPLE_LISTINGS[0], {
+          nearLocation: { lat: 35.78, lng: 51.37, radiusMeters: 1000 },
+        }),
+        true,
+      );
     });
 
     it('filters by geographic proximity radius', async () => {
