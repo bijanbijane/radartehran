@@ -92,3 +92,16 @@ The current GIS runtime's JSON snapshot persistence and the IRNI canonical D1 re
 ## 6. Focused verification workflow
 
 `.github/workflows/gis-spatial-integrity.yml` runs the dedicated `npm run test:geospatial` suite and repository TypeScript check for the GIS work branch. Its push trigger is intentionally scoped to the active GIS branch; it does not deploy or mutate runtime data.
+
+
+## 7. Persisted boundary-history invariants
+
+The durable snapshot validator now evaluates every stored boundary history and rejects:
+- History values that are not arrays or records that are not plain objects.
+- A history map key that disagrees with the record's `entityId`.
+- Missing or duplicate boundary IDs, invalid/duplicate version numbers, and non-increasing version sequences.
+- More than one `ACTIVE` version in a single entity history.
+
+A history with zero ACTIVE versions is allowed when all available versions are pending/rejected/superseded. The invariant is at most one ACTIVE record, not an automatic promotion. Point resolution, profile reads, automatic boundary mutation and bbox diagnostics each fail closed or exclude ambiguous history. Historical records are not rewritten automatically.
+
+The validator and recovery regression cases are committed, but the latest focused GIS workflow does not expose steps or logs. These guarantees remain **NOT VERIFIED by execution** until the exact-SHA test and typecheck commands run successfully.
