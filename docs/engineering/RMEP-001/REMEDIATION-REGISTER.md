@@ -112,3 +112,13 @@ Do not label GitHub Actions failures as source-code test failures unless a runne
 | ID | Finding / change | Status | Required verification |
 |---|---|---|---|
 | RT-WORKER-SEC-003 | `readValidatedJsonBody()` buffered the entire request via `request.text()` before enforcing its byte ceiling. Content-Type substring matching could also accept non-JSON lookalikes. Replaced with bounded streaming, exact media type validation, strict declared-length handling and fatal UTF-8 decoding; added regression tests for over-limit cancellation and malformed payloads. | IMPLEMENTED_BUT_NOT_VERIFIED | Run `npm run test:worker`, `npm run test:cloudflare`, `npm run typecheck`, `npm run arch:check`, and `npm run test:security` when an executor is available. |
+
+ 
+## SEC-NIPS-002 — Under-review metric value disclosure
+
+- **Severity:** High (public data disclosure / publication-policy bypass).
+- **Finding:** Public serialization preserved the numeric value for `UNDER_REVIEW` metrics whenever their source evidence had a redistributable permission. The same serializer classified that state as blocked in its counters, creating an inconsistent public contract.
+- **Fix:** `SUPPRESSED` and `UNDER_REVIEW` are now unconditional public suppression states. Source permission cannot override moderation/publication state.
+- **Regression:** Added an under-review metric fixture with `DERIVED_ONLY` permission and sentinel value; asserts state `SUPPRESSED`, null value, zero evidence count, and absence of the sentinel from serialized output.
+- **Files:** `server/modules/neighborhood-profile/repository.ts`; `tests/nips-backend-runtime-foundation.test.ts`.
+- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. Runtime test, typecheck, architecture and security suite remain pending an authorized Node 22/npm 10 executor or functioning Actions runner.
