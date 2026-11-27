@@ -1292,3 +1292,12 @@
 - Completed operation: OP-193 (D1-native OIDC/session auth, Worker Firebase auth/App Check retirement, D1-only sponsor and buyer-alert client flows, Worker typecheck and platform regressions, readiness/IRNI registry corrections, RMEP evidence reconciliation).
 - Verification: native auth suite 62/62; D1 marketplace/privacy/budget tests 27/27; Worker Platform integration PASS; Express readiness 1/1; IRNI route registry 2/2; frontend/API typechecks PASS; Worker typecheck PASS; frontend/API builds PASS; Worker dry-run PASS.
 - Remaining: Docker local Worker+USER_DB runtime and Google callback, full root/security suite, residual Express Firestore data adapters. Phase 6 remains PARTIALLY_VERIFIED; no deploy/commit/push/merge.
+
+
+## 2026-11-27 — Backend continuation / GitHub-state reconciliation
+- **Status:** IN_PROGRESS. Work is isolated on `codex/backend-resume-2026-11-27`; base is `main` at `456dcacb387b908797756863b10da1f7104b658e`.
+- **Repository operation:** Updated `EXECUTION-STATE.json` to reconcile the stale CHK-194 checkpoint with the actual GitHub branch/commit state. Reconciliation commit: `c391d4c5ac65d72a06a6e5bd17135bd8a06661b1`.
+- **Verified scope:** Existing RT-DB-TRIAD-001/002/003 code and tests are present; open PRs #69/#70/#71 cover overlapping work and were not duplicated or merged. PR #71 currently has failed CI checks and skipped E2E; failed-job logs/annotations were unavailable through the GitHub connector, so no root cause is claimed.
+- **Code inspection:** Account-deletion research erasure is coordinated through USER_DB `research_erasure_outbox` and RESEARCH_DB inbox receipts. Migration 0005 has no explicit outbox claim/lease columns. This is a concurrency-hardening investigation item, not yet a confirmed defect or completed fix.
+- **Verification limits:** No local test/build run was possible because the connected MacBook execution device is Offline. GitHub Actions failure details were not retrievable (BlobNotFound/empty job-step metadata). No production operation was attempted.
+- **Next:** Restore repository execution or Actions log access; diagnose the actual failed PR checks first, then continue residual Express Firestore-to-D1 adapter inventory and focused tests. Keep deployment/merge blocked pending explicit approval.
