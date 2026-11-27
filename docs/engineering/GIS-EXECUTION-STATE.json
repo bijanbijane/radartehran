@@ -6,7 +6,7 @@
   "repository": "bijanbijane/radartehran",
   "branch": "feat/gis-spatial-integrity-2026-11-27",
   "baseline_main_sha": "456dcacb387b908797756863b10da1f7104b658e",
-  "latest_branch_sha_at_record": "c00e24f7a5d4ac7df32880d48a2da50f4bb4a4c8",
+  "latest_branch_sha_at_record": "825fde0c4095361c7f9a08827746684bc8ee0421",
   "phase": "GIS-FOUNDATION-AND-SPATIAL-INTEGRITY",
   "completed": [
     "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and current GIS branch delta.",
@@ -26,10 +26,10 @@
   "database_migrations_added": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "NOT_RUN",
-    "reason": "Authorized local runner offline; no GitHub Actions run/check-run available for this branch in this session."
+    "status": "CI_FAILED_UNDIAGNOSED",
+    "reason": "PR-triggered GitHub Actions checks on ee1e5b259dea69809545eacc9dbf0b6991ae70a4 and 825fde0c4095361c7f9a08827746684bc8ee0421 reported failures; test job logs returned BlobNotFound, so test execution/failure cause cannot be established."
   },
-  "next_exact_action": "Run npm run test:geospatial and the relevant TypeScript check on an online repository runner; fix any failures before expanding topology validation to MultiPolygon component overlap.",
+  "next_exact_action": "Recover usable GitHub Actions logs or run npm run test:geospatial and TypeScript checks on an online local runner; diagnose CI failures before claiming verification.",
   "blockers": [
     "No available execution runner in this session; Desktop Commander device reported offline.",
     "No verified licensed Tehran neighborhood boundary dataset in the current GIS source register.",
