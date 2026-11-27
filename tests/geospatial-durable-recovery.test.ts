@@ -11,7 +11,12 @@ import {
   validatePersistedGeospatialState,
   type GeospatialRecordCounts,
 } from '../server/modules/geospatial/geospatialDurableRecovery';
-import type { PersistedGeospatialState } from '../server/modules/geospatial/geospatialRepository';
+import {
+  loadGeospatialState,
+  persistGeospatialState,
+  resetGeospatialRepositoryForTests,
+  type PersistedGeospatialState,
+} from '../server/modules/geospatial/geospatialRepository';
 import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
 import {
   runGeospatialOperatorMigration,
@@ -223,6 +228,30 @@ async function runTests(): Promise<void> {
   });
   assert.equal(blockedReport.health, 'BLOCKED');
   assert.equal(blockedReport.activated, false);
+
+  // A rejected snapshot must not be re-exposed through the repository cache,
+  // and a runtime mutation must not overwrite the authoritative snapshot.
+  resetGeospatialRepositoryForTests();
+  const blockedByStage = stageGeospatialSnapshotForActivation({
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  });
+  assert.equal(blockedByStage.health, 'BLOCKED');
+  assert.deepEqual(loadGeospatialState(), {
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  });
+  assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
+  resetGeospatialRecoveryStateForTests();
+  resetGeospatialRepositoryForTests();
 
   resetGeospatialRecoveryStateForTests();
   const stagedOnly = await runGeospatialDurableRecovery({
