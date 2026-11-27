@@ -4,10 +4,10 @@
 **Active branch:** `feat/gis-spatial-integrity-2026-11-27`  
 **Review PR:** [#72 — Draft](https://github.com/bijanbijane/radartehran/pull/72)
 
-1. Restore an online runner and execute `npm run test:geospatial` on the current branch head. Then run `npm run test:unit`, lint, architecture checks, typechecks and builds. Resolve failures before marking the work VERIFIED.
+1. Restore an online runner and execute `npm run test:geospatial` on HEAD `b2c7265fda504af48726a19317c420058efbeef7`. Then run `npm run test:unit`, lint, architecture checks, typechecks and builds. Resolve failures before marking the work VERIFIED.
 2. Audit every consumer of `resolvePointToGeography`. Align the meaning of `resolved` with `RESOLVED_ON_EDGE` and `AMBIGUOUS_OVERLAP`; do not let non-valuation consumers use an arbitrary hood ID.
-3. Complete durable integrity checks for one active boundary per entity, unique version/id sequences, entity/history key consistency, and historical duplicate handling across mutation, hydration and read paths.
-4. Run the newly added hole-topology regression tests. Then complete polygon topology validation for distinct MultiPolygon component overlap/intersection and segment endpoint/collinear-touch cases; add trusted fixtures.
+3. Complete persisted-snapshot and hydration validation for one ACTIVE boundary per entity, unique version/id sequences, entity/history key consistency, and explicit legacy-history reconciliation. Point resolution, profile reads and boundary mutations now fail closed for duplicate ACTIVE histories.
+4. Run the newly added hole-topology, duplicate ACTIVE lifecycle, endpoint-touch and collinear-overlap regression tests. Complete polygon topology validation for distinct MultiPolygon component overlap/intersection and add trusted fixtures.
 5. Complete CRS policy and transformations from source metadata. Verify Tehran measurement CRS against actual source datasets before choosing a projected EPSG code; do not infer a universal city CRS.
 6. Formalize source registry records including authority, licensing, provenance, retrieval date, coverage, checksum, coordinate reference system and validation status.
 7. Reconcile GIS runtime persistence with the NIPS ownership model: IRNI remains canonical geography owner; NIPS profile persistence belongs in the proposed dedicated `radar-profile-db`, shared by the two NIPS backend implementations and separate from IRNI, USER_DB and RESEARCH_DB. Do not add `nips_*` tables to `radar-neighborhood-db`. Confirm owner/writer policy before provisioning.
