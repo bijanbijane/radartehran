@@ -2,6 +2,9 @@
  * RT-INFRA-009 — geospatial durable recovery & migration dry-run.
  */
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   assessGeospatialSnapshot,
   activateStagedGeospatialSnapshot,
@@ -24,6 +27,7 @@ import {
 } from '../server/modules/shared/geospatialRepositoryMigration';
 import { runRepositorySnapshotMigrationDryRun } from '../server/modules/shared/repositorySnapshotMigration';
 import { setRepositorySnapshotBackendForTests } from '../server/modules/shared/durableRepositorySnapshotStore';
+import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 
 function sampleState(): PersistedGeospatialState {
   const boundaryId = 'bnd-1';
@@ -229,29 +233,40 @@ async function runTests(): Promise<void> {
   assert.equal(blockedReport.health, 'BLOCKED');
   assert.equal(blockedReport.activated, false);
 
-  // A rejected snapshot must not be re-exposed through the repository cache,
-  // and a runtime mutation must not overwrite the authoritative snapshot.
-  resetGeospatialRepositoryForTests();
-  const blockedByStage = stageGeospatialSnapshotForActivation({
-    boundaryHistoryByEntity: {},
-    poiStore: {},
-    poiDedupeIndex: {},
-    spatialListingsByCity: {},
-    overlayStore: {},
-    importBatches: {},
-  });
-  assert.equal(blockedByStage.health, 'BLOCKED');
-  assert.deepEqual(loadGeospatialState(), {
-    boundaryHistoryByEntity: {},
-    poiStore: {},
-    poiDedupeIndex: {},
-    spatialListingsByCity: {},
-    overlayStore: {},
-    importBatches: {},
-  });
-  assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
-  resetGeospatialRecoveryStateForTests();
-  resetGeospatialRepositoryForTests();
+  // Prime a real cached snapshot, then reject it and prove it cannot be
+  // re-exposed or overwritten by a runtime write.
+  const temporaryRepositoryDir = mkdtempSync(join(tmpdir(), 'radar-gis-recovery-'));
+  setRepositoryBaseDirForTests(temporaryRepositoryDir);
+  try {
+    resetGeospatialRecoveryStateForTests();
+    resetGeospatialRepositoryForTests();
+    persistGeospatialState(sampleState());
+    assert.equal(Object.keys(loadGeospatialState().boundaryHistoryByEntity).length, 1);
+
+    const blockedByStage = stageGeospatialSnapshotForActivation({
+      boundaryHistoryByEntity: {},
+      poiStore: {},
+      poiDedupeIndex: {},
+      spatialListingsByCity: {},
+      overlayStore: {},
+      importBatches: {},
+    });
+    assert.equal(blockedByStage.health, 'BLOCKED');
+    assert.deepEqual(loadGeospatialState(), {
+      boundaryHistoryByEntity: {},
+      poiStore: {},
+      poiDedupeIndex: {},
+      spatialListingsByCity: {},
+      overlayStore: {},
+      importBatches: {},
+    });
+    assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
+  } finally {
+    resetGeospatialRecoveryStateForTests();
+    resetGeospatialRepositoryForTests();
+    setRepositoryBaseDirForTests(null);
+    rmSync(temporaryRepositoryDir, { recursive: true, force: true });
+  }
 
   resetGeospatialRecoveryStateForTests();
   const stagedOnly = await runGeospatialDurableRecovery({
