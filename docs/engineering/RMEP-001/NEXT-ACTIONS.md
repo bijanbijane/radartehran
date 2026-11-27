@@ -74,3 +74,13 @@ Before any Radar production deployment:
 6. Keep PR #67 Draft. No merge, Production deployment, remote migration, secret change, or destructive data operation without explicit approval.
 
 **Evidence boundary:** Cloudflare frontend preview succeeded on PR #67 head `ede0dac6e57cb06191d434877eeab997f7801cb2`; this does not establish backend test success. No local Node/npm test was executed in this session.
+
+
+## Immediate next actions — 2026-11-27 follow-up
+
+1. Recover usable diagnostics for the fresh failed GitHub runs on PR #69 and #71; current jobs have null/empty steps, no artifacts, and log downloads return BlobNotFound.
+2. Verify whether .npmrc resolves npm ci on a working Node 22/npm 10 executor. PR #70 already has the setting and its frontend preview build passed; PR #69/#71 settings remain unverified.
+3. Retrieve full npm audit JSON and remediate the two critical and five high findings based on actual advisory paths, without force upgrades.
+4. Review Wrangler staging environment config. Do not add inherited production D1/services/vars wholesale; staging must use explicit staging-only IDs and a verified IRNI service endpoint.
+5. Resume NIPS persistent storage only after the IRNI-owned authenticated/versioned RPC and canonical geography Service Binding are confirmed.
+6. Reconcile execution state after each verified work package.
