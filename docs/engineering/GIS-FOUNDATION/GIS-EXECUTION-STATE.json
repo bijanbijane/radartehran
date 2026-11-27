@@ -5,10 +5,10 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": null,
-  "branch_head_sha_note": "Branch search did not expose a head SHA. File blob SHAs are not commit SHAs.",
-  "last_verified_source_commit": "456dcacb387b908797756863b10da1f7104b658e",
-  "last_verified_source_commit_scope": "Revision returned by GitHub code search for inspected GIS files; not asserted as the feature branch HEAD.",
+  "branch_head_sha": "439224c0ad44b4d80b8c2f735873a0a198049923",
+  "branch_head_sha_note": "Verified from the GitHub branch endpoint and PR #72 head metadata on 2026-11-27; this is the commit SHA, not a file blob SHA.",
+  "last_verified_source_commit": "439224c0ad44b4d80b8c2f735873a0a198049923",
+  "last_verified_source_commit_scope": "Exact GIS branch HEAD verified from GitHub branch and PR metadata; relevant GIS source, test, and execution-state files fetched at this branch ref. This is repository/source verification only, not test execution.",
   "verified_findings": [
     "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
     "Radar Worker IRNI v2 client and neighborhood identity resolver validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
@@ -19,7 +19,8 @@
     "Geospatial service persistence is AtomicJsonRepository('geospatial-state.json') with optional remote repository-snapshot persistence, not a relational D1 schema.",
     "wrangler.backend.jsonc declares USER_DB, DB, RESEARCH_DB and IRNI_GEOGRAPHY; no Radar-owned GIS D1 binding is declared.",
     "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it.",
-    "Profile evidence builder now explicitly rejects sourceProvenance=computed_hex_fallback even if an injected source resolver returns publishable authority; regression test added but not executed."
+    "Profile evidence builder now explicitly rejects sourceProvenance=computed_hex_fallback even if an injected source resolver returns publishable authority; regression test added but not executed.",
+    "At branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923, the neighborhood profile evidence builder independently blocks computed_hex_fallback even when a source resolver reports publishable authority; regression test is present."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -49,7 +50,7 @@
     {
       "id": "GIS-GUARD-001",
       "status": "IMPLEMENTED_NOT_TESTED",
-      "summary": "Added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test that simulates an over-permissive source resolver."
+      "summary": "At branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923, added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test simulating an over-permissive source resolver; test execution remains unverified."
     }
   ],
   "blockers": [
@@ -81,7 +82,7 @@
     {
       "id": "GIS-BLK-006",
       "severity": "MEDIUM",
-      "description": "Geometry validation needs explicit tests for hole-ring intersections, overlapping MultiPolygon components and cross-neighborhood topology."
+      "description": "Cross-neighborhood topology consistency and exact-head execution of the ring/hole/MultiPolygon topology regression suite remain unverified."
     },
     {
       "id": "GIS-BLK-007",
@@ -93,13 +94,16 @@
     "identified": [
       "tests/cloudflare-neighborhood-boundary-route.test.ts",
       "tests/neighborhood-profile-boundary-read-model.test.ts",
-      "server/modules/geography/__tests__/employee18Geography.test.ts"
+      "server/modules/geography/__tests__/employee18Geography.test.ts",
+      "tests/geospatial-gis-module.test.ts",
+      "tests/geospatial-valuation-location-assignment.test.ts"
     ],
     "executed_in_this_session": [],
     "implemented_not_executed": [
+      "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression"
     ],
-    "note": "Repository source inspection and current public D1 documentation review only; no local test runner or live D1 runtime was executed."
+    "note": "Source and test files were fetched from exact branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923. No local test runner was available in this session; GitHub Actions failures have no step metadata/logs, so no test or typecheck execution is claimed."
   },
   "production_changes": {
     "migrations": false,
@@ -108,6 +112,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Run tests/neighborhood-profile-boundary-read-model.test.ts and the relevant geospatial typecheck in a real checkout; then add an equivalent guard to property-to-neighborhood assignment if any route can persist computed_hex_fallback as a boundary record.",
+  "next_exact_action": "Restore usable GitHub Actions runner diagnostics or an authorized real checkout; run tests/neighborhood-profile-boundary-read-model.test.ts, npm run test:geospatial, npm run test:valuation-location, and npm run typecheck against exact HEAD 439224c0ad44b4d80b8c2f735873a0a198049923. Fix only failures demonstrated by executable diagnostics; keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
