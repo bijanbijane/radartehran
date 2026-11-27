@@ -15,3 +15,6 @@ These blockers do not authorize merging, production deployment, production datab
 
 7. **Latest CI on head 2b71c9a1eac38f02255f58c8676926de49a490de — BLOCKED.** Runs 45986000419 (Tehran Radar CI Quality Gates), 45986000574 (Cloudflare Native Auth Validation), 45986000519 (Tehran Radar Path-Filtered Checks), and 45986000654 (Radar Backend Triad) all concluded failure. E2E and downstream path-filtered gates were skipped. Job-step arrays are empty and log downloads return BlobNotFound, so no root cause is attributed.
 8. **Concurrent erasure regression — NOT EXECUTED.** A deterministic overlapping-read test and guarded-delete fix are committed, but the local MacBook remains Offline and CI logs do not reveal whether the test executed.
+
+9. **Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a — BLOCKED.** Runs 45986606294 (Tehran Radar CI Quality Gates), 45986606317 (Cloudflare Native Auth Validation), 45986606333 (Tehran Radar Path-Filtered Checks), and 45986606330 (Radar Backend Triad) all failed. Job logs and step metadata remain unavailable; failure root causes are unknown.
+10. **Lifecycle concurrency fixes — NOT VERIFIED.** Deterministic regressions now cover cross-subject inbox identity collision and stale-worker retry downgrade, but neither test nor Worker typecheck has been executed in this session.
