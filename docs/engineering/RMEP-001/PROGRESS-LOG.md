@@ -1403,3 +1403,11 @@
 - Latest PR #67 runs on `93328807ff66153827cc05a4c6c72acabe6d4080`: #45987832174, #45987830960, #45987830877, #45987830888 and #45987830940 all report FAILURE. Job step arrays are empty; log retrieval for jobs 140467847417, 140467847508 and 140467846977 returns `BlobNotFound`. Broader raw Actions payload evidence already recorded above establishes `runner_id=0`, blank runner identity and immediate failure before steps; classify this as runner allocation/infrastructure failure, not a failed source command.
 - Work in this continuation was limited to GitHub repository inspection and documentation commits. No local Node/npm tests, dependency changes, runtime source changes, D1 migrations, bindings, secrets, deployment, merge or production mutation occurred.
 - **Next:** keep GitHub-only scope. Map residual Firebase Admin/Firestore and Sharp runtime call sites to the approved Cloudflare-native services; do not remove dependencies until replacements and lockfile can be verified. NIPS storage remains blocked on the owner-side IRNI RPC and migration contract. PR #67 remains Draft.
+
+
+## 2026-11-27 — Firebase / Firestore / Sharp call-site inventory
+
+- Added `docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md` on the active NIPS branch. The inventory records verified active call sites in the central Firebase Admin provider, object-storage and media metadata, sponsor/bargain routes, market-pulse overrides, community persistence, account deletion, legal-regulatory adapters, and Sharp image processing.
+- Confirmed the browser `src/firebase.ts` compatibility facade itself is SDK-free, while `vite.config.ts` retains Firebase optimize/chunk references and `scripts/check-architecture.ts` only bans Firestore client imports, not the full Firebase client package surface.
+- Confirmed the Worker entrypoint boundary forbids Express, Firebase Admin and Sharp. The legacy Express runtime still imports these packages; removing them without per-domain replacement would break existing behavior.
+- No code, package manifest, lockfile, database, binding, secret or deployment changes were made. The call-site inventory is static evidence only; no tests were run.
