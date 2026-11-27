@@ -39,3 +39,14 @@ Active NIPS branch head: `9180bffe91577e9a53460fcf54e0058549813f0d`
 ## Explicitly not blockers
 - Ordinary reversible branch code, test, and documentation changes require no additional user approval.
 - Production deployment, destructive production database operations, irreversible data changes, secret rotation/disclosure, and paid-service activation remain approval-gated.
+ 
+
+## CHK-197 update — 2026-11-27
+
+- Active branch head after this checkpoint: `ee2023a59128a9bad17f37e144995b5a6d67bc1f`.
+- A reproducible workflow defect was found: `.github/workflows/cloudflare-native-auth-validation.yml` invoked `npm run test:cloudflare-native-auth`, but root `package.json` has no such script. The existing `test:auth` script covers the required native-auth/OIDC/session suites. The workflow now invokes `npm run test:auth` (commit `eb76b22590c70dc81ddff2189fc1cca459099d8d`).
+- A separate reproducible Cloudflare preview build defect was confirmed from PR #70's Cloudflare build evidence: the stale root `bun.lock` caused Cloudflare to select `bun install --frozen-lockfile` and fail because the lockfile did not match the npm workspace manifest. On this branch, `bun.lock` was removed and `.npmrc` was added with `legacy-peer-deps=true` (commits `dd28ff9aa9c2946a60ae9fbd34630ac4d6ad5c5f`, `ee2023a59128a9bad17f37e144995b5a6d67bc1f`). PR #70 independently carries the same remediation; no merge was performed.
+- The five workflows on the new head `ee2023a59128a9bad17f37e144995b5a6d67bc1f` still conclude FAILURE. Their jobs expose empty/null step lists and log download returns `BlobNotFound`. Thus the workflow changes are committed but not CI-verified; the remaining Actions failure is still not attributable to an application command.
+- No local test execution was available in this GitHub-only session. No migration, binding, secret, production deployment, or merge was performed.
+
+**Next:** restore usable Actions runner/log evidence, then execute the NIPS, typecheck, architecture, auth, and D1 isolation suites in an executable environment. Do not guess at the remaining failure.
