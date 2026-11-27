@@ -1305,6 +1305,6 @@
 
 - Integrated leased research-processing permits, durable consent-revocation jobs, revision-scoped erasure outbox, and RESEARCH_DB consent-fence enforcement.
 - Queue ingestion now acquires and releases a bounded processing permit; the existing legacy Firestore projection job remains fail-closed and is not re-enqueued.
-- Added migration 0008 with a unique (uid, revoked_consent_revision) index and an outbox retry-scan index. Migration is committed but has not been applied to any database.
+- Added migration 0011 with a unique (uid, revoked_consent_revision) index and an outbox retry-scan index. Migration is committed but has not been applied to any database.
 - Added TRIAD-003 regression cases and wired them into npm run test:triad. Test execution, typecheck, and Worker build remain NOT VERIFIED in this session.
 - Added a design-only legal-regulatory D1 migration plan; ownership remains unresolved and no migration or binding was introduced for that domain.

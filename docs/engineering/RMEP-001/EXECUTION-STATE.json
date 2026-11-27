@@ -4422,7 +4422,7 @@
           "A later explicit re-grant is blocked while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; after completion it advances consent_revision and can write above the fence.",
           "PATCH /api/account/privacy now initiates barrier revocation and POST /api/account/privacy/reconcile resumes durable jobs; route group and API route catalog include the new endpoint.",
           "The six-scenario tests in tests/rt-db-triad-003-consent-barrier.test.ts are now included in npm run test:triad. No execution is claimed.",
-          "USER_DB migration 0008 adds a unique index on (uid, revoked_consent_revision) and an outbox retry index. Deterministic revocation/outbox IDs make concurrent duplicate revocation requests converge.",
+          "USER_DB migration 0011 adds a unique index on (uid, revoked_consent_revision) and an outbox retry index. Deterministic revocation/outbox IDs make concurrent duplicate revocation requests converge.",
           "updateUserPrivacyConsentInD1 now accepts expectedConsentRevision; the revocation orchestrator uses this CAS and cancels an unapplied job/outbox if a concurrent privacy mutation wins while research consent remains enabled.",
           "Unrelated privacy mutations and consent re-grants are rejected while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; the barrier's own revocation/reconciliation CAS is the only allowed consent transition in that state.",
           "The prior TRIAD-002 race test expected an obsolete pre-commit 403 and conflicted with the new permit-drain contract. It now asserts that an already-permitted writer may finish, then reconciliation erases its event and completes the fence.",
@@ -4522,7 +4522,7 @@
           "id": "BE-012",
           "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
           "files": [
-            "migrations/user-d1/0008_research_consent_revocation_uniqueness.sql",
+            "migrations/user-d1/0011_research_consent_revocation_uniqueness.sql",
             "worker/account/d1AccountRepository.ts",
             "worker/research/researchConsentRevocation.ts",
             "tests/rt-db-triad-002-forensic.test.ts",

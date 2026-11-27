@@ -17,5 +17,5 @@ Production deployment, main merge, destructive production D1 operations, irrever
 
 - Implementation is integrated: leased research-processing permits, durable revocation jobs, revision-scoped erasure, and RESEARCH_DB consent fences.
 - The TRIAD-003 regression suite is wired into npm run test:triad, but it has not been executed in this session. Keep status IMPLEMENTED_BUT_NOT_VERIFIED until the suite, TypeScript checks, and Worker build pass.
-- Migration migrations/user-d1/0008_research_consent_revocation_uniqueness.sql adds indexes only. It has NOT been applied to any remote database. Validate existing duplicate rows and run it only in an approved, controlled migration process.
+- Migration migrations/user-d1/0011_research_consent_revocation_uniqueness.sql adds indexes only. It has NOT been applied to any remote database. Validate existing duplicate rows and run it only in an approved, controlled migration process.
 - GitHub Actions job logs remain unavailable in this session; prior failed checks do not establish test failures or root cause.
