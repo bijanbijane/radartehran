@@ -171,3 +171,13 @@
 - **Repository verification:** Both files were fetched back from GitHub at the resulting branch head; all expected implementation and assertion fragments are present. This is source-level verification only.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. No local test, typecheck, build, or rendered-browser run was available in this session. Do not treat GitHub commit acceptance as test execution.
 - **Next exact action:** Run `npx tsx tests/buyer-alert-contract.test.ts`, `npm run lint`, `npm run arch:check`, and `npm run build`; add a real multi-pointer browser regression if the runner is available; inspect 320×568 and 390×844 layouts. Keep PR #68 Draft until all required gates pass.
+
+### Session continuation — 2026-11-27 16:42 +0330
+- **Work package:** FE-MOBILE-MULTI-POINTER-E2E-001 on `fix/frontend-mobile-sheet-handle-target-2026-11-27`.
+- **Finding:** The mobile inspector's pointer identity guards were present in `NeighborhoodInspectorDrawer.tsx`, but the browser E2E flow did not exercise a secondary pointer arriving and ending while a primary drag remained active.
+- **Implementation:** Added a Playwright regression sequence to `tests/tehran-radar.e2e.spec.ts`. It dispatches a primary pointer-down, a secondary pointer-down and pointer-up, then the original primary pointer-up; it asserts the primary drag still transitions the sheet to peek and that a fresh primary gesture restores the expanded state.
+- **Commit:** `698f9735be0587b75570ff3c2f0ff85f28447d3c` — `test(ui): cover concurrent pointer isolation in mobile inspector`.
+- **Modified files:** `tests/tehran-radar.e2e.spec.ts`, `FRONTEND_ENGINEERING_STATE.md`.
+- **Verification:** GitHub accepted the source commit. The regression has not been executed in a browser or local test runner in this session. Status is `IMPLEMENTED_BUT_NOT_VERIFIED`; no test pass or visual verification is claimed.
+- **Blocker:** Existing PR #68 records repeated GitHub Actions jobs failing before any step with `runner_id: 0`, no runner name, and empty step arrays; local Desktop Commander device was previously recorded offline. Recheck current CI before attributing any test failure.
+- **Next exact action:** Run `npx playwright test tests/tehran-radar.e2e.spec.ts --grep "mobile inspector"` (or the exact test title selector), then `npx tsx tests/buyer-alert-contract.test.ts`, `npm run lint`, `npm run arch:check`, and `npm run build`; inspect 320×568 and 390×844 rendered layouts. Keep PR #68 Draft until all required checks pass.
