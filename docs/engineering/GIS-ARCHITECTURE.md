@@ -105,3 +105,8 @@ The durable snapshot validator now evaluates every stored boundary history and r
 A history with zero ACTIVE versions is allowed when all available versions are pending/rejected/superseded. The invariant is at most one ACTIVE record, not an automatic promotion. Point resolution, profile reads, automatic boundary mutation and bbox diagnostics each fail closed or exclude ambiguous history. Historical records are not rewritten automatically.
 
 The validator and recovery regression cases are committed, but the latest focused GIS workflow does not expose steps or logs. These guarantees remain **NOT VERIFIED by execution** until the exact-SHA test and typecheck commands run successfully.
+
+
+## Durable recovery geometry gate
+
+During production repository bootstrap, the hydrated geospatial snapshot must pass structural validation before it is accepted. Each boundary's canonical geometry and simplified display geometry are revalidated. The stored bounding box is compared with bounds recomputed from canonical geometry (tolerance 1e-6 degrees). Any geometry or bbox mismatch blocks readiness; no automatic geometry correction or production rewrite is performed. The runtime's point resolver relies on the validated bbox for candidate pruning, so bbox consistency is an integrity invariant rather than a display-only concern.
