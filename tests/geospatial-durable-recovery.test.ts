@@ -279,23 +279,43 @@ async function runTests(): Promise<void> {
   assert.equal(stagedOnly.activated, false);
   // A blocked repository must recover through the explicit activation path;
   // ordinary writes remain prohibited until the durable activation completes.
+  const activationRepositoryDir = mkdtempSync(join(tmpdir(), 'radar-gis-activation-'));
+  setRepositoryBaseDirForTests(activationRepositoryDir);
+  try {
+    resetGeospatialRecoveryStateForTests();
+    resetGeospatialRepositoryForTests();
+    const blockedBeforeRecovery = stageGeospatialSnapshotForActivation({
+      boundaryHistoryByEntity: {},
+      poiStore: {},
+      poiDedupeIndex: {},
+      spatialListingsByCity: {},
+      overlayStore: {},
+      importBatches: {},
+    });
+    assert.equal(blockedBeforeRecovery.health, 'BLOCKED');
+    const stagedRecovery = stageGeospatialSnapshotForActivation(sampleState());
+    assert.equal(stagedRecovery.health, 'READY');
+    assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
+    const recoveryActivation = await activateStagedGeospatialRepositorySnapshot();
+    assert.equal(recoveryActivation.health, 'READY');
+    assert.equal(recoveryActivation.activated, true);
+    assert.equal(Object.keys(loadGeospatialState().boundaryHistoryByEntity).length, 1);
+  } finally {
+    resetGeospatialRecoveryStateForTests();
+    resetGeospatialRepositoryForTests();
+    setRepositoryBaseDirForTests(null);
+    rmSync(activationRepositoryDir, { recursive: true, force: true });
+  }
+
   resetGeospatialRecoveryStateForTests();
-  const blockedBeforeRecovery = stageGeospatialSnapshotForActivation({
-    boundaryHistoryByEntity: {},
-    poiStore: {},
-    poiDedupeIndex: {},
-    spatialListingsByCity: {},
-    overlayStore: {},
-    importBatches: {},
+  const missingPersistor = await runGeospatialDurableRecovery({
+    hydratedState: sampleState(),
+    remoteSnapshotPresent: true,
+    activateOnSuccess: true,
   });
-  assert.equal(blockedBeforeRecovery.health, 'BLOCKED');
-  const stagedRecovery = stageGeospatialSnapshotForActivation(sampleState());
-  assert.equal(stagedRecovery.health, 'READY');
-  assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
-  const recoveryActivation = await activateStagedGeospatialRepositorySnapshot();
-  assert.equal(recoveryActivation.health, 'READY');
-  assert.equal(recoveryActivation.activated, true);
-  assert.equal(Object.keys(loadGeospatialState().boundaryHistoryByEntity).length, 1);
+  assert.equal(missingPersistor.health, 'BLOCKED');
+  assert.ok(missingPersistor.validationErrors.includes('GEOSPATIAL_RECOVERY_PERSISTOR_REQUIRED'));
+  resetGeospatialRecoveryStateForTests();
 
   resetGeospatialRecoveryStateForTests();
   stageGeospatialSnapshotForActivation(sampleState());
