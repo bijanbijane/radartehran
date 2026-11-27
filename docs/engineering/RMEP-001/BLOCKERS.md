@@ -3,7 +3,7 @@
 Updated: 2026-11-27
 Active branch: `feat/nips-backend-runtime-foundation-2026-11-26`
 Latest inspected main: `456dcacb387b908797756863b10da1f7104b658e`
-Active NIPS branch head: `9180bffe91577e9a53460fcf54e0058549813f0d`
+Active NIPS branch head at last reconciliation: `3004fd05714137a6129212d1ca27e81f1660dff7`
 
 ## BLOCKED
 
@@ -158,3 +158,13 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Source and regression test files were re-read from the branch and the expected bounded-stream implementation/test cases were confirmed.
 - Commit `34adeb686f04162a97e305b391ea7aa714b53ebf` has no associated Actions workflow runs or check-runs in the GitHub API response. This is not a passing result; local execution is unavailable in this GitHub-only session.
 - Keep this change **IMPLEMENTED_BUT_NOT_VERIFIED** until the worker test suite and required backend gates execute.
+
+
+## CHK-209 — Worker caller audit and current CI evidence (2026-11-27)
+
+- PR #67 head verified as `3004fd05714137a6129212d1ca27e81f1660dff7`; PR remains OPEN, DRAFT, NOT MERGED.
+- Five Actions runs associated with this head: #46008493815 (Native Auth), #46008493886 (IRNI RPC), #46008493813 (Backend Triad), #46008493882 (Root CI), and #46008493914 (Path-Filtered). All conclude FAILURE.
+- Returned job records have null/empty step data. Log download for job IDs 140537624635, 140537624806, 140537625471, 140537625356 and 140537626037 returns `BlobNotFound`. No command-level failure is established and no test result can be inferred.
+- Static audit of nine Worker route modules found all inspected `readValidatedJsonBody` callers propagate the parser's HTTP status and error code. Body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route is bounded but may have a high transient-memory profile due to chunk retention, byte concatenation, UTF-8 decoding and parsed JSON; no runtime memory measurement is available, so no speculative limit change was made.
+- **Status:** parser and NIPS serializer changes remain IMPLEMENTED_BUT_NOT_VERIFIED. No local Node/npm executor was used and no Actions steps ran.
+- **Next:** restore runner/log access or obtain an authorized Node 22/npm 10 executor. Run `npm ci`, `npm run test:worker`, `npm run test:nips`, Cloudflare/auth/security suites, typecheck, architecture check and Worker tsconfig compilation. Diagnose only failures backed by actual command output.
