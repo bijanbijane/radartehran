@@ -1351,3 +1351,12 @@
 - Updated the same staging-only trigger to run `npm audit --json || true` before the fail-closed validator, so package-level vulnerability details can be captured without bypassing the staging gate. Audit build `f993d88e-1b92-4e41-9f62-83b1c3ea34b4` was queued; it remained queued at last poll.
 - Current PR checks: PR #67, #69, #70 and #71 remain Draft/open and have failed GitHub Actions checks. PR #70's latest Cloudflare API staging and frontend preview builds succeeded, but GitHub CI still fails. PR #71's latest checks also fail after workflow script corrections. All relevant job-step arrays remain empty; raw GitHub log downloads return `BlobNotFound`.
 - No production Worker, production Build Trigger, production database, secret, merge, or deployment was modified.
+
+
+## 2026-11-27 — Production geography ownership drift rechecked
+
+- Read-only Cloudflare Worker settings inspection confirms production `radartehran-api` still has D1 binding `NEIGHBORHOOD_DB` to `radar-neighborhood-db` (`f335efe8-37ac-4c7d-a057-bc9f4480f6c6`) and legacy secret binding `IRNI_PUBLISH_HMAC_SECRET`; no `IRNI_GEOGRAPHY` Service Binding is present.
+- Production also still has `DB_WRITES_PAUSED_UNTIL_UTC=2026-11-24T00:00:00Z`. The current `resolveD1WritePauseState` implementation explicitly treats expired deadlines as unpaused. This is not an active write freeze as of 2026-11-27.
+- A read-only Cloudflare settings request for Worker `irni-api` returned HTTP 404 / error 10007: the Worker does not exist on the account. The IRNI repository's PR #22 (read RPC v2) and PR #25 (NIPS profile domain/persistence proposal) are Draft; ADR-0002 remains a proposal, not an accepted owner-side storage contract.
+- Radar's NIPS branch already configures `IRNI_GEOGRAPHY` and omits `NEIGHBORHOOD_DB` from `wrangler.backend.jsonc`, but it cannot be safely deployed until the IRNI Worker and replacement publisher/storage paths exist and pass contract tests.
+- **No production bindings, secrets, write-pause settings, database rows, or Workers were modified.** Production cutover remains blocked; do not remove the legacy publisher binding/secret before the replacement is operational.
