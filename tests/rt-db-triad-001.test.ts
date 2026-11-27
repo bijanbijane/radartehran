@@ -821,33 +821,38 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
       // Simulate another Worker committing COMPLETED after this Worker has selected
       // the PENDING row but before its RESEARCH_DB attempt fails.
+      const wrapUserStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapUserStatement(target.bind(...values), sql);
+            }
+            if (
+              property === 'all' &&
+              sql.includes('SELECT * FROM research_erasure_outbox') &&
+              sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
+            ) {
+              return async (...args: unknown[]) => {
+                const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                userSqlite.raw
+                  .prepare(
+                    `UPDATE research_erasure_outbox
+                     SET status = 'COMPLETED', attempt_count = 1, receipt_id = 'receipt_from_competing_worker',
+                         erased_events_count = 3, completed_at_iso = ?, updated_at_iso = ?
+                     WHERE outbox_id = 'outbox_race_001'`,
+                  )
+                  .run(nowIso, nowIso);
+                return rows;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
       const racingUserDb: D1Database = {
         prepare(sql: string) {
-          const statement = userSqlite.db.prepare(sql);
-          return new Proxy(statement, {
-            get(target, property) {
-              if (
-                property === 'all' &&
-                sql.includes('SELECT * FROM research_erasure_outbox') &&
-                sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
-              ) {
-                return async (...args: unknown[]) => {
-                  const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
-                  userSqlite.raw
-                    .prepare(
-                      `UPDATE research_erasure_outbox
-                       SET status = 'COMPLETED', attempt_count = 1, receipt_id = 'receipt_from_competing_worker',
-                           erased_events_count = 3, completed_at_iso = ?, updated_at_iso = ?
-                       WHERE outbox_id = 'outbox_race_001'`,
-                    )
-                    .run(nowIso, nowIso);
-                  return rows;
-                };
-              }
-              const value = Reflect.get(target, property);
-              return typeof value === 'function' ? value.bind(target) : value;
-            },
-          });
+          return wrapUserStatement(userSqlite.db.prepare(sql), sql);
         },
         async batch<T = unknown>(statements: D1PreparedStatement[]) {
           return userSqlite.db.batch<T>(statements);
