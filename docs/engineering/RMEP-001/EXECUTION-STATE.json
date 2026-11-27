@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "ee6d5e490ac85410bb944c3bd2d27a79da5bd94a",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NIPS_PUBLIC_SERIALIZER_AND_WORKER_JSON_STREAMING_BOUNDARY_IMPLEMENTED_NOT_VERIFIED; FIVE_PR67_ACTIONS_RUNS_FAIL_WITHOUT_EXPOSED_STEPS_OR_LOGS; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "ab3403d4f8afe68319a52bdd2fd50435b6c6075a",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; SEC-NIPS-002 FIX IMPLEMENTED_NOT_VERIFIED; WORKER STREAMING AND NIPS BASELINE IMPLEMENTED_NOT_VERIFIED; FIVE ACTIONS RUNS FAIL WITH NULL STEPS",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-209-WORKER-CALLSITE-AUDIT-AND-CI-EVIDENCE-RECONCILIATION",
-    "checkpoint_timestamp_utc": "2026-11-27T14:05:00.000Z",
-    "last_safe_operation": "Re-inspected PR #67 head and all discovered readValidatedJsonBody call sites. Every inspected caller propagates parser status/code; body ceilings range from 4 KiB to 14 MiB. Confirmed five Actions runs are associated with current head; all fail, their jobs expose null/empty steps and log downloads return BlobNotFound.",
-    "last_completed_operation": "CHK-209 state, blocker and next-action records were reconciled. Current PR head CI evidence is five failed workflow runs with null/empty job steps and BlobNotFound logs; route call-site audit is complete. Runtime/type verification remains unavailable.",
-    "next_exact_action": "Restore usable Actions runner/log access or obtain an authorized Node 22/npm 10 executor. Execute npm ci, npm run test:worker, npm run test:nips, npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Do not mark the changes verified without actual passing command results.",
+    "checkpoint_id": "CHK-210-NIPS-UNDER-REVIEW-PUBLIC-DISCLOSURE-FIX-IMPLEMENTED-NOT-VERIFIED",
+    "checkpoint_timestamp_utc": "2026-11-27T14:25:00.000Z",
+    "last_safe_operation": "Public NIPS serialization now unconditionally suppresses SUPPRESSED and UNDER_REVIEW metric states regardless of evidence redistribution permission; sentinel regression added and engineering records synchronized.",
+    "last_completed_operation": "Static re-fetch confirms blocked-state guard and regression assertions are committed. Five PR #67 workflows on code commit afc0c9dabc4fff2eab722b04d1803c9b25b96e3b fail before steps (steps null, logs_url null); no test commands executed. Change remains IMPLEMENTED_BUT_NOT_VERIFIED.",
+    "next_exact_action": "Run npm run test:nips first, then npm run typecheck, npm run arch:check, npm run test:security, npm run test:worker, npm run test:cloudflare and npm run test:auth on an authorized Node 22/npm 10 executor. Capture output and exit codes. Do not mark SEC-NIPS-002 verified without passing regression execution.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1894,6 +1894,14 @@
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T13:45:00.000Z"
+    },
+    {
+      "operation_id": "OP-204",
+      "phase": "PHASE-6",
+      "description": "Fix NIPS public serializer disclosure of UNDER_REVIEW metrics despite redistributable evidence; unconditionally suppress UNDER_REVIEW and SUPPRESSED public states and add sentinel regression.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T14:25:00.000Z"
     }
   ],
   "tests": [
@@ -2004,6 +2012,15 @@
       "exit_code": 0,
       "outcome": "PASSED",
       "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
+    },
+    {
+      "test_name": "NIPS public serializer suppresses UNDER_REVIEW metrics even when evidence permits redistribution",
+      "command": "npm run test:nips",
+      "environment": "authorized-node-22-npm-10-executor",
+      "timestamp_utc": "2026-11-27T14:25:00.000Z",
+      "exit_code": null,
+      "outcome": "NOT_RUN",
+      "evidence_path": "tests/nips-backend-runtime-foundation.test.ts"
     }
   ],
   "engineering_decisions": [
@@ -2026,7 +2043,8 @@
     "B-010: NIPS public-profile serializer allow-list hardening and its nested-metadata disclosure regression are committed but unverified; all five Actions workflows fail before runner allocation. Run npm run test:nips and required type/architecture/security gates when an executor is available.",
     "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification.",
     "B-001: GitHub Actions execution remains blocked before steps. Current PR #67 head 3004fd05714137a6129212d1ca27e81f1660dff7 has five associated failed runs (Native Auth 46008493815, IRNI RPC 46008493886, Backend Triad 46008493813, Root CI 46008493882, Path-Filtered 46008493914). Returned jobs expose null/empty steps; log retrieval returns BlobNotFound. No workflow command failure is established.",
-    "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit of nine route modules confirmed callers propagate parser status/code; body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route has a bounded but potentially high transient-memory profile; runtime measurements are unavailable. Run worker/backend gates before verification."
+    "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit of nine route modules confirmed callers propagate parser status/code; body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route has a bounded but potentially high transient-memory profile; runtime measurements are unavailable. Run worker/backend gates before verification.",
+    "B-012: SEC-NIPS-002 — prior public serializer exposed a metric value when state was UNDER_REVIEW and evidence permission was DERIVED_ONLY/PUBLIC_REDISTRIBUTION. Fix and sentinel regression are committed; remain IMPLEMENTED_BUT_NOT_VERIFIED until npm run test:nips, typecheck, architecture and security gates pass."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
