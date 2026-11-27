@@ -285,7 +285,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   }
 
   function upsertGeographicOverlay(layer: GeographicOverlayLayer): GeographicOverlayLayer {
-    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache);
+    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache, persistRuntime);
   }
 
   function getGeographicOverlay(params: { layerId: string; isAdminCaller: boolean }): GeographicOverlayLayer {
