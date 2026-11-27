@@ -217,3 +217,6 @@ export async function buildNeighborhoodProfileBoundaryReadModel(params: {
 
   return { status: 'READY', reasonCodes: [], evidence };
 }
+
+// Compatibility export retained for boundary read-model consumers.
+export { pickActiveBoundaryVersion } from './geospatialBoundaryReadModel';
