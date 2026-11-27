@@ -675,12 +675,17 @@ export async function executeResearchSubjectErasure(params: {
       nowIso,
     );
 
-  const batchResults = await params.researchDb.batch([
-    insertInboxStmt,
-    invalidateWindowsStmt,
-    deleteEventsStmt,
-    updateConsentFenceStmt,
-  ]);
+  let batchResults;
+  try {
+    batchResults = await params.researchDb.batch([
+      insertInboxStmt,
+      invalidateWindowsStmt,
+      deleteEventsStmt,
+      updateConsentFenceStmt,
+    ]);
+  } catch (cause) {
+    throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED', { cause });
+  }
   if (
     batchResults.length !== 4 ||
     batchResults.some((r) => !r.success)
