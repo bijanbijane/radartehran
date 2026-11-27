@@ -34,3 +34,16 @@ A parent-neighborhood interior match previously masked a point that lay exactly 
 ## Bbox diagnostic integrity correction — 2026-11-27
 
 A second audit found that bbox overlap diagnostics counted ACTIVE records only after filtering by city and boundary level. A corrupt history with two ACTIVE records carrying inconsistent city/level metadata could therefore be reduced to one apparently valid record and enter the overlap scan. The scan now checks the complete entity history first and excludes any history whose total ACTIVE count is not exactly one; city/level filtering is applied only after lifecycle uniqueness is established. A regression test covers this mixed-metadata case. The new test is committed but not yet verified by an accessible CI run.
+
+
+## Valuation-to-GIS integration gap — 2026-11-27
+
+A branch-head audit of `apps/api/server.ts` confirms that the production bootstrap imports and mounts `createProductionGeospatialModule()` at `/api/v1/geospatial`, but does not import or mount `createValuationService()` or `createValuationRouter()`. No `/api/v1/valuation` route is registered in this API bootstrap. The standalone valuation service accepts optional coordinates and previously did not spatially validate them.
+
+The valuation service now has an explicit `ValuationLocationResolver` dependency contract. Coordinate-bearing estimates fail closed with HTTP 409 when no resolver is configured, and also fail closed if the resolver's canonical city/neighborhood differs from the request. On successful resolution, district and sub-neighborhood IDs are taken from the resolver result. Regression cases cover missing resolver, successful resolution, and mismatched neighborhood identity.
+
+The focused workflow now includes `npm run test:valuation-location` alongside `npm run test:geospatial`, and watches the valuation service/types and valuation regression test paths.
+
+**Production integration remains unresolved:** the API bootstrap still does not construct or mount the valuation module, and no production resolver is wired. Do not claim a production valuation endpoint or coordinate guard is live until a real canonical read-only resolver is composed with a registered route and tested at the public API boundary.
+
+The exact-head GIS workflow run [45987033491](https://github.com/bijanbijane/radartehran/actions/runs/45987033491) failed both jobs; the job records returned `steps=null` and no logs URL. Test and typecheck execution remain unverified.
