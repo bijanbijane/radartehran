@@ -26,9 +26,9 @@
     "test_cases_passed": 0,
     "test_cases_failed": 0,
     "test_cases_skipped": 0,
-    "ci_jobs_failed_before_runner": 5,
+    "ci_jobs_failed_before_runner": 6,
     "ci_jobs_skipped": 1,
-    "reason": "No repository test command was executed in this session. GitHub repository APIs permit source inspection and commits but do not execute npm commands. Previously observed GitHub Actions failures occurred before runner allocation; runner_id=0 and steps=[]."
+    "reason": "No repository test command was executed in this session. GitHub repository APIs permit source inspection and commits but do not execute npm commands. Previously observed GitHub Actions failures occurred before runner allocation; runner_id=0 and steps=[]. A controlled rerun of the primary CI workflow (run 45978213208) also completed failure with zero job steps; job log retrieval returned BlobNotFound. No repository test command ran."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -108,8 +108,17 @@
     "e2e_job": "skipped_due_to_dependency_failure",
     "job_logs": "UNAVAILABLE_BLOB_NOT_FOUND",
     "public_status_page": "All systems operational; no incident reported on 2026-11-27 at time checked.",
-    "latest_main_commit": "456dcacb387b908797756863b10da1f7104b658e"
+    "latest_main_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "rerun_observation": {
+      "run_id": 45978213208,
+      "job_id": 140525618476,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": 0,
+      "logs": "BlobNotFound",
+      "classification": "PRE_RUNNER_CI_FAILURE"
+    }
   },
-  "next_exact_action": "Restore an actual execution path: inspect repository/account Actions runner policy and billing, then execute npm run test:contracts on an allocated runner. Do not infer a test result from source inspection or workflow configuration.",
-  "updated_at": "2026-11-27T16:39:00+03:30"
+  "next_exact_action": "Investigate hosted-runner eligibility/billing and Actions policy. Once GitHub allocates a runner, run npm run test:contracts first; do not infer test results from a pre-runner workflow failure.",
+  "updated_at": "2026-11-27T16:40:00+03:30"
 }
