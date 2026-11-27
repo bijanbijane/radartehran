@@ -84,6 +84,27 @@ The following active-branch files were fetched and searched for direct setter ca
 
 The writer inventory is scoped to the seven state families and call sites fetched in this pass. It is not a complete cross-repository state-transition graph.
 
+## 2.8 Existing test coverage does not exercise native event propagation
+
+The active branch test review found:
+
+- `tests/react-component-interactions.test.ts` exercises `isTopmostModalDialogElement` with synthetic object stubs and asserts that `useDialogFocus` references the helper. It does not mount React dialogs or dispatch a bubbling native Escape event through document and window listeners.
+- `tests/frontend-debug-regressions.test.ts` checks source strings for scroll-lock counters and checks that selected components import `useDialogFocus`. These are source-contract assertions, not focus/keyboard integration tests.
+- `tests/engineering-quality-foundation.test.ts` explicitly asserts that the `useAppUiState.ts` Escape handler contains setters that close mobile filter, nationwide modal, and mobile sheet state. It does not assert topmost-only behavior or reconcile that global handler with the document-level focus hook.
+
+Therefore the current test suite has useful pure helper and source-wiring coverage, but the specific document-to-window propagation conflict and multi-dialog close behavior are not covered by the inspected tests. This is a test-coverage gap, not evidence that all existing tests fail.
+
+### Required regression test
+
+Create a DOM-level test with two active modal dialogs, each with its own close callback and focus container. Dispatch one bubbling Escape event. Assert:
+1. only the topmost dialog's close callback runs;
+2. the lower dialog remains mounted and retains its state;
+3. focus returns to the invoking element inside the lower dialog;
+4. a second Escape closes the lower dialog;
+5. the final body overflow state is restored exactly.
+
+Also add cases for a non-dismissible top dialog, a removed trigger, and an ordinary workspace popover so modal and non-modal Escape ownership do not conflict.
+
 ## 3. Concurrency risk register
 
 | Surface group | Verified state model | Risk if flags overlap | Evidence status |
@@ -162,7 +183,7 @@ Recommended conceptual model:
 
 ## 7. Review outcome
 
-**VERIFIED — source findings:** the named components, independent visibility conditions, shared-hook activation expressions, workspace modal aggregation, setter call sites, and document/window Escape listeners were fetched from the active design branch.
+**VERIFIED — source findings:** the named components, independent visibility conditions, shared-hook activation expressions, workspace modal aggregation, setter call sites, document/window Escape listeners, and relevant existing test files were fetched from the active design branch.
 
 **IMPLEMENTED — NOT VERIFIED:** this design package records the concurrency contract and acceptance matrix. No application code or tests were changed.
 
