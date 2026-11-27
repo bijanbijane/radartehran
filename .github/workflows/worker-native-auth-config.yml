@@ -1,0 +1,54 @@
+name: Cloudflare Native Auth Configuration Guard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wrangler.backend.jsonc'
+      - 'wrangler.backend.preview-check.jsonc'
+      - 'scripts/cloudflare/validate-backend-config.mjs'
+      - 'worker/auth/**'
+      - 'worker/routes/authRoutes.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wrangler.backend.jsonc'
+      - 'wrangler.backend.preview-check.jsonc'
+      - 'scripts/cloudflare/validate-backend-config.mjs'
+      - 'worker/auth/**'
+      - 'worker/routes/authRoutes.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-auth-config-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-native-auth-config:
+    name: Verify Firebase-free Worker runtime configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate backend Worker D1 isolation and retired auth configuration
+        run: node scripts/cloudflare/validate-backend-config.mjs --config=wrangler.backend.jsonc
+      - name: Verify all backend preview configs contain no Firebase runtime vars
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            for (const file of ["wrangler.backend.jsonc", "wrangler.backend.preview-check.jsonc"]) {
+              const source = fs.readFileSync(file, "utf8");
+              if (/"(?:FIREBASE|FIRESTORE)_/i.test(source)) {
+                throw new Error("Retired Firebase runtime variable remains in " + file);
+              }
+            }
+            console.log("Backend Worker configs contain no Firebase or Firestore runtime variables.");
+          '
