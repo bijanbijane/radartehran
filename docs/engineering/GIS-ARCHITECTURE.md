@@ -40,6 +40,15 @@
 ## 5. Current limitations
 
 - A complete authoritative source registry and verified import dataset are not yet demonstrated by the current runtime types.
-- The polygon validator now checks every ring for closure, coordinate validity, degeneracy and per-ring self-intersection. Hole containment within its exterior ring, intersections between different rings, and overlaps between component polygons still need topology-level validation.
+- The polygon validator checks ring closure, coordinate validity, degeneracy, per-ring self-intersection, strict hole containment, and hole-to-hole overlap/nesting. The new hole-topology tests are committed but have not yet been executed in a local or CI runner. Intersections between separate MultiPolygon components and component overlap remain outstanding.
 - Point resolution still needs a broader audit for duplicate active versions within one entity history and for ambiguous result semantics across all consumers. Valuation feature derivation is fail-closed in this branch.
 - CRS transformation workflows and local metric projection policy are not yet established for all source datasets.
+
+
+## 6. 2026-11-27 GIS increment
+
+- Added `HOLE_OUTSIDE_OUTER` and `HOLE_OVERLAP` validation issue codes.
+- Interior rings must be strictly inside the exterior ring; touching, crossing, overlapping, or nested holes are rejected.
+- Regression coverage added for exterior escape, boundary contact, overlapping holes, and nested holes.
+- Verification state: source and test files were re-fetched from GitHub after commit; automated execution remains pending because no online local runner or GitHub check run was available during this session.
+- No production data, D1 schema, Worker binding, or deployment was changed.
