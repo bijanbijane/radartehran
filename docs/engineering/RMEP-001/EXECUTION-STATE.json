@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "14b898b4c83dec6d4b9563ff8331878724674fbf",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; outbox retry code/test source-reviewed; tests not executed; Actions runner allocation fails before steps; local executor Offline",
-    "last_verified_commit": "d0faff86e79dde909faeb3cacbfa57e65e55ae37"
+    "head_commit": "ba67c21b13675fcd129a99d792a3750b98ba7c12",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 source/tests/docs committed; tests and typecheck not executed; hosted Actions jobs fail before runner assignment; local MacBook Offline",
+    "last_verified_commit": "f5b2df10ba734461332af7e7c51b16919d8f69b9"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -25,19 +25,19 @@
     "phase_status": "PARTIALLY_VERIFIED"
   },
   "current_workstream": {
-    "workstream_id": "RT-DB-TRIAD-001-OUTBOX-RETRY-CONCURRENCY",
-    "workstream_name": "Research erasure outbox idempotency, stale-worker fencing and atomic retry accounting",
-    "task_id": "BE-010",
+    "workstream_id": "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER",
+    "workstream_name": "Leased research consent permits, durable revocation drain, revision-scoped erasure and zombie-writer fencing",
+    "task_id": "BE-011",
     "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED",
-    "next_workstream": "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER",
-    "next_task_id": "BE-011"
+    "next_workstream": "LIVE-EXPRESS-FIRESTORE-ADAPTER-RETIREMENT",
+    "next_task_id": "BE-012"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-198-OUTBOX-RETRY-COUNTER-AND-CONSENT-BARRIER-AUDIT",
-    "checkpoint_timestamp_utc": "2026-11-27T11:45:00.000Z",
-    "last_safe_operation": "Changed the USER_DB research-erasure outbox success/retry transitions to atomic attempt_count increments, row-derived exponential backoff and status-fenced completion; added a deterministic concurrent failure regression; audited the dormant TRIAD-003 consent barrier and confirmed its active runtime wiring is missing.",
-    "last_completed_operation": "Committed worker/account-lifecycle/workerLifecycleRuntime.ts and tests/rt-db-triad-001.test.ts changes. Updated blockers, next actions, remediation register and progress log. Re-read changed source/test and verified exact GitHub Actions job metadata; no test/build command executed.",
-    "next_exact_action": "Complete RT-DB-TRIAD-003: integrate leased permits into direct HTTP and Queue ingestion; persist consent_revision and enforce research_subject_consent_fences in RESEARCH_DB writes; create revision-scoped revocation jobs/outbox; drain permits and reconcile receipts; wire PATCH/POST account privacy routes; activate six-scenario tests. Then run npm test and npm run typecheck when an executor/hosted runner is available.",
+    "checkpoint_id": "CHK-199-TRIAD-003-CONSENT-BARRIER-RUNTIME-WIRING",
+    "checkpoint_timestamp_utc": "2026-11-27T11:56:05.677Z",
+    "last_safe_operation": "Wired leased consent permits into direct HTTP and Queue ingestion; added per-event consent_revision and atomic RESEARCH_DB fence checks; implemented durable revocation job/outbox orchestration, permit drain/expiry recovery, revision-scoped erasure and receipt reconciliation; added privacy reconcile route and activated six-scenario test suite.",
+    "last_completed_operation": "Committed runtime changes, route catalog updates, test activation, security/architecture documentation, and refreshed engineering records. Source files were re-read from GitHub. No local or hosted tests/typechecks executed.",
+    "next_exact_action": "Resolve hosted runner allocation issue #49 or reconnect MacBook-Air.local; run npm run test:triad and Worker/API typechecks; fix observed failures; verify TRIAD-003 account routes and D1 migration prerequisites in non-production only; then audit one mounted Express Firestore adapter for D1 migration.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2206,7 +2206,13 @@
       "On branch codex/backend-resume-2026-11-27, the catch-path outbox retry update previously wrote attempt_count from a stale scan value; concurrent failed workers could lose increments. Both retry paths now increment atomically in SQL, derive exponential backoff from the current row attempt_count, and preserve the later deadline with MAX(next_retry_at_ms,...). Successful completion is also status-fenced and increments atomically.",
       "Added deterministic test 'increments retry attempts atomically when concurrent workers fail the same outbox item' in tests/rt-db-triad-001.test.ts. It forces two workers to read the same PENDING row, injects RESEARCH_DB failure, and asserts attempt_count=2 plus the second-attempt backoff.",
       "Reviewed the live RT-DB-TRIAD-003 consent path: researchConsentBarrier.ts and migrations exist but are not imported by active direct HTTP or Queue ingestion; active event writes omit consent_revision and do not check research_subject_consent_fences; PATCH /api/account/privacy updates consent directly and there is no POST /api/account/privacy/reconcile route.",
-      "The dormant tests/rt-db-triad-003-consent-barrier.test.ts expects functions not exported by the active researchService/jobDispatcher and is excluded from tsconfig and npm test (which runs TRIAD-001 and TRIAD-002 only)."
+      "The dormant tests/rt-db-triad-003-consent-barrier.test.ts expects functions not exported by the active researchService/jobDispatcher and is excluded from tsconfig and npm test (which runs TRIAD-001 and TRIAD-002 only).",
+      "RT-DB-TRIAD-003 runtime wiring is now committed: HTTP and Queue ingestion acquire/release bounded USER_DB permits tied to consent_revision; RESEARCH_DB event INSERTs include consent_revision and atomically enforce research_subject_consent_fences.",
+      "Consent revocation now persists a durable revocation job and UID-free revision-scoped outbox before flipping consent off. This order makes a crash between intent creation and consent CAS fail closed; reconcile can complete the CAS.",
+      "Consent-only erasure uses max_consent_revision equal to the new revoked revision, preserves the subject registry for future re-grant, drains active permits and reclaims expired leases, then creates an Inbox receipt, invalidates affected aggregation windows, deletes eligible events and advances the RESEARCH_DB fence in one batch.",
+      "A later explicit re-grant is blocked while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; after completion it advances consent_revision and can write above the fence.",
+      "PATCH /api/account/privacy now initiates barrier revocation and POST /api/account/privacy/reconcile resumes durable jobs; route group and API route catalog include the new endpoint.",
+      "The six-scenario tests in tests/rt-db-triad-003-consent-barrier.test.ts are now included in npm run test:triad. No execution is claimed."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
@@ -2219,10 +2225,12 @@
       "Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a again failed all four workflows: Tehran Radar CI Quality Gates run 45986606294, Cloudflare Native Auth Validation run 45986606317, Tehran Radar Path-Filtered Checks run 45986606333, and Radar Backend Triad run 45986606330. Job logs/step details remain inaccessible via the GitHub connector; no root cause is claimed.",
       "Latest branch CI checks on code commit 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 failed in detect, TypeScript/Architecture/Unit/Storage/Stress/Build, D1 domain isolation/Worker bundle, and native-auth. E2E and downstream path-filtered gates were skipped. Job step metadata is null and job log retrieval returns BlobNotFound; root causes are not known.",
       "No legal-regulatory D1 migration or D1 store exists. The target database binding is not confirmed; radar_researcher_db is only a candidate. A design-only architecture document was committed; no schema, adapter, production composition, data migration, or deployment was changed.",
-      "RT-DB-TRIAD-003 consent revocation is not end-to-end: leased permits, revision-scoped event fencing/erasure, revocation job/outbox orchestration, Queue integration and privacy reconcile route remain unwired.",
-      "The new atomic retry-counter code and regression are source-reviewed but not executed. CI on code/test head d0faff86e79dde909faeb3cacbfa57e65e55ae37 (runs 45990057254, 45990057424, 45990057265, 45990057325) failed before runner assignment: runner_id=0, empty runner name, zero steps."
+      "The new atomic retry-counter code and regression are source-reviewed but not executed. CI on code/test head d0faff86e79dde909faeb3cacbfa57e65e55ae37 (runs 45990057254, 45990057424, 45990057265, 45990057325) failed before runner assignment: runner_id=0, empty runner name, zero steps.",
+      "RT-DB-TRIAD-003 implementation is committed but unverified. tests/rt-db-triad-003-consent-barrier.test.ts, the full triad suite and Worker/API typechecks have not run.",
+      "Latest CI on code head f5b2df10ba734461332af7e7c51b16919d8f69b9: Quality Gates run 45994140283, Backend Triad run 45994140162, Native Auth run 45994140401, plus related path-filtered and frontend budget workflows, failed before runner execution. Quality Gates job runner_id=0, runner_name empty, steps=0; Backend Triad and Native Auth step metadata are null. This matches open operational issue #49; source-level failures are not established.",
+      "Local executor remains unavailable: MacBook-Air.local Offline (last seen 21h ago)."
     ],
-    "next_action": "Complete RT-DB-TRIAD-003: integrate leased permits into direct HTTP and Queue ingestion; persist consent_revision and enforce research_subject_consent_fences in RESEARCH_DB writes; create revision-scoped revocation jobs/outbox; drain permits and reconcile receipts; wire PATCH/POST account privacy routes; activate six-scenario tests. Then run npm test and npm run typecheck when an executor/hosted runner is available.",
+    "next_action": "Resolve GitHub Actions hosted runner allocation issue #49 or reconnect MacBook-Air.local; run npm run test:triad and Worker/API typechecks; then validate TRIAD-003 routes/migrations in non-production and continue the next verified live Express Firestore adapter.",
     "code_work": {
       "id": "BE-002",
       "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
@@ -2263,5 +2271,6 @@
         "next_action": "Complete runtime wiring and activate six-scenario test suite."
       }
     ]
-  }
+  },
+  "code_work_updates": []
 }
