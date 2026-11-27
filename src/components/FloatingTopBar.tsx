@@ -245,11 +245,11 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
               ))}
             </div>
             <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="flex-1 min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition cursor-pointer disabled:opacity-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition cursor-pointer disabled:opacity-50">
                   {savingPrefs ? 'در حال ذخیره...' : currentUser ? 'ذخیره در حساب ابری' : 'ورود با گوگل و ذخیره'}
                 </button>
-                <button type="button" onClick={onCopyBudgetShareLink} className="min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer whitespace-nowrap">ارسال لینک این بودجه برای خانواده</button>
+                <button type="button" onClick={onCopyBudgetShareLink} className="min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer whitespace-normal text-center leading-snug">ارسال لینک این بودجه برای خانواده</button>
               </div>
               {prefsMessage && <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center">{prefsMessage}</span>}
             </div>
