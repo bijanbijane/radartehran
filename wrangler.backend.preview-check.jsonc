@@ -10,8 +10,6 @@
     "APP_ENV": "preview",
     "WORKER_ENV": "preview",
     "APP_URL": "https://preview.invalid",
-    "FIREBASE_PROJECT_ID": "preview-disabled",
-    "FIREBASE_APP_CHECK_MODE": "enforced",
     "STAGE_D_LIFECYCLE_ENABLED": "false"
   }
 }

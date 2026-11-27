@@ -988,6 +988,29 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const secretCheck = validateBackendWranglerConfig(withSecretVar, { skipFsChecks: true });
       assert.equal(secretCheck.ok, false);
       assert.ok(secretCheck.errors.some((e: string) => e.startsWith('PLAINTEXT_SECRET_IN_VARS_FORBIDDEN')));
+
+      // Firebase Auth/App Check is retired from the Cloudflare API Worker runtime.
+      const withFirebaseRuntimeVar = structuredClone(parsed);
+      withFirebaseRuntimeVar.vars.FIREBASE_PROJECT_ID = 'legacy-project';
+      const firebaseRuntimeCheck = validateBackendWranglerConfig(withFirebaseRuntimeVar, { skipFsChecks: true });
+      assert.equal(firebaseRuntimeCheck.ok, false);
+      assert.ok(firebaseRuntimeCheck.errors.includes('RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:production.FIREBASE_PROJECT_ID'));
+
+      // Preview and named environments are covered by the same retirement guard.
+      const withFirebasePreviewVar = structuredClone(parsed);
+      withFirebasePreviewVar.previews = { vars: { FIREBASE_APP_CHECK_MODE: 'enforced' } };
+      const firebasePreviewCheck = validateBackendWranglerConfig(withFirebasePreviewVar, { skipFsChecks: true });
+      assert.equal(firebasePreviewCheck.ok, false);
+      assert.ok(firebasePreviewCheck.errors.includes('RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:previews.FIREBASE_APP_CHECK_MODE'));
+
+      for (const legacyConfigPath of ['wrangler.jsonc', 'wrangler.backend.preview-check.jsonc']) {
+        const legacyConfig = fs.readFileSync(path.join(process.cwd(), legacyConfigPath), 'utf-8');
+        assert.equal(
+          /["'](?:FIREBASE|FIRESTORE)_/i.test(legacyConfig),
+          false,
+          `Retired Firebase runtime variables must not remain in ${legacyConfigPath}`,
+        );
+      }
     });
 
     it('verifies worker/** has zero forbidden Node/Express/firebase-admin/JSON-repo imports and zero IRNI D1 bindings', () => {

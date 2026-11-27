@@ -12,10 +12,6 @@
     "DB_WRITES_PAUSED_UNTIL_UTC": "2026-11-24T00:00:00Z",
     "WORKER_ENV": "production",
     "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev",
-    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-    "FIREBASE_PROJECT_NUMBER": "935427453422",
-    "FIREBASE_APP_CHECK_APP_ID": "1:935427453422:web:25817d32df713f2a68deff",
-    "FIREBASE_APP_CHECK_MODE": "enforced",
     "ADMIN_EMAIL": "radio837isf@gmail.com",
     "RESEARCH_HMAC_KEY_VERSION": "v1",
     "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
@@ -27,8 +23,6 @@
       "APP_ENV": "preview",
       "WORKER_ENV": "preview",
       "APP_URL": "https://preview.invalid",
-      "FIREBASE_PROJECT_ID": "preview-disabled",
-      "FIREBASE_APP_CHECK_MODE": "enforced",
       "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
       "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
     }
