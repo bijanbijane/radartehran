@@ -235,6 +235,128 @@ test('public serializer suppresses metrics whose evidence is not redistributable
 });
 
 
+test('public serializer allow-lists nested fields and redacts free-form internal diagnostics', async () => {
+  const profile = await assembleNipsNeighborhoodProfile(buildAssemblyInput());
+  const publicMetric = {
+    metricId: 'metric.public.test',
+    value: 42,
+    state: 'OBSERVED',
+    unit: 'count',
+    currency: null,
+    semanticRole: 'TEST',
+    period: {
+      kind: 'SNAPSHOT',
+      observedAt: '2026-11-26T12:00:00.000Z',
+      periodStart: null,
+      periodEnd: null,
+      asOf: null,
+      privatePayload: 'private-sentinel-period',
+    },
+    geography: {
+      level: 'NEIGHBORHOOD',
+      canonicalEntityId: 'irni:neighborhood:test-001',
+      boundaryVersionId: null,
+      boundarySchemeId: null,
+      boundarySchemeVersion: null,
+      assignmentMethod: 'DIRECT',
+      precision: 'EXACT',
+      privatePayload: 'private-sentinel-geography',
+    },
+    methodologyId: 'test-method',
+    methodologyVersion: '1.0.0',
+    provenance: {
+      evidence: [{
+        evidenceId: 'evidence-public-001',
+        sourceId: 'source-public-001',
+        sourceVersion: '1',
+        evidenceHash: 'c'.repeat(64),
+        evidenceReference: 'r2://evidence/public-001',
+        permissionStatus: 'DERIVED_ONLY',
+        verifiedAt: '2026-11-26T12:00:00.000Z',
+      }],
+      canonicalObservationIds: ['observation-public-001'],
+      sourceVariableMappingIds: ['mapping-public-001'],
+      transformationIds: ['run-public-001'],
+    },
+    quality: {
+      status: 'VERIFIED',
+      confidence: 1,
+      sampleSize: 1,
+      coverageRatio: 1,
+      freshnessStatus: 'CURRENT',
+      limitations: ['private-sentinel-quality'],
+      privatePayload: 'private-sentinel-quality-object',
+    },
+    comparabilityKey: null,
+    display: {
+      labelKey: 'test.metric',
+      format: 'NUMBER',
+      precision: 0,
+      privatePayload: 'private-sentinel-display',
+    },
+  };
+  const contaminatedProfile = {
+    ...profile,
+    identity: {
+      ...profile.identity,
+      data: {
+        ...profile.identity.data,
+        localizedNames: {
+          ...profile.identity.data.localizedNames,
+          'private-sentinel-locale': 'private-sentinel-locale-value',
+        },
+        parentEntities: [{
+          canonicalEntityId: 'irni:city:test-001',
+          level: 'CITY',
+          name: 'Test City',
+          privatePayload: 'private-sentinel-parent',
+        }],
+      },
+      readiness: {
+        ...profile.identity.readiness,
+        reasons: ['private-sentinel-identity-reason'],
+      },
+    },
+    domains: {
+      ...profile.domains,
+      demographics: {
+        ...profile.domains.demographics,
+        metrics: [publicMetric],
+        readiness: {
+          ...profile.domains.demographics.readiness,
+          publishableMetricCount: 1,
+          reasons: ['private-sentinel-readiness'],
+        },
+      },
+    },
+    quality: {
+      ...profile.quality,
+      publishableMetricCount: 1,
+      overallReasons: ['private-sentinel-overall'],
+    },
+  } as unknown as NipsNeighborhoodProfile;
+
+  const publicView = serializeNipsProfileForPublic(contaminatedProfile);
+  const serialized = JSON.stringify(publicView);
+  assert.equal(serialized.includes('private-sentinel'), false);
+
+  const metric = publicView.domains.find((domain) => domain.domainId === 'demographics')?.metrics[0];
+  assert.deepEqual(metric?.period, {
+    kind: 'SNAPSHOT',
+    observedAt: '2026-11-26T12:00:00.000Z',
+    periodStart: null,
+    periodEnd: null,
+    asOf: null,
+  });
+  assert.deepEqual(metric?.quality.limitations, ['Some quality details are withheld.']);
+  assert.deepEqual(
+    publicView.domains.find((domain) => domain.domainId === 'demographics')?.readiness.reasons,
+    ['Some readiness details are withheld.']
+  );
+  assert.deepEqual(publicView.quality.overallReasons, ['Some readiness details are withheld.']);
+});
+
+
 test('profile validation rejects NaN and Infinity in quality ratios', async () => {
   const profile = await assembleNipsNeighborhoodProfile(buildAssemblyInput());
   const invalidMetric = {
