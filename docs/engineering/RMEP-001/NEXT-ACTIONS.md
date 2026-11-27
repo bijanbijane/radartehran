@@ -134,3 +134,11 @@ Before any Radar production deployment:
 2. Run `npm run test:cloudflare`, `npm run test:auth`, `npm run test:security`, `npm run typecheck`, `npm run arch:check`, and Worker TypeScript compilation using `tsc --noEmit -p tsconfig.worker.json`.
 3. If a runner remains unavailable, use an authorized Node 22/npm 10 executor; do not mark the work verified based on source inspection alone.
 4. Resume NIPS serialization tests and the IRNI-owned persistence RPC dependency after the Worker security gate.
+
+
+## CHK-209 — immediate execution queue (2026-11-27)
+
+1. Restore usable GitHub Actions runner/step/log visibility. Current PR #67 head `3004fd05714137a6129212d1ca27e81f1660dff7` has five associated failed workflows; all returned jobs have null/empty steps and log downloads return `BlobNotFound`. Do not treat this as an application test failure.
+2. Obtain an authorized Node 22/npm 10 executor and run `npm ci`, `npm run test:worker`, `npm run test:nips`, `npm run test:cloudflare`, `npm run test:auth`, `npm run test:security`, `npm run typecheck`, `npm run arch:check`, and `tsc --noEmit -p tsconfig.worker.json`. Capture exact command output and exit codes.
+3. Worker call-site audit is complete: all nine inspected route modules propagate parser status/code. Preserve existing endpoint-specific limits; specifically measure the 14 MiB JSON/base64 upload path before changing its accepted payload ceiling or parser strategy.
+4. Keep NIPS serializer and Worker parser **IMPLEMENTED_BUT_NOT_VERIFIED** until executable tests pass. Keep PR #67 Draft. No merge, Production deployment, remote migration, or production binding/secret changes without explicit approval.
