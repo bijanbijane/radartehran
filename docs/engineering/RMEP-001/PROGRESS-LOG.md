@@ -1356,3 +1356,11 @@
 - Confirmed `server/modules/property-viewings` is not currently mounted by `apps/api/server.ts`; its facade reference is confined to the module and its tests in repository search. It is not the first production migration target.
 - Confirmed `server/modules/legal-regulatory` is mounted by the active Express API (`registerLegalRegulatoryRoutes`); its route registration explicitly creates `FirestoreLegalRegulatoryStore`, whose persistence spans 10 domain collections.
 - No legal-regulatory-specific D1 migration exists in the repository migration tree. Migration is therefore not safe as a quick store substitution; schema, transaction semantics, indexes/pagination, compatibility plan, and route parity tests must be designed first.
+
+
+## 2026-11-27 — Legal-regulatory D1 migration design gate
+- **Confirmed live path:** apps/api/server.ts mounts registerLegalRegulatoryRoutes; the default composition constructs FirestoreLegalRegulatoryStore and FirestoreLegalRegulatoryTransactionRunner.
+- **Contract reviewed:** ten logical collections; transaction runner enforces all reads before writes, optimistic version CAS, and atomic entity + audit + idempotency writes. Existing tests assert rollback, stale-version rejection, idempotency, and cross-instance durability.
+- **Deliverable:** docs/engineering/RMEP-001/LEGAL-REGULATORY-D1-MIGRATION-DESIGN.md specifies the relational projection model, indexes, conditional D1 transaction-guard protocol, parity tests, migration/reconciliation sequence, and explicit no-fallback cutover requirements.
+- **Blocker:** legal-regulatory owning D1 database/binding is not approved; radar_researcher_db is only a candidate. No D1 schema, adapter, migration, or production composition change was made.
+- **Status:** DESIGN_COMPLETE / IMPLEMENTATION_BLOCKED. PR #78 remains Draft; no merge/deploy/production data mutation.
