@@ -239,8 +239,11 @@ export async function revokeUserResearchConsentWithBarrier(params: {
       // Treat that exact durable outcome as idempotent; reject every other conflict.
       const latestPrivacy = await getUserPrivacyConsentFromD1(userDb, params.uid);
       const canonicalJob = await readRevocationJob(userDb, revocationId);
+      if (latestPrivacy.researchAnalyticsConsent) {
+        await cancelUnappliedRevocationIntent(userDb, revocationId);
+        throw error;
+      }
       if (
-        latestPrivacy.researchAnalyticsConsent ||
         latestPrivacy.consentRevision !== newConsentRevision ||
         !canonicalJob ||
         canonicalJob.uid !== params.uid ||
