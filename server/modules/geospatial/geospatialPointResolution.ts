@@ -86,10 +86,14 @@ export function resolvePointInBoundaryStore(params: {
   subMatches.sort((a, b) => a.record.entityId.localeCompare(b.record.entityId));
 
   const primary = hoodMatches[0] ?? insideMatches[0];
-  const sub = subMatches[0]?.record;
+  // A sub-neighborhood identifier is authoritative only for a strictly interior
+  // match. A point on its edge must not inherit that micro-neighborhood ID.
+  const sub = subMatches.find((match) => match.classification === 'INSIDE')?.record;
 
   const isAmbiguousOverlap = hoodMatches.length > 1 || subMatches.length > 1;
-  const isEdge = !isAmbiguousOverlap && primary.classification === 'ON_EDGE';
+  // Any matched active boundary edge makes the spatial result non-interior.
+  // In particular, a parent-neighborhood interior must not mask a sub-neighborhood edge.
+  const isEdge = !isAmbiguousOverlap && insideMatches.some((match) => match.classification === 'ON_EDGE');
 
   return {
     resolved: true,
