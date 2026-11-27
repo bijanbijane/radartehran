@@ -168,6 +168,16 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
+    const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
+    await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
+    const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
+    const marketTab = page.getByRole('tab', { name: 'بازار و نمودار' });
+    await scorecardTab.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(marketTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#inspector-panel-market')).toBeVisible();
+    await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
+
     // A cancelled touch gesture must not be applied by a later pointerup event.
     const cancelBox = await sheetHandle.boundingBox();
     expect(cancelBox).not.toBeNull();
@@ -207,15 +217,6 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
-    const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
-    await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
-    const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
-    const marketTab = page.getByRole('tab', { name: 'بازار و نمودار' });
-    await scorecardTab.focus();
-    await page.keyboard.press('ArrowLeft');
-    await expect(marketTab).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#inspector-panel-market')).toBeVisible();
-    await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
   });
 
   test('4. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
