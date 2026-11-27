@@ -395,6 +395,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     upsertPointOfInterest,
     findNearbyPointsOfInterest,
     indexListingForSpatialSearch,
+    removeListingFromSpatialSearch,
     searchListingsSpatially,
     getLocationContext,
     getValuationLocationFeatures,
