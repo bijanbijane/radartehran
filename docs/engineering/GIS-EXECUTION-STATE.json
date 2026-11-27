@@ -32,7 +32,12 @@
     "Fixed bbox overlap diagnostics to require exactly one ACTIVE record across the complete entity history before filtering by city or boundary level; added a mixed-metadata duplicate-ACTIVE regression.",
     "Added an injectable canonical ValuationLocationResolver contract to the valuation module; coordinate-bearing estimates fail closed when the resolver is absent or its canonical city/neighborhood differs from the request.",
     "Added valuation regression coverage for missing resolver, successful coordinate resolution, and mismatched neighborhood identity; added test:valuation-location and included it in the GIS focused workflow.",
-    "Audited production API composition: apps/api/server.ts mounts the GIS router but does not construct or mount createValuationService/createValuationRouter; documented that production valuation API integration remains unresolved."
+    "Audited production API composition: apps/api/server.ts mounts the GIS router but does not construct or mount createValuationService/createValuationRouter; documented that production valuation API integration remains unresolved.",
+    "Re-audited the current branch IRNI RPC v2 consumer: the Worker Service Binding and revision/checksum-verified identity facade exist, but the v2 entity DTO does not provide authoritative polygon geometry.",
+    "Confirmed the Worker neighborhood-boundary endpoint generates explicitly approximate visualization hexagons and is not a valid valuation boundary source.",
+    "Confirmed Express GIS point resolution reads its boundary-history snapshot repository; no verified IRNI geometry ingestion path was established.",
+    "Confirmed valuation production composition remains incomplete: apps/api/server.ts does not mount the valuation router, and no production ValuationDataConsumerAdapter or IRNI-backed ValuationLocationResolver was established.",
+    "Expanded GIS blocker documentation with the exact IRNI geometry, production composition, and API integration acceptance gates."
   ],
   "not_verified": [
     "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
@@ -49,7 +54,12 @@
     "Execution of the mixed-metadata duplicate-ACTIVE bbox diagnostic regression on code revision 4a66e3ed9d06a93b051d5b549a688826d0c4da01",
     "Execution of tests/property-valuation-engine-module.test.ts and npm run test:valuation-location on the latest branch head",
     "Production composition of the valuation service with an authoritative IRNI read-only resolver",
-    "Public API valuation endpoint registration and end-to-end coordinate-to-neighborhood integration"
+    "Public API valuation endpoint registration and end-to-end coordinate-to-neighborhood integration",
+    "Authoritative IRNI polygon/MultiPolygon geometry contract and version-pinned geometry artifact",
+    "Verified ingestion/refresh path from IRNI-approved geometries into the production GIS boundary repository",
+    "Production ValuationDataConsumerAdapter and canonical IRNI-backed ValuationLocationResolver",
+    "Public valuation HTTP endpoint registration and API-boundary tests",
+    "Exact-head execution of GIS, IRNI RPC and Worker bundle workflows on code revision 3aafd609702b270c1a49be3d52ba4175662829a6"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -151,34 +161,62 @@
     "The production API bootstrap does not register a valuation router or construct a valuation service; the new canonical resolver guard is only a service-level seam until production composition and an IRNI read-only resolver are implemented.",
     "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified."
   ],
-  "last_recorded_action": "Added actual cross-module GIS-to-valuation integration regression, updated PR evidence and refreshed exact-head CI checkpoint. Both focused workflow jobs still fail without steps/logs; execution remains unverified.",
-  "latest_inspected_pr_head_sha": "f21c8e9757833f8277cd5a286991cd85addca04d",
-  "latest_branch_head_sha": "f21c8e9757833f8277cd5a286991cd85addca04d",
+  "last_recorded_action": "Audited IRNI RPC v2 versus authoritative geometry, confirmed approximate Worker boundary output is not suitable for valuation, verified Express GIS snapshot persistence and missing valuation production dependencies, and documented integration acceptance gates.",
+  "latest_inspected_pr_head_sha": "3aafd609702b270c1a49be3d52ba4175662829a6",
+  "latest_branch_head_sha": "6a26a7fe22c5a892c80b3e6e72f9d8c88155aad2",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "f21c8e9757833f8277cd5a286991cd85addca04d",
-    "latest_code_revision_sha": "69f6e972e5b6583a82e6da2200515b08cb47f4a8",
+    "branch_head_sha": "6a26a7fe22c5a892c80b3e6e72f9d8c88155aad2",
+    "latest_code_revision_sha": "3aafd609702b270c1a49be3d52ba4175662829a6",
     "compare_main": {
-      "ahead_by": 158,
+      "ahead_by": 166,
       "behind_by": 0,
       "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
     },
     "workflow_runs": [
       {
         "name": "GIS Spatial Integrity",
-        "run_id": 45987669458,
+        "run_id": 45988855453,
         "conclusion": "failure",
         "jobs": [
           {
             "name": "GIS geometry and boundary regression",
-            "job_id": 140467313055,
+            "job_id": 140471269115,
             "conclusion": "failure",
             "steps": null,
             "logs": null
           },
           {
             "name": "GIS module TypeScript typecheck",
-            "job_id": 140467313607,
+            "job_id": 140471269759,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 45988855598,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "irni-rpc-contract",
+            "job_id": 140471269221,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "run_id": 45988855139,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "D1 domain isolation, Worker bundle & frontend RPC binding",
+            "job_id": 140471268134,
             "conclusion": "failure",
             "steps": null,
             "logs": null
@@ -186,16 +224,19 @@
         ]
       }
     ],
-    "interpretation": "The latest code revision 4a66e3ed9d06a93b051d5b549a688826d0c4da01 has no exact-SHA focused GIS run returned by the current lookup. The latest observed focused run for the preceding code revision failed without step metadata or logs. No test/typecheck pass is claimed."
+    "interpretation": "The latest branch code revision's GIS, IRNI RPC consumer and Worker bundle workflow runs all concluded failure. Each returned steps=null and logs_url=null; command execution and failure causes are unknown. Documentation-only commits do not rerun the focused workflow. No test/typecheck pass is claimed."
   },
-  "latest_branch_sha_at_record": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
+  "latest_branch_sha_at_record": "6a26a7fe22c5a892c80b3e6e72f9d8c88155aad2",
   "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
   "valuation_integration": {
-    "status": "SERVICE_GUARD_IMPLEMENTED_PRODUCTION_WIRING_NOT_IMPLEMENTED",
-    "api_bootstrap": "GIS router mounted at /api/v1/geospatial; no valuation router or service construction found in apps/api/server.ts",
-    "resolver_contract": "ValuationLocationResolver",
-    "coordinate_policy": "Fail closed with 409 when coordinates are present and resolver is missing or canonical city/hood does not match",
-    "tests": "Added missing-resolver, successful-resolution, and mismatched-neighborhood cases; execution unverified",
-    "real_geospatial_service_integration_test": "Added in tests/geospatial-valuation-location-assignment.test.ts; checks edge rejection, interior acceptance and caller hood-ID mismatch. Execution unverified."
+    "status": "SERVICE_GUARD_IMPLEMENTED_PRODUCTION_WIRING_BLOCKED",
+    "api_bootstrap": "GIS router mounted at /api/v1/geospatial; no valuation service construction or valuation router mount in apps/api/server.ts",
+    "resolver_contract": "ValuationLocationResolver exists only as an injectable service dependency; current cross-module test injects local GeospatialService",
+    "irni_identity_rpc": "Worker IRNI RPC v2 exists through IRNI_GEOGRAPHY and validates active registry metadata/revision/checksum; entity DTO does not provide polygon geometry",
+    "worker_boundary_route": "/api/neighborhood-boundaries/resolve returns explicitly approximate visualization-only hexagons; not authoritative",
+    "gis_persistence": "Express GIS service hydrates/persists boundary history through AtomicJsonRepository geospatial-state.json and durable snapshot adapter; IRNI ingestion not established",
+    "data_consumer": "ValuationDataConsumerAdapter is required by createValuationService; production adapter/composition not established",
+    "tests": "Service-level and local cross-module regression cases added; execution unverified; no public HTTP-to-IRNI-geometry integration test",
+    "acceptance": "Require approved versioned geometry provider, exact canonical linkage, production ingestion, production adapters, public route tests, and fail-closed behavior before route registration."
   }
 }
