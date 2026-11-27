@@ -26,7 +26,7 @@ Current source type supports `city`, `district`, `neighborhood`, and `sub_neighb
 ## Known gaps
 
 - MultiPolygon component overlap/intersection and full cross-component topology are not yet validated. The current ring-topology checks cover holes within each Polygon component; they do not prove that separate MultiPolygon components are disjoint.
-- Duplicate `ACTIVE` versions inside a single entity history are not yet blocked by the snapshot validator; some readers select the first active version.
+- Legacy snapshots containing duplicate `ACTIVE` versions are not automatically reconciled at startup. They fail closed at point assignment/profile read boundaries and require an explicit, independently reviewed repair.
 - Bounding-box overlap is only a coarse candidate signal, not proof of polygon overlap.
 - No authoritative production boundary dataset has been re-imported and independently verified in this work package.
 - Boundary version metadata does not yet guarantee a complete source license/provenance record.
