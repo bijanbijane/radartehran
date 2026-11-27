@@ -44,3 +44,6 @@ These blockers do not authorize merging, production deployment, production datab
 
 
 19. **Latest CI reproduction on exact PR #78 head `1a33b00db205303dfd2603698cceea051c424398` — BLOCKED before runner allocation.** Backend Triad run 45996787222 job 140498058219, Quality Gates run 45996787220 job 140498058177, Native Auth run 45996787126 job 140498057995, and Path-Filtered Checks run 45996787006 detect job 140498057224 all report runner_id=0, empty runner_name and zero steps. E2E/API/contracts/frontend jobs were skipped. No source-level check executed. Issue #49 updated.
+
+
+20. **Latest CI reproduction on exact PR #78 head `d622a1958d567140731f7ac87d6aa3140ed4a44e` — BLOCKED before runner allocation.** Backend Triad run 45997297157 job 140499788635, Quality Gates run 45997297169 job 140499789069, Native Auth run 45997297190 job 140499788433, and Path-Filtered Checks run 45997297120 detect job 140499788458 all report runner_id=0, empty runner_name and zero steps. Downstream jobs skipped. The TRIAD-003 test-only commit triggered the workflow but no test step ran. Issue #49 updated.
