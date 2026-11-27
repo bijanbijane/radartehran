@@ -1384,3 +1384,12 @@
 - Cloudflare API staging build emitted warnings that staging does not inherit top-level `vars`, `d1_databases`, or `services`; it only had APP_ENV, WORKER_ENV and APP_URL bindings. Backend config validation also reports `BLOCKED_STAGING_DATABASES_NOT_PROVISIONED`. No staging resource provisioning or deployment change was initiated in this session.
 - Security audit output in the Cloudflare API build reports 21 dependency vulnerabilities (14 moderate, 5 high, 2 critical). No `npm audit fix --force` or unreviewed dependency upgrade was run.
 - Latest inspected NIPS branch head at checkpoint start: `b8d292af786e3091ab85ebf73d4c38d036197717`. No application runtime or database change was made on the NIPS branch in this work package.
+
+
+## 2026-11-27 — CI runner allocation root cause established
+
+- Raw GitHub Actions run/job payloads were inspected for PR #69, #70, #71, PR #67's related runs, and new PR #81. Failed jobs consistently have `runner_id: 0`, blank runner name, zero steps, and a runtime of roughly 1–3 seconds.
+- PR #81's native-auth config guard run `45987535979` was explicitly rerun; attempt 2 also failed before runner assignment (`runner_id: 0`, zero steps).
+- This establishes the current GitHub Actions failures as **runner allocation/infrastructure failures before any workflow command executes**. They are not evidence that npm ci, typecheck, tests, or source code failed in those runs. The previous `BlobNotFound` log responses are consistent with jobs that never started on a runner.
+- Cloudflare Workers Builds are a separate execution system: those logs do contain executed commands and the confirmed npm ci lockfile mismatch for build `cfd42e27-7b3c-449b-88e9-106cd042aa41`.
+- Current CI blocker classification corrected: GitHub Actions = BLOCKED before execution; Cloudflare build install = reproducible package-lock mismatch on PR #71; PR #70 preview build = successful.
