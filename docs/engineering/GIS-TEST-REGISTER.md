@@ -115,3 +115,15 @@ Log retrieval for the focused GIS jobs returned `BlobNotFound`. A failed check w
 - Persisted simplified geometry is independently validated before a snapshot can be activated.
 - Regression cases cover an unclosed canonical ring, a stale/mismatched bounding box (which must block recovery), and malformed simplified geometry.
 - Status: committed, NOT RUN / NOT VERIFIED. Exact-head GIS jobs failed without exposing steps; job logs returned BlobNotFound.
+
+
+## Latest exact-HEAD verification — `1ccf9411a4d945fcd4baad0ec11ac7b956b16382`
+
+| Run | Attempt | Job | Job ID | Result |
+|---|---:|---|---:|---|
+| 45980564390 | 1 | GIS geometry and boundary regression | 140443084579 | FAILURE; steps unavailable |
+| 45980564390 | 1 | GIS module TypeScript typecheck | 140443084890 | FAILURE; steps unavailable |
+| 45980564390 | 2 (rerun) | GIS module TypeScript typecheck | 140443495137 | FAILURE; steps unavailable |
+| 45980564390 | 2 (rerun) | GIS geometry and boundary regression | 140443495590 | FAILURE; steps unavailable |
+
+GitHub log retrieval remains unavailable. Issue #49 records a matching hosted-runner allocation failure pattern on both project repositories, but the current job records do not expose runner IDs. Treat runner allocation as suspected, not confirmed. Both focused checks remain **NOT VERIFIED**; there is no passing evidence.
