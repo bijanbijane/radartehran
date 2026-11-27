@@ -146,3 +146,12 @@
 - **Next exact action:** After PR #70's lockfile fix is integrated through normal review, update the Frontend branch through a reviewable commit, then run `npm run test:contracts`, `npm run lint`, `npm run arch:check`, `npm run build`, and the focused Playwright mobile budget-filter test. Inspect keyboard focus at 320×568 and 390×844 before changing verification status.
 
 - **Latest CI recheck for the focus regression source commit `721fbd067c6ea709c3e5d9126abc8c59fd0e5051`:** Runs `46008451892` (Browser UX), `46008451998` (Bundle Budget), `46008451966` (Native Auth), `46008451913` (Path-Filtered), and `46008452001` (Quality Gates) all concluded `failure`. Their primary job IDs `140537479454`, `140537480133`, `140537479761`, `140537479823`, and `140537480077` each returned an empty step list. The path-filtered dependent jobs and Quality Gates Playwright job were skipped. No source validation command executed; status remains `IMPLEMENTED_BUT_NOT_VERIFIED`.
+
+
+### CI infrastructure recheck — 2026-11-27
+- **Checked head:** `624a440803db86a81ff5abc77b40a796557698ac` (PR #76 branch).
+- **Fresh PR workflows:** Native Auth `46008551336`, Quality Gates `46008551306`, Browser UX `46008551457`, Path-Filtered Checks `46008551372`, and Initial Frontend Bundle Budget `46008551349` all completed with conclusion `failure`.
+- **Job evidence:** Primary jobs `140537821772`, `140537821830`, `140537822544`, `140537822469`, and `140537821687` all returned `steps: null`; dependent Playwright and path-filtered jobs were skipped. Fetching the Quality Gates primary-job log returned HTTP 404 `BlobNotFound`.
+- **Assessment:** This is another reproduced pre-step CI failure across five independent workflows. It is not evidence of a source-level test failure, and the precise GitHub runner/service cause remains unknown. No tests, lint, architecture checks, build, or browser checks are claimed as executed.
+- **Workflow configuration inspection:** The default-branch `.github/workflows/ci.yml` uses GitHub-hosted `ubuntu-latest` runners and defines checkout/setup/install/test/build steps. The observed job payloads contain no step summaries; no workflow permission or runner-label change is justified by current evidence.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. PR #76 remains Draft. Do not merge or deploy. Next action remains to obtain a functioning runner/device and execute the documented frontend checks.
