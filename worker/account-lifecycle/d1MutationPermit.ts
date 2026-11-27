@@ -5,6 +5,18 @@
  */
 import type { D1Database } from '../types';
 
+export class UserD1MutationPermitError extends Error {
+  readonly code: string;
+  readonly httpStatus: number;
+
+  constructor(code: string, httpStatus = 503) {
+    super(code);
+    this.name = 'UserD1MutationPermitError';
+    this.code = code;
+    this.httpStatus = httpStatus;
+  }
+}
+
 export interface AcquiredMutationPermit {
   readonly ok: true;
   readonly permitId: string;
@@ -75,29 +87,36 @@ export async function acquireMutationPermitInD1(params: {
     ? Math.max(1_000, Math.min(15 * 60_000, suppliedTtlMs))
     : 15 * 60_000;
   const expiresAtMs = nowMs + ttlMs;
-  if (!Number.isSafeInteger(expiresAtMs)) throw new Error('ACCOUNT_MUTATION_PERMIT_EXPIRY_INVALID');
+  if (!Number.isSafeInteger(expiresAtMs)) {
+    throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_EXPIRY_INVALID');
+  }
   const permitId = `perm_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
   // Single atomic SQL statement prevents TOCTOU race where account_write_blocks is inserted
   // between a prior SELECT and a subsequent INSERT.
-  const res = await params.userDb
-    .prepare(
-      `INSERT INTO account_mutation_permits (
-        permit_id, uid, operation_name, acquired_at_ms, expires_at_ms, released_at_ms
+  try {
+    const res = await params.userDb
+      .prepare(
+        `INSERT INTO account_mutation_permits (
+          permit_id, uid, operation_name, acquired_at_ms, expires_at_ms, released_at_ms
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, NULL
+        WHERE NOT EXISTS (
+          SELECT 1 FROM account_write_blocks WHERE uid = ?2 AND released_at_iso IS NULL
+        )`,
       )
-      SELECT ?1, ?2, ?3, ?4, ?5, NULL
-      WHERE NOT EXISTS (
-        SELECT 1 FROM account_write_blocks WHERE uid = ?2 AND released_at_iso IS NULL
-      )`,
-    )
-    .bind(permitId, params.uid, params.operationName.slice(0, 80), nowMs, expiresAtMs)
-    .run();
+      .bind(permitId, params.uid, params.operationName.slice(0, 80), nowMs, expiresAtMs)
+      .run();
 
-  if (res.success === false) {
-    throw new Error('ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE');
-  }
-  if ((res.meta?.changes ?? 0) !== 1) {
-    return { ok: false, statusCode: 423, code: 'ACCOUNT_WRITE_BLOCKED' };
+    if (res.success === false) {
+      throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE');
+    }
+    if ((res.meta?.changes ?? 0) !== 1) {
+      return { ok: false, statusCode: 423, code: 'ACCOUNT_WRITE_BLOCKED' };
+    }
+  } catch (error) {
+    if (error instanceof UserD1MutationPermitError) throw error;
+    throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_STORE_UNAVAILABLE');
   }
 
   return {
@@ -118,11 +137,33 @@ export async function releaseMutationPermitInD1(params: {
   const nowMs = Number.isSafeInteger(suppliedNowMs) && Number(suppliedNowMs) > 0
     ? Number(suppliedNowMs)
     : Date.now();
-  const result = await params.userDb
-    .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
-    .bind(nowMs, params.permitId)
-    .run();
-  if (result.success === false) throw new Error('ACCOUNT_MUTATION_PERMIT_RELEASE_FAILED');
+
+  try {
+    const result = await params.userDb
+      .prepare('UPDATE account_mutation_permits SET released_at_ms = ?1 WHERE permit_id = ?2 AND released_at_ms IS NULL')
+      .bind(nowMs, params.permitId)
+      .run();
+    if (result.success === false || (result.meta?.changes ?? 0) !== 1) {
+      throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_RELEASE_FAILED');
+    }
+
+    // A successful UPDATE result alone is not the durable acknowledgement. Read back the
+    // persisted timestamp before reporting release to the caller.
+    const persisted = await params.userDb
+      .prepare('SELECT released_at_ms FROM account_mutation_permits WHERE permit_id = ?1')
+      .bind(params.permitId)
+      .first<{ released_at_ms: number | null }>();
+    if (
+      !persisted ||
+      !Number.isSafeInteger(Number(persisted.released_at_ms)) ||
+      Number(persisted.released_at_ms) !== nowMs
+    ) {
+      throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_RELEASE_UNCONFIRMED');
+    }
+  } catch (error) {
+    if (error instanceof UserD1MutationPermitError) throw error;
+    throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_RELEASE_FAILED');
+  }
 }
 
 export async function countActiveMutationPermitsInD1(
@@ -131,18 +172,21 @@ export async function countActiveMutationPermitsInD1(
   nowMs: number = Date.now(),
 ): Promise<number> {
   const safeNowMs = Number.isSafeInteger(nowMs) && nowMs > 0 ? nowMs : Date.now();
-  const result = await userDb
-    .prepare(
-      'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
-    )
-    .bind(uid, safeNowMs)
-    .all<{ cnt: number }>();
-  if (!result.success || result.results.length !== 1) {
-    throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
+  try {
+    const result = await userDb
+      .prepare(
+        'SELECT COUNT(*) AS cnt FROM account_mutation_permits WHERE uid = ?1 AND released_at_ms IS NULL AND expires_at_ms > ?2',
+      )
+      .bind(uid, safeNowMs)
+      .first<{ cnt: number | string }>();
+    if (!result) throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
+    const count = Number(result.cnt);
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_COUNT_INVALID');
+    }
+    return count;
+  } catch (error) {
+    if (error instanceof UserD1MutationPermitError) throw error;
+    throw new UserD1MutationPermitError('ACCOUNT_MUTATION_PERMIT_COUNT_UNAVAILABLE');
   }
-  const count = Number(result.results[0].cnt);
-  if (!Number.isSafeInteger(count) || count < 0) {
-    throw new Error('ACCOUNT_MUTATION_PERMIT_COUNT_INVALID');
-  }
-  return count;
 }
