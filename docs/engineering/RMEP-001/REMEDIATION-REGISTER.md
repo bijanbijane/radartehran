@@ -119,6 +119,6 @@ Do not label GitHub Actions failures as source-code test failures unless a runne
 - **Severity:** High (public data disclosure / publication-policy bypass).
 - **Finding:** Public serialization preserved the numeric value for `UNDER_REVIEW` metrics whenever their source evidence had a redistributable permission. The same serializer classified that state as blocked in its counters, creating an inconsistent public contract.
 - **Fix:** `SUPPRESSED` and `UNDER_REVIEW` are now unconditional public suppression states. Source permission cannot override moderation/publication state.
-- **Regression:** Added an under-review metric fixture with `DERIVED_ONLY` permission and sentinel value; asserts state `SUPPRESSED`, null value, zero evidence count, and absence of the sentinel from serialized output.
+- **Regression:** Added `UNDER_REVIEW` and explicit `SUPPRESSED` metric fixtures with `DERIVED_ONLY` permission and sentinel values; asserts both states serialize as `SUPPRESSED`, null values, zero evidence count, and no sentinel in public output.
 - **Files:** `server/modules/neighborhood-profile/repository.ts`; `tests/nips-backend-runtime-foundation.test.ts`.
 - **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. Runtime test, typecheck, architecture and security suite remain pending an authorized Node 22/npm 10 executor or functioning Actions runner.
