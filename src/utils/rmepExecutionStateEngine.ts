@@ -9,7 +9,7 @@ export interface RmepExecutionState { schema_version: '1.0'; program_id: 'RMEP-0
   execution_history: { completed_tasks: string[]; in_progress_tasks: string[]; verified_commits: string[]; uncommitted_changes_summary: string; };
   phase_statuses: { phase_1: RmepPhaseStatus; phase_2: RmepPhaseStatus; phase_3: RmepPhaseStatus; phase_4: RmepPhaseStatus; phase_5: RmepPhaseStatus; phase_6: RmepPhaseStatus; };
   operations: Array<{ operation_id: string; phase: string; description: string; status: RmepOperationStatus; idempotent: boolean; timestamp_utc: string; }>;
-  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number; outcome: 'PASSED' | 'FAILED'; evidence_path: string; }>;
+  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number; outcome: 'PASSED' | 'FAILED' | 'NOT_RUN'; evidence_path: string | null; }>;
   engineering_decisions: string[];
   blockers: Array<{ blocker_id: string; phase: string; description: string; requires_explicit_user_authorization: boolean; }>;
   pending_authorization: string[];
@@ -34,22 +34,49 @@ export function verifyMasterPromptIntegrity(
 const SECRET_LEAK_PATTERN = /(AIzaSy[A-Za-z0-9_-]{30,}|-----BEGIN\s+(?:RSA\s+|EC\s+)?PRIVATE\s+KEY-----|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/i;
 export function validateRmepExecutionState(state: RmepExecutionState): { valid: boolean; reasons: string[] } {
   const reasons: string[] = [];
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { valid: false, reasons: ['Execution state must be an object'] };
+  }
   if (state.program_id !== RMEP_PROGRAM_ID) reasons.push('Invalid program_id');
   if (state.program_version !== RMEP_PROGRAM_VERSION) reasons.push('Invalid program_version');
   if (SECRET_LEAK_PATTERN.test(JSON.stringify(state))) {
     reasons.push('Execution state must never contain secrets, API keys, or private keys');
   }
-  if (state.approved_master_prompt.path.includes('..') || state.approved_master_prompt.path.startsWith('/') || state.approved_master_prompt.path.includes('\\')) {
+
+  const approvedPath = state.approved_master_prompt?.path;
+  if (typeof approvedPath !== 'string' || !approvedPath.trim()) {
+    reasons.push('Missing approved_master_prompt.path');
+  } else if (approvedPath.includes('..') || approvedPath.startsWith('/') || approvedPath.includes('\\\\')) {
     reasons.push('Unsafe path reference in approved_master_prompt.path');
   }
-  if (state.final_report_path && (state.final_report_path.includes('..') || state.final_report_path.startsWith('/') || state.final_report_path.includes('\\'))) {
-    reasons.push('Unsafe path reference in final_report_path');
-  }
-  for (const t of state.tests) {
-    if (t.evidence_path.includes('..') || t.evidence_path.startsWith('/') || t.evidence_path.includes('\\')) {
-      reasons.push(`Unsafe evidence_path: ${t.evidence_path}`);
+
+  const reportPath: unknown = state.final_report_path;
+  if (reportPath !== undefined && reportPath !== null) {
+    if (typeof reportPath !== 'string' || reportPath.includes('..') || reportPath.startsWith('/') || reportPath.includes('\\\\')) {
+      reasons.push('Unsafe path reference in final_report_path');
     }
   }
+
+  if (!Array.isArray(state.tests)) {
+    reasons.push('Execution state tests must be an array');
+  } else {
+    for (const testRecord of state.tests) {
+      if (!testRecord || typeof testRecord !== 'object') {
+        reasons.push('Execution state contains an invalid test record');
+        continue;
+      }
+      const evidencePath: unknown = testRecord.evidence_path;
+      if (evidencePath === null && testRecord.outcome === 'NOT_RUN') continue;
+      if (typeof evidencePath !== 'string' || !evidencePath.trim()) {
+        reasons.push(`Missing evidence_path for test: ${String(testRecord.test_name ?? 'unknown')}`);
+        continue;
+      }
+      if (evidencePath.includes('..') || evidencePath.startsWith('/') || evidencePath.includes('\\\\')) {
+        reasons.push(`Unsafe evidence_path: ${evidencePath}`);
+      }
+    }
+  }
+
   return { valid: reasons.length === 0, reasons };
 }
 export async function writeExecutionStateAtomically(
