@@ -11,7 +11,7 @@ import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../.
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { matchesPersianSearch } from '../../utils/security';
 import { type MapViewportBoundsState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
-import { listNeighborhoodsInMapViewport, resolveMapExplorerNeighborhoodList } from './mapViewportHoodFilter';
+import { listNeighborhoodsInMapViewport, resolveMapExplorerNeighborhoodList, resolveMapExplorerSelectedNeighborhood } from './mapViewportHoodFilter';
 import { formatPersianScore } from '../../utils/persianBidiFormat';
 import { resolveInitialSidebarOpen, type DesktopMapPanelMode } from './mapSheetCoordinator';
 
@@ -370,8 +370,11 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
     }
   };
 
-  const resolvedSelectedHood =
-    selectedHood || evaluatedNeighborhoods.find((h) => h.id === selectedHoodId) || evaluatedNeighborhoods[0];
+  const resolvedSelectedHood = resolveMapExplorerSelectedNeighborhood({
+    neighborhoods: evaluatedNeighborhoods,
+    selectedHoodId,
+    selectedHood,
+  });
 
   const panelProps: SidebarPanelProps = {
     filtered,
