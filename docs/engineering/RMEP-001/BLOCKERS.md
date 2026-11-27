@@ -89,3 +89,22 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - IRNI read RPC PR #22 and NIPS persistence PR #25 are Draft; ADR-0002 is proposed and does not authorize an owner-side NIPS persistence migration/RPC.
 - **Risk:** current production geography publication still depends on the legacy Radar-side D1 binding/secret path. The new Radar branch cannot be deployed until IRNI replacement read/write contracts and the service are deployed and tested.
 - **Do not:** remove production binding/secret, change the production write-pause deadline, run a D1 migration, or deploy a replacement Worker without the required approval and ordered cutover.
+
+
+## Additional blockers — 2026-11-27
+
+### B-004 — npm lockfile peer resolution
+- Cloudflare build log confirms npm ci fails because package.json and package-lock.json are out of sync; Wrangler's optional peer range requests Vitest 5 while root project declares Vitest 3.
+- PR #70 already contains legacy-peer-deps=true and its frontend preview build passed. PR #69 and #71 were updated with the same .npmrc setting, but fresh GitHub Actions jobs still fail and their logs are inaccessible.
+- Do not upgrade Vitest or hand-edit package-lock without reproducible npm output.
+- Next: obtain a working Node/npm executor and run clean npm ci under Node 22/npm 10, compare with and without the repo .npmrc, then regenerate lockfile only if required.
+
+### B-005 — staging Worker binding isolation
+- Cloudflare API staging build logs warn that vars, d1_databases, and services are absent from env.staging because Wrangler does not inherit them.
+- Backend validation reports BLOCKED_STAGING_DATABASES_NOT_PROVISIONED. The uploaded staging Worker version had only APP_ENV, WORKER_ENV, APP_URL bindings.
+- Do not deploy or provision staging resources until intended staging DB/service IDs and owner-approved topology are verified.
+- Next: inventory current staging DBs and IRNI service binding contract; reconcile config and provisioning in a non-production change.
+
+### B-006 — dependency vulnerabilities
+- Build output reports 21 npm audit findings (14 moderate, 5 high, 2 critical), but the advisory JSON and dependency paths are not present in accessible logs.
+- Next: retrieve full npm audit JSON from a working executor and triage direct/transitive exposure. No force upgrades.
