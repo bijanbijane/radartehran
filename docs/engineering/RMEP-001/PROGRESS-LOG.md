@@ -1427,3 +1427,9 @@
 - **Regression alignment:** TRIAD-001 now asserts direct revocation bypass is rejected and uses the durable barrier to erase events. TRIAD-002 race coverage now expects an already-permitted request to drain before erasure; concurrent CAS tests use non-research consent flags; queue stale-revision errors are asserted as CONSENT_REVISION_STALE_OR_REVOKED; atomic aggregation invalidation failure is tested.
 - **Verification:** No tests/typecheck executed. Latest CI on head d622a1958d567140731f7ac87d6aa3140ed4a44e: Quality Gates run 45997297169 job 140499789069 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45997297157 and Native Auth run 45997297190 have null step metadata. E2E skipped. This remains the runner allocation blocker tracked in issue #49.
 - **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. PR #78 remains Draft.
+
+
+## 2026-11-27 — seven-workflow runner allocation reproduction
+- Exact PR #78 head `7a54aebecd72cd7425c00cd3a635a2a74fff16ba` (last source/test head `fbb09b96e29680af67ad68eafc4910cead925e9a`) triggered seven workflows: Backend Triad 45997942625, Quality Gates 45997942616, Native Auth 45997942633, Path-Filtered Checks 45997942737, Geographic RPC Contract 45997942650, Frontend Bundle Budget 45997942637 and Shadow Registry Safety 45997942605.
+- Every primary job ended before runner allocation (runner_id=0, empty runner_name, zero steps); downstream jobs skipped. No checkout, dependency install, test, typecheck, build or validation ran. Issue #49 updated; no blind rerun was issued.
+- PR #78 remains Draft. Community Firestore adapter parity audit is gated until the existing verification gates can execute; no adapter changes made.
