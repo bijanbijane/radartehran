@@ -54,3 +54,6 @@ These blockers do not authorize merging, production deployment, production datab
 
 
 21. **Latest CI reproduction on PR #78 head `7a54aebecd72cd7425c00cd3a635a2a74fff16ba` (code head `fbb09b96e29680af67ad68eafc4910cead925e9a`) — BLOCKED before runner allocation.** Backend Triad run 45997942625 job 140501967719; Quality Gates run 45997942616 job 140501967682; Native Auth run 45997942633 job 140501967269; Path-Filtered Checks run 45997942737 detect job 140501968108; Geographic RPC Contract run 45997942650 job 140501967316; Frontend Bundle Budget run 45997942637 job 140501967999; Shadow Registry Safety run 45997942605 job 140501968226. Every primary job reports runner_id=0, empty runner_name and zero steps. Downstream jobs skipped. Issue #49 updated. No code-level validation ran.
+
+
+22. **Runner allocation still blocked on latest documentation-only PR #78 head `b8e5e4a1e499c890a9de90cf9fd4c7fede123433`.** Backend Triad run 45998616590 job 140504252762, Quality Gates run 45998616563 job 140504251169, Path-Filtered Checks run 45998616641 detect job 140504251265, Geographic RPC Contract run 45998616575 job 140504250476, Native Auth run 45998616562 job 140504250681 and Frontend Bundle Budget run 45998616558 job 140504251010 all report runner_id=0, empty runner_name and zero steps. Downstream jobs skipped. Issue #49 updated. No code-level validation ran.
