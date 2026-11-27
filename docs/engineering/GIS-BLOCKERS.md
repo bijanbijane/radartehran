@@ -168,3 +168,24 @@ The handler has now been split:
 5. Keep R2 media attachment unavailable until object ownership, target binding, cleanup and deletion are implemented and tested.
 
 No D1 migration was applied, no live database was written, and no deployment was performed. The new code and regression test are committed; hosted CI evidence is still required before treating them as passing.
+
+
+## Upstream IRNI runtime-contract verification — 2026-11-27
+
+A read-only inspection of the connected source repository `bijanbijane/Iran-Neighborhood-Intelligence`, default branch `main`, file `src/services/geographic-registry/radar-read-port-v1.ts`, found an explicit upstream status declaration:
+
+- `RADAR_GEOGRAPHIC_READ_CONTRACT_STATE` is `CONTRACT_FINALIZED_RUNTIME_NOT_IMPLEMENTED`.
+- The contract comments state that no runtime adapter is implemented and that the Worker MUST continue reporting RPC unavailable until the durable IRNI repository and live shared-D1 schema/ledger have been verified.
+- The v1 port exposes approved canonical identity, identifier resolution, relationships and paginated entity reads. It exposes no polygon/MultiPolygon geometry payload or geometry retrieval method.
+- The Radar-side v2 RPC client and structural DTOs are client/contract code; their existence is not evidence that the upstream runtime adapter, shared persistence, or live Service Binding is operational. The current Radar v2 entity shape likewise carries a boundary reference and optional point/area metadata, not an authoritative geometry artifact.
+
+This is stronger evidence than the prior Radar-only code inspection: the upstream contract itself explicitly marks runtime implementation as incomplete. Do not interpret a Wrangler service-binding declaration, mock binding test, successful DTO validation, or identity-resolution test as proof of a live canonical geography service. No production geometry bridge or valuation resolver can be completed safely from the currently published contract.
+
+### Revised dependency order
+
+1. In the IRNI repository, complete and independently verify its durable canonical registry read adapter and live shared-D1 schema/ledger before changing the contract state to ACTIVE. This workstream does not authorize modifications to IRNI from the Radar branch.
+2. Extend the upstream read contract through an explicitly versioned, read-only geometry method/artifact, including canonical entity ID, geometry version/hash, CRS, source dataset/version, provenance/evidence, approval/lifecycle state, and registry revision/checksum. Identity references alone are insufficient.
+3. Verify the deployed IRNI WorkerEntrypoint and Service Binding against that active contract with non-production end-to-end tests; preserve fail-closed behavior when absent, stale, disputed or unverified.
+4. Only then implement the Radar-side ingestion/refresh and runtime bridge, followed by public valuation composition and HTTP integration tests.
+
+Until those upstream gates are met, the correct Radar behavior is to keep coordinate-based valuation unavailable and retain the current local GIS snapshot strictly as a separately governed, non-authoritative dataset. No application code, binding, database, secret, deployment or upstream repository was changed by this verification.
