@@ -2058,6 +2058,21 @@ async function runSuite(): Promise<void> {
     assert.equal(topBarSrc.includes('aria-label="بودجه کل خرید"'), true, 'FloatingTopBar budget input must have aria-label');
     assert.equal(topBarSrc.includes('aria-label="اسلایدر بودجه کل خرید"'), true, 'FloatingTopBar budget slider must have aria-label');
     assert.equal(topBarSrc.includes("با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟"), true, 'FloatingTopBar reverse budget button must use activeCity name instead of hardcoded تهران');
+    assert.ok(
+      topBarSrc.includes('className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50') &&
+        topBarSrc.includes('className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50'),
+      'Mobile budget filter reverse-budget and guide actions must retain 44px minimum touch targets'
+    );
+    assert.ok(
+      topBarSrc.includes('className={`min-h-[44px] md:min-h-[38px] py-1 px-1 rounded-lg') &&
+        topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center flex-1 py-1.5 rounded-[8px]'),
+      'Mobile building-age and budget-status choices must retain 44px minimum touch targets'
+    );
+    assert.ok(
+      topBarSrc.includes('flex-1 min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center py-2 px-3 rounded-[10px] bg-slate-900') &&
+        topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50'),
+      'Mobile save-preferences and share-budget actions must retain 44px minimum touch targets'
+    );
 
     const navCtxSrc = readComp('src/context/RadarNavigationContext.tsx');
     assert.equal(navCtxSrc.includes('if (typeof window === \'undefined\' || !hasExplicitNavChangeRef.current) return;'), true, 'RadarNavigationContext must guard initial URL replaceState with hasExplicitNavChangeRef');
