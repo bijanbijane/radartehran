@@ -144,6 +144,58 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
   assert.equal(approved.status, 'ACTIVE');
   assert.equal(history.filter((record) => record.status === 'ACTIVE').length, 1);
   assert.equal(history.filter((record) => record.status === 'SUPERSEDED').length, 2);
+
+  // A failed durable write must restore the exact pre-mutation lifecycle for upserts.
+  const rollbackActive = makeActive(1);
+  const rollbackUpsertHistory = [rollbackActive];
+  const rollbackUpsertStore = new Map<string, BoundaryVersionRecord[]>([[entityId, rollbackUpsertHistory]]);
+  const persistenceError = new Error('simulated durable snapshot failure');
+  await assert.rejects(
+    () => executeUpsertNeighborhoodBoundary({
+      ...common,
+      boundaryHistoryByEntity: rollbackUpsertStore,
+      persistRuntime: () => { throw persistenceError; },
+      input: {
+        actorUid: 'replacement-creator',
+        entityId,
+        cityId: 'tehran',
+        hoodId: 77,
+        level: 'neighborhood',
+        nameFa: 'نسخهٔ جایگزین',
+        geometry,
+        sourceProvenance: 'persistence_rollback_test',
+      },
+      metrics,
+    }),
+    (error: unknown) => error === persistenceError,
+  );
+  assert.equal(rollbackUpsertStore.get(entityId), rollbackUpsertHistory);
+  assert.equal(rollbackUpsertHistory.length, 1);
+  assert.equal(rollbackUpsertHistory[0].status, 'ACTIVE');
+
+  // A failed approval write must not supersede the prior active boundary in memory.
+  const approvalActive = makeActive(1);
+  const approvalPending: BoundaryVersionRecord = {
+    ...makeActive(2),
+    status: 'PENDING_REVIEW',
+    createdByUid: 'new-creator',
+    reviewedByUid: undefined,
+    reviewedAtIso: undefined,
+  };
+  const rollbackApprovalHistory = [approvalActive, approvalPending];
+  const rollbackApprovalStore = new Map<string, BoundaryVersionRecord[]>([[entityId, rollbackApprovalHistory]]);
+  await assert.rejects(
+    () => executeApproveNeighborhoodBoundary({
+      ...common,
+      boundaryHistoryByEntity: rollbackApprovalStore,
+      persistRuntime: () => { throw persistenceError; },
+      input: { entityId, versionId: approvalPending.id, reviewerUid: 'independent-reviewer' },
+    }),
+    (error: unknown) => error === persistenceError,
+  );
+  assert.equal(rollbackApprovalStore.get(entityId), rollbackApprovalHistory);
+  assert.equal(rollbackApprovalHistory[0].status, 'ACTIVE');
+  assert.equal(rollbackApprovalHistory[1].status, 'PENDING_REVIEW');
 }
 
 void (async () => {
