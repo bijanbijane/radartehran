@@ -1,23 +1,57 @@
 import type { SpatialPublishableListing } from './types';
 
-export type PublicSpatialListing = Omit<
+export type PublicSpatialListing = Pick<
   SpatialPublishableListing,
-  'exactPrivateAddress' | 'privateCoordinates' | 'ownerContact' | 'privateAccessNotes' | 'internalPropertyReference'
+  | 'id'
+  | 'propertyId'
+  | 'cityId'
+  | 'districtId'
+  | 'hoodId'
+  | 'subNeighborhoodId'
+  | 'propertyCategory'
+  | 'transactionType'
+  | 'sqm'
+  | 'priceMillion'
+  | 'monthlyRentMillion'
+  | 'bedrooms'
+  | 'buildYear'
+  | 'hasElevator'
+  | 'hasParking'
+  | 'coordinates'
+  | 'publicationStatus'
+  | 'verificationStatus'
+  | 'available'
 >;
 
-const BLOCKED_FIELDS = new Set([
-  'exactPrivateAddress',
-  'privateCoordinates',
-  'ownerContact',
-  'privateAccessNotes',
-  'internalPropertyReference',
-]);
+const PUBLIC_FIELDS = [
+  'id',
+  'propertyId',
+  'cityId',
+  'districtId',
+  'hoodId',
+  'subNeighborhoodId',
+  'propertyCategory',
+  'transactionType',
+  'sqm',
+  'priceMillion',
+  'monthlyRentMillion',
+  'bedrooms',
+  'buildYear',
+  'hasElevator',
+  'hasParking',
+  'coordinates',
+  'publicationStatus',
+  'verificationStatus',
+  'available',
+] as const satisfies readonly (keyof SpatialPublishableListing)[];
 
 export function toPublicSpatialListing(listing: SpatialPublishableListing): PublicSpatialListing {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(listing)) {
-    if (BLOCKED_FIELDS.has(key)) continue;
-    out[key] = value;
+  const out: Partial<PublicSpatialListing> = {};
+  for (const key of PUBLIC_FIELDS) {
+    const value = listing[key];
+    if (value !== undefined) {
+      Object.assign(out, { [key]: value });
+    }
   }
   return out as PublicSpatialListing;
 }
