@@ -1,18 +1,26 @@
 # Backend Remediation Register
 
 Updated: 2026-11-27
+Repository: `bijanbijane/radartehran`
+Active branch: `codex/backend-resume-2026-11-27`
+PR #78 remains Draft. No merge, deployment, production D1 mutation, or secret operation is authorized.
 
 | ID | Priority | Finding / work package | Evidence | Status | Next action |
 |---|---|---|---|---|---|
-| BE-001 | P0 | Diagnose failing Cloudflare/triad CI checks without guessing | PR #71 head `b9f2e63704e2add8227880a32a68ec1d5688a0dd`; failed checks exist, E2E skipped; connector did not return logs/annotations | BLOCKED | Restore Actions log access; inspect exact failing job output |
-| BE-002 | P1 | Validate account-deletion outbox concurrent processing and retry semantics | `worker/account-lifecycle/workerLifecycleRuntime.ts`; migration `0005_account_lifecycle_permits_and_outbox.sql` has no explicit claim/lease columns | IN_PROGRESS | Model duplicate concurrent workers and determine whether existing RESEARCH_DB inbox idempotency fully protects USER_DB completion updates |
-| BE-003 | P1 | Complete residual Express Firestore adapter retirement | CHK-194 continuation record | NOT_STARTED | Inventory live Express Firestore imports/routes and migrate one bounded repository at a time |
+| BE-001 | P0 | Diagnose hosted GitHub Actions runner allocation failure | Issue #49; PR #67/#78 jobs fail with `runner_id=0`, empty runner name, zero steps | BLOCKED | Resolve account-level Actions availability, billing/usage and policy; do not infer source failures |
+| BE-002 | P1 | Validate account-deletion outbox concurrent processing and retry semantics | `worker/account-lifecycle/workerLifecycleRuntime.ts`; USER_DB outbox schema | IN_PROGRESS | Complete deterministic race coverage and run it |
+| BE-003 | P1 | Complete residual Express Firestore adapter retirement | CHK-194 continuation record | NOT_STARTED | Migrate one confirmed live adapter at a time with domain-owned D1 schema and parity tests |
 | BE-004 | P1 | Verify Docker local Worker + USER_DB and Google OAuth callback | CHK-194 continuation record | BLOCKED | Restore local runtime and execute callback integration test |
+| BE-005 | P1 | Reject completed research-erasure receipt replay when outbox ID is paired with a different subject key/version | Completed inbox fast path now validates subject identity before replay | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused test and Worker typecheck |
+| BE-006 | P1 | Prevent cross-subject data deletion when concurrent erasure deliveries reuse one outbox_id | Inbox identity is claimed first; destructive deletes are guarded by exact outbox_id + subject_key + subject_key_version; deterministic regression added | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused D1 test and Worker typecheck |
+| BE-007 | P1 | Prevent stale research-erasure worker from downgrading completed USER_DB outbox item | Catch-path retry update is status-fenced and reconciles a competing COMPLETED row | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused triad test/typecheck |
+| BE-008 | P1 | Retire mounted legal-regulatory Firestore persistence without weakening transactional guarantees | Confirmed live mount; ten logical collections; D1 migration design authored; owning binding not approved | DESIGN_COMPLETE / IMPLEMENTATION_BLOCKED | Confirm owning D1 binding; implement and parity-test D1 transaction runner before cutover |
+| BE-009 | P1 | Prevent stale unavailable-RESEARCH_DB worker from downgrading completed outbox item | Retry update is status-fenced; attempt_count increments atomically; canonical completion is read when update affects zero rows | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused RT-DB triad test and Worker typecheck |
+| BE-010 | P1 | Prevent concurrent failed workers from losing outbox retry attempts | Retry updates previously wrote a stale scanned attempt_count; both retry paths now use atomic SQL increments and row-derived exponential backoff; success update is status-fenced; deterministic regression added | IMPLEMENTED_BUT_NOT_VERIFIED | Run TRIAD-001 and typecheck on exact PR head |
+| BE-011 | P1 | Wire research consent revocation barrier into active HTTP/Queue runtime | Consent migrations and permit primitives exist, but active HTTP/Queue ingestion does not acquire permits; event inserts omit consent_revision/fence checks; privacy route does not start/reconcile revocation; TRIAD-003 tests are dormant | IN_PROGRESS | Implement permits, revision-scoped fencing/erasure, revocation job orchestration, route integration and activate six-scenario tests |
+ 
+## Verification boundary
 
-No production data changes
-| BE-008 | P1 | Retire mounted legal-regulatory Firestore persistence without weakening transactional guarantees | Confirmed live mount in apps/api/server.ts; 10 logical collections; Firestore runner guarantees read-before-write, CAS, and atomic entity/audit/idempotency writes; no legal D1 migration exists | DESIGN_COMPLETE / IMPLEMENTATION_BLOCKED | Confirm owning D1 binding; implement and parity-test D1 transaction runner; reconcile data before approved cutover |
-, migrations, deployments, or merges were performed in this session.
-| BE-005 | P1 | Reject completed research-erasure receipt replay when outbox ID is paired with a different subject key/version | Completed inbox fast path previously selected receipt fields only; now validates subject identity before replay | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused test and Worker typecheck; verify no regressions |
-| BE-006 | P1 | Prevent cross-subject data deletion when concurrent erasure deliveries reuse one outbox_id | D1 batch previously deleted events before INSERT OR IGNORE established the inbox identity; now claims first and guards deletes with exact outbox_id + subject_key + subject_key_version; deterministic concurrency regression added | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused D1 test and Worker typecheck; inspect latest CI failures |
-| BE-007 | P1 | Prevent stale research-erasure worker from downgrading completed USER_DB outbox item | Catch-path retry update was unconditional; now guarded to PENDING/RETRY_PENDING and reconciles an already-COMPLETED row; deterministic stale-worker regression added | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused triad test/typecheck; audit remaining lease and attempt-count races |
-| BE-006 | P1 | Prevent stale unavailable-RESEARCH_DB worker from downgrading completed outbox item | Guard retry status update by PENDING/RETRY_PENDING; read canonical completion on zero-row update; atomic attempt_count increment | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused RT-DB triad test and Worker typecheck; validate concurrency test |
+The code and test changes in BE-005 through BE-010 have been source-reviewed but not executed in this session. The latest PR #78 CI runs on code head `d0faff86e79dde909faeb3cacbfa57e65e55ae37` failed before runner assignment; they provide no TypeScript, test, build or browser evidence. The connected local execution device remains Offline.
+
+No production data changes, migrations, deployments, merges, or secret operations were performed.
