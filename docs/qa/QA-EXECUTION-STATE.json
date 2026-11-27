@@ -8,7 +8,7 @@
   "qa_branch": "qa/ci-contract-fixes-2026-11-27",
   "latest_qa_commit": "b109e1fb7c850b7473b45732040b8218ca02228f",
   "pull_request": 79,
-  "status": "BLOCKED_CONFIRMED_GITHUB_RUNNER_ALLOCATION",
+  "status": "BLOCKED_PRE_EXECUTION_GITHUB_RUNNER_AND_CLOUDFLARE_BUILD_QUEUE",
   "tests": {
     "executed": 0,
     "passed": 0,
@@ -63,16 +63,16 @@
     "One rerun of the CI quality-gates job repeated the same runner_id=0, empty runner_name, zero-step failure.",
     "Job logs are unavailable and no diagnostic artifacts were produced.",
     "GitHub public status page listed Actions operational with no incident on 2026-11-27; repository/account-specific runner settings or quota remain uninspected.",
-    "Cloudflare Preview build bdf2e772-1133-486a-98bf-f1d26c81355a failed during bun install --frozen-lockfile before the build command; the stale Bun lockfile has been removed and npm pinned, but a fresh build is pending."
+    "Latest Cloudflare Preview build 951d14a5-65c1-4912-9bcf-aee3136849f8 targets the latest observed PR head 757322b10e5090b288f68e1e0a041c1298b48912, remains queued, and has emitted only 'Initializing build environment...'; no package-manager selection, install, build, or preview result is available. Cloudflare build-minute limit endpoint reports has_reached_build_minutes_limit=false.",
+    "Five latest GitHub Actions workflow runs on observed PR head 757322b10e5090b288f68e1e0a041c1298b48912 failed before runner allocation: runs 45985711432, 45985711590, 45985711398, 45985711595, 45985711269. Each executed zero steps and had runner_id=0/empty runner_name. The GitHub connector could not retrieve check-run annotations or Actions settings endpoints, so billing/policy/account-level cause is not determined."
   ],
-  "next_action": "Verify a fresh Cloudflare Preview uses npm and reaches the frontend build; restore GitHub Actions runner allocation, then run the exact test matrix.",
-  "updated_at": "2026-11-27T10:45:00Z",
+  "next_action": "Wait for the queued Cloudflare Preview to produce logs; obtain GitHub check-run annotations and verify account billing/Actions policy through GitHub Settings or Support before retrying tests.",
+  "updated_at": "2026-11-27T10:53:00Z",
   "ci_observation": {
-    "pr": 79,
-    "code_head": "1e0fa339ba72d3d0f1cf30cad0fe7e6f331d8fb0",
+    "observed_head": "757322b10e5090b288f68e1e0a041c1298b48912",
     "workflow_runs": [
       {
-        "id": 45982139278,
+        "id": 45985711432,
         "name": "Tehran Radar CI Quality Gates",
         "job_id": 140448443589,
         "runner_id": 0,
@@ -81,25 +81,7 @@
         "conclusion": "failure"
       },
       {
-        "id": 45982139311,
-        "name": "Tehran Radar Path-Filtered Checks",
-        "job_id": 140448443963,
-        "runner_id": 0,
-        "runner_name": "",
-        "steps": 0,
-        "conclusion": "failure"
-      },
-      {
-        "id": 45982139268,
-        "name": "Cloudflare Native Auth Validation",
-        "job_id": 140448442710,
-        "runner_id": 0,
-        "runner_name": "",
-        "steps": 0,
-        "conclusion": "failure"
-      },
-      {
-        "id": 45982139346,
+        "id": 45985711590,
         "name": "IRNI Geographic RPC Consumer Contract",
         "job_id": 140448443288,
         "runner_id": 0,
@@ -108,7 +90,25 @@
         "conclusion": "failure"
       },
       {
-        "id": 45982139324,
+        "id": 45985711398,
+        "name": "Tehran Radar Path-Filtered Checks",
+        "job_id": 140448443963,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45985711595,
+        "name": "Cloudflare Native Auth Validation",
+        "job_id": 140448442710,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45985711269,
         "name": "Radar Backend Triad & Frontend Service Binding",
         "job_id": 140448451664,
         "runner_id": 0,
@@ -117,14 +117,15 @@
         "conclusion": "failure"
       }
     ],
-    "retry": {
-      "run_id": 45982139278,
-      "job_id": 140448953174,
-      "runner_id": 0,
-      "runner_name": "",
-      "steps": 0,
-      "conclusion": "failure",
-      "result": "same runner-allocation failure"
-    }
+    "runner_diagnosis": "Pre-execution dispatch failure. No application step ran. Root cause remains unknown because annotations and account Actions/billing settings were not accessible through the connected GitHub API."
+  },
+  "cloudflare_preview": {
+    "build_id": "951d14a5-65c1-4912-9bcf-aee3136849f8",
+    "observed_commit": "757322b10e5090b288f68e1e0a041c1298b48912",
+    "status": "queued",
+    "build_outcome": null,
+    "latest_log": "Initializing build environment...",
+    "build_minutes_limit_reached": false,
+    "verification": "pending"
   }
 }
