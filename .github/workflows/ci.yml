@@ -99,6 +99,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          npm run test:worker 2>&1 | tee ci-gate-g-worker-tests.log
           npm run test:cloudflare 2>&1 | tee ci-gate-g-cloudflare-tests.log
           npx wrangler deploy --env staging --dry-run --outdir /tmp/radartehran-staging-dryrun 2>&1 | tee ci-gate-g-wrangler-dry-run.log
 
