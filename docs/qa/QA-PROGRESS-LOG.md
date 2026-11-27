@@ -42,3 +42,13 @@
 - Static comparison found the Bun lockfile's root workspace name `react-example` versus manifest name `radartehran`, plus mismatched root dependency groups. Cloudflare selected Bun despite the repository's npm package scripts because `bun.lock` was present.
 - Remediation: delete the stale Bun lockfile and pin `packageManager` to `npm@10.9.2`, matching the npm version observed in the Cloudflare build image. The repository already has `package-lock.json`.
 - Pending: a fresh Preview build must confirm npm selection, dependency installation, and frontend compilation. No runtime test or build pass is claimed.
+
+
+## 2026-11-27 — Follow-up execution verification
+
+- Rechecked the latest Cloudflare Preview build `951d14a5-65c1-4912-9bcf-aee3136849f8` for observed head `757322b10e5090b2889a208e1a041c1298b48912`. It remains `queued`; only `Initializing build environment...` is present. Two superseded Preview builds were stopped as `skipped`. Cloudflare account build-minute limit reports `has_reached_build_minutes_limit=false`.
+- Rechecked five GitHub Actions runs on the same observed head. All five fail before runner allocation (`runner_id=0`, empty runner name, zero steps). No test, typecheck, checkout, or install command executed.
+- Verified the QA branch is 26 commits ahead and 0 behind `main`; the compare reports exactly 10 changed files: two workflow files, root package.json, six QA docs, and deletion of the stale 1,663-line bun.lock. The deleted Bun lockfile was the only large deletion.
+- Verified root `packageManager` is exactly `npm@10.9.2`, root `package-lock.json` identifies `radartehran`, the stale `bun.lock` returns 404 on the QA branch, and the relevant workflow scripts exist in the branch.
+- Official Cloudflare guidance confirms the root `packageManager` field selects the package-manager version, while the repository lockfile determines which package manager is used. Removing `bun.lock` while retaining `package-lock.json` therefore aligns the project with npm; the new build is still required to verify this operationally.
+- Root cause of GitHub runner rejection remains undetermined. Check-run annotations and Actions settings/billing endpoints were not available through the connected GitHub API. No tests were run; no pass is claimed.
