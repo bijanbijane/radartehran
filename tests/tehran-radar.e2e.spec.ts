@@ -176,6 +176,11 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
           expect(height).toBeGreaterThanOrEqual(44);
         }
 
+        const dialogHasHorizontalOverflow = await dialog.evaluate((element) =>
+          element.scrollWidth > element.clientWidth
+        );
+        expect(dialogHasHorizontalOverflow).toBe(false);
+
         await dialog.getByRole('button', { name: /^مناسب/ }).click();
         await dialog.getByRole('button', { name: /فقط خارج از طرح ترافیک/ }).click();
         await dialog.getByRole('button', { name: /فقط دسترسی عالی مترو/ }).click();
@@ -194,10 +199,6 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
           expect(height).toBeGreaterThanOrEqual(44);
         }
 
-        const dialogHasHorizontalOverflow = await dialog.evaluate((element) =>
-          element.scrollWidth > element.clientWidth
-        );
-        expect(dialogHasHorizontalOverflow).toBe(false);
       });
     }
   });
