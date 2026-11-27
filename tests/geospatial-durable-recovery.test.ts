@@ -142,6 +142,39 @@ async function runTests(): Promise<void> {
   ));
 
 
+  const malformedGeometry = sampleState();
+  malformedGeometry.boundaryHistoryByEntity['hood-tehran-1'][0].geometry = {
+    type: 'Polygon',
+    coordinates: [[[51.3, 35.7], [51.31, 35.7], [51.31, 35.71], [51.3, 35.71]]],
+  };
+  assert.ok(validatePersistedGeospatialState(malformedGeometry).errors.some(
+    (error) => error.startsWith('BOUNDARY_GEOMETRY_INVALID:bnd-1:'),
+  ));
+
+  const bboxGeometryMismatch = sampleState();
+  bboxGeometryMismatch.boundaryHistoryByEntity['hood-tehran-1'][0].boundingBox = {
+    minLat: 35.7,
+    maxLat: 35.71,
+    minLng: 51.3,
+    maxLng: 51.39,
+  };
+  assert.ok(validatePersistedGeospatialState(bboxGeometryMismatch).errors.includes(
+    'BOUNDARY_BBOX_GEOMETRY_MISMATCH:bnd-1',
+  ));
+  assert.equal(
+    assessGeospatialSnapshot(bboxGeometryMismatch, { remoteSnapshotPresent: true }).health,
+    'BLOCKED',
+  );
+
+  const malformedSimplifiedGeometry = sampleState();
+  malformedSimplifiedGeometry.boundaryHistoryByEntity['hood-tehran-1'][0].simplifiedGeometry = {
+    type: 'Polygon',
+    coordinates: [],
+  };
+  assert.ok(validatePersistedGeospatialState(malformedSimplifiedGeometry).errors.some(
+    (error) => error.startsWith('BOUNDARY_SIMPLIFIED_GEOMETRY_INVALID:bnd-1:'),
+  ));
+
   const ready = assessGeospatialSnapshot(sampleState(), { remoteSnapshotPresent: true, snapshotRevision: 3 });
   assert.equal(ready.health, 'READY');
 
