@@ -79,6 +79,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   hydrateGeospatialRuntimeFromRepository(runtimeMaps);
   const persistRuntime = createGeospatialPersistHook(runtimeMaps);
   const persistBoundaryRuntime = createGeospatialPersistHookAsync(runtimeMaps);
+  const persistDurableRuntime = createGeospatialPersistHookAsync(runtimeMaps);
 
   const metrics: GeospatialObservabilityMetrics = {
     spatialQueriesCount: 0,
@@ -165,14 +166,14 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     return resolvePointInBoundaryStore({ boundaryHistoryByEntity, metrics, rawLat, rawLng });
   }
 
-  function upsertPointOfInterest(params: UpsertPoiParams) {
+  async function upsertPointOfInterest(params: UpsertPoiParams) {
     return executeUpsertPointOfInterest({
       input: params,
       poiStore,
       poiDedupeIndex,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistDurableRuntime,
     });
   }
 
@@ -311,8 +312,8 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     });
   }
 
-  function upsertGeographicOverlay(layer: GeographicOverlayLayer): GeographicOverlayLayer {
-    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache, persistRuntime);
+  async function upsertGeographicOverlay(layer: GeographicOverlayLayer): Promise<GeographicOverlayLayer> {
+    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache, persistDurableRuntime);
   }
 
   function getGeographicOverlay(params: { layerId: string; isAdminCaller: boolean }): GeographicOverlayLayer {
@@ -364,7 +365,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       nowIso: nowFn().toISOString(),
       upsertNeighborhoodBoundary,
       upsertPointOfInterest,
-      persistRuntime,
+      persistRuntime: persistDurableRuntime,
     });
   }
 
