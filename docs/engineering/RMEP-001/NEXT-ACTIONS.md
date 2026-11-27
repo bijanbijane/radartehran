@@ -50,3 +50,7 @@ Updated: 2026-11-27
 26. Run npm run test:triad (TRIAD-001, TRIAD-002, TRIAD-003) and the AGENTS.md Worker/API typecheck gates on the latest PR #78 head. Capture actual output and fix only demonstrated failures.
 27. Verify the new account route through migration register and API contract tests; confirm migrations user-d1/0007 and research-d1/0003 are applied only in a non-production test/staging environment after explicit authorization.
 28. After TRIAD-003 passes, resume the next bounded backend item: audit one mounted Express Firestore adapter and establish its D1 schema/transaction parity before replacing it.
+
+29. After restoring a runner, run npm test (which now begins with all three DB triad suites), npm run typecheck, and the Worker bundle/API route-contract checks.
+30. Verify migration 0008 applies cleanly after user-d1/0007 in an isolated local SQLite/D1 test database; never apply it to production without separate authorization.
+31. Inspect the TRIAD-002 updated race test and all six TRIAD-003 scenarios for runtime outcomes; fix only actual failures.
