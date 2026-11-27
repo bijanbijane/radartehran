@@ -170,9 +170,13 @@ export async function handleHealthAndMetadataRoute(
     let appOriginConfigured = false;
     try {
       const appUrl = new URL(String(ctx.env.APP_URL || ''));
-      appOriginConfigured = appUrl.protocol === 'https:'
+      const isPublicHttpsOrigin = appUrl.protocol === 'https:'
         && !appUrl.hostname.endsWith('.invalid')
-        && appUrl.hostname !== 'localhost'
+        && appUrl.hostname !== 'localhost';
+      const isLocalDevelopmentOrigin = ctx.environment === 'development'
+        && appUrl.protocol === 'http:'
+        && ['localhost', '127.0.0.1'].includes(appUrl.hostname);
+      appOriginConfigured = (isPublicHttpsOrigin || isLocalDevelopmentOrigin)
         && !appUrl.username
         && !appUrl.password
         && appUrl.pathname === '/'
