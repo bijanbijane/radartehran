@@ -20,7 +20,6 @@ import {
 } from '../research/researchEventContract';
 import {
   purgeExpiredResearchData,
-  verifyQueuedResearchSubjectConsent,
   writePseudonymizedEventsToResearchDb,
 } from '../research/researchService';
 import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
