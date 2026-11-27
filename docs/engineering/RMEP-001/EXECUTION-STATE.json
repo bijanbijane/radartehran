@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "9b02eee9926e36bd4a9a1d94b8f8e3d4630f43b0",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NO_LOCAL_WORKTREE; BROWSER_FIREBASE_GUARD_IMPLEMENTED_NOT_VERIFIED; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "cbbd49d192be8458df3a7aa236ee2946cbf8ff1f",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NIPS_PUBLIC_SERIALIZER_ALLOWLIST_AND_REGRESSION_COMMITTED_IMPLEMENTED_NOT_VERIFIED; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -24,16 +24,16 @@
   },
   "current_workstream": {
     "workstream_id": "WS-NIPS-BACKEND-RUNTIME",
-    "workstream_name": "NIPS neighborhood profile runtime, shared persistence RPC, and backend verification",
+    "workstream_name": "NIPS neighborhood profile runtime, public serialization security, shared persistence RPC, and backend verification",
     "task_id": "P6-NIPS-001",
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-206-LATEST-CI-RETRY-BLOCKED",
-    "checkpoint_timestamp_utc": "2026-11-27T11:24:00.000Z",
-    "last_safe_operation": "Verified latest PR #67 branch head, PR state and five Actions runs. All five runs failed with zero recorded steps; root CI and path-filter log downloads return BlobNotFound. Recorded latest evidence in PROGRESS-LOG. Re-fetched browser Firebase guard and regression test files after commit.",
-    "last_completed_operation": "GitHub-only implementation of the browser Firebase SDK import guard and virtual regression fixtures is committed. The implementation remains unverified because Actions did not execute steps. No dependencies, lockfile, runtime adapters, D1 schema/data, bindings, secrets, deployments, merge or PR state changed.",
-    "next_exact_action": "When runner allocation recovers, execute npm run arch:check and npm run test:contracts first. If those pass, run npm run test:nips, npm run test:auth, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, npm run test:cloudflare, npm run test:triad, typecheck and security suites. Continue only with safe GitHub repository changes until the user changes scope.",
+    "checkpoint_id": "CHK-207-NIPS-PUBLIC-SERIALIZER-SECURITY-HARDENING-CI-BLOCKED",
+    "checkpoint_timestamp_utc": "2026-11-27T13:16:30.000Z",
+    "last_safe_operation": "Committed nested public-profile serializer allow-list hardening and a sentinel-based disclosure regression test. Re-ran all five PR #67 workflows; raw job payloads show runner_id=0, blank runner identity, zero steps and immediate failure. Job logs return BlobNotFound.",
+    "last_completed_operation": "Serializer hardening and regression fixture are committed on the existing NIPS feature branch. Status is IMPLEMENTED_BUT_NOT_VERIFIED because no test command ran. Execution records were reconciled. No database, binding, secret, deployment, merge or production mutation occurred.",
+    "next_exact_action": "When GitHub Actions runner allocation or an authorized Node 22/npm 10 executor is available, run npm run test:nips first, then npm run typecheck, npm run arch:check and npm run test:contracts. Continue with auth, IRNI RPC, geography, Cloudflare, D1 triad and security gates. Do not implement Radar NIPS persistence until the IRNI-owned authenticated/versioned storage RPC and migration contract are executable.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1862,6 +1862,22 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T11:24:00.000Z"
+    },
+    {
+      "operation_id": "OP-200",
+      "phase": "PHASE-6",
+      "description": "Harden NIPS public profile serialization with nested field allow-lists, safe public diagnostics and a sentinel-based regression test.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T13:16:30.000Z"
+    },
+    {
+      "operation_id": "OP-201",
+      "phase": "PHASE-6",
+      "description": "Re-run PR #67 root CI, path-filtered, backend triad, IRNI RPC and native-auth workflows; verify all five fail before runner allocation with runner_id=0 and zero steps.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T13:16:30.000Z"
     }
   ],
   "tests": [
@@ -1983,7 +1999,7 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: GitHub Actions runner allocation is failing before execution. Latest PR #67 runs #45990066405, #45990066761, #45990066394, #45990066422 and #45990066754 fail with zero steps; root CI and path-filter logs return BlobNotFound. Wider raw payload evidence shows runner_id=0 and blank runner identity. No workflow command ran.",
+    "B-001: GitHub Actions runner allocation fails before workflow execution. Latest PR #67 reruns #46005639001, #46005638842, #46005638770, #46005638783 and #46005638768 all fail; jobs 140527968883, 140527967743, 140527967160, 140527966504 and 140527966731 report runner_id=0, blank runner_name, zero steps and immediate completion. Job log downloads return BlobNotFound. No workflow command ran.",
     "B-002: NIPS persistence requires a separately versioned, authenticated, purpose-scoped IRNI-owned storage RPC and owner-side nips_ migration. Radar direct D1 binding to radar-neighborhood-db is prohibited.",
     "B-003: Version-pinned IRNI geography provider/Service Binding is not verified or available to the Radar runtime.",
     "B-004: Native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions execution.",
@@ -1991,7 +2007,8 @@
     "B-006: npm audit reports 21 vulnerabilities (14 moderate, 5 high, 2 critical). Critical dev-only packages: vitest@3.2.7 and tinypool@1.1.1. High production paths include firebase@12.19.0, @firebase/firestore@4.17.2, @grpc/grpc-js@1.9.16 and sharp@0.33.5; firebase-admin@13.10.0 has moderate findings. Major-version fix candidates require compatibility tests; no package changes have been made.",
     "B-007: Firebase Admin/Firestore and Sharp remain active in legacy Express/runtime code. Verified call-site inventory: docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Removing dependencies before migrating consumers would break backend behavior.",
     "B-008: Browser Firebase SDK import guard in scripts/check-architecture.ts and tests/architecture-guardrails.test.ts is IMPLEMENTED_BUT_NOT_VERIFIED because no Actions runner executes steps.",
-    "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified."
+    "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified.",
+    "B-010: NIPS public-profile serializer allow-list hardening and its nested-metadata disclosure regression are committed but unverified; all five Actions workflows fail before runner allocation. Run npm run test:nips and required type/architecture/security gates when an executor is available."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
@@ -2237,6 +2254,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Continue GitHub-only. The browser Firebase SDK guard and regression fixtures are committed but unverified. First run npm run arch:check and npm run test:contracts after runner recovery, then the full NIPS/auth/RPC/triad/security suite. Use the Firebase/Sharp call-site inventory for incremental replacement planning. NIPS persistence remains blocked on IRNI owner RPC and migration contract. Keep PR #67 Draft."
+    "next_action": "Run npm run test:nips as the first executable check when a runner is available; then run typecheck, architecture, contracts, auth, IRNI RPC, geography, Cloudflare, D1 triad and security gates. Keep NIPS persistence blocked on the IRNI-owned authenticated/versioned storage RPC."
   }
 }
