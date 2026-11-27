@@ -55,3 +55,14 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - The shared `AUTH_INTERNAL_HMAC_SECRET` is required by both runtimes; code/docs evidence does not establish that it is provisioned. No secret was read or modified and no deployment was attempted.
 - GIS workflow run [46006117704](https://github.com/bijanbijane/radartehran/actions/runs/46006117704) failed both jobs with `steps=null` and `logs_url=null`; no test or typecheck run can be inferred.
 - Next: restore executable Node 22 verification, run the new route regression plus focused GIS/valuation/typecheck suites, and verify bridge configuration through an authorized read-only runtime check. Keep PR #72 Draft.
+
+
+## 2026-11-27 — Independent-review HTTP coverage and runner diagnosis
+
+- Extended `tests/geospatial-cloudflare-session-approval.test.ts` with an explicit administrator self-approval attempt by the boundary creator; the endpoint must return 403 before an independent administrator can approve the pending version.
+- Confirmed the Worker proxy deletes any client-supplied session assertion, mints a request-bound assertion only after D1 session authentication, binds method/path/query/correlation ID, and sets the internal Worker-hop header. Express verifies the assertion before exposing the request-scoped principal.
+- Confirmed `apps/api/server.ts` mounts the bridge middleware globally and mounts the production geospatial router. The Worker registry/fallback path for the new GIS endpoint is not yet demonstrated as active in a deployed environment.
+- Latest exact-head GIS workflow [46009636806](https://github.com/bijanbijane/radartehran/actions/runs/46009636806) for `172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2` failed both jobs with `steps=null` and `logs_url=null`. CI quality gates, Cloudflare native auth validation and IRNI RPC contract workflows triggered by the same commit showed the same pre-step failure pattern. This points to hosted runner/dispatch infrastructure; it does not establish test or code failure.
+- Checked the authorized local execution route: the registered Desktop Commander device is offline. No local checkout or test command was available in this session.
+- Execution state was reconciled in commit `fe5eda2b9351d766147c772f80367b9d1eef8924`. The new regression remains IMPLEMENTED_NOT_TESTED; no secret was read or changed, and no deployment, merge or production mutation occurred.
+- Next: restore a working runner/authorized Node 22 checkout; execute the exact-head HTTP approval regression, GIS and valuation suites, and typecheck. Verify runtime bridge secret provisioning through an authorized read-only mechanism.
