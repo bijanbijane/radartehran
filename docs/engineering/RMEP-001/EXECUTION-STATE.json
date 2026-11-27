@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "567bba7507cab12ef3566413a06fafe4ee8e8fdb",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; state checkpoint records the immediately preceding docs commit; local execution device unavailable",
-    "last_verified_commit": "34e2aaad37ba4b3793df7a9a5eecd8e364de6b15"
+    "head_commit": "14b898b4c83dec6d4b9563ff8331878724674fbf",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; outbox retry code/test source-reviewed; tests not executed; Actions runner allocation fails before steps; local executor Offline",
+    "last_verified_commit": "d0faff86e79dde909faeb3cacbfa57e65e55ae37"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -25,18 +25,20 @@
     "phase_status": "PARTIALLY_VERIFIED"
   },
   "current_workstream": {
-    "workstream_id": "WS-CLOUDFLARE-NATIVE-MIGRATION",
-    "workstream_name": "Firebase retirement, D1 session auth, backend and UI verification",
-    "task_id": "P6-CF-NATIVE-001",
-    "task_status": "IN_PROGRESS"
+    "workstream_id": "RT-DB-TRIAD-001-OUTBOX-RETRY-CONCURRENCY",
+    "workstream_name": "Research erasure outbox idempotency, stale-worker fencing and atomic retry accounting",
+    "task_id": "BE-010",
+    "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+    "next_workstream": "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER",
+    "next_task_id": "BE-011"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T11:44:00.000Z",
-    "last_safe_operation": "Verified the legal-regulatory live Firestore route chain and authored/reviewed the D1 migration design; progress, blocker, remediation, next-action, and execution-state records synchronized.",
-    "last_completed_operation": "Verified the legal-regulatory live Firestore route chain and authored/reviewed the D1 migration design; progress, blocker, remediation, next-action, and execution-state records synchronized.",
-    "next_exact_action": "Confirm legal-regulatory database ownership and the actual binding available to apps/api (radar_researcher_db remains a candidate only); verify conditional D1 batch/SQL semantics in isolated tests; implement D1 transaction runner behind LegalRegulatoryStore with parity coverage; do not change production composition before all gates pass.",
-    "resume_status": "READY_WITH_ARCHITECTURE_GATE"
+    "checkpoint_id": "CHK-198-OUTBOX-RETRY-COUNTER-AND-CONSENT-BARRIER-AUDIT",
+    "checkpoint_timestamp_utc": "2026-11-27T11:45:00.000Z",
+    "last_safe_operation": "Changed the USER_DB research-erasure outbox success/retry transitions to atomic attempt_count increments, row-derived exponential backoff and status-fenced completion; added a deterministic concurrent failure regression; audited the dormant TRIAD-003 consent barrier and confirmed its active runtime wiring is missing.",
+    "last_completed_operation": "Committed worker/account-lifecycle/workerLifecycleRuntime.ts and tests/rt-db-triad-001.test.ts changes. Updated blockers, next actions, remediation register and progress log. Re-read changed source/test and verified exact GitHub Actions job metadata; no test/build command executed.",
+    "next_exact_action": "Complete RT-DB-TRIAD-003: integrate leased permits into direct HTTP and Queue ingestion; persist consent_revision and enforce research_subject_consent_fences in RESEARCH_DB writes; create revision-scoped revocation jobs/outbox; drain permits and reconcile receipts; wire PATCH/POST account privacy routes; activate six-scenario tests. Then run npm test and npm run typecheck when an executor/hosted runner is available.",
+    "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
     "completed_tasks": [
@@ -2200,7 +2202,11 @@
       "A separate stale-worker race existed in the no-RESEARCH_DB branch: it could overwrite a competing COMPLETED outbox row with RETRY_PENDING because the update matched only outbox_id. The update is now status-fenced, attempt_count increments atomically, and a SQLite-backed regression simulates the interleaving.",
       "PropertyViewingsModuleFacade is not mounted by the active apps/api/server.ts; its factory is only referenced by the module and its tests, so it is not a confirmed live Express migration target.",
       "Legal-regulatory is a confirmed live Express Firestore target: apps/api/server.ts mounts registerLegalRegulatoryRoutes, routes.ts constructs FirestoreLegalRegulatoryStore, and the store owns 10 domain collections; no legal-regulatory-specific D1 migration exists in the migrations tree.",
-      "Legal-regulatory is a confirmed live Express dependency: apps/api/server.ts mounts registerLegalRegulatoryRoutes, which defaults to FirestoreLegalRegulatoryStore and FirestoreLegalRegulatoryTransactionRunner. The module persists ten logical collections and relies on read-before-write, optimistic CAS, and atomic entity/audit/idempotency commits."
+      "Legal-regulatory is a confirmed live Express dependency: apps/api/server.ts mounts registerLegalRegulatoryRoutes, which defaults to FirestoreLegalRegulatoryStore and FirestoreLegalRegulatoryTransactionRunner. The module persists ten logical collections and relies on read-before-write, optimistic CAS, and atomic entity/audit/idempotency commits.",
+      "On branch codex/backend-resume-2026-11-27, the catch-path outbox retry update previously wrote attempt_count from a stale scan value; concurrent failed workers could lose increments. Both retry paths now increment atomically in SQL, derive exponential backoff from the current row attempt_count, and preserve the later deadline with MAX(next_retry_at_ms,...). Successful completion is also status-fenced and increments atomically.",
+      "Added deterministic test 'increments retry attempts atomically when concurrent workers fail the same outbox item' in tests/rt-db-triad-001.test.ts. It forces two workers to read the same PENDING row, injects RESEARCH_DB failure, and asserts attempt_count=2 plus the second-attempt backoff.",
+      "Reviewed the live RT-DB-TRIAD-003 consent path: researchConsentBarrier.ts and migrations exist but are not imported by active direct HTTP or Queue ingestion; active event writes omit consent_revision and do not check research_subject_consent_fences; PATCH /api/account/privacy updates consent directly and there is no POST /api/account/privacy/reconcile route.",
+      "The dormant tests/rt-db-triad-003-consent-barrier.test.ts expects functions not exported by the active researchService/jobDispatcher and is excluded from tsconfig and npm test (which runs TRIAD-001 and TRIAD-002 only)."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
@@ -2212,9 +2218,11 @@
       "New deterministic concurrent cross-subject outbox-ID collision test and guarded-delete fix are source-reviewed but not executed; local MacBook remains Offline.",
       "Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a again failed all four workflows: Tehran Radar CI Quality Gates run 45986606294, Cloudflare Native Auth Validation run 45986606317, Tehran Radar Path-Filtered Checks run 45986606333, and Radar Backend Triad run 45986606330. Job logs/step details remain inaccessible via the GitHub connector; no root cause is claimed.",
       "Latest branch CI checks on code commit 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 failed in detect, TypeScript/Architecture/Unit/Storage/Stress/Build, D1 domain isolation/Worker bundle, and native-auth. E2E and downstream path-filtered gates were skipped. Job step metadata is null and job log retrieval returns BlobNotFound; root causes are not known.",
-      "No legal-regulatory D1 migration or D1 store exists. The target database binding is not confirmed; radar_researcher_db is only a candidate. A design-only architecture document was committed; no schema, adapter, production composition, data migration, or deployment was changed."
+      "No legal-regulatory D1 migration or D1 store exists. The target database binding is not confirmed; radar_researcher_db is only a candidate. A design-only architecture document was committed; no schema, adapter, production composition, data migration, or deployment was changed.",
+      "RT-DB-TRIAD-003 consent revocation is not end-to-end: leased permits, revision-scoped event fencing/erasure, revocation job/outbox orchestration, Queue integration and privacy reconcile route remain unwired.",
+      "The new atomic retry-counter code and regression are source-reviewed but not executed. CI on code/test head d0faff86e79dde909faeb3cacbfa57e65e55ae37 (runs 45990057254, 45990057424, 45990057265, 45990057325) failed before runner assignment: runner_id=0, empty runner name, zero steps."
     ],
-    "next_action": "Confirm legal-regulatory database ownership and the actual binding available to apps/api (radar_researcher_db remains a candidate only); verify conditional D1 batch/SQL semantics in isolated tests; implement D1 transaction runner behind LegalRegulatoryStore with parity coverage; do not change production composition before all gates pass.",
+    "next_action": "Complete RT-DB-TRIAD-003: integrate leased permits into direct HTTP and Queue ingestion; persist consent_revision and enforce research_subject_consent_fences in RESEARCH_DB writes; create revision-scoped revocation jobs/outbox; drain permits and reconcile receipts; wire PATCH/POST account privacy routes; activate six-scenario tests. Then run npm test and npm run typecheck when an executor/hosted runner is available.",
     "code_work": {
       "id": "BE-002",
       "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
@@ -2226,6 +2234,34 @@
       ],
       "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending. Added a deterministic concurrent regression with a barrier that forces both deliveries past an empty initial inbox read, serializes their D1 batches, and asserts the losing subject's event remains. Test/typecheck not executed. Added a deterministic stale-worker regression for the concurrent COMPLETED-versus-failure race. Test/typecheck not executed. A second deterministic regression now covers a stale lifecycle Worker failure after another Worker has committed COMPLETED; the retry update is status-fenced. Both new race tests remain unexecuted pending local/CI diagnostics. Added a SQLite-backed regression for the exact unavailable-DB interleaving; source/test files were re-read from GitHub, but no local execution was possible. Verified mounted route/store/transaction-runner source and existing atomicity/CAS test contract; design reviewed. No D1 implementation or runtime test has been performed.",
       "last_code_commit": "34e2aaad37ba4b3793df7a9a5eecd8e364de6b15"
-    }
+    },
+    "code_work_updates": [
+      {
+        "id": "BE-010",
+        "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+        "files": [
+          "worker/account-lifecycle/workerLifecycleRuntime.ts",
+          "tests/rt-db-triad-001.test.ts"
+        ],
+        "source_commit": "e95035c297ffee5a667b79328efd25096d4a9809",
+        "test_commit": "d0faff86e79dde909faeb3cacbfa57e65e55ae37",
+        "verification": "GitHub source/test re-read; no local or hosted execution. Latest Actions jobs had runner_id=0 and zero steps."
+      },
+      {
+        "id": "BE-011",
+        "status": "IN_PROGRESS",
+        "files": [
+          "worker/research/researchConsentBarrier.ts",
+          "worker/research/researchService.ts",
+          "worker/queues/jobDispatcher.ts",
+          "worker/routes/accountRoutes.ts",
+          "migrations/user-d1/0007_research_consent_barrier.sql",
+          "migrations/research-d1/0003_research_consent_fencing.sql",
+          "tests/rt-db-triad-003-consent-barrier.test.ts"
+        ],
+        "finding": "Existing permit/fencing migrations and helpers are not integrated into active HTTP/Queue ingestion and privacy revocation routes.",
+        "next_action": "Complete runtime wiring and activate six-scenario test suite."
+      }
+    ]
   }
 }
