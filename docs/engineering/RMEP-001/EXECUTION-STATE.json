@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "043e25c7c044cf4375fd40b68bbd62bb02c8831a",
+    "head_commit": "485da26a2f346e5e877449dbe1f6985dfcb2284f",
     "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; local execution device unavailable",
-    "last_verified_commit": "043e25c7c044cf4375fd40b68bbd62bb02c8831a"
+    "last_verified_commit": "485da26a2f346e5e877449dbe1f6985dfcb2284f"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -32,10 +32,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T10:59:40.000Z",
-    "last_safe_operation": "Added a guarded retry transition to prevent a stale failing lifecycle Worker from changing a concurrently completed USER_DB research-erasure outbox item back to RETRY_PENDING; added deterministic stale-read/failure regression.",
-    "last_completed_operation": "Added a guarded retry transition to prevent a stale failing lifecycle Worker from changing a concurrently completed USER_DB research-erasure outbox item back to RETRY_PENDING; added deterministic stale-read/failure regression.",
-    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker typecheck on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a; diagnose CI runs 45986606294, 45986606317, 45986606333, and 45986606330 from accessible logs; then audit remaining outbox claim/lease and residual Express Firestore adapters.",
+    "checkpoint_timestamp_utc": "2026-11-27T11:01:30.000Z",
+    "last_safe_operation": "Completed the guarded RESEARCH_DB inbox claim/delete ordering, deterministic concurrent cross-subject collision regression, and USER_DB outbox retry-state fencing with deterministic stale-worker regression; updated all engineering execution records.",
+    "last_completed_operation": "Completed the guarded RESEARCH_DB inbox claim/delete ordering, deterministic concurrent cross-subject collision regression, and USER_DB outbox retry-state fencing with deterministic stale-worker regression; updated all engineering execution records.",
+    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck against code commit 043e25c7c044cf4375fd40b68bbd62bb02c8831a; retrieve actionable diagnostics for runs 45986606294, 45986606317, 45986606333, and 45986606330; inspect outbox attempt_count concurrency and decide on lease/claim; continue residual Express Firestore adapter retirement.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2208,7 +2208,7 @@
       "New deterministic concurrent cross-subject outbox-ID collision test and guarded-delete fix are source-reviewed but not executed; local MacBook remains Offline.",
       "Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a again failed all four workflows: Tehran Radar CI Quality Gates run 45986606294, Cloudflare Native Auth Validation run 45986606317, Tehran Radar Path-Filtered Checks run 45986606333, and Radar Backend Triad run 45986606330. Job logs/step details remain inaccessible via the GitHub connector; no root cause is claimed."
     ],
-    "next_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck on 043e25c7c044cf4375fd40b68bbd62bb02c8831a; diagnose the latest four CI failures from actual logs; then review whether the outbox needs a durable processing lease beyond the guarded completion/retry transitions, and continue residual Express Firestore adapter retirement.",
+    "next_action": "Execute the new concurrent inbox-collision and stale-worker outbox regressions in tests/rt-db-triad-001.test.ts plus Worker typecheck; diagnose current failed CI runs; then review attempt_count lost updates/lease needs and proceed with Express Firestore adapter retirement.",
     "code_work": {
       "id": "BE-002",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
@@ -2218,7 +2218,7 @@
         "worker/research/researchService.ts",
         "tests/rt-db-triad-001.test.ts"
       ],
-      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending. Added a deterministic concurrent regression with a barrier that forces both deliveries past an empty initial inbox read, serializes their D1 batches, and asserts the losing subject's event remains. Test/typecheck not executed. Added a deterministic stale-worker regression for the concurrent COMPLETED-versus-failure race. Test/typecheck not executed.",
+      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending. Added a deterministic concurrent regression with a barrier that forces both deliveries past an empty initial inbox read, serializes their D1 batches, and asserts the losing subject's event remains. Test/typecheck not executed. Added a deterministic stale-worker regression for the concurrent COMPLETED-versus-failure race. Test/typecheck not executed. A second deterministic regression now covers a stale lifecycle Worker failure after another Worker has committed COMPLETED; the retry update is status-fenced. Both new race tests remain unexecuted pending local/CI diagnostics.",
       "last_code_commit": "043e25c7c044cf4375fd40b68bbd62bb02c8831a"
     }
   }
