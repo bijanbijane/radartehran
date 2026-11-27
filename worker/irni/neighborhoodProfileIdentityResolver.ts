@@ -139,15 +139,25 @@ export function createIrniNeighborhoodProfileIdentityResolver(
       alias.aliasStatus === 'ACTIVE_COMPATIBILITY_ALIAS'
     );
     if (matches.length === 0) return { ok: false, code: 'IRNI_ALIAS_NOT_FOUND' };
-    if (matches.length !== 1) return { ok: false, code: 'IRNI_ALIAS_AMBIGUOUS' };
 
-    const alias = matches[0];
-    if (!alias.automaticResolutionEligible) {
+    // The three supported encodings are alternate, exact legacy keys for the same
+    // Radar neighborhood. Multiple encodings are valid only when each key occurs
+    // once and every approved alias points to the same canonical entity.
+    const matchedKeys = new Set(matches.map(alias => alias.legacyIdentifierValue));
+    if (matchedKeys.size !== matches.length) {
+      return { ok: false, code: 'IRNI_ALIAS_AMBIGUOUS' };
+    }
+    if (matches.some(alias => !alias.automaticResolutionEligible)) {
       return { ok: false, code: 'IRNI_ALIAS_NOT_AUTOMATICALLY_RESOLVABLE' };
     }
+    const canonicalEntityIds = new Set(matches.map(alias => alias.canonicalGeographicEntityId));
+    if (canonicalEntityIds.size !== 1) {
+      return { ok: false, code: 'IRNI_ALIAS_AMBIGUOUS' };
+    }
+    const canonicalGeographicEntityId = matches[0].canonicalGeographicEntityId;
 
     const entityResult = await client.getApprovedEntityByCanonicalId(
-      alias.canonicalGeographicEntityId,
+      canonicalGeographicEntityId,
       metadata.registryRevision,
     );
     if (entityResult.ok === false) return { ok: false, code: 'IRNI_CANONICAL_ENTITY_UNAVAILABLE' };
