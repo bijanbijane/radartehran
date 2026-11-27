@@ -1419,15 +1419,29 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
       const parsed = parseJsonc(raw, 'wrangler.backend.jsonc');
 
+      // OAuth callback query strings contain short-lived authorization codes and state.
+      // Keep redaction scoped to Staging; do not silently change Production settings.
+      assert.equal(parsed.env.staging.observability?.redact_query_string, true);
+      assert.notEqual(parsed.observability?.redact_query_string, true);
+
       const valid = validateBackendWranglerConfig(parsed);
       assert.equal(valid.ok, true, `Expected valid wrangler.backend.jsonc, got errors: ${valid.errors.join(', ')}`);
       assert.equal(valid.summary?.irniDirectBindingPresent, false);
-      assert.equal(valid.summary?.stagingProvisioningStatus, 'BLOCKED_STAGING_DATABASES_NOT_PROVISIONED');
+      assert.equal(valid.summary?.stagingProvisioningStatus, 'PROVISIONED');
 
-      // Strict gate fails closed until staging DBs are provisioned
+      // A complete isolated Staging D1 triad must satisfy the strict provisioning gate.
       const strictStaging = validateBackendWranglerConfig(parsed, { requireStagingProvisioned: true });
-      assert.equal(strictStaging.ok, false);
-      assert.ok(strictStaging.errors.includes('BLOCKED_STAGING_DATABASES_NOT_PROVISIONED'));
+      assert.equal(strictStaging.ok, true, `Expected provisioned Staging D1 triad, got errors: ${strictStaging.errors.join(', ')}`);
+
+      // The strict gate must still fail closed when the Staging bindings are absent.
+      const withoutStagingD1 = structuredClone(parsed);
+      withoutStagingD1.env.staging.d1_databases = [];
+      const blockedStaging = validateBackendWranglerConfig(withoutStagingD1, {
+        requireStagingProvisioned: true,
+        skipFsChecks: true,
+      });
+      assert.equal(blockedStaging.ok, false);
+      assert.ok(blockedStaging.errors.includes('BLOCKED_STAGING_DATABASES_NOT_PROVISIONED'));
 
       // Rejects direct IRNI D1 binding
       const withIrni = structuredClone(parsed);

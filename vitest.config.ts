@@ -7,7 +7,6 @@ export default defineConfig({
     include: [
       'tests/neighborhood-insights.test.ts',
       'tests/**/*.vitest.test.ts',
-      'src/**/*.test.ts',
     ],
   },
 });

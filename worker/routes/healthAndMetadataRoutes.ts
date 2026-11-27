@@ -167,6 +167,38 @@ export async function handleHealthAndMetadataRoute(
 
   if (pathname === '/api/health/readiness') {
     const userDb = ctx.env.USER_DB;
+    let appOriginConfigured = false;
+    try {
+      const appUrl = new URL(String(ctx.env.APP_URL || ''));
+      const isPublicHttpsOrigin = appUrl.protocol === 'https:'
+        && !appUrl.hostname.endsWith('.invalid')
+        && appUrl.hostname !== 'localhost';
+      const isLocalDevelopmentOrigin = ctx.environment === 'development'
+        && appUrl.protocol === 'http:'
+        && ['localhost', '127.0.0.1'].includes(appUrl.hostname);
+      appOriginConfigured = (isPublicHttpsOrigin || isLocalDevelopmentOrigin)
+        && !appUrl.username
+        && !appUrl.password
+        && appUrl.pathname === '/'
+        && !appUrl.search
+        && !appUrl.hash;
+    } catch {
+      appOriginConfigured = false;
+    }
+    const googleOidcConfigured = Boolean(
+      String(ctx.env.GOOGLE_OAUTH_CLIENT_ID || '').trim()
+      && String(ctx.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim()
+      && String(ctx.env.GOOGLE_OAUTH_REDIRECT_URI || '').trim(),
+    );
+    const expressBridgeSecretConfigured =
+      new TextEncoder().encode(String(ctx.env.AUTH_INTERNAL_HMAC_SECRET || '')).byteLength >= 32;
+    const phoneOtpConfigured = Boolean(
+      String(ctx.env.KAVENEGAR_API_KEY || '').trim()
+      && String(ctx.env.KAVENEGAR_VERIFY_TEMPLATE || '').trim(),
+    );
+    const authPiiHmacConfigured =
+      new TextEncoder().encode(String(ctx.env.AUTH_PII_HMAC_SECRET || '')).byteLength >= 32;
+
     if (!userDb) {
       return jsonWorkerResponse(ctx, 503, {
         ok: false,
@@ -175,10 +207,11 @@ export async function handleHealthAndMetadataRoute(
         state: 'DEGRADED',
         dependencies: {
           userDb: { bound: false, ready: false },
-          googleOidc: {
-            configured: Boolean(ctx.env.GOOGLE_OAUTH_CLIENT_ID && ctx.env.GOOGLE_OAUTH_CLIENT_SECRET),
-          },
-          expressSessionBridge: { configured: false },
+          appOrigin: { configured: appOriginConfigured },
+          googleOidc: { configured: googleOidcConfigured },
+          expressSessionBridge: { configured: expressBridgeSecretConfigured },
+          phoneOtp: { configured: phoneOtpConfigured },
+          authPiiHmac: { configured: authPiiHmacConfigured },
         },
       });
     }
@@ -187,6 +220,7 @@ export async function handleHealthAndMetadataRoute(
     const requiredTables = [
       'auth_identities',
       'auth_oauth_states',
+      'auth_phone_challenges',
       'user_sessions',
       'bargains',
       'sponsor_requests',
@@ -205,26 +239,30 @@ export async function handleHealthAndMetadataRoute(
       }
     }
 
-    const googleOidcConfigured = Boolean(
-      String(ctx.env.GOOGLE_OAUTH_CLIENT_ID || '').trim() &&
-      String(ctx.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim() &&
-      String(ctx.env.GOOGLE_OAUTH_REDIRECT_URI || '').trim(),
-    );
-    const expressBridgeSecretConfigured =
-      new TextEncoder().encode(String(ctx.env.AUTH_INTERNAL_HMAC_SECRET || '')).byteLength >= 32;
     const userDbReady = userDbProbe.ok && missingTables.length === 0;
     const pendingMigrations = [
       ...(!userDbProbe.ok ? ['d1_migrations_or_d1_connectivity'] : []),
       ...missingTables,
     ];
-    const ready = userDbReady && googleOidcConfigured && expressBridgeSecretConfigured;
+    const ready = userDbReady
+      && appOriginConfigured
+      && googleOidcConfigured
+      && expressBridgeSecretConfigured
+      && phoneOtpConfigured
+      && authPiiHmacConfigured;
     const failureCode = !userDbReady
       ? 'REQUIRED_D1_MIGRATION_PENDING'
-      : !googleOidcConfigured
-        ? 'GOOGLE_OIDC_NOT_CONFIGURED'
-        : !expressBridgeSecretConfigured
-          ? 'AUTH_INTERNAL_HMAC_SECRET_NOT_CONFIGURED'
-          : null;
+      : !appOriginConfigured
+        ? 'APP_ORIGIN_NOT_CONFIGURED'
+        : !googleOidcConfigured
+          ? 'GOOGLE_OIDC_NOT_CONFIGURED'
+          : !expressBridgeSecretConfigured
+            ? 'AUTH_INTERNAL_HMAC_SECRET_NOT_CONFIGURED'
+            : !phoneOtpConfigured
+              ? 'PHONE_OTP_PROVIDER_NOT_CONFIGURED'
+              : !authPiiHmacConfigured
+                ? 'AUTH_PII_HMAC_SECRET_NOT_CONFIGURED'
+                : null;
 
     return jsonWorkerResponse(ctx, ready ? 200 : 503, {
       ok: ready,
@@ -244,8 +282,11 @@ export async function handleHealthAndMetadataRoute(
           migrationsApplied: userDbProbe.migrationsApplied,
           missingTables,
         },
+        appOrigin: { configured: appOriginConfigured },
         googleOidc: { configured: googleOidcConfigured },
         expressSessionBridge: { configured: expressBridgeSecretConfigured },
+        phoneOtp: { configured: phoneOtpConfigured },
+        authPiiHmac: { configured: authPiiHmacConfigured },
         researchDb: { bound: Boolean(ctx.env.RESEARCH_DB), requiredForResearchFeatures: true },
         neighborhoodDb: { bound: Boolean(ctx.env.NEIGHBORHOOD_DB), requiredForGeographicReplicaFeatures: true },
         mediaBucket: { bound: Boolean(ctx.env.MEDIA_BUCKET), requiredForMediaFeatures: true },
