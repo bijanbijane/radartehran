@@ -33,7 +33,8 @@
     "Latest PR workflow runs associated with exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84: GIS run 46011798449, native-auth run 46011798372, and backend triad run 46011798588 all concluded failure. Their jobs expose steps=null and logs_url=null; no job step execution is evidenced. The same pattern affects all seven PR-triggered workflows returned for this commit.",
     "Latest exact branch HEAD adfa8b15851c7b6c1e35e5505a233f72160e3c81 has seven PR-triggered workflow runs, all concluded failure. GIS run 46017942983, IRNI RPC run 46017943177 and backend triad run 46017943056 were inspected through the raw Jobs API: all sampled jobs have runner_id=0, empty runner_name and zero steps; GIS jobs completed in approximately two seconds. This is runner allocation/dispatch failure before any job step, not evidence of an application test or typecheck failure.",
     "Static workflow review found that .github/workflows/gis-spatial-integrity.yml declared valuation service/types and tests/property-valuation-engine-module.test.ts in push.paths but omitted them from pull_request.paths, so valuation-only PR changes could skip the GIS/valuation regression workflow. Added the three matching pull_request path filters in commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2; GitHub read-back confirms the workflow now has symmetric relevant path coverage.",
-    "Latest checks for workflow-path correction commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2 triggered both PR and push GIS runs (46018889303 and 46018881113). Raw job inspection shows both GIS jobs still fail before steps; sibling workflow jobs in run 46018889506 show the same failure/skip pattern. No tests or typecheck executed."
+    "Latest checks for workflow-path correction commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2 triggered both PR and push GIS runs (46018889303 and 46018881113). Raw job inspection shows both GIS jobs still fail before steps; sibling workflow jobs in run 46018889506 show the same failure/skip pattern. No tests or typecheck executed.",
+    "Durable geospatial snapshot validation previously checked top-level store objects plus boundary histories and POIs, but did not validate nested spatial listing city maps/records, POI dedupe-index references, overlay records or import-batch records. Added bounded structural validation for those stores, including listing city/id consistency, Iran-bounded coordinates, public lifecycle fields, overlay access-policy consistency, import-batch counters/failure entries and POI dedupe references. Regression cases cover malformed nested listing maps/records, orphan dedupe references, malformed overlays and malformed import batches. Changes are committed on the GIS branch; execution remains unverified because the latest inspected Actions jobs have steps=null."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -124,9 +125,10 @@
     "executed_in_this_session": [],
     "implemented_not_executed": [
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
-      "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval"
+      "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval",
+      "tests/geospatial-durable-recovery.test.ts — malformed spatial listing/city maps, orphan POI dedupe references, malformed overlay records and malformed import-batch records"
     ],
-    "note": "No test or typecheck command has been verified as passing. After CI trigger correction commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2, both GIS workflow runs (PR 46018889303 and push 46018881113) still fail with steps=null; sampled sibling workflow jobs also fail before steps. No test-step execution can be inferred. The previously registered Desktop Commander device was offline; no Remote Desktop Commander tool is available in this session."
+    "note": "No test or typecheck command has been verified as passing. The latest inspected GIS run 46019787322 (triggered on prior head 9205f3c32e6118af8a57e3b1005ddde67c18d138 before the follow-up test syntax correction commit) failed both jobs with steps=null. The final branch head must be checked for its own workflow run; no local checkout or runnable test environment is available in this session."
   },
   "production_changes": {
     "migrations": false,
@@ -135,6 +137,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Regenerate bun.lock from the actual apps/* and packages/* workspace graph using Bun 1.4.4; verify all workspace entries and dependency groups, then run frozen install and the Cloudflare Preview build. Do not hand-edit bun.lock. GitHub-hosted runner dispatch is currently failing before steps; do not repeatedly rerun until runner availability is restored. Separately, obtain explicit approval before any non-production AUTH_INTERNAL_HMAC_SECRET or STRANGLER_ORIGIN_URL configuration changes; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
+  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Run tests/geospatial-durable-recovery.test.ts via npm run test:geospatial and the GIS module typecheck; resolve any compiler/test findings before further source changes. Do not rerun GitHub workflows while jobs fail before steps. Regenerate bun.lock only with Bun 1.4.4 from the actual apps/* and packages/* workspace graph, then verify frozen install and Cloudflare Preview build. Keep PR #72 Draft; no Production configuration, secret, migration, deployment or merge changes.",
   "updated_at": "2026-11-27"
 }
