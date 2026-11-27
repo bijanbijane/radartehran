@@ -1,6 +1,9 @@
 -- NIPS logical D1 schema reference — DESIGN ONLY.
 -- NOT a migration. Do not run with wrangler d1 migrations apply.
--- Proposed database: radar-profile-db.
+-- Target physical D1: radar-neighborhood-db (shared; owned and migrated only by IRNI).
+-- NIPS owns only the logical nips_* records; Radar must access them through a separately
+-- versioned, authenticated, purpose-scoped IRNI Worker RPC. Radar must not bind this D1.
+-- USER_DB and RESEARCH_DB remain isolated; neither is a substitute for NIPS persistence.
 -- External references (IRNI entity IDs, source IDs, boundary IDs) have no cross-DB FK.
 
 PRAGMA foreign_keys = ON;
