@@ -302,6 +302,12 @@ test('public serializer allow-lists nested fields and redacts free-form internal
     state: 'UNDER_REVIEW',
     quality: { ...publicMetric.quality, status: 'UNDER_REVIEW' },
   };
+  const explicitlySuppressedMetric = {
+    ...publicMetric,
+    metricId: 'metric.suppressed.test',
+    value: 876543,
+    state: 'SUPPRESSED',
+  };
   const contaminatedProfile = {
     ...profile,
     identity: {
@@ -328,11 +334,11 @@ test('public serializer allow-lists nested fields and redacts free-form internal
       ...profile.domains,
       demographics: {
         ...profile.domains.demographics,
-        metrics: [publicMetric, underReviewMetric],
+        metrics: [publicMetric, underReviewMetric, explicitlySuppressedMetric],
         readiness: {
           ...profile.domains.demographics.readiness,
           publishableMetricCount: 1,
-          blockedMetricCount: 1,
+          blockedMetricCount: 2,
           reasons: ['private-sentinel-readiness'],
         },
       },
@@ -370,7 +376,15 @@ test('public serializer allow-lists nested fields and redacts free-form internal
   assert.equal(reviewMetric?.value, null);
   assert.equal(reviewMetric?.evidenceCount, 0);
   assert.equal(JSON.stringify(publicView).includes('987654'), false);
-  assert.equal(publicView.quality.suppressedMetricCount, 1);
+  assert.equal(publicView.quality.suppressedMetricCount, 2);
+
+  const suppressedMetric = publicView.domains
+    .find((domain) => domain.domainId === 'demographics')?.metrics
+    .find((candidate) => candidate.metricId === 'metric.suppressed.test');
+  assert.equal(suppressedMetric?.state, 'SUPPRESSED');
+  assert.equal(suppressedMetric?.value, null);
+  assert.equal(suppressedMetric?.evidenceCount, 0);
+  assert.equal(JSON.stringify(publicView).includes('876543'), false);
 });
 
 
