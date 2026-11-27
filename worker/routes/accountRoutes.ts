@@ -163,6 +163,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
             actorUid: uid,
             behavioralTelemetryConsent: behavioralTelemetryInput,
             marketingCommunicationsConsent: marketingInput,
+            consentVersion: typeof b.consentVersion === 'string' ? b.consentVersion : undefined,
           });
           const statusCode = result.revocation?.statusCode ?? 200;
           return jsonWorkerResponse(ctx, statusCode, {
