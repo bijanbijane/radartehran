@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
+import { AtomicJsonRepository, setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 import {
   setRepositorySnapshotBackendForTests,
   type RepositorySnapshotBackendPort,
@@ -42,6 +42,28 @@ async function runTests(): Promise<void> {
     setRepositoryBaseDirForTests(tmp);
     setRepositorySnapshotBackendForTests(memoryBackend());
 
+    // A failed remote snapshot write must be observable but must not poison later retries.
+    let failFirstPersist = true;
+    let persistedRetrySnapshot: string | null = null;
+    setRepositorySnapshotBackendForTests({
+      async verify() { return { ok: true as const }; },
+      async load() { return persistedRetrySnapshot; },
+      async persist(_fileName, jsonUtf8) {
+        if (failFirstPersist) {
+          failFirstPersist = false;
+          throw new Error('transient snapshot failure');
+        }
+        persistedRetrySnapshot = jsonUtf8;
+      },
+    });
+    const retryRepo = new AtomicJsonRepository<{ revision: number }>('retry-test.json');
+    retryRepo.writeImmediate({ revision: 1 });
+    await assert.rejects(retryRepo.awaitPendingPersistence(), /transient snapshot failure/);
+    retryRepo.writeImmediate({ revision: 2 });
+    await retryRepo.awaitPendingPersistence();
+    assert.deepEqual(JSON.parse(persistedRetrySnapshot ?? 'null'), { revision: 2 });
+
+    setRepositorySnapshotBackendForTests(memoryBackend());
     resetSearchIndexRepositoryForTests();
     const hydrated = await ensureSearchIndexRepositoryHydrated();
     assert.equal(hydrated.activeIndexVersion, 'v1');
