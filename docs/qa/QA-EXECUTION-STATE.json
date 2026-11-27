@@ -8,7 +8,7 @@
   "qa_branch": "qa/triad-regression-coverage-2026-11-27",
   "latest_qa_commit": "d0227fd834d8a552af775d2feb21bbf768b508da",
   "pull_request": 71,
-  "status": "BLOCKED_CI_INFRASTRUCTURE",
+  "status": "IMPLEMENTED_PENDING_EXECUTION",
   "tests": {
     "executed": 0,
     "passed": 0,
@@ -35,6 +35,22 @@
       "evidence": "The workflow YAML was read from PR #71 and root package.json was read from the same commit. The former command is absent from scripts; test:auth exists and runs the five Cloudflare-native auth/OIDC/session suites.",
       "correction_commit": "a488f9750211d9afec46d4ed33258c47e70171f2",
       "verification": "GitHub read-back confirms the new command; GitHub Actions still fails before exposing job steps/logs, and the local MacBook is offline. No test pass is claimed."
+    },
+    {
+      "id": "QA-003",
+      "severity": "P1",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "summary": "Radar Backend Triad workflow invoked missing npm script test:geo; changed to existing test:geography-catalog.",
+      "evidence": "package.json contained test:geography-catalog but no test:geo; workflow command was read directly.",
+      "verification": "Workflow read-back confirms replacement; GitHub Actions execution/log review still pending."
+    },
+    {
+      "id": "QA-004",
+      "severity": "P1",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "summary": "IRNI Geographic RPC workflow invoked two missing npm scripts; added test:irni-geographic-rpc and typecheck:irni-geographic-rpc.",
+      "evidence": "The workflow referenced both script names; package.json had neither. Existing RPC test files and tsconfig.irni-geographic-rpc.json were verified before wiring scripts.",
+      "verification": "package.json read-back confirms both scripts; no runtime test or typecheck has been executed in this session."
     }
   ],
   "limitations": [
@@ -43,8 +59,8 @@
     "After QA commit a488f9750211d9afec46d4ed33258c47e70171f2, five PR workflows again reported failure with step details/logs unavailable; exact failure cause is unconfirmed.",
     "No local test execution was possible because the authorized MacBook Desktop Commander device remained offline."
   ],
-  "next_action": "Restore a usable local or GitHub Actions runner and execute npm run test:auth, npm run test:triad, the write-pause suite, test:cloudflare and security gates. Inspect real job logs before classifying failures. Keep PR #71 unmerged.",
-  "updated_at": "2026-11-27T10:06:30Z",
+  "next_action": "Obtain executable runner and run npm run test:auth, npm run test:triad, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, write-pause, test:cloudflare and full CI. Inspect actual job logs.",
+  "updated_at": "2026-11-27T10:22:00Z",
   "ci_observation": {
     "pull_request": 71,
     "head_commit_at_last_inspection": "a488f9750211d9afec46d4ed33258c47e70171f2",
