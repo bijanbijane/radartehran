@@ -562,17 +562,6 @@ export async function executeResearchSubjectErasure(params: {
     };
   }
 
-  const countRow = await params.researchDb
-    .prepare(
-      'SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND (?3 IS NULL OR consent_revision <= ?4)',
-    )
-    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, maxConsentRevision)
-    .first<{ cnt: number }>();
-  if (!countRow || !Number.isSafeInteger(Number(countRow.cnt)) || Number(countRow.cnt) < 0) {
-    throw new Error('RESEARCH_ERASURE_TARGET_COUNT_UNAVAILABLE');
-  }
-  const targetCount = Number(countRow.cnt);
-
   // Scope invalidation and event deletion are performed in the same RESEARCH_DB batch.
   // This avoids missing a scope committed after an earlier pre-read but before the erasure batch.
 
