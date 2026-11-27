@@ -507,7 +507,7 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   assert.ok(gis.getActiveBoundary('hood:tehran:1'));
 
   // Duplicate POI prevention
-  const dupPoi = gis.upsertPointOfInterest({
+  const dupPoi = await gis.upsertPointOfInterest({
     nameFa: 'پارک نیاوران',
     category: 'park',
     coordinates: { lat: 35.812, lng: 51.471 },
@@ -538,7 +538,7 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   assert.ok(spatialSummary.simplifiedGeometry);
 
   // Public vs Admin overlay permission enforcement
-  gis.upsertGeographicOverlay({
+  await gis.upsertGeographicOverlay({
     layerId: 'layer_admin_audit',
     layerType: 'INTERNAL_ADMIN_AUDIT_LAYER',
     dataSourceReference: 'internal_ops',
