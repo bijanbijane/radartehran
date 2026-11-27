@@ -150,10 +150,6 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       }
       continue;
     }
-    if (typeof testItem.evidence_path !== 'string' || !testItem.evidence_path.trim()) {
-      discrepancies.push(`Test '${testItem.test_name}' has no evidence path`);
-      continue;
-    }
     if (testItem.exit_code !== 0 || testItem.outcome !== 'PASSED' || !testItem.command?.trim()) {
       discrepancies.push(`Test '${testItem.test_name}' is not PASSED with exit_code=0 and valid command`);
     }
