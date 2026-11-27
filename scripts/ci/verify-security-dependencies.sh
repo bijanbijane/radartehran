@@ -29,6 +29,9 @@ npx tsx --test tests/rt-db-triad-001.test.ts tests/rt-db-triad-002-forensic.test
 echo "[security-deps] storage tests"
 npm run test:storage
 
+echo "[security-deps] Node unit tests"
+npm run test:unit
+
 echo "[security-deps] Vitest tests"
 npm run test:vitest
 
