@@ -115,7 +115,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <MapPin className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{isArcPinned ? 'کمان نقشه پین شد' : 'پین کمان روی نقشه'}</span>
             </button>
-            <button type="button" disabled={!compHood1 || !compHood2} onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
+            <button type="button" disabled={!compHood1 || !compHood2 || compHood1.id === compHood2.id} onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
               {copied ? <Check className="w-3.5 h-3.5 stroke-[2]" /> : <Copy className="w-3.5 h-3.5 stroke-[1.75]" />}
               <span>{copied ? 'کپی شد' : 'کپی خلاصه'}</span>
             </button>
@@ -123,13 +123,13 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <Printer className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.printBtnLabel}</span>
             </button>
-            <button type="button" disabled={!compHood1 || !compHood2} onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
+            <button type="button" disabled={!compHood1 || !compHood2 || compHood1.id === compHood2.id} onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
               <RefreshCw className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.swapBtnLabel}</span>
             </button>
           </div>
         </div>
-        {safeNeighborhoods.length === 0 || !compHood1 || !compHood2 ? (
+        {safeNeighborhoods.length === 0 || !compHood1 || !compHood2 || compHood1.id === compHood2.id ? (
           <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] p-6 text-center space-y-3">
             <AlertCircle className="w-6 h-6 stroke-[1.75] text-amber-600 mx-auto" />
             <p className="text-xs font-bold text-slate-700 dark:text-[var(--color-text-secondary)]">اطلاعات محلات برای مقایسه در دسترس نیست.</p>
