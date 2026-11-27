@@ -17,8 +17,8 @@
 
 - `tests/geospatial-valuation-location-assignment.test.ts` — no-boundary fallback, unique interior assignment, caller-ID mismatch, point on edge, overlapping neighborhoods, city mismatch, polygon holes, ring closure, hole containment, boundary contact, hole overlap and nesting.
 - `tests/geospatial-gis-module.test.ts` — coordinate normalization, polygon validation, boundary versions, point resolution, overlap classification, spatial search, POIs, imports and overlays.
-- `tests/neighborhood-profile-boundary-read-model.test.ts` — identity/source resolver, CRS, geometry digest and independent-review requirements.
-- `tests/geospatial-boundary-approval.test.ts` — pending boundary cannot become active without approval.
+- `tests/neighborhood-profile-boundary-read-model.test.ts` — identity/source resolver, CRS, geometry digest, independent-review requirements and exactly-one-active boundary selection.
+- `tests/geospatial-boundary-approval.test.ts` — pending boundary cannot become active without approval; duplicate active histories cannot be auto-replaced and can be repaired only through independent pending approval.
 
 ## Verification rule
 
