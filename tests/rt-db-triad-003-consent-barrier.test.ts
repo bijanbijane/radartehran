@@ -160,7 +160,7 @@ function createTestTriad() {
   const researchSqlite = createRealSqliteD1();
   const userMigrations = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
   const researchMigrations = applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
-  assert.equal(userMigrations.length, 8);
+  assert.equal(userMigrations.length, 12);
   assert.equal(researchMigrations.length, 3);
 
   const env: WorkerEnv = {
