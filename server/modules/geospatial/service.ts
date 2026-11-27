@@ -226,10 +226,42 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     hoodId?: number;
   }): ValuationLocationFeatureVector {
     const resolved = resolvePointToGeography(params.coordinates.lat, params.coordinates.lng);
-    const hoodId = resolved.hoodId ?? params.hoodId ?? 1;
+    if (
+      !resolved.resolved
+      || resolved.status !== 'RESOLVED_INSIDE'
+      || !resolved.cityId
+      || !Number.isSafeInteger(resolved.hoodId)
+    ) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'A unique point strictly inside a verified neighborhood boundary is required for valuation features.',
+        {
+          resolutionStatus: resolved.status,
+          candidateBoundaryIds: resolved.candidateBoundaryIds,
+        },
+      );
+    }
+    if (resolved.cityId !== params.cityId) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'Resolved neighborhood city does not match the requested city.',
+        { requestedCityId: params.cityId, resolvedCityId: resolved.cityId },
+      );
+    }
+    if (params.hoodId !== undefined && params.hoodId !== resolved.hoodId) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'Caller-supplied neighborhood ID does not match the spatially resolved neighborhood.',
+        { requestedHoodId: params.hoodId, resolvedHoodId: resolved.hoodId },
+      );
+    }
+    const hoodId = resolved.hoodId!;
     const context = getLocationContext({
       coordinates: params.coordinates,
-      cityId: resolved.cityId ?? params.cityId,
+      cityId: resolved.cityId,
       hoodId,
     });
     return buildValuationLocationFeatureVector({
