@@ -100,6 +100,20 @@
 - Zero warnings on architecture check (`npm run arch:check`: 0 errors, 0 warnings).
 - Verified with `compile_applet`, `lint_applet`, `npm run arch:check`, `npm run test:contracts`, `npm run test:mutation`, `npx tsx tests/architecture-guardrails.test.ts`, `npx tsx tests/frontend-deep-debug.test.ts`, `npx tsx scripts/verify-all-views-browser.ts`, and `npm run build`.
 
+
+### Current work package — FE-MOBILE-BUDGET-FILTER-TOUCH-001 (2026-11-27)
+
+- **Scope:** Correct undersized primary actions inside the mobile map budget/filter panel without changing budget calculations, navigation, API contracts, or backend behavior.
+- **Branch:** `fix/frontend-budget-filter-touch-targets-2026-11-27`.
+- **Files changed:**
+  - `src/components/FloatingTopBar.tsx`: the reverse-budget and guide actions, building-age choices, budget-status choices, and save/share actions now have a 44px minimum mobile height; the previous 36–38px desktop sizing is retained at the `md` breakpoint.
+  - `tests/engineering-quality-foundation.test.ts`: added contract assertions for all five affected control groups.
+- **Scope note:** `MapQuickControlsStrip` was inspected but is not mounted in the active `FloatingTopBar` render path (the current source only imports/references it with `void`). It was therefore not changed as though it were visible UI.
+- **Commits:** source `d1e28d4a4cb434629b51b4c5eaed6a9b12471d75`; regression contract `0d0792e86ff01079e94f4af29b8b212e2f5f3a1e`.
+- **Repository verification:** both modified files were fetched back from the dedicated branch and their expected source changes were confirmed. This is source-level verification only.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. The test suite, typecheck, architecture check, production build, and rendered viewport inspection have not been executed in this session. The registered MacBook Air Desktop Commander device is offline; GitHub Actions runner allocation is also a previously documented pre-step blocker.
+- **Next exact action:** execute `npm run test:contracts`, `npm run lint`, `npm run arch:check`, and `npm run build` on an available runner/device; inspect the filter panel at 320×568 and 390×844; update this status only from actual outputs. Keep any PR Draft until these checks pass.
+
 ## 4. Remaining Priorities & Next Implementation Targets
 - All 9 Frontend Engineering Batches and the Principal-Level Frontend Architecture, CSS Specificity, Focus-Trap Lifecycle & Blind-Spot Audits are 100% complete and verified.
 
