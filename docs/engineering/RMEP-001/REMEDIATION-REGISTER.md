@@ -11,3 +11,4 @@ Updated: 2026-11-27
 
 No production data changes, migrations, deployments, or merges were performed in this session.
 | BE-005 | P1 | Reject completed research-erasure receipt replay when outbox ID is paired with a different subject key/version | Completed inbox fast path previously selected receipt fields only; now validates subject identity before replay | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused test and Worker typecheck; verify no regressions |
+| BE-006 | P1 | Prevent cross-subject data deletion when concurrent erasure deliveries reuse one outbox_id | D1 batch previously deleted events before INSERT OR IGNORE established the inbox identity; now claims first and guards deletes with exact outbox_id + subject_key + subject_key_version; deterministic concurrency regression added | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused D1 test and Worker typecheck; inspect latest CI failures |
