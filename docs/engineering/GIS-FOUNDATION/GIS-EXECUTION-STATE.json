@@ -5,10 +5,10 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "0c69135b50b0ed59416f1f471ef18da64fbbbb6c",
-  "branch_head_sha_note": "Verified from GitHub branch endpoint and PR #72 head metadata on 2026-11-27; documentation checkpoint.",
+  "branch_head_sha": "e63fe14dc2d49ff4674729fd0761b7747cbb813e",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint after the three GIS documentation commits in this continuation. Source implementation verification remains scoped to 0c69135b50b0ed59416f1f471ef18da64fbbbb6c.",
   "last_verified_source_commit": "0c69135b50b0ed59416f1f471ef18da64fbbbb6c",
-  "last_verified_source_commit_scope": "GIS source, tests, workflow and docs fetched at exact branch HEAD; repository inspection only. GitHub Actions attempt 2 was triggered for this exact SHA and failed before any recorded job steps.",
+  "last_verified_source_commit_scope": "Application source, tests, workflow and production composition were inspected at code head 0c69135b50b0ed59416f1f471ef18da64fbbbb6c. Subsequent commits e63fe14dc2d49ff4674729fd0761b7747cbb813e are documentation-only. GIS workflow retry attempt 2 failed before recorded steps.",
   "verified_findings": [
     "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
     "Radar Worker IRNI v2 client and neighborhood identity resolver validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
@@ -19,7 +19,8 @@
     "Geospatial service persistence is AtomicJsonRepository('geospatial-state.json') with optional remote repository-snapshot persistence, not a relational D1 schema.",
     "wrangler.backend.jsonc declares USER_DB, DB, RESEARCH_DB and IRNI_GEOGRAPHY; no Radar-owned GIS D1 binding is declared.",
     "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it.",
-    "At exact branch HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c, GIS workflow run 46005295667 attempt 2 completed failure for both jobs; job summaries expose steps=null and logs_url=null, so no source test or typecheck execution can be attributed."
+    "At exact branch HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c, GIS workflow run 46005295667 attempt 2 completed failure for both jobs; job summaries expose steps=null and logs_url=null, so no source test or typecheck execution can be attributed.",
+    "Code search found no production Firebase token-verifier or delegated-admin store adapter wired for geospatial; do not construct placeholder auth adapters. Production approval remains fail-closed."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -114,6 +115,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Obtain a functioning GitHub Actions runner or authorized local checkout. Run node 22 npm ci, tests/neighborhood-profile-boundary-read-model.test.ts, npm run test:geospatial, npm run test:valuation-location and npm run typecheck on exact HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c. In parallel, implement only the authenticated IRNI Worker/API bridge after identifying a supported internal transport; keep profile evidence BLOCKED and PR #72 Draft.",
+  "next_exact_action": "Obtain a functioning GitHub Actions runner or authorized local checkout; run targeted boundary/profile tests, npm run test:geospatial, npm run test:valuation-location and npm run typecheck against code head 0c69135b50b0ed59416f1f471ef18da64fbbbb6c. In parallel, locate or implement a real Firebase verifier and delegated-admin store adapter, then wire the approval route. Implement authenticated IRNI identity bridge and trusted source registry only after their authoritative transport/owners are established. Keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
