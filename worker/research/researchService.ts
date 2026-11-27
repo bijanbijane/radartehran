@@ -622,7 +622,7 @@ export async function executeResearchSubjectErasure(params: {
     receiptId: canonicalInbox.receipt_id,
     deletedEventsCount: Number(canonicalInbox.deleted_events_count),
     invalidatedAggregationWindowsCount: impactedScopes.length,
-    idempotentReplay: canonicalInbox.receipt_id !== receiptId || Number(batchResults[batchResults.length - 1]?.meta?.changes ?? 1) === 0,
+    idempotentReplay: canonicalInbox.receipt_id !== receiptId || Number(batchResults[0]?.meta?.changes ?? 1) === 0,
     completedAtIso: canonicalInbox.completed_at_iso,
   };
 }
