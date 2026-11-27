@@ -99,6 +99,57 @@ function isNonValueState(state: NipsMetricState): boolean {
   return state === 'MISSING' || state === 'UNAVAILABLE' || state === 'NOT_APPLICABLE';
 }
 
+function serializePublicPeriod(period: NipsMetric['period']): NipsMetric['period'] {
+  return {
+    kind: period.kind,
+    observedAt: period.observedAt,
+    periodStart: period.periodStart,
+    periodEnd: period.periodEnd,
+    asOf: period.asOf,
+  };
+}
+
+function serializePublicGeography(geography: NipsMetric['geography']): NipsMetric['geography'] {
+  return {
+    level: geography.level,
+    canonicalEntityId: geography.canonicalEntityId,
+    boundaryVersionId: geography.boundaryVersionId,
+    boundarySchemeId: geography.boundarySchemeId,
+    boundarySchemeVersion: geography.boundarySchemeVersion,
+    assignmentMethod: geography.assignmentMethod,
+    precision: geography.precision,
+  };
+}
+
+function serializePublicQuality(quality: NipsMetric['quality']): NipsMetric['quality'] {
+  return {
+    status: quality.status,
+    confidence: quality.confidence,
+    sampleSize: quality.sampleSize,
+    coverageRatio: quality.coverageRatio,
+    freshnessStatus: quality.freshnessStatus,
+    limitations: quality.limitations.length > 0 ? ['Some quality details are withheld.'] : [],
+  };
+}
+
+function serializePublicDisplay(display: NipsMetric['display']): NipsMetric['display'] {
+  return {
+    labelKey: display.labelKey,
+    format: display.format,
+    precision: display.precision,
+  };
+}
+
+function serializePublicReasons(reasons: readonly string[]): readonly string[] {
+  return reasons.length > 0 ? ['Some readiness details are withheld.'] : [];
+}
+
+function serializePublicLocalizedNames(names: Readonly<Record<string, string>>): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    Object.entries(names).filter(([locale]) => /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(locale))
+  );
+}
+
 function serializePublicMetric(metric: NipsMetric): NipsPublicMetric {
   const permissions = metric.provenance.evidence.map((item) => item.permissionStatus);
   const evidenceAllowed = permissions.every(isPublicEvidencePermission);
@@ -113,8 +164,8 @@ function serializePublicMetric(metric: NipsMetric): NipsPublicMetric {
       unit: null,
       currency: null,
       semanticRole: 'SUPPRESSED',
-      period: metric.period,
-      geography: metric.geography,
+      period: serializePublicPeriod(metric.period),
+      geography: serializePublicGeography(metric.geography),
       methodologyId: metric.methodologyId,
       methodologyVersion: metric.methodologyVersion,
       quality: {
@@ -126,7 +177,7 @@ function serializePublicMetric(metric: NipsMetric): NipsPublicMetric {
         limitations: ['NOT_PUBLICLY_DISTRIBUTABLE'],
       },
       comparabilityKey: null,
-      display: metric.display,
+      display: serializePublicDisplay(metric.display),
       evidenceCount: 0,
     };
   }
@@ -138,13 +189,13 @@ function serializePublicMetric(metric: NipsMetric): NipsPublicMetric {
     unit: metric.unit,
     currency: metric.currency,
     semanticRole: metric.semanticRole,
-    period: metric.period,
-    geography: metric.geography,
+    period: serializePublicPeriod(metric.period),
+    geography: serializePublicGeography(metric.geography),
     methodologyId: metric.methodologyId,
     methodologyVersion: metric.methodologyVersion,
-    quality: metric.quality,
+    quality: serializePublicQuality(metric.quality),
     comparabilityKey: metric.comparabilityKey,
-    display: metric.display,
+    display: serializePublicDisplay(metric.display),
     evidenceCount: metric.provenance.evidence.length,
   };
 }
@@ -191,7 +242,7 @@ export function serializeNipsProfileForPublic(profile: NipsNeighborhoodProfile):
         unavailableMetricCount: metrics.filter((metric) =>
           metric.state === 'UNAVAILABLE' || metric.state === 'MISSING' || metric.state === 'NOT_APPLICABLE'
         ).length,
-        reasons: envelope.readiness.reasons,
+        reasons: serializePublicReasons(envelope.readiness.reasons),
       },
     };
   });
@@ -207,8 +258,8 @@ export function serializeNipsProfileForPublic(profile: NipsNeighborhoodProfile):
       registryRevision: profile.identity.data.registryRevision,
       identityStatus: 'CONFIRMED_CANONICAL',
       officialName: profile.identity.data.officialName,
-      localizedNames: profile.identity.data.localizedNames,
-      parentEntities: profile.identity.data.parentEntities,
+      localizedNames: serializePublicLocalizedNames(profile.identity.data.localizedNames),
+      parentEntities: profile.identity.data.parentEntities.map((entity) => ({ canonicalEntityId: entity.canonicalEntityId, level: entity.level, name: entity.name })),
     },
     domains,
     quality: {
@@ -220,9 +271,9 @@ export function serializeNipsProfileForPublic(profile: NipsNeighborhoodProfile):
       publishableMetricCount,
       blockedMetricCount,
       unavailableMetricCount,
-      overallReasons: suppressedMetricCount > 0
-        ? [...profile.quality.overallReasons, 'Some metrics are withheld by public redistribution policy.']
-        : profile.quality.overallReasons,
+      overallReasons: serializePublicReasons(profile.quality.overallReasons).concat(
+        suppressedMetricCount > 0 ? ['Some metrics are withheld by public redistribution policy.'] : []
+      ),
       suppressedMetricCount,
     },
   };
