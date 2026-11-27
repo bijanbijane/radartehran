@@ -87,3 +87,12 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - Compared main and the GIS branch: bun.lock has the same blob SHA on both branches, and the relevant root package devDependency groups are unchanged. The stale Bun lockfile state therefore predates this GIS branch and is not caused by its geospatial changes.
 - No lockfile was manually edited. Regenerating a Bun workspace lockfile requires the exact supported Bun version and a runnable dependency install; this session has neither a local online device nor usable GitHub Actions jobs. Do not hand-edit the generated lockfile.
 - This Cloudflare Preview build failure is independent of the GitHub Actions pre-step failures. Root cause is established for the Preview build; test/typecheck execution remains unverified.
+
+
+## 2026-11-27 — Bun workspace lockfile structure diagnosis and latest CI state
+
+- Inspected the root manifest: it declares npm workspaces `apps/*` and `packages/*`. The frontend workspace independently declares `@tailwindcss/vite` in `devDependencies`; both root and frontend Vite configs import the plugin.
+- The committed `bun.lock` does not represent this workspace graph: its `workspaces` object contains only the empty-root entry named `react-example`, with no `apps/frontend`, `apps/api` or `packages/*` workspace entries. It also records root `@tailwindcss/vite` under `dependencies`, whereas root `package.json` declares it under `devDependencies`.
+- This explains the Bun 1.4.4 frozen-install mismatch more precisely than the initial dependency-group observation. A correct fix is to regenerate the lockfile with Bun 1.4.4 from the actual monorepo root/workspaces, then verify `bun install --frozen-lockfile`; do not hand-edit generated lock data or casually move a build-time plugin into production dependencies.
+- Latest exact-head PR runs for `4d3755d274beca85988eba1cecafdec7e40fdd84`: GIS 46011798449, native-auth 46011798372 and backend triad 46011798588 all concluded failure with job `steps=null` and `logs_url=null`. All seven PR workflow runs returned for the commit have the same failed conclusion; no test step execution is evidenced.
+- No tests/typecheck were run in this session. No application code, lockfile, Worker configuration, secret or production resource was changed.
