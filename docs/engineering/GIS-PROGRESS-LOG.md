@@ -82,3 +82,17 @@
 - Both job records exposed no steps; downloading either log returned `BlobNotFound`.
 - The result is a failed CI check, not a verified assertion failure. The available evidence does not identify whether setup/runner allocation failed or whether the commands ran and failed.
 - The device is offline; no local rerun is possible in this session. GIS regression and typecheck status remain **NOT VERIFIED** pending a rerun with accessible logs.
+
+
+## 2026-11-27 — Current PR head and repeated GIS workflow result
+
+**Branch / PR HEAD:** `039ad4f17d70042f83cd67754a4f22b049ccd1c3`  
+**Code revision:** `039ad4f17d70042f83cd67754a4f22b049ccd1c3`  
+**Review:** [Draft PR #72](https://github.com/bijanbijane/radartehran/pull/72)
+
+- The latest code commit `fix(gis): narrow multipolygon outer ring guards` narrows guards before reading exterior rings and uses the validated ring variables for containment checks.
+- The current PR description records the broader MultiPolygon component topology behavior: reject touching/intersecting components and overlapping filled interiors, while permitting a separate component contained within another component's valid hole.
+- Dedicated GIS push run `45979357361` and PR run `45979368572` both concluded failure for both GIS jobs: module TypeScript typecheck and geometry/boundary regression.
+- All four job records expose `steps=null`; GitHub log retrieval returned `BlobNotFound`. Broader PR workflows also concluded failure with no step metadata.
+- These are confirmed failed workflow conclusions, not evidence of which command/assertion failed. GIS tests and typecheck remain **NOT VERIFIED**. No passing result is claimed.
+- PR #72 remains Draft/open. No merge or production modification occurred.
