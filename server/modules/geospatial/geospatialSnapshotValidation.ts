@@ -1,7 +1,16 @@
 import type { PersistedGeospatialState } from './geospatialRepository';
 import type { BoundaryVersionRecord, PointOfInterestRecord, PolygonGeometry } from './types';
-import type { GeospatialRecordCounts } from './geospatialDurableRecovery';
 import { validatePolygonGeometry } from './coordinateAndPolygonEngine';
+
+export interface GeospatialRecordCounts {
+  boundaryEntities: number;
+  activeBoundaries: number;
+  poiRecords: number;
+  spatialListingCities: number;
+  spatialListings: number;
+  overlayLayers: number;
+  importBatches: number;
+}
 
 export function getGeospatialRecordCounts(state: PersistedGeospatialState): GeospatialRecordCounts {
   return countRecords(state);
