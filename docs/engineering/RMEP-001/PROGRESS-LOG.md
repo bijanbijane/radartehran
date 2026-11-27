@@ -1411,3 +1411,11 @@
 - Confirmed the browser `src/firebase.ts` compatibility facade itself is SDK-free, while `vite.config.ts` retains Firebase optimize/chunk references and `scripts/check-architecture.ts` only bans Firestore client imports, not the full Firebase client package surface.
 - Confirmed the Worker entrypoint boundary forbids Express, Firebase Admin and Sharp. The legacy Express runtime still imports these packages; removing them without per-domain replacement would break existing behavior.
 - No code, package manifest, lockfile, database, binding, secret or deployment changes were made. The call-site inventory is static evidence only; no tests were run.
+
+
+## 2026-11-27 — Browser Firebase SDK architecture guard added
+
+- Extended `scripts/check-architecture.ts` with `CLIENT_FIREBASE_SDK_IMPORT`. The guard rejects `firebase`, `firebase/*`, `@firebase/*` and `firebase-admin/*` imports from browser-facing source layers: app, cells, components, context, data, design-system, features, interaction-system, layout-system, navigation, platform, shared, styles, types and workers, plus `src/App.tsx` and `src/main.tsx`.
+- Added a virtual-override regression case in `tests/architecture-guardrails.test.ts` covering `firebase/auth`, `@firebase/app` and `firebase-admin/firestore` imports. Existing Node-only `src/utils` migration adapters remain outside this browser-only guard so transitional Express code can be migrated incrementally.
+- Re-fetched both files and confirmed the new violation code, source-layer scope, and three import fixtures are committed. **The test was not executed** because GitHub Actions jobs still fail before runner assignment; the code change is IMPLEMENTED_BUT_NOT_VERIFIED.
+- No package, lockfile, runtime adapter, database, binding, secret, deployment or PR state changed.
