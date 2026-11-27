@@ -106,10 +106,10 @@
 - **Scope:** Correct undersized primary actions inside the mobile map budget/filter panel without changing budget calculations, navigation, API contracts, or backend behavior.
 - **Branch:** `fix/frontend-budget-filter-touch-targets-2026-11-27`.
 - **Files changed:**
-  - `src/components/FloatingTopBar.tsx`: the reverse-budget and guide actions, building-age choices, budget-status choices, and save/share actions now have a 44px minimum mobile height; the previous 36–38px desktop sizing is retained at the `md` breakpoint.
-  - `tests/engineering-quality-foundation.test.ts`: added contract assertions for all five affected control groups.
+  - `src/components/FloatingTopBar.tsx`: the reverse-budget and guide actions, building-age choices, budget-status choices, save/share actions, and three active-filter dismissal chips now have a 44px minimum mobile height; the previous compact desktop sizing is retained at the `md` breakpoint.
+  - `tests/engineering-quality-foundation.test.ts`: added source-contract assertions for the five budget-panel control groups and a count-based regression assertion for all three active-filter dismissal chips.
 - **Scope note:** `MapQuickControlsStrip` was inspected but is not mounted in the active `FloatingTopBar` render path (the current source only imports/references it with `void`). It was therefore not changed as though it were visible UI.
-- **Commits:** source `d1e28d4a4cb434629b51b4c5eaed6a9b12471d75`; regression contract `0d0792e86ff01079e94f4af29b8b212e2f5f3a1e`.
+- **Commits:** source `d1e28d4a4cb434629b51b4c5eaed6a9b12471d75` and active-filter follow-up `e1170cd06d1ded44460c34b707cc3bb4e6e95abb`; regression contracts `0d0792e86ff01079e94f4af29b8b212e2f5f3a1e` and active-filter follow-up `8185a9888cb9fec0d016f6fe53e9a069e23dbdd1`.
 - **Repository verification:** both modified files were fetched back from the dedicated branch and their expected source changes were confirmed. This is source-level verification only.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. The test suite, typecheck, architecture check, production build, and rendered viewport inspection have not been executed in this session.
 - **CI evidence for PR #76:** Five pull-request workflows on head `b39ed7f730c2337bec37d7f743aebb39b18be2c5` failed within seconds (runs `45979187350`, `45979187251`, `45979187278`, `45979187195`, `45979187442`). Their primary jobs returned empty step lists; downloading each log returned `BlobNotFound` (HTTP 404). The Quality Gates run was retried once (`run_attempt=2`, job `140439178096`) and again returned no steps and `BlobNotFound`. Thus no test/build command has run; the exact platform/account-side reason remains unverified. This matches the runner-dispatch blocker tracked by issues #49 and #56.
