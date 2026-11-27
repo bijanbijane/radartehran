@@ -185,3 +185,9 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Confirmed root `npm test` includes `test:unit`, which in turn includes `npm run test:nips`.
 - Retried all five failed PR #67 workflows on prior head `c2dd01f31ae211972c46c48cf687334b5d65f355`; every rerun again completed failure with empty step arrays and unavailable BlobNotFound logs. No command-level failure is established.
 - **Status:** CI workflow change IMPLEMENTED_BUT_NOT_VERIFIED; runtime tests remain unexecuted. Recheck the new PR synchronization run on the updated head before further code diagnosis.
+
+
+## CHK-214 — executor availability (2026-11-27)
+
+- Node `v22.16.0` and npm `10.9.2` are installed in the current tool container, but no repository checkout is present and network access is disabled. The GitHub connector does not expose a remote command execution/checkout operation. This blocks local `npm ci` and test execution independently of the Actions runner issue.
+- Required minimum: authorized Node 22/npm 10 environment with PR #67 checkout and package registry/cache access.
