@@ -24,15 +24,15 @@
     "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck."
   ],
   "not_verified": [
-    "Execution of npm run test:geospatial on branch HEAD b2c7265fda504af48726a19317c420058efbeef7",
-    "Repository-wide TypeScript typecheck, lint, architecture check and build on the current head",
+    "Cause of GIS Spatial Integrity workflow run 45979096386 failures; job steps/logs unavailable",
+    "Successful execution of npm run test:geospatial on the current code revision",
+    "Successful GIS module TypeScript typecheck on the current code revision",
+    "Repository-wide TypeScript typecheck, lint, architecture check and build",
     "D1 RTree support through the actual Worker binding runtime",
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
     "Authoritative Tehran neighborhood polygon dataset, license and CRS",
-    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories",
-    "Execution of the new dedicated GIS workflow on the latest commit",
-    "Focused geospatial suite and repository TypeScript typecheck on the latest commit"
+    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -40,8 +40,8 @@
   "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "PENDING_DEDICATED_CI",
-    "reason": "A branch-scoped GIS workflow was added to isolate geospatial tests from broad PR workflows. Awaiting its exact-SHA run; no test is marked passed yet."
+    "status": "NOT_VERIFIED",
+    "reason": "The exact branch HEAD 24e4c66af8c67195b46f7d3878d1cc846b6bdf8c triggered GIS Spatial Integrity run 45979096386. Both jobs (GIS geometry and boundary regression; GIS module TypeScript typecheck) concluded failure, but the job records expose no steps and GitHub log retrieval returned BlobNotFound. Other repository workflows also failed. The Desktop Commander MacBook is offline. A check failure is confirmed, but the underlying cause and whether the test command reached execution cannot be determined from available evidence."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -74,9 +74,9 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Inspect the dedicated GIS workflow run on the latest branch SHA. If it starts, resolve test/typecheck failures; if it fails before steps, recover runner/Actions diagnostics or use an online local runner.",
+  "next_exact_action": "Restore an online execution runner and obtain usable logs for GIS Spatial Integrity run 45979096386. Re-run npm run test:geospatial and npm run typecheck on branch HEAD 24e4c66af8c67195b46f7d3878d1cc846b6bdf8c, fix any code-level failures, then rerun repository gates. Do not provision radar-profile-db or alter production bindings until ownership and authorization are explicitly approved.",
   "blockers": [
-    "No online execution runner; Desktop Commander MacBook offline; current exact-SHA GitHub Actions workflows fail, and their logs cannot be retrieved.",
+    "No online execution runner; Desktop Commander MacBook offline. GIS workflow run 45979096386 and other workflows conclude failure, but job steps/logs are unavailable.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
     "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
@@ -84,48 +84,70 @@
     "Production IRNI read-only resolver/service binding is not verified.",
     "Legacy snapshot validation, hydration and all non-point consumers still need an integrity audit for multiple ACTIVE versions."
   ],
-  "last_recorded_action": "Committed duplicate ACTIVE boundary fail-closed behavior and independent-review repair tests; inspected exact-SHA CI failures and preserved the work as unverified.",
-  "latest_inspected_pr_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25",
-  "latest_branch_head_sha": "b2c7265fda504af48726a19317c420058efbeef7",
+  "last_recorded_action": "Recorded exact-HEAD GIS workflow failures (both dedicated GIS jobs), unavailable job logs, and unverified execution status. No merge or production changes performed.",
+  "latest_inspected_pr_head_sha": "24e4c66af8c67195b46f7d3878d1cc846b6bdf8c",
+  "latest_branch_head_sha": "24e4c66af8c67195b46f7d3878d1cc846b6bdf8c",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "b2c7265fda504af48726a19317c420058efbeef7",
+    "branch_head_sha": "24e4c66af8c67195b46f7d3878d1cc846b6bdf8c",
+    "latest_code_revision_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25",
     "combined_statuses": [],
     "workflow_runs": [
       {
-        "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 45978860143,
+        "name": "GIS Spatial Integrity",
+        "run_id": 45979096386,
         "conclusion": "failure",
-        "failed_job": "detect"
+        "jobs": [
+          {
+            "name": "GIS module TypeScript typecheck",
+            "job_id": 140438143889,
+            "conclusion": "failure"
+          },
+          {
+            "name": "GIS geometry and boundary regression",
+            "job_id": 140438144408,
+            "conclusion": "failure"
+          }
+        ],
+        "job_steps": null,
+        "logs": "BlobNotFound"
+      },
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 45979096548,
+        "conclusion": "failure",
+        "failed_job": "detect",
+        "dependent_jobs": "skipped"
       },
       {
         "name": "Tehran Radar CI Quality Gates",
-        "run_id": 45978860142,
+        "run_id": 45979096195,
         "conclusion": "failure",
         "failed_job": "TypeScript, Architecture, Unit, Storage, Stress & Build",
         "skipped_job": "Real Browser E2E & Accessibility Suite (Playwright)"
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45978860503,
+        "run_id": 45979096284,
         "conclusion": "failure",
         "failed_job": "D1 domain isolation, Worker bundle & frontend RPC binding"
       },
       {
         "name": "Cloudflare Native Auth Validation",
-        "run_id": 45978860128,
+        "run_id": 45979096146,
         "conclusion": "failure",
         "failed_job": "native-auth"
       },
       {
         "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45978860069,
+        "run_id": 45979096317,
         "conclusion": "failure",
         "failed_job": "irni-rpc-contract"
       }
     ],
     "job_log_retrieval": "BlobNotFound",
-    "interpretation": "Workflow failure is confirmed, but GIS test execution and the underlying runner failure cause are not confirmed."
+    "interpretation": "Failed workflow conclusions are confirmed. The underlying cause and whether GIS test/typecheck commands ran are not established; no successful verification can be claimed."
   },
-  "latest_branch_sha_at_record": "pending-after-documentation-commit"
+  "latest_branch_sha_at_record": "pending-after-documentation-commit",
+  "latest_code_revision_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25"
 }
