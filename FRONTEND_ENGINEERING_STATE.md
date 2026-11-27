@@ -126,3 +126,11 @@
 ## 4. Remaining Priorities & Next Implementation Targets
 - All 9 Frontend Engineering Batches and the Principal-Level Frontend Architecture, CSS Specificity, Focus-Trap Lifecycle & Blind-Spot Audits are 100% complete and verified.
 
+### Session continuation — 2026-11-27 16:42 +0330
+- **Work package:** FE-MOBILE-ACTIVE-FILTER-OVERFLOW-001 on `fix/frontend-budget-filter-touch-targets-2026-11-27` / PR #76 (Draft).
+- **Review finding:** The existing Playwright scenario measured the 44px dismissal-chip hit areas at 320×568 and 390×844, but only asserted horizontal overflow inside the open budget dialog. The active-filter region itself was not checked after the three chips were activated.
+- **Implementation:** Extended `tests/tehran-radar.e2e.spec.ts` to assert `scrollWidth <= clientWidth` on the visible active-filter region after all three dismissal chips are present, at both mobile viewports.
+- **Commit:** `afae5c74f09fc05597d3273512be75cff22807cd` — `test(ui): assert mobile active-filter chips do not overflow`.
+- **Modified files:** `tests/tehran-radar.e2e.spec.ts` only.
+- **Verification:** GitHub accepted the commit and the file was fetched back. No local or browser test has been executed in this session. Status: `IMPLEMENTED_BUT_NOT_VERIFIED`.
+- **Next exact action:** Verify the updated PR head and its workflow runs; when an executable runner is available, run `npx playwright test tests/tehran-radar.e2e.spec.ts --grep "Mobile budget filter controls"`, `npm run test:contracts`, `npm run lint`, `npm run arch:check`, and `npm run build`. Keep PR #76 Draft until runtime and visual checks pass.
