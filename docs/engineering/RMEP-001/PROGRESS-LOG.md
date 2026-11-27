@@ -1419,3 +1419,11 @@
 ## 2026-11-27 — TRIAD-003 test-only CI trigger verification
 - The TRIAD-003 test-only change on PR #78 head `d622a1958d567140731f7ac87d6aa3140ed4a44e` triggered the Backend Triad workflow (run 45997297157), Quality Gates (45997297169), Native Auth (45997297190) and Path-Filtered Checks (45997297120).
 - Primary jobs again failed before runner assignment (runner_id=0, empty runner_name, zero steps); downstream jobs skipped. This confirms the path filter is now triggering the intended workflow, but the runner issue still prevents test execution. Issue #49 updated.
+
+## 2026-11-27 — Enforce barrier-only consent revocation and align all regression suites
+- **Bypass closed:** updateUserPrivacyConsentInD1 now rejects direct true→false research consent changes unless a durable revocation job exists and the caller is the barrier/reconcile transition. This prevents repository callers from silently disabling consent without an erasure outbox.
+- **CAS and replay:** Expected consent revision is enforced; stale unapplied intents are canceled; deterministic revocation IDs and unique (uid, revoked_consent_revision) migration prevent duplicate concurrent jobs. Concurrent identical revocation attempts converge on the canonical job.
+- **Route fidelity:** account privacy PATCH forwards consentVersion into the barrier.
+- **Regression alignment:** TRIAD-001 now asserts direct revocation bypass is rejected and uses the durable barrier to erase events. TRIAD-002 race coverage now expects an already-permitted request to drain before erasure; concurrent CAS tests use non-research consent flags; queue stale-revision errors are asserted as CONSENT_REVISION_STALE_OR_REVOKED; atomic aggregation invalidation failure is tested.
+- **Verification:** No tests/typecheck executed. Latest CI on head d622a1958d567140731f7ac87d6aa3140ed4a44e: Quality Gates run 45997297169 job 140499789069 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45997297157 and Native Auth run 45997297190 have null step metadata. E2E skipped. This remains the runner allocation blocker tracked in issue #49.
+- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. PR #78 remains Draft.
