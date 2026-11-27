@@ -1428,3 +1428,10 @@
 - Latest PR #67 runs on head `2744b32bfac8765687df8c5433d56a3d99b1ee1e`: #45989808778 (path-filtered), #45989808702 (root CI), #45989808715 (native auth), #45989808637 (backend triad), and #45989808717 (IRNI RPC) all conclude FAILURE. Their jobs expose zero steps; log downloads for 140474467939, 140474467803 and 140474468270 return `BlobNotFound`.
 - The architecture guard and regression fixtures are **IMPLEMENTED_BUT_NOT_VERIFIED**. No test, typecheck, npm install, or build ran. Existing runner-allocation evidence remains the best-supported explanation for the empty-step failures; no source-level command failure is established.
 - No dependency, lockfile, runtime adapter, D1 schema/data, binding, secret, deployment, merge or PR state changed. PR #67 remains Draft.
+
+
+## 2026-11-27 — CHK-206: latest head CI retry still blocked
+
+- Latest PR #67 head `753d01fedcc2ad2c8414d465394022d2eecd2084` triggered five workflows: #45990066405 (Backend Triad), #45990066761 (Native Auth), #45990066394 (Root CI), #45990066422 (Path-Filtered), and #45990066754 (IRNI RPC). All conclude FAILURE.
+- Corresponding job records expose zero steps; the root CI job's log (140475333883) and path-filter detect log (140475332511) return `BlobNotFound`. E2E and downstream path-filter gates are skipped. This still provides no command-level test result.
+- PR #67 remains OPEN / DRAFT / NOT MERGED. The browser Firebase SDK guard remains IMPLEMENTED_BUT_NOT_VERIFIED. No tests were run locally or by a visible Actions runner.
