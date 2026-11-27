@@ -18,14 +18,14 @@ Current source type supports `city`, `district`, `neighborhood`, and `sub_neighb
 
 ## Current integrity controls
 
-- Polygon structural validation checks all rings for minimum vertices, closure, valid Iran-coordinate positions, non-zero area and per-ring self-intersection.
+- Polygon structural validation checks all rings for minimum vertices, closure, valid Iran-coordinate positions, non-zero area and per-ring self-intersection. The latest GIS increment also requires every interior ring to be strictly inside its exterior ring and rejects hole touching, crossing, overlap and nesting.
 - Point-in-polygon now evaluates holes: points inside an interior ring are outside the polygon; points on exterior or interior ring edges are classified `ON_EDGE`.
 - Valuation feature generation accepts only a `RESOLVED_INSIDE` neighborhood result with a resolved city and integer neighborhood ID.
 - It rejects caller-supplied neighborhood IDs that disagree with the geometric resolution.
 
 ## Known gaps
 
-- Hole containment, ring-to-ring intersections, nested/overlapping holes, and MultiPolygon component topology are not yet fully validated.
+- MultiPolygon component overlap/intersection and full cross-component topology are not yet validated. The current ring-topology checks cover holes within each Polygon component; they do not prove that separate MultiPolygon components are disjoint.
 - Duplicate `ACTIVE` versions inside a single entity history are not yet blocked by the snapshot validator; some readers select the first active version.
 - Bounding-box overlap is only a coarse candidate signal, not proof of polygon overlap.
 - No authoritative production boundary dataset has been re-imported and independently verified in this work package.
