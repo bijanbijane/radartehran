@@ -121,3 +121,6 @@ Provenance fields consumed by UI: `provenance`, `evidenceSufficiency`, `observed
 The consent barrier spans USER_DB and RESEARCH_DB without assuming a distributed transaction. USER_DB owns consent revisions, leased processing permits, revocation jobs and a UID-free erasure outbox. RESEARCH_DB owns per-event consent revisions, immutable erasure receipts and monotonic subject fences. Direct HTTP and Queue ingestion share the permit and fence rules. Revocation stops new permits, drains or expires existing leases, then performs revision-scoped erasure and fence advancement. A subsequent re-grant is represented by a higher consent revision; older revisions remain fenced.
 
 The Worker account API exposes PATCH /api/account/privacy and POST /api/account/privacy/reconcile for initiation and recovery. Full account deletion continues to use max_consent_revision IS NULL and remains distinct from consent-only erasure.
+
+
+USER_DB migration 0008 enforces one revocation job per user/revoked revision and indexes retryable outbox work. Revocation intent IDs are deterministic for idempotent concurrent requests; consent mutation is guarded by an expected-revision compare-and-swap. The full database triad suite is part of the default npm test pipeline.
