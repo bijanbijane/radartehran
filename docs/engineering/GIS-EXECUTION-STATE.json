@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "workstream": "RADAR-TEHRAN-GIS",
   "status": "IN_PROGRESS",
   "status_date": "2026-11-27",
@@ -32,29 +32,87 @@
   "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "NOT_VERIFIED",
-    "reason": "The inspected PR head returned zero workflow runs and zero status checks. The authorized Desktop Commander MacBook is offline; repository issue #49 documents hosted runner allocation failures."
+    "status": "CI_FAILED_UNDIAGNOSED",
+    "reviewed_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25",
+    "workflow_runs": [
+      {
+        "id": 45978910268,
+        "name": "Tehran Radar Path-Filtered Checks",
+        "conclusion": "failure",
+        "job_steps": 0,
+        "logs": "BlobNotFound"
+      },
+      {
+        "id": 45978910401,
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "conclusion": "failure",
+        "job_steps": 0,
+        "logs": "BlobNotFound"
+      },
+      {
+        "id": 45978910183,
+        "name": "Cloudflare Native Auth Validation",
+        "conclusion": "failure",
+        "job_steps": 0,
+        "logs": "BlobNotFound"
+      },
+      {
+        "id": 45978911690,
+        "name": "Tehran Radar CI Quality Gates",
+        "conclusion": "failure",
+        "job_steps": 0,
+        "logs": "BlobNotFound"
+      },
+      {
+        "id": 45978910352,
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "conclusion": "failure",
+        "job_steps": 0,
+        "logs": "BlobNotFound"
+      }
+    ],
+    "reason": "All five workflows failed without exposed steps; logs could not be retrieved. It is unknown whether test/typecheck commands started. Repository issue #49 documents runner allocation failures."
   },
   "d1_runtime_probes": {
     "read_only": true,
-    "passed": ["SELECT 1", "json_valid", "json_extract", "sqrt"],
-    "denied_by_rest_query_surface": ["sqlite_version", "PRAGMA module_list", "EXPLAIN CREATE VIRTUAL TABLE USING rtree"],
+    "passed": [
+      "SELECT 1",
+      "json_valid",
+      "json_extract",
+      "sqrt"
+    ],
+    "denied_by_rest_query_surface": [
+      "sqlite_version",
+      "PRAGMA module_list",
+      "EXPLAIN CREATE VIRTUAL TABLE USING rtree"
+    ],
     "rtree_support": "UNVERIFIED"
   },
   "cloudflare_d1_inventory": {
-    "radar-neighborhood-db": {"application_tables": 19, "applied_migrations": 5, "nips_tables": 0},
-    "radar-user-db": {"application_tables": 29, "nips_tables": 0},
-    "radar-researcher-db": {"application_tables": 9, "nips_tables": 0},
+    "radar-neighborhood-db": {
+      "application_tables": 19,
+      "applied_migrations": 5,
+      "nips_tables": 0
+    },
+    "radar-user-db": {
+      "application_tables": 29,
+      "nips_tables": 0
+    },
+    "radar-researcher-db": {
+      "application_tables": 9,
+      "nips_tables": 0
+    },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore an online execution runner, run npm run test:geospatial on the current branch head, then run the relevant typecheck and repository gates. Do not provision radar-profile-db or alter production bindings until its ownership and authorization are explicitly approved.",
+  "next_exact_action": "Restore a usable GitHub Actions runner or online local runner, then run npm run test:geospatial and repository typecheck/quality gates on the latest PR head. Diagnose the pre-step CI failures before treating any code test as failed or passed.",
   "blockers": [
-    "No online execution runner; Desktop Commander MacBook offline and GitHub Actions runner allocation issue #49.",
+    "Five GitHub Actions workflows failed with empty step lists and unavailable logs; runner allocation issue #49 remains unresolved.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
     "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
     "RTree support is not verified in the D1 Worker runtime.",
     "Production IRNI read-only resolver/service binding is not verified."
   ],
-  "last_recorded_action": "Opened draft PR #72, inspected live D1 inventory read-only, and corrected GIS/NIPS database ownership documentation."
+  "last_recorded_action": "Inspected latest PR head CI failures; all five workflows exposed no steps and logs returned BlobNotFound.",
+  "latest_inspected_pr_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25"
 }
