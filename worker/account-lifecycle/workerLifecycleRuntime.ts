@@ -127,20 +127,20 @@ export async function processPendingResearchErasureOutbox(params: {
     const jobId = String(row.job_id);
     const subjectKey = String(row.subject_key);
     const subjectKeyVersion = String(row.subject_key_version);
-    const attempts = Number(row.attempt_count ?? 0) + 1;
     touchedJobIds.add(jobId);
     attempted += 1;
 
     if (!params.researchDb) {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
       const retryUpdate = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = attempt_count + 1, next_retry_at_ms = ?1,
+           SET status = 'RETRY_PENDING',
+               attempt_count = attempt_count + 1,
+               next_retry_at_ms = MAX(next_retry_at_ms, ?1 + MIN(300000, 10000 * (1 << MIN(attempt_count + 1, 5)))),
                last_error_code = 'RESEARCH_DB_UNAVAILABLE', updated_at_iso = ?2
            WHERE outbox_id = ?3 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(nowMs + backoffMs, nowIso, outboxId)
+        .bind(nowMs, nowIso, outboxId)
         .run();
       if (!retryUpdate.success) throw new Error('RESEARCH_ERASURE_UNAVAILABLE_RETRY_STATE_UPDATE_FAILED');
 
@@ -184,12 +184,12 @@ export async function processPendingResearchErasureOutbox(params: {
       const outboxComplete = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
-               erased_events_count = ?3, last_error_code = NULL,
-               updated_at_iso = ?4, completed_at_iso = ?5
-           WHERE outbox_id = ?6`,
+           SET status = 'COMPLETED', attempt_count = attempt_count + 1, receipt_id = ?1,
+               erased_events_count = ?2, last_error_code = NULL,
+               updated_at_iso = ?3, completed_at_iso = ?4
+           WHERE outbox_id = ?5 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(attempts, erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
+        .bind(erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
         .run();
       if (!outboxComplete.success || (outboxComplete.meta?.changes ?? 0) !== 1) {
         throw new Error('RESEARCH_ERASURE_OUTBOX_COMPLETION_UNCONFIRMED');
@@ -198,15 +198,16 @@ export async function processPendingResearchErasureOutbox(params: {
       erasedEventsTotal += erasureRes.deletedEventsCount;
       completed += 1;
     } catch {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
       const retryUpdate = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
-               last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?3
-           WHERE outbox_id = ?4 AND status IN ('PENDING', 'RETRY_PENDING')`,
+           SET status = 'RETRY_PENDING',
+               attempt_count = attempt_count + 1,
+               next_retry_at_ms = MAX(next_retry_at_ms, ?1 + MIN(300000, 10000 * (1 << MIN(attempt_count + 1, 5)))),
+               last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?2
+           WHERE outbox_id = ?3 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(attempts, nowMs + backoffMs, nowIso, outboxId)
+        .bind(nowMs, nowIso, outboxId)
         .run();
       if (!retryUpdate.success) throw new Error('RESEARCH_ERASURE_RETRY_STATE_UPDATE_FAILED');
 
