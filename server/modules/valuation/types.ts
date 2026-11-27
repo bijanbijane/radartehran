@@ -453,8 +453,23 @@ export interface ValuationDataConsumerAdapter {
   }>>;
 }
 
+export interface ValuationLocationResolver {
+  /** Resolves the submitted point against the active canonical neighborhood boundaries. */
+  getValuationLocationFeatures(params: {
+    coordinates: { lat: number; lng: number };
+    cityId: string;
+    hoodId: number;
+  }): {
+    cityId: string;
+    hoodId: number;
+    districtId?: string;
+    subNeighborhoodId?: string;
+  };
+}
+
 export interface ValuationModuleDependencies {
   dataConsumer: ValuationDataConsumerAdapter;
+  valuationLocationResolver?: ValuationLocationResolver;
   txRunner?: TransactionRunnerAdapter;
   tokenVerifier?: FirebaseIdTokenVerifier;
   adminStore?: AdminAuthorizationStoreAdapter;
