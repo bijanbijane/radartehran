@@ -194,6 +194,7 @@ test('Employee 59 — 3. Evidence normalization, deduplication, outlier review o
   assert.equal(ev1.normalizedTotalMillion, 15000);
   assert.equal(ev1.normalizedPricePerSqmMillion, 150);
   assert.equal(ev1.isCompletedTransaction, true);
+  assert.equal(ev1.verificationStatus, 'VERIFIED');
   assert.equal(ev1.isAskingPrice, false);
 
   // Duplicate evidence detection
