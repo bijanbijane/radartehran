@@ -110,3 +110,12 @@ The validator and recovery regression cases are committed, but the latest focuse
 ## Durable recovery geometry gate
 
 During production repository bootstrap, the hydrated geospatial snapshot must pass structural validation before it is accepted. Each boundary's canonical geometry and simplified display geometry are revalidated. The stored bounding box is compared with bounds recomputed from canonical geometry (tolerance 1e-6 degrees). Any geometry or bbox mismatch blocks readiness; no automatic geometry correction or production rewrite is performed. The runtime's point resolver relies on the validated bbox for candidate pruning, so bbox consistency is an integrity invariant rather than a display-only concern.
+
+
+## Sub-neighborhood edge assignment — 2026-11-27
+
+- A resolved parent-neighborhood interior must not mask a point that lies on the edge of a matched sub-neighborhood.
+- Point resolution now classifies the aggregate match as `RESOLVED_ON_EDGE` if any matched ACTIVE boundary is an edge match.
+- A sub-neighborhood ID is included only when that sub-neighborhood match is strictly interior.
+- Valuation feature generation continues to require `RESOLVED_INSIDE`, so edge cases fail closed.
+- Regression coverage is present in `tests/geospatial-valuation-location-assignment.test.ts`; the latest CI job did not expose steps/logs, so this change is not yet test-verified.
