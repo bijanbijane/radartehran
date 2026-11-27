@@ -36,7 +36,7 @@
 - **Expected:** Invoke a script defined by root `package.json`.
 - **Actual:** Workflow called `npm run test:geo`; root package scripts had no `test:geo` entry.
 - **Correction:** Replaced it with the existing `npm run test:geography-catalog`.
-- **Verification:** Source read-back confirms the corrected command. Execution pending.
+- **Verification:** Initial read-back caught an accidental doubled suffix in the replacement; corrected in commit `4a20d2e84527d2aab7b3a28c2cc469ab702fa4ee`. Final GitHub read-back confirms the exact `npm run test:geography-catalog` command matches the package script. Execution pending.
 
 ## QA-004 — IRNI RPC workflow calls two nonexistent npm scripts
 
