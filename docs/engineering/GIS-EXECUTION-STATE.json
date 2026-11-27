@@ -58,19 +58,19 @@
   "tests": {
     "command": "npm run test:geospatial && npm run test:valuation-location",
     "status": "NOT_VERIFIED_NO_USABLE_JOB_DIAGNOSTICS",
-    "reviewed_head_sha": "d49a31807452fa35d7ba49a054d8e728658b215b",
-    "workflow_run_id": 45987145869,
+    "reviewed_head_sha": "69f6e972e5b6583a82e6da2200515b08cb47f4a8",
+    "workflow_run_id": 45987481282,
     "jobs": [
       {
-        "name": "GIS geometry and boundary regression",
-        "job_id": 140465566722,
+        "name": "GIS module TypeScript typecheck",
+        "job_id": 140466695696,
         "conclusion": "failure",
         "steps": null,
         "logs": null
       },
       {
-        "name": "GIS module TypeScript typecheck",
-        "job_id": 140465567283,
+        "name": "GIS geometry and boundary regression",
+        "job_id": 140466695976,
         "conclusion": "failure",
         "steps": null,
         "logs": null
@@ -86,7 +86,7 @@
       "steps": [],
       "logs": "BlobNotFound"
     },
-    "reason": "The exact-head focused GIS run concluded failure, but both job records returned steps=null and logs_url=null. It is not established whether checkout, dependency installation, GIS tests, valuation tests or typecheck started.",
+    "reason": "Exact code revision 69f6e972e5b6583a82e6da2200515b08cb47f4a8 triggered GIS run 45987481282. Both jobs concluded failure but returned steps=null and logs_url=null. No test, valuation regression, or typecheck execution/pass is established. Subsequent documentation-only commits updated the branch head to b0559caa18003a70ce172613524f035eb91bc822 without changing code.",
     "latest_observed_prior_run": {
       "run_id": 45981367653,
       "reviewed_branch_head": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
@@ -138,7 +138,7 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore usable GitHub Actions runner diagnostics; execute npm run test:geospatial, npm run test:valuation-location and npm run typecheck on exact head d49a31807452fa35d7ba49a054d8e728658b215b. Then implement production valuation composition only after identifying the authoritative IRNI read-only resolver contract and data consumer.",
+  "next_exact_action": "Restore usable GitHub Actions diagnostics and execute npm run test:geospatial, npm run test:valuation-location, and npm run typecheck against code revision 69f6e972e5b6583a82e6da2200515b08cb47f4a8. Then implement production valuation composition only after confirming the authoritative IRNI read-only resolver and data-consumer contracts.",
   "blockers": [
     "No usable execution runner or exact-SHA GIS test evidence. The latest observed GIS run for the preceding code revision failed with steps=null and BlobNotFound; Desktop Commander MacBook remains offline.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
@@ -151,15 +151,15 @@
     "The production API bootstrap does not register a valuation router or construct a valuation service; the new canonical resolver guard is only a service-level seam until production composition and an IRNI read-only resolver are implemented.",
     "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified."
   ],
-  "last_recorded_action": "Added fail-closed canonical spatial resolver injection to valuation service, regression cases and focused CI coverage; audited API bootstrap and confirmed production valuation route composition is absent. Latest exact-head CI failed without usable job diagnostics.",
-  "latest_inspected_pr_head_sha": "d49a31807452fa35d7ba49a054d8e728658b215b",
-  "latest_branch_head_sha": "d49a31807452fa35d7ba49a054d8e728658b215b",
+  "last_recorded_action": "Added real cross-module regression using GeospatialService as the valuation location resolver; documented the missing production valuation route and updated the GIS test register/progress log. Exact-head test execution remains unverified.",
+  "latest_inspected_pr_head_sha": "b0559caa18003a70ce172613524f035eb91bc822",
+  "latest_branch_head_sha": "b0559caa18003a70ce172613524f035eb91bc822",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "d49a31807452fa35d7ba49a054d8e728658b215b",
-    "latest_code_revision_sha": "d49a31807452fa35d7ba49a054d8e728658b215b",
+    "branch_head_sha": "b0559caa18003a70ce172613524f035eb91bc822",
+    "latest_code_revision_sha": "69f6e972e5b6583a82e6da2200515b08cb47f4a8",
     "compare_main": {
-      "ahead_by": 153,
+      "ahead_by": 158,
       "behind_by": 0,
       "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
     },
@@ -195,6 +195,7 @@
     "api_bootstrap": "GIS router mounted at /api/v1/geospatial; no valuation router or service construction found in apps/api/server.ts",
     "resolver_contract": "ValuationLocationResolver",
     "coordinate_policy": "Fail closed with 409 when coordinates are present and resolver is missing or canonical city/hood does not match",
-    "tests": "Added missing-resolver, successful-resolution, and mismatched-neighborhood cases; execution unverified"
+    "tests": "Added missing-resolver, successful-resolution, and mismatched-neighborhood cases; execution unverified",
+    "real_geospatial_service_integration_test": "Added in tests/geospatial-valuation-location-assignment.test.ts; checks edge rejection, interior acceptance and caller hood-ID mismatch. Execution unverified."
   }
 }
