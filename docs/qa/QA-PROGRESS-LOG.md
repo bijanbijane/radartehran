@@ -60,3 +60,16 @@
 - The configured deploy command printed `QA verification only; no deployment requested.`; no Worker deployment was performed.
 - NIPS golden-reference TypeScript suite on PR #74 remains unexecuted. GitHub Actions startup failures remain a separate unresolved infrastructure blocker.
 - Dependency audit remains open with 22 findings; this test build deliberately used `--no-audit` and does not change the audit result.
+
+
+## 2026-11-27 — Security, contract foundation, and architecture checks verified
+
+- Cloudflare Build `06f4dc2e-c773-4c75-8e3a-36841f3db2a0` completed successfully on PR #79 QA branch.
+- Clean install: `npm ci --ignore-scripts --no-audit --no-fund`; 646 packages added.
+- IRNI RPC typecheck: `tsc --noEmit -p tsconfig.irni-geographic-rpc.json`; command completed and subsequent steps ran.
+- Security suite: first security/auth suite reported **24 assertions passed**; second security-remediation suite emitted its explicit all-tasks/security-finding PASS marker.
+- Contract foundation: **10/10** Engineering Quality, Numeric, Boundary & API Contract Foundation tests passed.
+- Architecture guard: scanned 2,051 implementation files and 112 ratchet-locked legacy files; **0 blocking architecture errors**. It emitted 295 size-review warnings for files in the 300–499 line band; these are warnings, not gate failures.
+- Build outcome: `success`; deploy command was an echo-only QA no-op. No Worker deployment occurred.
+- Important scope distinction: PR #79 `test:contracts` invokes only `tests/engineering-quality-foundation.test.ts`; PR #74 adds `tests/nips-golden-reference.test.ts` to that script. Therefore the successful 10/10 contract result does **not** execute or verify the five NIPS golden-reference cases.
+- New focused GIS/Worker test build dispatched: `e3859b89-c95f-4787-80a2-bb40b1c11919`; currently queued at dispatch. It targets the neighborhood boundary read model, boundary HTTP route, and Cloudflare phase 1/2 Worker tests.
