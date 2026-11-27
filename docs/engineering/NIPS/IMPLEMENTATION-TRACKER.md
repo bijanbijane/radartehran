@@ -176,3 +176,13 @@ The existing IRNI schema-evolution document says no migration has been executed 
 - Updated `BLOCKERS.md`, `NEXT-ACTIONS.md` and `REMEDIATION-REGISTER.md` with current run IDs and exact evidence limitations.
 - No runtime code, database migration, production binding, secret, deployment, merge or PR state was changed. The NIPS persistence implementation remains blocked on the IRNI-owned authenticated/versioned storage RPC and geography provider.
 - **Next:** diagnose Actions runner/job initialization using GitHub's native Actions UI or restore raw job logs; do not guess at source-level causes. Then continue the paired IRNI RPC and Radar adapter work without direct Radar D1 access.
+
+
+## 10. CHK-197 CI remediation and current execution state
+
+- Latest Radar PR #67 head: `ee2023a59128a9bad17f37e144995b5a6d67bc1f`; PR remains Draft.
+- Fixed the native-auth workflow's invalid script reference: `test:cloudflare-native-auth` did not exist in root package scripts; `test:auth` exists and invokes the native OIDC/session suites. Workflow now uses `npm run test:auth`.
+- Removed stale `bun.lock` and added `.npmrc` with `legacy-peer-deps=true` to ensure Cloudflare uses the npm lockfile and handles the root lockfile's optional Wrangler peer consistently.
+- These changes are source-verified but not run-verified. The five workflows triggered on the latest head all report FAILURE; their job step arrays are empty/null and raw log retrieval returns `BlobNotFound`. This is insufficient evidence to attribute failure to code.
+- No NIPS storage adapter, D1 migration, or IRNI RPC integration was added. The approved ownership boundary remains unchanged: IRNI owns the shared D1 and the NIPS storage RPC; Radar consumes the authenticated RPC and must not bind directly to the database.
+- **Next:** restore Actions job/log visibility; then run `npm run test:nips`, typecheck, architecture, auth and triad/write-pause suites. Continue with the IRNI owner-side RPC only after its contract and authorization are available.
