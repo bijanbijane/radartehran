@@ -105,3 +105,7 @@ Before any Radar production deployment:
 7. Keep PR #67 Draft. No merge, production deployment, remote migration, direct shared-D1 binding, secret change or destructive operation.
 
 **Scope rule:** until the user changes the instruction, continue work only against the GitHub repository. Do not use Cloudflare dashboards/APIs or local machine execution.
+
+
+### Call-site inventory added
+- `docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md` records the verified active Firebase Admin/Firestore and Sharp consumers, the SDK-free browser compatibility facade, stale Vite chunk/prebundle references, architecture-guard gap, and a safe migration sequence. Use it as the working inventory; do not remove packages until each runtime consumer has a tested replacement.
