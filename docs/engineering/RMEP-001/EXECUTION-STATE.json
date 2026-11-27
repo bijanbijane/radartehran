@@ -15,8 +15,8 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "a2e299f0c38b1f0ab00b8565cb200b6cedb322e7",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; documentation checkpoint commit follows last verified code commit; local execution device unavailable",
+    "head_commit": "dd2c6ef5af358f16392fa9e43afd039ed3e9a7ea",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; latest source and test commits reviewed; docs checkpoint commit follows; local execution device unavailable",
     "last_verified_commit": "34e2aaad37ba4b3793df7a9a5eecd8e364de6b15"
   },
   "current_phase": {
@@ -32,10 +32,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T11:12:00.000Z",
-    "last_safe_operation": "Guarded the unavailable-RESEARCH_DB outbox retry transition against stale-worker downgrades; atomically incremented attempt_count; added a SQLite-backed regression simulating a competing completion; synchronized progress, remediation, blocker, and next-action records.",
-    "last_completed_operation": "Guarded the unavailable-RESEARCH_DB outbox retry transition against stale-worker downgrades; atomically incremented attempt_count; added a SQLite-backed regression simulating a competing completion; synchronized progress, remediation, blocker, and next-action records.",
-    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck on the current branch head when local runtime is online; obtain diagnostics for CI runs 45987376314, 45987376378, 45987376493, and 45987376397; then inspect and migrate one live Express Firestore adapter only after its D1 contract and regression path are established.",
+    "checkpoint_timestamp_utc": "2026-11-27T11:18:00.000Z",
+    "last_safe_operation": "Fenced the unavailable-RESEARCH_DB outbox retry update, added a SQLite-backed competing-completion regression, refreshed PR #78 scope/verification, and identified the first confirmed live Express Firestore migration target without changing its persistence layer.",
+    "last_completed_operation": "Fenced the unavailable-RESEARCH_DB outbox retry update, added a SQLite-backed competing-completion regression, refreshed PR #78 scope/verification, and identified the first confirmed live Express Firestore migration target without changing its persistence layer.",
+    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck on the current branch head when a local runtime is online; retrieve actionable diagnostics for runs 45987376314, 45987376378, 45987376493, and 45987376397; then design a legal-regulatory D1 schema and transactional repository contract before any Firestore cutover.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2197,7 +2197,9 @@
       "Generated lifecycle outbox IDs are rout_<timestamp>_<8 hex chars>; derived research inbox IDs remain below any schema-declared length limits because the schema uses unrestricted TEXT columns.",
       "processPendingResearchErasureOutbox previously updated any outbox row to RETRY_PENDING in its catch path without checking current status. A stale Worker failing after a competing Worker had committed COMPLETED could downgrade the durable outbox state. The retry UPDATE is now conditional on status PENDING/RETRY_PENDING; if no row changed, the worker reads the current row and counts an already-COMPLETED item as completed.",
       "Added a deterministic stale-worker regression that returns a PENDING outbox row to one invocation, simulates a competing completion before the research DB attempt fails, and asserts the stale failure cannot downgrade the completed row or leave its parent deletion job pending.",
-      "A separate stale-worker race existed in the no-RESEARCH_DB branch: it could overwrite a competing COMPLETED outbox row with RETRY_PENDING because the update matched only outbox_id. The update is now status-fenced, attempt_count increments atomically, and a SQLite-backed regression simulates the interleaving."
+      "A separate stale-worker race existed in the no-RESEARCH_DB branch: it could overwrite a competing COMPLETED outbox row with RETRY_PENDING because the update matched only outbox_id. The update is now status-fenced, attempt_count increments atomically, and a SQLite-backed regression simulates the interleaving.",
+      "PropertyViewingsModuleFacade is not mounted by the active apps/api/server.ts; its factory is only referenced by the module and its tests, so it is not a confirmed live Express migration target.",
+      "Legal-regulatory is a confirmed live Express Firestore target: apps/api/server.ts mounts registerLegalRegulatoryRoutes, routes.ts constructs FirestoreLegalRegulatoryStore, and the store owns 10 domain collections; no legal-regulatory-specific D1 migration exists in the migrations tree."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
@@ -2210,7 +2212,7 @@
       "Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a again failed all four workflows: Tehran Radar CI Quality Gates run 45986606294, Cloudflare Native Auth Validation run 45986606317, Tehran Radar Path-Filtered Checks run 45986606333, and Radar Backend Triad run 45986606330. Job logs/step details remain inaccessible via the GitHub connector; no root cause is claimed.",
       "Latest branch CI checks on code commit 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 failed in detect, TypeScript/Architecture/Unit/Storage/Stress/Build, D1 domain isolation/Worker bundle, and native-auth. E2E and downstream path-filtered gates were skipped. Job step metadata is null and job log retrieval returns BlobNotFound; root causes are not known."
     ],
-    "next_action": "Run the focused RT-DB triad test and Worker typecheck when local runtime is online; retrieve actionable CI diagnostics; then migrate one verified live Express Firestore adapter with domain-specific regression coverage.",
+    "next_action": "Run the focused RT-DB triad suite and Worker typecheck when local runtime is online; obtain actionable CI diagnostics; then design and test the legal-regulatory D1 schema/repository migration before any production store cutover.",
     "code_work": {
       "id": "BE-002",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
