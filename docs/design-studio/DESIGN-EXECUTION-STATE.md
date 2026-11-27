@@ -2,8 +2,7 @@
 **Updated:** 2026-11-27  
 **Repository:** `bijanbijane/radartehran`  
 **Baseline:** `main` @ `456dcacb387b908797756863b10da1f7104b658e`  
-**Active branch:** `design/mobile-neighborhood-inspector-2026-11-27`  
-**Latest design commit:** `b364833b18a661e0a3a4857b6ed61ec3f3830788`
+**Active branch:** `design/mobile-neighborhood-inspector-2026-11-27`
 
 ## Completed design packages
 1. `docs/design-studio/2026-11-27-mobile-neighborhood-inspector.md`
