@@ -291,3 +291,10 @@ The first hosted validation of PR #98 exposed three GIS test defects and baselin
 - API contract suite failed on a frontend map-filter focus-indicator static assertion. The three dismissal buttons already had visible focus classes, but the assertion's JSX tag matcher stopped at the => in an earlier onClick attribute. Attribute order was adjusted so the existing focus classes are visible to the check; no interaction behavior changed.
 
 The above are intermediate results only. The latest head is being revalidated by fresh GitHub Actions runs. No check is treated as passed for the latest head until its own run completes.
+
+
+## Verified transaction evidence eligibility — 2026-11-28
+
+The hosted GIS/valuation regression exposed a baseline with zero verified samples even after ingesting a record explicitly typed as VERIFIED_COMPLETED_TRANSACTION. Root cause: resolveInitialEvidenceVerificationStatus returned PENDING_REVIEW for every non-outlier source, including explicitly verified completed transactions and rental contracts. This contradicted the source-type contract and caused official baseline eligibility to discard authoritative transaction evidence.
+
+Implemented on the current PR branch: VERIFIED_COMPLETED_TRANSACTION and VERIFIED_RENTAL_CONTRACT now receive VERIFIED status on ingestion unless outlier detection flags the record; all other source types remain PENDING_REVIEW by default. Added a regression assertion for the completed-transaction status. The existing reviewer correction path remains unchanged. Fresh CI is required to verify this fix.
