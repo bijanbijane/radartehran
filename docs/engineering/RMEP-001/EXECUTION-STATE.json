@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "abfba871ff452aff2c645c9452a700895cf733f0",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; last source/test commit fbb09b96e29680af67ad68eafc4910cead925e9a; current PR head contains engineering checkpoint updates only; six latest workflows fail pre-runner on documentation-only head; no test/typecheck/build execution; community Firestore adapter audit gated; no adapter changes",
-    "last_verified_commit": "fbb09b96e29680af67ad68eafc4910cead925e9a"
+    "head_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; BE-014 consent outbox parent crash recovery added; source commit ea5c70062704c76dd004ea8d75b6008fdd0db651; regression test commit c0da26dc3be660c32e9e78bbdb66a0b4d3b23604; seven latest Actions workflows fail pre-runner with runner_id=0 and zero steps; no test/typecheck/build execution; PR #78 remains Draft",
+    "last_verified_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -27,17 +27,17 @@
   "current_workstream": {
     "workstream_id": "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER",
     "workstream_name": "Leased research consent permits, durable revocation drain, revision-scoped erasure and zombie-writer fencing",
-    "task_id": "BE-011",
+    "task_id": "BE-014",
     "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED",
-    "next_workstream": "COMMUNITY-FIRESTORE-TO-D1-ADAPTER-AUDIT",
-    "next_task_id": "BE-014"
+    "next_workstream": "GITHUB_ACTIONS_RUNNER_ALLOCATION_RESOLUTION",
+    "next_task_id": "OPS-001"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-204-DOCUMENTATION-HEAD-RUNNER-FAILURE-REPRODUCED",
-    "checkpoint_timestamp_utc": "2026-11-27T12:28:00.000Z",
-    "last_safe_operation": "Reconciled latest PR #78 head and found no source changes beyond code/test head fbb09b96e29680af67ad68eafc4910cead925e9a. Inspected six latest Actions workflows at job level; all primary jobs fail before runner allocation even on a documentation-only head. Updated issue #49 and engineering blocker/progress records.",
-    "last_completed_operation": "Reconciled PR #78 head and execution state; inspected latest six workflow jobs showing runner_id=0 and zero steps even for documentation-only changes; issue #49 and engineering records updated. No tests/typecheck/build/migration/deployment or production data operation executed.",
-    "next_exact_action": "Resolve GitHub Actions hosted-runner allocation through issue #49 or reconnect the authorized local executor. Then run npm test and npm run typecheck against source/test head fbb09b96e29680af67ad68eafc4910cead925e9a; verify isolated D1 migrations and Worker/API bundles. Only after those gates pass, complete the community Firestore adapter (16 collections) parity audit and prepare a parity/rollback plan before any store change. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
+    "checkpoint_id": "CHK-205-TRIAD003-PARENT-RECOVERY-IMPLEMENTED-RUNNER-BLOCKED",
+    "checkpoint_timestamp_utc": "2026-11-27T13:07:00.000Z",
+    "last_safe_operation": "Added independent recovery for completed consent-revocation outbox parents and deterministic TRIAD-003 Scenario 9; source and test re-read from GitHub. Reproduced runner allocation failure on exact PR head across seven workflows.",
+    "last_completed_operation": "Committed BE-014 source recovery scan and Scenario 9 regression; updated progress log, blocker register and issue #49. No tests, typecheck, build, migrations or deployment executed.",
+    "next_exact_action": "Resolve hosted GitHub Actions runner allocation or reconnect the authorized local executor. Then run TRIAD-003 Scenario 9, npm run test:triad, npm test and npm run typecheck against c0da26dc3be660c32e9e78bbdb66a0b4d3b23604. If gates pass, verify isolated D1 migrations and Worker/API bundles. Only then continue the community Firestore adapter (16 collections) parity audit. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -236,7 +236,8 @@
       "P6-GOLD-EDITION-60-STORAGE-MAGIC-BYTES-OSM-BOUNDARY-LEGAL-AND-SECURITY",
       "P6-GOLD-EDITION-60-SCHEMA-MIGRATION-CASCADE-JOURNAL-AND-STORAGE-HELPERS",
       "P6-FRONTEND-AUTONOMOUS-ELEVATION-AND-VERIFICATION",
-      "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION"
+      "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION",
+      "BE-014-CONSENT-REVOCATION-OUTBOX-PARENT-CRASH-RECOVERY"
     ],
     "in_progress_tasks": [
       "CLOUDFLARE_NATIVE_AUTH_FIREBASE_RETIREMENT",
@@ -2331,6 +2332,18 @@
       "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
       "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
       "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
+    },
+    {
+      "id": "BE-014",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "files": [
+        "worker/account-lifecycle/workerLifecycleRuntime.ts",
+        "tests/rt-db-triad-003-consent-barrier.test.ts"
+      ],
+      "source_commit": "ea5c70062704c76dd004ea8d75b6008fdd0db651",
+      "test_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604",
+      "verification": "Source/test re-read from GitHub. Seven Actions workflows on exact head failed before runner assignment with runner_id=0, empty runner_name and zero steps; no test/typecheck/build executed.",
+      "next_action": "Run TRIAD-003 Scenario 9, npm run test:triad, npm test and npm run typecheck when an authorized executor is available."
     }
   ]
 }
