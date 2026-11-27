@@ -673,6 +673,16 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         assert.equal(dup.deduplicatedCount, 1);
       }
 
+      // Direct repository writes may not bypass the durable revocation barrier.
+      await assert.rejects(
+        () => updateUserPrivacyConsentInD1(userSqlite.db, {
+          uid,
+          actorUid: uid,
+          researchAnalyticsConsent: false,
+        }),
+        /RESEARCH_CONSENT_REVOCATION_BARRIER_REQUIRED/,
+      );
+
       // 5. Revoke through the durable permit/outbox barrier; existing data is erased before completion.
       const revoked = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
       assert.ok(revoked.revocation);
