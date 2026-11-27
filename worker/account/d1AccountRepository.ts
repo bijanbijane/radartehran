@@ -4,6 +4,10 @@
  * Sessions, and Data Requests repository operating strictly on `USER_DB` (never `RESEARCH_DB`).
  */
 import type { D1Database } from '../types';
+import {
+  mapConsentRevocationJobRow,
+  type ResearchConsentRevocationJobRecord,
+} from '../research/researchConsentBarrier';
 
 export interface D1UserProfile {
   readonly uid: string;
@@ -539,4 +543,16 @@ export async function createUserDataRequestInD1(
     completedAtIso: null,
     updatedAtIso: nowIso,
   };
+}
+
+
+export async function getResearchConsentRevocationJobFromD1(
+  userDb: D1Database,
+  revocationId: string,
+): Promise<ResearchConsentRevocationJobRecord | null> {
+  const row = await userDb
+    .prepare('SELECT * FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
+    .bind(revocationId)
+    .first<Record<string, unknown>>();
+  return row ? mapConsentRevocationJobRow(row) : null;
 }
