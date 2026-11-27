@@ -12,3 +12,6 @@ These blockers do not authorize merging, production deployment, production datab
 5. **Research erasure identity hardening — IMPLEMENTED_BUT_NOT_VERIFIED.** Completed inbox replays now validate subject key and key version against the stored row; regression assertion added but not executed.
 
 6. **Latest CI reruns after the code hardening — BLOCKED.** On head e7053f53d8c69605ee6bf0037c9442650c95e7cf, Tehran Radar CI run 45982446365 failed in its TypeScript/Architecture/Unit/Storage/Stress/Build job; E2E was skipped. Cloudflare Native Auth Validation run 45982446011 failed in native-auth. Job step metadata is empty and log downloads remain unavailable, so neither failure is attributed to the latest source change.
+
+7. **Latest CI on head 2b71c9a1eac38f02255f58c8676926de49a490de — BLOCKED.** Runs 45986000419 (Tehran Radar CI Quality Gates), 45986000574 (Cloudflare Native Auth Validation), 45986000519 (Tehran Radar Path-Filtered Checks), and 45986000654 (Radar Backend Triad) all concluded failure. E2E and downstream path-filtered gates were skipped. Job-step arrays are empty and log downloads return BlobNotFound, so no root cause is attributed.
+8. **Concurrent erasure regression — NOT EXECUTED.** A deterministic overlapping-read test and guarded-delete fix are committed, but the local MacBook remains Offline and CI logs do not reveal whether the test executed.
