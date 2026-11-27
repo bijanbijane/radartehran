@@ -18,3 +18,12 @@
 - CI jobs failed before runner assignment: 5
 - Dependent CI jobs skipped: 4 (one Playwright job and three path-filtered gates)
 - CI startup failures are not counted as test failures.
+
+
+| QA-T-007 | CI static contract audit | Compare every workflow `npm run` invocation with root/workspace package scripts; inspect PR event branch filters | Static GitHub source audit | Static audit complete; not executed as a test | Main: 16 workflow files, 40 invocations, 4 missing script references. PR #79 branch: same 16 files and 40 invocations, 0 missing references. PR #79 remains unmerged; no Actions job executed. |
+
+## Cross-branch note
+
+- On the QA branch for PR #74, `test:contracts` correctly runs both `engineering-quality-foundation.test.ts` and `nips-golden-reference.test.ts`.
+- The `main` base branch still lacks that NIPS test wiring until PR #74 is accepted; this is an intentional PR change, not a defect in the QA branch.
+- The PR #79 CI contract fixes are statically present but remain unmerged and runtime-unverified.
