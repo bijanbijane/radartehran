@@ -1,6 +1,7 @@
 /** @file src/design-system/designSystem.test.ts — Fast Node unit tests for RT-UI-VIS-001, RT-UI-COLOR-001, RT-UI-TYPE-001 & RT-UI-SPACING-001 */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CONTROLLED_GEOMETRY_TOKENS,
   DENSITY_PROFILES,
@@ -20,6 +21,7 @@ import {
   SEMANTIC_PALETTE,
   computeHexContrastRatio,
 } from './colorSystem';
+import { DARK_THEME_TOKENS } from './themes/dark';
 import {
   BODY_TYPE_SCALE_PX,
   EDITORIAL_READING_MEASURE,
@@ -211,3 +213,29 @@ test('RT-UI-COMP-001 & RT-UI-DS-IMPLEMENTATION-001 enforce 5-layer DS, 6 button 
   assert.equal(COMPONENT_ACCEPTANCE_CRITERIA.length, 22);
 });
 
+
+
+test('RT-UI-COLOR-002 keeps dark CSS theme values synchronized with canonical TypeScript theme tokens', () => {
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+  const cssTokenMap: Record<string, string> = {
+    '--color-bg-canvas': DARK_THEME_TOKENS.bgCanvas,
+    '--color-bg-surface': DARK_THEME_TOKENS.bgSurface,
+    '--color-bg-elevated': DARK_THEME_TOKENS.bgElevated,
+    '--color-bg-muted': DARK_THEME_TOKENS.bgMuted,
+    '--color-text-primary': DARK_THEME_TOKENS.textPrimary,
+    '--color-text-secondary': DARK_THEME_TOKENS.textSecondary,
+    '--color-text-muted': DARK_THEME_TOKENS.textMuted,
+    '--color-border-subtle': DARK_THEME_TOKENS.borderSubtle,
+    '--color-border-strong': DARK_THEME_TOKENS.borderStrong,
+    '--color-focus': DARK_THEME_TOKENS.focusRing,
+    '--color-brand-primary': DARK_THEME_TOKENS.brandPrimary,
+    '--color-brand-hover': DARK_THEME_TOKENS.brandHover,
+  };
+
+  for (const [cssName, expectedValue] of Object.entries(cssTokenMap)) {
+    assert.ok(
+      darkCss.includes(`${cssName}: ${expectedValue};`),
+      `Dark CSS token ${cssName} must match TypeScript theme value ${expectedValue}`,
+    );
+  }
+});
