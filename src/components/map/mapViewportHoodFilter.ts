@@ -28,3 +28,15 @@ export function resolveMapExplorerNeighborhoodList(params: {
   }
   return [...params.neighborhoods];
 }
+/**
+ * Resolve the selected neighborhood without silently substituting the first list item
+ * when the selected ID is stale or belongs to another city.
+ */
+export function resolveMapExplorerSelectedNeighborhood(params: {
+  neighborhoods: readonly EvaluatedNeighborhood[];
+  selectedHoodId: number;
+  selectedHood?: EvaluatedNeighborhood | null;
+}): EvaluatedNeighborhood | null {
+  if (params.selectedHood?.id === params.selectedHoodId) return params.selectedHood;
+  return params.neighborhoods.find((hood) => hood.id === params.selectedHoodId) ?? null;
+}
