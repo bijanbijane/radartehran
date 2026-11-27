@@ -13,7 +13,7 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "027257fc8ed3ab0cb996aeb7a865c69cb712c58a",
+    "head_commit": "6edf6b6318bcb148c2f9a5ed36386b0ef6142396",
     "working_tree_status": "REMOTE_GITHUB_BRANCH; SEC-NIPS-002 PUBLIC MODERATION-STATE SUPPRESSION IMPLEMENTED WITH UNDER_REVIEW AND SUPPRESSED REGRESSIONS; NOT RUNTIME VERIFIED; FIVE ACTIONS RUNS FAIL WITH NULL STEPS",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
@@ -30,9 +30,9 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-210-NIPS-PUBLIC-MODERATION-STATE-DISCLOSURE-FIX-IMPLEMENTED-NOT-VERIFIED",
-    "checkpoint_timestamp_utc": "2026-11-27T14:30:00.000Z",
+    "checkpoint_timestamp_utc": "2026-11-27T14:35:00.000Z",
     "last_safe_operation": "Updated public NIPS serializer to suppress UNDER_REVIEW and SUPPRESSED metric values irrespective of source redistribution permissions. Added regression fixtures for both states using DERIVED_ONLY evidence and sentinel values. Updated progress, remediation, blocker and next-action records.",
-    "last_completed_operation": "Re-fetched source and tests from GitHub and confirmed both blocked-state guard and regression assertions. Five Actions workflows on code/test commit 02f616f336d551ab553afe39643b3b9fd1bc18de concluded FAILURE, but all executable jobs expose steps=null and logs_url=null; downstream jobs were skipped. No workflow command ran and no runtime tests passed or failed. SEC-NIPS-002 remains IMPLEMENTED_BUT_NOT_VERIFIED.",
+    "last_completed_operation": "Code fix and both regression fixtures are confirmed committed and re-fetched. Five Actions workflows on test commit 02f616f336d551ab553afe39643b3b9fd1bc18de concluded FAILURE; executable jobs have steps=null and logs_url=null. No workflow command ran; runtime verification remains pending.",
     "next_exact_action": "Obtain a functioning Actions runner or authorized Node 22/npm 10 executor. Run npm run test:nips first, then npm run typecheck, npm run arch:check, npm run test:security, npm run test:worker, npm run test:cloudflare and npm run test:auth. Record exact output and exit codes; keep the security fix unverified until the new regression passes.",
     "resume_status": "READY"
   },
@@ -1898,10 +1898,10 @@
     {
       "operation_id": "OP-204",
       "phase": "PHASE-6",
-      "description": "Fix NIPS public serializer disclosure of UNDER_REVIEW metrics despite redistributable evidence; unconditionally suppress UNDER_REVIEW and SUPPRESSED public states and add sentinel regression.",
+      "description": "Fix NIPS public serializer disclosure of UNDER_REVIEW and SUPPRESSED metrics despite redistributable evidence; add sentinel regressions for both states.",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
       "idempotent": true,
-      "timestamp_utc": "2026-11-27T14:25:00.000Z"
+      "timestamp_utc": "2026-11-27T14:35:00.000Z"
     }
   ],
   "tests": [
@@ -2053,7 +2053,7 @@
     "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification.",
     "B-001: GitHub Actions execution remains blocked before steps. Current PR #67 head 3004fd05714137a6129212d1ca27e81f1660dff7 has five associated failed runs (Native Auth 46008493815, IRNI RPC 46008493886, Backend Triad 46008493813, Root CI 46008493882, Path-Filtered 46008493914). Returned jobs expose null/empty steps; log retrieval returns BlobNotFound. No workflow command failure is established.",
     "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit of nine route modules confirmed callers propagate parser status/code; body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route has a bounded but potentially high transient-memory profile; runtime measurements are unavailable. Run worker/backend gates before verification.",
-    "B-012: SEC-NIPS-002 — prior public serializer exposed a metric value when state was UNDER_REVIEW and evidence permission was DERIVED_ONLY/PUBLIC_REDISTRIBUTION. Fix and sentinel regression are committed; remain IMPLEMENTED_BUT_NOT_VERIFIED until npm run test:nips, typecheck, architecture and security gates pass."
+    "B-012: SEC-NIPS-002 — public serialization previously exposed UNDER_REVIEW metric values despite blocked moderation state when evidence allowed redistribution, and did not defensively suppress explicit SUPPRESSED states at the public boundary. Both states now serialize as SUPPRESSED with null value and zero evidence count; regressions cover both. Verification pending npm run test:nips, typecheck, architecture and security gates."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
