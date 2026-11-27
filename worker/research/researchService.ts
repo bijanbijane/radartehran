@@ -573,15 +573,8 @@ export async function executeResearchSubjectErasure(params: {
   }
   const targetCount = Number(countRow.cnt);
 
-  // Identify derived aggregation scopes impacted by this subject so stale counts are invalidated atomically.
-  const impactedScopesRes = await params.researchDb
-    .prepare(
-      'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND (?3 IS NULL OR consent_revision <= ?4)',
-    )
-    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, maxConsentRevision)
-    .all<{ event_type: string; city_id: string }>();
-  if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
-  const impactedScopes = impactedScopesRes.results ?? [];
+  // Scope invalidation and event deletion are performed in the same RESEARCH_DB batch.
+  // This avoids missing a scope committed after an earlier pre-read but before the erasure batch.
 
   // Stable IDs make concurrent deliveries of the same durable outbox command converge
   // on one immutable receipt. INSERT OR REPLACE could overwrite a receipt already returned
@@ -598,7 +591,11 @@ export async function executeResearchSubjectErasure(params: {
       `INSERT OR IGNORE INTO research_erasure_inbox (
         erasure_id, outbox_id, subject_key, subject_key_version, status,
         deleted_events_count, receipt_id, received_at_iso, completed_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+      )
+      SELECT ?1, ?2, ?3, ?4, ?5, COUNT(*), ?6, ?7, ?8
+      FROM research_events
+      WHERE subject_key = ?3 AND subject_key_version = ?4
+        AND (?9 IS NULL OR consent_revision <= ?9)`,
     )
     .bind(
       erasureId,
@@ -606,10 +603,10 @@ export async function executeResearchSubjectErasure(params: {
       params.subjectKey,
       params.subjectKeyVersion,
       'COMPLETED',
-      targetCount,
       receiptId,
       nowIso,
       nowIso,
+      maxConsentRevision,
     );
 
   const deleteEventsStmt = params.researchDb
@@ -624,24 +621,22 @@ export async function executeResearchSubjectErasure(params: {
     )
     .bind(params.subjectKey, params.subjectKeyVersion, params.outboxId, maxConsentRevision);
 
-  const invalidateWindowStmts = impactedScopes.map((scope) =>
-    params.researchDb
-      .prepare(
-        `DELETE FROM research_aggregation_windows
-         WHERE event_type = ?1 AND city_id = ?2
-           AND EXISTS (
-             SELECT 1 FROM research_erasure_inbox
-             WHERE outbox_id = ?3 AND subject_key = ?4 AND subject_key_version = ?5
-           )`,
-      )
-      .bind(
-        scope.event_type,
-        scope.city_id,
-        params.outboxId,
-        params.subjectKey,
-        params.subjectKeyVersion,
-      ),
-  );
+  const invalidateWindowsStmt = params.researchDb
+    .prepare(
+      `DELETE FROM research_aggregation_windows
+       WHERE EXISTS (
+         SELECT 1 FROM research_events e
+         WHERE e.subject_key = ?1 AND e.subject_key_version = ?2
+           AND (?3 IS NULL OR e.consent_revision <= ?3)
+           AND e.event_type = research_aggregation_windows.event_type
+           AND e.city_id = research_aggregation_windows.city_id
+       )
+       AND EXISTS (
+         SELECT 1 FROM research_erasure_inbox
+         WHERE outbox_id = ?4 AND subject_key = ?1 AND subject_key_version = ?2
+       )`,
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, params.outboxId);
 
   const fenceRevision = maxConsentRevision ?? 2_147_483_647;
   const updateConsentFenceStmt = params.researchDb
@@ -670,12 +665,12 @@ export async function executeResearchSubjectErasure(params: {
 
   const batchResults = await params.researchDb.batch([
     insertInboxStmt,
+    invalidateWindowsStmt,
     deleteEventsStmt,
-    ...invalidateWindowStmts,
     updateConsentFenceStmt,
   ]);
   if (
-    batchResults.length !== 3 + invalidateWindowStmts.length ||
+    batchResults.length !== 4 ||
     batchResults.some((r) => !r.success)
   ) {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
@@ -713,7 +708,7 @@ export async function executeResearchSubjectErasure(params: {
     outboxId: params.outboxId,
     receiptId: canonicalInbox.receipt_id,
     deletedEventsCount: Number(canonicalInbox.deleted_events_count),
-    invalidatedAggregationWindowsCount: impactedScopes.length,
+    invalidatedAggregationWindowsCount: Number(batchResults[1]?.meta?.changes ?? 0),
     idempotentReplay: canonicalInbox.receipt_id !== receiptId || Number(batchResults[0]?.meta?.changes ?? 1) === 0,
     completedAtIso: canonicalInbox.completed_at_iso,
   };
