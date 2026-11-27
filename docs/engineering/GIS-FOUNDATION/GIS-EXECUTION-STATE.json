@@ -5,8 +5,8 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2",
-  "branch_head_sha_note": "Verified from GitHub branch endpoint. GIS application integration source is in commit 731bdab12b7d01d540f1f8e69827703d9d8ff46c; regression test and suite registration are through f2374ae21de3cb16908d7cc6147f7a3566fd871a; commit 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2 adds explicit HTTP creator self-approval denial coverage.",
+  "branch_head_sha": "e9c311bbce7c48073a2f257e401b01d4fca1d41d",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint. Latest application source/test commit is 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. Subsequent docs-only commits fe5eda2b9351d766147c772f80367b9d1eef8924, dcc90177f1281a83bb837aa327b676bbb4525f54 and e9c311bbce7c48073a2f257e401b01d4fca1d41d reconcile execution state, progress and next actions.",
   "last_verified_source_commit": "172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2",
   "last_verified_source_commit_scope": "Inspected Worker-to-Express HMAC assertion signing/verification and proxy header behavior, Express middleware mount, GIS approval route, new HTTP regression including anonymous/non-admin/creator-self-approval/independent-admin cases, and npm run test:geospatial registration through 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. No tests/typecheck execution is evidenced.",
   "verified_findings": [
