@@ -370,7 +370,7 @@ export function simplifyPolygonGeometry(geometry: PolygonGeometry, stepStride = 
     const simplified: LinearRingCoords = [
       [Number(ring[0][0].toFixed(5)), Number(ring[0][1].toFixed(5))],
     ];
-    for (let i = 1; i < ring.length - 1; i += Math.max(1, stepStride)) {
+    for (let i = Math.max(1, Math.floor(stepStride)); i < ring.length - 1; i += Math.max(1, Math.floor(stepStride))) {
       simplified.push([Number(ring[i][0].toFixed(5)), Number(ring[i][1].toFixed(5))]);
     }
     const last = ring[ring.length - 1];
