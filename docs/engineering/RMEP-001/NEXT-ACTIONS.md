@@ -32,3 +32,10 @@ Updated: 2026-11-27
 - `server/modules/property-viewings` is not the first migration target: repository search found its facade only in its module and tests, and `apps/api/server.ts` does not mount it.
 - `server/modules/legal-regulatory` is a confirmed live Express target: `apps/api/server.ts` imports and mounts `registerLegalRegulatoryRoutes`; `routes.ts` constructs `FirestoreLegalRegulatoryStore`; its repository spans 10 domain collections (plus the transactional/idempotency contract).
 - No legal-regulatory-specific D1 migration currently exists under `migrations/` (tree inventory checked). Do not swap the store or remove Firestore yet. First define the D1 schema, transactional repository contract, indexes/pagination, migration strategy, and parity tests for the mounted routes.
+
+
+## Legal-regulatory D1 migration design (2026-11-27)
+- Confirmed the mounted live dependency chain: apps/api/server.ts → registerLegalRegulatoryRoutes → FirestoreLegalRegulatoryStore → FirestoreLegalRegulatoryTransactionRunner.
+- Added LEGAL-REGULATORY-D1-MIGRATION-DESIGN.md defining the ten-table model, required indexes, conditional transaction-guard protocol, parity gates, data reconciliation, and no-fallback cutover sequence.
+- **Blocker:** D1 database ownership/binding is not confirmed for this domain. radar_researcher_db is only a candidate; do not use user or neighborhood DB. No migration or store replacement has been implemented.
+- Next exact action: confirm intended D1 binding and D1 batch SQL semantics; then implement the D1 transaction runner behind LegalRegulatoryStore and prove it against the existing Firestore transaction test contract before changing the production composition root.
