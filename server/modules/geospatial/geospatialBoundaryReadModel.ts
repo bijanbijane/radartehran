@@ -1,8 +1,8 @@
 import type { BoundaryVersionRecord } from './types';
 
 export function pickActiveBoundaryVersion(history: BoundaryVersionRecord[]): BoundaryVersionRecord | null {
-  const active = history.find((b) => b.status === 'ACTIVE');
-  return active ? structuredClone(active) : null;
+  const active = history.filter((record) => record.status === 'ACTIVE');
+  return active.length === 1 ? structuredClone(active[0]) : null;
 }
 
 export function pickLatestBoundaryVersion(history: BoundaryVersionRecord[]): BoundaryVersionRecord | null {
