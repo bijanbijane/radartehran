@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-010",
+  "package_id": "DESIGN-MAP-011",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -59,7 +59,9 @@
     "Verified RadarPrimitives dialog installs a separate document keydown handler without the shared topmost-modal guard; notification dropdown uses a window Escape listener and its inspected root lacks aria-modal.",
     "Created DESIGN-MAP-009 modal accessibility and keyboard interaction audit with source evidence, accessibility risks, coordinator contract, regression acceptance tests, and explicit runtime QA boundaries; no application code or tests changed.",
     "Audited the shared RadarSheet primitive on the active design branch; verified per-instance document Escape/Tab listeners without topmost ownership, independent focus restoration, and aria-modal=true semantics; cross-checked shared useDialogFocus and global window Escape handler.",
-    "Created RT-MAP-OVERLAY-PRIMITIVE-ACCESSIBILITY-SPEC.md with source evidence, modal/non-modal semantics, coordinator contract, and DOM-level regression acceptance tests; no application code or tests changed."
+    "Created RT-MAP-OVERLAY-PRIMITIVE-ACCESSIBILITY-SPEC.md with source evidence, modal/non-modal semantics, coordinator contract, and DOM-level regression acceptance tests; no application code or tests changed.",
+    "Audited ten active-branch overlay and navigation surfaces: notification previews, map legend, search dropdown, floating top bar, desktop mega menu, mobile more sheet, map tool rail, property gallery, spatial tools popover, and notification bell.",
+    "Verified distinct non-modal and modal semantics, independent Escape listeners across document/window, map-context panel dismissal ownership, and coarse modal-presence suppression in SearchDropdownMenu; documented non-modal classification and keyboard precedence contract in DESIGN-MAP-011."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -96,7 +98,10 @@
     "Centralize modal and non-modal overlay keyboard dismissal policy so one Escape closes only the top interaction layer.",
     "Keep non-modal popovers out of the modal stack unless they truly block the application; align dialog semantics with actual modality.",
     "Treat RadarSheet and hook-managed dialogs as participants in one overlay ownership system; per-instance Escape and Tab listeners must not independently compete.",
-    "Only the topmost truly modal surface may trap focus or dismiss on Escape; nested focus restoration must follow explicit parent ownership."
+    "Only the topmost truly modal surface may trap focus or dismiss on Escape; nested focus restoration must follow explicit parent ownership.",
+    "Classify each overlay as modal dialog, non-modal dialog, disclosure/region, or menu based on actual interaction behavior; do not infer modality from appearance or z-index.",
+    "A modal stack takes priority over non-modal overlays; exactly one active topmost dismissible surface may consume Escape, and only topmost modal traps Tab.",
+    "Route MapToolRail, FloatingTopBar, MapLegend, SearchDropdownMenu, notification previews, and spatial tools through one workspace overlay owner."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -146,7 +151,12 @@
     "radar_sheet_escape_topmost": "SOURCE RISK VERIFIED — PER-INSTANCE HANDLER HAS NO TOPMOST GUARD; RUNTIME NOT REPRODUCED",
     "radar_sheet_tab_topmost": "SOURCE RISK VERIFIED — PER-INSTANCE FOCUS TRAP HAS NO TOPMOST GUARD; RUNTIME NOT REPRODUCED",
     "radar_sheet_focus_restore": "SOURCE RISK VERIFIED — PER-INSTANCE PREVIOUS-FOCUS RESTORE; MULTI-SURFACE ORDER NOT REPRODUCED",
-    "overlay_primitive_accessibility_contract": "DOCUMENTED — NOT RUNTIME VERIFIED"
+    "overlay_primitive_accessibility_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "nonmodal_overlay_source_review": "VERIFIED — TEN ACTIVE-BRANCH SURFACES REVIEWED",
+    "nonmodal_overlay_semantics": "DOCUMENTED — PRODUCT CLASSIFICATION AND RUNTIME BEHAVIOR NOT FULLY VERIFIED",
+    "nonmodal_escape_ownership": "SOURCE RISK VERIFIED — MULTIPLE DOCUMENT/WINDOW LISTENERS; RUNTIME NOT REPRODUCED",
+    "map_context_overlay_ownership": "SOURCE REVIEW VERIFIED — SHARED REGISTRY NOT PRESENT IN REVIEWED SURFACES",
+    "nonmodal_keyboard_runtime": "NOT RUN — BROWSER/DEVICE UNAVAILABLE"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -160,7 +170,8 @@
     "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
     "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device.",
     "DESIGN-MAP-009 runtime validation remains blocked: no connected browser/device to reproduce stacked modal, primitive-dialog, non-modal overlay, keyboard, or focus-restoration behavior.",
-    "DESIGN-MAP-010 RadarSheet multi-instance Escape/Tab/focus behavior and modality semantics require connected browser/device reproduction; application implementation remains unauthorized."
+    "DESIGN-MAP-010 RadarSheet multi-instance Escape/Tab/focus behavior and modality semantics require connected browser/device reproduction; application implementation remains unauthorized.",
+    "DESIGN-MAP-011 requires browser/device reproduction of Escape precedence, modal-over-popover behavior, focus restoration, and outside-click ownership; frontend implementation remains unauthorized."
   ],
-  "next_exact_action": "Reconnect browser/device and reproduce two simultaneous RadarSheet surfaces with bubbling Escape, Tab/Shift+Tab, focus restoration, and the global close-all listener. After explicit frontend implementation authorization, implement a shared overlay coordinator and DOM-level regression tests; until then, continue source-only design audits."
+  "next_exact_action": "Reconnect browser/device and reproduce simultaneous notification, MapLegend, MapToolRail, spatial-tools, and modal surfaces. Verify one-Escape-one-close precedence and focus restoration. After explicit frontend implementation authorization, implement a shared overlay registry and its DOM-level regression suite."
 }
