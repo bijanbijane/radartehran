@@ -1,83 +1,325 @@
 {
   "schema_version": "1.0.0",
-  "mission": "Independent QA and test engineering for Radar Tehran",
-  "phase": "baseline-and-ci-triage",
-  "status": "in_progress",
-  "started_at": "2026-11-27T13:26:00+03:30",
-  "repository": "bijanbijane/radartehran",
-  "base_branch": "main",
-  "qa_branch": "qa/radar-tehran-baseline-2026-11-27",
-  "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
-  "last_verified_commit_sha": null,
-  "environment": {
-    "github_repository_access": "verified",
-    "local_execution": "blocked",
-    "desktop_commander_device": "MacBook-Air.local",
-    "desktop_commander_status": "offline",
-    "production_data_touched": false,
-    "production_deployment_attempted": false
+  "program_id": "RADAR-TEHRAN-QA",
+  "program_status": "ACTIVE_WITH_SECURITY_AND_CI_BLOCKERS",
+  "current_phase": "PHASE-2-FOCUSED-INTEGRATION-AND-CONTRACT-VALIDATION",
+  "current_work_package": "QA-WP-002-AUTH-TRIAD-IRNI-GEOGRAPHY-FOCUSED-EXECUTION",
+  "repository": {
+    "full_name": "bijanbijane/radartehran",
+    "base_branch": "main",
+    "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
+    "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "last_inspected_qa_commit_before_state_update": "727c1bad8ff523b4bbdc24ea99cc045282574940",
+    "pull_request": {
+      "number": 74,
+      "url": "https://github.com/bijanbijane/radartehran/pull/74",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head_sha": "786b94e53c42b36bd07e611b9c6bb9260b23a9a6"
+    },
+    "qa_head_commit": "786b94e53c42b36bd07e611b9c6bb9260b23a9a6"
   },
-  "findings": [
+  "test_results": {
+    "test_suites_added": 1,
+    "test_cases_defined": 5,
+    "test_cases_executed": 142,
+    "test_cases_passed": 142,
+    "test_cases_failed": 0,
+    "test_cases_skipped": 0,
+    "ci_jobs_failed_before_runner": 5,
+    "ci_jobs_skipped": 4,
+    "reason": "Cloudflare no-deploy Build 2c700586-8a6d-47b5-a6bd-c3dc14b593eb completed successfully on PR #79 QA branch: auth 62/62, D1 triad 49/49, IRNI RPC 23/23, geography catalog 8/8. Aggregate 142 passed, zero failed/skipped. NIPS five-case suite on PR #74 remains unexecuted. Dependency audit separately reports 22 advisories; GitHub Actions startup failures remain pre-runner infrastructure failures."
+  },
+  "suites_created": [
+    "tests/nips-golden-reference.test.ts"
+  ],
+  "suites_improved": [
+    "test:contracts now includes tests/nips-golden-reference.test.ts and is invoked by CI Gate C"
+  ],
+  "pre_execution_fixture_inspection": {
+    "performed": true,
+    "categories": 12,
+    "variables": 120,
+    "unique_variable_ids": 120,
+    "non_null_reference_values": 0,
+    "wrong_reference_statuses": 0,
+    "missing_required_fields": 0,
+    "note": "This was an independent JSON fixture inspection, not execution of the TypeScript test suite."
+  },
+  "confirmed_application_defects": [],
+  "infrastructure_findings": [
+    {
+      "id": "QA-INFRA-001",
+      "classification": "PRE_RUNNER_CI_FAILURE",
+      "severity": "BLOCKER",
+      "run_ids": [
+        46004991418,
+        46004991653,
+        46004991515,
+        46004991666,
+        46004991463
+      ],
+      "evidence": "Five latest PR-triggered workflow runs (46004991418, 46004991653, 46004991515, 46004991666, 46004991463) each have one failed pre-runner job with runner_id=0, runner_name='', steps=[]. Jobs completed in 1–2 seconds. Primary CI job log retrieval returned BlobNotFound. Four dependent jobs were skipped. Root cause remains unconfirmed.",
+      "root_cause": "UNCONFIRMED",
+      "likely_investigation": [
+        "GitHub Actions included minutes, usage, and spending budget",
+        "Repository Settings > Actions > General and hosted-runner policy",
+        "GitHub Support escalation if account and repository settings are clear"
+      ]
+    }
+  ],
+  "self_remediated_defects": [],
+  "blockers": [
+    "Dependency security gate: npm audit reports 22 advisories (2 critical, 6 high, 14 moderate); remediation and fresh post-remediation audit remain outstanding.",
+    "GitHub Actions primary jobs repeatedly fail before runner allocation; root cause remains unconfirmed. Focused Cloudflare hosted QA path now works.",
+    "NIPS golden-reference TypeScript suite on PR #74 has five defined cases but remains unexecuted.",
+    "Full GIS dataset provenance, CRS, topology, boundary accuracy, coverage, and property assignment validation remain unverified.",
+    "Frontend E2E, responsive, cross-browser, accessibility, performance/load, and full regression suites remain unverified."
+  ],
+  "ci": {
+    "workflow_files_inspected": [
+      ".github/workflows/ci.yml"
+    ],
+    "latest_main_commit_status": "No status checks returned for inspected main commit; this is not evidence of a green build.",
+    "qa_pr_workflows": [
+      {
+        "name": "Cloudflare Native Auth Validation",
+        "run_id": 46005424220,
+        "job_id": 140527260012,
+        "conclusion": "failure_before_runner",
+        "steps": 0
+      },
+      {
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "run_id": 46005424339,
+        "job_id": 140527261353,
+        "conclusion": "failure_before_runner",
+        "steps": 0
+      },
+      {
+        "name": "Tehran Radar CI Quality Gates",
+        "run_id": 46005424528,
+        "job_id": 140527262712,
+        "conclusion": "failure_before_runner",
+        "steps": 0
+      },
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 46005424288,
+        "job_id": 140527261036,
+        "conclusion": "failure_before_runner",
+        "steps": 0
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 46005424272,
+        "job_id": 140527260479,
+        "conclusion": "failure_before_runner",
+        "steps": 0
+      }
+    ],
+    "e2e_job": "skipped_due_to_dependency_failure",
+    "job_logs": "UNAVAILABLE_BLOB_NOT_FOUND",
+    "public_status_page": "All systems operational; no incident reported on 2026-11-27 at time checked.",
+    "latest_main_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "rerun_observation": {
+      "run_id": 45978213208,
+      "job_id": 140525618476,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": 0,
+      "logs": "BlobNotFound",
+      "classification": "PRE_RUNNER_CI_FAILURE"
+    },
+    "path_filtered_downstream_jobs": "frontend-gates, api-gates, contracts-gates skipped because detect failed before runner",
+    "latest_qa_head_commit": "807fa962ac6886a1d10ac62c46055cf4f51c66e9",
+    "latest_qa_run_timestamp_utc": "2026-11-27T13:36:00Z",
+    "latest_workflow_evidence_commit": "95ed139433437bd51688fc3acbe190a87e7e0685",
+    "latest_observed_runs_after_documentation_updates": [
+      {
+        "id": 46008470844,
+        "name": "Tehran Radar Path-Filtered Checks",
+        "primary_job": 140537546390,
+        "conclusion": "failure_before_steps",
+        "steps": 0,
+        "dependent_jobs": "skipped"
+      },
+      {
+        "id": 46008470272,
+        "name": "Cloudflare Native Auth Validation",
+        "primary_job": 140537543716,
+        "conclusion": "failure_before_steps",
+        "steps": 0
+      },
+      {
+        "id": 46008470407,
+        "name": "Tehran Radar CI Quality Gates",
+        "primary_job": 140537544549,
+        "conclusion": "failure_before_steps",
+        "steps": 0,
+        "e2e_job": "skipped"
+      },
+      {
+        "id": 46008470481,
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "primary_job": 140537545342,
+        "conclusion": "failure_before_steps",
+        "steps": 0
+      },
+      {
+        "id": 46008470506,
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "primary_job": 140537544878,
+        "conclusion": "failure_before_steps",
+        "steps": 0
+      }
+    ],
+    "pr79_review_finding": {
+      "head": "1907920698c24e950fbccc57cb80f7d5603205b0",
+      "manifest": "package.json:115 declares vitest ^5.1.2",
+      "lockfile": "package-lock.json:50 declares vitest ^3.0.8; lock resolves Vitest 3.2.7",
+      "package_lock_changed": false,
+      "latest_cloudflare_build": "0158ddf9-b519-44de-929a-4ac555403ffd",
+      "latest_cloudflare_build_status": "failed",
+      "classification": "CONFIRMED_NPM_MANIFEST_LOCKFILE_MISMATCH",
+      "verification": "Exact package.json/package-lock.json lines and complete PR changed-file list inspected. npm ci not executed; npm clean-install rejection is expected by npm lockfile contract, not runtime-confirmed in this session.",
+      "pr_comment_id": 7219718994
+    },
+    "retried_job": {
+      "run_id": 46008470407,
+      "job_id": 140538295439,
+      "original_job_id": 140537544549,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": 0,
+      "e2e": "skipped",
+      "log_retrieval": "BlobNotFound",
+      "interpretation": "Retry reproduced pre-step failure; root cause still not established."
+    }
+  },
+  "next_exact_action": "Restore an execution path (GitHub-hosted runner or online authorized Desktop Commander device). Then execute npm run test:contracts on the QA branch, followed by focused auth/triad/IRNI/geography suites. Review PR #79 fixes; do not mark CI defects resolved until merged and executed.",
+  "updated_at": "2026-11-27",
+  "confirmed_ci_defects": [
     {
       "id": "QA-CI-001",
-      "severity": "HIGH",
-      "status": "confirmed-ci-failure-root-cause-unresolved",
-      "scope": "main commit 456dcacb387b908797756863b10da1f7104b658e",
-      "evidence": {
-        "workflow": "Tehran Radar CI Quality Gates",
-        "run_id": 45837739418,
-        "run_url": "https://github.com/bijanbijane/radartehran/actions/runs/45837739418",
-        "jobs": [
-          {
-            "name": "TypeScript, Architecture, Unit, Storage, Stress & Build",
-            "conclusion": "failure",
-            "job_id": 139970977818
-          },
-          {
-            "name": "Real Browser E2E & Accessibility Suite (Playwright)",
-            "conclusion": "skipped",
-            "job_id": 139971000087
-          }
-        ],
-        "additional_checks": [
-          {
-            "name": "Workers Builds: radartehran-api-staging",
-            "conclusion": "failure"
-          },
-          {
-            "name": "Workers Builds: radartehran-frontend",
-            "conclusion": "failure"
-          }
-        ],
-        "diagnostic_artifacts": 0,
-        "logs_retrieval": "GitHub job-log endpoint returned 404; root cause not established"
-      },
-      "regression_test": null,
-      "verification": "not_started"
-    }
-  ],
-  "test_execution": {
-    "executed": 0,
-    "passed": 0,
-    "failed": 0,
-    "skipped": 0,
-    "not_run": [
-      "all local suites; execution host offline"
-    ]
-  },
-  "blockers": [
-    {
-      "id": "QA-BLOCK-001",
-      "description": "Connected MacBook-Air.local is offline; repository commands cannot be executed locally from this session.",
-      "impact": "Cannot independently run npm scripts, inspect runtime behavior, or create local test output.",
-      "next_step": "Reconnect Desktop Commander device or provide an online authorized execution host."
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/cloudflare-native-auth-validation.yml",
+      "missing_command": "test:cloudflare-native-auth",
+      "corrected_command": "test:auth",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
     },
     {
-      "id": "QA-BLOCK-002",
-      "description": "GitHub Actions logs for failed main CI job are unavailable through the current GitHub log endpoint (404), and the run exposes no uploaded artifacts.",
-      "impact": "CI root cause cannot yet be classified as code, dependency, runner, or infrastructure failure.",
-      "next_step": "Restore access to job logs or rerun the workflow after the execution environment is available."
+      "id": "QA-CI-002",
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/irni-geographic-rpc-contract.yml",
+      "missing_commands": [
+        "test:irni-geographic-rpc",
+        "typecheck:irni-geographic-rpc"
+      ],
+      "status": "SCRIPTS_ADDED_IN_PR_79_NOT_MERGED"
+    },
+    {
+      "id": "QA-CI-003",
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/radar-backend-triad.yml",
+      "missing_command": "test:geo",
+      "corrected_command": "test:geography-catalog",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
+    },
+    {
+      "id": "QA-CI-004",
+      "severity": "LOW",
+      "workflow": ".github/workflows/ci.yml",
+      "finding": "A branch name is listed under pull_request.types instead of pull_request.branches; PR #79 moves the branch targets into branches.",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
     }
   ],
-  "next_action": "Restore a live execution environment, reproduce the latest main CI failures, capture complete logs, and run the pending D1 triad/write-pause suites."
+  "static_ci_audit": {
+    "audited_base": "main",
+    "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "workflow_files": 16,
+    "npm_run_invocations": 40,
+    "missing_script_invocations": 4,
+    "missing": [
+      {
+        "workflow": "cloudflare-native-auth-validation.yml",
+        "script": "test:cloudflare-native-auth"
+      },
+      {
+        "workflow": "irni-geographic-rpc-contract.yml",
+        "script": "test:irni-geographic-rpc"
+      },
+      {
+        "workflow": "irni-geographic-rpc-contract.yml",
+        "script": "typecheck:irni-geographic-rpc"
+      },
+      {
+        "workflow": "radar-backend-triad.yml",
+        "script": "test:geo"
+      }
+    ],
+    "fix_branch": "qa/ci-contract-fixes-2026-11-27",
+    "fix_pr": 79,
+    "fix_head": "1907920698c24e950fbccc57cb80f7d5603205b0",
+    "fix_branch_audit": {
+      "workflow_files": 16,
+      "npm_run_invocations": 40,
+      "missing_script_invocations": 0
+    },
+    "execution_status": "STATIC_SOURCE_AUDIT_ONLY_NO_WORKFLOW_STEPS_EXECUTED"
+  },
+  "hosted_test_execution": {
+    "build_id": "2c700586-8a6d-47b5-a6bd-c3dc14b593eb",
+    "branch": "qa/ci-contract-fixes-2026-11-27",
+    "runtime": {
+      "node": "24.22.1",
+      "npm": "12.2.3"
+    },
+    "install": "npm ci --ignore-scripts --no-audit --no-fund; 646 packages added",
+    "suites": [
+      {
+        "command": "npm run test:auth",
+        "passed": 62,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "npm run test:triad",
+        "passed": 49,
+        "failed": 0,
+        "skipped": 0,
+        "details": {
+          "triad001": 14,
+          "triad002": 35
+        }
+      },
+      {
+        "command": "npm run test:irni-geographic-rpc",
+        "passed": 23,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "npm run test:geography-catalog",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "total": {
+      "passed": 142,
+      "failed": 0,
+      "skipped": 0
+    },
+    "outcome": "success",
+    "deployment": "none; deploy command was echo-only QA no-op",
+    "limitations": [
+      "Tests ran on PR #79 branch, not PR #74 head",
+      "No official geographic boundary accuracy validation",
+      "No full live Production service validation",
+      "Lifecycle scripts skipped during npm ci",
+      "NIPS test suite on PR #74 not executed"
+    ]
+  }
 }
