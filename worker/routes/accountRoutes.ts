@@ -26,6 +26,10 @@ import { authenticateWorkerSession } from '../auth/sessionAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import { decryptMarketPhone } from '../marketplace/marketPiiCrypto';
+import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../research/researchConsentRevocation';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(
@@ -39,6 +43,7 @@ async function authenticateAccountCaller(
 function isHandledAccountWorkerRoute(method: string, pathname: string): boolean {
   if (pathname === '/api/account/profile' && (method === 'GET' || method === 'PATCH')) return true;
   if (pathname === '/api/account/privacy' && (method === 'GET' || method === 'PATCH')) return true;
+  if (pathname === '/api/account/privacy/reconcile' && method === 'POST') return true;
   if (pathname === '/api/account/sessions' && method === 'GET') return true;
   if (method === 'POST' && pathname.startsWith('/api/account/sessions/') && pathname.endsWith('/revoke')) return true;
   if (pathname === '/api/account/favorites' && (method === 'GET' || method === 'PUT' || method === 'POST' || method === 'DELETE')) {
@@ -149,6 +154,23 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
             : typeof b.receiveMarketingUpdates === 'boolean'
               ? b.receiveMarketingUpdates
               : undefined;
+        const currentPrivacy = await getUserPrivacyConsentFromD1(userDb, uid);
+        if (b.researchAnalyticsConsent === false && currentPrivacy.researchAnalyticsConsent) {
+          const result = await revokeUserResearchConsentWithBarrier({
+            env,
+            uid,
+            actorUid: uid,
+            behavioralTelemetryConsent: behavioralTelemetryInput,
+            marketingCommunicationsConsent: marketingInput,
+          });
+          const statusCode = result.revocation?.statusCode ?? 200;
+          return jsonWorkerResponse(ctx, statusCode, {
+            status: statusCode === 202 ? 'pending' : 'ok',
+            privacy: result.privacy,
+            revocation: result.revocation,
+          });
+        }
+
         const privacy = await updateUserPrivacyConsentInD1(userDb, {
           uid,
           actorUid: uid,
@@ -161,6 +183,30 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         });
         return jsonWorkerResponse(ctx, 200, { status: 'ok', privacy });
       }
+    }
+
+    // 2b. POST /api/account/privacy/reconcile — drain permits and reconcile durable revocation jobs.
+    if (pathname === '/api/account/privacy/reconcile' && method === 'POST') {
+      const pendingJobs = await userDb
+        .prepare(
+          `SELECT revocation_id FROM research_consent_revocation_jobs
+           WHERE uid = ?1 AND status != 'COMPLETED' ORDER BY created_at_iso ASC LIMIT 20`,
+        )
+        .bind(uid)
+        .all<{ revocation_id: string }>();
+      if (!pendingJobs.success) {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'RESEARCH_CONSENT_REVOCATION_LIST_FAILED' });
+      }
+      const results = [];
+      for (const item of pendingJobs.results ?? []) {
+        results.push(await reconcileResearchConsentRevocation({ env, revocationId: item.revocation_id }));
+      }
+      const completed = results.every((item) => item.completed);
+      return jsonWorkerResponse(ctx, completed ? 200 : 202, {
+        status: completed ? 'ok' : 'pending',
+        reconciledCount: results.length,
+        results,
+      });
     }
 
     // 3. GET /api/account/sessions & POST /api/account/sessions/:sessionId/revoke
