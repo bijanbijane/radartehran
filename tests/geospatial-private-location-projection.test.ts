@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { toPublicSpatialListing } from '../server/modules/geospatial/publicSpatialProjection';
+import {
+  isListingEligibleForPublicSpatialSearch,
+  toPublicSpatialListing,
+} from '../server/modules/geospatial/publicSpatialProjection';
 import type { SpatialPublishableListing } from '../server/modules/geospatial/types';
 
 function testPrivateFieldsStripped() {
@@ -21,6 +24,13 @@ function testPrivateFieldsStripped() {
   const pub = toPublicSpatialListing(listing) as Record<string, unknown>;
   assert.equal(pub.exactPrivateAddress, undefined);
   assert.equal(pub.id, 'l1');
+
+  assert.equal(isListingEligibleForPublicSpatialSearch(listing), true);
+  assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, publicationStatus: 'DRAFT' }), false);
+  assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, publicationStatus: 'ARCHIVED' }), false);
+  assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, verificationStatus: 'PENDING' }), false);
+  assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, verificationStatus: 'REJECTED' }), false);
+  assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, available: false }), false);
 }
 
 testPrivateFieldsStripped();
