@@ -1011,7 +1011,7 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
       path.resolve(process.cwd(), 'worker/research/researchConsentRevocation.ts'),
       'utf8',
     );
-    assert.match(source, /WHERE revocation_id = \\?3 AND status != 'COMPLETED'/);
+    assert.match(source, /WHERE revocation_id = \?3 AND status != 'COMPLETED'/);
 
     const staleTransition = await userSqlite.db.prepare(
       `UPDATE research_consent_revocation_jobs
