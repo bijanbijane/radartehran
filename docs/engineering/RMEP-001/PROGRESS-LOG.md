@@ -1419,3 +1419,12 @@
 - Added a virtual-override regression case in `tests/architecture-guardrails.test.ts` covering `firebase/auth`, `@firebase/app` and `firebase-admin/firestore` imports. Existing Node-only `src/utils` migration adapters remain outside this browser-only guard so transitional Express code can be migrated incrementally.
 - Re-fetched both files and confirmed the new violation code, source-layer scope, and three import fixtures are committed. **The test was not executed** because GitHub Actions jobs still fail before runner assignment; the code change is IMPLEMENTED_BUT_NOT_VERIFIED.
 - No package, lockfile, runtime adapter, database, binding, secret, deployment or PR state changed.
+
+
+## 2026-11-27 — CHK-205: browser Firebase SDK guard and latest CI evidence
+
+- Added the `CLIENT_FIREBASE_SDK_IMPORT` architecture violation in `scripts/check-architecture.ts`, scoped to browser-facing source layers. It rejects imports from `firebase`, `firebase/*`, `@firebase/*` and `firebase-admin/*` in the frontend module surface while leaving transitional Node-only `src/utils` adapters outside that browser guard.
+- Added three virtual import fixtures in `tests/architecture-guardrails.test.ts` for `firebase/auth`, `@firebase/app`, and `firebase-admin/firestore`. Re-fetched both files and confirmed the rule and fixtures are committed.
+- Latest PR #67 runs on head `2744b32bfac8765687df8c5433d56a3d99b1ee1e`: #45989808778 (path-filtered), #45989808702 (root CI), #45989808715 (native auth), #45989808637 (backend triad), and #45989808717 (IRNI RPC) all conclude FAILURE. Their jobs expose zero steps; log downloads for 140474467939, 140474467803 and 140474468270 return `BlobNotFound`.
+- The architecture guard and regression fixtures are **IMPLEMENTED_BUT_NOT_VERIFIED**. No test, typecheck, npm install, or build ran. Existing runner-allocation evidence remains the best-supported explanation for the empty-step failures; no source-level command failure is established.
+- No dependency, lockfile, runtime adapter, D1 schema/data, binding, secret, deployment, merge or PR state changed. PR #67 remains Draft.
