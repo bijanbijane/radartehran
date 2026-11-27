@@ -47,3 +47,10 @@ Corrections on the QA branch:
 - Replaced the stale `test:geo` reference with the existing `test:geography-catalog` script.
 
 Read-back verification: confirmed both new package scripts exist and the backend workflow no longer contains the missing `test:geo` command. Execution verification remains pending because no usable local runner is connected and GitHub Actions logs have not been retrievable. No test pass is claimed.
+
+
+## 2026-11-27 — QA correction: workflow command typo caught in read-back
+
+- A post-write read-back caught an unintended malformed command in `.github/workflows/radar-backend-triad.yml`: `npm run test:geography-cataloggraphy-catalog`.
+- Corrected it to the exact existing package script `npm run test:geography-catalog` in commit `4a20d2e84527d2aab7b3a28c2cc469ab702fa4ee`.
+- This demonstrates why command-level read-back is required after every workflow edit. The corrected workflow and package script were both fetched from GitHub; no runtime execution is claimed.
