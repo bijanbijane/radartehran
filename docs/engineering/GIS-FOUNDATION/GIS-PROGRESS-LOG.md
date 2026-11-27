@@ -32,3 +32,14 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - Confirmed Cloudflare's current D1 SQL documentation lists FTS5, JSON and math in its supported extension subset; the 2026-11-12 RTree export announcement does not establish Worker-runtime RTree SQL support. RTree remains UNVERIFIED.
 - No production D1 schema, data, binding, deployment, merge or release was changed.
 - Next exact action: obtain an executable test environment or usable hosted-runner diagnostics, then run the targeted profile-boundary test, geospatial suite, valuation-location suite and typecheck on the reconciled branch head. Keep PR #72 Draft.
+
+
+## 2026-11-27 — Exact-head GIS runner retry and production wiring audit
+
+- Reconciled the workstream against exact branch HEAD `0c69135b50b0ed59416f1f471ef18da64fbbbb6c`; execution state is now committed at `5939adf30927aee21719eeb3eed6800caae7cdb8`.
+- Inspected the production Express composition and the complete geospatial router. The approval route does implement Firebase principal verification, admin/delegated-admin authorization and independent reviewer enforcement. The production bootstrap still calls `createProductionGeospatialModule()` with no dependencies, so the route intentionally fails closed. The blocker is missing production dependency wiring, not missing route-level authorization logic.
+- Confirmed the GIS import function is not exposed by the current geospatial router; the internal service import path is not a public HTTP ingestion endpoint.
+- Retried failed jobs for GIS workflow run [46005295667](https://github.com/bijanbijane/radartehran/actions/runs/46005295667). Attempt 2 again failed both jobs with `steps=null` and `logs_url=null`; no test or typecheck execution is evidenced.
+- Updated `GIS-BLOCKERS.md` to distinguish implemented route safeguards from missing production dependencies, and to record the exact runner retry evidence.
+- No application source code was changed in this checkpoint because the required trusted identity/source adapters and an authorized executable test environment are not available; fabricating adapters or weakening fail-closed behavior would be unsafe.
+- Next: restore an operational runner/authorized checkout, then implement a supported authenticated IRNI identity bridge and trusted source resolver as independently testable adapters. Keep profile evidence blocked until both adapters are wired and verified.
