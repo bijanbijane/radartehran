@@ -101,5 +101,21 @@
 - Verified with `compile_applet`, `lint_applet`, `npm run arch:check`, `npm run test:contracts`, `npm run test:mutation`, `npx tsx tests/architecture-guardrails.test.ts`, `npx tsx tests/frontend-deep-debug.test.ts`, `npx tsx scripts/verify-all-views-browser.ts`, and `npm run build`.
 
 ## 4. Remaining Priorities & Next Implementation Targets
-- All 9 Frontend Engineering Batches and the Principal-Level Frontend Architecture, CSS Specificity, Focus-Trap Lifecycle & Blind-Spot Audits are 100% complete and verified.
+- Historical completion statement: the 9 earlier batches were recorded as complete at that checkpoint; it is not a claim that no later frontend defects remain.
+
+## 5. Active Frontend Remediation — 2026-11-27
+
+### Work Package FE-MOBILE-TOUCH-001
+- **Scope:** Increase the active mobile Neighborhood Inspector drag-handle hit area to the 44px ergonomic target and add a regression assertion.
+- **Branch:** `fix/frontend-mobile-sheet-handle-target-2026-11-27`
+- **Pull Request:** [#68 — improve mobile neighborhood-sheet drag target](https://github.com/bijanbijane/radartehran/pull/68) (Draft; not merged).
+- **Files changed:**
+  - `src/components/NeighborhoodInspectorDrawer.tsx`: `radar-drawer-drag-handle` minimum height changed from `24px` to `44px`.
+  - `tests/buyer-alert-contract.test.ts`: added a source-level regression assertion for the 44px drag-handle target and its accessible label. The test is included in the root `test:unit` script.
+- **Implementation status:** `IMPLEMENTED_BUT_NOT_VERIFIED`.
+- **CI status:** The PR head `d1ed74c054f729444b4b31692025a521366a32b6` triggered the repository CI Quality Gates, Cloudflare Native Auth Validation, Initial Frontend Bundle Budget, and Path-Filtered Checks; all four runs concluded `failure`. The Playwright E2E job was skipped. GitHub's job-log retrieval returned `BlobNotFound`, so the exact failing step and cause could not be established. Do not attribute these failures to this UI change without evidence.
+- **Local verification:** No local typecheck, unit test, architecture check, production build, or rendered viewport test was executed in this session.
+- **Merge/deployment:** Not performed. PR remains Draft.
+- **Next exact action:** Obtain the failed check annotations/logs for PR #68, compare the failures against the same workflows on the base commit, then run `npm run lint`, `npm run arch:check`, the focused `tests/buyer-alert-contract.test.ts`, and `npm run build`. Only after those pass, inspect the drawer at mobile viewports (at minimum 320×568 and 390×844) and update this record.
+
 
