@@ -235,7 +235,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       throw new CoreApiError(
         'CONFLICT',
         409,
-        'A unique point strictly inside a verified neighborhood boundary is required for valuation features.',
+        'A unique point strictly inside an active neighborhood boundary is required for valuation features.',
         {
           resolutionStatus: resolved.status,
           candidateBoundaryIds: resolved.candidateBoundaryIds,
