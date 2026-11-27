@@ -232,11 +232,18 @@ export async function updateUserPrivacyConsentInD1(
     marketingCommunicationsConsent?: boolean;
     consentVersion?: string;
     consentSource?: string;
+    expectedConsentRevision?: number;
     nowIso?: string;
   },
 ): Promise<D1UserPrivacyConsent> {
   await assertUserNotWriteBlocked(userDb, params.uid);
   const current = await getUserPrivacyConsentFromD1(userDb, params.uid);
+  if (
+    params.expectedConsentRevision !== undefined &&
+    current.consentRevision !== params.expectedConsentRevision
+  ) {
+    throw new Error('CONSENT_REVISION_CONFLICT');
+  }
   const nowIso = params.nowIso ?? new Date().toISOString();
 
   const nextResearch = params.researchAnalyticsConsent ?? current.researchAnalyticsConsent;
