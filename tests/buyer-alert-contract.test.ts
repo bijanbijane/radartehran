@@ -468,9 +468,12 @@ import('../src/utils/areaUnit').then((areaMod) => {
   assert.ok(
     inspectorDrawerSrc.includes('radar-drawer-drag-handle min-h-[44px]') &&
       inspectorDrawerSrc.includes('aria-label={mobileSheetOpen ?') &&
+      inspectorDrawerSrc.includes('pointerId: number') &&
+      inspectorDrawerSrc.includes('if (!e.isPrimary || e.button !== 0 || dragStartRef.current) return;') &&
+      inspectorDrawerSrc.includes('dragStartRef.current?.pointerId !== e.pointerId') &&
       inspectorDrawerSrc.includes('didDragRef.current = Math.abs(dy) >= 8') &&
       inspectorDrawerSrc.includes('if (didDragRef.current) {') &&
-      inspectorDrawerSrc.includes('onPointerCancel={() => { dragStartRef.current = null; didDragRef.current = false; }}'),
+      inspectorDrawerSrc.includes('onPointerCancel={(e) => { if (dragStartRef.current?.pointerId !== e.pointerId) return;'),
     'Mobile Neighborhood Inspector drag handle must expose an accessible name and a 44px minimum hit area'
   );
   const compareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf8');
