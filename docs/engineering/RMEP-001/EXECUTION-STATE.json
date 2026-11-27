@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "7f38d38ec0b0a9d2a0442bd2de95c54591c5e299",
-    "working_tree_status": "REMOTE_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; NO_LOCAL_WORKTREE; CHK-197_CHANGES_NOT_LOCALLY_TESTED",
+    "head_commit": "f16fe1eb158947eaaf4faf8f3061ac8cd5802d65",
+    "working_tree_status": "REMOTE_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; NO_LOCAL_WORKTREE; CHK-197_AND_CHK-198_NOT_LOCALLY_TESTED",
     "last_verified_commit": "25f6fa0196adef30d5d0be9368a5431360696a25"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-197-CI-FIXES-AND-RUNNER-BLOCKER",
-    "checkpoint_timestamp_utc": "2026-11-27T10:20:23.000Z",
-    "last_safe_operation": "Completed the CHK-197 documentation reconciliation after committing the workflow script correction, stale Bun lockfile removal and npm configuration; the recorded head is the progress-log commit immediately preceding this state checkpoint.",
-    "last_completed_operation": "Updated the five engineering records and verified the workflow script and lockfile state. Latest observed Actions runs on the code-fix head still fail with no step/log evidence.",
-    "next_exact_action": "Inspect the five latest GitHub Actions failures in the native Actions UI or restore a working job-log endpoint; run npm run test:nips, npm run typecheck, npm run arch:check, npm run test:auth, npm run test:cloudflare and D1 triad/write-pause suites in an executable environment. Then continue the IRNI-owned authenticated/versioned NIPS storage RPC; Radar must not bind directly to the shared D1.",
+    "checkpoint_id": "CHK-198-WORKFLOW-SCRIPT-CONSISTENCY",
+    "checkpoint_timestamp_utc": "2026-11-27T10:25:04.000Z",
+    "last_safe_operation": "Corrected three workflow/package script mismatches, removed the stale Bun lockfile, added npm installation configuration, and reconciled all engineering records. GitHub Actions remains non-diagnostic because failed jobs expose null steps and BlobNotFound logs.",
+    "last_completed_operation": "Added IRNI RPC test/typecheck scripts to package.json, corrected the backend triad geography test command, verified workflow/package script parity, and updated progress, blockers, remediation, next-actions and NIPS tracker records.",
+    "next_exact_action": "Restore GitHub Actions runner/job diagnostics or execute tests in a connected local environment. Run npm run test:nips, npm run test:auth, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, npm run test:cloudflare, D1 triad/write-pause suites, typecheck and architecture checks. Then resume IRNI-owned NIPS storage RPC work; do not add direct Radar D1 access.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -2192,6 +2192,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Inspect the five latest GitHub Actions failures in the native Actions UI or restore a working job-log endpoint; run npm run test:nips, npm run typecheck, npm run arch:check, npm run test:auth, npm run test:cloudflare and D1 triad/write-pause suites in an executable environment. Then continue the IRNI-owned authenticated/versioned NIPS storage RPC; Radar must not bind directly to the shared D1."
+    "next_action": "Restore GitHub Actions runner/job diagnostics or execute tests in a connected local environment. Run npm run test:nips, npm run test:auth, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, npm run test:cloudflare, D1 triad/write-pause suites, typecheck and architecture checks. Then resume IRNI-owned NIPS storage RPC work; do not add direct Radar D1 access."
   }
 }
