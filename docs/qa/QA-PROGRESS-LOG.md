@@ -32,3 +32,13 @@
 - The status page currently lists Actions as operational and reports no incident for November 27, 2026.
 - Therefore the observed runner allocation failure cannot be attributed to a declared GitHub-wide Actions outage. A repository/account-specific runner eligibility, usage-limit, or configuration issue remains possible but unverified.
 - Source: https://www.githubstatus.com/ (checked 2026-11-27).
+
+
+## 2026-11-27 — Cloudflare Workers Build dependency-manager diagnosis
+
+- Retrieved the Cloudflare Workers Build record and full available log for build `bdf2e772-1133-486a-98bf-f1d26c81355a` (commit `ee9d0d31b17089aa5a3fa9707688c0df0050dfd5`).
+- The build environment initialized and cloned the repository successfully, restored caches, detected Bun 1.4.4, then ran `bun install --frozen-lockfile`.
+- Bun stopped before `npm run build -w radartehran-frontend` because the frozen lockfile did not match the root manifest; it specifically identified `@tailwindcss/vite` as belonging to a different dependency group.
+- Static comparison found the Bun lockfile's root workspace name `react-example` versus manifest name `radartehran`, plus mismatched root dependency groups. Cloudflare selected Bun despite the repository's npm package scripts because `bun.lock` was present.
+- Remediation: delete the stale Bun lockfile and pin `packageManager` to `npm@10.9.2`, matching the npm version observed in the Cloudflare build image. The repository already has `package-lock.json`.
+- Pending: a fresh Preview build must confirm npm selection, dependency installation, and frontend compilation. No runtime test or build pass is claimed.
