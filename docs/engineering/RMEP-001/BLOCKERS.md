@@ -10,3 +10,5 @@ These blockers do not authorize merging, production deployment, production datab
 
 4. **PR #78 CI diagnosis — BLOCKED.** Latest workflow run 45980515216 failed in detect; api/frontend/contracts jobs were skipped. The radartehran-frontend Cloudflare Workers Builds check also failed. Logs/annotations remain unavailable (BlobNotFound), so root causes are unknown.
 5. **Research erasure identity hardening — IMPLEMENTED_BUT_NOT_VERIFIED.** Completed inbox replays now validate subject key and key version against the stored row; regression assertion added but not executed.
+
+6. **Latest CI reruns after the code hardening — BLOCKED.** On head e7053f53d8c69605ee6bf0037c9442650c95e7cf, Tehran Radar CI run 45982446365 failed in its TypeScript/Architecture/Unit/Storage/Stress/Build job; E2E was skipped. Cloudflare Native Auth Validation run 45982446011 failed in native-auth. Job step metadata is empty and log downloads remain unavailable, so neither failure is attributed to the latest source change.
