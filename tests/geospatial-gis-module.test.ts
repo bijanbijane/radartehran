@@ -281,6 +281,18 @@ test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, cluste
   assert.equal(clusteredRes.mode, 'CLUSTERED_VIEWPORT');
   assert.ok((clusteredRes.clusters?.length ?? 0) >= 1);
 
+  // Spatial listing index mutations must survive repository rehydration.
+  resetGeospatialRepositoryForTests();
+  const rehydratedGis = createGeospatialService();
+  const rehydratedSearch = rehydratedGis.searchListingsSpatially({
+    cityId: 'tehran',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  assert.equal(rehydratedSearch.totalMatched, 4);
+
   // Reject excessive radius query (> 25,000 meters)
   assert.throws(
     () =>
