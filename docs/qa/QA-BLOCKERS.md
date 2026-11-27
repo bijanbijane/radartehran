@@ -2,16 +2,18 @@
 
 ## Active
 
-1. **CI runner startup failure (confirmed observation; root cause unconfirmed)**
-   - PR #71 triggered five workflows: CI Quality Gates, Path-Filtered Checks, Cloudflare Native Auth Validation, IRNI Geographic RPC Consumer Contract, and Backend Triad & Frontend Service Binding.
-   - All five reported failure.
-   - The GitHub connector returned empty step arrays for the failed jobs; job logs were unavailable.
-   - One rerun of CI Quality Gates (run 45978194244) was requested. It failed again before reporting any steps.
-   - This is not evidence of a failing test assertion or an application defect. The tests did not produce inspectable results.
-   - Do not keep rerunning without new runner diagnostics or a changed execution path.
+1. **No executable runner currently available**
+   - The linked Desktop Commander MacBook device previously reported Offline.
+   - No local checkout, npm install, or test command has been executed in this session.
 
-2. **Local execution unavailable**
-   - The linked Desktop Commander MacBook device reported Offline.
-   - No local checkout, npm install, or test command was executed in this session.
+2. **GitHub Actions diagnostics unavailable**
+   - Latest PR-associated runs report failures, but job details returned null step arrays.
+   - Job-log download endpoints returned BlobNotFound.
+   - This prevents attribution of the observed failures to runner provisioning, workflow setup, or actual test execution. The root cause remains unconfirmed.
+   - Do not label these runs as test assertion failures or passes.
 
-No production credentials, production data, deployment, or migrations were touched.
+3. **Newly repaired workflow commands require execution**
+   - QA-003 and QA-004 are statically corrected and read back from GitHub.
+   - Their runtime outcomes remain unknown until the affected workflows run with accessible logs.
+
+No production credentials, production data, deployments, or migrations were touched.
