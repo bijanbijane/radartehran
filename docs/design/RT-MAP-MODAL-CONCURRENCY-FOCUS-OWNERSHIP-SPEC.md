@@ -60,6 +60,30 @@ The reviewed `useDialogFocus.ts`:
 
 `dialogStack.ts` also uses DOM order to identify the topmost dialog. This makes DOM order an implicit cross-component coordination mechanism rather than an explicit modal-stack state contract.
 
+## 2.6 Global Escape listener conflicts with topmost-dialog dismissal
+
+`src/components/useAppUiState.ts` registers a native `keydown` listener on `window`. When `e.key === 'Escape'`, it sets a broad set of modal flags to false in one handler, including super modules, compare, shortlist, share, smart suggest, agency, admin, pulse, SEO, buyer alert, PWA, legal, visited, trade-up, hedonic, price trend, onboarding, nationwide province, and listing verifier. It also closes several non-modal floating panels.
+
+The shared `useDialogFocus.ts` registers a native `keydown` listener on `document`. For Escape, it checks whether its container is the last DOM-ordered modal; if so, it calls that modal's `onClose` and calls `preventDefault()`, but the inspected handler does not call `stopPropagation()`.
+
+Native keydown propagation proceeds from `document` to `window`. Consequently, when a hook-managed dialog receives Escape, the document handler can close the topmost dialog and the event can continue to the window-level handler, which clears all modal flags. This creates a source-level conflict with the intended one-topmost-dialog dismissal contract and can close multiple modal states on one Escape press.
+
+**Evidence status:** both listener implementations and their registration targets were fetched from the active design branch. This is a deterministic source-path conflict; actual user-visible impact still requires a browser test with at least two simultaneously active modal states. Do not claim runtime reproduction until tested.
+
+## 2.7 Source-backed transition writer inventory
+
+The following active-branch files were fetched and searched for direct setter calls:
+
+| State family | Verified open/close writers or entry points | Result |
+|---|---|---|
+| Pulse / SEO | `ProductViewRouter.tsx`, `FloatingTopBar.tsx`, `SecondaryModals.tsx` | Both can be opened from separate entry points; FloatingTopBar closes its tools popover when opening SEO, not other modal flags. |
+| Buyer alert | `NeighborhoodBargainsAndVotesTabs.tsx`, `ProductViewRouter.tsx`, `BuyerAlertPwaLegalModals.tsx` | Buyer alert can be opened from neighborhood and product-view actions; no global modal exclusivity is evident in these call sites. |
+| Visited log | `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodBargainsAndVotesTabs.tsx`, `ProductViewRouter.tsx`, `RadarWorkspaceShell.tsx` | Multiple independent entry points set the visited flag true. |
+| Trade-up | `NeighborhoodInspectorTabs.tsx` | Separate action sets trade-up true and seeds the current neighborhood. |
+| Global close | `useAppUiState.ts` | Escape listener clears many modal flags together; this is not topmost-only dismissal. |
+
+The writer inventory is scoped to the seven state families and call sites fetched in this pass. It is not a complete cross-repository state-transition graph.
+
 ## 3. Concurrency risk register
 
 | Surface group | Verified state model | Risk if flags overlap | Evidence status |
@@ -68,6 +92,7 @@ The reviewed `useDialogFocus.ts`:
 | BuyerAlert/PWA/Legal | Three booleans; one shared hook ref | One ref may not point to the active topmost dialog for every combination | Source-level risk verified; overlap runtime NOT VERIFIED |
 | PortfolioModals | Two booleans; two independent z-50 dialog branches; no shared hook found | Two modal surfaces may mount together without coordinated focus ownership | Source-level risk verified; overlap runtime NOT VERIFIED |
 | Workspace modal families | Independent flags in aggregator; selected flows close predecessors manually | Other entry paths may create competing surfaces without a central exclusivity rule | Partial source evidence; full transition graph NOT VERIFIED |
+| Global Escape handler | Document-level hook dismisses topmost; window-level UI-state listener clears all modal flags | A single Escape can invoke both handlers and clear more than the topmost modal | Source conflict VERIFIED; runtime reproduction NOT RUN |
 | Body-portaled modal families | 14 paths asserted by an existing test to use createPortal and z-[9500] | Several portal roots can be simultaneously mounted; DOM insertion order may not match intended user-facing priority | Test-backed inventory VERIFIED; runtime order NOT VERIFIED |
 
 ## 4. Canonical product contract
@@ -128,7 +153,7 @@ Recommended conceptual model:
 - [ ] Prove or disprove mutual exclusion for visited-homes/trade-up states.
 - [ ] Map every `useDialogFocus` ref to exactly one dialog root at a time.
 - [ ] Test simultaneous in-tree and body-portal dialogs, including equal z-9500 surfaces.
-- [ ] Verify Escape closes exactly one topmost dismissible dialog.
+- [ ] Remove the competing global all-modals Escape behavior or route it through the same coordinator; verify one Escape closes exactly one topmost dismissible dialog.
 - [ ] Verify Tab/Shift+Tab containment and nested focus restoration.
 - [ ] Verify lower-dialog cleanup cannot steal focus from a still-open top dialog.
 - [ ] Verify background inertness, body scroll lock, and exact restoration.
@@ -137,11 +162,11 @@ Recommended conceptual model:
 
 ## 7. Review outcome
 
-**VERIFIED — source findings:** the named components, independent visibility conditions, shared-hook activation expressions, and workspace modal aggregation were fetched from the active design branch.
+**VERIFIED — source findings:** the named components, independent visibility conditions, shared-hook activation expressions, workspace modal aggregation, setter call sites, and document/window Escape listeners were fetched from the active design branch.
 
 **IMPLEMENTED — NOT VERIFIED:** this design package records the concurrency contract and acceptance matrix. No application code or tests were changed.
 
-**NOT VERIFIED:** whether overlapping booleans are reachable through actual user journeys; runtime DOM order, focus behavior, Escape behavior, and visual layer ownership.
+**NOT VERIFIED:** whether every overlapping boolean combination is reachable through actual user journeys; runtime DOM order, focus behavior, Escape behavior, and visual layer ownership. The document/window Escape listener conflict is source-verified but runtime reproduction is NOT RUN.
 
 **BLOCKED:** browser/device QA remains unavailable; no runtime claim is made.
 
