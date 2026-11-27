@@ -92,7 +92,8 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "recharts": "^3.10.1",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "react-is": "^19.0.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.67.0",
