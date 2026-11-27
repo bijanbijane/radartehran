@@ -10,6 +10,7 @@ import {
 import { normalizeDigitsToAscii } from '../filters/PropertyFilterDraft';
 import { sanitizeListingText } from '../moderation/ListingValidation';
 import type { PropertyListingRecord, ListingStatus } from '../types/listing.types';
+import type { LocationPrecision } from '../types/property.types';
 import type {
   DuplicateMatchAssessment,
   ListingHistoryEvent,
@@ -22,6 +23,14 @@ const MY_LISTINGS_KEY = 'radar_my_listings_v1';
 const SUBMISSION_DRAFT_KEY = 'radar_listing_submission_draft_v1';
 const LISTING_HISTORY_KEY = 'radar_listing_history_v1';
 const LISTING_REPORTS_KEY = 'radar_listing_reports_v1';
+
+/**
+ * User submissions currently capture a neighborhood selection, not a property coordinate.
+ * Never retain a street-level precision claim until a real coordinate capture/evidence flow exists.
+ */
+export function normalizeSubmissionLocationPrecision(value: LocationPrecision): LocationPrecision {
+  return value === 'unavailable' ? 'unavailable' : 'neighborhood';
+}
 
 export interface SavedPropertySnapshot {
   listingId: string;
@@ -83,7 +92,7 @@ export function loadSubmissionDraft(uid?: string | null): ListingSubmissionDraft
   if (loaded.ownerUid && loaded.ownerUid !== scopeUid) {
     return null;
   }
-  return { ...loaded, ownerUid: scopeUid };
+  return { ...loaded, ownerUid: scopeUid, locationPrecision: normalizeSubmissionLocationPrecision(loaded.locationPrecision) };
 }
 
 export function saveSubmissionDraft(draft: ListingSubmissionDraft, uid?: string | null): ListingSubmissionDraft {
@@ -94,6 +103,7 @@ export function saveSubmissionDraft(draft: ListingSubmissionDraft, uid?: string 
   const stamped: ListingSubmissionDraft = {
     ...draft,
     ownerUid: scopeUid,
+    locationPrecision: normalizeSubmissionLocationPrecision(draft.locationPrecision),
     lastSavedAtIso: new Date().toISOString(),
   };
   writeScopedStorageJson(SUBMISSION_DRAFT_KEY, stamped, scopeUid);
@@ -160,6 +170,7 @@ export function submitDraftAsPropertyListing(
     throw new Error('DRAFT_OWNER_UID_MISMATCH');
   }
   const nowIso = new Date().toISOString();
+  const locationPrecision = normalizeSubmissionLocationPrecision(draft.locationPrecision);
   const area = parseAsciiNum(draft.areaSqm);
   const isSale = draft.transactionType === 'sale' || draft.transactionType === 'presale';
   const saleTotalM =
@@ -192,10 +203,10 @@ export function submitDraftAsPropertyListing(
       hoodName: hood.name,
       zoneName: hood.zone,
       street: sanitizeListingText(draft.street, 80),
-      lat: draft.locationPrecision === 'unavailable' ? null : hood.lat,
-      lng: draft.locationPrecision === 'unavailable' ? null : hood.lng,
-      locationPrecision: draft.locationPrecision,
-      privacyRadiusMeters: draft.locationPrecision === 'exact' ? 30 : draft.locationPrecision === 'approximate' ? 250 : 600,
+      lat: locationPrecision === 'unavailable' ? null : hood.lat,
+      lng: locationPrecision === 'unavailable' ? null : hood.lng,
+      locationPrecision,
+      privacyRadiusMeters: locationPrecision === 'unavailable' ? 0 : 600,
       areaSqm: area,
       buildYearJalali: parseAsciiNum(draft.buildYearJalali),
       roomsCount: parseAsciiNum(draft.roomsCount),
