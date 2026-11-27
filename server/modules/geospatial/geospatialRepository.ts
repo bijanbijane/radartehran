@@ -75,6 +75,15 @@ export async function persistGeospatialStateAwait(state: PersistedGeospatialStat
   await geoRepo.writeImmediateAwait(state);
 }
 
+/** Activate only a previously validated staged snapshot through the recovery state machine. */
+export async function activateStagedGeospatialRepositorySnapshot() {
+  const { activateStagedGeospatialSnapshot } = await import('./geospatialDurableRecovery');
+  return activateStagedGeospatialSnapshot({
+    // This is the sole write path allowed to persist while recovery is RECOVERING.
+    persist: async (state) => geoRepo.writeImmediateAwait(state),
+  });
+}
+
 export function resetGeospatialRepositoryForTests(): void {
   geoRepo.resetInMemoryCacheForTests();
 }
