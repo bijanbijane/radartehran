@@ -191,6 +191,8 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       coordinates: coordCheck.coordinate,
     });
     spatialListingsByCity.set(listing.cityId, cityMap);
+    // Spatial listings are part of the durable geospatial repository; persist each index mutation.
+    persistRuntime();
   }
 
   function searchListingsSpatially(query: SpatialSearchQuery): SpatialSearchResult {
