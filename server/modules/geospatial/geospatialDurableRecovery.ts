@@ -3,6 +3,9 @@
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
 import type { BoundaryVersionRecord } from './types';
+import { countGeospatialRecords, emptyGeospatialRecordCounts, validatePersistedGeospatialState, type GeospatialRecordCounts } from './geospatialSnapshotValidation';
+export { validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+export type { GeospatialRecordCounts } from './geospatialSnapshotValidation';
 
 export const GEOSPATIAL_SNAPSHOT_SCHEMA = 'geospatial_state_v1';
 
