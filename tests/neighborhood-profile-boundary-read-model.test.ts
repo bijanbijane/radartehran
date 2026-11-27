@@ -13,6 +13,7 @@ import type {
 import {
   buildNeighborhoodProfileBoundaryReadModel,
   calculateNeighborhoodBoundaryGeometrySha256,
+  pickActiveBoundaryVersion,
 } from '../server/modules/geospatial/neighborhoodProfileBoundaryReadModel';
 import { evaluateNeighborhoodProfileBoundary } from '../src/features/neighborhoods/profile-contract/neighborhoodProfileBoundaryContract';
 
@@ -335,4 +336,13 @@ test('HTTP profile endpoint stays fail-closed and approval route denies callers 
     setRepositoryBaseDirForTests(null);
     rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+test('does not expose an arbitrary boundary when a history has multiple ACTIVE versions', () => {
+  const v1 = makeBoundary();
+  const v2 = makeBoundary({ id: 'bnd_hood_tehran_13_v2', version: 2 });
+  const superseded = makeBoundary({ id: 'bnd_hood_tehran_13_v0', version: 0, status: 'SUPERSEDED' });
+
+  assert.equal(pickActiveBoundaryVersion([v1, v2]), null);
+  assert.equal(pickActiveBoundaryVersion([v1, superseded])?.id, v1.id);
 });
