@@ -54,12 +54,12 @@ export function resolvePointInBoundaryStore(params: {
   const primary = hoodMatches[0] ?? insideMatches[0];
   const sub = subMatches[0]?.record;
 
-  const isEdge = primary.classification === 'ON_EDGE';
-  const isAmbiguousOverlap = hoodMatches.filter((m) => m.classification === 'INSIDE').length > 1;
+  const isAmbiguousOverlap = hoodMatches.length > 1 || subMatches.length > 1;
+  const isEdge = !isAmbiguousOverlap && primary.classification === 'ON_EDGE';
 
   return {
     resolved: true,
-    status: isEdge ? 'RESOLVED_ON_EDGE' : isAmbiguousOverlap ? 'AMBIGUOUS_OVERLAP' : 'RESOLVED_INSIDE',
+    status: isAmbiguousOverlap ? 'AMBIGUOUS_OVERLAP' : isEdge ? 'RESOLVED_ON_EDGE' : 'RESOLVED_INSIDE',
     confidence: isEdge || isAmbiguousOverlap ? 'medium' : 'high',
     cityId: primary.record.cityId,
     districtId: primary.record.districtId,
