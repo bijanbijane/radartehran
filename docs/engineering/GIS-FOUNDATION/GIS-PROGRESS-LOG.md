@@ -78,3 +78,12 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - PR metadata also reports failed Cloudflare Preview builds for the current commit. Build logs have not been inspected; root cause is unknown.
 - Updated blocker and execution-state records with runtime evidence. No application source changes were made because secret provisioning and runtime activation require operator approval.
 - Next: recover executable test capacity; inspect Preview build diagnostics; obtain explicit approval for non-production bridge configuration before changing it; keep PR #72 Draft.
+
+
+## 2026-11-27 — Cloudflare Preview build root-cause analysis
+
+- Retrieved the current branch's Cloudflare Workers Build record and log for build 290f16e3-e364-46b5-875d-73266852335c. The trigger runs `npm run build -w radartehran-frontend`, but dependency installation first executes `bun install --frozen-lockfile` under Bun 1.4.4.
+- The build log reports `@tailwindcss/vite is in different dependency groups` between package.json and bun.lock, then stops before the frontend build command.
+- Compared main and the GIS branch: bun.lock has the same blob SHA on both branches, and the relevant root package devDependency groups are unchanged. The stale Bun lockfile state therefore predates this GIS branch and is not caused by its geospatial changes.
+- No lockfile was manually edited. Regenerating a Bun workspace lockfile requires the exact supported Bun version and a runnable dependency install; this session has neither a local online device nor usable GitHub Actions jobs. Do not hand-edit the generated lockfile.
+- This Cloudflare Preview build failure is independent of the GitHub Actions pre-step failures. Root cause is established for the Preview build; test/typecheck execution remains unverified.
