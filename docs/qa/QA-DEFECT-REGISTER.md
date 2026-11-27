@@ -20,3 +20,15 @@ No application runtime defect has been independently reproduced. The following C
 ## Application defects
 
 No confirmed application runtime defects have been reproduced in this session. Functional behavior remains unverified because no test runner or local execution device was available.
+
+
+## PR #79 review findings — current head `1907920698c24e950fbccc57cb80f7d5603205b0`
+
+| Finding ID | Severity | Subsystem | Evidence | Status |
+|---|---|---|---|---|
+| QA-DEP-001 | HIGH | Dependency reproducibility | PR changes root `package.json` Vitest range from `^3.0.8` to `^5.1.2`, while the complete PR changed-file list contains no `package-lock.json` update. The PR description explicitly says lockfile regeneration and post-upgrade audit are pending. | Open; clean-install compatibility not executed in this session |
+| QA-SEC-001 | HIGH (reported) | Dependency security | PR description reports `npm audit` found 22 advisories (14 moderate, 6 high, 2 critical); it identifies Vitest/tinypool among critical findings and says post-upgrade audit is pending. Audit JSON/advisory IDs were not independently retrieved in this QA pass. | Open; remediation and post-upgrade audit unverified |
+
+Additional execution evidence: Cloudflare's PR comment reports the build for exact head `1907920` failed (build `0158ddf9-b519-44de-929a-4ac555403ffd`). This confirms the current head did not receive a successful build, but does not establish the failure cause. Earlier successful Preview deployments cited in PR comments belong to older commits and must not be generalized to the current head.
+
+The GitHub Actions run set for PR #74 at head `a1e03d3983d2ef3d63d50017eea79399a8645d9c` also remains blocked before test execution: five primary jobs have zero steps; E2E and path-filtered dependent jobs were skipped. Test counts remain zero.
