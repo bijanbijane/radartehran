@@ -5,10 +5,10 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "f2374ae21de3cb16908d7cc6147f7a3566fd871a",
-  "branch_head_sha_note": "Verified from GitHub branch endpoint after GIS approval-auth implementation, regression test and focused-suite registration. Source changes at 731bdab12b7d01d540f1f8e69827703d9d8ff46c and test-suite registration at f2374ae21de3cb16908d7cc6147f7a3566fd871a; exact-head CI run 46006117704 failed before recorded steps.",
+  "branch_head_sha": "ef684ee86287c0acd2cab39a23d0b3c5974adef0",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint. Application source and regression-suite code scope is f2374ae21de3cb16908d7cc6147f7a3566fd871a; subsequent commits 80a9dc62e38312ca6576e71da382a194bb9b215e, 399ef4ec547d0f5d3882c2d602ec01accd9a1751 and ef684ee86287c0acd2cab39a23d0b3c5974adef0 update GIS blocker/progress/next-action documentation only.",
   "last_verified_source_commit": "f2374ae21de3cb16908d7cc6147f7a3566fd871a",
-  "last_verified_source_commit_scope": "Inspected Cloudflare Worker-to-Express assertion implementation, Express bridge middleware mounting, GIS route auth integration, new HTTP regression test and npm run test:geospatial registration through f2374ae21de3cb16908d7cc6147f7a3566fd871a. No tests/typecheck executed successfully; GitHub Actions run 46006117704 jobs returned steps=null and logs_url=null.",
+  "last_verified_source_commit_scope": "Application source, regression test and npm run test:geospatial registration inspected through f2374ae21de3cb16908d7cc6147f7a3566fd871a. Later docs-only commits bring branch HEAD to ef684ee86287c0acd2cab39a23d0b3c5974adef0. Exact-head GIS workflow run 46006117704 failed before recorded steps; no test/typecheck pass is established.",
   "verified_findings": [
     "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
     "Radar Worker IRNI v2 client and neighborhood identity resolver validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
