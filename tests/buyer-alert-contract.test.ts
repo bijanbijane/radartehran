@@ -414,6 +414,12 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const areaUnitToggleSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AreaUnitToggle.tsx'), 'utf8');
   const mapLegendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf8');
   const radarBottomNavSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/RadarBottomNav.tsx'), 'utf8');
+  assert.ok(
+    mapLegendSrc.includes('aria-label="بستن راهنمای نقشه"') &&
+      mapLegendSrc.includes('min-w-[44px] min-h-[44px]'),
+    'Map legend close control must retain its accessible name and provide a 44x44 CSS-pixel touch target'
+  );
+
   const mainEntrySrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
   const modelsTypeSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf8');
   const typeGuardsSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/typeGuards.ts'), 'utf8');
@@ -460,6 +466,18 @@ import('../src/utils/areaUnit').then((areaMod) => {
     'useAppUrlAndTitleSync must sync dynamic locale/dir and AreaUnitToggle must expose ft² controls'
   );
   const inspectorDrawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf8');
+  assert.ok(
+    inspectorDrawerSrc.includes('radar-drawer-drag-handle min-h-[44px]') &&
+      inspectorDrawerSrc.includes('aria-label={mobileSheetOpen ?') &&
+      inspectorDrawerSrc.includes('pointerId: number') &&
+      inspectorDrawerSrc.includes('if (!e.isPrimary || e.button !== 0 || dragStartRef.current) return;') &&
+      inspectorDrawerSrc.includes('dragStartRef.current?.pointerId !== e.pointerId') &&
+      inspectorDrawerSrc.includes('didDragRef.current = Math.abs(dy) >= 8') &&
+      inspectorDrawerSrc.includes('if (didDragRef.current) {') &&
+      inspectorDrawerSrc.includes('onPointerCancel={(e) => { if (dragStartRef.current?.pointerId !== e.pointerId) return;'),
+    'Mobile Neighborhood Inspector drag handle must expose an accessible name and a 44px minimum hit area'
+  );
+
   const compareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf8');
   assert.ok(
     shareModalSrc.includes('storyBuyFx') &&
