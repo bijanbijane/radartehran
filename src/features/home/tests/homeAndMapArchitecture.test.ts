@@ -35,6 +35,7 @@ import {
   undoInteractiveSpatialPoint,
 } from '../../../components/map/interactiveSpatialMeasureLayer';
 import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
+import { calculateNeighborhoodMedianMetric } from '../../../components/map/neighborhoodMedianMetric';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
@@ -389,3 +390,19 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
   });
 });
 
+
+
+describe('Map Explorer neighborhood median statistics', () => {
+  it('calculates the arithmetic median for even and odd samples and returns null without valid data', () => {
+    const sample = (buyPerSqm: number, rahn80m: number) => ({
+      ...MOCK_HOODS[0],
+      buyPerSqm,
+      rahn80m,
+    });
+
+    assert.equal(calculateNeighborhoodMedianMetric([sample(100, 10), sample(300, 30)], 'buy'), 200);
+    assert.equal(calculateNeighborhoodMedianMetric([sample(100, 10), sample(200, 20), sample(900, 90)], 'rent'), 20);
+    assert.equal(calculateNeighborhoodMedianMetric([], 'buy'), null);
+    assert.equal(calculateNeighborhoodMedianMetric([sample(0, -1)], 'rent'), null);
+  });
+});
