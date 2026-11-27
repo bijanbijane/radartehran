@@ -104,59 +104,105 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     };
   }
 
-  const registry = await userDb
+  const existingActiveJob = await userDb
     .prepare(
-      'SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1 ORDER BY subject_key_version, subject_key',
+      `SELECT * FROM research_consent_revocation_jobs
+       WHERE uid = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
+       ORDER BY created_at_iso DESC LIMIT 1`,
     )
     .bind(params.uid)
-    .all<{ subject_key: string; subject_key_version: string }>();
-  if (!registry.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_READ_FAILED');
+    .first<Record<string, unknown>>();
 
-  // CAS update is the permit-admission barrier: any permit racing after this write is rejected.
-  const privacy = await updateUserPrivacyConsentInD1(userDb, {
-    uid: params.uid,
-    actorUid: params.actorUid,
-    researchAnalyticsConsent: false,
-    behavioralTelemetryConsent: params.behavioralTelemetryConsent,
-    marketingCommunicationsConsent: params.marketingCommunicationsConsent,
-    consentSource: 'research_consent_revocation_barrier',
-    nowIso,
-  });
-  const revokedConsentRevision = current.consentRevision;
-  const newConsentRevision = privacy.consentRevision;
-  const revocationId = `rrev_${nowMs}_${crypto.randomUUID().slice(0, 12)}`;
+  let registryRows: Array<{ subject_key: string; subject_key_version: string }> = [];
+  let privacy = current;
+  let revocationId: string;
+  let revokedConsentRevision: number;
+  let newConsentRevision: number;
 
-  const statements = [
-    userDb
+  if (existingActiveJob) {
+    const existingJob = mapConsentRevocationJobRow(existingActiveJob);
+    if (current.consentRevision !== existingJob.revokedConsentRevision) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+    }
+    // Recover a crash after the durable job/outbox commit but before consent was switched off.
+    privacy = await updateUserPrivacyConsentInD1(userDb, {
+      uid: params.uid,
+      actorUid: params.actorUid,
+      researchAnalyticsConsent: false,
+      behavioralTelemetryConsent: params.behavioralTelemetryConsent,
+      marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+      consentSource: 'research_consent_revocation_barrier',
+      nowIso,
+    });
+    if (privacy.consentRevision !== existingJob.newConsentRevision) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+    }
+    revocationId = existingJob.revocationId;
+    revokedConsentRevision = existingJob.revokedConsentRevision;
+    newConsentRevision = existingJob.newConsentRevision;
+  } else {
+    const registry = await userDb
       .prepare(
-        `INSERT INTO research_consent_revocation_jobs (
-          revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
-          erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
-        ) VALUES (?1, ?2, ?3, ?4, 'DRAINING_PERMITS', 0, '[]', ?5, ?5, NULL)`,
+        'SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1 ORDER BY subject_key_version, subject_key',
       )
-      .bind(revocationId, params.uid, revokedConsentRevision, newConsentRevision, nowIso),
-    ...(registry.results ?? []).map((subject) => {
-      const outboxId = `rrevout_${revocationId}_${subject.subject_key_version}_${crypto.randomUUID().slice(0, 6)}`;
-      return userDb
+      .bind(params.uid)
+      .all<{ subject_key: string; subject_key_version: string }>();
+    if (!registry.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_READ_FAILED');
+    registryRows = registry.results ?? [];
+
+    revokedConsentRevision = current.consentRevision;
+    newConsentRevision = current.consentRevision + 1;
+    if (!Number.isSafeInteger(newConsentRevision)) throw new Error('CONSENT_REVISION_EXHAUSTED');
+    revocationId = `rrev_${nowMs}_${crypto.randomUUID().slice(0, 12)}`;
+
+    // Commit the durable revocation job and UID-free outbox BEFORE switching consent off.
+    // Permit admission checks for this active job, so a crash here fails closed; reconcile
+    // can finish the consent CAS without losing the erasure intent.
+    const statements = [
+      userDb
         .prepare(
-          `INSERT INTO research_erasure_outbox (
-            outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
-            next_retry_at_ms, created_at_iso, updated_at_iso, max_consent_revision
-          ) VALUES (?1, ?2, ?3, ?4, 'PENDING', 0, 0, ?5, ?5, ?6)`,
+          `INSERT INTO research_consent_revocation_jobs (
+            revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
+            erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
+          ) VALUES (?1, ?2, ?3, ?4, 'DRAINING_PERMITS', 0, '[]', ?5, ?5, NULL)`,
         )
-        .bind(
-          outboxId,
-          revocationId,
-          subject.subject_key,
-          subject.subject_key_version,
-          nowIso,
-          newConsentRevision,
-        );
-    }),
-  ];
-  const writes = await userDb.batch(statements);
-  if (writes.length !== statements.length || writes.some((result) => !result.success)) {
-    throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_CREATE_FAILED');
+        .bind(revocationId, params.uid, revokedConsentRevision, newConsentRevision, nowIso),
+      ...registryRows.map((subject) => {
+        const outboxId = `rrevout_${revocationId}_${subject.subject_key_version}_${crypto.randomUUID().slice(0, 6)}`;
+        return userDb
+          .prepare(
+            `INSERT INTO research_erasure_outbox (
+              outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
+              next_retry_at_ms, created_at_iso, updated_at_iso, max_consent_revision
+            ) VALUES (?1, ?2, ?3, ?4, 'PENDING', 0, 0, ?5, ?5, ?6)`,
+          )
+          .bind(
+            outboxId,
+            revocationId,
+            subject.subject_key,
+            subject.subject_key_version,
+            nowIso,
+            newConsentRevision,
+          );
+      }),
+    ];
+    const writes = await userDb.batch(statements);
+    if (writes.length !== statements.length || writes.some((result) => !result.success)) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_CREATE_FAILED');
+    }
+
+    privacy = await updateUserPrivacyConsentInD1(userDb, {
+      uid: params.uid,
+      actorUid: params.actorUid,
+      researchAnalyticsConsent: false,
+      behavioralTelemetryConsent: params.behavioralTelemetryConsent,
+      marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+      consentSource: 'research_consent_revocation_barrier',
+      nowIso,
+    });
+    if (privacy.consentRevision !== newConsentRevision) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+    }
   }
 
   const expiredPermitsReclaimed = await expireStaleResearchProcessingPermitsInD1({
@@ -170,7 +216,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     maxConsentRevision: revokedConsentRevision,
     nowMs,
   });
-  const hasErasureScope = (registry.results ?? []).length > 0;
+  const hasErasureScope = registryRows.length > 0 || (await userDb.prepare('SELECT 1 FROM research_erasure_outbox WHERE job_id = ?1 LIMIT 1').bind(revocationId).first()) !== null;
   const status = !hasErasureScope
     ? 'COMPLETED'
     : activePermitsRemaining > 0
@@ -255,6 +301,26 @@ export async function reconcileResearchConsentRevocation(params: {
     };
   }
   if (job.status === 'COMPLETED') return toResponse(job, 0, 0, true);
+
+  // Recover a crash between durable revocation intent creation and the consent CAS.
+  const currentPrivacy = await getUserPrivacyConsentFromD1(userDb, job.uid);
+  if (currentPrivacy.researchAnalyticsConsent) {
+    if (currentPrivacy.consentRevision !== job.revokedConsentRevision) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+    }
+    const revokedPrivacy = await updateUserPrivacyConsentInD1(userDb, {
+      uid: job.uid,
+      actorUid: job.uid,
+      researchAnalyticsConsent: false,
+      consentSource: 'research_consent_revocation_reconcile',
+      nowIso: new Date(nowMs).toISOString(),
+    });
+    if (revokedPrivacy.consentRevision !== job.newConsentRevision) {
+      throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+    }
+  } else if (currentPrivacy.consentRevision !== job.newConsentRevision) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
+  }
 
   const expiredPermitsReclaimed = await expireStaleResearchProcessingPermitsInD1({
     userDb,
