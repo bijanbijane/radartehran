@@ -120,3 +120,7 @@ The Worker tree contains no authenticated Firestore REST source adapter; `worker
 - The erasure Inbox receipt count, aggregation-window invalidation, event deletion and consent-fence advancement execute in one RESEARCH_DB batch. The Inbox count is calculated inside that batch, avoiding a stale pre-count.
 - Worker routes: PATCH /api/account/privacy starts revocation and returns 202 while permits drain; POST /api/account/privacy/reconcile advances pending revocation jobs. The route is registered in the account route group and API catalog.
 - Verification status: implementation and six deterministic scenarios are wired in tests/rt-db-triad-003-consent-barrier.test.ts; the suite is included in npm run test:triad. Tests and typecheck remain unexecuted because hosted runners have failed before step execution and the local MacBook is Offline. Do not describe the implementation as verified until the suite runs.
+
+
+- USER_DB migration 0008 adds a unique `(uid, revoked_consent_revision)` key for revocation jobs and a retry-scan index for the erasure outbox. Revocation IDs and outbox IDs are deterministic per UID/revision/subject, so concurrent duplicate requests converge on one durable intent. The consent update uses an expected-revision CAS; a stale intent is removed if another consent mutation wins before the revocation CAS.
+- The default `npm test` pipeline now runs `npm run test:triad`, including TRIAD-003; the dedicated `npm run test:triad` remains available for focused execution.
