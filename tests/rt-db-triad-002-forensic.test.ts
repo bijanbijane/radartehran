@@ -31,6 +31,10 @@ import {
   upsertUserProfileInD1,
 } from '../worker/account/d1AccountRepository';
 import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../worker/research/researchConsentRevocation';
+import {
   signInternalLifecycleRpc,
   verifyAndConsumeInternalRpcNonce,
 } from '../worker/account-lifecycle/d1InternalRpcNonceStore';
@@ -1331,6 +1335,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         RESEARCH_DB: researchSqlite.db,
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         RESEARCH_HMAC_KEY_VERSION: 'v1',
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
       };
 
       const granted = await updateUserPrivacyConsentInD1(userSqlite.db, {
@@ -1340,7 +1345,9 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       });
       assert.equal(granted.consentRevision, 1);
 
-      // 1. Mid-flight HTTP consent revocation right before RESEARCH_DB write -> MUST ABORT with 403 and write 0 rows
+      // 1. Mid-flight revocation stops new permits, drains the already-issued permit,
+      // then erases the event and advances the RESEARCH_DB fence before returning completion.
+      let revocationId = '';
       const raceRes = await ingestResearchEventsBatch({
         env,
         uid,
@@ -1355,20 +1362,18 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           },
         ],
         beforeResearchWriteHook: async () => {
-          await updateUserPrivacyConsentInD1(userSqlite.db, {
-            uid,
-            actorUid: uid,
-            researchAnalyticsConsent: false,
-          });
+          const revoked = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+          assert.ok(revoked.revocation);
+          revocationId = revoked.revocation!.revocationId;
+          assert.equal(revoked.revocation!.status, 'DRAINING_PERMITS');
         },
       });
-      assert.equal(raceRes.ok, false);
-      if (!raceRes.ok) {
-        assert.equal(raceRes.statusCode, 403);
-        assert.equal(raceRes.code, 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT');
-      }
+      assert.equal(raceRes.ok, true, 'an already-permitted in-flight writer may finish while revocation drains');
+      if (raceRes.ok) assert.equal(raceRes.acceptedCount, 1);
+      const finalizedRevocation = await reconcileResearchConsentRevocation({ env, revocationId });
+      assert.equal(finalizedRevocation.completed, true);
       const rowsAfterRace = researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number };
-      assert.equal(rowsAfterRace.cnt, 0);
+      assert.equal(rowsAfterRace.cnt, 0, 'completed revocation erases the drained in-flight event');
 
       // 2. Re-grant consent (consentRevision = 3) and test queued research_event_ingest
       const regranted = await updateUserPrivacyConsentInD1(userSqlite.db, {
