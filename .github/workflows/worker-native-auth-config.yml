@@ -15,6 +15,7 @@ on:
     paths:
       - 'wrangler.backend.jsonc'
       - 'wrangler.backend.preview-check.jsonc'
+      - 'wrangler.jsonc'
       - 'scripts/cloudflare/validate-backend-config.mjs'
       - 'worker/auth/**'
       - 'worker/routes/authRoutes.ts'
