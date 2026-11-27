@@ -25,6 +25,21 @@ function testPrivateFieldsStripped() {
   assert.equal(pub.exactPrivateAddress, undefined);
   assert.equal(pub.id, 'l1');
 
+  const extendedListing = {
+    ...listing,
+    ownerContact: 'private contact',
+    privateCoordinates: { lat: 35.7, lng: 51.4 },
+    privateAccessNotes: 'restricted access',
+    internalPropertyReference: 'internal-only',
+    futureSensitiveField: 'must not leak',
+  } as SpatialPublishableListing & Record<string, unknown>;
+  const extendedPublic = toPublicSpatialListing(extendedListing) as Record<string, unknown>;
+  assert.equal(extendedPublic.ownerContact, undefined);
+  assert.equal(extendedPublic.privateCoordinates, undefined);
+  assert.equal(extendedPublic.privateAccessNotes, undefined);
+  assert.equal(extendedPublic.internalPropertyReference, undefined);
+  assert.equal(extendedPublic.futureSensitiveField, undefined);
+
   assert.equal(isListingEligibleForPublicSpatialSearch(listing), true);
   assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, publicationStatus: 'DRAFT' }), false);
   assert.equal(isListingEligibleForPublicSpatialSearch({ ...listing, publicationStatus: 'ARCHIVED' }), false);
