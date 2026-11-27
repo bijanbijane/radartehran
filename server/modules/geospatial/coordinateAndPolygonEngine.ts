@@ -317,10 +317,12 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
     };
     for (let leftIndex = 0; leftIndex < polygons.length; leftIndex += 1) {
       const left = polygons[leftIndex];
-      if (!usableRing(left?.[0])) continue;
+      const leftOuter = left?.[0];
+      if (!left || !usableRing(leftOuter)) continue;
       for (let rightIndex = leftIndex + 1; rightIndex < polygons.length; rightIndex += 1) {
         const right = polygons[rightIndex];
-        if (!usableRing(right?.[0])) continue;
+        const rightOuter = right?.[0];
+        if (!right || !usableRing(rightOuter)) continue;
         let componentsIntersect = false;
         for (const leftRing of left) {
           if (!usableRing(leftRing)) continue;
@@ -340,10 +342,10 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
           }
           if (componentsIntersect) break;
         }
-        const leftInsideRight = left[0].slice(0, -1).some(([lng, lat]) =>
+        const leftInsideRight = leftOuter.slice(0, -1).some(([lng, lat]) =>
           componentContainsPoint({ lat, lng }, right),
         );
-        const rightInsideLeft = right[0].slice(0, -1).some(([lng, lat]) =>
+        const rightInsideLeft = rightOuter.slice(0, -1).some(([lng, lat]) =>
           componentContainsPoint({ lat, lng }, left),
         );
         if (componentsIntersect || leftInsideRight || rightInsideLeft) {
