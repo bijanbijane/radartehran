@@ -7,15 +7,15 @@ on:
       - master
       - cursor/rt-infra-001-gate-b-monorepo
   pull_request:
-    # Validate stacked PRs against their actual base branch as well as PRs to main.
-    # This keeps dependent workstreams from bypassing CI merely because they target
-    # another open PR branch.
+    # Validate PRs targeting main and the active infrastructure integration branch.
+    branches:
+      - main
+      - cursor/rt-infra-001-gate-b-monorepo
     types:
       - opened
       - synchronize
       - reopened
       - ready_for_review
-      - cursor/rt-infra-001-gate-b-monorepo
   workflow_dispatch:
 
 permissions:
