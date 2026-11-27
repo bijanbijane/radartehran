@@ -96,7 +96,7 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
     activeBoundaryLocks,
     nowIso: '2026-11-27T00:00:00.000Z',
     invalidateGeoCaches: (_cityId: string) => {},
-    persistRuntime: () => {},
+    persistRuntime: async () => {},
   };
 
   await assert.rejects(
