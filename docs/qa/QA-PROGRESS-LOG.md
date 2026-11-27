@@ -28,3 +28,17 @@
 - Check GitHub account Actions minutes/billing budget and repository Actions settings.
 - If those are clear, escalate the run IDs to GitHub Support; do not change workflow YAML without evidence.
 - Restore an executable runner path, then rerun the targeted contract suite and inspect the full CI gates.
+
+## 2026-11-27 16:39 +03:30 — QA session reconciliation
+
+- Re-read the actual `main` base commit: `456dcacb387b908797756863b10da1f7104b658e`; it remains the base recorded by PR #74.
+- Re-read `AGENTS.md`, `package.json`, the existing NIPS regression test, CI workflow, and all QA registers.
+- Confirmed `tests/nips-golden-reference.test.ts` already contains five substantive structural-contract cases and is wired through `npm run test:contracts`; no duplicate suite was added.
+- Confirmed the current QA PR head is `6c6dae13de92e9b4ebfcf32e77e67f03b18d6f84` and PR #74 is open, unmerged, and now Draft.
+- Inspected main commit `456dcac...`: combined status returned no status checks. This is **no evidence of a green build**.
+- No npm/test command could be executed through the available GitHub repository API. Current-session execution count remains 0; no pass/fail claims are made.
+- The GitHub Actions runner-allocation issue remains unconfirmed at root cause. No workflow configuration was changed to mask it.
+- No application code, production data, secrets, migrations, or deployments were changed.
+
+### Exact next action
+Inspect GitHub Actions account/repository runner eligibility and billing policy; once a runner is actually allocated, run `npm run test:contracts` first and capture the real test output.
