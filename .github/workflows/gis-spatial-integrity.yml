@@ -19,8 +19,11 @@ on:
       - main
     paths:
       - "server/modules/geospatial/**"
+      - "server/modules/valuation/service.ts"
+      - "server/modules/valuation/types.ts"
       - "tests/geospatial-*.test.ts"
       - "tests/neighborhood-profile-boundary-read-model.test.ts"
+      - "tests/property-valuation-engine-module.test.ts"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/gis-spatial-integrity.yml"
