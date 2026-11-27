@@ -260,6 +260,12 @@ export async function updateUserPrivacyConsentInD1(
     current.researchAnalyticsConsent &&
     (params.consentSource === 'research_consent_revocation_barrier' ||
       params.consentSource === 'research_consent_revocation_reconcile');
+  if (current.researchAnalyticsConsent && !nextResearch && !isBarrierRevocationTransition) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_BARRIER_REQUIRED');
+  }
+  if (isBarrierRevocationTransition && !pendingRevocation) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_INTENT_REQUIRED');
+  }
   if (pendingRevocation && !isBarrierRevocationTransition) {
     throw new Error('RESEARCH_CONSENT_REVOCATION_PENDING');
   }
