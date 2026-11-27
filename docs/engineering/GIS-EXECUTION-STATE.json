@@ -51,18 +51,18 @@
     "command": "npm run test:geospatial",
     "status": "CI_FAILED_UNDIAGNOSED",
     "reviewed_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
-    "workflow_run_id": 45980848999,
+    "workflow_run_id": 45981367653,
     "jobs": [
       {
         "name": "GIS module TypeScript typecheck",
-        "job_id": 140444048835,
+        "job_id": 140445807098,
         "conclusion": "failure",
         "steps": null,
         "logs": "BlobNotFound"
       },
       {
         "name": "GIS geometry and boundary regression",
-        "job_id": 140444049218,
+        "job_id": 140445807429,
         "conclusion": "failure",
         "steps": null,
         "logs": "BlobNotFound"
@@ -78,7 +78,7 @@
       "steps": [],
       "logs": "BlobNotFound"
     },
-    "reason": "The focused GIS workflow failed on the latest head; both jobs expose steps=null and logs return BlobNotFound. A retry of the prior failed jobs also failed without step/log evidence. It is unknown whether npm ci or the commands started."
+    "reason": "Latest focused GIS run 45981367653 failed both jobs; job records expose steps=null and logs return BlobNotFound. Previous retries failed in the same way. The actual failure point and command execution are unknown."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -111,9 +111,9 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore an online GitHub Actions runner or local runner. Execute npm run test:geospatial and npm run typecheck on HEAD 2d6c707303dc2e48723c3a8869e59984199c9608. Then continue the consumer audit for all point-resolution status handling and verify durable hydration.",
+  "next_exact_action": "Restore an online GitHub Actions runner or local runner. Run npm run test:geospatial and npm run typecheck against code revision 2d6c707303dc2e48723c3a8869e59984199c9608. Then audit all consumers of resolvePointToGeography and verify durable snapshot hydration against a real backend.",
   "blockers": [
-    "Six GitHub Actions workflows fail on the latest head; focused GIS jobs expose steps=null and logs return BlobNotFound. Retrying the prior GIS jobs did not yield diagnostics. Desktop Commander MacBook remains offline.",
+    "Latest focused GIS run 45981367653 and five other workflows failed; GIS jobs expose steps=null and logs return BlobNotFound. A retry of prior GIS jobs did not yield diagnostics. Desktop Commander MacBook remains offline.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
     "The GIS runtime persists atomic JSON/durable snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
@@ -122,34 +122,34 @@
     "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
     "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed."
   ],
-  "last_recorded_action": "Fixed the sub-neighborhood edge assignment gap and added a regression. Latest dedicated GIS workflow still fails without step metadata or retrievable logs.",
-  "latest_inspected_pr_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
-  "latest_branch_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
+  "last_recorded_action": "Added fail-closed sub-neighborhood edge handling and a regression; removed documentation-only paths from the focused GIS workflow to avoid unnecessary test runs. Latest checks remain failed without step/log diagnostics.",
+  "latest_inspected_pr_head_sha": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
+  "latest_branch_head_sha": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
+    "branch_head_sha": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
     "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
     "compare_main": {
-      "ahead_by": 105,
+      "ahead_by": 122,
       "behind_by": 0,
       "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
     },
     "workflow_runs": [
       {
         "name": "GIS Spatial Integrity",
-        "run_id": 45980848999,
+        "run_id": 45981367653,
         "conclusion": "failure",
         "jobs": [
           {
             "name": "GIS module TypeScript typecheck",
-            "job_id": 140444048835,
+            "job_id": 140445807098,
             "conclusion": "failure",
             "steps": null,
             "logs": "BlobNotFound"
           },
           {
             "name": "GIS geometry and boundary regression",
-            "job_id": 140444049218,
+            "job_id": 140445807429,
             "conclusion": "failure",
             "steps": null,
             "logs": "BlobNotFound"
@@ -158,38 +158,38 @@
       },
       {
         "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 45980848859,
+        "run_id": 45981367661,
         "conclusion": "failure",
         "failed_job": "detect",
-        "job_id": 140444047823,
+        "job_id": 140445807671,
         "dependent_jobs": "skipped"
       },
       {
         "name": "Tehran Radar CI Quality Gates",
-        "run_id": 45980848914,
+        "run_id": 45981367750,
         "conclusion": "failure",
-        "job_id": 140444048486
+        "job_id": 140445807483
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45980849010,
+        "run_id": 45981367679,
         "conclusion": "failure",
-        "job_id": 140444049786
+        "job_id": 140445807125
       },
       {
         "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45980848910,
+        "run_id": 45981367650,
         "conclusion": "failure",
-        "job_id": 140444047652
+        "job_id": 140445806753
       },
       {
         "name": "Cloudflare Native Auth Validation",
-        "run_id": 45980848919,
+        "run_id": 45981367634,
         "conclusion": "failure",
-        "job_id": 140444047826
+        "job_id": 140445807000
       }
     ],
-    "interpretation": "All six workflows failed. The focused GIS jobs expose no step metadata and their logs are unavailable; the actual failure point and command execution are unknown. No test/typecheck pass is claimed."
+    "interpretation": "All six workflows failed on the latest branch head. Focused GIS jobs expose no step metadata; logs are unavailable. The first failing command and whether npm ci/tests/typecheck started are unknown. No test/typecheck pass is claimed."
   },
   "latest_branch_sha_at_record": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
   "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608"
