@@ -13,9 +13,9 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "e70e31c698121805e2f29e2fab5f549489afc5c9",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; DOCS_AND_QA_BRANCH_CHANGES_COMMITTED; RUNTIME_TESTS_NOT_EXECUTED",
-    "last_verified_commit": "e70e31c698121805e2f29e2fab5f549489afc5c9"
+    "head_commit": "b79ce5ff15778bce968508478c7e024db80353d9",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; DOCS_COMMITTED; RUNTIME_TESTS_NOT_EXECUTED",
+    "last_verified_commit": "b79ce5ff15778bce968508478c7e024db80353d9"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-198-STAGING-FAIL-CLOSED-AND-CI-RECONCILIATION",
-    "checkpoint_timestamp_utc": "2026-11-27T10:25:00.000Z",
-    "last_safe_operation": "Updated the staging-only Cloudflare API Build Trigger b6872f6d-9c5f-44c2-8666-d5e0d1b73105 to require --require-staging-provisioned before dry-run/deploy after the previous staging build deployed without D1 or IRNI service bindings. Recorded the trigger scope and pending verification build ee140164-3d69-49f8-8f22-7849d19e4e80.",
-    "last_completed_operation": "Updated PROGRESS-LOG.md, REMEDIATION-REGISTER.md, BLOCKERS.md and NEXT-ACTIONS.md with new CI script fixes, successful Cloudflare build evidence, staging binding warnings, fail-closed mitigation and npm audit risk. PR #71 QA branch also removed bun.lock and corrected missing workflow script references. No production resource, database, secret, merge or deployment was changed in this operation.",
-    "next_exact_action": "Poll Cloudflare build ee140164-3d69-49f8-8f22-7849d19e4e80 until stopped; confirm --require-staging-provisioned fails before the deploy command. Then retrieve npm audit --json details, recover GitHub Actions job diagnostics or run the CI suites in an executable environment, and continue the IRNI-owned authenticated/versioned NIPS storage RPC.",
+    "checkpoint_id": "CHK-199-STAGING-GATE-VERIFIED-AUDIT-PENDING",
+    "checkpoint_timestamp_utc": "2026-11-27T10:29:00.000Z",
+    "last_safe_operation": "Verified Cloudflare API staging Build Trigger fail-closed behavior: build ee140164-3d69-49f8-8f22-7849d19e4e80 stopped at BLOCKED_STAGING_DATABASES_NOT_PROVISIONED before Wrangler dry-run/deploy. Trigger remains scoped to the staging Worker and one QA branch. Updated it to emit npm audit JSON details before the same fail-closed gate; audit build f993d88e-1b92-4e41-9f62-83b1c3ea34b4 is queued.",
+    "last_completed_operation": "Reconciled progress, remediation, blockers and next-actions documents with verified staging fail-closed evidence and current CI failures. No production resource, database, secret, merge or production deployment was changed.",
+    "next_exact_action": "Poll Cloudflare audit build f993d88e-1b92-4e41-9f62-83b1c3ea34b4; retrieve package-level npm audit findings and triage critical/high vulnerabilities. Then restore GitHub Actions diagnostics or execute the test suites in an available Node environment. Continue the IRNI-owned authenticated/versioned NIPS storage RPC after those gates.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1947,8 +1947,9 @@
     "B-002: NIPS persistence requires the authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
     "B-003: Version-pinned IRNI geography provider/Service Binding is not yet available to the Radar runtime.",
     "B-004: PR #69 native-auth workflow fix and PR #70 stale Bun lockfile removal remain Draft and unverified by successful CI/Cloudflare preview builds.",
-    "B-005: API staging D1/IRNI Service Binding provisioning is incomplete. Staging-only Cloudflare Build Trigger now requires --require-staging-provisioned; manual verification build ee140164-3d69-49f8-8f22-7849d19e4e80 remains queued.",
-    "B-006: Cloudflare npm install reports 21 vulnerabilities (14 moderate, 5 high, 2 critical); exact package-level npm audit details have not been retrieved."
+    "B-005: Staging D1/IRNI Service Binding provisioning remains incomplete. The staging-only Build Trigger now fails closed before Wrangler deploy; manual verification build ee140164-3d69-49f8-8f22-7849d19e4e80 verified the guard.",
+    "B-006: Cloudflare npm install reports 21 vulnerabilities (14 moderate, 5 high, 2 critical); exact package-level npm audit details are pending from build f993d88e-1b92-4e41-9f62-83b1c3ea34b4.",
+    "B-007: GitHub Actions runs for PRs #67, #69, #70 and #71 still fail; job steps are empty and raw log downloads return BlobNotFound."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
