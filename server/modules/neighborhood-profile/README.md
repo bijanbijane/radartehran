@@ -112,7 +112,7 @@ No buffer, display radius, Voronoi cell or fallback geometry may be represented 
 - Logical ERD and ownership boundaries: `docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-DATABASE-ERD-V1.md`
 - D1 logical schema reference (design only; never apply as a migration): `docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql`
 
-The proposed profile store is separate from IRNI, USER_DB and RESEARCH_DB. No D1 binding or migration has been created.
+NIPS is a separate logical data domain inside the existing shared physical D1 database `radar-neighborhood-db`, which is owned by IRNI. NIPS tables use the `nips_` prefix; the physical database is not separate from IRNI. The Radar API must not receive a direct D1 binding to this database. Only the database-owning IRNI Worker may expose NIPS persistence through a separately versioned, authenticated and purpose-scoped RPC. `USER_DB` and `RESEARCH_DB` remain isolated and are not substitutes. No owner-side NIPS storage RPC, D1 repository adapter, migration or write path is currently implemented or verified.
 
 ## 10. Current implementation status
 
@@ -151,4 +151,4 @@ The implementation now includes:
 - Separate publication decisions, immutable snapshot repository port and compare-and-swap activation contract.
 - Public allow-list serialization that suppresses values without PUBLIC_REDISTRIBUTION or DERIVED_ONLY evidence permission.
 
-The repository port is intentionally not wired to USER_DB or RESEARCH_DB. No authorized shared NIPS database binding or migration ownership is registered yet. A production adapter, route mounting and migrations remain blocked until those contracts are approved and integration-tested. See \`docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-BACKEND-IMPLEMENTATION-FOUNDATION-V1.md\`.
+The repository port is intentionally not wired to USER_DB or RESEARCH_DB and has no direct D1 binding. The approved target is the shared physical `radar-neighborhood-db`, owned by IRNI. The owner-side NIPS storage RPC, D1 repository adapter, additive `nips_` migration, migration-ledger verification and transactional integration tests are still absent. A production adapter, route mounting and migrations remain blocked until IRNI implements and verifies that owner-controlled contract. See \`docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-BACKEND-IMPLEMENTATION-FOUNDATION-V1.md\`.
