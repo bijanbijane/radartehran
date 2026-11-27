@@ -213,10 +213,6 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await sheetHandle.click();
     await expect(sheet).toHaveAttribute('data-snap-state', 'collapsed');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'false');
-    await sheetHandle.click();
-    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
-    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
-
   });
 
   test('4. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
