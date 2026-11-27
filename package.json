@@ -76,7 +76,7 @@
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
     "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend",
-    "test:geospatial": "tsx --test tests/geospatial-valuation-location-assignment.test.ts tests/geospatial-gis-module.test.ts tests/neighborhood-profile-boundary-read-model.test.ts && tsx tests/geospatial-boundary-approval.test.ts && tsx tests/geospatial-durable-recovery.test.ts"
+    "test:geospatial": "tsx --test tests/geospatial-valuation-location-assignment.test.ts tests/geospatial-gis-module.test.ts tests/geospatial-private-location-projection.test.ts tests/neighborhood-profile-boundary-read-model.test.ts && tsx tests/geospatial-boundary-approval.test.ts && tsx tests/geospatial-durable-recovery.test.ts"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.3.0",
