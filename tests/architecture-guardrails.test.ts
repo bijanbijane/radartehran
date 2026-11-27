@@ -51,15 +51,15 @@ verify('Guardrail rejects Firebase client and Admin SDK imports from browser mod
     virtualOverrides: [
       {
         relPath: 'src/components/IllegalFirebaseAuthImport.tsx',
-        content: `import { getAuth } from 'firebase/auth';\\nexport const auth = getAuth();\\n`,
+        content: `import { getAuth } from 'firebase/auth';\nexport const auth = getAuth();\n`,
       },
       {
         relPath: 'src/platform/IllegalFirebaseCoreImport.ts',
-        content: `import { initializeApp } from '@firebase/app';\\nexport const app = initializeApp({});\\n`,
+        content: `import { initializeApp } from '@firebase/app';\nexport const app = initializeApp({});\n`,
       },
       {
         relPath: 'src/features/IllegalFirebaseAdminImport.ts',
-        content: `import { getFirestore } from 'firebase-admin/firestore';\\nexport const db = getFirestore();\\n`,
+        content: `import { getFirestore } from 'firebase-admin/firestore';\nexport const db = getFirestore();\n`,
       },
     ],
   });
