@@ -185,6 +185,7 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/admin/analytics/pipelines/:pipelineId/run', ANL, 'ADMIN', 20, 'general', true, 'Trigger pipeline execution run'), route('POST', '/api/admin/analytics/runs/:runId/cancel', ANL, 'ADMIN', 20, 'general', true, 'Cancel analytics pipeline run'),
   route('GET', '/api/account/profile', AA, 'VERIFIED_USER', 90, 'general', true, 'Read UID-isolated profile'), route('PATCH', '/api/account/profile', AA, 'VERIFIED_USER', 30, 'general', true, 'Update profile with optimistic concurrency'),
   route('GET', '/api/account/privacy', AA, 'VERIFIED_USER', 90, 'general', true, 'Read account privacy settings'), route('PATCH', '/api/account/privacy', AA, 'VERIFIED_USER', 30, 'general', true, 'Update account privacy settings'),
+  route('POST', '/api/account/privacy/reconcile', AA, 'VERIFIED_USER', 10, 'general', true, 'Reconcile pending research consent revocation'),
   route('GET', '/api/account/sessions', AA, 'VERIFIED_USER', 60, 'general', true, 'List server-tracked user sessions'), route('POST', '/api/account/sessions/:id/revoke', AA, 'VERIFIED_USER', 20, 'general', true, 'Revoke active user session'),
   route('GET', '/api/account/data-requests', AA, 'VERIFIED_USER', 60, 'general', true, 'List account data export and deletion requests'),
   route('GET', '/api/admin/me', AA, 'ADMIN', 60, 'general', true, 'Verify authoritative admin role and permissions'), route('GET', '/api/admin/audit-logs', AA, 'ADMIN', 60, 'general', true, 'List paginated server admin audit logs'),
