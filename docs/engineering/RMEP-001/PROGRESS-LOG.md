@@ -1463,3 +1463,12 @@
 - Source: `server/modules/neighborhood-profile/repository.ts`; regression: `tests/nips-backend-runtime-foundation.test.ts`.
 - **Status: IMPLEMENTED_BUT_NOT_VERIFIED.** GitHub-only session; no Node/npm test command executed. Required: `npm run test:nips`, typecheck, architecture and security gates.
 - No database, migration, RPC, production configuration, or deployment was changed.
+
+ 
+## CHK-211 — Worker CI coverage and runner retry (2026-11-27)
+
+- Inspected root CI and package scripts: `npm test` includes `test:unit`, and `test:unit` includes `npm run test:nips`; NIPS regressions are therefore part of the root quality gate.
+- Found that root CI Gate G ran `npm run test:cloudflare` but omitted the dedicated `npm run test:worker` suite, which contains the new request-body streaming boundary regressions.
+- Added `npm run test:worker 2>&1 | tee ci-gate-g-worker-tests.log` to `.github/workflows/ci.yml`. The change is committed as `c65f6478473c890ed5ea8754faf3f5f896bf2ed7`.
+- Retried failed jobs on all five PR #67 workflows for prior head `c2dd01f31ae211972c46c48cf687334b5d65f355`. Rerun requests were accepted, but all jobs again failed with empty step arrays; log retrieval returned `BlobNotFound`. No command executed.
+- **Status:** CI coverage change IMPLEMENTED_BUT_NOT_VERIFIED; NIPS and Worker code changes remain IMPLEMENTED_BUT_NOT_VERIFIED. Await a new workflow run on the updated PR head and confirm actual step allocation before interpreting any test outcome.
