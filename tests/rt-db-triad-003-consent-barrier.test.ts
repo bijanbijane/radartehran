@@ -667,6 +667,17 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     assert.equal(outboxRow.status, 'RETRY_PENDING');
     assert.equal(outboxRow.max_consent_revision, 2);
 
+    // Re-grant is refused until the prior revision's durable erasure receipt is complete.
+    await assert.rejects(
+      () => updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+        nowIso: new Date(t0 + 300).toISOString(),
+      }),
+      /RESEARCH_CONSENT_REVOCATION_PENDING/,
+    );
+
     // 2. Restore RESEARCH_DB and process outbox via background lifecycle outbox processor (past backoff)
     const outboxRecovery = await processPendingResearchErasureOutbox({
       userDb: userSqlite.db,
