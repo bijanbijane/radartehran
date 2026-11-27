@@ -47,7 +47,7 @@
   "tests": {
     "command": "npm run test:geospatial",
     "status": "CI_FAILED_UNDIAGNOSED",
-    "reason": "GIS workflow run 45980838729 for HEAD 2d6c707303dc2e48723c3a8869e59984199c9608 completed failure. Both GIS jobs expose steps=null; logs remain unavailable (BlobNotFound). No local runner is online. The failure does not establish whether tests/typecheck executed."
+    "reason": "Latest branch HEAD 760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1 produced GIS run 45981010087 with both regression and typecheck jobs failed, steps=null; prior code HEAD 2d6c707303dc2e48723c3a8869e59984199c9608 produced the same result in run 45980838729. GitHub job logs return BlobNotFound. No local runner is online; command execution is unconfirmed."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -96,8 +96,8 @@
   "latest_branch_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
-    "latest_code_revision_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
+    "branch_head_sha": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
+    "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
     "workflow_runs": [
       {
         "name": "GIS Spatial Integrity",
@@ -170,8 +170,25 @@
       }
     ],
     "job_log_retrieval": "BlobNotFound",
-    "interpretation": "The focused GIS workflow and its retry failed without step metadata. Issue #49 documents a matching cross-repository hosted-runner allocation failure pattern. Runner allocation is suspected but not confirmed for these exact jobs; command execution and code-level failure remain unverified."
+    "interpretation": "Workflow failure is confirmed; command execution and code-level failure are not established.",
+    "latest_gis_workflow_run": {
+      "run_id": 45981010087,
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "name": "GIS geometry and boundary regression",
+          "conclusion": "failure",
+          "steps": null
+        },
+        {
+          "name": "GIS module TypeScript typecheck",
+          "conclusion": "failure",
+          "steps": null
+        }
+      ],
+      "logs": "BlobNotFound"
+    }
   },
-  "latest_branch_sha_at_record": "2d6c707303dc2e48723c3a8869e59984199c9608",
+  "latest_branch_sha_at_record": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
   "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608"
 }
