@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "b79ce5ff15778bce968508478c7e024db80353d9",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; DOCS_COMMITTED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "ede0dac6e57cb06191d434877eeab997f7801cb2",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; DOCS_COMMITTED; RUNTIME_TESTS_NOT_EXECUTED; CI_JOB_DIAGNOSTICS_UNAVAILABLE",
     "last_verified_commit": "b79ce5ff15778bce968508478c7e024db80353d9"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-199-STAGING-GATE-VERIFIED-AUDIT-PENDING",
-    "checkpoint_timestamp_utc": "2026-11-27T10:29:00.000Z",
-    "last_safe_operation": "Verified Cloudflare API staging Build Trigger fail-closed behavior: build ee140164-3d69-49f8-8f22-7849d19e4e80 stopped at BLOCKED_STAGING_DATABASES_NOT_PROVISIONED before Wrangler dry-run/deploy. Trigger remains scoped to the staging Worker and one QA branch. Updated it to emit npm audit JSON details before the same fail-closed gate; audit build f993d88e-1b92-4e41-9f62-83b1c3ea34b4 is queued.",
-    "last_completed_operation": "Reconciled progress, remediation, blockers and next-actions documents with verified staging fail-closed evidence and current CI failures. No production resource, database, secret, merge or production deployment was changed.",
-    "next_exact_action": "Poll Cloudflare audit build f993d88e-1b92-4e41-9f62-83b1c3ea34b4; retrieve package-level npm audit findings and triage critical/high vulnerabilities. Then restore GitHub Actions diagnostics or execute the test suites in an available Node environment. Continue the IRNI-owned authenticated/versioned NIPS storage RPC after those gates.",
+    "checkpoint_id": "CHK-200-CLOUDFLARE-AUDIT-AND-CI-DIAGNOSTICS",
+    "checkpoint_timestamp_utc": "2026-11-27T10:53:00.000Z",
+    "last_safe_operation": "Read-only inspection of GitHub Actions and Cloudflare Workers Builds. Confirmed the five PR #67 workflow jobs fail within 0-2 seconds with zero steps and BlobNotFound logs; frontend Workers preview check passed. Retrieved Cloudflare npm audit JSON output: 21 vulnerabilities (14 moderate, 5 high, 2 critical). Confirmed staging backend build stops at BLOCKED_STAGING_DATABASES_NOT_PROVISIONED before Wrangler dry-run/deploy.",
+    "last_completed_operation": "Recorded the package-level security audit and CI diagnostic findings. No dependency upgrades, code runtime changes, production resource changes, database mutations, secrets, merges or deployments were performed.",
+    "next_exact_action": "Triage the exact critical/high npm audit findings against the dependency graph and remove residual Firebase dependencies according to the approved Firebase retirement plan; do not run npm audit fix --force. In parallel, recover GitHub Actions job annotations/runner diagnostics or obtain a Node/npm executor. Keep staging provisioning fail-closed and continue NIPS storage only through an approved IRNI-owned RPC.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1822,6 +1822,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T09:36:00.000Z"
+    },
+    {
+      "operation_id": "OP-195",
+      "phase": "PHASE-6",
+      "description": "Retrieve Cloudflare staging npm audit JSON and correlate GitHub Actions job/check-run diagnostics for PR #67; verify staging fail-closed guard and frontend preview status.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T10:53:00.000Z"
     }
   ],
   "tests": [
@@ -1943,13 +1951,14 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: PR #67 workflows fail; rerun job 140435161931 also failed with an empty step list and BlobNotFound logs, so the failing command is unknown.",
-    "B-002: NIPS persistence requires the authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
+    "B-001: GitHub Actions jobs for PR #67 fail immediately with zero recorded steps; raw job logs return BlobNotFound. The failing command is not established.",
+    "B-002: NIPS persistence requires an authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
     "B-003: Version-pinned IRNI geography provider/Service Binding is not yet available to the Radar runtime.",
-    "B-004: PR #69 native-auth workflow fix and PR #70 stale Bun lockfile removal remain Draft and unverified by successful CI/Cloudflare preview builds.",
-    "B-005: Staging D1/IRNI Service Binding provisioning remains incomplete. The staging-only Build Trigger now fails closed before Wrangler deploy; manual verification build ee140164-3d69-49f8-8f22-7849d19e4e80 verified the guard.",
-    "B-006: Cloudflare npm install reports 21 vulnerabilities (14 moderate, 5 high, 2 critical); exact package-level npm audit details are pending from build f993d88e-1b92-4e41-9f62-83b1c3ea34b4.",
-    "B-007: GitHub Actions runs for PRs #67, #69, #70 and #71 still fail; job steps are empty and raw log downloads return BlobNotFound."
+    "B-004: Related native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions CI.",
+    "B-005: Staging D1/IRNI Service Binding provisioning is incomplete. The staging-only Build Trigger correctly fails closed before Wrangler dry-run/deploy.",
+    "B-006: npm audit reports 21 vulnerabilities (14 moderate, 5 high, 2 critical) across the installed dependency graph. Critical findings include tinypool and vitest; high findings include Firebase/Firestore transitive dependencies, @grpc/grpc-js and sharp. Package remediation requires dependency-graph review; no blind force-upgrade.",
+    "B-007: GitHub Actions diagnostics remain unavailable: latest PR #67 jobs complete within 0-2 seconds, step arrays are empty, and log downloads return BlobNotFound. Path-filtered detect fails while downstream gates are skipped.",
+    "B-008: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
@@ -2195,6 +2204,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Restore GitHub Actions runner/job diagnostics or execute tests in a connected local environment. Run npm run test:nips, npm run test:auth, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, npm run test:cloudflare, D1 triad/write-pause suites, typecheck and architecture checks. Then resume IRNI-owned NIPS storage RPC work; do not add direct Radar D1 access."
+    "next_action": "Triage critical/high dependency findings, prioritizing direct/runtime packages and Firebase retirement; restore GitHub Actions step/log diagnostics or use a connected Node executor; run NIPS/Auth/IRNI RPC/geography/D1 tests only in a real executor. Continue NIPS storage through the IRNI-owned authenticated/versioned RPC and do not bind Radar directly to radar-neighborhood-db."
   }
 }
