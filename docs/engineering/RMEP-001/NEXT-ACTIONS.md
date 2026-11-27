@@ -62,3 +62,15 @@ Before any Radar production deployment:
 4. Verify Radar's `IRNI_GEOGRAPHY` Service Binding and read/write contract tests in staging.
 5. Only then schedule a reviewed production cutover of the legacy `NEIGHBORHOOD_DB` binding and `IRNI_PUBLISH_HMAC_SECRET`; preserve the legacy path until replacement is proven.
 6. Reassess the expired production write-pause timestamp with the operator; no production pause change was made here.
+
+
+## CHK-200 — Updated execution queue (2026-11-27)
+
+1. **Dependency security triage:** inspect the lockfile paths and production/dev reachability for the two critical findings (`vitest`, transitive `tinypool`) and five high findings, including Firebase/Firestore, `@grpc/grpc-js` and `sharp`. Prioritize removing residual Firebase dependencies in line with the approved Firebase retirement; avoid `npm audit fix --force` and unreviewed major upgrades.
+2. **Recover GitHub Actions diagnostics:** latest PR #67 jobs fail within 0–2 seconds with zero steps and `BlobNotFound` log downloads. Retrieve check annotations/job startup diagnostics or use an available Node/npm executor. Do not infer test failures from empty job records.
+3. **Run the actual validation suite when an executor is available:** `npm ci`, `npm run test:nips`, `npm run test:auth`, `npm run test:irni-geographic-rpc`, `npm run typecheck:irni-geographic-rpc`, `npm run test:geography-catalog`, `npm run test:cloudflare`, root typecheck/architecture gates and D1 triad/write-pause tests. Record exact exit codes and environment.
+4. **Keep staging fail-closed:** build `f993d88e-1b92-4e41-9f62-83b1c3ea34b4` confirmed `BLOCKED_STAGING_DATABASES_NOT_PROVISIONED` before Wrangler dry-run/deploy. Do not create or bind staging databases/services by assumption.
+5. **Continue NIPS only at the IRNI ownership boundary:** the owner-side authenticated/versioned storage RPC, migration and service deployment must exist and pass tests before Radar's adapter integration. Radar must not receive a direct binding to `radar-neighborhood-db`.
+6. Keep PR #67 Draft. No merge, Production deployment, remote migration, secret change, or destructive data operation without explicit approval.
+
+**Evidence boundary:** Cloudflare frontend preview succeeded on PR #67 head `ede0dac6e57cb06191d434877eeab997f7801cb2`; this does not establish backend test success. No local Node/npm test was executed in this session.
