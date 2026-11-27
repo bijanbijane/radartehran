@@ -1444,3 +1444,12 @@
 - Code commits: `19771174c6f05f56c1f2607f9665e100ffbc8408` (serializer) and `676c799b25659363bd04924991521daff6b9792a` (regression test).
 - Re-ran the five PR #67 workflows. All five failed before runner assignment: job payloads show `runner_id=0`, blank `runner_name`, empty `steps`, and ~1–2 second execution windows. Log downloads return `BlobNotFound`. This is verified Actions infrastructure failure evidence, not an application test result.
 - Status: **IMPLEMENTED_BUT_NOT_VERIFIED**. No local Node/npm execution is available through this GitHub-only session; no test, typecheck, build, D1 migration, binding, secret, deployment, merge, or production mutation was performed. PR #67 remains Draft.
+
+## 2026-11-27 — Worker JSON body streaming boundary
+
+- Confirmed `readValidatedJsonBody()` checked the size only after `request.text()`, allowing an untrusted chunked request to be fully buffered before rejection. Its Content-Type check also used substring matching, and malformed Content-Length values were not rejected explicitly.
+- Replaced whole-body text buffering with incremental stream reads bounded by the configured byte ceiling. Oversized streams are rejected immediately and cancellation is non-blocking; declared lengths are validated before reading; media type matching is exact for `application/json`; UTF-8 decoding is fatal; parsed JSON must remain a non-array object.
+- Added regression cases for valid parameterized JSON media type, JSONP-like content type rejection, malformed/oversized Content-Length, early cancellation of oversized streams, invalid UTF-8, and non-object JSON.
+- Commits: `9b94d84e3a036d58580ff2f702057568f37f1053` (streaming parser), `bf41454a0a06d26609feaab8c285abd0b584c03a` (regression tests), `34adeb686f04162a97e305b391ea7aa714b53ebf` (non-blocking cancellation).
+- Static source reinspection confirms the parser no longer calls `request.text()` and the tests contain the expected cases. **No runtime tests or TypeScript checks executed**: no workflow run/checks were created for these commits, and the prior Actions runner-allocation blocker remains unresolved.
+- Status: **IMPLEMENTED_BUT_NOT_VERIFIED**.
