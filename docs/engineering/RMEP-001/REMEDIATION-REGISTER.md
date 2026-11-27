@@ -65,3 +65,14 @@ Static comparison of workflow invocations against root `package.json` found and 
 |---|---|---|
 | RT-IRNI-OWN-001 | Production API still binds IRNI-owned `NEIGHBORHOOD_DB` and `IRNI_PUBLISH_HMAC_SECRET`; no `IRNI_GEOGRAPHY` binding. The configured D1 write-pause deadline is expired. | BLOCKED — ordered owner-side RPC cutover required |
 | RT-IRNI-OWN-002 | Cloudflare Worker `irni-api` does not exist (404/10007). IRNI read RPC PR #22 and NIPS persistence proposal PR #25 are Draft; ADR-0002 not accepted. | BLOCKED — owner-side implementation/deployment gate |
+
+
+## 2026-11-27 — CI and dependency remediation follow-up
+
+| ID | Evidence / change | Status |
+|---|---|---|
+| RT-CI-005 | Cloudflare build `cfd42e27-7b3c-449b-88e9-106cd042aa41` confirms npm ci lock mismatch with missing Vitest 5 peer subtree. | CONFIRMED |
+| RT-CI-006 | `.npmrc legacy-peer-deps=true` already exists on PR #70; added to PR #69 and #71 branches. Fresh CI still fails but logs unavailable. | IMPLEMENTED_BUT_NOT_VERIFIED |
+| RT-CI-007 | PR #70 Cloudflare frontend preview build succeeds; API staging build succeeds and uploads a staging version. Overall PR checks remain failing. | PARTIALLY_VERIFIED |
+| RT-CI-008 | Staging Worker configuration does not inherit vars, D1 bindings, or service bindings; staging provisioning is explicitly blocked. | BLOCKED — configuration/ownership review required |
+| RT-SEC-001 | Cloudflare build output reports 21 dependency vulnerabilities: 14 moderate, 5 high, 2 critical. Exact advisory inventory not retrieved. | BLOCKED — need full npm audit JSON/advisories before remediation |
