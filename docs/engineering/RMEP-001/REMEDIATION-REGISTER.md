@@ -24,3 +24,4 @@ PR #78 remains Draft. No merge, deployment, production D1 mutation, or secret op
 The code and test changes in BE-005 through BE-010 have been source-reviewed but not executed in this session. The latest PR #78 CI runs on code head `d0faff86e79dde909faeb3cacbfa57e65e55ae37` failed before runner assignment; they provide no TypeScript, test, build or browser evidence. The connected local execution device remains Offline.
 
 No production data changes, migrations, deployments, merges, or secret operations were performed.
+| BE-011 | P1 | Complete RT-DB-TRIAD-003 leased research consent revocation barrier | Direct HTTP + Queue permits, revision-tagged RESEARCH_DB writes, durable revision-scoped revocation outbox, lease draining/recovery, fence-backed erasure, account reconcile route and activated six-scenario suite | IMPLEMENTED_BUT_NOT_VERIFIED | Run npm run test:triad and Worker/API typechecks when a runner is available; fix only observed failures |
