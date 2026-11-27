@@ -133,6 +133,54 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     const initialHandleBox = await sheetHandle.boundingBox();
     expect(initialHandleBox?.height ?? 0).toBeGreaterThanOrEqual(44);
 
+    // A secondary pointer must not replace or terminate the active primary-pointer drag.
+    await sheetHandle.evaluate((element) => {
+      const handle = element as HTMLButtonElement;
+      const box = handle.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      const dispatchPointer = (
+        type: 'pointerdown' | 'pointerup',
+        pointerId: number,
+        clientY: number,
+        isPrimary: boolean,
+      ) => handle.dispatchEvent(new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        pointerType: 'touch',
+        isPrimary,
+        button: 0,
+        buttons: type === 'pointerdown' ? 1 : 0,
+        clientX: x,
+        clientY,
+      }));
+
+      dispatchPointer('pointerdown', 71, y, true);
+      dispatchPointer('pointerdown', 72, y + 4, false);
+      dispatchPointer('pointerup', 72, y + 200, false);
+      dispatchPointer('pointerup', 71, y + 80, true);
+    });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // Restore the expanded state through a fresh primary-pointer gesture.
+    await sheetHandle.evaluate((element) => {
+      const handle = element as HTMLButtonElement;
+      const box = handle.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      handle.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, cancelable: true, pointerId: 73, pointerType: 'touch',
+        isPrimary: true, button: 0, buttons: 1, clientX: x, clientY: y,
+      }));
+      handle.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true, cancelable: true, pointerId: 73, pointerType: 'touch',
+        isPrimary: true, button: 0, buttons: 0, clientX: x, clientY: y - 80,
+      }));
+    });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+
     // Exercise the mobile handle with Chromium's touch input path, not mouse events.
     const cdpSession = await page.context().newCDPSession(page);
     await cdpSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
