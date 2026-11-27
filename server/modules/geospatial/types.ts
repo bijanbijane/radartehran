@@ -101,7 +101,9 @@ export interface PolygonValidationReport {
       | 'TOO_FEW_VERTICES'
       | 'SELF_INTERSECTION'
       | 'INVALID_COORDINATE'
-      | 'DEGENERATE_ZERO_AREA';
+      | 'DEGENERATE_ZERO_AREA'
+      | 'HOLE_OUTSIDE_OUTER'
+      | 'HOLE_OVERLAP';
     message: string;
   }>;
   boundingBox?: { minLat: number; maxLat: number; minLng: number; maxLng: number };
