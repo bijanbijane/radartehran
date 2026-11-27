@@ -82,3 +82,12 @@ Resolve hosted-runner eligibility/billing or repository Actions policy. Do not a
 
 ### Next exact action
 Restore a real execution path (hosted runner allocation or authorized local device online), execute `npm run test:contracts` on the QA branch, then run focused auth, D1 triad, IRNI RPC, and geography tests. Keep PR #74 and PR #79 unmerged until checks and review complete.
+
+
+## 2026-11-27 — Hosted npm and TypeScript gate
+
+- Rechecked PR #74 (`ea91cfcd6fe5fc76784cda97df98b722835792b4`) and PR #79 (`9a6d650fa53e0ca9a5e3b3cf533c5375f516cc34`): both remain open, Draft, unmerged.
+- Cloudflare no-deploy build `133c1163-ed8f-4f6b-9c0d-de34177f13f3` completed successfully. It used Node.js `24.22.1` and npm `12.2.3`; `npm ci --ignore-scripts --no-audit --no-fund` added 646 packages and `npm run lint` (`tsc --noEmit`) completed successfully.
+- A separate audit build `b1efc1f8-e256-4b99-80ae-421893c7ff10` remains queued at the last poll. No fresh audit result is available.
+- No unit, contract, auth, geography, triad, or IRNI test suite has yet been executed. GitHub Actions remains blocked before runner steps.
+- No deploy, merge, migration, or Production change occurred.
