@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "18e1de0041f053171318b0031c46bf092c66d3d7",
+    "head_commit": "2b71c9a1eac38f02255f58c8676926de49a490de",
     "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; local execution device unavailable",
-    "last_verified_commit": "18e1de0041f053171318b0031c46bf092c66d3d7"
+    "last_verified_commit": "2b71c9a1eac38f02255f58c8676926de49a490de"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -32,10 +32,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T10:29:20.000Z",
-    "last_safe_operation": "Research erasure inbox replay now fails closed on outbox ID / subject identity mismatch; regression assertion added; engineering records reconciled to GitHub branch and latest CI blockers.",
-    "last_completed_operation": "Research erasure inbox replay now fails closed on outbox ID / subject identity mismatch; regression assertion added; engineering records reconciled to GitHub branch and latest CI blockers.",
-    "next_exact_action": "Obtain diagnostic output for CI runs 45982446365 and 45982446011; run tests/rt-db-triad-001.test.ts and Worker typecheck when local execution is available; implement a deterministic overlapping-delivery regression; then inventory and retire remaining live Express Firestore adapters.",
+    "checkpoint_timestamp_utc": "2026-11-27T10:56:00.000Z",
+    "last_safe_operation": "Moved the RESEARCH_DB inbox identity claim to the first statement of the atomic D1 batch and guarded subject-event and aggregation deletes with the claimed outbox ID + subject key/version; added a deterministic two-reader barrier test for concurrent cross-subject outbox-ID collision.",
+    "last_completed_operation": "Moved the RESEARCH_DB inbox identity claim to the first statement of the atomic D1 batch and guarded subject-event and aggregation deletes with the claimed outbox ID + subject key/version; added a deterministic two-reader barrier test for concurrent cross-subject outbox-ID collision.",
+    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker TypeScript checks on head 2b71c9a1eac38f02255f58c8676926de49a490de; diagnose latest CI run failures from run IDs 45986000419, 45986000574, 45986000519, and 45986000654; then continue review of USER_DB outbox concurrent worker state transitions and residual Express Firestore adapters.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2191,27 +2191,32 @@
       "The old triad branch codex/rt-db-triad-003-lifecycle-receipt-key-isolation is 1,556 commits behind main and is not a safe patch base.",
       "The current worker lifecycle code uses USER_DB outbox and RESEARCH_DB inbox erasure; migration 0005 defines no processing lease/claim columns for the account deletion outbox.",
       "No local execution environment is currently available: the connected MacBook device reports Offline.",
-      "Review of executeResearchSubjectErasure found that the completed-inbox fast path previously returned a receipt without verifying that the durable outbox ID still mapped to the same subject_key and subject_key_version; this collision path is now rejected before returning the receipt."
+      "Review of executeResearchSubjectErasure found that the completed-inbox fast path previously returned a receipt without verifying that the durable outbox ID still mapped to the same subject_key and subject_key_version; this collision path is now rejected before returning the receipt.",
+      "Deeper race review found a destructive cross-subject collision: two deliveries could both pass the initial inbox read with the same outbox_id but different subject keys; the previous batch deleted subject events before INSERT OR IGNORE exposed the identity conflict. The inbox identity is now claimed first inside the atomic D1 batch, and destructive event/aggregation deletes are guarded by a matching outbox_id + subject_key + subject_key_version row.",
+      "The concurrent collision regression uses a barrier to force both deliveries to observe an empty inbox, then serializes D1 batches; it asserts exactly one identity wins and the losing subject's research event remains intact.",
+      "Generated lifecycle outbox IDs are rout_<timestamp>_<8 hex chars>; derived research inbox IDs remain below any schema-declared length limits because the schema uses unrestricted TEXT columns."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
       "GitHub Actions failed-job logs and annotations were unavailable through the connected GitHub API wrapper (BlobNotFound / empty step metadata); exact CI failure root cause remains unknown.",
       "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194.",
       "PR #78 workflow run 45980515216 failed in the detect job before api/frontend/contracts gates ran; the only detailed job logs available through the connector still return BlobNotFound. Cloudflare Workers Builds check for radartehran-frontend also reports failure without diagnostic annotations.",
-      "Latest CI runs on head e7053f53d8c69605ee6bf0037c9442650c95e7cf failed: Tehran Radar CI run 45982446365 failed in TypeScript/Architecture/Unit/Storage/Stress/Build; Cloudflare Native Auth Validation run 45982446011 failed in native-auth. E2E was skipped; job logs and step metadata remain unavailable."
+      "Latest CI runs on head e7053f53d8c69605ee6bf0037c9442650c95e7cf failed: Tehran Radar CI run 45982446365 failed in TypeScript/Architecture/Unit/Storage/Stress/Build; Cloudflare Native Auth Validation run 45982446011 failed in native-auth. E2E was skipped; job logs and step metadata remain unavailable.",
+      "Latest CI on head 2b71c9a1eac38f02255f58c8676926de49a490de failed in Tehran Radar CI Quality Gates (run 45986000419), Cloudflare Native Auth Validation (45986000574), Tehran Radar Path-Filtered Checks detect (45986000519), and Radar Backend Triad (45986000654). E2E and downstream path-filtered jobs were skipped. Connector job-step arrays are empty and log retrieval returns BlobNotFound; root causes remain unknown.",
+      "New deterministic concurrent cross-subject outbox-ID collision test and guarded-delete fix are source-reviewed but not executed; local MacBook remains Offline."
     ],
-    "next_action": "Obtain diagnostic output for CI runs 45982446365 and 45982446011; run tests/rt-db-triad-001.test.ts and Worker typecheck when local execution is available; add deterministic overlapping-delivery coverage; then continue residual Express Firestore adapter retirement.",
+    "next_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker TypeScript checks on head 2b71c9a1eac38f02255f58c8676926de49a490de; diagnose the latest four CI runs without inferring causes from empty logs; then review USER_DB outbox worker concurrency/state regression and residual Express Firestore adapters.",
     "code_work": {
       "id": "BE-002",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
-      "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery. A further identity-confusion edge case was found: an already-completed inbox row could be replayed with the same outbox_id but a different subject key/version and its receipt returned without identity validation.",
-      "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning. The completed-inbox fast path now checks subject_key and subject_key_version and fails closed with RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT on mismatch.",
+      "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery. A further identity-confusion edge case was found: an already-completed inbox row could be replayed with the same outbox_id but a different subject key/version and its receipt returned without identity validation. A deeper race remained: two different subject keys could concurrently reuse the same outbox_id after both read an empty inbox; because deletes preceded the INSERT OR IGNORE, the losing request could erase its own subject's events before the canonical identity mismatch was detected.",
+      "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning. The completed-inbox fast path now checks subject_key and subject_key_version and fails closed with RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT on mismatch. The inbox row is now inserted first inside the atomic batch; event and aggregation deletes include EXISTS guards requiring the exact outbox_id, subject_key, and subject_key_version. The replay flag now reads the inbox insert result at batch index 0 after statement reordering.",
       "files": [
         "worker/research/researchService.ts",
         "tests/rt-db-triad-001.test.ts"
       ],
-      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending.",
-      "last_code_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc"
+      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending. Added a deterministic concurrent regression with a barrier that forces both deliveries past an empty initial inbox read, serializes their D1 batches, and asserts the losing subject's event remains. Test/typecheck not executed.",
+      "last_code_commit": "2b71c9a1eac38f02255f58c8676926de49a490de"
     }
   }
 }
