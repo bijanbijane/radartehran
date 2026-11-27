@@ -55,10 +55,11 @@
     "The authorized MacBook Desktop Commander device is Offline.",
     "Five GitHub Actions jobs were assigned runner_id=0 with empty runner_name and zero steps; they failed within 2–5 seconds. This confirms runner allocation did not occur; no application test command was reached.",
     "One rerun of the CI quality-gates job repeated the same runner_id=0, empty runner_name, zero-step failure.",
-    "Job logs are unavailable and no diagnostic artifacts were produced."
+    "Job logs are unavailable and no diagnostic artifacts were produced.",
+    "GitHub public status page listed Actions operational with no incident on 2026-11-27; repository/account-specific runner settings or quota remain uninspected."
   ],
   "next_action": "Restore GitHub-hosted runner availability or reconnect the authorized MacBook runner; then rerun the exact test matrix and inspect logs. No further blind reruns until runner allocation changes.",
-  "updated_at": "2026-11-27T10:31:00Z",
+  "updated_at": "2026-11-27T10:33:00Z",
   "ci_observation": {
     "pr": 79,
     "code_head": "1e0fa339ba72d3d0f1cf30cad0fe7e6f331d8fb0",
