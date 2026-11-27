@@ -52,3 +52,13 @@ Open the failed rerun job `140435161931` in GitHub Actions and establish why the
 
 ## Latest verified change
 The staging fail-closed guard is verified: build ee140164-3d69-49f8-8f22-7849d19e4e80 failed at the required staging provisioning check before Wrangler dry-run/deploy. The next action is to poll audit build f993d88e-1b92-4e41-9f62-83b1c3ea34b4 for package-level npm audit findings, then prioritize CI diagnostic recovery.
+
+
+## Production ownership cutover gate
+Before any Radar production deployment:
+1. Obtain an accepted IRNI owner-side decision for NIPS profile persistence (ADR-0002) and complete the authenticated/versioned service contract.
+2. Complete and verify IRNI read RPC v2 and the NIPS storage RPC in the database-owning IRNI Worker.
+3. Deploy `irni-api` in a controlled sequence and verify the service identity/contract.
+4. Verify Radar's `IRNI_GEOGRAPHY` Service Binding and read/write contract tests in staging.
+5. Only then schedule a reviewed production cutover of the legacy `NEIGHBORHOOD_DB` binding and `IRNI_PUBLISH_HMAC_SECRET`; preserve the legacy path until replacement is proven.
+6. Reassess the expired production write-pause timestamp with the operator; no production pause change was made here.
