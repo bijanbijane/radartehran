@@ -9,6 +9,6 @@
 | QA-T-005 | `npm run typecheck:irni-geographic-rpc` | Strict isolated RPC consumer typecheck | Not executed |
 | QA-T-006 | `npm run test:geography-catalog` | Legacy geography catalog transition guardrails | Not executed |
 | QA-T-007 | `npm run test:security` | Telegram/admin and security remediation suites | Not executed |
-| QA-T-008 | GitHub Actions quality gates | TypeScript, architecture, unit, storage, stress, build, Cloudflare, E2E | Failed runs observed; test output unavailable |
+| QA-T-008 | GitHub Actions quality gates | TypeScript, architecture, unit, storage, stress, build, Cloudflare, E2E | Runner allocation failure before steps | Runs 45982139278 etc.; runner_id=0, runner_name empty, steps=0 |
 
 Counting policy: source inspection and workflow wiring do not count as test execution. Keep all counts at zero until actual runner output is inspected.
