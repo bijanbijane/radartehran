@@ -324,6 +324,37 @@ test('HTTP profile endpoint stays fail-closed and approval route denies callers 
     const readPayload = await readResponse.json();
     assert.match(JSON.stringify(readPayload), /ACTIVE_BOUNDARY_NOT_FOUND/);
 
+    // Mirror the production composition root: no IRNI identity or source-registry
+    // resolvers are injected. Even an independently approved local polygon must
+    // remain unavailable as canonical profile evidence until both are connected.
+    const pending = await service.upsertNeighborhoodBoundary({
+      actorUid: 'creator-1',
+      entityId: 'hood:tehran:13',
+      cityId: 'tehran',
+      hoodId: 13,
+      level: 'neighborhood',
+      nameFa: 'محله آزمایشی',
+      geometry: structuredClone(geometry),
+      sourceProvenance: 'tehran_municipality_gis_2025',
+      autoApprove: false,
+    });
+    assert.equal(pending.status, 'PENDING_REVIEW');
+    await service.approveNeighborhoodBoundary({
+      entityId: 'hood:tehran:13',
+      versionId: pending.id,
+      reviewerUid: 'reviewer-2',
+    });
+
+    const approvedLocalBoundaryResponse = await fetch(
+      `${baseUrl}/neighborhood-boundaries/tehran/13/profile-evidence`,
+    );
+    assert.equal(approvedLocalBoundaryResponse.status, 200);
+    const approvedLocalBoundaryPayload = await approvedLocalBoundaryResponse.json();
+    const serializedPayload = JSON.stringify(approvedLocalBoundaryPayload);
+    assert.match(serializedPayload, /CANONICAL_IDENTITY_RESOLVER_NOT_CONFIGURED/);
+    assert.match(serializedPayload, /BOUNDARY_SOURCE_REGISTRY_NOT_CONFIGURED/);
+    assert.match(serializedPayload, /"evidence":null/);
+
     const approveResponse = await fetch(
       `${baseUrl}/neighborhood-boundaries/tehran/13/versions/bnd_hood_tehran_13_v1/approve`,
       { method: 'POST' },
