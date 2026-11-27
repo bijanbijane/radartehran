@@ -28,7 +28,9 @@
     "Read-only Cloudflare inspection of deployed radartehran-api confirms AUTH_INTERNAL_HMAC_SECRET is absent from its secret bindings and STRANGLER_ORIGIN_URL is absent from its plain-text variables; staging Worker radartehran-api-staging has neither any secret bindings nor STRANGLER_ORIGIN_URL. The separate Express process environment remains unverified.",
     "The Worker router returns AUTH_SESSION_BRIDGE_NOT_CONFIGURED when AUTH_INTERNAL_HMAC_SECRET is missing; the fallback requires STRANGLER_ORIGIN_URL. Therefore the deployed Worker-side assertion/proxy path is not enabled by its current runtime configuration. No secret values were read or changed.",
     "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced.",
-    "Cloudflare Preview build 290f16e3-e364-46b5-875d-73266852335c for branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 stopped during dependency installation: Bun 1.4.4 ran bun install --frozen-lockfile and reported @tailwindcss/vite is in a different dependency group from bun.lock. Repository comparison confirms bun.lock is byte-identical on main and this branch; the lockfile mismatch predates the GIS branch. The Preview build never reached the configured frontend build command. No lockfile was manually edited."
+    "Cloudflare Preview build 290f16e3-e364-46b5-875d-73266852335c for branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 stopped during dependency installation: Bun 1.4.4 ran bun install --frozen-lockfile and reported @tailwindcss/vite is in a different dependency group from bun.lock. Repository comparison confirms bun.lock is byte-identical on main and this branch; the lockfile mismatch predates the GIS branch. The Preview build never reached the configured frontend build command. No lockfile was manually edited.",
+    "Deeper manifest/lock inspection confirms bun.lock is not a valid representation of the current monorepo workspace graph: root package.json declares workspaces apps/* and packages/*, but bun.lock contains only the empty-root workspace named react-example and no app/package workspace entries. In that root lock workspace, @tailwindcss/vite is recorded under dependencies while root package.json declares it under devDependencies. apps/frontend/package.json independently declares @tailwindcss/vite under devDependencies and both root and frontend Vite configs import it. Do not hand-edit the generated lockfile or change dependency classification without a reproducible Bun 1.4.4 regeneration and validation.",
+    "Latest PR workflow runs associated with exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84: GIS run 46011798449, native-auth run 46011798372, and backend triad run 46011798588 all concluded failure. Their jobs expose steps=null and logs_url=null; no job step execution is evidenced. The same pattern affects all seven PR-triggered workflows returned for this commit."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -121,7 +123,7 @@
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
       "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval"
     ],
-    "note": "No test or typecheck command has been verified as passing. At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs concluded failure with steps=null and logs_url=null. No test-step execution can be inferred. The registered Desktop Commander device remains offline."
+    "note": "No test or typecheck command has been verified as passing. Latest exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84 has seven PR workflow runs concluded failure. GIS run 46011798449 and sampled native-auth/backend-triad runs 46011798372/46011798588 expose steps=null and logs_url=null; no test-step execution can be inferred. The previously registered Desktop Commander device was offline; this session has no available Remote Desktop Commander tool."
   },
   "production_changes": {
     "migrations": false,
@@ -130,6 +132,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore executable Node.js 22/Bun 1.4.4 verification capacity. Regenerate and validate bun.lock with the repository's declared workspaces using the exact Cloudflare build Bun version, then verify the Cloudflare Preview build. Separately, in a non-production environment and only after explicit operator approval, provision AUTH_INTERNAL_HMAC_SECRET consistently in Worker and Express runtimes and configure STRANGLER_ORIGIN_URL; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
+  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Regenerate bun.lock from the actual apps/* and packages/* workspace graph using Bun 1.4.4; verify the root dependency group and all workspace entries, then rerun frozen install and Cloudflare Preview build. Do not hand-edit bun.lock. Separately, obtain explicit approval before any non-production AUTH_INTERNAL_HMAC_SECRET or STRANGLER_ORIGIN_URL configuration changes; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
