@@ -1,9 +1,10 @@
 # QA Next Actions
 
-1. Restore a real command execution path: bring the authorized Desktop Commander device online or resolve GitHub-hosted runner allocation. Do not create repeated CI triggers while the pre-runner failure persists.
-2. Keep PR #74 open and Draft; its NIPS contract suite is correctly wired on the QA branch. Once execution is available, run `npm run test:contracts` first and capture full output/exit code.
-3. Review PR #79's four CI command fixes and PR event-filter correction. It statically resolves all 4 missing command references found across 16 main-branch workflow files / 40 npm invocations. Do not mark these defects resolved until PR #79 is merged and the workflows execute successfully.
-4. After runner recovery, run focused auth, D1 triad, IRNI RPC, and geography suites; then lint/typecheck, full CI quality gates, build, and Playwright E2E/accessibility.
-5. For each executed suite, record actual cases passed/failed/skipped and retain logs. Keep CI startup failures separate from test results.
-6. Continue to use synthetic data and isolated environments. Do not run production migrations, mutate production data, deploy, or merge without explicit approval.
-7. Update all six QA records after each meaningful package, preserving the latest verified commit SHA and exact blockers.
+1. Poll Cloudflare focused test build `2c700586-8a6d-47b5-a6bd-c3dc14b593eb` until it stops. Capture install status, each suite's output, test counts, and exit code. Do not dispatch another build while this one is queued/running.
+2. If the focused build runs, triage failures by suite and classify actual assertion failures separately from environment/startup failures. Add regression tests only for reproduced defects.
+3. Run `npm run test:contracts` on PR #74 once a supported runner is available; its NIPS suite currently has five defined cases but zero executions.
+4. Investigate GitHub Actions pre-runner failures using repository/account Actions policy and run annotations. Do not change workflow YAML to hide runner allocation failures.
+5. Review all 22 npm audit advisories, prioritizing Critical Vitest/tinypool findings and six High findings. Review major-version compatibility before changing Vitest; update manifest and lockfile atomically, execute clean install and tests, then rerun audit.
+6. After focused tests, extend execution to full Unit, Backend Integration, Frontend E2E/Playwright, GIS regression, Accessibility, and Performance suites using synthetic data and isolated environments.
+7. Keep PR #74 and PR #79 Draft and unmerged until the relevant runtime checks and independent review pass.
+8. No Production deployment, migration, destructive data operation, or merge without explicit authorization.
