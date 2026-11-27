@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { REGISTERED_API_ROUTES } from '../src/utils/expressRouteCatalog';
-import { resetWorkerRateLimitWindowsForTests } from '../worker/contextAndSecurity';
+import { readValidatedJsonBody, resetWorkerRateLimitWindowsForTests } from '../worker/contextAndSecurity';
 import workerEntrypoint from '../worker/index';
 import { sanitizeWorkerErrorMessage } from '../worker/errorSanitizer';
 import { enforceWorkerMutationWriteBlock, releaseWorkerMutationPermitIfHeld } from '../worker/account-lifecycle/writeBlockWorkerGate';
@@ -551,6 +551,114 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     );
     assert.equal(rateLimitedRes.status, 429);
     assert.ok(rateLimitedRes.headers.get('retry-after'));
+  });
+});
+
+
+describe('Worker JSON request body boundary', () => {
+  it('accepts JSON media types with parameters and parses object bodies', async () => {
+    const result = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ neighborhood: 'سعادت‌آباد' }),
+      }),
+      128
+    );
+    assert.equal(result.ok, true);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.neighborhood, 'سعادت‌آباد');
+  });
+
+  it('rejects media types that merely contain the application/json substring', async () => {
+    const result = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/jsonp' },
+        body: '{"ok":true}',
+      }),
+      128
+    );
+    assert.equal(result.ok, false);
+    assert.equal(result.status, 415);
+    assert.equal(result.code, 'INVALID_CONTENT_TYPE');
+  });
+
+  it('rejects malformed and oversized declared Content-Length values before reading the body', async () => {
+    const malformed = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': 'not-a-number' },
+        body: '{}',
+      }),
+      8
+    );
+    assert.equal(malformed.status, 400);
+    assert.equal(malformed.code, 'INVALID_CONTENT_LENGTH');
+
+    const oversized = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': '999' },
+        body: '{}',
+      }),
+      8
+    );
+    assert.equal(oversized.status, 413);
+    assert.equal(oversized.code, 'PAYLOAD_TOO_LARGE');
+  });
+
+  it('cancels a streamed body as soon as its cumulative byte count exceeds the limit', async () => {
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(9));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const request = new Request('https://radartehran.ir/api/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      duplex: 'half',
+    });
+    const result = await readValidatedJsonBody(request, 8);
+    assert.equal(result.status, 413);
+    assert.equal(result.code, 'PAYLOAD_TOO_LARGE');
+    assert.equal(cancelled, true);
+  });
+
+  it('rejects invalid UTF-8 and non-object JSON payloads', async () => {
+    const invalidUtf8 = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([0xc3, 0x28]));
+        controller.close();
+      },
+    });
+    const invalidEncoding = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: invalidUtf8,
+        duplex: 'half',
+      }),
+      8
+    );
+    assert.equal(invalidEncoding.status, 400);
+    assert.equal(invalidEncoding.code, 'INVALID_JSON_BODY');
+
+    const primitive = await readValidatedJsonBody(
+      new Request('https://radartehran.ir/api/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '[]',
+      }),
+      8
+    );
+    assert.equal(primitive.status, 400);
+    assert.equal(primitive.code, 'INVALID_JSON_BODY');
   });
 });
 
