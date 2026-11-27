@@ -546,8 +546,10 @@ export async function runGeospatialDurableRecovery(params: {
       if (params.activateOnSuccess) {
         return activateStagedGeospatialSnapshot({ persist: params.persist });
       }
+      // Validation and staging do not activate the candidate. Keep the report
+      // explicit so callers cannot mistake a staged snapshot for an activated one.
       persistenceHealth = 'READY';
-      lastRecoveryReport = { ...assessment, activated: true };
+      lastRecoveryReport = { ...assessment, activated: false };
       return lastRecoveryReport;
     } finally {
       recoveryInFlight = null;
