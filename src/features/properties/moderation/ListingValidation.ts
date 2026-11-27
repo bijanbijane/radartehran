@@ -30,7 +30,7 @@ export function createEmptySubmissionDraft(
     cityId,
     hoodId: defaultHoodId,
     street: '',
-    locationPrecision: 'approximate',
+    locationPrecision: 'neighborhood',
     areaSqm: '85',
     buildYearJalali: '1398',
     roomsCount: '2',
