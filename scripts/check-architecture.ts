@@ -37,13 +37,20 @@ const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', '__tests__']);
 
 const CLIENT_MODULE_PREFIXES = [
   'src/app/',
+  'src/cells/',
   'src/components/',
+  'src/context/',
   'src/data/',
   'src/design-system/',
   'src/features/',
   'src/interaction-system/',
+  'src/layout-system/',
   'src/navigation/',
   'src/platform/',
+  'src/shared/',
+  'src/styles/',
+  'src/types/',
+  'src/workers/',
 ] as const;
 
 function isBrowserClientModule(relPath: string): boolean {
