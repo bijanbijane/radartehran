@@ -1029,4 +1029,44 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
   });
 
 
+
+  it('Scenario 9: Completed consent outbox rows recover a parent job after a worker crash', async () => {
+    const { userSqlite, env } = createTestTriad();
+    const nowIso = '2026-11-22T13:20:00.000Z';
+    await userSqlite.db.prepare(
+      `INSERT INTO research_consent_revocation_jobs (
+        revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
+        erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso
+      ) VALUES ('rrev_parent_recovery_9', 'uid_parent_recovery_9', 1, 2, 'PENDING_ERASURE',
+        0, '[]', ?1, ?1)`,
+    ).bind(nowIso).run();
+    await userSqlite.db.prepare(
+      `INSERT INTO research_erasure_outbox (
+        outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
+        next_retry_at_ms, receipt_id, erased_events_count, created_at_iso, updated_at_iso,
+        completed_at_iso, max_consent_revision
+      ) VALUES ('rout_parent_recovery_9', 'rrev_parent_recovery_9', 'subject_parent_recovery_9',
+        'v1', 'COMPLETED', 1, 0, 'receipt_parent_recovery_9', 3, ?1, ?1, ?1, 2)`,
+    ).bind(nowIso).run();
+
+    // Simulate a crash after the final outbox item was committed but before the
+    // revocation parent was advanced to COMPLETED. No pending outbox rows remain.
+    const result = await processPendingResearchErasureOutbox({
+      userDb: userSqlite.db,
+      researchDb: env.RESEARCH_DB,
+      nowMs: Date.parse('2026-11-22T13:21:00.000Z'),
+      receiptSecret: env.LIFECYCLE_RECEIPT_HMAC_SECRET!,
+    });
+    assert.equal(result.pending, 0);
+    const parent = await userSqlite.db.prepare(
+      'SELECT status, erased_events_count, receipt_ids_json FROM research_consent_revocation_jobs WHERE revocation_id = ?1',
+    ).bind('rrev_parent_recovery_9').first<{
+      status: string; erased_events_count: number; receipt_ids_json: string;
+    }>();
+    assert.equal(parent?.status, 'COMPLETED');
+    assert.equal(parent?.erased_events_count, 3);
+    assert.deepEqual(JSON.parse(parent?.receipt_ids_json ?? '[]'), ['receipt_parent_recovery_9']);
+  });
+
+
 });
