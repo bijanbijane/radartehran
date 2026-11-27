@@ -55,57 +55,137 @@ export function getGeospatialRecordCounts(state: PersistedGeospatialState): Geos
   return countRecords(state);
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function pushValidationError(errors: string[], limit: number, message: string): void {
+  if (errors.length < limit) errors.push(message);
+}
+
 function countRecords(state: PersistedGeospatialState): GeospatialRecordCounts {
+  const boundaryStore = isPlainRecord(state?.boundaryHistoryByEntity) ? state.boundaryHistoryByEntity : {};
+  const poiStore = isPlainRecord(state?.poiStore) ? state.poiStore : {};
+  const listingsStore = isPlainRecord(state?.spatialListingsByCity) ? state.spatialListingsByCity : {};
+  const overlayStore = isPlainRecord(state?.overlayStore) ? state.overlayStore : {};
+  const importBatches = isPlainRecord(state?.importBatches) ? state.importBatches : {};
+
   let activeBoundaries = 0;
-  for (const history of Object.values(state.boundaryHistoryByEntity)) {
-    activeBoundaries += history.filter((b) => b.status === 'ACTIVE').length;
+  for (const history of Object.values(boundaryStore)) {
+    if (!Array.isArray(history)) continue;
+    for (const record of history) {
+      if (isPlainRecord(record) && record.status === 'ACTIVE') activeBoundaries += 1;
+    }
   }
+
+  let spatialListingCities = 0;
   let spatialListings = 0;
-  for (const city of Object.values(state.spatialListingsByCity)) {
-    spatialListings += Object.keys(city).length;
+  for (const listings of Object.values(listingsStore)) {
+    if (!isPlainRecord(listings)) continue;
+    spatialListingCities += 1;
+    spatialListings += Object.keys(listings).length;
   }
+
   return {
-    boundaryEntities: Object.keys(state.boundaryHistoryByEntity).length,
+    boundaryEntities: Object.keys(boundaryStore).length,
     activeBoundaries,
-    poiRecords: Object.keys(state.poiStore).length,
-    spatialListingCities: Object.keys(state.spatialListingsByCity).length,
+    poiRecords: Object.keys(poiStore).length,
+    spatialListingCities,
     spatialListings,
-    overlayLayers: Object.keys(state.overlayStore).length,
-    importBatches: Object.keys(state.importBatches).length,
+    overlayLayers: Object.keys(overlayStore).length,
+    importBatches: Object.keys(importBatches).length,
   };
 }
 
 function isFiniteCoord(lat: number, lng: number): boolean {
-  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= IRAN_LAT.min && lat <= IRAN_LAT.max && lng >= IRAN_LNG.min && lng <= IRAN_LNG.max;
+  return Number.isFinite(lat) && Number.isFinite(lng)
+    && lat >= IRAN_LAT.min && lat <= IRAN_LAT.max
+    && lng >= IRAN_LNG.min && lng <= IRAN_LNG.max;
 }
 
-function validateBoundary(record: BoundaryVersionRecord, errors: string[], limit: number): void {
-  if (errors.length >= limit) return;
-  if (!record.id || !record.entityId) errors.push(`Boundary missing id/entityId (${record.entityId ?? '?'})`);
-  const bb = record.boundingBox;
-  if (
-    !bb ||
-    !isFiniteCoord(bb.minLat, bb.minLng) ||
-    !isFiniteCoord(bb.maxLat, bb.maxLng) ||
-    bb.minLat > bb.maxLat ||
-    bb.minLng > bb.maxLng
-  ) {
-    errors.push(`Boundary bbox invalid (${record.id})`);
+function validateBoundary(
+  value: unknown,
+  entityKey: string,
+  errors: string[],
+  limit: number,
+): value is BoundaryVersionRecord {
+  if (!isPlainRecord(value)) {
+    pushValidationError(errors, limit, `BOUNDARY_RECORD_NOT_OBJECT:${entityKey}`);
+    return false;
   }
+
+  const record = value;
+  if (typeof record.id !== 'string' || !record.id.trim()) {
+    pushValidationError(errors, limit, `BOUNDARY_MISSING_ID:${entityKey}`);
+  }
+  if (typeof record.entityId !== 'string' || !record.entityId.trim()) {
+    pushValidationError(errors, limit, `BOUNDARY_MISSING_ENTITY_ID:${entityKey}`);
+  } else if (record.entityId !== entityKey) {
+    pushValidationError(errors, limit, `BOUNDARY_ENTITY_KEY_MISMATCH:${entityKey}:${record.entityId}`);
+  }
+  if (
+    typeof record.version !== 'number'
+    || !Number.isSafeInteger(record.version)
+    || record.version < 1
+  ) {
+    pushValidationError(errors, limit, `BOUNDARY_VERSION_INVALID:${String(record.id ?? entityKey)}`);
+  }
+  if (!['ACTIVE', 'SUPERSEDED', 'PENDING_REVIEW', 'REJECTED'].includes(String(record.status))) {
+    pushValidationError(errors, limit, `BOUNDARY_STATUS_INVALID:${String(record.id ?? entityKey)}`);
+  }
+
+  const bbox = isPlainRecord(record.boundingBox) ? record.boundingBox : null;
+  const minLat = bbox?.minLat;
+  const maxLat = bbox?.maxLat;
+  const minLng = bbox?.minLng;
+  const maxLng = bbox?.maxLng;
+  const numbersValid = [minLat, maxLat, minLng, maxLng].every(
+    (coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate),
+  );
+  if (
+    !numbersValid
+    || !isFiniteCoord(minLat as number, minLng as number)
+    || !isFiniteCoord(maxLat as number, maxLng as number)
+    || (minLat as number) > (maxLat as number)
+    || (minLng as number) > (maxLng as number)
+  ) {
+    pushValidationError(errors, limit, `BOUNDARY_BBOX_INVALID:${String(record.id ?? entityKey)}`);
+  }
+  return true;
 }
 
-function validatePoi(record: PointOfInterestRecord, errors: string[], limit: number): void {
-  if (errors.length >= limit) return;
-  const { lat, lng } = record.coordinates;
-  if (!isFiniteCoord(lat, lng)) errors.push(`POI coordinates invalid (${record.id})`);
-  if (!record.dedupeKey) errors.push(`POI missing dedupeKey (${record.id})`);
+function validatePoi(value: unknown, poiKey: string, errors: string[], limit: number): void {
+  if (!isPlainRecord(value)) {
+    pushValidationError(errors, limit, `POI_RECORD_NOT_OBJECT:${poiKey}`);
+    return;
+  }
+  if (typeof value.id !== 'string' || value.id !== poiKey) {
+    pushValidationError(errors, limit, `POI_ID_KEY_MISMATCH:${poiKey}`);
+  }
+  const coordinates = value.coordinates;
+  if (
+    !isPlainRecord(coordinates)
+    || typeof coordinates.lat !== 'number'
+    || typeof coordinates.lng !== 'number'
+    || !isFiniteCoord(coordinates.lat, coordinates.lng)
+  ) {
+    pushValidationError(errors, limit, `POI_COORDINATES_INVALID:${String(value.id ?? poiKey)}`);
+  }
+  if (typeof value.dedupeKey !== 'string' || !value.dedupeKey.trim()) {
+    pushValidationError(errors, limit, `POI_MISSING_DEDUPE_KEY:${String(value.id ?? poiKey)}`);
+  }
 }
 
 export function validatePersistedGeospatialState(
   state: unknown,
   options?: { maxErrors?: number },
 ): { valid: boolean; errors: string[]; counts: GeospatialRecordCounts } {
-  const maxErrors = options?.maxErrors ?? 12;
+  const requestedMaxErrors = options?.maxErrors ?? 12;
+  const maxErrors = Number.isSafeInteger(requestedMaxErrors) && requestedMaxErrors > 0
+    ? Math.min(requestedMaxErrors, 1000)
+    : 12;
   const errors: string[] = [];
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     return { valid: false, errors: ['GEOSPATIAL_STATE_NOT_OBJECT'], counts: countRecords(defaultEmpty()) };
@@ -119,17 +199,55 @@ export function validatePersistedGeospatialState(
     'overlayStore',
     'importBatches',
   ] as const) {
-    if (!s[required] || typeof s[required] !== 'object' || Array.isArray(s[required])) {
+    if (!isPlainRecord(s[required])) {
       errors.push(`GEOSPATIAL_MISSING_FIELD_${required}`);
     }
   }
   if (errors.length > 0) {
     return { valid: false, errors, counts: countRecords(defaultEmpty()) };
   }
-  for (const history of Object.values(s.boundaryHistoryByEntity).slice(0, 50)) {
-    for (const b of history.slice(0, 20)) validateBoundary(b, errors, maxErrors);
+  const seenBoundaryIds = new Set<string>();
+  for (const [entityKey, history] of Object.entries(s.boundaryHistoryByEntity)) {
+    if (!Array.isArray(history)) {
+      pushValidationError(errors, maxErrors, `BOUNDARY_HISTORY_NOT_ARRAY:${entityKey}`);
+      continue;
+    }
+
+    const seenVersions = new Set<number>();
+    let previousVersion = 0;
+    let activeCount = 0;
+    for (const value of history) {
+      const validRecord = validateBoundary(value, entityKey, errors, maxErrors);
+      if (!validRecord) continue;
+      const record = value;
+
+      if (typeof record.id === 'string' && record.id.trim()) {
+        if (seenBoundaryIds.has(record.id)) {
+          pushValidationError(errors, maxErrors, `BOUNDARY_ID_DUPLICATE:${record.id}`);
+        }
+        seenBoundaryIds.add(record.id);
+      }
+      if (typeof record.version === 'number' && Number.isSafeInteger(record.version) && record.version > 0) {
+        if (seenVersions.has(record.version)) {
+          pushValidationError(errors, maxErrors, `BOUNDARY_VERSION_DUPLICATE:${entityKey}:${record.version}`);
+        }
+        if (record.version <= previousVersion) {
+          pushValidationError(errors, maxErrors, `BOUNDARY_VERSION_SEQUENCE_INVALID:${entityKey}`);
+        }
+        seenVersions.add(record.version);
+        previousVersion = record.version;
+      }
+      if (record.status === 'ACTIVE') activeCount += 1;
+    }
+
+    if (activeCount > 1) {
+      pushValidationError(errors, maxErrors, `BOUNDARY_MULTIPLE_ACTIVE_VERSIONS:${entityKey}`);
+    }
   }
-  for (const poi of Object.values(s.poiStore).slice(0, 100)) validatePoi(poi, errors, maxErrors);
+
+  for (const [poiKey, poi] of Object.entries(s.poiStore)) {
+    validatePoi(poi, poiKey, errors, maxErrors);
+  }
 
   const counts = countRecords(s);
   return { valid: errors.length === 0, errors, counts };

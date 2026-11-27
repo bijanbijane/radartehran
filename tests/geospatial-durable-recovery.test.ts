@@ -12,6 +12,7 @@ import {
   type GeospatialRecordCounts,
 } from '../server/modules/geospatial/geospatialDurableRecovery';
 import type { PersistedGeospatialState } from '../server/modules/geospatial/geospatialRepository';
+import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
 import {
   runGeospatialOperatorMigration,
   runGeospatialRepositoryMigration,
@@ -75,6 +76,71 @@ async function runTests(): Promise<void> {
 
   const valid = validatePersistedGeospatialState(sampleState());
   assert.equal(valid.valid, true);
+
+  const duplicateActive = sampleState();
+  const originalActive = duplicateActive.boundaryHistoryByEntity['hood-tehran-1'][0];
+  duplicateActive.boundaryHistoryByEntity['hood-tehran-1'].push({
+    ...structuredClone(originalActive),
+    id: 'bnd-duplicate-active',
+    version: 2,
+  });
+  const duplicateActiveReport = validatePersistedGeospatialState(duplicateActive);
+  assert.equal(duplicateActiveReport.valid, false);
+  assert.ok(duplicateActiveReport.errors.includes('BOUNDARY_MULTIPLE_ACTIVE_VERSIONS:hood-tehran-1'));
+  assert.equal(assessGeospatialSnapshot(duplicateActive, { remoteSnapshotPresent: true }).health, 'BLOCKED');
+
+  const entityMismatch = sampleState();
+  entityMismatch.boundaryHistoryByEntity['hood-tehran-1'][0].entityId = 'hood-tehran-99';
+  assert.ok(validatePersistedGeospatialState(entityMismatch).errors.some(
+    (error) => error.startsWith('BOUNDARY_ENTITY_KEY_MISMATCH:'),
+  ));
+
+  const unordered = sampleState();
+  const firstBoundary = unordered.boundaryHistoryByEntity['hood-tehran-1'][0];
+  unordered.boundaryHistoryByEntity['hood-tehran-1'].push(
+    { ...structuredClone(firstBoundary), id: 'bnd-v3', version: 3, status: 'SUPERSEDED' },
+    { ...structuredClone(firstBoundary), id: 'bnd-v2', version: 2, status: 'SUPERSEDED' },
+  );
+  assert.ok(validatePersistedGeospatialState(unordered).errors.includes(
+    'BOUNDARY_VERSION_SEQUENCE_INVALID:hood-tehran-1',
+  ));
+
+  const malformedHistory = sampleState();
+  (malformedHistory.boundaryHistoryByEntity as unknown as Record<string, unknown>)['hood-tehran-1'] = null;
+  assert.doesNotThrow(() => validatePersistedGeospatialState(malformedHistory));
+  assert.ok(validatePersistedGeospatialState(malformedHistory).errors.includes(
+    'BOUNDARY_HISTORY_NOT_ARRAY:hood-tehran-1',
+  ));
+
+  const malformedRecord = sampleState();
+  malformedRecord.boundaryHistoryByEntity['hood-tehran-1'].push(null as unknown as BoundaryVersionRecord);
+  assert.doesNotThrow(() => validatePersistedGeospatialState(malformedRecord));
+  assert.ok(validatePersistedGeospatialState(malformedRecord).errors.includes(
+    'BOUNDARY_RECORD_NOT_OBJECT:hood-tehran-1',
+  ));
+
+  const lateCorruption = sampleState();
+  for (let i = 0; i < 55; i += 1) lateCorruption.boundaryHistoryByEntity[`hood-tehran-${i + 2}`] = [];
+  (lateCorruption.boundaryHistoryByEntity as unknown as Record<string, unknown>)['hood-tehran-56'] = null;
+  assert.ok(validatePersistedGeospatialState(lateCorruption).errors.includes(
+    'BOUNDARY_HISTORY_NOT_ARRAY:hood-tehran-56',
+  ));
+
+  const longHistory = sampleState();
+  const longRecord = longHistory.boundaryHistoryByEntity['hood-tehran-1'][0];
+  for (let version = 2; version <= 25; version += 1) {
+    longHistory.boundaryHistoryByEntity['hood-tehran-1'].push({
+      ...structuredClone(longRecord),
+      id: `bnd-long-v${version}`,
+      version,
+      status: 'SUPERSEDED',
+    });
+  }
+  longHistory.boundaryHistoryByEntity['hood-tehran-1'][24].boundingBox = null as unknown as BoundaryVersionRecord['boundingBox'];
+  assert.ok(validatePersistedGeospatialState(longHistory).errors.some(
+    (error) => error.startsWith('BOUNDARY_BBOX_INVALID:'),
+  ));
+
 
   const ready = assessGeospatialSnapshot(sampleState(), { remoteSnapshotPresent: true, snapshotRevision: 3 });
   assert.equal(ready.health, 'READY');
