@@ -471,8 +471,8 @@ export function stageGeospatialSnapshotForActivation(candidate: PersistedGeospat
   return report;
 }
 
-export async function activateStagedGeospatialSnapshot(options?: {
-  persist?: (state: PersistedGeospatialState) => Promise<void>;
+export async function activateStagedGeospatialSnapshot(options: {
+  persist: (state: PersistedGeospatialState) => Promise<void>;
 }): Promise<GeospatialRecoveryReport> {
   if (!stagedSnapshot) {
     const blocked: GeospatialRecoveryReport = {
@@ -494,10 +494,10 @@ export async function activateStagedGeospatialSnapshot(options?: {
     lastRecoveryReport = { ...report, activated: false };
     return lastRecoveryReport;
   }
-  if (options?.persist) {
-    try {
-      await options.persist(stagedSnapshot);
-    } catch (error) {
+  persistenceHealth = 'RECOVERING';
+  try {
+    await options.persist(stagedSnapshot);
+  } catch (error) {
       persistenceHealth = 'BLOCKED';
       const report: GeospatialRecoveryReport = {
         health: 'BLOCKED',
@@ -507,9 +507,8 @@ export async function activateStagedGeospatialSnapshot(options?: {
         recoveryRequirement: 'Remote persistence failed; previous version remains active.',
         activated: false,
       };
-      lastRecoveryReport = report;
-      return report;
-    }
+    lastRecoveryReport = report;
+    return report;
   }
   persistenceHealth = 'READY';
   const report: GeospatialRecoveryReport = {
