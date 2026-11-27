@@ -1409,3 +1409,8 @@
 ## 2026-11-27 — latest Actions runner reproduction
 - On PR #78 code head `91226a55389ccf77e25b1dc070678d3f6c1fb9cd`, Backend Triad run 45996474063 job 140497002675, Quality Gates run 45996473971 job 140497002393, Native Auth run 45996473979 job 140497001806 and Path-Filtered Checks run 45996473964 detect job 140497002382 all failed before runner assignment (runner_id=0, empty runner name, zero steps). E2E and downstream path-filtered jobs were skipped.
 - No source checkout, dependency install, test, typecheck or build executed. Issue #49 updated with the run/job evidence. Do not classify this as a code failure.
+
+
+## 2026-11-27 — latest exact-head CI evidence
+- PR #78 code head `1a33b00db205303dfd2603698cceea051c424398` triggered Backend Triad run 45996787222 job 140498058219, Quality Gates run 45996787220 job 140498058177, Native Auth run 45996787126 job 140498057995 and Path-Filtered Checks run 45996787006 detect job 140498057224. All primary jobs failed with runner_id=0, empty runner_name and zero steps; downstream jobs were skipped.
+- No source checkout, dependency install, tests, typecheck or build executed. Issue #49 updated with the exact run/job IDs.
