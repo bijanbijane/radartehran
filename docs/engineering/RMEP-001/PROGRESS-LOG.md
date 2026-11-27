@@ -1341,3 +1341,12 @@
 - **Code head:** 043e25c7c044cf4375fd40b68bbd62bb02c8831a. Execution-state commit: 15764b32b5268253ed59a9df52b902b3ee398190.
 - **CI:** Latest four workflows on this head failed (runs 45986606294, 45986606317, 45986606333, 45986606330); logs and step metadata remain unavailable. Root cause unknown.
 - **Next:** Run focused triad test and Worker typecheck; inspect CI logs; decide whether a durable outbox processing lease is still necessary after status-transition fencing.
+
+
+## 2026-11-27 — Outbox unavailable-DB race fence
+- **Finding:** processPendingResearchErasureOutbox had a second stale-worker downgrade path when RESEARCH_DB was absent. It updated status to RETRY_PENDING using only outbox_id, so an invocation that had scanned PENDING could overwrite a competing worker's COMPLETED state.
+- **Fix:** The unavailable-DB retry update is now conditional on status IN (PENDING, RETRY_PENDING); attempt_count increments atomically in SQL. If the guarded update changes no row, the code reads the canonical outbox state and treats a valid COMPLETED row as completed rather than pending.
+- **Regression:** Added a SQLite-backed race test that changes the selected row to COMPLETED between scan and unavailable-DB update, then asserts the completion receipt and parent deletion job remain COMPLETED.
+- **Files:** worker/account-lifecycle/workerLifecycleRuntime.ts; tests/rt-db-triad-001.test.ts.
+- **Verification:** GitHub source and test contents re-read after commit. Local test/typecheck not executed (MacBook Offline). CI on the latest prior branch head still reports failures with unavailable logs; no pass is claimed.
+- **Commits:** 0bd488aa5aee3c1494f85eaebe63fce03f296d59 (fix); 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 (test).
