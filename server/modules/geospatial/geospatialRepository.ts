@@ -121,6 +121,16 @@ export function hydrateMaps(
     importBatches: Map<string, GeospatialImportBatchResult>;
   },
 ): void {
+  // Hydration is a full snapshot replacement, not a merge. Clear first so a
+  // repeated recovery/hydration cannot leave records from an older snapshot
+  // visible in the runtime maps.
+  maps.boundaryHistoryByEntity.clear();
+  maps.poiStore.clear();
+  maps.poiDedupeIndex.clear();
+  maps.spatialListingsByCity.clear();
+  maps.overlayStore.clear();
+  maps.importBatches.clear();
+
   for (const [k, v] of Object.entries(state.boundaryHistoryByEntity)) maps.boundaryHistoryByEntity.set(k, v);
   for (const [k, v] of Object.entries(state.poiStore)) maps.poiStore.set(k, v);
   for (const [k, v] of Object.entries(state.poiDedupeIndex)) maps.poiDedupeIndex.set(k, v);
