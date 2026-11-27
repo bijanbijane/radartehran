@@ -27,6 +27,7 @@ import {
   validateSubmissionStep,
 } from '../moderation/ListingValidation';
 import { assessDuplicateSubmission } from '../moderation/DuplicateDetection';
+import { normalizeSubmissionLocationPrecision } from '../services/listingService';
 
 function toEvaluated(): EvaluatedNeighborhood[] {
   return INITIAL_NEIGHBORHOODS.slice(0, 6).map((h) => ({
@@ -40,6 +41,13 @@ function toEvaluated(): EvaluatedNeighborhood[] {
     marketReport: getNeighborhoodMarketReport(h),
   }));
 }
+
+test('Listing submission never claims street-level coordinate precision without captured coordinates', () => {
+  assert.equal(normalizeSubmissionLocationPrecision('exact'), 'neighborhood');
+  assert.equal(normalizeSubmissionLocationPrecision('approximate'), 'neighborhood');
+  assert.equal(normalizeSubmissionLocationPrecision('neighborhood'), 'neighborhood');
+  assert.equal(normalizeSubmissionLocationPrecision('unavailable'), 'unavailable');
+});
 
 test('PropertyFilterDraft normalizes Persian numerals and auto-swaps inverted min/max bounds on commit', () => {
   const d = createDefaultPropertyFilters('sale');
