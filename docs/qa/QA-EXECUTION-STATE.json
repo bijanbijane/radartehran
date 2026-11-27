@@ -8,7 +8,7 @@
   "qa_branch": "qa/ci-contract-fixes-2026-11-27",
   "latest_qa_commit": "1e0fa339ba72d3d0f1cf30cad0fe7e6f331d8fb0",
   "pull_request": 79,
-  "status": "IMPLEMENTED_PENDING_EXECUTION",
+  "status": "BLOCKED_CONFIRMED_GITHUB_RUNNER_ALLOCATION",
   "tests": {
     "executed": 0,
     "passed": 0,
@@ -52,10 +52,71 @@
     }
   ],
   "limitations": [
-    "Authorized MacBook Desktop Commander device is Offline; local test execution is unavailable.",
-    "Recent GitHub Actions jobs return null step arrays; job log downloads returned 404 BlobNotFound and no diagnostic artifacts were available.",
-    "No application tests, typechecks, builds, or Wrangler dry-runs were executed in this session."
+    "The authorized MacBook Desktop Commander device is Offline.",
+    "Five GitHub Actions jobs were assigned runner_id=0 with empty runner_name and zero steps; they failed within 2–5 seconds. This confirms runner allocation did not occur; no application test command was reached.",
+    "One rerun of the CI quality-gates job repeated the same runner_id=0, empty runner_name, zero-step failure.",
+    "Job logs are unavailable and no diagnostic artifacts were produced."
   ],
-  "next_action": "Restore an executable runner, run all listed focused suites and the complete CI gates, inspect actual logs, and only then close the work package. Keep the PR Draft; no merge or production deployment.",
-  "updated_at": "2026-11-27T10:27:00Z"
+  "next_action": "Restore GitHub-hosted runner availability or reconnect the authorized MacBook runner; then rerun the exact test matrix and inspect logs. No further blind reruns until runner allocation changes.",
+  "updated_at": "2026-11-27T10:30:00Z",
+  "ci_observation": {
+    "pr": 79,
+    "code_head": "1e0fa339ba72d3d0f1cf30cad0fe7e6f331d8fb0",
+    "workflow_runs": [
+      {
+        "id": 45982139278,
+        "name": "Tehran Radar CI Quality Gates",
+        "job_id": 140448443589,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45982139311,
+        "name": "Tehran Radar Path-Filtered Checks",
+        "job_id": 140448443963,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45982139268,
+        "name": "Cloudflare Native Auth Validation",
+        "job_id": 140448442710,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45982139346,
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "job_id": 140448443288,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      },
+      {
+        "id": 45982139324,
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "job_id": 140448451664,
+        "runner_id": 0,
+        "runner_name": "",
+        "steps": 0,
+        "conclusion": "failure"
+      }
+    ],
+    "retry": {
+      "run_id": 45982139278,
+      "job_id": 140448953174,
+      "runner_id": 0,
+      "runner_name": "",
+      "steps": 0,
+      "conclusion": "failure",
+      "result": "same runner-allocation failure"
+    }
+  }
 }
