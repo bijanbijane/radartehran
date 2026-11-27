@@ -13,9 +13,9 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "5ee0b60db6c0d550c4e254e5753b286b75ef5536",
-    "working_tree_status": "REMOTE_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; NO_LOCAL_WORKTREE",
-    "last_verified_commit": "9180bffe91577e9a53460fcf54e0058549813f0d"
+    "head_commit": "ee2023a59128a9bad17f37e144995b5a6d67bc1f",
+    "working_tree_status": "REMOTE_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; NO_LOCAL_WORKTREE; LATEST_CHANGES_NOT_LOCALLY_TESTED",
+    "last_verified_commit": "25f6fa0196adef30d5d0be9368a5431360696a25"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-196-GITHUB-CI-RERUN-AND-BACKEND-RESUMPTION",
-    "checkpoint_timestamp_utc": "2026-11-27T10:00:00.000Z",
-    "last_safe_operation": "Verified the reconciled execution state and progress checkpoint on the NIPS engineering branch; repository head observed immediately before this state checkpoint was 5ee0b60db6c0d550c4e254e5753b286b75ef5536.",
-    "last_completed_operation": "Updated BLOCKERS.md, NEXT-ACTIONS.md, REMEDIATION-REGISTER.md and NIPS/IMPLEMENTATION-TRACKER.md with current workflow run IDs, rerun job ID 140435161931, exact BlobNotFound limitation and current storage ownership blockers. No runtime code or production configuration changed.",
-    "next_exact_action": "Diagnose GitHub Actions job initialization/runner availability for rerun job 140435161931 using GitHub's native Actions UI or restored log access. Once actual steps are available, fix the first reproducible command-level failure; in parallel, continue only owner-authorized IRNI NIPS RPC work without adding a direct Radar D1 binding.",
+    "checkpoint_id": "CHK-197-CI-FIXES-AND-RUNNER-BLOCKER",
+    "checkpoint_timestamp_utc": "2026-11-27T10:20:23.000Z",
+    "last_safe_operation": "Corrected the native-auth workflow to call the existing test:auth script; removed the stale Bun lockfile and added the repository's npm legacy-peer-deps setting on the existing NIPS branch. Rechecked GitHub CI after the changes.",
+    "last_completed_operation": "Committed the CI script correction (eb76b22590c70dc81ddff2189fc1cca459099d8d), stale bun.lock removal (dd28ff9aa9c2946a60ae9fbd34630ac4d6ad5c5f), and .npmrc addition (ee2023a59128a9bad17f37e144995b5a6d67bc1f). Verified bun.lock is absent, .npmrc exists, and native-auth workflow calls npm run test:auth. Five latest workflows still fail with empty/null job steps; log retrieval returns BlobNotFound.",
+    "next_exact_action": "Diagnose GitHub Actions job initialization through GitHub Actions UI or a functioning runner/log endpoint; do not infer an application failure from empty steps. Then run npm run test:nips, npm run typecheck, npm run arch:check and the focused security/auth/triad suites in an executable environment. Continue only with the IRNI-owned NIPS RPC contract; Radar must not bind directly to the shared neighborhood D1.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -2192,6 +2192,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Diagnose GitHub Actions job initialization/runner availability for rerun job 140435161931 using GitHub's native Actions UI or restored log access. Once actual steps are available, fix the first reproducible command-level failure; in parallel, continue only owner-authorized IRNI NIPS RPC work without adding a direct Radar D1 binding."
+    "next_action": "Diagnose GitHub Actions job initialization through GitHub Actions UI or a functioning runner/log endpoint; do not infer an application failure from empty steps. Then run npm run test:nips, npm run typecheck, npm run arch:check and the focused security/auth/triad suites in an executable environment. Continue only with the IRNI-owned NIPS RPC contract; Radar must not bind directly to the shared neighborhood D1."
   }
 }
