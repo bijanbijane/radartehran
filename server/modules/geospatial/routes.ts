@@ -10,12 +10,33 @@ import {
 import type { GeospatialModuleDependencies } from './types';
 import type { GeospatialService } from './service';
 import { getCloudflareSessionContext } from '../../../src/utils/serverCloudflareSessionBridge';
+import { getGeospatialPersistenceHealth, getLastGeospatialRecoveryReport } from './geospatialDurableRecovery';
 
 export function createGeospatialRouter(
   service: GeospatialService,
   deps: GeospatialModuleDependencies = {},
 ): Router {
   const router = Router();
+
+  router.use((req: Request, res: Response, next) => {
+    const health = getGeospatialPersistenceHealth();
+    if (health === 'READY') {
+      next();
+      return;
+    }
+    const report = getLastGeospatialRecoveryReport();
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(503).json(buildErrorEnvelope({
+      code: 'GEOSPATIAL_PERSISTENCE_UNAVAILABLE',
+      message: 'Geospatial services are unavailable until a verified durable snapshot is recovered.',
+      details: {
+        health,
+        recoveryRequirement: report?.recoveryRequirement ?? null,
+        validationErrors: report?.validationErrors ?? [],
+      },
+      correlationId: resolveCorrelationId(req),
+    }));
+  });
 
   function handleRouteError(res: Response, err: unknown, correlationId: string) {
     if (err instanceof CoreApiError) {
