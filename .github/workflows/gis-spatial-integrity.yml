@@ -6,11 +6,18 @@ on:
       - feat/gis-spatial-integrity-2026-11-27
     paths:
       - "server/modules/geospatial/**"
-      - "server/modules/valuation/service.ts"
-      - "server/modules/valuation/types.ts"
+      - "server/modules/valuation/**"
+      - "server/modules/property-search/**"
+      - "server/modules/shared/atomicJsonRepository.ts"
+      - "worker/irni/neighborhoodProfileIdentityResolver.ts"
+      - "worker/routes/marketplaceRoutes.ts"
       - "tests/geospatial-*.test.ts"
       - "tests/neighborhood-profile-boundary-read-model.test.ts"
       - "tests/property-valuation-engine-module.test.ts"
+      - "tests/durable-repository-snapshots.test.ts"
+      - "tests/irni-neighborhood-profile-identity-resolver.test.ts"
+      - "tests/cloudflare-marketplace-bargain-write.test.ts"
+      - "tests/property-search/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/gis-spatial-integrity.yml"
@@ -19,11 +26,18 @@ on:
       - main
     paths:
       - "server/modules/geospatial/**"
-      - "server/modules/valuation/service.ts"
-      - "server/modules/valuation/types.ts"
+      - "server/modules/valuation/**"
+      - "server/modules/property-search/**"
+      - "server/modules/shared/atomicJsonRepository.ts"
+      - "worker/irni/neighborhoodProfileIdentityResolver.ts"
+      - "worker/routes/marketplaceRoutes.ts"
       - "tests/geospatial-*.test.ts"
       - "tests/neighborhood-profile-boundary-read-model.test.ts"
       - "tests/property-valuation-engine-module.test.ts"
+      - "tests/durable-repository-snapshots.test.ts"
+      - "tests/irni-neighborhood-profile-identity-resolver.test.ts"
+      - "tests/cloudflare-marketplace-bargain-write.test.ts"
+      - "tests/property-search/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/gis-spatial-integrity.yml"
@@ -38,9 +52,9 @@ concurrency:
 
 jobs:
   gis-regression:
-    name: GIS geometry and boundary regression
+    name: GIS geometry, identity, persistence and valuation regressions
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
@@ -57,13 +71,20 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Run geospatial and valuation-location regression suites
-        run: npm run test:geospatial && npm run test:valuation-location
+      - name: Run GIS, valuation, persistence, IRNI and property-search regressions
+        run: >-
+          npm run test:geospatial &&
+          npm run test:valuation-location &&
+          npx tsx --test
+          tests/durable-repository-snapshots.test.ts
+          tests/irni-neighborhood-profile-identity-resolver.test.ts
+          tests/cloudflare-marketplace-bargain-write.test.ts
+          tests/property-search/__tests__/propertySearch.test.ts
 
   gis-typecheck:
     name: GIS module TypeScript typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
