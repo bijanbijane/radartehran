@@ -129,17 +129,17 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         {primaryView === 'map' && !mobileFilterOpen && !showSearchDropdown && activeFilterCount > 0 && (
           <div className="self-start flex flex-wrap items-center gap-1.5 apple-vibrancy-bar px-2.5 py-1 rounded-[10px] text-xs font-bold pointer-events-auto" role="region" aria-label="فیلترهای فعال نقشه">
             {statusFilter !== 'all' && (
-              <button type="button" aria-label="حذف فیلتر وضعیت بودجه" onClick={() => setStatusFilter('all')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر وضعیت بودجه" onClick={() => setStatusFilter('all')} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
                 <span>{statusFilter === 'green' ? 'مناسب بودجه' : statusFilter === 'yellow' ? 'مرزی' : 'فراتر از بودجه'}</span><X className="w-3 h-3" />
               </button>
             )}
             {onlyOutsideTrafficZone && (
-              <button type="button" aria-label="حذف فیلتر خارج از طرح" onClick={() => setOnlyOutsideTrafficZone(false)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر خارج از طرح" onClick={() => setOnlyOutsideTrafficZone(false)} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
                 <span>خارج از طرح</span><X className="w-3 h-3" />
               </button>
             )}
             {onlyHighMetro && (
-              <button type="button" aria-label="حذف فیلتر دسترسی مترو" onClick={() => setOnlyHighMetro(false)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر دسترسی مترو" onClick={() => setOnlyHighMetro(false)} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
                 <span>مترو ۸+</span><X className="w-3 h-3" />
               </button>
             )}
