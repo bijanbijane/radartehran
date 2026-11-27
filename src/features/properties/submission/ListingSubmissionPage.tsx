@@ -314,11 +314,12 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                 onChange={(e) => update({ locationPrecision: e.target.value as LocationPrecision })}
                 className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               >
-                <option value="approximate">محدوده تقریبی خیابان (پیشنهادی برای حفظ حریم خصوصی)</option>
                 <option value="neighborhood">فقط در سطح محله</option>
-                <option value="exact">نقطه دقیق ثبت‌شده</option>
                 <option value="unavailable">عدم نمایش مختصات روی نقشه</option>
               </select>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]" role="note">
+                ثبت مختصات واقعی ملک هنوز در این فرم فعال نیست؛ فعلاً فقط مرکز محله نمایش داده می‌شود. ثبت نقطه دقیق یا محدوده خیابان پس از افزودن ابزار انتخاب موقعیت و تأیید مختصات فعال خواهد شد.
+              </p>
             </div>
           </div>
         )}
