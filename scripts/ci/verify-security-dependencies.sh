@@ -6,7 +6,7 @@ npm ci --no-audit --no-fund
 
 echo "[security-deps] npm audit"
 npm audit --json > /tmp/radar-npm-audit.json || true
-node -e "const a=require('/tmp/radar-npm-audit.json'); console.log('NPM_AUDIT',JSON.stringify(a.metadata?.vulnerabilities)); for (const [name,v] of Object.entries(a.vulnerabilities||{})) console.log('AUDIT_PACKAGE',name,v.severity,'direct='+v.isDirect,'fix='+JSON.stringify(v.fixAvailable));"
+node -e "const a=require('/tmp/radar-npm-audit.json'); const v=a.metadata?.vulnerabilities ?? {}; console.log('NPM_AUDIT',JSON.stringify(v)); for (const [name,p] of Object.entries(a.vulnerabilities||{})) console.log('AUDIT_PACKAGE',name,p.severity,'direct='+p.isDirect,'fix='+JSON.stringify(p.fixAvailable)); const blocked=['vitest','@vitest/mocker','tinypool','sharp'].filter(name=>a.vulnerabilities?.[name]); if ((v.critical ?? 0)>0 || blocked.length) { console.error('SECURITY_AUDIT_GATE_FAILED',JSON.stringify({critical:v.critical ?? 0,blocked})); process.exit(1); }"
 
 echo "[security-deps] typecheck"
 npm run typecheck
@@ -38,4 +38,4 @@ npm run test:vitest
 echo "[security-deps] frontend build"
 npm run build
 
-echo "[security-deps] all verification commands passed"
+echo "[security-deps] verification commands completed; review residual npm audit findings printed above"
