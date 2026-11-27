@@ -144,3 +144,12 @@ GitHub log retrieval remains unavailable. Issue #49 records a matching hosted-ru
 - Valuation feature generation must reject the non-interior result.
 - Dedicated workflow run `45980848999`: GIS regression job `140444049218` and typecheck job `140444048835` concluded FAILURE; both expose no steps and logs return `BlobNotFound`. The regression is committed but NOT VERIFIED.
 - Retry of previous GIS run `45980295987` also failed (new job IDs `140442697746`, `140442699939`) with empty steps and unavailable logs.
+
+
+## Mixed-metadata duplicate ACTIVE history regression — 2026-11-27
+
+- Bbox overlap diagnostics must skip an entity history with multiple ACTIVE records even when only one record matches the requested city and level.
+- Regression file: `tests/geospatial-valuation-location-assignment.test.ts`.
+- Expected behavior: a corrupt two-ACTIVE history is excluded before bbox comparisons, so it cannot create a false overlap report against a neighboring authoritative boundary.
+- Code revision: `4a66e3ed9d06a93b051d5b549a688826d0c4da01`.
+- Status: COMMITTED / NOT VERIFIED. No successful GIS test run is available.
