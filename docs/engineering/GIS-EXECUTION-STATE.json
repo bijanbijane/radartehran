@@ -38,7 +38,9 @@
     "Confirmed Express GIS point resolution reads its boundary-history snapshot repository; no verified IRNI geometry ingestion path was established.",
     "Confirmed valuation production composition remains incomplete: apps/api/server.ts does not mount the valuation router, and no production ValuationDataConsumerAdapter or IRNI-backed ValuationLocationResolver was established.",
     "Expanded GIS blocker documentation with the exact IRNI geometry, production composition, and API integration acceptance gates.",
-    "Queried GitHub Actions Jobs API for GIS, IRNI RPC and Worker bundle failures; all four jobs report runner_id=0, empty runner_name and zero steps, confirming no workflow step was recorded."
+    "Queried GitHub Actions Jobs API for GIS, IRNI RPC and Worker bundle failures; all four jobs report runner_id=0, empty runner_name and zero steps, confirming no workflow step was recorded.",
+    "Expanded the GIS workflow push and pull_request path filters to cover all changed valuation, property-search, persistence, IRNI identity and marketplace regression paths; added those focused test files to the regression command.",
+    "Expanded Browser UX workflow source watches to include the changed Neighborhood Inspector and NIPS profile UI files; verified both workflow files by GitHub read-back."
   ],
   "not_verified": [
     "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
@@ -61,28 +63,29 @@
     "Production ValuationDataConsumerAdapter and canonical IRNI-backed ValuationLocationResolver",
     "Public valuation HTTP endpoint registration and API-boundary tests",
     "Exact-head execution of GIS, IRNI RPC and Worker bundle workflows on code revision 3aafd609702b270c1a49be3d52ba4175662829a6",
-    "Root cause of GitHub hosted-runner allocation/dispatch failure (account/repository Actions entitlement, usage/billing, policy or GitHub service state)"
+    "Root cause of GitHub hosted-runner allocation/dispatch failure (account/repository Actions entitlement, usage/billing, policy or GitHub service state)",
+    "Execution of expanded GIS regression and Browser UX suites on exact PR head 625490e51e434a722ddfe0357258c748e36de720; latest jobs failed without step metadata."
   ],
   "production_changes": false,
   "production_deployment": false,
   "database_migrations_added": false,
   "database_created": false,
   "tests": {
-    "command": "npm run test:geospatial && npm run test:valuation-location",
-    "status": "NOT_VERIFIED_NO_USABLE_JOB_DIAGNOSTICS",
-    "reviewed_head_sha": "f21c8e9757833f8277cd5a286991cd85addca04d",
-    "workflow_run_id": 45987669458,
+    "command": "npm run test:geospatial && npm run test:valuation-location && npx tsx --test tests/durable-repository-snapshots.test.ts tests/irni-neighborhood-profile-identity-resolver.test.ts tests/cloudflare-marketplace-bargain-write.test.ts tests/property-search/__tests__/propertySearch.test.ts",
+    "status": "NOT_VERIFIED_NO_JOB_STEPS",
+    "reviewed_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+    "workflow_run_id": 46018956272,
     "jobs": [
       {
-        "name": "GIS geometry and boundary regression",
-        "job_id": 140467313055,
+        "name": "GIS module TypeScript typecheck",
+        "job_id": 140573277590,
         "conclusion": "failure",
         "steps": null,
         "logs": null
       },
       {
-        "name": "GIS module TypeScript typecheck",
-        "job_id": 140467313607,
+        "name": "GIS geometry, identity, persistence and valuation regressions",
+        "job_id": 140573277971,
         "conclusion": "failure",
         "steps": null,
         "logs": null
@@ -98,7 +101,7 @@
       "steps": [],
       "logs": "BlobNotFound"
     },
-    "reason": "Exact-head GIS run 45987669458 on branch head f21c8e9757833f8277cd5a286991cd85addca04d concluded failure. Both jobs returned steps=null and logs_url=null. It is not established whether checkout, dependency installation, geospatial tests, valuation-location tests or typecheck started.",
+    "reason": "Exact-head GIS run 46018956272 on branch head 625490e51e434a722ddfe0357258c748e36de720 concluded failure. Both job payloads expose steps=null and no log evidence. It is not established whether checkout, dependency installation, test files or typecheck started.",
     "latest_observed_prior_run": {
       "run_id": 45981367653,
       "reviewed_branch_head": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
@@ -161,82 +164,126 @@
     "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
     "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed.",
     "The production API bootstrap does not register a valuation router or construct a valuation service; the new canonical resolver guard is only a service-level seam until production composition and an IRNI read-only resolver are implemented.",
-    "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified."
+    "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified.",
+    "Exact-head workflow runs 46018956272 (GIS), 46018956332 (Browser UX) and 46018956178 (path-filter detect) failed with steps=null; no command execution is evidenced and no runner metadata is exposed for these sampled jobs."
   ],
-  "last_recorded_action": "Updated GIS blockers and execution state with direct GitHub Actions job evidence: runner_id=0, empty runner_name and zero steps across GIS, IRNI RPC and Worker bundle jobs; application test execution remains unverified.",
-  "latest_inspected_pr_head_sha": "3aafd609702b270c1a49be3d52ba4175662829a6",
-  "latest_branch_head_sha": "62a83b9063ad1506b6d0070f16d3a9222c3dfa42",
+  "last_recorded_action": "Expanded GIS and Browser UX workflow path coverage and targeted regressions; exact-head workflow reruns remain unverified because sampled GitHub Actions jobs returned steps=null.",
+  "latest_inspected_pr_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+  "latest_branch_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "62a83b9063ad1506b6d0070f16d3a9222c3dfa42",
-    "latest_code_revision_sha": "3aafd609702b270c1a49be3d52ba4175662829a6",
+    "branch_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+    "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
     "compare_main": {
-      "ahead_by": 166,
+      "ahead_by": 254,
       "behind_by": 0,
       "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
     },
     "workflow_runs": [
       {
         "name": "GIS Spatial Integrity",
-        "run_id": 45988855453,
+        "run_id": 46018956272,
         "conclusion": "failure",
         "jobs": [
           {
-            "name": "GIS geometry and boundary regression",
-            "job_id": 140471269115,
+            "name": "GIS module TypeScript typecheck",
+            "job_id": 140573277590,
             "conclusion": "failure",
-            "steps": [],
-            "logs": null,
-            "runner_id": 0,
-            "runner_name": ""
+            "steps": null,
+            "logs": null
           },
           {
-            "name": "GIS module TypeScript typecheck",
-            "job_id": 140471269759,
+            "name": "GIS geometry, identity, persistence and valuation regressions",
+            "job_id": 140573277971,
             "conclusion": "failure",
-            "steps": [],
-            "logs": null,
-            "runner_id": 0,
-            "runner_name": ""
+            "steps": null,
+            "logs": null
           }
         ]
       },
       {
-        "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45988855598,
+        "name": "Radar Browser UX Focused Regressions",
+        "run_id": 46018956332,
         "conclusion": "failure",
         "jobs": [
           {
-            "name": "irni-rpc-contract",
-            "job_id": 140471269221,
+            "name": "Five-city context and 8-viewport browser regression",
+            "job_id": 140573278296,
             "conclusion": "failure",
-            "steps": [],
-            "logs": null,
-            "runner_id": 0,
-            "runner_name": ""
+            "steps": null,
+            "logs": null
           }
         ]
+      },
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 46018956178,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "detect",
+            "job_id": 140573277447,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "contracts-gates",
+            "job_id": 140573294495,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "frontend-gates",
+            "job_id": 140573294688,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "api-gates",
+            "job_id": 140573294789,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "Cloudflare Native Auth Validation",
+        "run_id": 46018956249,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "Tehran Radar CI Quality Gates",
+        "run_id": 46018956240,
+        "conclusion": "failure",
+        "jobs": []
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45988855139,
+        "run_id": 46018956302,
         "conclusion": "failure",
-        "jobs": [
-          {
-            "name": "D1 domain isolation, Worker bundle & frontend RPC binding",
-            "job_id": 140471268134,
-            "conclusion": "failure",
-            "steps": [],
-            "logs": null,
-            "runner_id": 0,
-            "runner_name": ""
-          }
-        ]
+        "jobs": []
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 46018956267,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "Radar Initial Frontend Bundle Budget",
+        "run_id": 46018956312,
+        "conclusion": "failure",
+        "jobs": []
       }
     ],
-    "interpretation": "Direct GitHub Actions Jobs API confirms runner_id=0, empty runner_name and zero steps for all four jobs across GIS, IRNI RPC consumer and Radar Worker bundle workflows. No command execution is recorded. This is a pre-step runner allocation/dispatch failure; its account/repository-level cause remains unknown. No test/typecheck pass is claimed."
+    "interpretation": "Exact-head workflow runs on 625490e51e434a722ddfe0357258c748e36de720 failed. The sampled GIS, Browser UX and path-filter detector job payloads expose steps=null; no runner metadata is exposed in those sampled payloads. No test, typecheck, browser, lint or build command execution is evidenced. The workflow path coverage corrections are verified by source read-back only; runtime validation remains blocked and the precise GitHub-side cause is unknown."
   },
-  "latest_branch_sha_at_record": "62a83b9063ad1506b6d0070f16d3a9222c3dfa42",
+  "latest_branch_sha_at_record": "625490e51e434a722ddfe0357258c748e36de720",
   "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
   "valuation_integration": {
     "status": "SERVICE_GUARD_IMPLEMENTED_PRODUCTION_WIRING_BLOCKED",
