@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "workstream": "RADAR-TEHRAN-GIS",
   "status": "IN_PROGRESS",
   "status_date": "2026-11-27",
@@ -26,7 +26,9 @@
     "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage.",
     "Added durable snapshot validation for canonical geometry, simplified geometry and exact persisted bounding-box consistency; added malformed geometry, malformed simplified geometry and stale bbox regression cases.",
     "Audited valuation and spatial market summary consumers: valuation now requires an explicit valid boundary version ID/version; market summary returns null boundary metadata instead of synthesizing version 1 when no unique ACTIVE boundary exists.",
-    "Hardened sub-neighborhood assignment: a point on a micro-neighborhood edge does not inherit its sub-neighborhood ID, and any matched active boundary edge prevents an interior valuation result."
+    "Hardened sub-neighborhood assignment: a point on a micro-neighborhood edge does not inherit its sub-neighborhood ID, and any matched active boundary edge prevents an interior valuation result.",
+    "Fixed a point-resolution integrity gap: a parent-neighborhood interior no longer masks a matched sub-neighborhood boundary edge; edge matches do not emit a sub-neighborhood ID.",
+    "Added a regression proving a point on a sub-neighborhood edge is marked RESOLVED_ON_EDGE and rejected by valuation feature generation."
   ],
   "not_verified": [
     "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
@@ -38,7 +40,8 @@
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
     "Authoritative Tehran neighborhood polygon dataset, license and CRS",
-    "Execution of exact-head GIS tests covering durable snapshot geometry and sub-neighborhood edge behavior"
+    "Execution of exact-head GIS tests covering durable snapshot geometry and sub-neighborhood edge behavior",
+    "Execution of the sub-neighborhood edge regression and latest GIS typecheck on HEAD 2d6c707303dc2e48723c3a8869e59984199c9608"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -47,7 +50,35 @@
   "tests": {
     "command": "npm run test:geospatial",
     "status": "CI_FAILED_UNDIAGNOSED",
-    "reason": "Latest branch HEAD 760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1 produced GIS run 45981010087 with both regression and typecheck jobs failed, steps=null; prior code HEAD 2d6c707303dc2e48723c3a8869e59984199c9608 produced the same result in run 45980838729. GitHub job logs return BlobNotFound. No local runner is online; command execution is unconfirmed."
+    "reviewed_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
+    "workflow_run_id": 45980848999,
+    "jobs": [
+      {
+        "name": "GIS module TypeScript typecheck",
+        "job_id": 140444048835,
+        "conclusion": "failure",
+        "steps": null,
+        "logs": "BlobNotFound"
+      },
+      {
+        "name": "GIS geometry and boundary regression",
+        "job_id": 140444049218,
+        "conclusion": "failure",
+        "steps": null,
+        "logs": "BlobNotFound"
+      }
+    ],
+    "retry_of_prior_gis_jobs": {
+      "original_run_id": 45980295987,
+      "retry_job_ids": [
+        140442697746,
+        140442699939
+      ],
+      "conclusion": "failure",
+      "steps": [],
+      "logs": "BlobNotFound"
+    },
+    "reason": "The focused GIS workflow failed on the latest head; both jobs expose steps=null and logs return BlobNotFound. A retry of the prior failed jobs also failed without step/log evidence. It is unknown whether npm ci or the commands started."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -80,9 +111,9 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore a functioning GitHub Actions/local runner and execute npm run test:geospatial plus npm run typecheck on current PR HEAD. Do not infer test success from a workflow dispatch or failed job conclusion without step/log evidence.",
+  "next_exact_action": "Restore an online GitHub Actions runner or local runner. Execute npm run test:geospatial and npm run typecheck on HEAD 2d6c707303dc2e48723c3a8869e59984199c9608. Then continue the consumer audit for all point-resolution status handling and verify durable hydration.",
   "blockers": [
-    "GitHub Actions hosted-runner allocation/diagnostics: current GIS jobs fail with steps=null and BlobNotFound. Open issue #49 documents the same runner_id=0/zero-step pattern across Radar and IRNI. Exact current jobs do not expose runner_id, so the cause is suspected, not proven. No local Desktop Commander runner is online.",
+    "Six GitHub Actions workflows fail on the latest head; focused GIS jobs expose steps=null and logs return BlobNotFound. Retrying the prior GIS jobs did not yield diagnostics. Desktop Commander MacBook remains offline.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
     "The GIS runtime persists atomic JSON/durable snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
@@ -91,103 +122,74 @@
     "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
     "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed."
   ],
-  "last_recorded_action": "Added durable snapshot validation for canonical/simplified geometry and bbox consistency; additionally audited valuation and market-summary consumers to stop synthesizing missing boundary version metadata, and hardened sub-neighborhood edge semantics. Exact-head GIS CI remains failed with steps/logs unavailable.",
-  "latest_inspected_pr_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
-  "latest_branch_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
+  "last_recorded_action": "Fixed the sub-neighborhood edge assignment gap and added a regression. Latest dedicated GIS workflow still fails without step metadata or retrievable logs.",
+  "latest_inspected_pr_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
+  "latest_branch_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
+    "branch_head_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
     "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608",
+    "compare_main": {
+      "ahead_by": 105,
+      "behind_by": 0,
+      "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
+    },
     "workflow_runs": [
       {
         "name": "GIS Spatial Integrity",
-        "run_id": 45980564390,
-        "attempt": 1,
+        "run_id": 45980848999,
         "conclusion": "failure",
-        "head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
-        "jobs": [
-          {
-            "name": "GIS geometry and boundary regression",
-            "job_id": 140443084579,
-            "conclusion": "failure",
-            "steps": null
-          },
-          {
-            "name": "GIS module TypeScript typecheck",
-            "job_id": 140443084890,
-            "conclusion": "failure",
-            "steps": null
-          }
-        ]
-      },
-      {
-        "name": "GIS Spatial Integrity",
-        "run_id": 45980564390,
-        "attempt": 2,
-        "conclusion": "failure",
-        "head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
         "jobs": [
           {
             "name": "GIS module TypeScript typecheck",
-            "job_id": 140443495137,
+            "job_id": 140444048835,
             "conclusion": "failure",
-            "steps": null
+            "steps": null,
+            "logs": "BlobNotFound"
           },
           {
             "name": "GIS geometry and boundary regression",
-            "job_id": 140443495590,
+            "job_id": 140444049218,
             "conclusion": "failure",
-            "steps": null
+            "steps": null,
+            "logs": "BlobNotFound"
           }
         ]
       },
       {
         "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 45980564380,
+        "run_id": 45980848859,
         "conclusion": "failure",
         "failed_job": "detect",
+        "job_id": 140444047823,
         "dependent_jobs": "skipped"
       },
       {
         "name": "Tehran Radar CI Quality Gates",
-        "run_id": 45980564496,
-        "conclusion": "failure"
+        "run_id": 45980848914,
+        "conclusion": "failure",
+        "job_id": 140444048486
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45980564425,
-        "conclusion": "failure"
-      },
-      {
-        "name": "Cloudflare Native Auth Validation",
-        "run_id": 45980564723,
-        "conclusion": "failure"
+        "run_id": 45980849010,
+        "conclusion": "failure",
+        "job_id": 140444049786
       },
       {
         "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45980564286,
-        "conclusion": "failure"
+        "run_id": 45980848910,
+        "conclusion": "failure",
+        "job_id": 140444047652
+      },
+      {
+        "name": "Cloudflare Native Auth Validation",
+        "run_id": 45980848919,
+        "conclusion": "failure",
+        "job_id": 140444047826
       }
     ],
-    "job_log_retrieval": "BlobNotFound",
-    "interpretation": "Workflow failure is confirmed; command execution and code-level failure are not established.",
-    "latest_gis_workflow_run": {
-      "run_id": 45981010087,
-      "conclusion": "failure",
-      "jobs": [
-        {
-          "name": "GIS geometry and boundary regression",
-          "conclusion": "failure",
-          "steps": null
-        },
-        {
-          "name": "GIS module TypeScript typecheck",
-          "conclusion": "failure",
-          "steps": null
-        }
-      ],
-      "logs": "BlobNotFound"
-    }
+    "interpretation": "All six workflows failed. The focused GIS jobs expose no step metadata and their logs are unavailable; the actual failure point and command execution are unknown. No test/typecheck pass is claimed."
   },
   "latest_branch_sha_at_record": "760d2aaa6f865cb5ef9c836d0ea33fb06a0177e1",
   "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608"
