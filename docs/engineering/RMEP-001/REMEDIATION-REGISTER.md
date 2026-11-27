@@ -76,3 +76,14 @@ Static comparison of workflow invocations against root `package.json` found and 
 | RT-CI-007 | PR #70 Cloudflare frontend preview build succeeds; API staging build succeeds and uploads a staging version. Overall PR checks remain failing. | PARTIALLY_VERIFIED |
 | RT-CI-008 | Staging Worker configuration does not inherit vars, D1 bindings, or service bindings; staging provisioning is explicitly blocked. | BLOCKED — configuration/ownership review required |
 | RT-SEC-001 | Cloudflare build output reports 21 dependency vulnerabilities: 14 moderate, 5 high, 2 critical. Exact advisory inventory not retrieved. | BLOCKED — need full npm audit JSON/advisories before remediation |
+
+
+## 2026-11-27 — Corrected CI failure classification
+
+| ID | Evidence | Correct status |
+|---|---|---|
+| RT-CI-009 | Raw GitHub Actions job payloads for runs #45980050543/#569/#567, #45981733704/#721/#699/#944, #45986054574/#580/#549/#62082/#62301/#62055/#62053, and #45987535979 show runner_id=0, zero steps, blank runner name, immediate failure. PR #81 rerun attempt 2 repeats this. | BLOCKED — runner allocation before execution; no source test result |
+| RT-CI-010 | Cloudflare build #cfd42e27-7b3c-449b-88e9-106cd042aa41 actually ran npm ci and returned EUSAGE with missing Vitest 5 peer entries. | CONFIRMED Cloudflare install failure |
+| RT-CI-011 | PR #70 frontend preview build #3072ec23-b98d-476d-b247-498a45cc0989 succeeded. | COMPLETED_AND_VERIFIED for this preview build only |
+
+Do not label GitHub Actions failures as source-code test failures unless a runner actually starts and executes steps.
