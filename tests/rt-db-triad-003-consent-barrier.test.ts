@@ -932,10 +932,10 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     // Its subject registry row lands after the first snapshot and must be recovered later.
     const revocationId = 'rrev_late_registry_7';
     await userSqlite.db.prepare(
-      \`INSERT INTO research_consent_revocation_jobs (
+      `INSERT INTO research_consent_revocation_jobs (
         revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
         erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
-      ) VALUES (?1, ?2, 1, 2, 'DRAINING_PERMITS', 0, '[]', ?3, ?3, NULL)\`,
+      ) VALUES (?1, ?2, 1, 2, 'DRAINING_PERMITS', 0, '[]', ?3, ?3, NULL)`,
     ).bind(revocationId, uid, new Date(t0 + 10).toISOString()).run();
     const revoked = await updateUserPrivacyConsentInD1(userSqlite.db, {
       uid, actorUid: uid, researchAnalyticsConsent: false, nowIso: new Date(t0 + 20).toISOString(),
@@ -949,8 +949,8 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     if (!derived.ok) return;
     const subjectKey = derived.derived.subjectKey;
     await userSqlite.db.prepare(
-      \`INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
-       VALUES (?1, ?2, ?3, ?4)\`,
+      `INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
+       VALUES (?1, ?2, ?3, ?4)`,
     ).bind(uid, subjectKey, 'v1', new Date(t0 + 30).toISOString()).run();
 
     const checked = validateAndMinimizeResearchEvent(makeSampleEvent('idem_late_registry_007', 707), t0 + 40);
@@ -963,10 +963,10 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     assert.equal(written.acceptedCount, 1);
 
     await userSqlite.db.prepare(
-      \`INSERT INTO research_processing_permits (
+      `INSERT INTO research_processing_permits (
         permit_id, uid, subject_key, subject_key_version, consent_revision,
         consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
-      ) VALUES (?1, ?2, ?3, 'v1', 1, 'http_ingest', ?4, ?5, NULL)\`,
+      ) VALUES (?1, ?2, ?3, 'v1', 1, 'http_ingest', ?4, ?5, NULL)`,
     ).bind('rperm_late_registry_7', uid, subjectKey, t0 + 15, t0 + 30_000).run();
 
     const draining = await reconcileResearchConsentRevocation({ env, revocationId, nowMs: t0 + 100 });
