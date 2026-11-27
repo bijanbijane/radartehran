@@ -161,3 +161,14 @@
 - Added a regression with two ACTIVE records in one history (one Tehran/neighborhood, one Karaj/district) and a second overlapping Tehran neighborhood. The corrupt history must be excluded from the overlap scan.
 - The code and regression are committed. The latest branch code has not been verified by an accessible focused GIS workflow; do not claim test success.
 - No production data, database, binding, secret or deployment was changed.
+
+
+## 2026-11-27 — valuation coordinate guard and real GIS service integration
+
+- Added an injected `ValuationLocationResolver` contract to the valuation service. Coordinate-bearing estimates now fail closed when the resolver is absent or when its resolved city/neighborhood differs from the submitted identity.
+- Resolver-provided district and sub-neighborhood identifiers are used after the canonical identity check.
+- Added service-level regression cases for missing resolver, successful resolution and mismatched neighborhood identity.
+- Added a cross-module regression that injects the real `GeospatialService` into `createValuationService` and checks edge rejection, interior acceptance and mismatched hood rejection.
+- Added `npm run test:valuation-location` and wired both valuation source/test paths into the focused GIS workflow.
+- Re-audited `apps/api/server.ts`: GIS is mounted, but valuation service/router is not composed or mounted. Production endpoint and authoritative IRNI read-only resolver wiring remain blocked.
+- Exact-head GIS run [45987481282](https://github.com/bijanbijane/radartehran/actions/runs/45987481282) failed both jobs without step metadata/logs. Test and typecheck execution remain unverified.
