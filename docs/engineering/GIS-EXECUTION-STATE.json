@@ -23,7 +23,8 @@
     "Added regression tests for overlapping/touching MultiPolygon components and valid disjoint/island-in-hole components.",
     "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck.",
     "Hardened geospatial snapshot validation across every boundary history: reject malformed history/record shapes, map-key/entity mismatches, duplicate record IDs, duplicate or out-of-order versions, and multiple ACTIVE versions; added durable-recovery regression coverage.",
-    "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage."
+    "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage.",
+    "Added durable snapshot validation for canonical geometry, simplified geometry and exact persisted bounding-box consistency; added malformed geometry, malformed simplified geometry and stale bbox regression cases."
   ],
   "not_verified": [
     "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
@@ -33,7 +34,8 @@
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
     "Authoritative Tehran neighborhood polygon dataset, license and CRS",
-    "Complete end-to-end recovery/hydration verification against a real durable snapshot backend"
+    "Complete end-to-end recovery/hydration verification against a real durable snapshot backend",
+    "Execution of the new durable snapshot recovery regression cases"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -41,8 +43,8 @@
   "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "NOT_VERIFIED",
-    "reason": "Exact PR HEAD 76b27e99840dcd486375c5fb5be76e85027ec041 triggered GIS Spatial Integrity run 45980072524. Both GIS jobs (typecheck and geometry/boundary regression) concluded failure with steps=null; log retrieval returned BlobNotFound. The path-filtered workflow also failed at detect and dependent jobs were skipped. It is not established whether checkout, npm ci, tests or typecheck executed. The authorized Desktop Commander MacBook is offline. No test result is claimed."
+    "status": "CI_FAILED_UNDIAGNOSED",
+    "reason": "Exact HEAD 9da716fdd87d4ba412eb4c916076749a4a7fb4a8 produced failed GIS jobs in runs 45980422536 and 45980416900; GitHub exposes steps=null and job-log retrieval is unavailable (BlobNotFound). A retry of the prior GIS run was initiated but did not provide usable diagnostics. No local runner is online."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -75,7 +77,7 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore an online execution runner or usable GitHub Actions diagnostics. Rerun npm run test:geospatial and npm run typecheck on code revision 76b27e99840dcd486375c5fb5be76e85027ec041; inspect the first real failure before altering code. Then run repository-wide tests, typechecks, lint, architecture checks and build. Keep production D1, Worker bindings and datasets unchanged until approvals and verified tests exist.",
+  "next_exact_action": "Obtain a functioning GitHub Actions runner or local runner; run npm run test:geospatial and npm run typecheck on exact HEAD 9da716fdd87d4ba412eb4c916076749a4a7fb4a8. Then audit every boundary consumer for assumptions about active history and validate persisted POI/listing/overlay references.",
   "blockers": [
     "No usable execution runner or GitHub Actions logs; dedicated GIS jobs and broader workflows conclude failure with steps=null/BlobNotFound. Desktop Commander MacBook is offline.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
@@ -83,9 +85,10 @@
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
     "RTree support is not verified in the D1 Worker runtime.",
     "Production IRNI read-only resolver/service binding is not verified.",
-    "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted."
+    "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
+    "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed."
   ],
-  "last_recorded_action": "Added complete persisted boundary-history lifecycle validation and excluded duplicate-active histories from bbox diagnostics; added regression tests. Exact-head GIS PR workflow then failed before exposing step logs. No tests are marked passed.",
+  "last_recorded_action": "Hardened durable snapshot recovery: validate canonical and simplified Polygon/MultiPolygon geometry and recompute/compare persisted bounding boxes; added corruption regression tests. Exact-head GIS CI remains failed with no steps/logs exposed.",
   "latest_inspected_pr_head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
   "latest_branch_head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
   "last_verified_commit_sha": null,
@@ -150,6 +153,6 @@
     "job_log_retrieval": "BlobNotFound",
     "interpretation": "Dedicated GIS check conclusions are confirmed failures with no step metadata; exact failure point and whether the commands executed are unknown. No GIS test or typecheck pass is claimed."
   },
-  "latest_branch_sha_at_record": "76b27e99840dcd486375c5fb5be76e85027ec041",
+  "latest_branch_sha_at_record": "9da716fdd87d4ba412eb4c916076749a4a7fb4a8",
   "latest_code_revision_sha": "76b27e99840dcd486375c5fb5be76e85027ec041"
 }
