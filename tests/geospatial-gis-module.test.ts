@@ -475,6 +475,15 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   const adminOverlay = gis.getGeographicOverlay({ layerId: 'layer_admin_audit', isAdminCaller: true });
   assert.equal(adminOverlay.layerId, 'layer_admin_audit');
 
+  // Geographic overlay mutations must survive repository rehydration.
+  resetGeospatialRepositoryForTests();
+  const rehydratedOverlayService = createGeospatialService();
+  const rehydratedOverlay = rehydratedOverlayService.getGeographicOverlay({
+    layerId: 'layer_admin_audit',
+    isAdminCaller: true,
+  });
+  assert.equal(rehydratedOverlay.payload.internalNotes, 'restricted');
+
   // Geocoding failure handling when provider is unconfigured
   const geocodeRes = await gis.forwardGeocode('تهران، نیاوران');
   assert.equal(geocodeRes.status, 'PROVIDER_UNAVAILABLE');
