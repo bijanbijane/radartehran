@@ -15,12 +15,13 @@
 
 ## Execution accounting — latest inspected heads
 
-- PR #74 head: `8c0213edb881943f546a526aa5ace2d55c30dc9c`.
-- PR #79 head: `50e4394f6ffd9810dfacd3d18f25d55e9683c3e8`.
-- Repository test commands actually executed in this QA session: 0.
-- Test cases passed: 0.
-- Test cases failed: 0.
+- PR #74 head at this update: `ea91cfcd6fe5fc76784cda97df98b722835792b4`.
+- PR #79 head at this update: `9a6d650fa53e0ca9a5e3b3cf533c5375f516cc34`.
+- Repository unit/contract/integration test commands executed in this QA session: 0.
+- Unit/contract/integration test cases passed: 0.
+- Unit/contract/integration test cases failed: 0.
 - Test cases skipped by a test runner: 0.
+- Separate hosted validation on PR #79: `npm ci --ignore-scripts --no-audit --no-fund` completed successfully (646 packages); `npm run lint` (`tsc --noEmit`) completed successfully. Cloudflare build `133c1163-ed8f-4f6b-9c0d-de34177f13f3`, stopped with outcome `success`. These are install/typecheck checks, not unit/contract test cases.
 - PR #74 primary workflow jobs failed before steps: 5.
 - PR #74 dependent jobs skipped: 4 (one Playwright job and three path-filtered gates).
 - PR #79 primary workflow jobs failed before steps: 5.
@@ -31,6 +32,15 @@
 
 - On PR #74, `test:contracts` includes `tests/nips-golden-reference.test.ts`; the suite has not executed.
 - PR #79's CI command fixes are statically present but remain unmerged and runtime-unverified.
-- PR #79's current head still has a root package manifest/lockfile Vitest version mismatch: `package.json` declares `^5.1.2`; `package-lock.json` root metadata declares `^3.0.8`. The lockfile is not in PR #79's changed-file list. No `npm ci` was run in this session.
+- PR #79 head `9a6d650fa53e0ca9a5e3b3cf533c5375f516cc34` has matching root Vitest ranges in `package.json` and `package-lock.json` (`^3.0.8`); the lock resolves `3.2.7`. The manifest was aligned to the committed lockfile; no lockfile regeneration was needed for that correction. `npm ci` has since passed in the hosted validation build.
 - PR #79 also contains a `bun.lock` change; it does not resolve the observed npm manifest/lockfile mismatch.
 - Keep static source inspection, fixture inspection, and actual test execution as separate evidence classes.
+
+
+## 2026-11-27 — Hosted install and TypeScript verification
+
+- PR #74 remains open, Draft, unmerged at `ea91cfcd6fe5fc76784cda97df98b722835792b4`; PR #79 remains open, Draft, unmerged at `9a6d650fa53e0ca9a5e3b3cf533c5375f516cc34`.
+- Cloudflare no-deploy build `133c1163-ed8f-4f6b-9c0d-de34177f13f3` cloned the PR #79 branch, detected Node.js `24.22.1` / npm `12.2.3`, completed `npm ci --ignore-scripts --no-audit --no-fund` (646 packages added), and ran `npm run lint` (`tsc --noEmit`) successfully. Build outcome: `success`; deploy command only echoed a QA-only message. No deployment occurred.
+- A separate build `b1efc1f8-e256-4b99-80ae-421893c7ff10` was queued to run a fresh `npm audit --json`; it remained queued at the last poll and produced no audit evidence. No audit status or advisory count is inferred.
+- Unit, contract, security, triad, geography, auth, and IRNI tests remain unexecuted. GitHub Actions startup failures remain unresolved.
+- Next: obtain the audit build result; then execute focused test suites on the working hosted path. Keep both PRs Draft and unmerged.
