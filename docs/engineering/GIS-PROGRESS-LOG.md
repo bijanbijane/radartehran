@@ -138,3 +138,15 @@
 - Spatial market summary no longer treats a profile's boundaryReference as a verified active GIS boundary and returns null boundary metadata when no unique ACTIVE boundary exists.
 - Point assignment now prevents a parent neighborhood interior from masking a matched sub-neighborhood edge; edge points do not inherit the micro-neighborhood ID.
 - These changes were inspected on branch HEAD `2d6c707303dc2e48723c3a8869e59984199c9608`; exact-head GIS CI still failed without exposing steps or logs. All tests remain NOT VERIFIED.
+
+
+## 2026-11-27 — Sub-neighborhood edge assignment correction
+
+**Code revision / branch HEAD:** `2d6c707303dc2e48723c3a8869e59984199c9608`  
+**Review:** [Draft PR #72](https://github.com/bijanbijane/radartehran/pull/72)
+
+- Source review found that `resolvePointInBoundaryStore` derived `RESOLVED_ON_EDGE` only from the primary neighborhood record. A point strictly inside its parent neighborhood but exactly on a matched sub-neighborhood edge could still be assigned a sub-neighborhood ID and reported as `RESOLVED_INSIDE`.
+- Updated edge classification to consider every matched active boundary. A sub-neighborhood ID is now returned only when its match is strictly `INSIDE`.
+- Added a regression that places a point on the sub-neighborhood edge while inside the parent; expected status is `RESOLVED_ON_EDGE`, no sub-neighborhood ID, and valuation feature generation must reject it.
+- Latest focused GIS workflow run `45980848999` failed both jobs (`140444048835`, `140444049218`) with no exposed steps and `BlobNotFound` logs. A retry of the preceding GIS run also failed without diagnostics. The new test and typecheck remain **NOT VERIFIED**; no passing result is claimed.
+- No production data, database, binding, secret or deployment was changed.
