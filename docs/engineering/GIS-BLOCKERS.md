@@ -229,3 +229,10 @@ This is an intentional fail-closed state, not a defect to bypass by weakening th
 - Even after identity bridging, READY remains prohibited until the upstream owner supplies a version-pinned authoritative geometry/source contract and Radar implements trusted source-registry verification.
 
 **Release gate:** Keep profile evidence fail-closed. Do not add a mock resolver, public-HTTP shortcut, approximate geometry, or unverified source mapping.
+
+
+## Additional security constraint — existing session assertion is not a geography RPC
+
+The existing Worker-to-Express session assertion is bound to method, exact path/query, correlation ID, and Worker-hop marker with a 30-second maximum lifetime. Inspection found no signed body digest and no one-time nonce/replay-store check in its payload/verifier. It is therefore not single-use and does not cryptographically bind the assertion to one exact request body during its validity window. It also authenticates a user session principal, not the Worker service identity or IRNI canonical identity.
+
+Do not repurpose this assertion or its `AUTH_INTERNAL_HMAC_SECRET` for the geography bridge. A dedicated RPC must bind contract version, method/path, timestamp, nonce, and canonical body digest, and durably consume the nonce before processing. The current authentication bridge was not modified in this GIS work.
