@@ -12,6 +12,10 @@ import { requireResearchDb, requireUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerEnv } from '../types';
 import { deriveResearchSubjectKey } from './pseudonymizer';
 import {
+  acquireResearchProcessingPermitInD1,
+  releaseResearchProcessingPermitInD1,
+} from './researchConsentBarrier';
+import {
   MAX_RESEARCH_BATCH_SIZE,
   RESEARCH_EVENT_POLICIES,
   validateAndMinimizeResearchEvent,
@@ -165,6 +169,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
   researchDb: D1Database;
   subjectKey: string;
   subjectKeyVersion: string;
+  consentRevision?: number;
   events: readonly ValidatedResearchEvent[];
   nowMs?: number;
   rejectedCount?: number;
@@ -173,14 +178,20 @@ export async function writePseudonymizedEventsToResearchDb(params: {
   readonly receiptId: string;
   readonly acceptedCount: number;
   readonly deduplicatedCount: number;
+  readonly fencedCount: number;
 }> {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
+  const consentRevision = params.consentRevision ?? 1;
+  if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+    throw new Error('RESEARCH_CONSENT_REVISION_INVALID');
+  }
   const batchId = `rb_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
   const receiptId = `rcpt_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
   let acceptedCount = 0;
   let deduplicatedCount = 0;
+  let fencedCount = 0;
 
   for (const evt of params.events) {
     const existing = await params.researchDb
@@ -194,13 +205,21 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     }
 
     const eventId = `revt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
+    // The fence check is part of the INSERT statement itself. A prior SELECT would leave
+    // a race in which a revocation could commit its fence between the check and this write.
     const insertEventStmt = params.researchDb
       .prepare(
         `INSERT OR IGNORE INTO research_events (
           event_id, subject_key, subject_key_version, event_type, schema_version,
           city_id, hood_id, session_bucket, payload_json,
-          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
+          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key, consent_revision
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+        WHERE NOT EXISTS (
+          SELECT 1 FROM research_subject_consent_fences
+          WHERE subject_key = ?2 AND subject_key_version = ?3
+            AND revoked_through_revision >= ?14
+        )`,
       )
       .bind(
         eventId,
@@ -216,15 +235,30 @@ export async function writePseudonymizedEventsToResearchDb(params: {
         evt.ingestedAtIso,
         evt.expiresAtIso,
         evt.idempotencyKey,
+        consentRevision,
       );
 
     const insertIdemStmt = params.researchDb
       .prepare(
         `INSERT OR IGNORE INTO research_idempotency_keys (
           idempotency_key, event_type, recorded_at_iso, expires_at_iso
-        ) VALUES (?1, ?2, ?3, ?4)`,
+        )
+        SELECT ?1, ?2, ?3, ?4
+        WHERE EXISTS (
+          SELECT 1 FROM research_events
+          WHERE idempotency_key = ?1 AND subject_key = ?5
+            AND subject_key_version = ?6 AND consent_revision = ?7
+        )`,
       )
-      .bind(evt.idempotencyKey, evt.eventType, nowIso, evt.expiresAtIso);
+      .bind(
+        evt.idempotencyKey,
+        evt.eventType,
+        nowIso,
+        evt.expiresAtIso,
+        params.subjectKey,
+        params.subjectKeyVersion,
+        consentRevision,
+      );
 
     const batchResults = await params.researchDb.batch([insertEventStmt, insertIdemStmt]);
     if (batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
@@ -236,7 +270,17 @@ export async function writePseudonymizedEventsToResearchDb(params: {
       throw new Error('RESEARCH_DB_ATOMIC_WRITE_RESULT_UNCONFIRMED');
     }
     if (eventChanges === 0) {
-      deduplicatedCount += 1;
+      const fence = await params.researchDb
+        .prepare(
+          'SELECT revoked_through_revision FROM research_subject_consent_fences WHERE subject_key = ?1 AND subject_key_version = ?2',
+        )
+        .bind(params.subjectKey, params.subjectKeyVersion)
+        .first<{ revoked_through_revision: number }>();
+      if (fence && Number(fence.revoked_through_revision) >= consentRevision) {
+        fencedCount += 1;
+      } else {
+        deduplicatedCount += 1;
+      }
       continue;
     }
     if (eventChanges !== 1 || idempotencyChanges !== 1) {
@@ -255,7 +299,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     .run();
   if (!receiptInsert.success) throw new Error('RESEARCH_INGESTION_RECEIPT_WRITE_FAILED');
 
-  return { batchId, receiptId, acceptedCount, deduplicatedCount };
+  return { batchId, receiptId, acceptedCount, deduplicatedCount, fencedCount };
 }
 
 /**
@@ -275,6 +319,7 @@ export async function ingestResearchEventsBatch(params: {
   rawEvents: unknown;
   nowMs?: number;
   beforeResearchWriteHook?: () => Promise<void>;
+  afterConsentCheckBeforeResearchWriteHook?: (context: { permitId: string; consentRevision: number }) => Promise<void>;
 }): Promise<ResearchIngestionResponse | ResearchIngestionFailure> {
   const userDbRes = requireUserDb(params.env);
   if (userDbRes.ok === false) {
@@ -394,49 +439,59 @@ export async function ingestResearchEventsBatch(params: {
     };
   }
 
-  // Optional test seam to exercise mid-flight consent revocation race deterministically
-  if (params.beforeResearchWriteHook) {
-    await params.beforeResearchWriteHook();
-  }
-
-  // 6. Pre-commit consent re-verification with monotonic consent_revision check
-  const preCommitConsent = await verifyServerSideResearchConsent(
-    userDbRes.db,
-    params.uid,
-    capturedConsentRevision,
-  );
-  if (preCommitConsent.allowed === false) {
+  // Permit issuance atomically binds this ingestion to the captured consent revision.
+  const permit = await acquireResearchProcessingPermitInD1({
+    userDb: userDbRes.db,
+    uid: params.uid,
+    subjectKey: pseudo.derived.subjectKey,
+    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
+    consumerKind: 'http_ingest',
+    expectedConsentRevision: capturedConsentRevision,
+    nowMs,
+  });
+  if (permit.ok === false) {
     return {
       ok: false,
-      statusCode: preCommitConsent.statusCode,
-      code:
-        preCommitConsent.statusCode === 503
-          ? preCommitConsent.code
-          : 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT',
-      messageFa: 'رضایت پژوهشی کاربر هم‌زمان لغو یا تغییر یافته و ثبت رویداد متوقف شد.',
+      statusCode: permit.statusCode,
+      code: permit.code,
+      messageFa: 'مجوز پردازش پژوهشی صادر نشد؛ ثبت رویداد متوقف شد.',
     };
   }
 
-  // 7. Persist pseudonymized events strictly in RESEARCH_DB
-  const written = await writePseudonymizedEventsToResearchDb({
-    researchDb: researchDbRes.db,
-    subjectKey: pseudo.derived.subjectKey,
-    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
-    events: validEvents,
-    nowMs,
-    rejectedCount: rejections.length,
-  });
+  try {
+    // An already-issued permit may finish while revocation drains. The RESEARCH_DB
+    // revision fence prevents it (or any zombie worker) from writing after completion.
+    if (params.afterConsentCheckBeforeResearchWriteHook) {
+      await params.afterConsentCheckBeforeResearchWriteHook({
+        permitId: permit.permitId,
+        consentRevision: permit.consentRevision,
+      });
+    }
+    if (params.beforeResearchWriteHook) await params.beforeResearchWriteHook();
 
-  return {
-    ok: true,
-    batchId: written.batchId,
-    receiptId: written.receiptId,
-    acceptedCount: written.acceptedCount,
-    deduplicatedCount: written.deduplicatedCount,
-    rejectedCount: rejections.length,
-    consentRevision: capturedConsentRevision,
-    rejections,
-  };
+    const written = await writePseudonymizedEventsToResearchDb({
+      researchDb: researchDbRes.db,
+      subjectKey: pseudo.derived.subjectKey,
+      subjectKeyVersion: pseudo.derived.subjectKeyVersion,
+      consentRevision: permit.consentRevision,
+      events: validEvents,
+      nowMs,
+      rejectedCount: rejections.length,
+    });
+
+    return {
+      ok: true,
+      batchId: written.batchId,
+      receiptId: written.receiptId,
+      acceptedCount: written.acceptedCount,
+      deduplicatedCount: written.deduplicatedCount,
+      rejectedCount: rejections.length,
+      consentRevision: permit.consentRevision,
+      rejections,
+    };
+  } finally {
+    await releaseResearchProcessingPermitInD1({ userDb: userDbRes.db, permitId: permit.permitId, nowMs: Date.now() });
+  }
 }
 
 export interface ResearchSubjectErasureResult {
