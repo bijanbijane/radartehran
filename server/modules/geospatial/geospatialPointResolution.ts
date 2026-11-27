@@ -103,7 +103,8 @@ export function resolvePointInBoundaryStore(params: {
     districtId: primary.record.districtId,
     hoodId: primary.record.hoodId,
     hoodNameFa: primary.record.nameFa,
-    subNeighborhoodId: sub?.subNeighborhoodId ?? primary.record.subNeighborhoodId,
+    // Never inherit a legacy parent-record sub-neighborhood ID when no strictly interior sub-boundary matched.
+    subNeighborhoodId: sub?.subNeighborhoodId,
     boundaryVersionId: primary.record.id,
     boundaryVersion: primary.record.version,
     sourceProvenance: primary.record.sourceProvenance,
