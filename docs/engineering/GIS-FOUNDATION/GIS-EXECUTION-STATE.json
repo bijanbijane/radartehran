@@ -46,6 +46,9 @@
       "summary": "Confirmed Geospatial boundary/POI/overlay/import state is persisted through geospatial-state.json AtomicJsonRepository and optional remote snapshots, not a D1 relational schema."
     }
   ],
+  "completed_work_packages": [
+    {"id":"GIS-GUARD-001","status":"IMPLEMENTED_NOT_TESTED","summary":"Added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test that simulates an over-permissive source resolver."}
+  ],
   "blockers": [
     {"id":"GIS-BLK-001","severity":"CRITICAL","description":"No authenticated, version-pinned IRNI Worker-to-Express identity resolver bridge is wired."},
     {"id":"GIS-BLK-002","severity":"CRITICAL","description":"Trusted source-registry resolver is not implemented or injected."},
@@ -62,9 +65,10 @@
       "server/modules/geography/__tests__/employee18Geography.test.ts"
     ],
     "executed_in_this_session": [],
+    "implemented_not_executed": ["tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression"],
     "note": "Repository source inspection and current public D1 documentation review only; no local test runner or live D1 runtime was executed."
   },
   "production_changes": {"migrations":false,"data_mutations":false,"deployment":false,"merge":false,"release":false},
-  "next_exact_action": "Inspect the production geospatial module composition and persistence lifecycle, then define the authenticated Worker/API bridge and storage ownership contract before changing persistence. Add a test that explicitly prevents approximate display geometry from entering profile evidence or property assignment.",
+  "next_exact_action": "Run tests/neighborhood-profile-boundary-read-model.test.ts and the relevant geospatial typecheck in a real checkout; then add an equivalent guard to property-to-neighborhood assignment if any route can persist computed_hex_fallback as a boundary record.",
   "updated_at": "2026-11-27"
 }
