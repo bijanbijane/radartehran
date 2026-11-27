@@ -13,9 +13,9 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "fix/backend-disable-fake-firestore-projection-2026-11-27",
-    "head_commit": "c3936150a548f00d83b18a53d1024b32b5267a9a",
+    "head_commit": "c49c1394b43d6515862a2f45611f7e3f9cbdcf7d",
     "working_tree_status": "GITHUB_COMMIT_CREATED; LOCAL_CHECKOUT_UNAVAILABLE",
-    "last_verified_commit": "c3936150a548f00d83b18a53d1024b32b5267a9a"
+    "last_verified_commit": "c49c1394b43d6515862a2f45611f7e3f9cbdcf7d"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -33,7 +33,7 @@
     "checkpoint_timestamp_utc": "2026-11-27T17:00:00.000Z",
     "last_safe_operation": "OP-194 removed the legacy Firestore projection handler that wrote seeded neighborhood values into D1; legacy queue messages now fail permanently with FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE and enter the existing DLQ path.",
     "last_completed_operation": "OP-194: disable fake Firestore-to-D1 neighborhood projection in the canonical queue dispatcher.",
-    "next_exact_action": "Run `npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts` and the relevant queue/triad suites in a connected local checkout; inspect CI check runs. Then reconcile queue cron producers and remove remaining live Express Firestore adapters in small D1-backed slices. Keep Phase 6 PARTIALLY_VERIFIED.",
+    "next_exact_action": "Run npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts and the queue/D1 triad suites in an online checkout; inspect CI check runs. Then reconcile queue cron producers and remove remaining live Express Firestore adapters in small D1-backed slices. Keep Phase 6 PARTIALLY_VERIFIED.",
     "resume_status": "READY"
   },
   "execution_history": {
