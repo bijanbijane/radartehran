@@ -66,3 +66,15 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - Checked the authorized local execution route: the registered Desktop Commander device is offline. No local checkout or test command was available in this session.
 - Execution state was reconciled in commit `fe5eda2b9351d766147c772f80367b9d1eef8924`. The new regression remains IMPLEMENTED_NOT_TESTED; no secret was read or changed, and no deployment, merge or production mutation occurred.
 - Next: restore a working runner/authorized Node 22 checkout; execute the exact-head HTTP approval regression, GIS and valuation suites, and typecheck. Verify runtime bridge secret provisioning through an authorized read-only mechanism.
+
+
+## 2026-11-27 — Cloudflare Worker runtime bridge audit
+
+- Verified backend Worker and staging names from wrangler.backend.jsonc: radartehran-api and radartehran-api-staging.
+- Inspected deployed Cloudflare Worker secret-binding names and plain-text variable names through read-only APIs. The API Worker has no AUTH_INTERNAL_HMAC_SECRET binding and no STRANGLER_ORIGIN_URL; the staging Worker has neither and has no secret bindings at all.
+- Confirmed in source that the Worker router fails with AUTH_SESSION_BRIDGE_NOT_CONFIGURED when the HMAC secret is absent and the strangler fallback needs the origin variable. The Worker-side bridge therefore cannot operate with current settings. Express process environment remains unverified.
+- Secret values were not requested, read, printed, provisioned or changed. No settings, deployment, production data or infrastructure were modified.
+- Exact branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 has seven PR workflow runs marked failed; the GIS run https://github.com/bijanbijane/radartehran/actions/runs/46009917366 and sampled sibling jobs have steps=null and logs_url=null. No test execution can be inferred.
+- PR metadata also reports failed Cloudflare Preview builds for the current commit. Build logs have not been inspected; root cause is unknown.
+- Updated blocker and execution-state records with runtime evidence. No application source changes were made because secret provisioning and runtime activation require operator approval.
+- Next: recover executable test capacity; inspect Preview build diagnostics; obtain explicit approval for non-production bridge configuration before changing it; keep PR #72 Draft.
