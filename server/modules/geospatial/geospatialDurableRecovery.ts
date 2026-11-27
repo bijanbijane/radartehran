@@ -2,7 +2,8 @@
  * RT-INFRA-009 — Deterministic geospatial snapshot validation, recovery & activation.
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
-import type { BoundaryVersionRecord, PointOfInterestRecord } from './types';
+import type { BoundaryVersionRecord, PointOfInterestRecord, PolygonGeometry } from './types';
+import { validatePolygonGeometry } from './coordinateAndPolygonEngine';
 
 export const GEOSPATIAL_SNAPSHOT_SCHEMA = 'geospatial_state_v1';
 
@@ -152,6 +153,38 @@ function validateBoundary(
     || (minLng as number) > (maxLng as number)
   ) {
     pushValidationError(errors, limit, `BOUNDARY_BBOX_INVALID:${String(record.id ?? entityKey)}`);
+  }
+
+  // Snapshot recovery must not trust persisted geometry or a caller-supplied bbox.
+  // A stale but plausible bbox can otherwise hide a real polygon from point lookup.
+  const geometryReport = validatePolygonGeometry(record.geometry as PolygonGeometry);
+  if (!geometryReport.valid || !geometryReport.boundingBox) {
+    const issueCodes = geometryReport.issues.map((issue) => issue.code).join(',');
+    pushValidationError(
+      errors,
+      limit,
+      `BOUNDARY_GEOMETRY_INVALID:${String(record.id ?? entityKey)}:${issueCodes || 'NO_BOUNDS'}`,
+    );
+  } else if (numbersValid) {
+    const expected = geometryReport.boundingBox;
+    const tolerance = 1e-6;
+    const matchesGeometry = Math.abs((minLat as number) - expected.minLat) <= tolerance
+      && Math.abs((maxLat as number) - expected.maxLat) <= tolerance
+      && Math.abs((minLng as number) - expected.minLng) <= tolerance
+      && Math.abs((maxLng as number) - expected.maxLng) <= tolerance;
+    if (!matchesGeometry) {
+      pushValidationError(errors, limit, `BOUNDARY_BBOX_GEOMETRY_MISMATCH:${String(record.id ?? entityKey)}`);
+    }
+  }
+
+  const simplifiedReport = validatePolygonGeometry(record.simplifiedGeometry as PolygonGeometry);
+  if (!simplifiedReport.valid || !simplifiedReport.boundingBox) {
+    const issueCodes = simplifiedReport.issues.map((issue) => issue.code).join(',');
+    pushValidationError(
+      errors,
+      limit,
+      `BOUNDARY_SIMPLIFIED_GEOMETRY_INVALID:${String(record.id ?? entityKey)}:${issueCodes || 'NO_BOUNDS'}`,
+    );
   }
   return true;
 }
