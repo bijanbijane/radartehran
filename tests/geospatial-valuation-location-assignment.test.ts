@@ -458,3 +458,45 @@ test('polygon validation detects collinear overlap between non-adjacent ring seg
   assert.equal(report.valid, false);
   assert.ok(report.issues.some((issue) => issue.code === 'SELF_INTERSECTION'));
 });
+
+test('does not treat a parent interior as resolved when the matched sub-neighborhood point is on its edge', async () => {
+  await withGeospatialService(async (service) => {
+    await addBoundary(service, { hoodId: 10 });
+    await service.upsertNeighborhoodBoundary({
+      actorUid: 'gis-test-reviewer',
+      entityId: 'sub:tehran:10:edge',
+      cityId: 'tehran',
+      hoodId: 10,
+      subNeighborhoodId: 'sub-edge',
+      level: 'sub_neighborhood',
+      nameFa: 'ریزپهنه مرزی آزمون',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [51.35, 35.72],
+          [51.37, 35.72],
+          [51.37, 35.78],
+          [51.35, 35.78],
+          [51.35, 35.72],
+        ]],
+      },
+      sourceProvenance: 'sub_neighborhood_edge_regression_test',
+      autoApprove: true,
+    });
+
+    const resolution = service.resolvePointToGeography(35.75, 51.35);
+    assert.equal(resolution.resolved, true);
+    assert.equal(resolution.status, 'RESOLVED_ON_EDGE');
+    assert.equal(resolution.hoodId, 10);
+    assert.equal(resolution.subNeighborhoodId, undefined);
+
+    assert.throws(
+      () => service.getValuationLocationFeatures({
+        coordinates: { lat: 35.75, lng: 51.35 },
+        cityId: 'tehran',
+        hoodId: 10,
+      }),
+      isConflict,
+    );
+  });
+});
