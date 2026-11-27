@@ -60,3 +60,17 @@ On branch head `e006fda6be0bff13df920b3cdd6b3cdcba117651`, static inspection fou
 - `radar-backend-triad.yml` invoked missing `npm run test:geo`; changed it to the existing `npm run test:geography-catalog` (commit `e006fda6be0bff13df920b3cdd6b3cdcba117651`).
 
 Re-fetched package scripts and both workflow files to verify the command names now resolve to registered scripts. The five workflows triggered on the updated head still report FAILURE; job steps are null and log retrieval again returns `BlobNotFound`. These source/config fixes remain IMPLEMENTED_BUT_NOT_VERIFIED. No npm commands ran locally.
+
+
+## B-005 — Staging D1/Service Binding provisioning is incomplete
+- Cloudflare API staging build `65cb411a-aea7-4702-bd2f-6148ae2175f4` completed and deployed Worker version `487db2f1-22e8-4299-b954-cc248858fa2a`.
+- Build logs confirm no staging D1 bindings or IRNI service binding; staging environment inherited only APP_ENV, WORKER_ENV and APP_URL. Top-level vars, D1 bindings and services were explicitly warned as non-inherited.
+- Validator's optional staging gate was not enabled and returned a warning rather than an error.
+- **Mitigation:** the staging-only Build Trigger now requires `--require-staging-provisioned` before the deploy command.
+- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED until the queued verification build completes and proves deploy is skipped.
+- Do not create or bind new databases or IRNI service names by assumption.
+
+## B-006 — Dependency security audit
+- Cloudflare npm install reports 21 vulnerabilities: 14 moderate, 5 high, 2 critical.
+- Exact package names, paths and fix availability have not yet been retrieved.
+- **Next:** capture `npm audit --json` from a reproducible executor; prioritize critical/high direct or runtime dependencies. No blind `npm audit fix --force`.
