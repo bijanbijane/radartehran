@@ -230,7 +230,14 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       !resolved.resolved
       || resolved.status !== 'RESOLVED_INSIDE'
       || !resolved.cityId
+      || typeof resolved.hoodId !== 'number'
       || !Number.isSafeInteger(resolved.hoodId)
+      || resolved.hoodId <= 0
+      || typeof resolved.boundaryVersion !== 'number'
+      || !Number.isSafeInteger(resolved.boundaryVersion)
+      || resolved.boundaryVersion < 1
+      || typeof resolved.boundaryVersionId !== 'string'
+      || !resolved.boundaryVersionId.trim()
     ) {
       throw new CoreApiError(
         'CONFLICT',
@@ -270,7 +277,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       districtId: resolved.districtId,
       hoodId,
       subNeighborhoodId: resolved.subNeighborhoodId,
-      boundaryVersion: resolved.boundaryVersion ?? 1,
+      boundaryVersion: resolved.boundaryVersion,
       context,
     });
   }
@@ -302,8 +309,10 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       cityId: params.cityId,
       hoodId: params.hoodId,
       hoodName: profile.hoodName,
-      boundaryVersionId: activeBnd?.id ?? profile.boundaryReference,
-      boundaryVersion: activeBnd?.version ?? 1,
+      // A market-profile boundaryReference is not a verified active GIS version.
+      // Do not synthesize v1 when the boundary registry has no unique ACTIVE record.
+      boundaryVersionId: activeBnd?.id ?? null,
+      boundaryVersion: activeBnd?.version ?? null,
       simplifiedGeometry: activeBnd?.simplifiedGeometry ?? null,
       medianAskingPsmMillion: profile.saleIndicators.medianAskingPricePerSqmMillion,
       medianVerifiedPsmMillion: profile.saleIndicators.medianVerifiedPricePerSqmMillion,

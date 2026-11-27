@@ -308,6 +308,11 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
     marketIntelligenceService: miService,
   });
 
+  const summaryWithoutActiveBoundary = gis.getSpatialMarketSummary({ cityId: 'tehran', hoodId: 1 });
+  assert.equal(summaryWithoutActiveBoundary.boundaryVersionId, null);
+  assert.equal(summaryWithoutActiveBoundary.boundaryVersion, null);
+  assert.equal(summaryWithoutActiveBoundary.simplifiedGeometry, null);
+
   // Import boundary and POIs via safe import pipeline (dryRun preview then commit)
   const preview = await gis.importGeographicDataset({
     actorUid: 'admin_gis',
@@ -432,6 +437,10 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   const spatialSummary = gis.getSpatialMarketSummary({ cityId: 'tehran', hoodId: 1 });
   assert.equal(spatialSummary.hoodName, 'نیاوران');
   assert.ok((spatialSummary.medianVerifiedPsmMillion ?? 0) > 0);
+  const activeMarketBoundary = gis.getActiveBoundary('hood:tehran:1');
+  assert.ok(activeMarketBoundary);
+  assert.equal(spatialSummary.boundaryVersionId, activeMarketBoundary.id);
+  assert.equal(spatialSummary.boundaryVersion, activeMarketBoundary.version);
   assert.ok(spatialSummary.simplifiedGeometry);
 
   // Public vs Admin overlay permission enforcement
