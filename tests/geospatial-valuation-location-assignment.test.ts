@@ -10,7 +10,8 @@ import { createGeospatialService, type GeospatialService } from '../server/modul
 import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
 import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 import type { PolygonGeometry } from '../server/modules/geospatial/types';
-import { classifyPointInPolygon, simplifyPolygonGeometry, validatePolygonGeometry } from '../server/modules/geospatial/coordinateAndPolygonEngine';
+import { classifyPointInPolygon, simplifyPolygonGeometry, validatePolygonGeometry, boundingBoxesOverlap } from '../server/modules/geospatial/coordinateAndPolygonEngine';
+import { detectActiveBoundaryBboxOverlaps } from '../server/modules/geospatial/geospatialBoundaryReadModel';
 
 const SQUARE_A: PolygonGeometry = {
   type: 'Polygon',
@@ -500,4 +501,48 @@ test('does not treat a parent interior as resolved when the matched sub-neighbor
       isConflict,
     );
   });
+});
+
+test('bbox overlap diagnostics skip a history with conflicting ACTIVE metadata before city and level filtering', () => {
+  const makeRecord = (
+    id: string,
+    cityId: string,
+    level: BoundaryVersionRecord['level'],
+  ): BoundaryVersionRecord => ({
+    id,
+    entityId: 'hood:tehran:10',
+    cityId,
+    hoodId: 10,
+    level,
+    nameFa: 'محله آزمون',
+    version: id.endsWith('v2') ? 2 : 1,
+    status: 'ACTIVE',
+    geometry: structuredClone(SQUARE_A),
+    simplifiedGeometry: structuredClone(SQUARE_A),
+    boundingBox: { minLat: 35.70, maxLat: 35.80, minLng: 51.30, maxLng: 51.40 },
+    sourceProvenance: 'bbox_conflicting_active_history_test',
+    createdByUid: 'test-creator',
+    createdAtIso: '2026-11-27T00:00:00.000Z',
+  });
+  const conflictingHistory = [
+    makeRecord('hood-tehran-10-v1', 'tehran', 'neighborhood'),
+    makeRecord('hood-tehran-10-v2', 'karaj', 'district'),
+  ];
+  const overlappingNeighbor = {
+    ...makeRecord('hood-tehran-11-v1', 'tehran', 'neighborhood'),
+    entityId: 'hood:tehran:11',
+    hoodId: 11,
+  };
+
+  const overlaps = detectActiveBoundaryBboxOverlaps(
+    new Map([
+      ['hood:tehran:10', conflictingHistory],
+      ['hood:tehran:11', [overlappingNeighbor]],
+    ]),
+    'tehran',
+    'neighborhood',
+    boundingBoxesOverlap,
+  );
+
+  assert.deepEqual(overlaps, []);
 });
