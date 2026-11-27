@@ -33,7 +33,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Run native session, storage, and cookie-forwarding contracts
-        run: npm run test:cloudflare-native-auth
+        run: npm run test:auth
       - name: Build frontend bundle
         run: npm run build
       - name: Dry-run backend Worker bundle
