@@ -62,6 +62,24 @@ async function readRevocationJob(userDb: Parameters<typeof getUserPrivacyConsent
   return row ? mapConsentRevocationJobRow(row) : null;
 }
 
+async function cancelUnappliedRevocationIntent(
+  userDb: Parameters<typeof getUserPrivacyConsentFromD1>[0],
+  revocationId: string,
+): Promise<void> {
+  const results = await userDb.batch([
+    userDb.prepare('DELETE FROM research_erasure_outbox WHERE job_id = ?1').bind(revocationId),
+    userDb
+      .prepare(
+        `DELETE FROM research_consent_revocation_jobs
+         WHERE revocation_id = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')`,
+      )
+      .bind(revocationId),
+  ]);
+  if (results.length !== 2 || results.some((result) => !result.success)) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_INTENT_CLEANUP_FAILED');
+  }
+}
+
 export async function revokeUserResearchConsentWithBarrier(params: {
   env: WorkerEnv;
   uid: string;
@@ -125,15 +143,24 @@ export async function revokeUserResearchConsentWithBarrier(params: {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
     // Recover a crash after the durable job/outbox commit but before consent was switched off.
-    privacy = await updateUserPrivacyConsentInD1(userDb, {
-      uid: params.uid,
-      actorUid: params.actorUid,
-      researchAnalyticsConsent: false,
-      behavioralTelemetryConsent: params.behavioralTelemetryConsent,
-      marketingCommunicationsConsent: params.marketingCommunicationsConsent,
-      consentSource: 'research_consent_revocation_barrier',
-      nowIso,
-    });
+    try {
+      privacy = await updateUserPrivacyConsentInD1(userDb, {
+        uid: params.uid,
+        actorUid: params.actorUid,
+        researchAnalyticsConsent: false,
+        behavioralTelemetryConsent: params.behavioralTelemetryConsent,
+        marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+        consentSource: 'research_consent_revocation_barrier',
+        expectedConsentRevision: existingJob.revokedConsentRevision,
+        nowIso,
+      });
+    } catch (error) {
+      const latest = await getUserPrivacyConsentFromD1(userDb, params.uid);
+      if (latest.researchAnalyticsConsent) {
+        await cancelUnappliedRevocationIntent(userDb, existingJob.revocationId);
+      }
+      throw error;
+    }
     if (privacy.consentRevision !== existingJob.newConsentRevision) {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
@@ -204,6 +231,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
         behavioralTelemetryConsent: params.behavioralTelemetryConsent,
         marketingCommunicationsConsent: params.marketingCommunicationsConsent,
         consentSource: 'research_consent_revocation_barrier',
+        expectedConsentRevision: revokedConsentRevision,
         nowIso,
       });
     } catch (error) {
@@ -312,13 +340,23 @@ export async function reconcileResearchConsentRevocation(params: {
     if (currentPrivacy.consentRevision !== job.revokedConsentRevision) {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
-    const revokedPrivacy = await updateUserPrivacyConsentInD1(userDb, {
-      uid: job.uid,
-      actorUid: job.uid,
-      researchAnalyticsConsent: false,
-      consentSource: 'research_consent_revocation_reconcile',
-      nowIso: new Date(nowMs).toISOString(),
-    });
+    let revokedPrivacy;
+    try {
+      revokedPrivacy = await updateUserPrivacyConsentInD1(userDb, {
+        uid: job.uid,
+        actorUid: job.uid,
+        researchAnalyticsConsent: false,
+        consentSource: 'research_consent_revocation_reconcile',
+        expectedConsentRevision: job.revokedConsentRevision,
+        nowIso: new Date(nowMs).toISOString(),
+      });
+    } catch (error) {
+      const latest = await getUserPrivacyConsentFromD1(userDb, job.uid);
+      if (latest.researchAnalyticsConsent) {
+        await cancelUnappliedRevocationIntent(userDb, job.revocationId);
+      }
+      throw error;
+    }
     if (revokedPrivacy.consentRevision !== job.newConsentRevision) {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
