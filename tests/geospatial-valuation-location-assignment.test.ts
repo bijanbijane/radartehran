@@ -209,6 +209,47 @@ test('point-in-polygon respects interior rings for Polygon and MultiPolygon geom
   );
 });
 
+
+test('polygon validation rejects holes outside or touching the exterior ring', () => {
+  const outsideHole: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [
+      (SQUARE_A.coordinates as [number, number][][])[0],
+      [[51.42, 35.72], [51.44, 35.72], [51.44, 35.74], [51.42, 35.74], [51.42, 35.72]],
+    ],
+  };
+  const touchingHole: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [
+      (SQUARE_A.coordinates as [number, number][][])[0],
+      [[51.30, 35.72], [51.34, 35.72], [51.34, 35.74], [51.30, 35.74], [51.30, 35.72]],
+    ],
+  };
+  assert.ok(validatePolygonGeometry(outsideHole).issues.some((issue) => issue.code === 'HOLE_OUTSIDE_OUTER'));
+  assert.ok(validatePolygonGeometry(touchingHole).issues.some((issue) => issue.code === 'HOLE_OUTSIDE_OUTER'));
+});
+
+test('polygon validation rejects overlapping or nested interior rings', () => {
+  const overlappingHoles: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [
+      (SQUARE_A.coordinates as [number, number][][])[0],
+      [[51.32, 35.72], [51.36, 35.72], [51.36, 35.76], [51.32, 35.76], [51.32, 35.72]],
+      [[51.34, 35.74], [51.38, 35.74], [51.38, 35.78], [51.34, 35.78], [51.34, 35.74]],
+    ],
+  };
+  const nestedHoles: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [
+      (SQUARE_A.coordinates as [number, number][][])[0],
+      [[51.32, 35.72], [51.38, 35.72], [51.38, 35.78], [51.32, 35.78], [51.32, 35.72]],
+      [[51.34, 35.74], [51.36, 35.74], [51.36, 35.76], [51.34, 35.76], [51.34, 35.74]],
+    ],
+  };
+  assert.ok(validatePolygonGeometry(overlappingHoles).issues.some((issue) => issue.code === 'HOLE_OVERLAP'));
+  assert.ok(validatePolygonGeometry(nestedHoles).issues.some((issue) => issue.code === 'HOLE_OVERLAP'));
+});
+
 test('polygon validation checks closure and self-intersection of interior rings', () => {
   const unclosedHole: PolygonGeometry = {
     type: 'Polygon',
