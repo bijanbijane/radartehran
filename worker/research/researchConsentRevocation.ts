@@ -392,27 +392,6 @@ export async function reconcileResearchConsentRevocation(params: {
     return toResponse(current, activePermitsRemaining, expiredPermitsReclaimed);
   }
 
-  const outboxCount = await userDb
-    .prepare('SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1')
-    .bind(params.revocationId)
-    .first<{ cnt: number }>();
-  if (!outboxCount || !Number.isSafeInteger(Number(outboxCount.cnt)) || Number(outboxCount.cnt) < 0) {
-    throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_COUNT_UNAVAILABLE');
-  }
-  if (Number(outboxCount.cnt) === 0) {
-    await userDb
-      .prepare(
-        `UPDATE research_consent_revocation_jobs
-         SET status = 'COMPLETED', erased_events_count = 0, receipt_ids_json = '[]',
-             updated_at_iso = ?1, completed_at_iso = ?1
-         WHERE revocation_id = ?2 AND status != 'COMPLETED'`,
-      )
-      .bind(nowIso, params.revocationId)
-      .run();
-    const emptyCompleted = (await readRevocationJob(userDb, params.revocationId))!;
-    return toResponse(emptyCompleted, 0, expiredPermitsReclaimed);
-  }
-
   // Re-scan after all old permits have drained. A request may have registered its
   // subject key and acquired a permit between the initial registry snapshot and the
   // revocation-job admission barrier; that key must still receive an erasure outbox item.
