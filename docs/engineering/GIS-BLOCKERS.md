@@ -199,3 +199,17 @@ The D1 marketplace route repair and new bargain-write regression test are presen
 ### Latest marketplace regression registration — 2026-11-27
 
 The new D1 bargain-write regression file is now included in `npm run test:cloudflare` (`tests/cloudflare-marketplace-bargain-write.test.ts`). Exact-head GIS run `45991392520` and quality-gate run `45991392542` still expose no job steps/logs (`steps=null`, `logs_url=null`); therefore neither the focused GIS suite nor the new marketplace test is confirmed as executed.
+
+## Production neighborhood-profile evidence route — resolver wiring gate — 2026-11-27
+
+A branch-head composition trace confirms the following:
+
+- `apps/api/server.ts` calls `createProductionGeospatialModule()` with no dependency argument and mounts its router at `/api/v1/geospatial`.
+- `createProductionGeospatialModule` forwards its default empty dependency object to `createGeospatialService` and `createGeospatialRouter`.
+- The profile-evidence route is `GET /api/v1/geospatial/neighborhood-boundaries/:cityId/:hoodId/profile-evidence`.
+- `buildNeighborhoodProfileBoundaryReadModel` requires both `resolveIdentity` and `resolveSource`. With the current production composition neither resolver is configured. Therefore the route cannot produce a `READY` evidence object, even if its local snapshot contains a valid, independently approved boundary. It returns a structured `BLOCKED` result with `CANONICAL_IDENTITY_RESOLVER_NOT_CONFIGURED` and `BOUNDARY_SOURCE_REGISTRY_NOT_CONFIGURED`.
+- The Worker IRNI identity resolver is not an Express dependency and does not provide geometry or a source-registry resolver. Importing it into Express would not bridge the Cloudflare Service Binding.
+
+A regression was added to `tests/neighborhood-profile-boundary-read-model.test.ts`: it creates and independently approves a local polygon through the default service composition, calls the HTTP profile-evidence endpoint, and asserts that the response remains blocked with null evidence until both trusted resolvers are wired. This strengthens the previous no-boundary test and prevents a local approval from being mistaken for canonical profile readiness.
+
+This is an intentional fail-closed state, not a defect to bypass by weakening the resolver requirement. The remaining implementation gate is a supported server-side bridge to an active IRNI identity contract plus an independently verified source registry; the upstream IRNI geometry contract and runtime adapter remain incomplete as recorded above. No route, production dependency, database, binding, secret, deployment or external repository was changed.
