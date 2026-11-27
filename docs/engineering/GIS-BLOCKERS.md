@@ -72,3 +72,39 @@ Follow-up acceptance criteria:
 6. Obtain an explicit product decision for `UNDER_OFFER`, `SOLD` and `RENTED` visibility.
 
 No producer, consumer, live data backfill or production index mutation is introduced by this blocker record.
+
+
+## Canonical listing write-path audit — 2026-11-27
+
+The production API bootstrap registers both `registerPublisherAndPlatformRoutes(app)` and `registerProductionPropertySearchRoutes(app)`, and separately constructs/mounts the geospatial module. The listing and search path currently evidenced by those registrations is:
+
+1. `src/utils/serverPublisherBargains.ts` defines the process-local `serverPublishedBargains` Map and registers persistence export/import hooks.
+2. `POST /api/my-bargains` creates or replaces a record in that Map and calls `saveDiskPersistedCache()`.
+3. `PATCH /api/my-bargains/:id` mutates lifecycle state and listing fields in the same Map, then persists the cache.
+4. `DELETE /api/my-bargains/:id` removes the record from the Map and persists the cache.
+5. `server/modules/property-search/productionBargainListingDataSource.ts` reads that same Map directly. This is a live in-process read, not a versioned event-driven projection.
+6. The geospatial module is separately constructed in `apps/api/server.ts`; no listing mutation hook or event consumer connects the Map to `indexListingForSpatialSearch` / `removeListingFromSpatialSearch`.
+
+This establishes the currently mounted legacy Express Map as the effective write/read source for the `/api/my-bargains` + production Property Search path. It does **not** establish a durable, transactional canonical listing repository: the source is a process-local Map persisted through the legacy disk-cache hooks, with no atomic outbox, monotonic listing revision or replayable domain event.
+
+A second model exists under `server/modules/bargains/`: its service uses transaction-runner abstractions and separate bargain/owner/moderation records with revisioned moderation transitions. However, `server/modules/bargains/routes.ts` explicitly documents that its router is exported for integration and is **not registered in `server.ts`**. It is therefore not the active production write path evidenced by the API bootstrap. Do not wire it as canonical without an explicit migration/ownership decision.
+
+### Search projection integrity correction
+
+The legacy `ServerPublishedBargainRecord` has no independent verification-status field, but the production Property Search adapter previously projected every such record as `isVerifiedListing: true`. That was unsupported by the source schema. The adapter now sets this flag to `false` until a verifiable evidence field and verification workflow are connected.
+
+The same adapter derives coordinates from a neighborhood center and explicitly marks them `isApproximate: true`. Property Search's bounding-box and proximity filters previously consumed these approximate centroids as if they were precise listing locations. Those filters now reject approximate coordinates; exact-coordinate records continue to participate. A regression test covers both filters and the exact-coordinate control case. These changes are committed, but execution remains unverified because the focused hosted workflow still returns no usable job steps/logs.
+
+### Updated acceptance criteria
+
+1. Make an explicit architecture decision whether the legacy `serverPublishedBargains` Map or the newer `server/modules/bargains` transactional model is to be retired/migrated; there must be one canonical write model.
+2. Move canonical listing persistence to the approved Cloudflare-native durable store; do not treat a process-local Map plus disk-cache snapshot as the long-term source of truth.
+3. Emit a transactional outbox event from the canonical write transaction with listing ID, monotonic revision, event schema version, occurred-at timestamp, and a minimal allowlisted projection.
+4. Consume that event idempotently for Property Search and GIS. Reject stale/out-of-order revisions; support retries, dead-letter inspection and replay.
+5. Keep listings without independently verified exact coordinates out of precise spatial queries and the GIS spatial index. Neighborhood centroids may be exposed only as explicitly approximate neighborhood context, never as property coordinates.
+6. Keep unverified listings out of verified-only results. A published lifecycle state is not evidence of identity, ownership or property verification.
+7. Enforce deletion, withdrawal, expiry, moderation rejection and privacy restrictions fail-closed at the canonical read boundary, not only after asynchronous projection convergence.
+8. Add API integration tests from canonical create/update/state-transition/delete through public Property Search and GIS query, including duplicate/out-of-order events, cache invalidation, city changes and restart/recovery.
+9. Resolve the duplicate `server/modules/bargains` vs legacy publisher model and document the chosen ownership boundary before adding another event producer.
+
+No listing data was mutated, no migration was run, and no production route/binding/deployment was changed by this audit.
