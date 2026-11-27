@@ -237,3 +237,18 @@ Added a regression test with all three supported legacy encodings converging on 
 Inspected the Worker assertion issuer, strangler fallback, Express verification middleware, and Express bootstrap. The existing authentication assertion is verified before downstream Express middleware and the private header is removed; it is bound to method/path/query, correlation ID and Worker-hop marker, with a 30-second maximum lifetime. The payload and verifier do not include a body digest or a unique nonce/replay-store check. It is therefore not a single-use, body-bound RPC credential. It authenticates a user session principal rather than a Worker service or IRNI entity.
 
 **Decision:** Do not reuse the session assertion or `AUTH_INTERNAL_HMAC_SECRET` for geography RPC. A separate versioned internal contract must bind timestamp, unique nonce and canonical body digest, with durable replay prevention. No authentication code was changed; the current GIS release gate remains BLOCKED. Source inspection only; no test execution was performed.
+
+
+## 2026-11-27 — GIS and neighborhood-profile workflow coverage correction
+
+**Reviewed PR head before this documentation entry:** `625490e51e434a722ddfe0357258c748e36de720`
+
+- Static review found that the GIS workflow's `pull_request.paths` omitted several backend files and regression suites changed in this workstream: valuation, property search, durable repository persistence, IRNI identity resolution and the marketplace route. The push and PR path filters were also inconsistent.
+- Expanded both GIS workflow path filters to cover the changed backend modules and their regression tests.
+- Expanded the GIS regression command to execute the geospatial and valuation suites plus targeted durable-snapshot, IRNI identity, marketplace and property-search tests.
+- Static review also found that the Browser UX workflow did not watch the modified Neighborhood Inspector and NIPS profile UI sources. Added those source paths so relevant PR changes trigger the browser regression workflow.
+- GitHub read-back verified both workflow files and the exact commands/path patterns.
+- The new exact-head runs were GIS `46018956272`, Browser UX `46018956332`, and Path-Filtered Checks `46018956178`. The sampled GIS jobs, Browser UX job and path-filter detector returned `steps=null`; dependent path-filter jobs were skipped. No test, typecheck or browser command execution is evidenced.
+- Updated the GIS execution-state record and PR #72 / issue #49 with exact run and job IDs. No application data, D1 schema, Worker binding, secret, or Production resource was changed.
+
+**Outcome:** Workflow trigger coverage is IMPLEMENTED and source-read-back VERIFIED. Runtime checks remain NOT VERIFIED because GitHub Actions still does not expose executed steps or logs. PR #72 remains Draft and unmerged.
