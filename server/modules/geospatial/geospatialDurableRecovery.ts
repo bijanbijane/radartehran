@@ -2,22 +2,14 @@
  * RT-INFRA-009 — Deterministic geospatial snapshot validation, recovery & activation.
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
-import { getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+import type { GeospatialRecordCounts } from './geospatialSnapshotValidation';
+import { validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 export { getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+export type { GeospatialRecordCounts } from './geospatialSnapshotValidation';
 
 export const GEOSPATIAL_SNAPSHOT_SCHEMA = 'geospatial_state_v1';
 
 export type GeospatialPersistenceHealth = 'READY' | 'DEGRADED' | 'BLOCKED' | 'RECOVERING';
-
-export interface GeospatialRecordCounts {
-  boundaryEntities: number;
-  activeBoundaries: number;
-  poiRecords: number;
-  spatialListingCities: number;
-  spatialListings: number;
-  overlayLayers: number;
-  importBatches: number;
-}
 
 export interface GeospatialRecoveryReport {
   health: GeospatialPersistenceHealth;
