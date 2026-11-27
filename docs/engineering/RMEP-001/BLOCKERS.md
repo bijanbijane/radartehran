@@ -47,3 +47,7 @@ These blockers do not authorize merging, production deployment, production datab
 
 
 20. **Latest CI reproduction on exact PR #78 head `d622a1958d567140731f7ac87d6aa3140ed4a44e` — BLOCKED before runner allocation.** Backend Triad run 45997297157 job 140499788635, Quality Gates run 45997297169 job 140499789069, Native Auth run 45997297190 job 140499788433, and Path-Filtered Checks run 45997297120 detect job 140499788458 all report runner_id=0, empty runner_name and zero steps. Downstream jobs skipped. The TRIAD-003 test-only commit triggered the workflow but no test step ran. Issue #49 updated.
+
+13. **Direct consent-revocation bypass — IMPLEMENTED_BUT_NOT_VERIFIED.** updateUserPrivacyConsentInD1 now rejects direct true→false transitions unless a durable revocation intent exists and the barrier/reconcile path performs the CAS. TRIAD-001 verifies the bypass is rejected; TRIAD-002 uses the barrier for both HTTP and Queue race cases.
+14. **Queue stale revision semantics:** completed consent-revocation outbox rows now return CONSENT_REVISION_STALE_OR_REVOKED for a message whose revision is at or below the revoked-through revision. TRIAD-002 asserts this contract.
+15. **Latest CI remains runner-blocked:** Quality Gates run 45997297169 job 140499789069 has runner_id=0 and zero steps; Backend Triad 45997297157 and Native Auth 45997297190 have null step metadata. E2E skipped. No source-level failure has been diagnosed.
