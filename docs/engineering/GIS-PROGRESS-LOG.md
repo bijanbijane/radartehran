@@ -118,3 +118,15 @@
 - Added regression tests for invalid canonical geometry, stale bbox, and invalid simplified geometry; a stale bbox must block recovery.
 - Exact branch HEAD: `9da716fdd87d4ba412eb4c916076749a4a7fb4a8`.
 - GitHub GIS push/PR jobs again reported failure with `steps=null`; logs unavailable (`BlobNotFound`). The tests and typecheck remain NOT VERIFIED. No production data or deployment was changed.
+
+
+## 2026-11-27 — Latest PR head and GIS retry
+
+**Branch / PR HEAD:** `1ccf9411a4d945fcd4baad0ec11ac7b956b16382`  
+**Latest code revision:** `76b27e99840dcd486375c5fb5be76e85027ec041` (the latest branch commit is documentation-only)
+
+- Reviewed the current durable recovery validator: it scans every boundary history; rejects malformed history/record shapes, key/entity mismatches, duplicate boundary IDs, duplicate/non-increasing version sequences, multiple ACTIVE versions, invalid canonical and simplified polygon geometry, and bbox/geometry mismatches.
+- The focused GIS workflow run `45980564390` failed on both GIS jobs. A rerun (attempt 2) also failed: jobs `140443495137` and `140443495590`, each with `steps=null`; job logs remain unavailable.
+- Open issue [#49](https://github.com/bijanbijane/radartehran/issues/49) documents the same hosted-runner failure pattern across Radar and IRNI, including earlier jobs with `runner_id=0` and zero steps. The current GIS job records do not expose runner metadata, so runner allocation is the leading hypothesis, not a proven diagnosis for these exact attempts.
+- The GIS test suite and typecheck remain **NOT VERIFIED**. No test is claimed as passing.
+- PR #72 remains Draft/open. No merge, deployment, production binding change or data mutation occurred.
