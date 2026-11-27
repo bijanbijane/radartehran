@@ -26,3 +26,9 @@ Updated: 2026-11-27
 18. Add/verify unavailable-RESEARCH_DB completion race test in tests/rt-db-triad-001.test.ts (new test committed at 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15).
 19. Run the focused RT-DB triad suite and Worker typecheck when a local runtime is online; retrieve actionable diagnostics for CI run IDs 45987376314, 45987376378, 45987376493, and 45987376397.
 20. After CI is diagnosable, continue one live Express Firestore adapter migration at a time; do not remove historical Firebase compatibility files or rules merely because their names contain Firebase/Firestore.
+
+
+## Live Express Firestore adapter triage (2026-11-27)
+- `server/modules/property-viewings` is not the first migration target: repository search found its facade only in its module and tests, and `apps/api/server.ts` does not mount it.
+- `server/modules/legal-regulatory` is a confirmed live Express target: `apps/api/server.ts` imports and mounts `registerLegalRegulatoryRoutes`; `routes.ts` constructs `FirestoreLegalRegulatoryStore`; its repository spans 10 domain collections (plus the transactional/idempotency contract).
+- No legal-regulatory-specific D1 migration currently exists under `migrations/` (tree inventory checked). Do not swap the store or remove Firestore yet. First define the D1 schema, transactional repository contract, indexes/pagination, migration strategy, and parity tests for the mounted routes.
