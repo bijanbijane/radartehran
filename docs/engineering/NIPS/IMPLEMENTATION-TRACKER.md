@@ -148,3 +148,21 @@ The fetched job records returned no steps; fetching their log artifacts returned
 - `DEFERRED`: intentionally postponed with a recorded reason.
 
 Never infer deployed or production status from local source code or CI unit tests.
+
+
+## 11. Additional owner-side work discovered after the initial audit
+
+IRNI PR #22 is an existing Draft implementation branch for the separate, read-only geographic RPC v2:
+
+- PR: [#22 — audited read-only geography RPC v2](https://github.com/bijanbijane/Iran-Neighborhood-Intelligence/pull/22)
+- Branch: `feat/irni-d1-readonly-geography-rpc-v2-2026-11-25`
+- Head at audit: `e657824b2727c4cfe9537d965ea7fe51fd4484f7`
+- It adds `D1ReadOnlyGeographicRegistryRepository`, a version-pinned read-only repository, and configures the owner Worker candidate with `GEOGRAPHIC_REGISTRY_DB` pointing at the existing `radar-neighborhood-db`.
+- Its RPC methods are SELECT-only and its PR body reports a revision-19 audit with 9,828 canonical entities and 3,670 active verified non-synthetic urban neighborhoods. These are claims recorded by that PR, not counts independently queried in this session.
+- Its CI run `45613213136` failed before providing usable job steps/logs. PR #22 remains Draft and no live `irni-api` deployment was observed.
+
+**Do not turn the read-only geography RPC into a write API.** NIPS storage operations must be a separate versioned and purpose-scoped owner-side RPC entrypoint/module, sharing the existing IRNI Worker boundary and physical database binding only where authorized. A separate stacked implementation PR based on PR #22's audited code is preferred over changing the semantics of PR #22.
+
+The current IRNI catalog type `VariableDefinition` includes data type, unit, category, geographic level, minimum geographic resolution, temporal semantics, measurement nature, source policy, validation rules, lifecycle, and schema version. It does not, by itself, provide a complete evaluated applicability decision for every canonical neighborhood. Golden Reference rows explicitly say applicability is unassessed and contain no real values. The provisioning implementation must therefore create explicit variable-state rows without guessing applicability; unresolved applicability must remain `BLOCKED` until an approved rule evaluates it.
+
+The existing IRNI schema-evolution document says no migration has been executed against a real database, and the current repository has no checked-in Worker D1 migration directory. The revision-19 geographic data snapshot reported by PR #22 is not, by itself, proof of an approved D1 schema-migration ledger. NIPS migration ordering/ledger ownership must be reconciled before any remote migration.
