@@ -39,7 +39,8 @@ function mapBargainRecord(b: ServerPublishedBargainRecord): SearchPropertyItem {
     priceDisplayTextFa: b.priceText || `${total} میلیون تومان`,
     rooms: sqm >= 130 ? 3 : sqm >= 75 ? 2 : 1,
     coordinates: coords ? { lat: coords.lat, lng: coords.lng, isApproximate: true } : undefined,
-    isVerifiedListing: true,
+    // No independent verification evidence exists in this source record.
+    isVerifiedListing: false,
     publishedAtIso: b.createdAtIso,
     updatedAtIso: b.updatedAtIso || b.createdAtIso,
   };
