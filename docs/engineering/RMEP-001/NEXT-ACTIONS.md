@@ -18,3 +18,7 @@ Updated: 2026-11-27
 12. Diagnose run IDs 45986000419, 45986000574, 45986000519, and 45986000654 from actual job output; do not infer root causes from empty metadata.
 13. Review processPendingResearchErasureOutbox for concurrent USER_DB status regression (e.g. a failed worker overwriting a successful COMPLETED state with RETRY_PENDING); add a regression before deciding whether a durable claim/lease is required.
 14. Continue the residual Express Firestore adapter inventory and migrate one bounded live adapter at a time, with domain-specific tests.
+
+15. Run the full RT-DB-TRIAD-001 test and Worker typecheck against head 043e25c7c044cf4375fd40b68bbd62bb02c8831a.
+16. Inspect CI run IDs 45986606294, 45986606317, 45986606333, and 45986606330 using actual logs/annotations when available; no inferred root causes.
+17. Audit outbox attempt_count lost-update behavior and whether a lease/claim is still needed; retain status fencing regardless.
