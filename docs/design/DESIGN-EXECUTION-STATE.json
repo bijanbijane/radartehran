@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-001",
+  "package_id": "DESIGN-MAP-002",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
-  "status": "DESIGN_PROTOTYPE_READY_IMPLEMENTATION_NOT_AUTHORIZED",
+  "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
   "current_task": "Map workspace UX/UI redesign and handoff",
   "priority_basis": "PAGE-02 is NOT STARTED in docs/implementation/UX-AUDIT-IMPLEMENTATION-REGISTER.md; older mobile-map findings were reconciled against current source before selection.",
   "completed": [
@@ -15,7 +15,13 @@
     "Confirmed MapQuickControlsStrip has no callsite beyond its own module; FloatingTopBar imports but does not render it.",
     "Explored three materially different map-workspace directions and selected spatial-first canvas with contextual inspector.",
     "Produced an interactive chat prototype using repository-backed neighborhood reference values and explicit schematic-map disclosure.",
-    "Completed independent critique and documented limitations and developer handoff."
+    "Completed independent critique and documented limitations and developer handoff.",
+    "Inspected current bottom-sheet utility, unit tests, component state, and CSS tokens against the mobile acceptance criteria.",
+    "Identified current three-way contract drift: pure helper/test 78px/40%/86%, acceptance document 72px/40dvh/86dvh, component hidden/50dvh/84dvh.",
+    "Confirmed drawer handle min-height remains 24px; pointerdown/up exist but pointermove and pointercancel are absent.",
+    "Confirmed drawer scroll and drag CSS classes are now applied in JSX; historical orphan-token claim is stale.",
+    "Produced a second interactive three-state mobile inspector concept and independent critique.",
+    "Created DESIGN-MAP-002 mobile inspector specification."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -23,12 +29,15 @@
     "Use one canonical map action strip and avoid duplicate control ownership.",
     "Use progressive disclosure for neighborhood detail.",
     "Keep static reference values, observed listings, analytical estimates, and live signals visually distinct.",
-    "Reuse Vazirmatn, existing semantic tokens, 4px spacing scale, and 44px primary mobile touch targets."
+    "Reuse Vazirmatn, existing semantic tokens, 4px spacing scale, and 44px primary mobile touch targets.",
+    "Use one canonical collapsed/peek/expanded state to drive visual geometry, aria state, backdrop, and map availability.",
+    "Keep 40dvh peek and 86dvh expanded as utility/test baseline; resolve 72px vs 78px collapsed after validating nav and safe-area geometry.",
+    "Use a dedicated >=44px drag handle, full pointer lifecycle, and explicit tap alternatives."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
     "independent_critique": "ACCEPTED_AS_CONCEPT_ONLY",
-    "production_visual_qa": "NOT_RUN",
+    "production_visual_qa": "BLOCKED_DESKTOP_DEVICE_OFFLINE",
     "responsive_browser_validation": "NOT_RUN",
     "rtl_device_validation": "NOT_RUN",
     "screen_reader_validation": "NOT_RUN",
@@ -37,7 +46,8 @@
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
     "Schematic prototype is not a real map and must not be treated as spatially accurate.",
-    "Frontend implementation remains unauthorized."
+    "Frontend implementation remains unauthorized.",
+    "Desktop Commander MacBook device is offline (last seen 23h ago), preventing current product screenshots and DOM geometry capture."
   ],
-  "next_exact_action": "Capture current map workspace screenshots and viewport geometry at 360x800, 390x844, 768x1024, 1024x768, 1280x800, and 1440x900; then reconcile the measured layout against DESIGN-MAP-001 before any implementation."
+  "next_exact_action": "Reconnect development machine/browser; capture 320x568, 360x800, 390x844, and 844x390 screenshots; measure sheet states and FloatingTopBar overlap; reconcile D1-D4 and PAGE-02 before implementation."
 }
