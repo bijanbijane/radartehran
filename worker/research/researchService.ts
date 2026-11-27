@@ -524,16 +524,10 @@ export async function executeResearchSubjectErasure(params: {
   const erasureId = `rerase_${params.outboxId}`;
   const receiptId = `ercpt_${params.outboxId}`;
 
-  const deleteEventsStmt = params.researchDb
-    .prepare('DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-    .bind(params.subjectKey, params.subjectKeyVersion);
-
-  const invalidateWindowStmts = impactedScopes.map((scope) =>
-    params.researchDb
-      .prepare('DELETE FROM research_aggregation_windows WHERE event_type = ?1 AND city_id = ?2')
-      .bind(scope.event_type, scope.city_id),
-  );
-
+  // Claim the durable outbox identity before any destructive statement. The batch is
+  // atomic; guarded deletes below can run only when this outbox ID belongs to this exact
+  // subject key/version. This also protects the race where two different subjects submit
+  // the same outbox ID after both passed the initial read.
   const insertInboxStmt = params.researchDb
     .prepare(
       `INSERT OR IGNORE INTO research_erasure_inbox (
@@ -553,10 +547,40 @@ export async function executeResearchSubjectErasure(params: {
       nowIso,
     );
 
+  const deleteEventsStmt = params.researchDb
+    .prepare(
+      `DELETE FROM research_events
+       WHERE subject_key = ?1 AND subject_key_version = ?2
+         AND EXISTS (
+           SELECT 1 FROM research_erasure_inbox
+           WHERE outbox_id = ?3 AND subject_key = ?1 AND subject_key_version = ?2
+         )`,
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion, params.outboxId);
+
+  const invalidateWindowStmts = impactedScopes.map((scope) =>
+    params.researchDb
+      .prepare(
+        `DELETE FROM research_aggregation_windows
+         WHERE event_type = ?1 AND city_id = ?2
+           AND EXISTS (
+             SELECT 1 FROM research_erasure_inbox
+             WHERE outbox_id = ?3 AND subject_key = ?4 AND subject_key_version = ?5
+           )`,
+      )
+      .bind(
+        scope.event_type,
+        scope.city_id,
+        params.outboxId,
+        params.subjectKey,
+        params.subjectKeyVersion,
+      ),
+  );
+
   const batchResults = await params.researchDb.batch([
+    insertInboxStmt,
     deleteEventsStmt,
     ...invalidateWindowStmts,
-    insertInboxStmt,
   ]);
   if (
     batchResults.length !== 2 + invalidateWindowStmts.length ||
