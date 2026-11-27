@@ -134,3 +134,37 @@ No code path, binding, database, secret or deployment was changed by this audit.
 ## Hosted runner allocation evidence — 2026-11-27
 
 The GitHub Actions Jobs API was queried directly for the latest GIS, IRNI RPC consumer and Radar Worker bundle runs listed above. All four job records report `runner_id=0`, an empty `runner_name`, and an empty `steps` array; each job completed as `failure` within approximately 1–3 seconds of its start timestamp. This confirms that no job step was recorded and strongly indicates failure before a hosted runner began executing the workflow. It does not identify the account/repository-level reason (for example, runner entitlement, usage/billing enforcement, repository Actions policy or service-side dispatch failure). Treat this as a runner-allocation/dispatch blocker, not an application test failure, until GitHub account and repository Actions diagnostics identify the cause. No code change can be justified from these empty job records.
+
+
+## Cloudflare D1 marketplace write-route repair — 2026-11-27
+
+A route-to-handler mismatch was found in `worker/routes/marketplaceRoutes.ts`:
+
+- The frontend `createBargainWithOwner` calls `POST /api/v1/market/bargains` with listing fields (`title`, `type`, `sqm`, `priceMillions`, `discountPercent`, etc.).
+- Before this repair, that Worker path executed the sponsor-request workflow: it required `agencyName`, `phone` and `experienceYears`, and inserted into `sponsor_requests`. A valid bargain payload therefore could not create a bargain.
+- The frontend sponsor repository calls `POST /api/v1/market/sponsor-requests`, but the sponsor handler was not mounted at that path.
+
+The handler has now been split:
+
+1. `POST /api/v1/market/bargains` validates a bargain against the D1 neighborhood projection, requires a verified Worker session and idempotency key, then inserts the `bargains` row and `bargain_projections` row in the same idempotent D1 batch. New listings begin in `pending`; only the existing admin approval path can move them to `approved`.
+2. The sponsor-request handler now matches `POST /api/v1/market/sponsor-requests`, the path used by the frontend repository and declared in the route register.
+3. The bargain route explicitly rejects media/video references while R2-backed media attachment is deferred. It does not silently drop those references or claim a successful attachment.
+4. A new route regression test covers the D1 bargain create response and the fail-closed media behavior.
+
+### Remaining integration gaps (not solved by this route repair)
+
+- The D1 marketplace state read exposes approved bargains, but the production Property Search adapter still reads the legacy `serverPublishedBargains` Map. The GIS spatial index has no consumer of D1 bargain writes. The new D1 write path is therefore not yet reflected in those two read models.
+- `src/features/properties/services/listingService.ts` stores user-submitted property records in UID-scoped browser storage. This is a separate listing model from the D1 marketplace bargains.
+- The legacy `/api/my-bargains` endpoints still mutate the Express process-local Map and disk-cache snapshot. They are not transactionally connected to the D1 marketplace tables.
+- `syncPublishedBargainToExpressServer` targets `POST /api/bargains`, but the active Worker/Express route inventory reviewed here has no corresponding create handler; repository search finds only the helper definition and a test invocation, not a production call site. Its unit test uses a mocked fetch response and does not establish a real dual-write.
+- Consequently, do not yet declare one end-to-end canonical listing lifecycle across D1, Property Search, GIS and the browser property explorer.
+
+### Next acceptance criteria
+
+1. Add D1-backed read adapters for Property Search and GIS, with approved-only publication semantics and exact, independently verified coordinates.
+2. Define whether the separate browser-storage `PropertyListingRecord` flow is to be migrated into the D1 bargain model or retired; do not silently merge unlike schemas.
+3. Retire or explicitly isolate the legacy `/api/my-bargains` Map and the unused Express dual-write helper after client migration.
+4. Add integration tests proving create → pending → admin approval → public state/search/GIS visibility, plus rejection, deletion, idempotent replay, owner isolation and restart durability.
+5. Keep R2 media attachment unavailable until object ownership, target binding, cleanup and deletion are implemented and tested.
+
+No D1 migration was applied, no live database was written, and no deployment was performed. The new code and regression test are committed; hosted CI evidence is still required before treating them as passing.
