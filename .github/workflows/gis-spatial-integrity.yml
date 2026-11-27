@@ -6,8 +6,11 @@ on:
       - feat/gis-spatial-integrity-2026-11-27
     paths:
       - "server/modules/geospatial/**"
+      - "server/modules/valuation/service.ts"
+      - "server/modules/valuation/types.ts"
       - "tests/geospatial-*.test.ts"
       - "tests/neighborhood-profile-boundary-read-model.test.ts"
+      - "tests/property-valuation-engine-module.test.ts"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/gis-spatial-integrity.yml"
@@ -51,8 +54,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Run focused geospatial regression suite
-        run: npm run test:geospatial
+      - name: Run geospatial and valuation-location regression suites
+        run: npm run test:geospatial && npm run test:valuation-location
 
   gis-typecheck:
     name: GIS module TypeScript typecheck
