@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "program_id": "RADAR-TEHRAN-QA",
+  "program_status": "IN_PROGRESS",
+  "current_phase": "PHASE-0-BASELINE-AND-FIRST-REGRESSION",
+  "current_work_package": "QA-WP-001-NIPS-GOLDEN-REFERENCE-CONTRACT",
+  "repository": {
+    "full_name": "bijanbijane/radartehran",
+    "base_branch": "main",
+    "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
+    "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "latest_qa_commit": "0e351f8244ee92261904ca5dd6f2022e80d40040"
+  },
+  "test_results": {
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "not_executed": 1,
+    "reason": "The connected MacBook is offline; GitHub repository APIs can write files but do not execute repository commands. CI execution is pending a draft PR run."
+  },
+  "suites_created": [
+    "tests/nips-golden-reference.test.ts"
+  ],
+  "suites_improved": [
+    "test:contracts now includes the NIPS golden-reference regression suite"
+  ],
+  "confirmed_defects": [],
+  "suspected_findings": [
+    "The NIPS golden-reference fixture has no dedicated automated structural regression test on main; a test has been added on the QA branch, pending execution."
+  ],
+  "self_remediated_defects": [],
+  "blockers": [
+    "No online remote execution device is available for local test execution."
+  ],
+  "ci": {
+    "workflow_files_inspected": [
+      ".github/workflows/ci.yml"
+    ],
+    "latest_commit_status": "No status checks were returned for the inspected main commit.",
+    "qa_branch_run": "PENDING"
+  },
+  "next_exact_action": "Open a draft pull request from the QA branch to main, then inspect the actual GitHub Actions run and fix any failures in scope.",
+  "updated_at": "2026-11-27T13:26:00+03:30"
+}
