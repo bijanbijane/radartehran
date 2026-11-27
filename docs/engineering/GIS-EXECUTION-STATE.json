@@ -167,12 +167,12 @@
     "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified.",
     "Exact-head workflow runs 46018956272 (GIS), 46018956332 (Browser UX) and 46018956178 (path-filter detect) failed with steps=null; no command execution is evidenced and no runner metadata is exposed for these sampled jobs."
   ],
-  "last_recorded_action": "Expanded GIS and Browser UX workflow path coverage and targeted regressions; exact-head workflow reruns remain unverified because sampled GitHub Actions jobs returned steps=null.",
-  "latest_inspected_pr_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
-  "latest_branch_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+  "last_recorded_action": "Corrected GIS and Browser UX workflow path coverage, expanded targeted GIS regressions, and synchronized GIS execution-state/progress records. Runtime validation remains blocked by exact-head GitHub Actions jobs with steps=null.",
+  "latest_inspected_pr_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
+  "latest_branch_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+    "branch_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
     "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
     "compare_main": {
       "ahead_by": 254,
@@ -283,7 +283,7 @@
     ],
     "interpretation": "Exact-head workflow runs on 625490e51e434a722ddfe0357258c748e36de720 failed. The sampled GIS, Browser UX and path-filter detector job payloads expose steps=null; no runner metadata is exposed in those sampled payloads. No test, typecheck, browser, lint or build command execution is evidenced. The workflow path coverage corrections are verified by source read-back only; runtime validation remains blocked and the precise GitHub-side cause is unknown."
   },
-  "latest_branch_sha_at_record": "625490e51e434a722ddfe0357258c748e36de720",
+  "latest_branch_sha_at_record": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
   "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
   "valuation_integration": {
     "status": "SERVICE_GUARD_IMPLEMENTED_PRODUCTION_WIRING_BLOCKED",
