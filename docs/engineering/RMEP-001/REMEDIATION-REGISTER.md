@@ -38,3 +38,8 @@ The GitHub connector returned empty step summaries for the failed jobs and the j
 - **RT-CI-002:** PR #70 independently carries the stale Bun lockfile remediation. Its Cloudflare frontend preview reported a successful build and deployment for commit `f05b6228de9e36b38b039cb60d407048a0067720`; this is evidence for that PR's preview only, not PR #67 or production. Keep PR #69/#70 Draft until their own checks and required preview builds pass.
 - **RT-NIPS-001/002:** No runtime NIPS persistence adapter, schema migration, HTTP route, or ingestion pipeline has been implemented by this checkpoint. These remain dependent on the IRNI-owned authenticated/versioned RPC contract.
 - **Verification boundary:** GitHub confirmed the content commits and file state. No npm test, TypeScript check, architecture check, D1 integration test, production migration, or deployment was executed in this session.
+
+
+## CHK-198 — additional CI script audit
+
+Static comparison of workflow invocations against root `package.json` found and corrected two more mismatches: added `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc` scripts for the existing client test and isolated tsconfig; replaced the nonexistent `test:geo` invocation with the existing `test:geography-catalog` script. The workflow files and package scripts were re-fetched after the commits and the references match. The new Actions runs still fail before exposing steps; therefore no workflow execution is marked passed.
