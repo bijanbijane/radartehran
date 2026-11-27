@@ -213,14 +213,14 @@ test('polygon validation checks closure and self-intersection of interior rings'
   const unclosedHole: PolygonGeometry = {
     type: 'Polygon',
     coordinates: [
-      SQUARE_A.coordinates as [number, number][][],
-      [[
+      (SQUARE_A.coordinates as [number, number][][])[0],
+      [
         [51.32, 35.72],
         [51.38, 35.72],
         [51.38, 35.78],
         [51.32, 35.78],
-      ]],
-    ] as unknown as [number, number][][],
+      ],
+    ],
   };
   const validation = validatePolygonGeometry(unclosedHole);
   assert.equal(validation.valid, false);
