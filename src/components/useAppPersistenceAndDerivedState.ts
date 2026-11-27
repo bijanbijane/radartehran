@@ -18,6 +18,7 @@ import {
 } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import type { useAppUiState } from './useAppUiState';
+import { resolveSelectedNeighborhoodById } from './selectedNeighborhoodResolver';
 
 export const FEATURE_FLAGS_STORAGE_KEY = 'tehran_radar_feature_flags_v1';
 
@@ -44,10 +45,7 @@ export function useAppPersistenceAndDerivedState({
   rentAgeMultiplier, totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
 }: UseAppPersistenceAndDerivedStateParams) {
   const selectedHood = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.selectedHoodId) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.selectedHoodId) ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.selectedHoodId, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.selectedHoodId]
   );
 
