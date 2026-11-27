@@ -230,3 +230,10 @@ Added a regression test with all three supported legacy encodings converging on 
 **Outcome:** No bridge code was added because the required trusted geometry/source contract and production-safe replay boundary are not present in the reviewed source. Profile evidence remains fail-closed. This is an intentional architecture gate, not a completed integration.
 
 **Verification:** Source/configuration inspection only. No automated tests or typecheck were run for this documentation-only update. CI execution remains unverified.
+
+
+## 2026-11-27 — Existing session assertion reuse assessment
+
+Inspected the Worker assertion issuer, strangler fallback, Express verification middleware, and Express bootstrap. The existing authentication assertion is verified before downstream Express middleware and the private header is removed; it is bound to method/path/query, correlation ID and Worker-hop marker, with a 30-second maximum lifetime. The payload and verifier do not include a body digest or a unique nonce/replay-store check. It is therefore not a single-use, body-bound RPC credential. It authenticates a user session principal rather than a Worker service or IRNI entity.
+
+**Decision:** Do not reuse the session assertion or `AUTH_INTERNAL_HMAC_SECRET` for geography RPC. A separate versioned internal contract must bind timestamp, unique nonce and canonical body digest, with durable replay prevention. No authentication code was changed; the current GIS release gate remains BLOCKED. Source inspection only; no test execution was performed.
