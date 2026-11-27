@@ -150,3 +150,12 @@ Before any Radar production deployment:
 2. Run root typecheck, `npm run arch:check`, `npm run test:security`, and the applicable Worker/auth/Cloudflare suites.
 3. Keep SEC-NIPS-002, NIPS serializer hardening, and Worker streaming parser **IMPLEMENTED_BUT_NOT_VERIFIED** until commands execute successfully.
 4. Keep PR #67 Draft. Do not implement Radar-side NIPS persistence until the IRNI-owned authenticated/versioned storage RPC and canonical geography Service Binding are available and verified.
+
+ 
+## CHK-211 — immediate verification queue
+
+1. Inspect PR #67 workflow runs for updated head `c65f6478473c890ed5ea8754faf3f5f896bf2ed7`; confirm runner allocation and non-empty steps before reading test outcomes.
+2. Confirm root CI Gate G executes `npm run test:worker` and retains `ci-gate-g-worker-tests.log`. Root `npm test` already includes NIPS via `test:unit`.
+3. If commands execute, diagnose concrete output from `npm run test:worker`, `npm test`, typecheck, architecture, security and Cloudflare gates; do not infer results from job conclusion alone.
+4. Keep SEC-NIPS-002, Worker streaming parser, and CI workflow change **IMPLEMENTED_BUT_NOT_VERIFIED** until executable checks pass.
+5. Keep PR #67 Draft. Preserve the IRNI-owned storage RPC and geography Service Binding prerequisites; no direct Radar binding to IRNI D1 or Production changes.
