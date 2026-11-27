@@ -1435,3 +1435,12 @@
 - Latest PR #67 head `753d01fedcc2ad2c8414d465394022d2eecd2084` triggered five workflows: #45990066405 (Backend Triad), #45990066761 (Native Auth), #45990066394 (Root CI), #45990066422 (Path-Filtered), and #45990066754 (IRNI RPC). All conclude FAILURE.
 - Corresponding job records expose zero steps; the root CI job's log (140475333883) and path-filter detect log (140475332511) return `BlobNotFound`. E2E and downstream path-filter gates are skipped. This still provides no command-level test result.
 - PR #67 remains OPEN / DRAFT / NOT MERGED. The browser Firebase SDK guard remains IMPLEMENTED_BUT_NOT_VERIFIED. No tests were run locally or by a visible Actions runner.
+
+## 2026-11-27 — NIPS public serializer hardening and CI runner block
+
+- Reviewed the public profile serializer and confirmed that it forwarded nested `period`, `geography`, `quality`, and `display` objects, free-form readiness/quality diagnostics, and parent-entity objects without nested projection. The profile validator does not reject unknown nested properties, so this path could expose internal metadata through the public read model.
+- Added explicit field-by-field serialization for metric period, geography, quality, display, localized-name locale keys, and parent entities. Free-form quality limitations and readiness/overall reasons are replaced with static public-safe messages.
+- Added a regression test that injects private sentinel fields into nested metadata, parent entities, localized-name keys, and free-form diagnostics; it asserts that the serialized public profile contains none of the sentinels and retains the approved fields.
+- Code commits: `19771174c6f05f56c1f2607f9665e100ffbc8408` (serializer) and `676c799b25659363bd04924991521daff6b9792a` (regression test).
+- Re-ran the five PR #67 workflows. All five failed before runner assignment: job payloads show `runner_id=0`, blank `runner_name`, empty `steps`, and ~1–2 second execution windows. Log downloads return `BlobNotFound`. This is verified Actions infrastructure failure evidence, not an application test result.
+- Status: **IMPLEMENTED_BUT_NOT_VERIFIED**. No local Node/npm execution is available through this GitHub-only session; no test, typecheck, build, D1 migration, binding, secret, deployment, merge, or production mutation was performed. PR #67 remains Draft.
