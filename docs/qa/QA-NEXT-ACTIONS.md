@@ -1,11 +1,9 @@
 # QA Next Actions
 
-1. **Resolve hosted-runner allocation:** inspect GitHub account Actions usage/billing and included-minute/spending limits; inspect repository Settings → Actions → General for Actions enablement, allowed actions, and hosted-runner policy.
-2. **Do not create another CI trigger solely to repeat the same pre-runner failure.** The five latest PR #74 workflows all had `runner_id=0` and `steps=[]`; root cause remains unconfirmed.
-3. If billing and policy are clear, escalate the five run IDs (46004991418, 46004991653, 46004991515, 46004991666, 46004991463) to GitHub Support with job IDs and timestamps.
-4. Once a runner is actually allocated, run `npm run test:contracts` first; capture the full output and exit code for the NIPS golden-reference contract suite.
-5. Then inspect the primary quality-gates job's first failing step; run only that command for reproduction and classify code, test, dependency, environment, and infrastructure failures separately.
-6. Continue with D1 triad and write-pause suites, then auth/security/typecheck/build and the browser E2E/accessibility suites. Use the existing scripts in `package.json`; do not add an overlapping test framework.
-7. Keep all test data synthetic and isolated. Do not run production migrations, mutate production data, or deploy.
-8. Update all six QA records with actual test counts, workflow evidence, and the latest inspected commit after each meaningful package.
-9. Keep PR #74 open and Draft; do not merge without explicit approval.
+1. Restore a real command execution path: bring the authorized Desktop Commander device online or resolve GitHub-hosted runner allocation. Do not create repeated CI triggers while the pre-runner failure persists.
+2. Keep PR #74 open and Draft; its NIPS contract suite is correctly wired on the QA branch. Once execution is available, run `npm run test:contracts` first and capture full output/exit code.
+3. Review PR #79's four CI command fixes and PR event-filter correction. It statically resolves all 4 missing command references found across 16 main-branch workflow files / 40 npm invocations. Do not mark these defects resolved until PR #79 is merged and the workflows execute successfully.
+4. After runner recovery, run focused auth, D1 triad, IRNI RPC, and geography suites; then lint/typecheck, full CI quality gates, build, and Playwright E2E/accessibility.
+5. For each executed suite, record actual cases passed/failed/skipped and retain logs. Keep CI startup failures separate from test results.
+6. Continue to use synthetic data and isolated environments. Do not run production migrations, mutate production data, deploy, or merge without explicit approval.
+7. Update all six QA records after each meaningful package, preserving the latest verified commit SHA and exact blockers.
