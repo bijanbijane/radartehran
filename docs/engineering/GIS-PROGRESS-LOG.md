@@ -130,3 +130,11 @@
 - Open issue [#49](https://github.com/bijanbijane/radartehran/issues/49) documents the same hosted-runner failure pattern across Radar and IRNI, including earlier jobs with `runner_id=0` and zero steps. The current GIS job records do not expose runner metadata, so runner allocation is the leading hypothesis, not a proven diagnosis for these exact attempts.
 - The GIS test suite and typecheck remain **NOT VERIFIED**. No test is claimed as passing.
 - PR #72 remains Draft/open. No merge, deployment, production binding change or data mutation occurred.
+
+
+## 2026-11-27 — Consumer fail-closed audit
+
+- Valuation feature generation now requires an explicit positive neighborhood ID, explicit positive boundary version, and non-empty boundary version ID; it no longer falls back to version 1.
+- Spatial market summary no longer treats a profile's boundaryReference as a verified active GIS boundary and returns null boundary metadata when no unique ACTIVE boundary exists.
+- Point assignment now prevents a parent neighborhood interior from masking a matched sub-neighborhood edge; edge points do not inherit the micro-neighborhood ID.
+- These changes were inspected on branch HEAD `2d6c707303dc2e48723c3a8869e59984199c9608`; exact-head GIS CI still failed without exposing steps or logs. All tests remain NOT VERIFIED.
