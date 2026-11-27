@@ -2068,11 +2068,19 @@ async function runSuite(): Promise<void> {
         topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center flex-1 py-1.5 rounded-[8px]'),
       'Mobile building-age and budget-status choices must retain 44px minimum touch targets'
     );
+    const saveActionTag = topBarSrc.match(/<button\\b(?=[^>]*onClick={onSaveUserPreferences})[^>]*>/)?.[0] ?? '';
+    const shareActionTag = topBarSrc.match(/<button\\b(?=[^>]*onClick={onCopyBudgetShareLink})[^>]*>/)?.[0] ?? '';
     assert.ok(
       topBarSrc.includes('className="grid grid-cols-1 sm:grid-cols-2 gap-2"') &&
-        topBarSrc.includes('min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center') &&
-        topBarSrc.includes('whitespace-normal text-center leading-snug'),
-      'Mobile save/share actions must retain 44px touch targets and wrap safely without forcing horizontal overflow'
+        saveActionTag.includes('min-w-0') &&
+        saveActionTag.includes('min-h-[44px] md:min-h-[38px]') &&
+        saveActionTag.includes('w-full') &&
+        shareActionTag.includes('min-w-0') &&
+        shareActionTag.includes('min-h-[44px] md:min-h-[38px]') &&
+        shareActionTag.includes('w-full') &&
+        shareActionTag.includes('whitespace-normal') &&
+        !shareActionTag.includes('whitespace-nowrap'),
+      'Mobile save/share actions must independently retain 44px touch targets, fill their grid cells, and allow the share label to wrap'
     );
     assert.equal(
       (topBarSrc.match(/min-h-\[44px\] md:min-h-\[32px\] inline-flex items-center gap-1 px-2 py-0\.5 rounded-\[6px\] bg-emerald-50/g) || []).length,
