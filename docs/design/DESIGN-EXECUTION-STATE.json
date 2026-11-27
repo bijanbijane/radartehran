@@ -41,7 +41,10 @@
     "Identified non-uniform modal focus management: shared hook adoption in selected dialogs, a separate primitive dialog keydown implementation, and SecondaryModals hook activation limited to pulse/SEO states.",
     "Documented topmost DOM-order dependency, focus restoration and body-scroll-lock behavior, background inertness gap in inspected hook, and conditional z-50/z-55 layer collision risk in DESIGN-MAP-007; no application code changed.",
     "Expanded DESIGN-MAP-007 inventory across 13 modal entry-point modules; verified three child modals createPortal directly into document.body while AppModalsPortal remains a normal React aggregator.",
-    "Reconciled mixed modal mounting model and updated DESIGN-MAP-007 with per-component focus-hook/portal findings; full-repository dialog inventory remains open."
+    "Reconciled mixed modal mounting model and updated DESIGN-MAP-007 with per-component focus-hook/portal findings; full-repository dialog inventory remains open.",
+    "Inspected the existing form-input-handling.test.ts portal contract and verified its explicit 14-file portaledModals inventory; each listed file is asserted to use createPortal and z-[9500].",
+    "Fetched all 11 additional portal paths from the active design branch and verified each contains one createPortal call, one dialog role, and shared useDialogFocus adoption.",
+    "Expanded DESIGN-MAP-007 with the 14-file portal inventory, test-contract limits, and exact shared useDialogFocus behavior including body-scroll reference counting, DOM-order topmost checks, focus restoration, and absence of background inert management in the inspected hook."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -93,13 +96,13 @@
     "stacking_context_ancestry": "NOT VERIFIED",
     "safe_area_visual_viewport": "NOT RUN",
     "overlay_pointer_focus_ownership": "NOT RUN",
-    "modal_portal_source_review": "VERIFIED — THREE BODY PORTALS IDENTIFIED",
-    "modal_focus_management_source_review": "VERIFIED",
+    "modal_portal_source_review": "VERIFIED — 14 TESTED PORTAL MODULES",
+    "modal_focus_management_source_review": "VERIFIED — SHARED HOOK REVIEWED; PER-MODULE RUNTIME NOT VERIFIED",
     "modal_runtime_focus_behavior": "NOT RUN",
     "modal_background_inertness": "NOT VERIFIED",
     "modal_scroll_lock_runtime": "NOT RUN",
     "modal_stack_visual_order": "NOT VERIFIED",
-    "full_portal_root_inventory": "PARTIAL — THREE BODY PORTALS; REPOSITORY-WIDE NOT VERIFIED",
+    "full_portal_root_inventory": "14-FILE TEST-BACKED PORTAL INVENTORY VERIFIED; GLOBAL COMPLETENESS NOT VERIFIED",
     "modal_entry_point_inventory": "PARTIAL — 13 WORKSPACE MODAL MODULES"
   },
   "blockers": [
@@ -112,5 +115,5 @@
     "DESIGN-MAP-007 full-app portal-root inventory and nested modal runtime behavior remain unverified without complete source-tree/runtime inspection.",
     "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA."
   ],
-  "next_exact_action": "Complete repository-wide dialog/portal inventory beyond the 13 workspace modal modules; then reconnect development browser/device to validate mixed body-portal and in-tree modal stacking, nested focus restoration, background inertness, and scroll locking across viewport/RTL matrices; prepare implementation handoff only after evidence and explicit frontend authorization."
+  "next_exact_action": "Audit all 14 portal modules for reachable concurrent-open states and focus-hook container ownership; inspect remaining modal entry points outside the test inventory; then reconnect browser/device for nested portal stacking, keyboard ownership, focus restoration, inert background, and body scroll-lock QA. Do not change application code without explicit frontend authorization."
 }
