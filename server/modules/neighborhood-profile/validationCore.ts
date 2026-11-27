@@ -36,7 +36,7 @@ const HASH = /^[a-f0-9]{64}$/i;
 const NON_VALUE_STATES = ['MISSING', 'UNAVAILABLE', 'SUPPRESSED', 'NOT_APPLICABLE'] as const;
 const PUBLISHABLE_STATES = ['OBSERVED', 'ESTIMATED', 'ALLOCATED'] as const;
 const BLOCKED_STATES = ['SUPPRESSED', 'UNDER_REVIEW'] as const;
-const REQUIRED_PUBLICATION_DOMAINS = ['identity', 'geography', 'evidence'] as const;
+export const REQUIRED_PUBLICATION_DOMAINS = ['identity', 'geography', 'evidence'] as const;
 export const count = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0;
 const finiteRatio = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
@@ -137,7 +137,7 @@ export function pushIssue(
   issues.push({ code, path, message });
 }
 
-function countMetricsByState(metrics: readonly NipsMetric[]): {
+export function countMetricsByState(metrics: readonly NipsMetric[]): {
   publishable: number;
   blocked: number;
   stale: number;
@@ -261,7 +261,7 @@ export function validateQualitySummary(
     blocked: envelopes.filter((domain) => domain.state === 'BLOCKED').length,
     stale: envelopes.filter((domain) => domain.state === 'STALE').length,
   };
-  const actualMetricCounts = envelopes.reduce((total, domain) => {
+  const actualMetricCounts = envelopes.reduce<{ publishable: number; blocked: number; stale: number; unavailable: number }>((total, domain) => {
     const metrics = Array.isArray(domain.metrics) ? domain.metrics as NipsMetric[] : [];
     const counts = countMetricsByState(metrics);
     return {
