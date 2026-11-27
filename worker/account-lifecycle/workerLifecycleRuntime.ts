@@ -260,6 +260,29 @@ export async function processPendingResearchErasureOutbox(params: {
     if (row.job_id) touchedJobIds.add(String(row.job_id));
   }
 
+  // Recover consent-revocation parents when the final outbox item committed but
+  // the parent status update was interrupted. Completed outbox rows are excluded
+  // from the pending scan above, so this independent scan is required for replay.
+  const alreadyErasedRevocations = await params.userDb
+    .prepare(
+      `SELECT j.revocation_id
+       FROM research_consent_revocation_jobs j
+       WHERE j.status = 'PENDING_ERASURE'
+         AND EXISTS (SELECT 1 FROM research_erasure_outbox o WHERE o.job_id = j.revocation_id)
+         AND NOT EXISTS (
+           SELECT 1 FROM research_erasure_outbox o
+           WHERE o.job_id = j.revocation_id AND o.status != 'COMPLETED'
+         )
+       LIMIT 50`,
+    )
+    .all<{ revocation_id: string }>();
+  if (!alreadyErasedRevocations.success) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_COMPLETED_JOB_SCAN_FAILED');
+  }
+  for (const row of alreadyErasedRevocations.results ?? []) {
+    if (row.revocation_id) touchedJobIds.add(String(row.revocation_id));
+  }
+
   // Reconcile consent-revocation jobs separately from account-deletion jobs.
   // A revocation job must never enter the account-deletion completion path.
   for (const jobId of touchedJobIds) {
