@@ -1,0 +1,82 @@
+name: GIS Spatial Integrity
+
+on:
+  push:
+    branches:
+      - feat/gis-spatial-integrity-2026-11-27
+    paths:
+      - "server/modules/geospatial/**"
+      - "tests/geospatial-*.test.ts"
+      - "tests/neighborhood-profile-boundary-read-model.test.ts"
+      - "docs/engineering/GIS-*.md"
+      - "docs/engineering/GIS-*.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/gis-spatial-integrity.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "server/modules/geospatial/**"
+      - "tests/geospatial-*.test.ts"
+      - "tests/neighborhood-profile-boundary-read-model.test.ts"
+      - "docs/engineering/GIS-*.md"
+      - "docs/engineering/GIS-*.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/gis-spatial-integrity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gis-spatial-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gis-regression:
+    name: GIS geometry and boundary regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run focused geospatial regression suite
+        run: npm run test:geospatial
+
+  gis-typecheck:
+    name: GIS module TypeScript typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
