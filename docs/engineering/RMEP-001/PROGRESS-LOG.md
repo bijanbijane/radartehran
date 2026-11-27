@@ -1309,3 +1309,13 @@
 - **Files:** `worker/research/researchService.ts`, `tests/rt-db-triad-001.test.ts`.
 - **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. No local test/typecheck execution because the connected MacBook is Offline. The added regression currently covers duplicate delivery/replay; a deterministic overlapping-delivery test remains required.
 - **Code commits:** `8c014f249d61ead95ec005974a29d900bb907e60`, `a3713a1f05eb03639c127c6d995f805839f9292e`.
+
+
+## 2026-11-27 — Research erasure inbox identity-conflict hardening
+- **Finding:** The completed-inbox fast path in executeResearchSubjectErasure returned a stored receipt using only outbox_id; it did not verify that the row belonged to the supplied subject_key and subject_key_version. Reusing/corrupting an outbox ID could therefore return a receipt for a different pseudonymous subject.
+- **Change:** The initial inbox lookup now reads subject identity and rejects mismatches with RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT before returning any completed receipt. Added a regression assertion for a completed outbox ID replayed against a different subject key.
+- **Files:** worker/research/researchService.ts, tests/rt-db-triad-001.test.ts.
+- **Verification:** Source and migration contract reviewed. Test/typecheck not executed because local execution device remains Offline. Status remains IMPLEMENTED_BUT_NOT_VERIFIED.
+- **GitHub:** PR #78 remains Draft. Latest code commit: 0f1818e488e12580bfc9c01356cd9de04d3970fc; execution-state reconciliation commit: 399a93a2de17ccddf914a7981d46981567001fe3.
+- **CI:** PR workflow run 45980515216 failed at detect; downstream api/frontend/contracts gates were skipped. A Cloudflare Workers Builds check for radartehran-frontend also failed. Job logs still return BlobNotFound, so failure causes are not attributed to source changes.
+- **Next:** Obtain detect/Cloudflare build diagnostics, run tests/rt-db-triad-001.test.ts and Worker typecheck, then add deterministic concurrent delivery coverage.
