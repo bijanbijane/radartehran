@@ -14,3 +14,8 @@
 8. **CRS and metric calculations.** A verified local projected CRS and source-specific transformation policy have not been established. Do not guess a Tehran EPSG code or treat degrees as meters.
 
 No production deployment, remote migration, live binding change, secret change, database creation, production data replacement or paid service activation was performed.
+
+
+## New integrity finding (2026-11-27)
+
+Snapshot recovery previously checked that a boundary bbox was numerically plausible and within Iran, but did not validate the persisted canonical/simplified geometry or compare the bbox against the canonical geometry. This could let a stale but plausible bbox exclude a polygon from spatial lookup. The recovery validator now rejects invalid canonical geometry, invalid simplified geometry, and bbox/geometry mismatches. Regression tests are committed but not verified until a functioning runner is available.
