@@ -7,6 +7,7 @@ import { CoreApiError } from '../server/modules/core';
 import { resolvePointInBoundaryStore } from '../server/modules/geospatial/geospatialPointResolution';
 import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
 import { createGeospatialService, type GeospatialService } from '../server/modules/geospatial/service';
+import { createValuationService, type ValuationDataConsumerAdapter } from '../server/modules/valuation';
 import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
 import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 import type { PolygonGeometry } from '../server/modules/geospatial/types';
@@ -545,4 +546,60 @@ test('bbox overlap diagnostics skip a history with conflicting ACTIVE metadata b
   );
 
   assert.deepEqual(overlaps, []);
+});
+
+
+test('valuation service enforces the real geospatial resolver for coordinate-based estimates', async () => {
+  await withGeospatialService(async (geospatialService) => {
+    await addBoundary(geospatialService, { hoodId: 10 });
+    const dataConsumer: ValuationDataConsumerAdapter = {
+      async getNeighborhoodBenchmark({ cityId, hoodId }) {
+        if (cityId !== 'tehran' || hoodId !== 10) return null;
+        return {
+          basePricePerSqmMillion: 100,
+          baseRahn80mMillion: 1000,
+          hoodName: 'محله آزمون ۱۰',
+          zone: 'test',
+          lastUpdatedIso: '2026-11-27T00:00:00.000Z',
+        };
+      },
+      async queryComparableListings() {
+        return [];
+      },
+    };
+    const valuationService = createValuationService({
+      dataConsumer,
+      valuationLocationResolver: geospatialService,
+    });
+    const commonInput = {
+      cityId: 'tehran',
+      hoodId: 10,
+      propertyCategory: 'residential' as const,
+      transactionType: 'sale' as const,
+      sqm: 100,
+    };
+
+    await assert.rejects(
+      () => valuationService.estimatePropertyValue({
+        ...commonInput,
+        coordinates: { lat: 35.70, lng: 51.35 },
+      }),
+      isConflict,
+    );
+
+    const insideResult = await valuationService.estimatePropertyValue({
+      ...commonInput,
+      coordinates: { lat: 35.75, lng: 51.35 },
+    });
+    assert.ok(insideResult.estimatedTotalMillion > 0);
+
+    await assert.rejects(
+      () => valuationService.estimatePropertyValue({
+        ...commonInput,
+        hoodId: 11,
+        coordinates: { lat: 35.75, lng: 51.35 },
+      }),
+      isConflict,
+    );
+  });
 });
