@@ -88,6 +88,9 @@ export async function executeUpsertPointOfInterest(params: {
     throw error;
   }
   params.invalidateGeoCaches(record.cityId);
+  if (previousRecord && previousRecord.cityId !== record.cityId) {
+    params.invalidateGeoCaches(previousRecord.cityId);
+  }
   return { record: structuredClone(record), isDuplicate: false };
 }
 
