@@ -3,26 +3,24 @@
 ## Active
 
 1. **GitHub Actions jobs fail before runner assignment**
-   - Five independent workflows triggered by PR #74 failed within approximately 2–3 seconds.
-   - All five failed jobs report `runner_id: 0`, empty `runner_name`, and `steps: []`.
-   - The primary CI E2E job was skipped because the quality-gates job failed.
-   - Job log retrieval returns BlobNotFound; no test command output exists.
-   - This is an infrastructure/startup failure, not evidence that the source code or tests failed.
-   - Root cause is not yet established. Check account Actions minutes/billing budget and repository Actions policy/hosted-runner permissions. If clear, escalate to GitHub Support with the run IDs.
-   - Run IDs: `45978213208`, `45978213210`, `45978213295`, `45978213292`, `45978213244`.
+   - Five latest independent workflows triggered by PR #74 failed before execution: 46004991418, 46004991653, 46004991515, 46004991666, 46004991463.
+   - Each failed job reports `runner_id: 0`, empty `runner_name`, and `steps: []`; completion occurred within 1–2 seconds.
+   - The primary CI Playwright job and three path-filtered downstream jobs were skipped because prerequisite jobs failed.
+   - Primary CI job-log retrieval (job 140525806828) returns HTTP 404 `BlobNotFound`; no test command output exists.
+   - This is a CI startup/infrastructure failure, not evidence that application code or tests failed.
+   - Root cause is unconfirmed. Check account Actions usage/billing and hosted-runner eligibility, then repository Actions policy. If those are clear, escalate run IDs to GitHub Support.
 
-2. **Local execution unavailable**
-   - The connected MacBook device is offline.
-   - GitHub repository APIs can inspect and commit files but cannot execute repository commands.
-   - No local test command has been run in this session.
+2. **No independent command-execution host is available through the current GitHub repository integration**
+   - GitHub repository APIs permit source inspection and commits but do not execute npm/Node/Wrangler/Playwright commands.
+   - No repository test command has been executed in this session. The prior QA register records the configured MacBook execution device as offline; current session did not verify a device reconnection.
 
 ## External status check
 
-- GitHub Status reported all systems operational and no incident reported on 2026-11-27 at the time checked.
-- Public service status does not establish that this repository/account has no billing or policy restriction.
+- The earlier public GitHub Status check reported all systems operational on 2026-11-27. That does not establish that this account/repository has no billing, policy, or runner-eligibility restriction.
 
 ## Not blockers
 
 - GitHub repository access and branch write permissions are available.
-- A dedicated QA branch and PR #74 exist.
+- Dedicated QA branch and Draft PR #74 exist.
+- QA suite and all six persistent QA records exist on the QA branch.
 - Repository file inspection and isolated branch commits are available.
