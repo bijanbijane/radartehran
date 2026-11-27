@@ -39,3 +39,12 @@ Open the failed rerun job `140435161931` in GitHub Actions and establish why the
 2. Re-run the exact workflow commands after runner access is restored: `npm run test:auth`, `npm run test:irni-geographic-rpc`, `npm run typecheck:irni-geographic-rpc`, `npm run test:geography-catalog`, plus the root CI and D1 triad suites.
 3. Run NIPS foundation tests, TypeScript and architecture gates; fix only reproducible failures.
 4. Continue the IRNI-owned NIPS storage RPC and Radar RPC adapter only within the approved ownership boundary. No direct Radar D1 binding.
+
+
+## 2026-11-27 — Updated immediate queue
+
+1. Verify Cloudflare staging build `ee140164-3d69-49f8-8f22-7849d19e4e80` reaches stopped/fail at `--require-staging-provisioned` and does not run the deploy command.
+2. Obtain full `npm audit --json` findings for the current lockfile; triage the two critical and five high vulnerabilities before upgrading.
+3. Recover GitHub Actions job diagnostics. Re-runs of PR #69/#70/#71 still fail, with empty step arrays and `BlobNotFound` log downloads.
+4. Run the actual npm/typecheck/architecture/auth/triad/NIPS suites in a working executor; do not mark CI remediations complete from source inspection alone.
+5. Continue the authenticated, versioned NIPS storage RPC in the database-owning IRNI repository; Radar must remain without a direct shared-neighborhood D1 binding.
