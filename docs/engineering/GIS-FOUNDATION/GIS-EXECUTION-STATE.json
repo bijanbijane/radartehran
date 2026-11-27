@@ -5,8 +5,8 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "693fb424b3a24e8964478b8928c8417bbafd0050",
-  "branch_head_sha_note": "Verified from GitHub branch endpoint. Latest application source/test commit is 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2; docs-only commits fe5eda2b9351d766147c772f80367b9d1eef8924, dcc90177f1281a83bb837aa327b676bbb4525f54, e9c311bbce7c48073a2f257e401b01d4fca1d41d and 693fb424b3a24e8964478b8928c8417bbafd0050 synchronize the engineering record.",
+  "branch_head_sha": "062740891fed40bd2bb39aa7ef902bb267eeebc5",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint before this documentation synchronization. This state-file update itself advances the branch head; last application source/test commit remains 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2.",
   "last_verified_source_commit": "172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2",
   "last_verified_source_commit_scope": "Inspected Worker-to-Express HMAC assertion signing/verification and proxy header behavior, Express middleware mount, GIS approval route, new HTTP regression including anonymous/non-admin/creator-self-approval/independent-admin cases, and npm run test:geospatial registration through 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. No tests/typecheck execution is evidenced.",
   "verified_findings": [
@@ -24,7 +24,10 @@
     "Cloudflare-native D1 sessions are already bridged Worker-to-Express by a 30-second HMAC-SHA256 assertion bound to method, exact path/query, correlation ID and Worker-hop marker; Express mounts the verification middleware globally.",
     "GIS boundary approval now consumes the verified request-scoped Cloudflare session principal first, requires consistent admin role flags, and does not fall back to Firebase when a Cloudflare session context exists.",
     "The Worker/Express AUTH_INTERNAL_HMAC_SECRET is documented as required and absent from committed .env.example; no evidence establishes that the secret is provisioned in either runtime or that the production hop is live.",
-    "The GIS HTTP regression test covers anonymous denial, non-admin denial, creator self-approval denial and independent Cloudflare-session admin approval; it is registered in npm run test:geospatial but remains unexecuted."
+    "The GIS HTTP regression test covers anonymous denial, non-admin denial, creator self-approval denial and independent Cloudflare-session admin approval; it is registered in npm run test:geospatial but remains unexecuted.",
+    "Read-only Cloudflare inspection of deployed radartehran-api confirms AUTH_INTERNAL_HMAC_SECRET is absent from its secret bindings and STRANGLER_ORIGIN_URL is absent from its plain-text variables; staging Worker radartehran-api-staging has neither any secret bindings nor STRANGLER_ORIGIN_URL. The separate Express process environment remains unverified.",
+    "The Worker router returns AUTH_SESSION_BRIDGE_NOT_CONFIGURED when AUTH_INTERNAL_HMAC_SECRET is missing; the fallback requires STRANGLER_ORIGIN_URL. Therefore the deployed Worker-side assertion/proxy path is not enabled by its current runtime configuration. No secret values were read or changed.",
+    "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -76,7 +79,7 @@
     {
       "id": "GIS-BLK-003",
       "severity": "HIGH",
-      "description": "GIS boundary approval consumes the verified request-scoped Cloudflare session context and rejects non-admin/self-review attempts without Firebase downgrade. Worker-to-Express HMAC bridge code and proxy path are verified, but AUTH_INTERNAL_HMAC_SECRET provisioning and production-hop activation are not evidenced; the expanded HTTP integration regression remains unexecuted."
+      "description": "Read-only Cloudflare inspection confirms deployed radartehran-api lacks AUTH_INTERNAL_HMAC_SECRET and STRANGLER_ORIGIN_URL; radartehran-api-staging lacks both. Express process environment remains unverified. Worker-side assertion/proxy cannot be enabled with current configuration; HTTP regression remains unexecuted."
     },
     {
       "id": "GIS-BLK-004",
@@ -117,7 +120,7 @@
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
       "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval"
     ],
-    "note": "No test or typecheck command has been verified as passing. Latest exact-head GIS workflow run 46009636806 for 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2 failed both jobs with steps=null and logs_url=null. Other workflows triggered by the same commit (CI 46009636275, Cloudflare native auth 46009636277, IRNI RPC contract 46009636264) also failed before recorded steps. This is consistent with hosted runner/dispatch failure, not evidence of code/test failure. No local runner was available (registered Desktop Commander device offline)."
+    "note": "No test or typecheck command has been verified as passing. At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs concluded failure with steps=null and logs_url=null. No test-step execution can be inferred. The registered Desktop Commander device remains offline."
   },
   "production_changes": {
     "migrations": false,
@@ -126,6 +129,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore an operational GitHub-hosted runner or authorized Node.js 22 checkout. Run tests/geospatial-cloudflare-session-approval.test.ts, npm run test:geospatial, npm run test:valuation-location and npm run typecheck against 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2 and record raw output. Verify (read-only) whether AUTH_INTERNAL_HMAC_SECRET is provisioned in both Worker and Express runtimes; do not provision or deploy without explicit authorization. Continue authenticated IRNI identity/source-registry work only through approved transport and owners. Keep PR #72 Draft.",
+  "next_exact_action": "Restore an operational GitHub-hosted runner or authorized Node.js 22 checkout and run focused GIS, valuation-location and typecheck suites against application source commit 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. In a non-production environment, obtain explicit operator approval before provisioning AUTH_INTERNAL_HMAC_SECRET consistently in Worker and Express runtimes or setting STRANGLER_ORIGIN_URL; inspect the separate Express environment without exposing values. Verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
