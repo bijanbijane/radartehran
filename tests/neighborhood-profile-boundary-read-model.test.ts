@@ -16,6 +16,7 @@ import {
   pickActiveBoundaryVersion,
 } from '../server/modules/geospatial/neighborhoodProfileBoundaryReadModel';
 import { detectActiveBoundaryBboxOverlaps } from '../server/modules/geospatial/geospatialBoundaryReadModel';
+import { resetGeospatialRecoveryStateForTests, stageGeospatialSnapshotForActivation } from '../server/modules/geospatial/geospatialDurableRecovery';
 import { evaluateNeighborhoodProfileBoundary } from '../src/features/neighborhoods/profile-contract/neighborhoodProfileBoundaryContract';
 
 const geometry: BoundaryVersionRecord['geometry'] = {
@@ -386,6 +387,54 @@ test('HTTP profile endpoint stays fail-closed and approval route denies callers 
     await new Promise<void>((resolve, reject) => {
       server.close((error) => error ? reject(error) : resolve());
     });
+    resetGeospatialRepositoryForTests();
+    setRepositoryBaseDirForTests(null);
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('public GIS 503 omits internal recovery validation diagnostics', async () => {
+  const express = (await import('express')).default;
+  const { createGeospatialRouter } = await import('../server/modules/geospatial/routes');
+  const tempRoot = mkdtempSync(join(tmpdir(), 'gis-public-503-'));
+  setRepositoryBaseDirForTests(tempRoot);
+  resetGeospatialRepositoryForTests();
+  resetGeospatialRecoveryStateForTests();
+  const service = createGeospatialService();
+  const app = express();
+  app.use('/api/v1/geospatial', createGeospatialRouter(service));
+  const server = app.listen(0, '127.0.0.1');
+
+  try {
+    const blocked = stageGeospatialSnapshotForActivation({
+      boundaryHistoryByEntity: {},
+      poiStore: {},
+      poiDedupeIndex: {},
+      spatialListingsByCity: {},
+      overlayStore: {},
+      importBatches: {},
+    });
+    assert.equal(blocked.health, 'BLOCKED');
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('listening', resolve);
+      server.once('error', reject);
+    });
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/v1/geospatial/resolve-point?lat=35.7&lng=51.3`);
+    assert.equal(response.status, 503);
+    const payload = await response.json() as { error?: { details?: Record<string, unknown> } };
+    const details = payload.error?.details ?? {};
+    assert.equal(details.health, 'BLOCKED');
+    assert.equal(details.recoveryRequired, true);
+    assert.equal('validationErrors' in details, false);
+    assert.equal('recoveryRequirement' in details, false);
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    resetGeospatialRecoveryStateForTests();
     resetGeospatialRepositoryForTests();
     setRepositoryBaseDirForTests(null);
     rmSync(tempRoot, { recursive: true, force: true });
