@@ -21,7 +21,8 @@
     "Identified that DetailPageShell highlights a selected section but renders every visible section.",
     "Identified that DetailMetadata omits sourceId and observedAt even though the field contract supports them.",
     "Created an interactive ChatGPT prototype with entity-type switching, tabs, favorite/compare demo states and source disclosure.",
-    "Added docs/design/ENTITY-DETAIL-DESIGN-PACKAGE-001.md to this branch."
+    "Added docs/design/ENTITY-DETAIL-DESIGN-PACKAGE-001.md to this branch.",
+    "Added interactive state explorer for Loading, Success, Partial, Stale, Conflict, Restricted, Deleted, Archived, Not Found and Error variants."
   ],
   "designDecisions": {
     "selectedDirection": "Editorial data dossier with optional spatial context",
@@ -51,7 +52,8 @@
     "responsive": "Prototype uses wrapping/minimum-width layouts; real device verification outstanding.",
     "rtl": "Persian-first layout designed; browser bidi/device verification outstanding.",
     "interaction": "Prototype controls operate locally in ChatGPT; no product API persistence.",
-    "runtime": "Not tested in Radar Tehran application."
+    "runtime": "Not tested in Radar Tehran application.",
+    "stateVariants": "Visually represented as selectable prototype states; runtime transitions and API behavior remain unverified."
   },
   "blockers": [
     "Canonical route handling is inconsistent across entity types.",
