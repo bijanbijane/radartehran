@@ -1322,3 +1322,13 @@
 - **Engineering boundary:** No NIPS runtime adapter, D1 migration, route, observation pipeline, secret, binding, production data change, deployment or merge was performed. NIPS persistence remains blocked on the authenticated/versioned IRNI-owned RPC.
 - **Records reconciled:** Updated `EXECUTION-STATE.json`, `BLOCKERS.md`, `NEXT-ACTIONS.md`, `REMEDIATION-REGISTER.md` and `NIPS/IMPLEMENTATION-TRACKER.md` with the current evidence and next action.
 - **Next exact action:** Restore GitHub Actions job/runner diagnostics or run the targeted test commands in an executable environment; then fix the first reproducible failure. Continue the IRNI-owned RPC path without adding a direct Radar D1 binding.
+
+
+## 2026-11-27 — CHK-198: workflow/package script consistency
+
+- Static workflow audit found two additional reproducible mismatches: the IRNI RPC workflow called two undefined npm scripts, and the backend triad workflow called undefined `test:geo`.
+- Added `test:irni-geographic-rpc` (runs the existing `tests/irni-geographic-rpc-client.test.ts`) and `typecheck:irni-geographic-rpc` (uses the existing isolated tsconfig) to root `package.json`; commit `29dcf30cba962d50de3501364b75d9f0140d0aab`.
+- Replaced `npm run test:geo` with `npm run test:geography-catalog`; commit `e006fda6be0bff13df920b3cdd6b3cdcba117651`.
+- Re-fetched the changed workflow files and package.json and confirmed all referenced scripts exist. Latest triggered Actions runs still fail with null step lists and `BlobNotFound` logs. No local npm/test/typecheck command was executed.
+- No runtime NIPS persistence, D1 migration, production binding, deployment, secret change or merge was performed.
+- **Next:** resolve GitHub Actions job initialization/log visibility, then execute the newly registered commands and the NIPS/auth/triad verification suites.
