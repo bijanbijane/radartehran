@@ -1303,3 +1303,12 @@
 - **Verification:** GitHub file read-back passed. The subsequent five PR workflows again reported failures before exposing job steps or logs; no local tests ran. Do not classify these as application-test failures. The connected MacBook runner is offline.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Phase 6 remains `PARTIALLY_VERIFIED`; no merge, deployment, migration, or production data operation was performed.
 - **Next action:** Restore a local/CI runner, run `test:auth`, `test:triad`, write-pause, Cloudflare and security suites, then proceed to the next residual Express Firestore-to-D1 domain migration.
+
+
+## 2026-11-27 — OP-195 / CHK-195 documentation and QA reconciliation
+
+- Created the missing RMEP records in the existing engineering directory: `REMEDIATION-REGISTER.md`, `BLOCKERS.md`, and `NEXT-ACTIONS.md`. Each was fetched back from GitHub after creation.
+- Reconciled `docs/qa/QA-EXECUTION-STATE.json` with the latest PR #71 auth-workflow correction and the five latest failing workflow IDs; preserved zero executed tests and cause-unconfirmed CI blocker classification.
+- Added QA-002 to `docs/qa/QA-DEFECT-REGISTER.md` and appended the post-correction run evidence to `docs/qa/QA-PROGRESS-LOG.md`; both were fetched back and verified.
+- Documentation commits: `d93be37473edbe111b3980d2a1e4290d5d58be2d` (remediation register), `23113279d5e4a358cec6fe5949e4c72f2cdca041` (blockers), `d0227fd834d8a552af775d2feb21bbf768b508da` (next actions), `55cbf465c0bde51e7bf4b33e4598691fc19f444e` (QA state), `9620ba6d0b3b30eba8f72cc296c258649309fb3d` (QA defect register), and `402d376818346cf5baccf94efecb255f68c09ec7` (QA progress log).
+- Verification is documentation read-back only. No unit, integration, browser, typecheck, build, or Wrangler command has run in this session. Phase 6 remains PARTIALLY_VERIFIED.
