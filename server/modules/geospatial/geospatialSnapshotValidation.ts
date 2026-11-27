@@ -290,7 +290,7 @@ export function validatePersistedGeospatialState(
     }
   }
   if (errors.length > 0) {
-    return { valid: false, errors, counts: countRecords(defaultEmpty()) };
+    return { valid: false, errors, counts: countRecords(createEmptyGeospatialState()) };
   }
   const seenBoundaryIds = new Set<string>();
   for (const [entityKey, history] of Object.entries(s.boundaryHistoryByEntity)) {
