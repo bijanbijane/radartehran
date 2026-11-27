@@ -39,7 +39,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
             </div> <div className="flex items-center gap-1 shrink-0">{statusFilter !== 'all' && (
               <button type="button" onClick={() => onChangeStatusFilter('all')} className="text-xs font-bold text-[var(--color-brand-600)] hover:underline cursor-pointer">
                 نمایش همه ({toPersianNum(totalCount)})
-              </button> )}<button type="button" onClick={onToggle} aria-label="بستن راهنمای نقشه" className="p-1.5 min-w-[32px] min-h-[32px] rounded-[8px] text-slate-400 hover:text-slate-700 dark:hover:text-[var(--color-text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] transition cursor-pointer">✕</button></div>
+              </button> )}<button type="button" onClick={onToggle} aria-label="بستن راهنمای نقشه" className="p-1.5 min-w-[44px] min-h-[44px] rounded-[8px] text-slate-400 hover:text-slate-700 dark:hover:text-[var(--color-text-primary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] transition cursor-pointer">✕</button></div>
           </div>
           <MapProviderStatusBadge />
           <div className="apple-grouped-card dark:bg-[var(--color-bg-muted)] dark:border-[var(--color-border-subtle)] p-2 space-y-1">
