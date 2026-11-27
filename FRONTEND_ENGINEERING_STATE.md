@@ -160,3 +160,14 @@
 - **CI forensic update:** The latest rerun attempt (attempt 2) again failed before any job step. The browser UX job, quality-gates job, bundle-budget job, path-filter detection job, and native-auth job all report `runner_id: 0`, an empty runner name, and an empty `steps` array. The dependent Playwright job and path-filtered downstream jobs were skipped. Job-log retrieval returned `BlobNotFound`; the precise GitHub-side cause remains unknown. Existing `main` runs also show pre-execution failures, so this is not evidence of a regression introduced by this branch.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Keep PR #68 Draft. Do not merge or deploy.
 - **Next verification:** Run the focused browser UX workflow and full quality gates when GitHub assigns a runner; require actual Playwright, typecheck, architecture, unit, and build outputs before closing this work package. Then inspect 320×568 and 390×844 rendered layouts.
+
+
+### Session continuation — 2026-11-27 16:39 +0330
+- **Work package:** FE-MOBILE-INSPECTOR-POINTER-ISOLATION-001 on `fix/frontend-mobile-sheet-handle-target-2026-11-27`.
+- **Finding:** The mobile inspector drag handler shared one gesture record across all pointer IDs. A secondary/non-primary pointer could overwrite the active gesture or end/cancel the primary pointer's gesture, causing an unintended sheet snap or toggle during multi-touch input.
+- **Implementation:** `src/components/NeighborhoodInspectorDrawer.tsx` now accepts only primary-button pointer starts, refuses to replace an active gesture, records the initiating `pointerId`, and ignores pointer-up/cancel events from any other pointer. Existing 44px touch target, drag threshold, snap behavior, and cancellation reset are preserved.
+- **Regression coverage:** `tests/buyer-alert-contract.test.ts` now asserts the primary-pointer gate, pointer identity tracking, matching-pointer end/cancel guards, and existing accessible touch-target contract.
+- **Commits:** `4ba26281c0604bc79e5ad321b20fd82e2f2a4f01` (implementation); `53c931ca356e6575b3e0ed96ddf1fc4c00b35774` (regression assertion).
+- **Repository verification:** Both files were fetched back from GitHub at the resulting branch head; all expected implementation and assertion fragments are present. This is source-level verification only.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. No local test, typecheck, build, or rendered-browser run was available in this session. Do not treat GitHub commit acceptance as test execution.
+- **Next exact action:** Run `npx tsx tests/buyer-alert-contract.test.ts`, `npm run lint`, `npm run arch:check`, and `npm run build`; add a real multi-pointer browser regression if the runner is available; inspect 320×568 and 390×844 layouts. Keep PR #68 Draft until all required gates pass.
