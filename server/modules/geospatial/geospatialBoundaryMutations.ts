@@ -26,7 +26,7 @@ export async function executeUpsertNeighborhoodBoundary(params: {
   metrics: GeospatialObservabilityMetrics;
   nowIso: string;
   invalidateGeoCaches: (cityId: string) => void;
-  persistRuntime: () => void;
+  persistRuntime: () => Promise<void>;
 }): Promise<BoundaryVersionRecord> {
   const { input } = params;
   if (params.activeBoundaryLocks.has(input.entityId)) {
@@ -91,7 +91,7 @@ export async function executeUpsertNeighborhoodBoundary(params: {
     params.boundaryHistoryByEntity.set(input.entityId, history);
     try {
       params.invalidateGeoCaches(input.cityId);
-      params.persistRuntime();
+      await params.persistRuntime();
     } catch (error) {
       if (originalHistory) params.boundaryHistoryByEntity.set(input.entityId, originalHistory);
       else params.boundaryHistoryByEntity.delete(input.entityId);
@@ -115,7 +115,7 @@ export async function executeApproveNeighborhoodBoundary(params: {
   activeBoundaryLocks: Set<string>;
   nowIso: string;
   invalidateGeoCaches: (cityId: string) => void;
-  persistRuntime: () => void;
+  persistRuntime: () => Promise<void>;
 }): Promise<BoundaryVersionRecord> {
   const { input } = params;
   if (!input.entityId.trim() || !input.versionId.trim() || !input.reviewerUid.trim()) {
@@ -171,7 +171,7 @@ export async function executeApproveNeighborhoodBoundary(params: {
     params.boundaryHistoryByEntity.set(input.entityId, history);
     try {
       params.invalidateGeoCaches(target.cityId);
-      params.persistRuntime();
+      await params.persistRuntime();
     } catch (error) {
       params.boundaryHistoryByEntity.set(input.entityId, originalHistory);
       throw error;
