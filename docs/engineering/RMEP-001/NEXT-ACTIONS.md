@@ -119,3 +119,11 @@ Before any Radar production deployment:
 ### Latest CI retry status — 2026-11-27
 - PR #67 runs #45989808778, #45989808702, #45989808715, #45989808637 and #45989808717 all failed before exposing steps; job logs again return `BlobNotFound`. Do not rerun repeatedly while runner allocation is unavailable.
 - The new browser Firebase SDK guard is implemented but unverified. Required first checks after runner recovery: `npm run arch:check` and `npm run test:contracts`, followed by the full auth/NIPS/RPC/triad suite.
+
+## CHK-207 — NIPS public serializer hardening and verification queue
+
+1. **First executable action when a runner is available:** run `npm run test:nips`; inspect any real assertion/type failure and correct only reproducible defects.
+2. Run `npm run typecheck`, `npm run arch:check`, and `npm run test:contracts`; then run `npm run test:auth`, `npm run test:irni-geographic-rpc`, `npm run typecheck:irni-geographic-rpc`, `npm run test:geography-catalog`, `npm run test:cloudflare`, `npm run test:triad`, and the security suites.
+3. Keep the public serializer change **IMPLEMENTED_BUT_NOT_VERIFIED** until these checks actually execute and pass.
+4. Continue NIPS persistence only after the IRNI owner implements and verifies the authenticated, versioned, purpose-scoped storage RPC and additive `nips_*` migration. Radar must not receive a direct binding to `radar-neighborhood-db`.
+5. Keep PR #67 Draft; no merge, production deployment, production migration, secret change, or destructive operation without explicit approval.
