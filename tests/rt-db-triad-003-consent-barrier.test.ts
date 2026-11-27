@@ -13,6 +13,14 @@ import {
   getResearchConsentRevocationJobFromD1,
   updateUserPrivacyConsentInD1,
 } from '../worker/account/d1AccountRepository';
+import {
+  acquireResearchProcessingPermitInD1,
+  releaseResearchProcessingPermitInD1,
+} from '../worker/research/researchConsentBarrier';
+import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../worker/research/researchConsentRevocation';
 import { processPendingResearchErasureOutbox } from '../worker/account-lifecycle/workerLifecycleRuntime';
 import {
   clearTestJwksForEdgeAuth,
@@ -25,12 +33,8 @@ import {
 import { deriveResearchSubjectKey } from '../worker/research/pseudonymizer';
 import { validateAndMinimizeResearchEvent } from '../worker/research/researchEventContract';
 import {
-  acquireResearchProcessingPermitInD1,
   executeResearchSubjectErasure,
   ingestResearchEventsBatch,
-  reconcileResearchConsentRevocation,
-  releaseResearchProcessingPermitInD1,
-  revokeUserResearchConsentWithBarrier,
   writePseudonymizedEventsToResearchDb,
 } from '../worker/research/researchService';
 import { handleAccountWorkerRoute } from '../worker/routes/accountRoutes';
@@ -156,7 +160,7 @@ function createTestTriad() {
   const researchSqlite = createRealSqliteD1();
   const userMigrations = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
   const researchMigrations = applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
-  assert.equal(userMigrations.length, 7);
+  assert.equal(userMigrations.length, 12);
   assert.equal(researchMigrations.length, 3);
 
   const env: WorkerEnv = {
@@ -167,6 +171,7 @@ function createTestTriad() {
     RESEARCH_HMAC_SECRET: 'rt_triad_003_barrier_hmac_secret_0123456789abcdef',
     RESEARCH_HMAC_KEY_VERSION: 'v1',
     INTERNAL_LIFECYCLE_RPC_SECRET: 'rt_triad_003_receipt_secret_0123456789abcdef',
+    LIFECYCLE_RECEIPT_HMAC_SECRET: 'rt_triad_003_dedicated_receipt_secret_0123456789abcdef',
     APP_ENV: 'development',
   };
 
@@ -662,6 +667,17 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     assert.equal(outboxRow.status, 'RETRY_PENDING');
     assert.equal(outboxRow.max_consent_revision, 2);
 
+    // Re-grant is refused until the prior revision's durable erasure receipt is complete.
+    await assert.rejects(
+      () => updateUserPrivacyConsentInD1(userSqlite.db, {
+        uid,
+        actorUid: uid,
+        researchAnalyticsConsent: true,
+        nowIso: new Date(t0 + 300).toISOString(),
+      }),
+      /RESEARCH_CONSENT_REVOCATION_PENDING/,
+    );
+
     // 2. Restore RESEARCH_DB and process outbox via background lifecycle outbox processor (past backoff)
     const outboxRecovery = await processPendingResearchErasureOutbox({
       userDb: userSqlite.db,
@@ -902,4 +918,155 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
       clearTestJwksForEdgeAuth();
     }
   });
+
+  it('Scenario 7: Post-snapshot registration and completed permit are recovered before revocation completes', async () => {
+    const { userSqlite, researchSqlite, env } = createTestTriad();
+    const uid = 'uid_barrier_late_registry_7';
+    const t0 = Date.parse('2026-11-22T13:00:00.000Z');
+    const granted = await updateUserPrivacyConsentInD1(userSqlite.db, {
+      uid, actorUid: uid, researchAnalyticsConsent: true, nowIso: new Date(t0).toISOString(),
+    });
+    assert.equal(granted.consentRevision, 1);
+
+    const derived = await deriveResearchSubjectKey({
+      uid, secret: env.RESEARCH_HMAC_SECRET, keyVersion: 'v1',
+    });
+    assert.equal(derived.ok, true);
+    if (!derived.ok) return;
+    const subjectKey = derived.derived.subjectKey;
+    const checked = validateAndMinimizeResearchEvent(makeSampleEvent('idem_late_registry_007', 707), t0 + 40);
+    assert.equal(checked.ok, true);
+    if (!('event' in checked)) return;
+
+    let injected = false;
+    const wrappedUserDb: D1Database = {
+      prepare: (query) => userSqlite.db.prepare(query),
+      exec: (query) => userSqlite.db.exec(query),
+      batch: async (statements) => {
+        if (!injected) {
+          injected = true;
+          // This represents an ingestion that completes after the initial registry read
+          // but before the revocation job is committed.
+          await userSqlite.db.prepare(
+            `INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
+             VALUES (?1, ?2, 'v1', ?3)`,
+          ).bind(uid, subjectKey, new Date(t0 + 30).toISOString()).run();
+          await userSqlite.db.prepare(
+            `INSERT INTO research_processing_permits (
+              permit_id, uid, subject_key, subject_key_version, consent_revision,
+              consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
+            ) VALUES ('rperm_late_registry_7', ?1, ?2, 'v1', 1, 'http_ingest', ?3, ?4, NULL)`,
+          ).bind(uid, subjectKey, t0 + 15, t0 + 30_000).run();
+          const written = await writePseudonymizedEventsToResearchDb({
+            researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
+            consentRevision: 1, events: [checked.event], nowMs: t0 + 40,
+          });
+          assert.equal(written.acceptedCount, 1);
+        }
+        return userSqlite.db.batch(statements);
+      },
+    };
+    const raceEnv: WorkerEnv = { ...env, USER_DB: wrappedUserDb, DB: wrappedUserDb };
+
+    const revoked = await revokeUserResearchConsentWithBarrier({
+      env: raceEnv, uid, actorUid: uid, nowMs: t0 + 100,
+    });
+    assert.ok(revoked.revocation);
+    assert.equal(revoked.revocation.status, 'DRAINING_PERMITS');
+    assert.equal(revoked.revocation.activePermitsRemaining, 1);
+
+    await releaseResearchProcessingPermitInD1({
+      userDb: userSqlite.db, permitId: 'rperm_late_registry_7', nowMs: t0 + 200,
+    });
+    const completed = await reconcileResearchConsentRevocation({
+      env: raceEnv, revocationId: revoked.revocation.revocationId, nowMs: t0 + 300,
+    });
+    assert.equal(completed.status, 'COMPLETED');
+    assert.equal(completed.completed, true);
+    assert.equal(
+      Number((researchSqlite.raw.prepare('SELECT COUNT(*) AS c FROM research_events').get() as { c: number }).c),
+      0,
+    );
+    const outbox = await userSqlite.db.prepare(
+      'SELECT status, max_consent_revision FROM research_erasure_outbox WHERE job_id = ?1',
+    ).bind(revoked.revocation.revocationId).first<{ status: string; max_consent_revision: number }>();
+    assert.equal(outbox?.status, 'COMPLETED');
+    assert.equal(outbox?.max_consent_revision, 2);
+  });
+
+
+
+  it('Scenario 8: A stale revocation request cannot downgrade a concurrently completed job', async () => {
+    const { userSqlite } = createTestTriad();
+    const nowIso = '2026-11-22T13:10:00.000Z';
+    await userSqlite.db.prepare(
+      `INSERT INTO research_consent_revocation_jobs (
+        revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
+        erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
+      ) VALUES ('rrev_status_fence_8', 'uid_status_fence_8', 1, 2, 'COMPLETED',
+        0, '[]', ?1, ?1, ?1)`,
+    ).bind(nowIso).run();
+
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'worker/research/researchConsentRevocation.ts'),
+      'utf8',
+    );
+    assert.match(source, /WHERE revocation_id = \?3 AND status != 'COMPLETED'/);
+
+    const staleTransition = await userSqlite.db.prepare(
+      `UPDATE research_consent_revocation_jobs
+       SET status = ?1, updated_at_iso = ?2,
+           completed_at_iso = CASE WHEN ?1 = 'COMPLETED' THEN ?2 ELSE NULL END
+       WHERE revocation_id = ?3 AND status != 'COMPLETED'`,
+    ).bind('PENDING_ERASURE', '2026-11-22T13:11:00.000Z', 'rrev_status_fence_8').run();
+    assert.equal(staleTransition.meta?.changes, 0);
+
+    const canonical = await userSqlite.db.prepare(
+      'SELECT status, completed_at_iso FROM research_consent_revocation_jobs WHERE revocation_id = ?1',
+    ).bind('rrev_status_fence_8').first<{ status: string; completed_at_iso: string | null }>();
+    assert.equal(canonical?.status, 'COMPLETED');
+    assert.equal(canonical?.completed_at_iso, nowIso);
+  });
+
+
+
+  it('Scenario 9: Completed consent outbox rows recover a parent job after a worker crash', async () => {
+    const { userSqlite, env } = createTestTriad();
+    const nowIso = '2026-11-22T13:20:00.000Z';
+    await userSqlite.db.prepare(
+      `INSERT INTO research_consent_revocation_jobs (
+        revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
+        erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso
+      ) VALUES ('rrev_parent_recovery_9', 'uid_parent_recovery_9', 1, 2, 'PENDING_ERASURE',
+        0, '[]', ?1, ?1)`,
+    ).bind(nowIso).run();
+    await userSqlite.db.prepare(
+      `INSERT INTO research_erasure_outbox (
+        outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
+        next_retry_at_ms, receipt_id, erased_events_count, created_at_iso, updated_at_iso,
+        completed_at_iso, max_consent_revision
+      ) VALUES ('rout_parent_recovery_9', 'rrev_parent_recovery_9', 'subject_parent_recovery_9',
+        'v1', 'COMPLETED', 1, 0, 'receipt_parent_recovery_9', 3, ?1, ?1, ?1, 2)`,
+    ).bind(nowIso).run();
+
+    // Simulate a crash after the final outbox item was committed but before the
+    // revocation parent was advanced to COMPLETED. No pending outbox rows remain.
+    const result = await processPendingResearchErasureOutbox({
+      userDb: userSqlite.db,
+      researchDb: env.RESEARCH_DB,
+      nowMs: Date.parse('2026-11-22T13:21:00.000Z'),
+      receiptSecret: env.LIFECYCLE_RECEIPT_HMAC_SECRET!,
+    });
+    assert.equal(result.pending, 0);
+    const parent = await userSqlite.db.prepare(
+      'SELECT status, erased_events_count, receipt_ids_json FROM research_consent_revocation_jobs WHERE revocation_id = ?1',
+    ).bind('rrev_parent_recovery_9').first<{
+      status: string; erased_events_count: number; receipt_ids_json: string;
+    }>();
+    assert.equal(parent?.status, 'COMPLETED');
+    assert.equal(parent?.erased_events_count, 3);
+    assert.deepEqual(JSON.parse(parent?.receipt_ids_json ?? '[]'), ['receipt_parent_recovery_9']);
+  });
+
+
 });

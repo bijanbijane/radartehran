@@ -12,6 +12,10 @@ import { requireResearchDb, requireUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerEnv } from '../types';
 import { deriveResearchSubjectKey } from './pseudonymizer';
 import {
+  acquireResearchProcessingPermitInD1,
+  releaseResearchProcessingPermitInD1,
+} from './researchConsentBarrier';
+import {
   MAX_RESEARCH_BATCH_SIZE,
   RESEARCH_EVENT_POLICIES,
   validateAndMinimizeResearchEvent,
@@ -128,15 +132,27 @@ export async function verifyQueuedResearchSubjectConsent(params: {
   | { readonly allowed: false; readonly statusCode: 403 | 503; readonly code: string }
 > {
   try {
-    const outbox = await params.userDb
+    const outboxRows = await params.userDb
       .prepare(
-        `SELECT outbox_id FROM research_erasure_outbox
-         WHERE subject_key = ?1 AND subject_key_version = ?2 LIMIT 1`,
+        `SELECT status, max_consent_revision FROM research_erasure_outbox
+         WHERE subject_key = ?1 AND subject_key_version = ?2`,
       )
       .bind(params.subjectKey, params.subjectKeyVersion)
-      .first<{ outbox_id: string }>();
-    if (outbox) {
-      return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
+      .all<{ status: string; max_consent_revision: number | null }>();
+    if (!outboxRows.success) {
+      return { allowed: false, statusCode: 503, code: 'RESEARCH_ERASURE_OUTBOX_READ_FAILED' };
+    }
+    for (const outbox of outboxRows.results ?? []) {
+      const maxRevision =
+        outbox.max_consent_revision === null ? null : Number(outbox.max_consent_revision);
+      if (
+        outbox.status !== 'COMPLETED' ||
+        maxRevision === null ||
+        params.expectedConsentRevision === undefined ||
+        params.expectedConsentRevision <= maxRevision
+      ) {
+        return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
+      }
     }
 
     const reg = await params.userDb
@@ -165,6 +181,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
   researchDb: D1Database;
   subjectKey: string;
   subjectKeyVersion: string;
+  consentRevision?: number;
   events: readonly ValidatedResearchEvent[];
   nowMs?: number;
   rejectedCount?: number;
@@ -173,14 +190,20 @@ export async function writePseudonymizedEventsToResearchDb(params: {
   readonly receiptId: string;
   readonly acceptedCount: number;
   readonly deduplicatedCount: number;
+  readonly fencedCount: number;
 }> {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
+  const consentRevision = params.consentRevision ?? 1;
+  if (!Number.isSafeInteger(consentRevision) || consentRevision < 1) {
+    throw new Error('RESEARCH_CONSENT_REVISION_INVALID');
+  }
   const batchId = `rb_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
   const receiptId = `rcpt_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
   let acceptedCount = 0;
   let deduplicatedCount = 0;
+  let fencedCount = 0;
 
   for (const evt of params.events) {
     const existing = await params.researchDb
@@ -194,13 +217,21 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     }
 
     const eventId = `revt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
+    // The fence check is part of the INSERT statement itself. A prior SELECT would leave
+    // a race in which a revocation could commit its fence between the check and this write.
     const insertEventStmt = params.researchDb
       .prepare(
         `INSERT OR IGNORE INTO research_events (
           event_id, subject_key, subject_key_version, event_type, schema_version,
           city_id, hood_id, session_bucket, payload_json,
-          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
+          occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key, consent_revision
+        )
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
+        WHERE NOT EXISTS (
+          SELECT 1 FROM research_subject_consent_fences
+          WHERE subject_key = ?2 AND subject_key_version = ?3
+            AND revoked_through_revision >= ?14
+        )`,
       )
       .bind(
         eventId,
@@ -216,15 +247,30 @@ export async function writePseudonymizedEventsToResearchDb(params: {
         evt.ingestedAtIso,
         evt.expiresAtIso,
         evt.idempotencyKey,
+        consentRevision,
       );
 
     const insertIdemStmt = params.researchDb
       .prepare(
         `INSERT OR IGNORE INTO research_idempotency_keys (
           idempotency_key, event_type, recorded_at_iso, expires_at_iso
-        ) VALUES (?1, ?2, ?3, ?4)`,
+        )
+        SELECT ?1, ?2, ?3, ?4
+        WHERE EXISTS (
+          SELECT 1 FROM research_events
+          WHERE idempotency_key = ?1 AND subject_key = ?5
+            AND subject_key_version = ?6 AND consent_revision = ?7
+        )`,
       )
-      .bind(evt.idempotencyKey, evt.eventType, nowIso, evt.expiresAtIso);
+      .bind(
+        evt.idempotencyKey,
+        evt.eventType,
+        nowIso,
+        evt.expiresAtIso,
+        params.subjectKey,
+        params.subjectKeyVersion,
+        consentRevision,
+      );
 
     const batchResults = await params.researchDb.batch([insertEventStmt, insertIdemStmt]);
     if (batchResults.length !== 2 || batchResults.some((r) => !r.success)) {
@@ -236,7 +282,17 @@ export async function writePseudonymizedEventsToResearchDb(params: {
       throw new Error('RESEARCH_DB_ATOMIC_WRITE_RESULT_UNCONFIRMED');
     }
     if (eventChanges === 0) {
-      deduplicatedCount += 1;
+      const fence = await params.researchDb
+        .prepare(
+          'SELECT revoked_through_revision FROM research_subject_consent_fences WHERE subject_key = ?1 AND subject_key_version = ?2',
+        )
+        .bind(params.subjectKey, params.subjectKeyVersion)
+        .first<{ revoked_through_revision: number }>();
+      if (fence && Number(fence.revoked_through_revision) >= consentRevision) {
+        fencedCount += 1;
+      } else {
+        deduplicatedCount += 1;
+      }
       continue;
     }
     if (eventChanges !== 1 || idempotencyChanges !== 1) {
@@ -255,7 +311,7 @@ export async function writePseudonymizedEventsToResearchDb(params: {
     .run();
   if (!receiptInsert.success) throw new Error('RESEARCH_INGESTION_RECEIPT_WRITE_FAILED');
 
-  return { batchId, receiptId, acceptedCount, deduplicatedCount };
+  return { batchId, receiptId, acceptedCount, deduplicatedCount, fencedCount };
 }
 
 /**
@@ -275,6 +331,7 @@ export async function ingestResearchEventsBatch(params: {
   rawEvents: unknown;
   nowMs?: number;
   beforeResearchWriteHook?: () => Promise<void>;
+  afterConsentCheckBeforeResearchWriteHook?: (context: { permitId: string; consentRevision: number }) => Promise<void>;
 }): Promise<ResearchIngestionResponse | ResearchIngestionFailure> {
   const userDbRes = requireUserDb(params.env);
   if (userDbRes.ok === false) {
@@ -394,49 +451,59 @@ export async function ingestResearchEventsBatch(params: {
     };
   }
 
-  // Optional test seam to exercise mid-flight consent revocation race deterministically
-  if (params.beforeResearchWriteHook) {
-    await params.beforeResearchWriteHook();
-  }
-
-  // 6. Pre-commit consent re-verification with monotonic consent_revision check
-  const preCommitConsent = await verifyServerSideResearchConsent(
-    userDbRes.db,
-    params.uid,
-    capturedConsentRevision,
-  );
-  if (preCommitConsent.allowed === false) {
+  // Permit issuance atomically binds this ingestion to the captured consent revision.
+  const permit = await acquireResearchProcessingPermitInD1({
+    userDb: userDbRes.db,
+    uid: params.uid,
+    subjectKey: pseudo.derived.subjectKey,
+    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
+    consumerKind: 'http_ingest',
+    expectedConsentRevision: capturedConsentRevision,
+    nowMs,
+  });
+  if (permit.ok === false) {
     return {
       ok: false,
-      statusCode: preCommitConsent.statusCode,
-      code:
-        preCommitConsent.statusCode === 503
-          ? preCommitConsent.code
-          : 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT',
-      messageFa: 'رضایت پژوهشی کاربر هم‌زمان لغو یا تغییر یافته و ثبت رویداد متوقف شد.',
+      statusCode: permit.statusCode,
+      code: permit.code,
+      messageFa: 'مجوز پردازش پژوهشی صادر نشد؛ ثبت رویداد متوقف شد.',
     };
   }
 
-  // 7. Persist pseudonymized events strictly in RESEARCH_DB
-  const written = await writePseudonymizedEventsToResearchDb({
-    researchDb: researchDbRes.db,
-    subjectKey: pseudo.derived.subjectKey,
-    subjectKeyVersion: pseudo.derived.subjectKeyVersion,
-    events: validEvents,
-    nowMs,
-    rejectedCount: rejections.length,
-  });
+  try {
+    // An already-issued permit may finish while revocation drains. The RESEARCH_DB
+    // revision fence prevents it (or any zombie worker) from writing after completion.
+    if (params.afterConsentCheckBeforeResearchWriteHook) {
+      await params.afterConsentCheckBeforeResearchWriteHook({
+        permitId: permit.permitId,
+        consentRevision: permit.consentRevision,
+      });
+    }
+    if (params.beforeResearchWriteHook) await params.beforeResearchWriteHook();
 
-  return {
-    ok: true,
-    batchId: written.batchId,
-    receiptId: written.receiptId,
-    acceptedCount: written.acceptedCount,
-    deduplicatedCount: written.deduplicatedCount,
-    rejectedCount: rejections.length,
-    consentRevision: capturedConsentRevision,
-    rejections,
-  };
+    const written = await writePseudonymizedEventsToResearchDb({
+      researchDb: researchDbRes.db,
+      subjectKey: pseudo.derived.subjectKey,
+      subjectKeyVersion: pseudo.derived.subjectKeyVersion,
+      consentRevision: permit.consentRevision,
+      events: validEvents,
+      nowMs,
+      rejectedCount: rejections.length,
+    });
+
+    return {
+      ok: true,
+      batchId: written.batchId,
+      receiptId: written.receiptId,
+      acceptedCount: written.acceptedCount,
+      deduplicatedCount: written.deduplicatedCount,
+      rejectedCount: rejections.length,
+      consentRevision: permit.consentRevision,
+      rejections,
+    };
+  } finally {
+    await releaseResearchProcessingPermitInD1({ userDb: userDbRes.db, permitId: permit.permitId, nowMs: Date.now() });
+  }
 }
 
 export interface ResearchSubjectErasureResult {
@@ -458,22 +525,42 @@ export async function executeResearchSubjectErasure(params: {
   outboxId: string;
   subjectKey: string;
   subjectKeyVersion: string;
+  maxConsentRevision?: number | null;
   nowMs?: number;
 }): Promise<ResearchSubjectErasureResult> {
   const nowMs = params.nowMs ?? Date.now();
+  const maxConsentRevision =
+    params.maxConsentRevision === undefined || params.maxConsentRevision === null
+      ? null
+      : Number(params.maxConsentRevision);
+  if (maxConsentRevision !== null && (!Number.isSafeInteger(maxConsentRevision) || maxConsentRevision < 1)) {
+    throw new Error('RESEARCH_ERASURE_MAX_CONSENT_REVISION_INVALID');
+  }
   const nowIso = new Date(nowMs).toISOString();
 
   const existing = await params.researchDb
     .prepare(
-      'SELECT receipt_id, deleted_events_count, completed_at_iso, status FROM research_erasure_inbox WHERE outbox_id = ?1',
+      'SELECT subject_key, subject_key_version, receipt_id, deleted_events_count, completed_at_iso, status FROM research_erasure_inbox WHERE outbox_id = ?1',
     )
     .bind(params.outboxId)
     .first<{
+      subject_key: string;
+      subject_key_version: string;
       receipt_id: string;
       deleted_events_count: number;
       completed_at_iso: string | null;
       status: string;
     }>();
+
+  // An outbox ID is an idempotency key, not an authorization to reuse a receipt
+  // for another pseudonymous subject or key version.
+  if (
+    existing &&
+    (existing.subject_key !== params.subjectKey ||
+      existing.subject_key_version !== params.subjectKeyVersion)
+  ) {
+    throw new Error('RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT');
+  }
 
   if (existing && existing.status === 'COMPLETED' && existing.completed_at_iso) {
     return {
@@ -487,44 +574,29 @@ export async function executeResearchSubjectErasure(params: {
     };
   }
 
-  const countRow = await params.researchDb
-    .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-    .bind(params.subjectKey, params.subjectKeyVersion)
-    .first<{ cnt: number }>();
-  if (!countRow || !Number.isSafeInteger(Number(countRow.cnt)) || Number(countRow.cnt) < 0) {
-    throw new Error('RESEARCH_ERASURE_TARGET_COUNT_UNAVAILABLE');
-  }
-  const targetCount = Number(countRow.cnt);
+  // Scope invalidation and event deletion are performed in the same RESEARCH_DB batch.
+  // This avoids missing a scope committed after an earlier pre-read but before the erasure batch.
 
-  // Identify derived aggregation scopes impacted by this subject so stale counts are invalidated atomically.
-  const impactedScopesRes = await params.researchDb
-    .prepare(
-      'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2',
-    )
-    .bind(params.subjectKey, params.subjectKeyVersion)
-    .all<{ event_type: string; city_id: string }>();
-  if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
-  const impactedScopes = impactedScopesRes.results ?? [];
+  // Stable IDs make concurrent deliveries of the same durable outbox command converge
+  // on one immutable receipt. INSERT OR REPLACE could overwrite a receipt already returned
+  // to a competing USER_DB worker.
+  const erasureId = `rerase_${params.outboxId}`;
+  const receiptId = `ercpt_${params.outboxId}`;
 
-  const erasureId = `rerase_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  const receiptId = `ercpt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
-
-  const deleteEventsStmt = params.researchDb
-    .prepare('DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-    .bind(params.subjectKey, params.subjectKeyVersion);
-
-  const invalidateWindowStmts = impactedScopes.map((scope) =>
-    params.researchDb
-      .prepare('DELETE FROM research_aggregation_windows WHERE event_type = ?1 AND city_id = ?2')
-      .bind(scope.event_type, scope.city_id),
-  );
-
+  // Claim the durable outbox identity before any destructive statement. The batch is
+  // atomic; guarded deletes below can run only when this outbox ID belongs to this exact
+  // subject key/version. This also protects the race where two different subjects submit
+  // the same outbox ID after both passed the initial read.
   const insertInboxStmt = params.researchDb
     .prepare(
-      `INSERT OR REPLACE INTO research_erasure_inbox (
+      `INSERT OR IGNORE INTO research_erasure_inbox (
         erasure_id, outbox_id, subject_key, subject_key_version, status,
         deleted_events_count, receipt_id, received_at_iso, completed_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+      )
+      SELECT ?1, ?2, ?3, ?4, ?5, COUNT(*), ?6, ?7, ?8
+      FROM research_events
+      WHERE subject_key = ?3 AND subject_key_version = ?4
+        AND (?9 IS NULL OR consent_revision <= ?9)`,
     )
     .bind(
       erasureId,
@@ -532,32 +604,125 @@ export async function executeResearchSubjectErasure(params: {
       params.subjectKey,
       params.subjectKeyVersion,
       'COMPLETED',
-      targetCount,
       receiptId,
       nowIso,
+      nowIso,
+      maxConsentRevision,
+    );
+
+  const deleteEventsStmt = params.researchDb
+    .prepare(
+      `DELETE FROM research_events
+       WHERE subject_key = ?1 AND subject_key_version = ?2
+         AND (?4 IS NULL OR consent_revision <= ?4)
+         AND EXISTS (
+           SELECT 1 FROM research_erasure_inbox
+           WHERE outbox_id = ?3 AND subject_key = ?1 AND subject_key_version = ?2
+         )`,
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion, params.outboxId, maxConsentRevision);
+
+  const invalidateWindowsStmt = params.researchDb
+    .prepare(
+      `DELETE FROM research_aggregation_windows
+       WHERE EXISTS (
+         SELECT 1 FROM research_events e
+         WHERE e.subject_key = ?1 AND e.subject_key_version = ?2
+           AND (?3 IS NULL OR e.consent_revision <= ?3)
+           AND e.event_type = research_aggregation_windows.event_type
+           AND e.city_id = research_aggregation_windows.city_id
+       )
+       AND EXISTS (
+         SELECT 1 FROM research_erasure_inbox
+         WHERE outbox_id = ?4 AND subject_key = ?1 AND subject_key_version = ?2
+       )`,
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, params.outboxId);
+
+  const fenceRevision = maxConsentRevision ?? 2_147_483_647;
+  const updateConsentFenceStmt = params.researchDb
+    .prepare(
+      `INSERT INTO research_subject_consent_fences (
+        subject_key, subject_key_version, revoked_through_revision,
+        last_outbox_id, last_receipt_id, updated_at_iso
+      )
+      SELECT ?1, ?2, ?3, ?4, ?5, ?6
+      WHERE EXISTS (
+        SELECT 1 FROM research_erasure_inbox
+        WHERE outbox_id = ?4 AND subject_key = ?1 AND subject_key_version = ?2
+      )
+      ON CONFLICT(subject_key, subject_key_version) DO UPDATE SET
+        revoked_through_revision = MAX(
+          research_subject_consent_fences.revoked_through_revision,
+          excluded.revoked_through_revision
+        ),
+        last_outbox_id = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.last_outbox_id ELSE research_subject_consent_fences.last_outbox_id END,
+        last_receipt_id = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.last_receipt_id ELSE research_subject_consent_fences.last_receipt_id END,
+        updated_at_iso = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.updated_at_iso ELSE research_subject_consent_fences.updated_at_iso END`,
+    )
+    .bind(
+      params.subjectKey,
+      params.subjectKeyVersion,
+      fenceRevision,
+      params.outboxId,
+      receiptId,
       nowIso,
     );
 
   const batchResults = await params.researchDb.batch([
-    deleteEventsStmt,
-    ...invalidateWindowStmts,
     insertInboxStmt,
+    invalidateWindowsStmt,
+    deleteEventsStmt,
+    updateConsentFenceStmt,
   ]);
   if (
-    batchResults.length !== 2 + invalidateWindowStmts.length ||
+    batchResults.length !== 4 ||
     batchResults.some((r) => !r.success)
   ) {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
   }
 
+  // Read the canonical row after commit. A competing Worker may have inserted it first.
+  const canonicalInbox = await params.researchDb
+    .prepare(
+      'SELECT subject_key, subject_key_version, status, deleted_events_count, receipt_id, completed_at_iso FROM research_erasure_inbox WHERE outbox_id = ?1',
+    )
+    .bind(params.outboxId)
+    .first<{
+      subject_key: string;
+      subject_key_version: string;
+      status: string;
+      deleted_events_count: number;
+      receipt_id: string;
+      completed_at_iso: string | null;
+    }>();
+  if (
+    !canonicalInbox ||
+    canonicalInbox.subject_key !== params.subjectKey ||
+    canonicalInbox.subject_key_version !== params.subjectKeyVersion ||
+    canonicalInbox.status !== 'COMPLETED' ||
+    !canonicalInbox.completed_at_iso ||
+    !canonicalInbox.receipt_id ||
+    !Number.isSafeInteger(Number(canonicalInbox.deleted_events_count)) ||
+    Number(canonicalInbox.deleted_events_count) < 0
+  ) {
+    throw new Error('RESEARCH_SUBJECT_ERASURE_CANONICAL_RECEIPT_UNAVAILABLE');
+  }
+
   return {
     ok: true,
     outboxId: params.outboxId,
-    receiptId,
-    deletedEventsCount: targetCount,
-    invalidatedAggregationWindowsCount: impactedScopes.length,
-    idempotentReplay: false,
-    completedAtIso: nowIso,
+    receiptId: canonicalInbox.receipt_id,
+    deletedEventsCount: Number(canonicalInbox.deleted_events_count),
+    invalidatedAggregationWindowsCount: Number(batchResults[1]?.meta?.changes ?? 0),
+    idempotentReplay: canonicalInbox.receipt_id !== receiptId || Number(batchResults[0]?.meta?.changes ?? 1) === 0,
+    completedAtIso: canonicalInbox.completed_at_iso,
   };
 }
 

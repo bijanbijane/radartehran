@@ -4,6 +4,10 @@
  * Sessions, and Data Requests repository operating strictly on `USER_DB` (never `RESEARCH_DB`).
  */
 import type { D1Database } from '../types';
+import {
+  mapConsentRevocationJobRow,
+  type ResearchConsentRevocationJobRecord,
+} from '../research/researchConsentBarrier';
 
 export interface D1UserProfile {
   readonly uid: string;
@@ -228,14 +232,43 @@ export async function updateUserPrivacyConsentInD1(
     marketingCommunicationsConsent?: boolean;
     consentVersion?: string;
     consentSource?: string;
+    expectedConsentRevision?: number;
     nowIso?: string;
   },
 ): Promise<D1UserPrivacyConsent> {
   await assertUserNotWriteBlocked(userDb, params.uid);
   const current = await getUserPrivacyConsentFromD1(userDb, params.uid);
+  if (
+    params.expectedConsentRevision !== undefined &&
+    current.consentRevision !== params.expectedConsentRevision
+  ) {
+    throw new Error('CONSENT_REVISION_CONFLICT');
+  }
   const nowIso = params.nowIso ?? new Date().toISOString();
 
   const nextResearch = params.researchAnalyticsConsent ?? current.researchAnalyticsConsent;
+  const pendingRevocation = await userDb
+    .prepare(
+      `SELECT revocation_id FROM research_consent_revocation_jobs
+       WHERE uid = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
+       LIMIT 1`,
+    )
+    .bind(params.uid)
+    .first<{ revocation_id: string }>();
+  const isBarrierRevocationTransition =
+    params.researchAnalyticsConsent === false &&
+    current.researchAnalyticsConsent &&
+    (params.consentSource === 'research_consent_revocation_barrier' ||
+      params.consentSource === 'research_consent_revocation_reconcile');
+  if (current.researchAnalyticsConsent && !nextResearch && !isBarrierRevocationTransition) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_BARRIER_REQUIRED');
+  }
+  if (isBarrierRevocationTransition && !pendingRevocation) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_INTENT_REQUIRED');
+  }
+  if (pendingRevocation && !isBarrierRevocationTransition) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_PENDING');
+  }
   const nextTelemetry = params.behavioralTelemetryConsent ?? current.behavioralTelemetryConsent;
   const nextMarketing = params.marketingCommunicationsConsent ?? current.marketingCommunicationsConsent;
   const consentVersion = (params.consentVersion ?? current.consentVersion ?? 'v1').trim().slice(0, 24);
@@ -539,4 +572,16 @@ export async function createUserDataRequestInD1(
     completedAtIso: null,
     updatedAtIso: nowIso,
   };
+}
+
+
+export async function getResearchConsentRevocationJobFromD1(
+  userDb: D1Database,
+  revocationId: string,
+): Promise<ResearchConsentRevocationJobRecord | null> {
+  const row = await userDb
+    .prepare('SELECT * FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
+    .bind(revocationId)
+    .first<Record<string, unknown>>();
+  return row ? mapConsentRevocationJobRow(row) : null;
 }

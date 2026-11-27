@@ -8,3 +8,12 @@
 6. Restore an online local Worker + USER_DB runtime and verify the real Google OIDC callback. Keep Phase 6 `PARTIALLY_VERIFIED` until all acceptance gates pass.
 
 Do not merge to `main`, deploy, or mutate production data without explicit approval.
+
+
+## RT-DB-TRIAD-003 follow-up
+
+1. Run npm run test:triad and focused account/research queue tests in a working runner.
+2. Run TypeScript typecheck and Worker/API builds; inspect the exact CI check annotations.
+3. Validate migration 0008 against an isolated copy of USER_DB, including duplicate (uid, revoked_consent_revision) detection before index creation.
+4. Do not apply migration 0008 to Production until its data preconditions, backup, and rollback plan are verified.
+5. Continue legal-regulatory D1 ownership review from LEGAL-REGULATORY-D1-MIGRATION-DESIGN.md; no binding or migration is authorized by that design document.

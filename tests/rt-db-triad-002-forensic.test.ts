@@ -31,6 +31,10 @@ import {
   upsertUserProfileInD1,
 } from '../worker/account/d1AccountRepository';
 import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../worker/research/researchConsentRevocation';
+import {
   signInternalLifecycleRpc,
   verifyAndConsumeInternalRpcNonce,
 } from '../worker/account-lifecycle/d1InternalRpcNonceStore';
@@ -1060,7 +1064,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
-    it('does not erase research events when impacted aggregation scopes cannot be read', async () => {
+    it('does not erase research events when atomic aggregation-window invalidation fails', async () => {
       const researchSqlite = createForensicSqliteD1();
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
       await researchSqlite.db.prepare(
@@ -1072,7 +1076,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           1, 'tehran', 12, '2026-11-22', '{}', '2026-11-22T10:00:00.000Z',
           '2026-11-22T10:00:00.000Z', '2027-01-01T00:00:00.000Z', 'idem_scope_read_failure')`,
       ).run();
-      researchSqlite.setFailResultOnSqlContains('SELECT DISTINCT event_type, city_id');
+      researchSqlite.setFailResultOnSqlContains('DELETE FROM research_aggregation_windows');
       await assert.rejects(
         () => executeResearchSubjectErasure({
           researchDb: researchSqlite.db,
@@ -1080,7 +1084,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           subjectKey: 'sk_v1_test',
           subjectKeyVersion: 'v1',
         }),
-        /RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED/,
+        /RESEARCH_SUBJECT_ERASURE_BATCH_FAILED/,
       );
       assert.equal(
         (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE event_id = ?').get('evt_scope_read_failure') as { cnt: number }).cnt,
@@ -1126,18 +1130,20 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         uid: 'uid_consent_cas',
         actorUid: 'uid_consent_cas',
         researchAnalyticsConsent: true,
+        behavioralTelemetryConsent: true,
+        marketingCommunicationsConsent: true,
       });
       concurrentSqlite.setYieldBeforeBatch(true);
       const concurrent = await Promise.allSettled([
         updateUserPrivacyConsentInD1(concurrentSqlite.db, {
           uid: 'uid_consent_cas',
           actorUid: 'uid_consent_cas',
-          researchAnalyticsConsent: false,
+          behavioralTelemetryConsent: false,
         }),
         updateUserPrivacyConsentInD1(concurrentSqlite.db, {
           uid: 'uid_consent_cas',
           actorUid: 'uid_consent_cas',
-          behavioralTelemetryConsent: true,
+          marketingCommunicationsConsent: false,
         }),
       ]);
       assert.equal(concurrent.filter((result) => result.status === 'fulfilled').length, 1);
@@ -1331,6 +1337,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         RESEARCH_DB: researchSqlite.db,
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         RESEARCH_HMAC_KEY_VERSION: 'v1',
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
       };
 
       const granted = await updateUserPrivacyConsentInD1(userSqlite.db, {
@@ -1340,7 +1347,9 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       });
       assert.equal(granted.consentRevision, 1);
 
-      // 1. Mid-flight HTTP consent revocation right before RESEARCH_DB write -> MUST ABORT with 403 and write 0 rows
+      // 1. Mid-flight revocation stops new permits, drains the already-issued permit,
+      // then erases the event and advances the RESEARCH_DB fence before returning completion.
+      let revocationId = '';
       const raceRes = await ingestResearchEventsBatch({
         env,
         uid,
@@ -1355,20 +1364,18 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           },
         ],
         beforeResearchWriteHook: async () => {
-          await updateUserPrivacyConsentInD1(userSqlite.db, {
-            uid,
-            actorUid: uid,
-            researchAnalyticsConsent: false,
-          });
+          const revoked = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+          assert.ok(revoked.revocation);
+          revocationId = revoked.revocation!.revocationId;
+          assert.equal(revoked.revocation!.status, 'DRAINING_PERMITS');
         },
       });
-      assert.equal(raceRes.ok, false);
-      if (!raceRes.ok) {
-        assert.equal(raceRes.statusCode, 403);
-        assert.equal(raceRes.code, 'CONSENT_REVOKED_OR_REVISED_IN_FLIGHT');
-      }
+      assert.equal(raceRes.ok, true, 'an already-permitted in-flight writer may finish while revocation drains');
+      if (raceRes.ok) assert.equal(raceRes.acceptedCount, 1);
+      const finalizedRevocation = await reconcileResearchConsentRevocation({ env, revocationId });
+      assert.equal(finalizedRevocation.completed, true);
       const rowsAfterRace = researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number };
-      assert.equal(rowsAfterRace.cnt, 0);
+      assert.equal(rowsAfterRace.cnt, 0, 'completed revocation erases the drained in-flight event');
 
       // 2. Re-grant consent (consentRevision = 3) and test queued research_event_ingest
       const regranted = await updateUserPrivacyConsentInD1(userSqlite.db, {
@@ -1429,17 +1436,15 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       const okQueue = await dispatch(makeEnvelope('q_fresh_rev', 3));
       assert.equal(okQueue.affectedCount, 1);
 
-      // Revoke consent -> queued message with revision=3 MUST now be rejected!
-      await updateUserPrivacyConsentInD1(userSqlite.db, {
-        uid,
-        actorUid: uid,
-        researchAnalyticsConsent: false,
-      });
+      // Revoke through the durable barrier -> revision=3 queue messages are fenced.
+      const queueRevocation = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+      assert.ok(queueRevocation.revocation);
+      assert.equal(queueRevocation.revocation!.status, 'COMPLETED');
       await assert.rejects(
         () => dispatch(makeEnvelope('q_after_revoke', 3)),
         (err: unknown) =>
           err instanceof QueueJobExecutionError &&
-          err.code === 'RESEARCH_CONSENT_REQUIRED' &&
+          err.code === 'CONSENT_REVISION_STALE_OR_REVOKED' &&
           err.retryable === false,
       );
     });

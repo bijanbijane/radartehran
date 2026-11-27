@@ -108,3 +108,19 @@
 The former `firestore_d1_projection_sync` handler did not read Firestore. It read static `MULTI_CITY_CONFIGS`, synthesized deal prices with a fixed multiplier, wrote a constant AQI value and a fallback investment score, and stamped the current execution time into `firestore_version_iso`. Those values cannot be represented as Firestore-authoritative projections.
 
 The Worker tree contains no authenticated Firestore REST source adapter; `worker/db/reconciliation.ts` only compares source and destination arrays supplied by its caller. Therefore the projection job is now disabled, removed from the morning Cron envelope, and legacy queued envelopes are permanently dead-lettered without writing `neighborhood_projections`. Re-enable it only after a real authenticated source adapter, source document versioning, and field-level provenance are implemented and tested.
+
+
+
+## RT-DB-TRIAD-003 — Consent revocation barrier (implementation checkpoint)
+
+- USER_DB.research_processing_permits issues bounded leases atomically with the active consent-revision check. Direct HTTP and Queue ingestion acquire permits and release them in finally; expired leases are reclaimed during revocation reconciliation.
+- research_consent_revocation_jobs tracks the revoked revision, next revision, drain state, durable receipt IDs and completion.
+- research_erasure_outbox.max_consent_revision is revision-scoped for consent revocation. NULL remains reserved for full account deletion; non-NULL records preserve the subject registry for a later explicit re-grant.
+- RESEARCH_DB.research_events.consent_revision is written with each event. research_subject_consent_fences blocks any delayed or zombie writer at or below the revoked-through revision. The event INSERT includes the fence predicate; no read-then-write fence check is used.
+- The erasure Inbox receipt count, aggregation-window invalidation, event deletion and consent-fence advancement execute in one RESEARCH_DB batch. The Inbox count is calculated inside that batch, avoiding a stale pre-count.
+- Worker routes: PATCH /api/account/privacy starts revocation and returns 202 while permits drain; POST /api/account/privacy/reconcile advances pending revocation jobs. The route is registered in the account route group and API catalog.
+- Verification status: implementation and six deterministic scenarios are wired in tests/rt-db-triad-003-consent-barrier.test.ts; the suite is included in npm run test:triad. Tests and typecheck remain unexecuted because hosted runners have failed before step execution and the local MacBook is Offline. Do not describe the implementation as verified until the suite runs.
+
+
+- USER_DB migration 0008 adds a unique `(uid, revoked_consent_revision)` key for revocation jobs and a retry-scan index for the erasure outbox. Revocation IDs and outbox IDs are deterministic per UID/revision/subject, so concurrent duplicate requests converge on one durable intent. The consent update uses an expected-revision CAS; a stale intent is removed if another consent mutation wins before the revocation CAS.
+- The default `npm test` pipeline now runs `npm run test:triad`, including TRIAD-003; the dedicated `npm run test:triad` remains available for focused execution.
