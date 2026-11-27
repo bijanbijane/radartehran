@@ -194,3 +194,11 @@ The resolver now:
 - continues to fetch and validate the canonical entity at the same pinned registry revision.
 
 Added a regression test with all three supported legacy encodings converging on one canonical entity; retained the conflicting-alias rejection test. Updated the neighborhood-profile reference design to describe the exact convergence rule. The dedicated resolver suite now contains nine tests by inspection; execution is not verified because the latest commit has no reported CI runs/status checks. No local runner, upstream IRNI repository, binding, database, secret or deployment was changed.
+
+## 2026-11-27 — Production profile resolver wiring regression
+
+- Re-traced the exact production composition: `apps/api/server.ts` invokes `createProductionGeospatialModule()` without dependencies and mounts the resulting router at `/api/v1/geospatial`.
+- Confirmed that this leaves both canonical IRNI identity resolution and trusted boundary-source resolution absent. A locally approved polygon therefore remains insufficient to produce public profile evidence.
+- Extended the HTTP regression in `tests/neighborhood-profile-boundary-read-model.test.ts`: after independently approving a local boundary under the default production-like composition, the profile-evidence endpoint must return both resolver-not-configured blockers and `evidence: null`.
+- Recorded the explicit production wiring gate and dependency order in `GIS-BLOCKERS.md`. No bypass, mock-to-production substitution, IRNI repository edit, binding change, database mutation, secret change or deployment was made.
+- The commit-triggered workflows for the current head again failed before any runner executed a step: observed jobs report `runner_id=0`, empty `runner_name`, and empty `steps`. The cause remains outside the available job evidence; the new regression has not been confirmed as executed.
