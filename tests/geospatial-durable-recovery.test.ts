@@ -176,7 +176,7 @@ async function runTests(): Promise<void> {
   ));
 
   const malformedListing = sampleState();
-  (malformedListing.spatialListingsByCity as unknown as Record<string, unknown>).tehran = { listing-1: null };
+  (malformedListing.spatialListingsByCity as unknown as Record<string, unknown>).tehran = { 'listing-1': null };
   assert.ok(validatePersistedGeospatialState(malformedListing).errors.includes(
     'SPATIAL_LISTING_NOT_OBJECT:tehran:listing-1',
   ));
