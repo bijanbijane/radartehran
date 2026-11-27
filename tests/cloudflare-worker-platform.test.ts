@@ -699,6 +699,9 @@ async function runSuite(): Promise<void> {
       GOOGLE_OAUTH_CLIENT_SECRET: 'test-google-client-secret',
       GOOGLE_OAUTH_REDIRECT_URI: 'https://radartehran-staging.bijanbijane-1.workers.dev/api/auth/google/callback',
       AUTH_INTERNAL_HMAC_SECRET: 'test-local-worker-express-session-bridge-secret-with-enough-entropy',
+      KAVENEGAR_API_KEY: 'test-kavenegar-api-key',
+      KAVENEGAR_VERIFY_TEMPLATE: 'radar-otp',
+      AUTH_PII_HMAC_SECRET: 'test-auth-pii-hmac-secret-with-more-than-32-bytes',
       ADMIN_EMAIL: 'radio837isf@gmail.com',
       DB: sqliteDb,
       USER_DB: sqliteDb,
@@ -965,6 +968,9 @@ async function runSuite(): Promise<void> {
       GOOGLE_OAUTH_CLIENT_SECRET: undefined,
       GOOGLE_OAUTH_REDIRECT_URI: undefined,
       AUTH_INTERNAL_HMAC_SECRET: undefined,
+      KAVENEGAR_API_KEY: undefined,
+      KAVENEGAR_VERIFY_TEMPLATE: undefined,
+      AUTH_PII_HMAC_SECRET: undefined,
     };
     const migratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
@@ -978,8 +984,11 @@ async function runSuite(): Promise<void> {
       state: string;
       dependencies: {
         userDb: { bound: boolean; ready: boolean; missingTables: string[] };
+        appOrigin: { configured: boolean };
         googleOidc: { configured: boolean };
         expressSessionBridge: { configured: boolean };
+        phoneOtp: { configured: boolean };
+        authPiiHmac: { configured: boolean };
       };
     };
     assert.equal(migratedJson.ok, false);
@@ -987,8 +996,42 @@ async function runSuite(): Promise<void> {
     assert.equal(migratedJson.state, 'DEGRADED');
     assert.equal(migratedJson.dependencies.userDb.ready, true);
     assert.equal(migratedJson.dependencies.userDb.missingTables.length, 0);
+    assert.equal(migratedJson.dependencies.appOrigin.configured, true);
     assert.equal(migratedJson.dependencies.googleOidc.configured, false);
     assert.equal(migratedJson.dependencies.expressSessionBridge.configured, false);
+    assert.equal(migratedJson.dependencies.phoneOtp.configured, false);
+    assert.equal(migratedJson.dependencies.authPiiHmac.configured, false);
+
+    const otpUnconfiguredEnv: WorkerEnv = {
+      ...env,
+      KAVENEGAR_API_KEY: undefined,
+      KAVENEGAR_VERIFY_TEMPLATE: undefined,
+      AUTH_PII_HMAC_SECRET: undefined,
+    };
+    const otpReadinessRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
+      otpUnconfiguredEnv,
+      execCtx,
+    );
+    assert.equal(otpReadinessRes.status, 503);
+    const otpReadinessJson = (await otpReadinessRes.json()) as {
+      code: string;
+      dependencies: { phoneOtp: { configured: boolean }; authPiiHmac: { configured: boolean } };
+    };
+    assert.equal(otpReadinessJson.code, 'PHONE_OTP_PROVIDER_NOT_CONFIGURED');
+    assert.equal(otpReadinessJson.dependencies.phoneOtp.configured, false);
+    assert.equal(otpReadinessJson.dependencies.authPiiHmac.configured, false);
+
+    const invalidOriginEnv: WorkerEnv = { ...env, APP_URL: 'https://staging.invalid' };
+    const invalidOriginRes = await workerEntrypoint.fetch(
+      new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
+      invalidOriginEnv,
+      execCtx,
+    );
+    assert.equal(invalidOriginRes.status, 503);
+    const invalidOriginJson = (await invalidOriginRes.json()) as { code: string; dependencies: { appOrigin: { configured: boolean } } };
+    assert.equal(invalidOriginJson.code, 'APP_ORIGIN_NOT_CONFIGURED');
+    assert.equal(invalidOriginJson.dependencies.appOrigin.configured, false);
 
     const readyRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
@@ -998,13 +1041,19 @@ async function runSuite(): Promise<void> {
     assert.equal(readyRes.status, 200);
     const readyJson = (await readyRes.json()) as { ok: boolean; dependencies: {
       userDb: { ready: boolean };
+      appOrigin: { configured: boolean };
       googleOidc: { configured: boolean };
       expressSessionBridge: { configured: boolean };
+      phoneOtp: { configured: boolean };
+      authPiiHmac: { configured: boolean };
     } };
     assert.equal(readyJson.ok, true);
     assert.equal(readyJson.dependencies.userDb.ready, true);
+    assert.equal(readyJson.dependencies.appOrigin.configured, true);
     assert.equal(readyJson.dependencies.googleOidc.configured, true);
     assert.equal(readyJson.dependencies.expressSessionBridge.configured, true);
+    assert.equal(readyJson.dependencies.phoneOtp.configured, true);
+    assert.equal(readyJson.dependencies.authPiiHmac.configured, true);
 
     // Ensure no runtime DDL execution exists in worker runtime entrypoints
     for (const runtimeFile of ['worker/index.ts', 'worker/router.ts', 'worker/queues/queueAndCronProcessor.ts']) {
