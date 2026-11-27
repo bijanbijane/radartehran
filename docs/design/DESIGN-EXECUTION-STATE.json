@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-007",
+  "package_id": "DESIGN-MAP-008",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -45,7 +45,11 @@
     "Inspected the existing form-input-handling.test.ts portal contract and verified its explicit 14-file portaledModals inventory; each listed file is asserted to use createPortal and z-[9500].",
     "Fetched all 11 additional portal paths from the active design branch and verified each contains one createPortal call, one dialog role, and shared useDialogFocus adoption.",
     "Expanded DESIGN-MAP-007 with the 14-file portal inventory, test-contract limits, and exact shared useDialogFocus behavior including body-scroll reference counting, DOM-order topmost checks, focus restoration, and absence of background inert management in the inspected hook.",
-    "Verified the final DESIGN-MAP-007 document after correcting its portal-inventory section formatting; the 14-path test inventory and shared-hook behavior are present in the committed document."
+    "Verified the final DESIGN-MAP-007 document after correcting its portal-inventory section formatting; the 14-path test inventory and shared-hook behavior are present in the committed document.",
+    "Audited SecondaryModals, BuyerAlertPwaLegalModals, PortfolioModals, AppModalsPortal, useDialogFocus, and dialogStack for simultaneous modal states and focus-hook ownership.",
+    "Verified SecondaryModals exposes five independent modal visibility conditions while its focus hook activation covers only pulse/SEO; buyer-alert/PWA/legal have one shared hook ref across three conditional dialog surfaces.",
+    "Verified PortfolioModals independently renders visited-homes and trade-up dialogs from separate flags without a shared useDialogFocus hook in the inspected component.",
+    "Documented modal concurrency risk register, exclusive/nested modal state contract, focus restoration invariants, and transition acceptance matrix in DESIGN-MAP-008; no application code or tests changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -74,7 +78,10 @@
     "Use one documented overlay coordinator for modal stack order, focus ownership, dismissal policy, and scroll-lock lifecycle.",
     "Keep coordinator stack order, DOM order, and visual stacking order aligned; only the topmost dialog handles Escape and sequential focus.",
     "Require stack-aware focus restoration, explicit background inertness, accessible naming, and independent modal content scrolling.",
-    "Treat current modal z-index conflicts as source-level risks until simultaneous states and rendered stacking contexts are verified."
+    "Treat current modal z-index conflicts as source-level risks until simultaneous states and rendered stacking contexts are verified.",
+    "Represent active modal ownership explicitly in a central typed coordinator; allow concurrency only for intentional parent-child dialog stacks.",
+    "Associate each focus-management ref with exactly one dialog root and ensure only the coordinator's top stack entry handles Escape and Tab.",
+    "Do not assume independently supplied modal booleans are mutually exclusive unless source transitions or behavioral tests prove that invariant."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -105,7 +112,12 @@
     "modal_stack_visual_order": "NOT VERIFIED",
     "full_portal_root_inventory": "14-FILE TEST-BACKED PORTAL INVENTORY VERIFIED; GLOBAL COMPLETENESS NOT VERIFIED",
     "modal_entry_point_inventory": "PARTIAL — 13 WORKSPACE MODAL MODULES",
-    "modal_portal_documentation": "VERIFIED — FINAL FETCH CONFIRMED"
+    "modal_portal_documentation": "VERIFIED — FINAL FETCH CONFIRMED",
+    "modal_concurrency_source_review": "VERIFIED — SECONDARY, BUYER/PWA/LEGAL, PORTFOLIO, WORKSPACE AGGREGATOR",
+    "modal_flag_mutual_exclusion": "NOT VERIFIED — TRANSITION WRITERS NOT YET TRACED",
+    "modal_focus_ref_ownership": "SOURCE RISK VERIFIED — RUNTIME NOT VERIFIED",
+    "modal_concurrency_runtime": "NOT RUN",
+    "modal_behavioral_transition_tests": "NOT RUN"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -115,7 +127,9 @@
     "DESIGN-MAP-005 responsive hierarchy, rendered content density, and keyboard/screen-reader behavior remain unverified because browser/device inspection is unavailable.",
     "DESIGN-MAP-006 computed stacking contexts, safe-area geometry, visual-viewport behavior, and overlay hit testing remain unverified without an available browser/device.",
     "DESIGN-MAP-007 full-app portal-root inventory and nested modal runtime behavior remain unverified without complete source-tree/runtime inspection.",
-    "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA."
+    "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA.",
+    "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
+    "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device."
   ],
-  "next_exact_action": "Audit all 14 portal modules for reachable concurrent-open states and focus-hook container ownership; inspect remaining modal entry points outside the test inventory; then reconnect browser/device for nested portal stacking, keyboard ownership, focus restoration, inert background, and body scroll-lock QA. Do not change application code without explicit frontend authorization."
+  "next_exact_action": "Trace all writers and transition handlers for SecondaryModals, BuyerAlert/PWA/Legal, and PortfolioModals flags; build a source-backed transition graph; then validate overlapping states, topmost Escape/Tab, nested focus restoration, background inertness, and scroll lock in a connected browser/device. No app-code changes without explicit frontend authorization."
 }
