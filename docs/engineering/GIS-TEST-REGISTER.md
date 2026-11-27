@@ -6,7 +6,7 @@
 
 | Command | Coverage | Current status in this session |
 |---|---|---|
-| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | Registered; NOT RUN by this session |
+| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | Registered; NOT VERIFIED — CI failed and job logs unavailable |
 | `npm run test:unit` | Existing unit gates plus `test:geospatial` | Updated to include geospatial suite; NOT RUN by this session |
 | `npm run lint` | Repository lint | NOT RUN |
 | `npm run arch:check` | Architecture rules | NOT RUN |
@@ -28,3 +28,10 @@ Source changes and registered tests are not proof of correctness until the comma
 ## Latest unexecuted additions
 
 The 2026-11-27 increment adds explicit assertions for `HOLE_OUTSIDE_OUTER` and `HOLE_OVERLAP`. These tests are committed on the GIS branch but remain NOT RUN. The exact verification command remains `npm run test:geospatial`.
+
+
+## CI evidence (2026-11-27)
+
+- PR-triggered runs associated with `ee1e5b259dea69809545eacc9dbf0b6991ae70a4` and `825fde0c4095361c7f9a08827746684bc8ee0421` returned failed check conclusions.
+- The path-detect, broad TypeScript/unit/build, D1/Worker binding, IRNI RPC and native-auth jobs failed; dependent frontend/contracts/API/E2E gates were skipped.
+- GitHub job-log retrieval returned `BlobNotFound`. No test is recorded as passed, and it is not established that the GIS test command actually ran.
