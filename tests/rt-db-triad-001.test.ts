@@ -950,6 +950,11 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const raw = fs.readFileSync(path.join(process.cwd(), 'wrangler.backend.jsonc'), 'utf-8');
       const parsed = parseJsonc(raw, 'wrangler.backend.jsonc');
 
+      // OAuth callback query strings contain short-lived authorization codes and state.
+      // Keep redaction scoped to Staging; do not silently change Production settings.
+      assert.equal(parsed.env.staging.observability?.redact_query_string, true);
+      assert.notEqual(parsed.observability?.redact_query_string, true);
+
       const valid = validateBackendWranglerConfig(parsed);
       assert.equal(valid.ok, true, `Expected valid wrangler.backend.jsonc, got errors: ${valid.errors.join(', ')}`);
       assert.equal(valid.summary?.irniDirectBindingPresent, false);
