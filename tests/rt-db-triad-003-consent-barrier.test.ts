@@ -951,17 +951,17 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
             `INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
              VALUES (?1, ?2, 'v1', ?3)`,
           ).bind(uid, subjectKey, new Date(t0 + 30).toISOString()).run();
-          const written = await writePseudonymizedEventsToResearchDb({
-            researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
-            consentRevision: 1, events: [checked.event], nowMs: t0 + 40,
-          });
-          assert.equal(written.acceptedCount, 1);
           await userSqlite.db.prepare(
             `INSERT INTO research_processing_permits (
               permit_id, uid, subject_key, subject_key_version, consent_revision,
               consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
             ) VALUES ('rperm_late_registry_7', ?1, ?2, 'v1', 1, 'http_ingest', ?3, ?4, NULL)`,
           ).bind(uid, subjectKey, t0 + 15, t0 + 30_000).run();
+          const written = await writePseudonymizedEventsToResearchDb({
+            researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
+            consentRevision: 1, events: [checked.event], nowMs: t0 + 40,
+          });
+          assert.equal(written.acceptedCount, 1);
         }
         return userSqlite.db.batch(statements);
       },
