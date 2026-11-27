@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-004",
+  "package_id": "DESIGN-MAP-005",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -30,7 +30,10 @@
     "Inspected active-branch mapSheetCoordinator and its tests; verified the reducer is a standalone pure model and is not integrated as the runtime panel state authority in RadarWorkspaceShell.",
     "Compared the current NeighborhoodInspectorDrawer local peek/expanded state and hidden collapsed behavior against the three-state snap utility/tests and D2 acceptance contract.",
     "Identified fragmented panel visibility and detent ownership across desktopMapPanelMode, mobileMapListOpen, ui.mobileSheetOpen, local snapMode, and separate floating panel booleans.",
-    "Created DESIGN-MAP-004 unified panel state architecture handoff with typed transition contract, geometry reconciliation, and regression acceptance criteria."
+    "Created DESIGN-MAP-004 unified panel state architecture handoff with typed transition contract, geometry reconciliation, and regression acceptance criteria.",
+    "Inspected active-branch NeighborhoodInspectorDrawer and NeighborhoodInspectorTabs information hierarchy, tab semantics, header evidence badges, scorecard modules, and mobile sheet composition.",
+    "Reviewed PAGE-02 acceptance status and identified the need to distinguish observed listing evidence, reference baselines, estimates, community reports, and live signals at the point of use.",
+    "Created DESIGN-MAP-005 neighborhood inspector information hierarchy and data provenance specification; no application code changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -48,7 +51,11 @@
     "Require rendered-DOM target-size, overlap, focus, RTL/LTR, and light/dark evidence before accepting placement.",
     "Unify panel visibility and inspector detent under one typed workspace state authority; components should dispatch actions rather than maintain competing visibility copies.",
     "Derive actual rendered inspector geometry from one shared geometry config only after browser evidence resolves 72px vs 78px collapsed height and current vh drift.",
-    "Treat spatial measure as an interaction mode coordinated by the shell, not as a sheet state."
+    "Treat spatial measure as an interaction mode coordinated by the shell, not as a sheet state.",
+    "Keep neighborhood identity, mode/budget fit, and one mode-relevant price anchor as the persistent inspector header hierarchy.",
+    "Place evidence class and sample coverage adjacent to price claims; never imply complete-market coverage or live freshness without source evidence.",
+    "Keep scorecard, market, bargains, reviews, and vote as distinct task-oriented tabs with tailored empty/loading/error and disclosure behavior.",
+    "Prioritize scorecard affordability decisions above secondary calculators and deep analytical modules; defer long content without hiding methodology."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -62,13 +69,17 @@
     "control_ownership_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
     "browser_dom_geometry": "BLOCKED_DESKTOP_DEVICE_OFFLINE",
     "panel_state_source_review": "VERIFIED",
-    "panel_state_architecture": "DOCUMENTED — NOT RUNTIME VERIFIED"
+    "panel_state_architecture": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "inspector_information_hierarchy_source_review": "VERIFIED",
+    "inspector_information_hierarchy": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "data_provenance_contract": "DOCUMENTED — NOT RUNTIME VERIFIED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
     "Schematic prototype is not a real map and must not be treated as spatially accurate.",
     "Frontend implementation remains unauthorized.",
-    "Desktop Commander MacBook-Air.local remains offline; DESIGN-MAP-004 component/browser integration tests and rendered geometry cannot be captured."
+    "Desktop Commander MacBook-Air.local remains offline; DESIGN-MAP-004 component/browser integration tests and rendered geometry cannot be captured.",
+    "DESIGN-MAP-005 responsive hierarchy, rendered content density, and keyboard/screen-reader behavior remain unverified because browser/device inspection is unavailable."
   ],
-  "next_exact_action": "Reconnect development machine/browser; run the DESIGN-MAP-004 panel transition and viewport matrix; resolve sheet geometry and FloatingTopBar overlap; then request explicit frontend implementation authorization."
+  "next_exact_action": "Reconnect development browser/device; validate DESIGN-MAP-002/004/005 together across mobile and desktop viewports, RTL/LTR keyboard navigation, provenance states, and panel overlap; then request explicit frontend implementation authorization."
 }
