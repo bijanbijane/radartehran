@@ -15,7 +15,9 @@ Reconcile the map workspace overlay contract (DESIGN-MAP-006) with the repositor
 | Area | Verified source evidence | Design implication |
 |---|---|---|
 | Workspace ownership | `RadarWorkspaceShell.tsx` renders `AppModalsPortal` inside the workspace error boundary; the reverse-budget modal is separately rendered immediately before it. | Modal entry points are distributed across the shell rather than governed by one explicit overlay host. |
-| Modal aggregator | `AppModalsPortal.tsx` conditionally renders many lazy-loaded modal components under `React.Suspense`. | Despite its name, this component contains no `createPortal` call in the reviewed source. It is an aggregation component, not evidence of a dedicated DOM portal root. |
+| Modal aggregator | `AppModalsPortal.tsx` conditionally renders many lazy-loaded modal components under `React.Suspense`. | It is an aggregation component, not itself a `createPortal` host. Some child modal components portal their content independently. |
+| Confirmed body portals | `NeighborhoodPriceTrendModal.tsx`, `modals/InstantListingVerifierModal.tsx`, and `modals/ReverseBudgetDiscoveryModal.tsx` import `createPortal` and return `createPortal(modalContent, document.body)` when `document` exists. | The active modal system is mixed: ordinary workspace descendants and body-level portal descendants coexist. Their DOM order and z-index must be reconciled. |
+| Other inspected modal entry points | `AgencyModal`, `CompareModal`, `ShortlistMatrixModal`, `ShareModal`, `SecondaryModals`, `OnboardingWizardModal`, `HedonicValuationModal`, `PortfolioModals`, and `NationwideProvinceModal` were fetched from the active branch. | Most inspected dialogs declare modal semantics, but focus-hook adoption varies; this is not yet an exhaustive repository-wide inventory. |
 | Shared dialog hook | `useDialogFocus.ts` saves trigger focus, applies a reference-counted body overflow lock, focuses an initial target, traps Tab/Shift+Tab, handles Escape only for the topmost modal, and restores focus on cleanup. | This is the strongest shared behavior contract currently identified; modal adoption is not universal. |
 | Stack ordering | `utils/interactions/dialogStack.ts` identifies the topmost modal as the last DOM-ordered `[role="dialog"][aria-modal="true"]` element. | DOM order is currently part of the interaction contract; visual z-index and DOM order must remain aligned. |
 | Modal consumers | `SmartSuggestModal`, `FutureSuperModulesModal`, `ExpansionModulesModal` use `useDialogFocus`. | These are positive adoption examples. |
@@ -23,18 +25,18 @@ Reconcile the map workspace overlay contract (DESIGN-MAP-006) with the repositor
 | Primitive dialog | `ui/RadarPrimitives.tsx` contains a separate dialog implementation with its own keydown listener, focus cycling, Escape close, and z-index `70`. | There are at least two dialog-management implementations; the primitive does not use the shared topmost-dialog guard in the inspected block. |
 | Layer values | Map workspace layers from DESIGN-MAP-006 include inspector backdrop/surface 34/35, bottom nav 43, geo-context banner 45, invalid-city overlay 55. Several feature dialogs use z-index 50; the primitive dialog uses 70. | A dialog at 50 can be visually below the invalid-city overlay at 55 if both states coexist. This is a conditional collision risk, not a verified rendered defect. |
 
-## 3. Confirmed design risks and limits
+## 3. Additional modal entry-point inventory\n\nThe following active-branch modules were fetched and checked for dialog semantics, focus-hook use, or portal mounting:\n\n| Component | Source-level result |\n|---|---|\n| `AgencyModal` | Declares dialog surfaces at z-50; shared `useDialogFocus` adoption was not found in the inspected file signals. |\n| `CompareModal` | Imports the shared focus hook; dialog surface at z-50. |\n| `ShortlistMatrixModal` | Uses the shared focus hook; dialog surface at z-50. |\n| `ShareModal` | Uses the shared focus hook; contains multiple dialog render branches. |\n| `SecondaryModals` | One shared hook instance is activated by pulse/SEO state; buyer-alert, PWA, and legal states are also passed into this component. |\n| `OnboardingWizardModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `HedonicValuationModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `PortfolioModals` | Contains visited-log and trade-up dialog surfaces; shared hook adoption was not found in inspected signals. |\n| `NationwideProvinceModal` | Uses the shared focus hook. |\n| `NeighborhoodPriceTrendModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `InstantListingVerifierModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `ReverseBudgetDiscoveryModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n\nThis inventory is limited to components directly imported by the inspected workspace/modal aggregator and the separately rendered reverse-budget modal. It is not proof that no other dialogs or portals exist elsewhere.\n\n## 4. Confirmed design risks and limits
 
-1. **No canonical DOM portal host is evidenced.** `AppModalsPortal` is rendered in the ordinary React tree. A portal root elsewhere in the app was not established by this bounded source review; do not infer that none exists globally.
+1. **Portal ownership is fragmented.** `AppModalsPortal` is an ordinary React aggregator, while at least three child modal modules create portals directly to `document.body`. This is a verified mixed mounting model, not one canonical portal host. The complete repository-wide portal inventory remains open.
 2. **Modal behavior is not uniformly delegated.** Shared hook adoption is visible in selected dialogs, while `RadarPrimitives` has an independent implementation and the secondary-modal group uses one ref for only a subset of its modal states.
-3. **Topmost behavior depends on DOM order.** The shared hook guards Escape and Tab using the last matching dialog in document order. A visual stacking change without matching DOM ordering can make keyboard ownership disagree with the visible top layer.
+3. **Topmost behavior depends on DOM order across mixed mount locations.** The shared hook guards Escape and Tab using the last matching dialog in document order. Body-level portals and ordinary descendants can produce a DOM order that differs from intended visual stack order unless centrally coordinated.
 4. **Background inertness is not established.** The shared hook traps focus inside its own dialog and locks body overflow, but the inspected implementation does not set `inert` or `aria-hidden` on the application background. A focus trap alone does not prove that all background interaction paths are disabled.
 5. **Scroll lock is reference-counted but global.** A module-level counter preserves the original `body.style.overflow` until the final hook consumer closes. It does not, in the inspected source, establish scrollbar-gap compensation, iOS visual-viewport behavior, or coordination with non-hook dialogs.
 6. **Focus restoration under overlapping dialogs needs runtime validation.** Each hook instance stores its own previously focused element and restores it on cleanup. The intended nested-dialog sequence should be tested, including when a lower dialog closes while another remains open.
 7. **Layer collisions are possible by declared values.** Feature dialogs at z-50 and invalid-city overlay at z-55 have an ordering conflict if simultaneously mounted. Whether that state is reachable and how stacking contexts affect the result require runtime inspection.
 8. **Accessibility naming is inconsistent in the inspected examples.** Some dialogs use `aria-label`, while the primitive uses `aria-labelledby`. Both can be valid, but every dialog must have a stable accessible name and a deliberate initial focus target.
 
-## 4. Canonical ownership contract
+## 5. Canonical ownership contract
 
 ### 4.1 One overlay coordinator
 
@@ -80,7 +82,7 @@ Use semantic roles rather than arbitrary per-component z-index values. Proposed 
 
 The exact token values and whether system notices should sit above dialogs must be reconciled with the product's interruption policy. Do not numerically change existing layers based on source inventory alone.
 
-## 5. Acceptance criteria
+## 6. Acceptance criteria
 
 - [ ] Inventory every modal/dialog entry point, including lazy-loaded, error-boundary, onboarding, PWA, legal, admin, and reverse-budget flows.
 - [ ] Identify the actual DOM portal roots (if any), their owners, and their stacking-context ancestry.
@@ -94,9 +96,9 @@ The exact token values and whether system notices should sit above dialogs must 
 - [ ] Verify z-layer behavior with map inspector, bottom navigation, geo-context notice, invalid-city notice, and all modal classes.
 - [ ] Run viewport checks at 320×568, 360×800, 390×844, 844×390, tablet, and desktop; include safe-area and mobile virtual keyboard states.
 
-## 6. Source review outcome
+## 7. Source review outcome
 
-**VERIFIED — source inventory:** the named files, shared focus hook, dialog-stack helper, and representative modal call sites were fetched from the active design branch.
+**VERIFIED — source inventory:** the named shell, aggregator, shared focus hook, dialog-stack helper, primitive dialog, 13 modal entry-point modules, and three body-level portal implementations were fetched from the active design branch.
 
 **IMPLEMENTED — NOT VERIFIED:** this document records the design contract and acceptance criteria; no application implementation was changed.
 
@@ -104,6 +106,6 @@ The exact token values and whether system notices should sit above dialogs must 
 
 **BLOCKED:** browser/device QA remains unavailable while the development device is offline.
 
-## 7. Next action
+## 8. Next action
 
 Complete a full modal entry-point and portal-root inventory, then validate nested-dialog focus, inert background, scroll locking, and layer ordering in a connected browser/device. Only after that evidence is available should the overlay coordinator be translated into an implementation proposal and frontend implementation authorization requested.
