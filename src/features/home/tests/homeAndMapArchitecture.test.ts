@@ -23,6 +23,7 @@ import {
   buildNeighborhoodIntelligenceProfile, evaluateMarketSampleAdequacy, formatNullSafeMetricValue,
 } from '../../neighborhoods/services/neighborhoodProfileEngine';
 import { computeViewportPulseSnapshot } from '../../../components/map/MapViewportPulseDock';
+import { resolveMapExplorerSelectedNeighborhood } from '../../../components/map/mapViewportHoodFilter';
 import {
   appendInteractiveSpatialPoint,
   clearInteractiveSpatialPoints,
@@ -389,3 +390,24 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
   });
 });
 
+
+describe('Map Explorer selected neighborhood resolution', () => {
+  it('does not display an unrelated first neighborhood when the selected ID is stale', () => {
+    const [first, second] = MOCK_HOODS;
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 999,
+      selectedHood: first,
+    }), null);
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 2,
+      selectedHood: first,
+    }), second);
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 1,
+      selectedHood: first,
+    }), first);
+  });
+});
