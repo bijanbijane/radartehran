@@ -27,7 +27,7 @@ import {
   validateSubmissionStep,
 } from '../moderation/ListingValidation';
 import { assessDuplicateSubmission } from '../moderation/DuplicateDetection';
-import { normalizeSubmissionLocationPrecision } from '../services/listingService';
+import { normalizeSubmissionLocationPrecision, normalizeUserSubmittedListingLocation } from '../services/listingService';
 
 function toEvaluated(): EvaluatedNeighborhood[] {
   return INITIAL_NEIGHBORHOODS.slice(0, 6).map((h) => ({
@@ -47,6 +47,25 @@ test('Listing submission never claims street-level coordinate precision without 
   assert.equal(normalizeSubmissionLocationPrecision('approximate'), 'neighborhood');
   assert.equal(normalizeSubmissionLocationPrecision('neighborhood'), 'neighborhood');
   assert.equal(normalizeSubmissionLocationPrecision('unavailable'), 'unavailable');
+  assert.equal(createEmptySubmissionDraft(1).locationPrecision, 'neighborhood');
+
+  const base = buildPropertyListingRecords(toEvaluated())[0];
+  const legacyUserRecord = {
+    ...base,
+    property: { ...base.property, locationPrecision: 'exact' as const, privacyRadiusMeters: 30 },
+    listing: { ...base.listing, sourceKind: 'user_submitted' as const },
+  };
+  const normalized = normalizeUserSubmittedListingLocation(legacyUserRecord);
+  assert.equal(normalized.property.locationPrecision, 'neighborhood');
+  assert.equal(normalized.property.privacyRadiusMeters, 600);
+  assert.equal(normalized.property.lat, legacyUserRecord.property.lat);
+
+  const unavailable = normalizeUserSubmittedListingLocation({
+    ...legacyUserRecord,
+    property: { ...legacyUserRecord.property, locationPrecision: 'unavailable' },
+  });
+  assert.equal(unavailable.property.lat, null);
+  assert.equal(unavailable.property.lng, null);
 });
 
 test('PropertyFilterDraft normalizes Persian numerals and auto-swaps inverted min/max bounds on commit', () => {
