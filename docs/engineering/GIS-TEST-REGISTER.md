@@ -50,3 +50,16 @@ The 2026-11-27 increment adds explicit assertions for `HOLE_OUTSIDE_OUTER` and `
 | IRNI Geographic RPC Consumer Contract | 45978860069 | FAILURE | `irni-rpc-contract` failed |
 
 GitHub log retrieval returned `BlobNotFound`. The current Desktop Commander device is offline. It is not established whether any workflow reached an actual test step. Consequently `npm run test:geospatial`, typecheck, lint, architecture checks and build remain NOT VERIFIED.
+
+
+## MultiPolygon component regression additions
+
+- Distinct components with overlapping filled areas must report `MULTIPOLYGON_COMPONENT_OVERLAP`.
+- Components sharing/touching a boundary must report `MULTIPOLYGON_COMPONENT_OVERLAP`.
+- Disjoint components are accepted.
+- A separate component fully contained in another component's valid hole is accepted.
+- These additions are committed but are not marked passed until the dedicated GitHub Actions workflow completes successfully.
+
+## Dedicated CI
+
+`.github/workflows/gis-spatial-integrity.yml` runs `npm run test:geospatial` and `npm run typecheck` independently. The broader repository workflows have been failing before exposing step-level logs; the focused workflow is intended to isolate GIS regressions from unrelated backend/auth/Worker gates.
