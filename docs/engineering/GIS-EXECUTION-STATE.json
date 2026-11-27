@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "workstream": "RADAR-TEHRAN-GIS",
+  "status": "IN_PROGRESS",
+  "status_date": "2026-11-27",
+  "repository": "bijanbijane/radartehran",
+  "branch": "feat/gis-spatial-integrity-2026-11-27",
+  "baseline_main_sha": "456dcacb387b908797756863b10da1f7104b658e",
+  "latest_branch_sha_at_record": "bf2aa76f92d9a78cdd9a51c9836def9a6ba322d8",
+  "phase": "GIS-FOUNDATION-AND-SPATIAL-INTEGRITY",
+  "completed": [
+    "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and current GIS branch delta.",
+    "Added strict interior-ring containment and hole-to-hole topology validation.",
+    "Added regression tests for holes outside/touching the exterior ring and overlapping/nested holes.",
+    "Updated GIS architecture, data dictionary, source register and execution tracking."
+  ],
+  "not_verified": [
+    "Automated GIS test suite execution",
+    "TypeScript typecheck",
+    "D1 runtime spatial capability",
+    "Production IRNI resolver wiring",
+    "Authoritative Tehran neighborhood polygon dataset and license"
+  ],
+  "production_changes": false,
+  "production_deployment": false,
+  "database_migrations_added": false,
+  "tests": {
+    "command": "npm run test:geospatial",
+    "status": "NOT_RUN",
+    "reason": "No connected local execution device; GitHub Actions query returned no workflow runs and commit checks returned no check-runs."
+  },
+  "next_exact_action": "Run npm run test:geospatial and the relevant TypeScript check on an online repository runner; fix any failures before expanding topology validation to MultiPolygon component overlap.",
+  "blockers": [
+    "No available execution runner in this session; Desktop Commander device reported offline.",
+    "No verified licensed Tehran neighborhood boundary dataset in the current GIS source register.",
+    "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine; IRNI owns canonical geographic registry writes."
+  ]
+}
