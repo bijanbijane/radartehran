@@ -115,3 +115,23 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Rerunning PR #81's failed workflow reproduced the same result.
 - This is a GitHub Actions runner/queue infrastructure blocker. No workflow commands ran; no code failure or pass can be inferred.
 - Next: wait for runner allocation to recover or use an available connected Node/npm executor. Keep PRs Draft until the actual checks execute.
+
+
+## CHK-203 — Current evidence corrections (2026-11-27)
+
+### B-001 / B-007 — GitHub Actions runner allocation
+- Latest PR #67 head before this documentation checkpoint: `93328807ff66153827cc05a4c6c72acabe6d4080`.
+- Runs #45987832174 (Backend Triad), #45987830960 (Native Auth), #45987830877 (IRNI RPC), #45987830888 (Root CI), and #45987830940 (Path-Filtered) all conclude FAILURE.
+- All corresponding jobs expose zero steps. Log retrieval for job IDs 140467847417, 140467847508 and 140467846977 returns `BlobNotFound`.
+- The progress log records broader raw job payloads with `runner_id=0`, blank runner name and zero steps, reproduced after a PR #81 rerun. The best-supported root cause is runner allocation before workflow execution. Do not attribute these failures to application code or npm commands.
+
+### B-006 — Dependency security findings (inventory recovered)
+- Audit total: **21** (14 moderate, 5 high, 2 critical); dependency metadata: 286 production, 492 development, 297 optional and 3 peer entries.
+- Critical dev-only: `vitest@3.2.7` and `tinypool@1.1.1`; advisories GHSA-5gmw-xhrv-c9v3 and GHSA-85c8-ppgw-ccpr. Audit suggests `vitest@5.1.2` (major upgrade); compatibility is unverified.
+- High production paths: direct `firebase@12.19.0`, `@firebase/firestore@4.17.2`, transitive `@grpc/grpc-js@1.9.16`, and direct `sharp@0.33.5`. Audit suggests major upgrade candidates `firebase@9.14.0` and `sharp@0.35.5`. Direct `firebase-admin@13.10.0` has moderate findings; suggested candidate `14.5.1` is also a major upgrade.
+- Branch source still imports Firebase Admin/Firestore in `src/utils/serverAdminAndTelegramSecurity.ts` and Sharp in `src/utils/objectStorageUpload.ts`. These consumers must be migrated before removing dependencies. No upgrades/removals have been made.
+- **Next:** create a verified call-site migration map; regenerate package-lock with a compatible Node/npm executor; run typecheck, focused tests and the complete security suite. Never use `npm audit fix --force` without a reviewed migration.
+
+### NIPS shared-store target correction
+- `server/modules/neighborhood-profile/README.md` and `NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql` now consistently state that NIPS is a logical `nips_*` data domain in the existing IRNI-owned physical `radar-neighborhood-db`. IRNI alone owns D1 migrations; Radar consumes a versioned authenticated RPC and must not bind the database directly.
+- The SQL remains design-only. No migration, D1 binding, repository adapter or RPC route was created.
