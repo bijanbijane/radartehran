@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "a68465e4eec9ce26007ced11c43c548e1781a6c0",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; ROOT CI COVERS WORKER AND NIPS TEST SUITES; LATEST FIVE WORKFLOWS FAIL BEFORE STEP EXECUTION; NIPS AND WORKER CHANGES IMPLEMENTED_NOT_VERIFIED",
+    "head_commit": "2921a3d37e2f11982c51191d26b07aa7734d0e57",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; ROOT CI INCLUDES WORKER AND NIPS TESTS; MODIFIED WORKFLOW SCRIPT NAMES MATCH PACKAGE SCRIPTS; NODE 22/NPM 10 AVAILABLE IN TOOL RUNTIME BUT REPOSITORY CHECKOUT ABSENT AND NETWORK DISABLED; TEST EXECUTION NOT POSSIBLE",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,12 +29,12 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-213-LATEST-PR-CI-ATTEMPT-ZERO-STEP-FAILURE",
-    "checkpoint_timestamp_utc": "2026-11-27T15:15:00.000Z",
-    "last_safe_operation": "Rechecked latest PR #67 synchronization workflows and inspected their complete job summaries and logs. Reviewed NIPS validation and public serializer paths for additional state leakage; no additional actionable defect established from the inspected contracts.",
-    "last_completed_operation": "PR #67 head a68465e4eec9ce26007ced11c43c548e1781a6c0 remains OPEN/DRAFT/NOT MERGED. Five latest runs #46010998864 (IRNI RPC), #46010999058 (Path-Filtered), #46010999033 (Backend Triad), #46010999035 (Native Auth), and #46010998861 (Root CI) all concluded FAILURE. Job payloads explicitly return logs_url=null and steps=null; direct step lookup returns empty arrays and log downloads return BlobNotFound. No workflow command ran. Root CI workflow was re-read and confirms explicit npm run test:worker gate; npm test includes NIPS via test:unit.",
-    "next_exact_action": "Obtain an authorized functioning Node 22/npm 10 executor or restore GitHub Actions runner allocation/log retention. Run npm ci, npm run test:nips, npm run test:worker, typecheck, architecture, security, auth and Cloudflare gates; record actual outputs. Do not change Production bindings, secrets, migrations, merge or deploy.",
-    "resume_status": "BLOCKED_ON_EXECUTION_ENVIRONMENT"
+    "checkpoint_id": "CHK-214-PR-WORKFLOW-SCRIPT-AUDIT-AND-EXECUTOR-ENVIRONMENT",
+    "checkpoint_timestamp_utc": "2026-11-27T15:25:00.000Z",
+    "last_safe_operation": "Audited the full PR changed-file list and workflow/package-script consistency. Confirmed test:worker, test:auth, and test:geography-catalog exist in package.json; root npm test includes test:nips through test:unit. Inspected package-lock peer metadata: Wrangler's nested @cloudflare/workers-utils declares optional Vitest peer ^4.1.0 || ^5.0.0 while root Vitest is 3.2.7, supporting the .npmrc legacy-peer-deps rationale.",
+    "last_completed_operation": "Confirmed local tool runtime is Node v22.16.0/npm 10.9.2, but /openai/project contains only CUA assets and is not a Git checkout; /mnt/data is empty. Container network is disabled. GitHub integration supports file/PR operations but no repository checkout or remote command execution. Therefore npm ci and test commands cannot be run in this environment. PR #67 remains open/draft; no reviews or commit status checks were returned.",
+    "next_exact_action": "Use an authorized execution environment with a checkout of bijanbijane/radartehran at PR head 2921a3d37e2f11982c51191d26b07aa7734d0e57, Node 22/npm 10 and network/package-cache access. Run npm ci and the targeted test/typecheck/security/architecture gates; publish actual output and exit codes. Independently diagnose GitHub Actions runner provisioning/log retention. Do not merge or deploy.",
+    "resume_status": "BLOCKED_ON_REPOSITORY_EXECUTOR"
   },
   "execution_history": {
     "completed_tasks": [
@@ -1926,6 +1926,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T15:15:00.000Z"
+    },
+    {
+      "operation_id": "OP-208",
+      "phase": "PHASE-6",
+      "description": "Audit PR workflow command names against package.json, inspect npm lock peer metadata and verify available local execution environment; establish why tests cannot run locally.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T15:25:00.000Z"
     }
   ],
   "tests": [
@@ -2063,6 +2071,15 @@
       "exit_code": null,
       "outcome": "NOT_RUN",
       "evidence_path": "ci-gate-g-worker-tests.log"
+    },
+    {
+      "test_name": "Local execution environment availability check",
+      "command": "node --version; npm --version; git -C /openai/project status; inspect /mnt/data",
+      "environment": "Current tool container",
+      "timestamp_utc": "2026-11-27T15:25:00.000Z",
+      "exit_code": 0,
+      "outcome": "VERIFIED_ENVIRONMENT_ONLY; Node v22.16.0 and npm 10.9.2 available; no repository checkout; network disabled",
+      "evidence_path": "container runtime inspection"
     }
   ],
   "engineering_decisions": [
@@ -2084,10 +2101,11 @@
     "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified.",
     "B-010: NIPS public-profile serializer allow-list and moderation-state suppression hardening plus sentinel regressions are committed but unverified. Root npm test includes test:unit, which includes npm run test:nips; awaiting a functioning Actions runner.",
     "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification.",
-    "B-001: GitHub Actions jobs continue to fail before step execution. Latest PR #67 runs #46010998864 (IRNI RPC), #46010999058 (Path-Filtered), #46010999033 (Backend Triad), #46010999035 (Native Auth), and #46010998861 (Root CI) all concluded failure. Full job payloads return logs_url=null and steps=null; step lookup returns empty arrays; log download returns BlobNotFound. No command-level or application test failure is established.",
+    "B-001: GitHub Actions jobs continue to fail before step execution. Latest five workflows returned completed FAILURE with steps=null, logs_url=null, empty step lookup and BlobNotFound. No command-level failure is established.",
     "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit confirmed nine inspected route modules propagate parser status/code; body limits range 4 KiB–14 MiB. Root CI now explicitly runs npm run test:worker and retains its log, but no runner step has executed.",
     "B-012: SEC-NIPS-002 — public serialization previously exposed UNDER_REVIEW metric values despite blocked moderation state when evidence allowed redistribution, and did not defensively suppress explicit SUPPRESSED states at the public boundary. Both states now serialize as SUPPRESSED with null value and zero evidence count; regressions cover both. Verification pending npm run test:nips, typecheck, architecture and security gates.",
-    "B-013: CI coverage gap found and fixed: root .github/workflows/ci.yml previously ran test:cloudflare but omitted the dedicated test:worker suite containing the request-body streaming regressions. Added npm run test:worker as an explicit Gate G step with ci-gate-g-worker-tests.log. Workflow change c65f6478473c890ed5ea8754faf3f5f896bf2ed7 is committed but has not executed."
+    "B-013: CI coverage gap found and fixed: root .github/workflows/ci.yml previously ran test:cloudflare but omitted the dedicated test:worker suite containing the request-body streaming regressions. Added npm run test:worker as an explicit Gate G step with ci-gate-g-worker-tests.log. Workflow change c65f6478473c890ed5ea8754faf3f5f896bf2ed7 is committed but has not executed.",
+    "B-014: Local execution is also unavailable despite Node v22.16.0/npm 10.9.2 being installed: no repository checkout exists in /openai/project or /mnt/data, and container network is disabled. GitHub connector exposes repository file/PR operations but no remote shell/checkout action. A permitted executor with repository checkout and dependency access is required."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
