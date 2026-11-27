@@ -179,3 +179,18 @@
 Read-only inspection of `bijanbijane/Iran-Neighborhood-Intelligence` on `main`, `src/services/geographic-registry/radar-read-port-v1.ts`, found that `RADAR_GEOGRAPHIC_READ_CONTRACT_STATE` is explicitly `CONTRACT_FINALIZED_RUNTIME_NOT_IMPLEMENTED`. The upstream contract states that no runtime adapter is implemented and the Worker must report RPC unavailable until durable registry persistence and the live shared-D1 schema/ledger are verified. The port is identity/relationship read-only; it has no geometry retrieval method. This confirms that Radar's local v2 client/types and a Wrangler binding declaration cannot establish a functioning upstream provider.
 
 **Decision:** no attempt was made to construct a fake resolver, bridge, or geometry ingestion path. Keep coordinate-based valuation unavailable. The GIS blocker register now records the upstream evidence and dependency order: upstream durable read adapter → versioned authoritative geometry contract → non-production deployed RPC verification → Radar bridge/ingestion → valuation API composition and HTTP integration tests. No IRNI files, runtime resources, bindings, secrets, databases, or deployments were changed.
+
+
+## 2026-11-27 — IRNI legacy-alias convergence correction
+
+A focused review of `worker/irni/neighborhoodProfileIdentityResolver.ts` found that the resolver generated three supported, exact, versioned Radar legacy encodings but rejected any result containing more than one matching alias record. That treated three distinct compatibility keys converging on the same canonical IRNI entity as an ambiguity, even though the ambiguity is the conflicting target or duplicate key—not the existence of multiple legacy encodings.
+
+The resolver now:
+
+- accepts multiple distinct matching legacy keys only when every key occurs exactly once;
+- requires every matching alias to be eligible for automatic resolution;
+- requires all matched keys to converge on exactly one canonical geographic entity ID;
+- rejects duplicate keys or multiple canonical targets as `IRNI_ALIAS_AMBIGUOUS`;
+- continues to fetch and validate the canonical entity at the same pinned registry revision.
+
+Added a regression test with all three supported legacy encodings converging on one canonical entity; retained the conflicting-alias rejection test. Updated the neighborhood-profile reference design to describe the exact convergence rule. The dedicated resolver suite now contains nine tests by inspection; execution is not verified because the latest commit has no reported CI runs/status checks. No local runner, upstream IRNI repository, binding, database, secret or deployment was changed.
