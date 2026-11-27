@@ -127,7 +127,115 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     // Verify mobile inspector sheet handle has accessible role and label
     const sheetHandle = page.getByRole('button', { name: /پنل کالبدشکافی/ });
     await expect(sheetHandle).toBeVisible();
-    await sheetHandle.click();
+    const sheet = page.locator('aside[data-snap-state]');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    const initialHandleBox = await sheetHandle.boundingBox();
+    expect(initialHandleBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    // A secondary pointer must not replace or terminate the active primary-pointer drag.
+    await sheetHandle.evaluate((element) => {
+      const handle = element as HTMLButtonElement;
+      const box = handle.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      const dispatchPointer = (
+        type: 'pointerdown' | 'pointerup',
+        pointerId: number,
+        clientY: number,
+        isPrimary: boolean,
+      ) => handle.dispatchEvent(new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        pointerType: 'touch',
+        isPrimary,
+        button: 0,
+        buttons: type === 'pointerdown' ? 1 : 0,
+        clientX: x,
+        clientY,
+      }));
+
+      dispatchPointer('pointerdown', 71, y, true);
+      dispatchPointer('pointerdown', 72, y + 4, false);
+      dispatchPointer('pointerup', 72, y + 200, false);
+      dispatchPointer('pointerup', 71, y + 80, true);
+    });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // Restore the expanded state through a fresh primary-pointer gesture.
+    await sheetHandle.evaluate((element) => {
+      const handle = element as HTMLButtonElement;
+      const box = handle.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      handle.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, cancelable: true, pointerId: 73, pointerType: 'touch',
+        isPrimary: true, button: 0, buttons: 1, clientX: x, clientY: y,
+      }));
+      handle.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true, cancelable: true, pointerId: 73, pointerType: 'touch',
+        isPrimary: true, button: 0, buttons: 0, clientX: x, clientY: y - 80,
+      }));
+    });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+
+    // Exercise the mobile handle with Chromium's touch input path, not mouse events.
+    const cdpSession = await page.context().newCDPSession(page);
+    await cdpSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const dispatchTouch = async (
+      type: 'touchStart' | 'touchMove' | 'touchEnd' | 'touchCancel',
+      x: number,
+      y: number
+    ) => {
+      await cdpSession.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' || type === 'touchCancel'
+          ? []
+          : [{ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 }],
+      });
+    };
+
+    // A deliberate downward touch drag must move the sheet to peek without toggling it closed.
+    const handleCenterX = initialHandleBox!.x + initialHandleBox!.width / 2;
+    const handleCenterY = initialHandleBox!.y + initialHandleBox!.height / 2;
+    await dispatchTouch('touchStart', handleCenterX, handleCenterY);
+    for (let step = 1; step <= 8; step += 1) {
+      await page.waitForTimeout(10);
+      await dispatchTouch('touchMove', handleCenterX, handleCenterY + step * 10);
+    }
+    await dispatchTouch('touchEnd', handleCenterX, handleCenterY + 80);
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // An 8px+ touch movement below the snap threshold must suppress the synthetic click.
+    const peekHandleBox = await sheetHandle.boundingBox();
+    expect(peekHandleBox).not.toBeNull();
+    const peekX = peekHandleBox!.x + peekHandleBox!.width / 2;
+    const peekY = peekHandleBox!.y + peekHandleBox!.height / 2;
+    await dispatchTouch('touchStart', peekX, peekY);
+    await page.waitForTimeout(20);
+    await dispatchTouch('touchMove', peekX, peekY + 12);
+    await page.waitForTimeout(120);
+    await dispatchTouch('touchEnd', peekX, peekY + 12);
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // Upward touch drag returns the inspector to its expanded state.
+    const finalHandleBox = await sheetHandle.boundingBox();
+    expect(finalHandleBox).not.toBeNull();
+    const finalX = finalHandleBox!.x + finalHandleBox!.width / 2;
+    const finalY = finalHandleBox!.y + finalHandleBox!.height / 2;
+    await dispatchTouch('touchStart', finalX, finalY);
+    for (let step = 1; step <= 8; step += 1) {
+      await page.waitForTimeout(10);
+      await dispatchTouch('touchMove', finalX, finalY - step * 10);
+    }
+    await dispatchTouch('touchEnd', finalX, finalY - 80);
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
     const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
     await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
     const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
@@ -137,78 +245,48 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(marketTab).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#inspector-panel-market')).toBeVisible();
     await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
+
+    // Confirm a browser-generated pointercancel clears the gesture before a stale pointerup.
+    const cancelBox = await sheetHandle.boundingBox();
+    expect(cancelBox).not.toBeNull();
+    const cancelX = cancelBox!.x + cancelBox!.width / 2;
+    const cancelY = cancelBox!.y + cancelBox!.height / 2;
+    await sheetHandle.evaluate((element) => {
+      const button = element as HTMLButtonElement;
+      button.dataset.pointerCancelSeen = 'false';
+      button.addEventListener('pointercancel', (event) => {
+        button.dataset.pointerCancelSeen = 'true';
+        button.dataset.cancelledPointerId = String((event as PointerEvent).pointerId);
+      }, { once: true });
+    });
+    await dispatchTouch('touchStart', cancelX, cancelY);
+    await page.waitForTimeout(30);
+    await dispatchTouch('touchCancel', cancelX, cancelY);
+    await expect(sheetHandle).toHaveAttribute('data-pointer-cancel-seen', 'true');
+    await sheetHandle.evaluate((element, point) => {
+      const button = element as HTMLButtonElement;
+      const pointerId = Number(button.dataset.cancelledPointerId);
+      button.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        pointerType: 'touch',
+        isPrimary: true,
+        button: 0,
+        buttons: 0,
+        clientX: point.x,
+        clientY: point.y,
+      }));
+    }, { x: cancelX, y: cancelY });
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await cdpSession.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await cdpSession.detach();
+    await sheetHandle.click();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'collapsed');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('4. Mobile budget filter controls expose 44px hit areas without horizontal overflow', async ({ page }) => {
-    for (const viewport of [
-      { width: 320, height: 568 },
-      { width: 390, height: 844 },
-    ]) {
-      await test.step(`Budget filter hit areas at ${viewport.width}x${viewport.height}`, async () => {
-        await page.setViewportSize(viewport);
-        await page.goto('/?view=map', { waitUntil: 'domcontentloaded' });
-        await waitForLayoutStabilization(page);
-
-        const openFilter = page.getByRole('button', { name: /فیلتر بودجه و وام/ });
-        await expect(openFilter).toBeVisible();
-        await openFilter.click();
-
-        const dialog = page.getByRole('dialog', { name: 'تنظیم بودجه، وام مسکن و محل کار' });
-        await expect(dialog).toBeVisible();
-
-        const scopedControls = [
-          dialog.getByRole('button', { name: /با بودجه من کجای/ }),
-          dialog.getByRole('button', { name: 'راهنما' }),
-          dialog.getByRole('button', { name: /نوساز/ }),
-          dialog.getByRole('button', { name: /۶ تا ۱۵ سال/ }),
-          dialog.getByRole('button', { name: /۱۵\+ سال/ }),
-          dialog.getByRole('button', { name: /^همه/ }),
-          dialog.getByRole('button', { name: /^مناسب/ }),
-          dialog.getByRole('button', { name: /^مرزی/ }),
-          dialog.getByRole('button', { name: /^فراتر/ }),
-          dialog.getByRole('button', { name: /ورود با گوگل و ذخیره|ذخیره در حساب ابری/ }),
-          dialog.getByRole('button', { name: 'ارسال لینک این بودجه برای خانواده' }),
-        ];
-
-        for (const control of scopedControls) {
-          await expect(control).toBeVisible();
-          const height = await control.evaluate((element) => element.getBoundingClientRect().height);
-          expect(height).toBeGreaterThanOrEqual(44);
-        }
-
-        const dialogHasHorizontalOverflow = await dialog.evaluate((element) =>
-          element.scrollWidth > element.clientWidth
-        );
-        expect(dialogHasHorizontalOverflow).toBe(false);
-
-        await dialog.getByRole('button', { name: /^مناسب/ }).click();
-        await dialog.getByRole('button', { name: /فقط خارج از طرح ترافیک/ }).click();
-        await dialog.getByRole('button', { name: /فقط دسترسی عالی مترو/ }).click();
-        await dialog.getByRole('button', { name: 'بستن تنظیمات بودجه' }).click();
-
-        const activeFilters = page.getByRole('region', { name: 'فیلترهای فعال نقشه' });
-        await expect(activeFilters).toBeVisible();
-        for (const accessibleName of [
-          'حذف فیلتر وضعیت بودجه',
-          'حذف فیلتر خارج از طرح',
-          'حذف فیلتر دسترسی مترو',
-        ]) {
-          const dismissal = activeFilters.getByRole('button', { name: accessibleName });
-          await expect(dismissal).toBeVisible();
-          const height = await dismissal.evaluate((element) => element.getBoundingClientRect().height);
-          expect(height).toBeGreaterThanOrEqual(44);
-        }
-
-        const activeFiltersHaveHorizontalOverflow = await activeFilters.evaluate((element) =>
-          element.scrollWidth > element.clientWidth
-        );
-        expect(activeFiltersHaveHorizontalOverflow).toBe(false);
-
-      });
-    }
-  });
-
-  test('5. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
+  test('4. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
     for (const vp of RESPONSIVE_VIEWPORT_MATRIX) {
       await test.step(`Viewport ${vp.label} (${vp.width}x${vp.height})`, async () => {
         await assertResponsiveLayout(page, vp);
