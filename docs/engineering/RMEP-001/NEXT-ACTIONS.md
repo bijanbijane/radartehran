@@ -56,3 +56,7 @@ Updated: 2026-11-27
 31. Inspect the TRIAD-002 updated race test and all six TRIAD-003 scenarios for runtime outcomes; fix only actual failures.
 
 31. Re-check the latest CI run metadata after issue #49 is resolved. Do not rerun unchanged workflows while runner_id remains 0 or the job has zero steps.
+
+32. Verify direct consent-revocation bypass tests in TRIAD-001 and the updated HTTP/Queue race and stale-revision assertions in TRIAD-002.
+33. Run npm test and npm run typecheck only after runner assignment is restored; then run Wrangler local D1/Worker integration against isolated databases with migrations 0007 and 0008.
+34. Do not proceed to Firestore adapter replacement until TRIAD-001/002/003 pass and their runtime behavior is evidenced.
