@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-005",
+  "package_id": "DESIGN-MAP-006",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -33,7 +33,9 @@
     "Created DESIGN-MAP-004 unified panel state architecture handoff with typed transition contract, geometry reconciliation, and regression acceptance criteria.",
     "Inspected active-branch NeighborhoodInspectorDrawer and NeighborhoodInspectorTabs information hierarchy, tab semantics, header evidence badges, scorecard modules, and mobile sheet composition.",
     "Reviewed PAGE-02 acceptance status and identified the need to distinguish observed listing evidence, reference baselines, estimates, community reports, and live signals at the point of use.",
-    "Created DESIGN-MAP-005 neighborhood inspector information hierarchy and data provenance specification; no application code changed."
+    "Created DESIGN-MAP-005 neighborhood inspector information hierarchy and data provenance specification; no application code changed.",
+    "Inventoried active-branch map workspace z-index declarations, fixed viewport anchors, inspector backdrop/surface, mobile navigation safe-bottom padding, map toolbar offsets, and workspace status/validation overlays.",
+    "Documented semantic overlay layer roles, interaction/focus invariants, safe-area and visual-viewport requirements, responsive test matrix, and explicit limits of source-only stacking analysis in DESIGN-MAP-006; no application code changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -55,7 +57,10 @@
     "Keep neighborhood identity, mode/budget fit, and one mode-relevant price anchor as the persistent inspector header hierarchy.",
     "Place evidence class and sample coverage adjacent to price claims; never imply complete-market coverage or live freshness without source evidence.",
     "Keep scorecard, market, bargains, reviews, and vote as distinct task-oriented tabs with tailored empty/loading/error and disclosure behavior.",
-    "Prioritize scorecard affordability decisions above secondary calculators and deep analytical modules; defer long content without hiding methodology."
+    "Prioritize scorecard affordability decisions above secondary calculators and deep analytical modules; defer long content without hiding methodology.",
+    "Treat overlay z-index values as semantic layer roles governed by a workspace contract; inspect stacking-context ancestry and portal ownership before changing numeric tokens.",
+    "Position map utilities against a shared measured mobile-navigation/safe-area contract rather than undocumented per-breakpoint bottom offsets.",
+    "Treat source z-index inventory as risk evidence only; rendered overlap requires computed styles, bounding boxes, and pointer/focus verification."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -72,14 +77,20 @@
     "panel_state_architecture": "DOCUMENTED — NOT RUNTIME VERIFIED",
     "inspector_information_hierarchy_source_review": "VERIFIED",
     "inspector_information_hierarchy": "DOCUMENTED — NOT RUNTIME VERIFIED",
-    "data_provenance_contract": "DOCUMENTED — NOT RUNTIME VERIFIED"
+    "data_provenance_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "overlay_z_index_source_inventory": "VERIFIED",
+    "overlay_semantic_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "stacking_context_ancestry": "NOT VERIFIED",
+    "safe_area_visual_viewport": "NOT RUN",
+    "overlay_pointer_focus_ownership": "NOT RUN"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
     "Schematic prototype is not a real map and must not be treated as spatially accurate.",
     "Frontend implementation remains unauthorized.",
     "Desktop Commander MacBook-Air.local remains offline; DESIGN-MAP-004 component/browser integration tests and rendered geometry cannot be captured.",
-    "DESIGN-MAP-005 responsive hierarchy, rendered content density, and keyboard/screen-reader behavior remain unverified because browser/device inspection is unavailable."
+    "DESIGN-MAP-005 responsive hierarchy, rendered content density, and keyboard/screen-reader behavior remain unverified because browser/device inspection is unavailable.",
+    "DESIGN-MAP-006 computed stacking contexts, safe-area geometry, visual-viewport behavior, and overlay hit testing remain unverified without an available browser/device."
   ],
-  "next_exact_action": "Reconnect development browser/device; validate DESIGN-MAP-002/004/005 together across mobile and desktop viewports, RTL/LTR keyboard navigation, provenance states, and panel overlap; then request explicit frontend implementation authorization."
+  "next_exact_action": "Reconnect development browser/device; validate DESIGN-MAP-002/004/005/006 together across viewport, safe-area, overlay, focus, and RTL/LTR matrices; reconcile semantic layers with global modal/portal ownership; then request explicit frontend implementation authorization."
 }
