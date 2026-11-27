@@ -106,12 +106,6 @@ function extractPolygonRings(geometry: PolygonGeometry): LinearRingCoords[][] {
   return geometry.coordinates as LinearRingCoords[][];
 }
 
-function extractOuterRings(geometry: PolygonGeometry): LinearRingCoords[] {
-  return extractPolygonRings(geometry)
-    .map((polygon) => polygon[0])
-    .filter((ring): ring is LinearRingCoords => Array.isArray(ring) && ring.length > 0);
-}
-
 export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValidationReport {
   const issues: PolygonValidationReport['issues'] = [];
   if (!geometry || (geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon')) {
