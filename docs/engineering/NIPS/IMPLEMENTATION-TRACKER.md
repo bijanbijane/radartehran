@@ -113,7 +113,7 @@ All five runs concluded FAILURE. The root quality-gate job was rerun through Git
 ## 7. Migration, deployment and safety state
 
 - No NIPS migration has been applied.
-- The existing Radar SQL file named `NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql` is design-only and still refers to the superseded proposed database name `radar-profile-db`. It must not be applied. Reconcile the document with the shared IRNI-owned physical database and owner-side migration process.
+- The Radar SQL file `NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql` remains design-only and must not be applied. Its header now correctly identifies the existing shared physical `radar-neighborhood-db` (IRNI-owned), `nips_` logical tables, and the requirement for owner-controlled migrations plus a separately versioned, authenticated IRNI RPC. Radar must not bind the database directly.
 - Do not add NIPS tables to `USER_DB` or `RESEARCH_DB`.
 - Do not add a fourth NIPS database.
 - Do not add a direct D1 binding from Radar API to `radar-neighborhood-db`.
@@ -194,3 +194,37 @@ The existing IRNI schema-evolution document says no migration has been executed 
 - Corrected `radar-backend-triad.yml` from nonexistent `test:geo` to existing `test:geography-catalog`.
 - Re-fetched and verified the workflow commands and package script definitions match.
 - Latest branch code/config head at this checkpoint: `e006fda6be0bff13df920b3cdd6b3cdcba117651`. Five Actions workflows still fail with null steps and missing logs; no tests are marked passed.
+
+
+## 12. CHK-203 — GitHub-only continuation, dependency inventory and ownership-document reconciliation
+
+**Inspection date:** 2026-11-27. **Runtime code/config HEAD at start of this checkpoint:** `2f5969683b1da75df04f4ac38e17e162590ddfaf`. **Documentation branch HEAD at start:** `93328807ff66153827cc05a4c6c72acabe6d4080`. PR #67 remains OPEN / DRAFT / NOT MERGED.
+
+### GitHub Actions evidence
+
+- Latest PR #67 runs on `93328807ff66153827cc05a4c6c72acabe6d4080`: #45987832174 (Backend Triad), #45987830960 (Native Auth), #45987830877 (IRNI RPC), #45987830888 (Root CI), and #45987830940 (Path-Filtered Checks) all report FAILURE.
+- Their jobs have zero recorded steps. Job-log retrieval for jobs 140467847417, 140467847508 and 140467846977 returned `BlobNotFound`.
+- The persistent engineering progress log records raw job payload evidence from the broader PR set, including `runner_id: 0`, blank runner name, zero steps and immediate completion, reproduced by rerunning PR #81. The best-supported classification is GitHub Actions runner allocation failure before workflow commands execute. This is not evidence that npm ci, TypeScript, tests or application source failed.
+- No GitHub Actions command-level pass is claimed. No local Node/npm execution was performed in this GitHub-only continuation.
+
+### Dependency audit — exact package inventory recovered from the recorded audit JSON and branch lockfile
+
+- `npm audit --json`: 21 findings — 14 moderate, 5 high, 2 critical; dependency metadata: 286 production, 492 development, 297 optional, 3 peer entries (862 total).
+- Critical, development-only test toolchain: direct `vitest@3.2.7` (manifest range `^3.0.8`) and transitive `tinypool@1.1.1`. Advisories: GHSA-5gmw-xhrv-c9v3 and GHSA-85c8-ppgw-ccpr. The audit reports a major-version fix candidate `vitest@5.1.2`; compatibility has not been tested.
+- High, production dependency paths: direct `firebase@12.19.0` (manifest range `^12.12.0`), `@firebase/firestore@4.17.2`, transitive `@grpc/grpc-js@1.9.16`; direct `sharp@0.33.5` (root and API workspace). The audit reports major-version fix candidates `firebase@9.14.0` and `sharp@0.35.5`. `firebase-admin@13.10.0` is also a direct production dependency (root and API workspace) and has moderate findings; the audit reports `14.5.1` as a major-version fix candidate.
+- The current branch still imports `firebase-admin/app` and `firebase-admin/firestore` in `src/utils/serverAdminAndTelegramSecurity.ts`, and `sharp` in `src/utils/objectStorageUpload.ts`. These are real legacy Express/runtime migration paths; removing packages before replacing those paths would break the backend. The browser compatibility facade `src/firebase.ts` itself does not import the Firebase SDK, but the root manifest and Vite optimize/manual chunk configuration still mention Firebase packages.
+- No dependency was upgraded or removed. Do not use `npm audit fix --force`; fix candidates include major-version changes and require package/lockfile regeneration plus tests.
+
+### NIPS ownership/documentation consistency
+
+- Corrected `server/modules/neighborhood-profile/README.md`: NIPS is a separate logical data domain using `nips_*` tables inside the existing shared physical `radar-neighborhood-db`; IRNI owns the physical database and migration authority. Radar must call a separate authenticated/versioned IRNI RPC and must not have a direct D1 binding. USER_DB and RESEARCH_DB remain isolated.
+- Corrected the header of `NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql` to match that decision. It remains design-only, not a migration.
+- No schema migration, repository adapter, RPC route, D1 binding, deployment or data mutation was created.
+
+### Current status and next work
+
+- NIPS domain foundation: IMPLEMENTED at source level; no runtime tests executed in this continuation.
+- NIPS persistence / IRNI storage RPC / canonical geography Service Binding: BLOCKED pending owner-side implementation and verified contract.
+- Dependency security remediation: FINDINGS_INVENTORIED; REMEDIATION_NOT_STARTED.
+- GitHub Actions: BLOCKED before runner allocation; no source-level test conclusion.
+- Next: keep work GitHub-only; map every Firebase Admin/Firestore and Sharp call path to its Cloudflare-native replacement; prepare package/lockfile changes only when a runnable verification path exists. Keep PR #67 Draft and do not merge, deploy, provision or migrate.
