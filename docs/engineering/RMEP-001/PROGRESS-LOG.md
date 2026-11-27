@@ -1364,3 +1364,16 @@
 - **Deliverable:** docs/engineering/RMEP-001/LEGAL-REGULATORY-D1-MIGRATION-DESIGN.md specifies the relational projection model, indexes, conditional D1 transaction-guard protocol, parity tests, migration/reconciliation sequence, and explicit no-fallback cutover requirements.
 - **Blocker:** legal-regulatory owning D1 database/binding is not approved; radar_researcher_db is only a candidate. No D1 schema, adapter, migration, or production composition change was made.
 - **Status:** DESIGN_COMPLETE / IMPLEMENTATION_BLOCKED. PR #78 remains Draft; no merge/deploy/production data mutation.
+
+
+## 2026-11-27 — Concurrent outbox retry counter hardening and consent-barrier audit
+
+- **Finding 1:** The outbox failure path computed `attempts` from the row scan and wrote that stale value back. Two overlapping failed workers could both scan attempt_count=0 and both write 1, losing one retry increment. The unavailable-RESEARCH_DB path was already using an atomic increment, but its backoff timestamp could still be overwritten by an earlier retry time.
+- **Fix:** Both retry paths now increment `attempt_count` in SQL, calculate the exponential backoff from the current row value inside the UPDATE, and use `MAX(next_retry_at_ms, ...)` so a later retry deadline cannot be shortened. The success transition also increments atomically and only updates PENDING/RETRY_PENDING rows.
+- **Regression:** Added a deterministic overlapping-worker test in `tests/rt-db-triad-001.test.ts`. It forces two invocations to read the same PENDING row before either retry update, injects RESEARCH_DB failure, then asserts attempt_count=2 and the 40-second backoff corresponding to the second attempt.
+- **Files:** `worker/account-lifecycle/workerLifecycleRuntime.ts`; `tests/rt-db-triad-001.test.ts`.
+- **Commits:** source `e95035c297ffee5a667b79328efd25096d4a9809`; regression `d0faff86e79dde909faeb3cacbfa57e65e55ae37`.
+- **Verification:** Re-read both updated files and checked the final SQL bindings and test interleaving. Tests and typecheck were NOT run: local executor is Offline. GitHub runs 45990057254, 45990057424, 45990057265 and 45990057325 all failed with runner_id=0 and zero steps; no code-level checks executed.
+- **Finding 2:** RT-DB-TRIAD-003 consent revocation primitives/migrations are not integrated into active runtime. HTTP ingestion lacks leased permits; Queue ingestion uses the older consent helper; event writes omit consent_revision and fence checks; privacy route updates consent directly without starting/draining/reconciling revocation; dormant tests expect APIs not exported by the active service.
+- **Decision:** Do not claim consent revocation erasure is complete. Next implementation package is the full permit + revision fence + revocation outbox orchestration across HTTP, Queue and account privacy routes, followed by activating and running the six-scenario TRIAD-003 suite.
+- **CI diagnosis:** Updated issue #49 with fresh PR #67/#79 runner evidence earlier in this session. PR #78 adds another reproduction on the exact code/test head above. The runner problem remains account-level and unresolved; no blind reruns or workflow permission weakening.
