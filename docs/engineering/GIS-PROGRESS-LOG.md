@@ -96,3 +96,16 @@
 - All four job records expose `steps=null`; GitHub log retrieval returned `BlobNotFound`. Broader PR workflows also concluded failure with no step metadata.
 - These are confirmed failed workflow conclusions, not evidence of which command/assertion failed. GIS tests and typecheck remain **NOT VERIFIED**. No passing result is claimed.
 - PR #72 remains Draft/open. No merge or production modification occurred.
+
+
+## 2026-11-27 — Durable boundary-history integrity and bbox diagnostics
+
+**Code revision:** `76b27e99840dcd486375c5fb5be76e85027ec041`  
+**Review:** [Draft PR #72](https://github.com/bijanbijane/radartehran/pull/72)
+
+- Persisted snapshot validation now scans every boundary history rather than only the first fixed subset.
+- It rejects non-array histories, non-object boundary records, history-key/entity-ID mismatch, duplicate boundary IDs, invalid/duplicate/non-monotonic version sequences, and more than one ACTIVE record per entity.
+- Record counting was made defensive for malformed persisted structures so validation can return a controlled error report instead of throwing while counting.
+- Boundary bbox overlap diagnostics now use an entity history only when it has exactly one ACTIVE record; corrupt histories are not reduced to an arbitrary first version.
+- Regression tests were added for duplicate ACTIVE snapshot recovery, entity mismatch, malformed histories/records, late malformed history, long version histories, and ambiguous-history exclusion in bbox diagnostics.
+- Exact-head GIS PR run `45980072524`: both typecheck and geometry/boundary regression jobs failed with `steps=null`; log retrieval returned `BlobNotFound`. Path-filtered detection also failed. It is not established whether any test command executed; results remain **NOT VERIFIED**.
