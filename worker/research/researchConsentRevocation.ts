@@ -159,8 +159,17 @@ export async function revokeUserResearchConsentWithBarrier(params: {
       const latest = await getUserPrivacyConsentFromD1(userDb, params.uid);
       if (latest.researchAnalyticsConsent) {
         await cancelUnappliedRevocationIntent(userDb, existingJob.revocationId);
+        throw error;
       }
-      throw error;
+      const canonicalJob = await readRevocationJob(userDb, existingJob.revocationId);
+      if (
+        latest.consentRevision !== existingJob.newConsentRevision ||
+        !canonicalJob ||
+        canonicalJob.uid !== params.uid ||
+        canonicalJob.revokedConsentRevision !== existingJob.revokedConsentRevision ||
+        canonicalJob.newConsentRevision !== existingJob.newConsentRevision
+      ) throw error;
+      privacy = latest;
     }
     if (privacy.consentRevision !== existingJob.newConsentRevision) {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
