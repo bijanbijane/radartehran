@@ -18,7 +18,8 @@
     "The geography geometry engine implements WGS84 validation, ring closure, self-intersection checks, hole containment, point-in-polygon and selected CRS transformations.",
     "Geospatial service persistence is AtomicJsonRepository('geospatial-state.json') with optional remote repository-snapshot persistence, not a relational D1 schema.",
     "wrangler.backend.jsonc declares USER_DB, DB, RESEARCH_DB and IRNI_GEOGRAPHY; no Radar-owned GIS D1 binding is declared.",
-    "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it."
+    "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it.",
+    "Profile evidence builder now explicitly rejects sourceProvenance=computed_hex_fallback even if an injected source resolver returns publishable authority; regression test added but not executed."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -44,19 +45,49 @@
       "id": "GIS-PERSISTENCE-001",
       "status": "VERIFIED_BY_SOURCE_INSPECTION",
       "summary": "Confirmed Geospatial boundary/POI/overlay/import state is persisted through geospatial-state.json AtomicJsonRepository and optional remote snapshots, not a D1 relational schema."
+    },
+    {
+      "id": "GIS-GUARD-001",
+      "status": "IMPLEMENTED_NOT_TESTED",
+      "summary": "Added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test that simulates an over-permissive source resolver."
     }
   ],
-  "completed_work_packages": [
-    {"id":"GIS-GUARD-001","status":"IMPLEMENTED_NOT_TESTED","summary":"Added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test that simulates an over-permissive source resolver."}
-  ],
   "blockers": [
-    {"id":"GIS-BLK-001","severity":"CRITICAL","description":"No authenticated, version-pinned IRNI Worker-to-Express identity resolver bridge is wired."},
-    {"id":"GIS-BLK-002","severity":"CRITICAL","description":"Trusted source-registry resolver is not implemented or injected."},
-    {"id":"GIS-BLK-003","severity":"HIGH","description":"Boundary approval HTTP route lacks injected admin token verification and authorization store."},
-    {"id":"GIS-BLK-004","severity":"HIGH","description":"Current IRNI neighborhood entities are point-only; no verified neighborhood polygons or measured areas are available."},
-    {"id":"GIS-BLK-005","severity":"HIGH","description":"D1 RTree virtual-table runtime support has not been demonstrated against an actual D1 Worker binding."},
-    {"id":"GIS-BLK-006","severity":"MEDIUM","description":"Geometry validation needs explicit tests for hole-ring intersections, overlapping MultiPolygon components and cross-neighborhood topology."},
-    {"id":"GIS-BLK-007","severity":"HIGH","description":"Radar geospatial state is not stored in a relational D1 schema; storage owner and migration boundary for Radar-owned GIS records are unresolved."}
+    {
+      "id": "GIS-BLK-001",
+      "severity": "CRITICAL",
+      "description": "No authenticated, version-pinned IRNI Worker-to-Express identity resolver bridge is wired."
+    },
+    {
+      "id": "GIS-BLK-002",
+      "severity": "CRITICAL",
+      "description": "Trusted source-registry resolver is not implemented or injected."
+    },
+    {
+      "id": "GIS-BLK-003",
+      "severity": "HIGH",
+      "description": "Boundary approval HTTP route lacks injected admin token verification and authorization store."
+    },
+    {
+      "id": "GIS-BLK-004",
+      "severity": "HIGH",
+      "description": "Current IRNI neighborhood entities are point-only; no verified neighborhood polygons or measured areas are available."
+    },
+    {
+      "id": "GIS-BLK-005",
+      "severity": "HIGH",
+      "description": "D1 RTree virtual-table runtime support has not been demonstrated against an actual D1 Worker binding."
+    },
+    {
+      "id": "GIS-BLK-006",
+      "severity": "MEDIUM",
+      "description": "Geometry validation needs explicit tests for hole-ring intersections, overlapping MultiPolygon components and cross-neighborhood topology."
+    },
+    {
+      "id": "GIS-BLK-007",
+      "severity": "HIGH",
+      "description": "Radar geospatial state is not stored in a relational D1 schema; storage owner and migration boundary for Radar-owned GIS records are unresolved."
+    }
   ],
   "tests": {
     "identified": [
@@ -65,10 +96,18 @@
       "server/modules/geography/__tests__/employee18Geography.test.ts"
     ],
     "executed_in_this_session": [],
-    "implemented_not_executed": ["tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression"],
+    "implemented_not_executed": [
+      "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression"
+    ],
     "note": "Repository source inspection and current public D1 documentation review only; no local test runner or live D1 runtime was executed."
   },
-  "production_changes": {"migrations":false,"data_mutations":false,"deployment":false,"merge":false,"release":false},
+  "production_changes": {
+    "migrations": false,
+    "data_mutations": false,
+    "deployment": false,
+    "merge": false,
+    "release": false
+  },
   "next_exact_action": "Run tests/neighborhood-profile-boundary-read-model.test.ts and the relevant geospatial typecheck in a real checkout; then add an equivalent guard to property-to-neighborhood assignment if any route can persist computed_hex_fallback as a boundary record.",
   "updated_at": "2026-11-27"
 }
