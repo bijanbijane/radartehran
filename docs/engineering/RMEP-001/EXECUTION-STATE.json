@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "ef1023a6f3a8d9368698005890183f52d3b2b462",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 runtime, deterministic revocation/outbox identity, expected-revision CAS, stale-intent cleanup, post-drain registry rescan and seven-scenario regression committed; npm test includes TRIAD-001/002/003; Backend Triad workflow filters include TRIAD-001/003; no test/typecheck execution because hosted runners fail before steps; local MacBook Offline",
-    "last_verified_commit": "7b4330e19603327aca6c662e3b43db2f8b606cf7"
+    "head_commit": "91226a55389ccf77e25b1dc070678d3f6c1fb9cd",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 runtime and seven-scenario regression committed; npm test runs all three DB triad suites; CI path filters include TRIAD-001/003 tests; hosted Actions jobs continue failing before runner assignment; no test/typecheck execution; local MacBook Offline",
+    "last_verified_commit": "91226a55389ccf77e25b1dc070678d3f6c1fb9cd"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -33,11 +33,11 @@
     "next_task_id": "BE-013"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-202-TRIAD-003-RACE-CLOSURE-AND-CI-TRIGGER-RECONCILIATION",
-    "checkpoint_timestamp_utc": "2026-11-27T12:10:41Z",
-    "last_safe_operation": "Completed deterministic consent-revocation job/outbox identity, expectedConsentRevision CAS and stale-intent cleanup; ensured revocation always reconciles and re-scans the subject registry only after all active permits drain; added Scenario 7 for a completed ingestion racing the initial registry snapshot. Added recent-auth requirement for privacy reconciliation and workflow path filters for TRIAD-001/003 tests.",
-    "last_completed_operation": "Committed TRIAD-003 race closure, seven-scenario regression, TRIAD-002 permit-drain test alignment, migration 0008 unique revocation identity/outbox retry index, npm test integration for all triad suites, workflow path updates, and refreshed engineering docs. Updated issue #49 with current runner/job evidence. Re-read current GitHub source, workflow and PR state. No test/typecheck/build/migration/deployment or production mutation executed.",
-    "next_exact_action": "Resolve hosted GitHub Actions runner allocation through issue #49 or reconnect the local executor. Then run npm test, npm run typecheck, Worker/API typecheck and Backend Triad bundle checks against the exact latest PR #78 head; capture actual output and fix demonstrated failures only. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
+    "checkpoint_id": "CHK-203-TRIAD-003-IMPLEMENTED-AWAITING-RUNNER",
+    "checkpoint_timestamp_utc": "2026-11-27T12:12:08Z",
+    "last_safe_operation": "Completed post-drain registry rescan and deterministic consent-revocation/outbox identity with expected-revision CAS and stale-intent cleanup; added the seventh race regression; enabled all triad tests in npm test and added dedicated workflow path filters for TRIAD-001/003.",
+    "last_completed_operation": "Source and tests were re-read from GitHub; docs, workflow path filters and issue #49 updated. Latest Actions runs 45996474063, 45996473971, 45996473979 and 45996473964 were inspected at job level and failed before runner assignment with runner_id=0 and zero steps. No test/typecheck/build/migration/deployment or production data operation executed.",
+    "next_exact_action": "Resolve GitHub Actions hosted-runner allocation through issue #49 or reconnect the local executor. Then run npm test, npm run typecheck, Worker/API typecheck and Backend Triad bundle checks against the exact current PR #78 head. Capture actual output and fix demonstrated failures only. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
