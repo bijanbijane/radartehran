@@ -11,8 +11,8 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
   const [criterion, setCriterion] = useState<QuickRankingCriterionId>('budget_match'); const { filterRankingByViewport, viewportBounds, comparisonArc } = useMapAdvancedOverlayState();
   const nationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []);
   const currentSelectedHood = useMemo(
-    () => resolveSelectedNeighborhoodById(selectedHoodId, evaluatedNeighborhoods, nationwideHoods),
-    [evaluatedNeighborhoods, nationwideHoods, selectedHoodId]
+    () => resolveSelectedNeighborhoodById(selectedHoodId, evaluatedNeighborhoods, []),
+    [evaluatedNeighborhoods, selectedHoodId]
   );
   const scopedNeighborhoods = useMemo(() => {
     if (!filterRankingByViewport || !viewportBounds) return evaluatedNeighborhoods;
