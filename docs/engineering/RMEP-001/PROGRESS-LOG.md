@@ -1330,3 +1330,14 @@
 - **GitHub:** PR #78 remains Draft. Code head: 2b71c9a1eac38f02255f58c8676926de49a490de; execution-state update commit: 41b29102f964159a4ecc6d7c6fdebbabd109224a.
 - **CI:** On code head 2b71c9a, runs 45986000419 (Tehran Radar CI Quality Gates), 45986000574 (Cloudflare Native Auth Validation), 45986000519 (Path-Filtered Checks), and 45986000654 (Radar Backend Triad) failed. E2E/downstream path jobs were skipped. Job-step arrays are empty and log downloads return BlobNotFound; root causes remain unknown.
 - **Next:** Execute focused test and Worker typecheck; diagnose CI; then inspect USER_DB outbox concurrent status regressions and continue Express Firestore adapter retirement.
+
+
+## 2026-11-27 — USER_DB outbox stale-worker state protection
+- **Finding:** processPendingResearchErasureOutbox updated the outbox row to RETRY_PENDING in its catch path without checking the current status. A stale Worker that failed after a competing Worker committed COMPLETED could downgrade the durable deletion state.
+- **Fix:** Retry transition now applies only while the outbox status is PENDING or RETRY_PENDING. If no row is updated, the worker reads the current state; a valid COMPLETED row is counted as completed using its durable erased_events_count instead of being downgraded.
+- **Regression:** Added a deterministic stale-read/failure test that selects a PENDING item, simulates another Worker committing COMPLETED before the research DB call fails, then asserts the item and parent deletion job remain COMPLETED.
+- **Files:** worker/account-lifecycle/workerLifecycleRuntime.ts; tests/rt-db-triad-001.test.ts.
+- **Verification:** Source and USER_DB migration contract reviewed. Test/typecheck not run because MacBook remains Offline. Status: IMPLEMENTED_BUT_NOT_VERIFIED.
+- **Code head:** 043e25c7c044cf4375fd40b68bbd62bb02c8831a. Execution-state commit: 15764b32b5268253ed59a9df52b902b3ee398190.
+- **CI:** Latest four workflows on this head failed (runs 45986606294, 45986606317, 45986606333, 45986606330); logs and step metadata remain unavailable. Root cause unknown.
+- **Next:** Run focused triad test and Worker typecheck; inspect CI logs; decide whether a durable outbox processing lease is still necessary after status-transition fencing.
