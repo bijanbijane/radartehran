@@ -99,13 +99,17 @@ function segmentsProperlyIntersect(
     ((d3 > 1e-10 && d4 < -1e-10) || (d3 < -1e-10 && d4 > 1e-10));
 }
 
-function extractOuterRings(geometry: PolygonGeometry): LinearRingCoords[] {
+function extractPolygonRings(geometry: PolygonGeometry): LinearRingCoords[][] {
   if (geometry.type === 'Polygon') {
-    const coords = geometry.coordinates as LinearRingCoords[];
-    return coords.length > 0 ? [coords[0]] : [];
+    return [geometry.coordinates as LinearRingCoords[]];
   }
-  const multi = geometry.coordinates as LinearRingCoords[][];
-  return multi.map((poly) => poly[0]).filter((r): r is LinearRingCoords => Array.isArray(r) && r.length > 0);
+  return geometry.coordinates as LinearRingCoords[][];
+}
+
+function extractOuterRings(geometry: PolygonGeometry): LinearRingCoords[] {
+  return extractPolygonRings(geometry)
+    .map((polygon) => polygon[0])
+    .filter((ring): ring is LinearRingCoords => Array.isArray(ring) && ring.length > 0);
 }
 
 export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValidationReport {
@@ -117,8 +121,10 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
     };
   }
 
-  const rings = extractOuterRings(geometry);
-  if (rings.length === 0) {
+  const polygons = extractPolygonRings(geometry);
+  const outerRings = polygons.map((polygon) => polygon[0])
+    .filter((ring): ring is LinearRingCoords => Array.isArray(ring) && ring.length > 0);
+  if (outerRings.length === 0) {
     return {
       valid: false,
       issues: [{ code: 'TOO_FEW_VERTICES', message: 'Geometry has no outer rings.' }],
@@ -130,65 +136,100 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
   let minLng = 180;
   let maxLng = -180;
 
-  for (const ring of rings) {
-    if (!Array.isArray(ring) || ring.length < 4) {
+  for (const polygon of polygons) {
+    if (!Array.isArray(polygon) || polygon.length === 0) {
       issues.push({
         code: 'TOO_FEW_VERTICES',
-        message: 'A linear ring must contain at least 4 coordinates (3 distinct vertices + closing vertex).',
+        message: 'Each polygon must contain an outer ring.',
       });
       continue;
     }
 
-    const first = ring[0];
-    const last = ring[ring.length - 1];
-    if (Math.abs(first[0] - last[0]) > 1e-7 || Math.abs(first[1] - last[1]) > 1e-7) {
-      issues.push({
-        code: 'UNCLOSED_RING',
-        message: 'Polygon linear ring must be closed (first and last vertex must match).',
-      });
-    }
-
-    let signedArea2 = 0;
-    for (let i = 0; i < ring.length; i++) {
-      const [lng, lat] = ring[i];
-      const check = normalizeAndValidateCoordinate(lat, lng);
-      if (!check.valid) {
+    for (let ringIndex = 0; ringIndex < polygon.length; ringIndex += 1) {
+      const ring = polygon[ringIndex];
+      if (!Array.isArray(ring) || ring.length < 4) {
         issues.push({
-          code: 'INVALID_COORDINATE',
-          message: check.errorMessage ?? 'Invalid vertex coordinate in polygon.',
+          code: 'TOO_FEW_VERTICES',
+          message: 'Every polygon ring must contain at least 4 coordinates (3 distinct vertices + closing vertex).',
+        });
+        continue;
+      }
+
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (!Array.isArray(first) || !Array.isArray(last)
+        || Math.abs(first[0] - last[0]) > 1e-7
+        || Math.abs(first[1] - last[1]) > 1e-7) {
+        issues.push({
+          code: 'UNCLOSED_RING',
+          message: 'Every polygon ring must be closed (first and last vertex must match).',
         });
       }
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-      if (lng < minLng) minLng = lng;
-      if (lng > maxLng) maxLng = lng;
 
-      if (i < ring.length - 1) {
-        const [nextLng, nextLat] = ring[i + 1];
-        signedArea2 += lng * nextLat - nextLng * lat;
-      }
-    }
-
-    if (Math.abs(signedArea2) < 1e-10) {
-      issues.push({
-        code: 'DEGENERATE_ZERO_AREA',
-        message: 'Polygon ring has zero or near-zero area.',
-      });
-    }
-
-    // Check non-adjacent segment self-intersections
-    const segCount = ring.length - 1;
-    let foundSelfIntersect = false;
-    for (let i = 0; i < segCount && !foundSelfIntersect; i++) {
-      for (let j = i + 2; j < segCount; j++) {
-        if (i === 0 && j === segCount - 1) continue; // adjacent at closing vertex
-        if (segmentsProperlyIntersect(ring[i], ring[i + 1], ring[j], ring[j + 1])) {
+      let signedArea2 = 0;
+      for (let i = 0; i < ring.length; i++) {
+        const position = ring[i];
+        if (!Array.isArray(position) || position.length < 2
+          || !Number.isFinite(position[0]) || !Number.isFinite(position[1])) {
           issues.push({
-            code: 'SELF_INTERSECTION',
-            message: `Polygon ring self-intersects between segments ${i} and ${j}.`,
+            code: 'INVALID_COORDINATE',
+            message: 'Polygon ring contains a malformed coordinate position.',
           });
-          foundSelfIntersect = true;
-          break;
+          continue;
+        }
+        const [lng, lat] = position;
+        const check = normalizeAndValidateCoordinate(lat, lng);
+        if (!check.valid) {
+          issues.push({
+            code: 'INVALID_COORDINATE',
+            message: check.errorMessage ?? 'Invalid vertex coordinate in polygon.',
+          });
+        }
+        if (ringIndex === 0) {
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+        }
+
+        if (i < ring.length - 1) {
+          const next = ring[i + 1];
+          if (Array.isArray(next) && next.length >= 2
+            && Number.isFinite(next[0]) && Number.isFinite(next[1])) {
+            signedArea2 += lng * next[1] - next[0] * lat;
+          }
+        }
+      }
+
+      if (Math.abs(signedArea2) < 1e-10) {
+        issues.push({
+          code: 'DEGENERATE_ZERO_AREA',
+          message: 'Polygon ring has zero or near-zero area.',
+        });
+      }
+
+      // Check non-adjacent segment self-intersections on both outer and inner rings.
+      const segCount = ring.length - 1;
+      let foundSelfIntersect = false;
+      for (let i = 0; i < segCount && !foundSelfIntersect; i++) {
+        for (let j = i + 2; j < segCount; j++) {
+          if (i === 0 && j === segCount - 1) continue;
+          const a1 = ring[i];
+          const a2 = ring[i + 1];
+          const b1 = ring[j];
+          const b2 = ring[j + 1];
+          if (
+            Array.isArray(a1) && Array.isArray(a2) && Array.isArray(b1) && Array.isArray(b2)
+            && a1.length >= 2 && a2.length >= 2 && b1.length >= 2 && b2.length >= 2
+            && segmentsProperlyIntersect(a1, a2, b1, b2)
+          ) {
+            issues.push({
+              code: 'SELF_INTERSECTION',
+              message: `Polygon ring self-intersects between segments ${i} and ${j}.`,
+            });
+            foundSelfIntersect = true;
+            break;
+          }
         }
       }
     }
@@ -200,7 +241,6 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
     boundingBox: issues.length === 0 ? { minLat, maxLat, minLng, maxLng } : undefined,
   };
 }
-
 export function simplifyPolygonGeometry(geometry: PolygonGeometry, stepStride = 2): PolygonGeometry {
   const simplifyRing = (ring: LinearRingCoords): LinearRingCoords => {
     if (ring.length <= 6) return ring.map(([lng, lat]) => [Number(lng.toFixed(5)), Number(lat.toFixed(5))]);
@@ -261,35 +301,53 @@ function isPointOnSegment(
   return Math.hypot(px - projX, py - projY) <= epsilon;
 }
 
+function classifyPointInRing(
+  point: Wgs84Coordinate,
+  ring: LinearRingCoords,
+): 'INSIDE' | 'ON_EDGE' | 'OUTSIDE' {
+  if (ring.length < 4) return 'OUTSIDE';
+  for (let i = 0; i < ring.length - 1; i++) {
+    if (isPointOnSegment(point, ring[i], ring[i + 1])) return 'ON_EDGE';
+  }
+
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+    const intersects = yi > point.lat !== yj > point.lat
+      && point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi + 1e-15) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside ? 'INSIDE' : 'OUTSIDE';
+}
+
 export function classifyPointInPolygon(
   point: Wgs84Coordinate,
   geometry: PolygonGeometry,
 ): 'INSIDE' | 'ON_EDGE' | 'OUTSIDE' {
-  const rings = extractOuterRings(geometry);
-  for (const ring of rings) {
-    for (let i = 0; i < ring.length - 1; i++) {
-      if (isPointOnSegment(point, ring[i], ring[i + 1])) {
-        return 'ON_EDGE';
+  const polygons = extractPolygonRings(geometry);
+  for (const polygon of polygons) {
+    const outer = polygon[0];
+    if (!outer) continue;
+    const outerClassification = classifyPointInRing(point, outer);
+    if (outerClassification === 'ON_EDGE') return 'ON_EDGE';
+    if (outerClassification !== 'INSIDE') continue;
+
+    let excludedByHole = false;
+    for (const hole of polygon.slice(1)) {
+      const holeClassification = classifyPointInRing(point, hole);
+      if (holeClassification === 'ON_EDGE') return 'ON_EDGE';
+      if (holeClassification === 'INSIDE') {
+        excludedByHole = true;
+        break;
       }
     }
-
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const xi = ring[i][0];
-      const yi = ring[i][1];
-      const xj = ring[j][0];
-      const yj = ring[j][1];
-
-      const intersect =
-        yi > point.lat !== yj > point.lat &&
-        point.lng < ((xj - xi) * (point.lat - yi)) / (yj - yi + 1e-15) + xi;
-      if (intersect) inside = !inside;
-    }
-    if (inside) return 'INSIDE';
+    if (!excludedByHole) return 'INSIDE';
   }
   return 'OUTSIDE';
 }
-
 export function boundingBoxesOverlap(
   a: { minLat: number; maxLat: number; minLng: number; maxLng: number },
   b: { minLat: number; maxLat: number; minLng: number; maxLng: number },
