@@ -1303,3 +1303,10 @@
 - **Documentation operation:** Added `REMEDIATION-REGISTER.md`, `BLOCKERS.md`, and `NEXT-ACTIONS.md` under this directory. These record findings, external dependencies, and exact next actions. No runtime code, schema, binding, secret, production data, or deployment was changed.
 - **Verification:** GitHub confirmed successful creation of the three documentation commits. Source inspection and repository metadata only; no local Node/npm test execution was available in this GitHub-only session. Do not classify NIPS runtime or PR #67 as verified.
 - **Next action:** Recover raw GitHub Actions logs or reproduce the failing `detect` job, then diagnose each failing workflow separately. After CI evidence is available, continue with the paired IRNI NIPS storage RPC and the Radar adapter without direct D1 access.
+
+
+- **2026-11-27T10:00:00Z** | `RMEP-001` | `NIPS BACKEND RESUMPTION / CI DIAGNOSTICS` | `CHK-196-GITHUB-CI-RERUN-AND-BACKEND-RESUMPTION`
+  - **Action**: Reconciled live GitHub repository state: `main` baseline `456dcacb387b908797756863b10da1f7104b658e`, NIPS code head `9180bffe91577e9a53460fcf54e0058549813f0d`, and open PRs #67, #69, #70. Re-ran PR #67 root quality-gate job; GitHub accepted the rerun, but replacement job `140435161931` failed with no returned steps and log retrieval returned `BlobNotFound`.
+  - **Files Affected**: `docs/engineering/RMEP-001/EXECUTION-STATE.json`, `BLOCKERS.md`, `NEXT-ACTIONS.md`, `REMEDIATION-REGISTER.md`, `docs/engineering/NIPS/IMPLEMENTATION-TRACKER.md`, `PROGRESS-LOG.md`.
+  - **Verification**: GitHub repository/branch/PR metadata fetched; current CI conclusions and rerun job inspected. No source-level test was claimed or executed. No runtime code, migration, production binding, secret, deployment, merge or PR state changed.
+  - **Next Action**: Diagnose Actions runner/job initialization through GitHub UI or restored raw logs; then remediate the first reproducible command failure. Continue the paired IRNI-owned NIPS RPC only within the approved database boundary.
