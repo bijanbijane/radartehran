@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-012",
+  "package_id": "DESIGN-MAP-013",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -63,7 +63,9 @@
     "Audited ten active-branch overlay and navigation surfaces: notification previews, map legend, search dropdown, floating top bar, desktop mega menu, mobile more sheet, map tool rail, property gallery, spatial tools popover, and notification bell.",
     "Verified distinct non-modal and modal semantics, independent Escape listeners across document/window, map-context panel dismissal ownership, and coarse modal-presence suppression in SearchDropdownMenu; documented non-modal classification and keyboard precedence contract in DESIGN-MAP-011.",
     "Traced selected modal and transient overlay state writers across eleven active-branch files, including central useAppUiState, RadarWorkspaceShell transitions, FloatingTopBar, ProductViewRouter, neighborhood entry points, and modal aggregators.",
-    "Verified global Escape handler in useAppUiState clears a broad set of unrelated modal/map/search flags and FloatingTopBar independently clears four top-bar overlay flags; documented source-level event propagation conflict, partial shell closeFloatingMapPanels coordination, selected writer inventory, and regression contract in DESIGN-MAP-012."
+    "Verified global Escape handler in useAppUiState clears a broad set of unrelated modal/map/search flags and FloatingTopBar independently clears four top-bar overlay flags; documented source-level event propagation conflict, partial shell closeFloatingMapPanels coordination, selected writer inventory, and regression contract in DESIGN-MAP-012.",
+    "Expanded modal entrypoint and mount audit across AppModalsPortal, URL synchronization, ProductViewRouter, FloatingTopBar, RadarWorkspaceShell, and modal implementations for Share, Compare, Shortlist, Smart Suggest, Agency, Nationwide Province, Onboarding, Reverse Budget, and Expansion.",
+    "Verified Compare state is written by URL/history synchronization; reverse-budget is shell-local and separately portaled; admin modal flag is consumed by route navigation; AppModalsPortal is a conditional React aggregator rather than a universal portal host. Documented the expanded entrypoint/mounting matrix and regression criteria in DESIGN-MAP-013."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -105,7 +107,9 @@
     "A modal stack takes priority over non-modal overlays; exactly one active topmost dismissible surface may consume Escape, and only topmost modal traps Tab.",
     "Route MapToolRail, FloatingTopBar, MapLegend, SearchDropdownMenu, notification previews, and spatial tools through one workspace overlay owner.",
     "Remove global close-all-on-Escape behavior in favor of a single overlay authority that dismisses exactly one active topmost dismissible surface.",
-    "Use explicit shell transitions for map-context mutual exclusion while preserving unrelated map layers, spatial points, and selected context according to declared transition policy."
+    "Use explicit shell transitions for map-context mutual exclusion while preserving unrelated map layers, spatial points, and selected context according to declared transition policy.",
+    "Include URL/history, shell-local state, lazy mounting, direct portal surfaces, and route replacement in the overlay transition model; button-only writer inventories are insufficient.",
+    "Treat route navigation such as admin as a route transition, not a modal stack entry, unless product architecture explicitly changes."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -166,7 +170,13 @@
     "global_escape_close_all": "SOURCE BEHAVIOR VERIFIED — RUNTIME NOT REPRODUCED",
     "floating_topbar_escape_multi_close": "SOURCE BEHAVIOR VERIFIED — RUNTIME NOT REPRODUCED",
     "shell_map_panel_transition_coordination": "PARTIAL SOURCE COORDINATION VERIFIED — NOT A GLOBAL OVERLAY AUTHORITY",
-    "overlay_transition_runtime": "NOT RUN — BROWSER/DEVICE UNAVAILABLE"
+    "overlay_transition_runtime": "NOT RUN — BROWSER/DEVICE UNAVAILABLE",
+    "overlay_entrypoint_source_review": "VERIFIED — EXPANDED ENTRYPOINT AND MOUNTING PATHS REVIEWED",
+    "compare_url_state_writer": "SOURCE VERIFIED — URL/HISTORY SYNCHRONIZATION WRITES COMPARE STATE; RUNTIME NOT RUN",
+    "reverse_budget_state_ownership": "SOURCE VERIFIED — SHELL-LOCAL STATE AND DIRECT PORTAL; ESCAPE RUNTIME NOT VERIFIED",
+    "admin_modal_route_transition": "SOURCE VERIFIED — FLAG CONSUMED INTO /admin NAVIGATION",
+    "app_modals_portal_architecture": "SOURCE VERIFIED — CONDITIONAL REACT AGGREGATOR, NOT UNIVERSAL PORTAL HOST",
+    "overlay_entrypoint_inventory": "EXPANDED AND VERIFIED FOR LISTED FAMILIES — GLOBAL COMPLETENESS NOT VERIFIED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -182,7 +192,8 @@
     "DESIGN-MAP-009 runtime validation remains blocked: no connected browser/device to reproduce stacked modal, primitive-dialog, non-modal overlay, keyboard, or focus-restoration behavior.",
     "DESIGN-MAP-010 RadarSheet multi-instance Escape/Tab/focus behavior and modality semantics require connected browser/device reproduction; application implementation remains unauthorized.",
     "DESIGN-MAP-011 requires browser/device reproduction of Escape precedence, modal-over-popover behavior, focus restoration, and outside-click ownership; frontend implementation remains unauthorized.",
-    "DESIGN-MAP-012 browser/DOM regression and device QA remain blocked; selected state writers are traced but full repository-wide overlay writer graph remains open. Frontend implementation remains unauthorized."
+    "DESIGN-MAP-012 browser/DOM regression and device QA remain blocked; selected state writers are traced but full repository-wide overlay writer graph remains open. Frontend implementation remains unauthorized.",
+    "DESIGN-MAP-013 component-specific focus and Escape behavior for HedonicValuationModal, NeighborhoodPriceTrendModal, and modals/InstantListingVerifierModal remain to be audited; URL/history and reverse-budget transitions require browser reproduction."
   ],
-  "next_exact_action": "Complete source writer inventory for remaining admin, share, compare, shortlist, smart-suggest, agency, listing-verifier, nationwide-province, onboarding, reverse-budget, and expansion surfaces; build a full transition matrix. Reproduce one-Escape-one-close in browser/device after reconnection. Implement only after explicit frontend implementation authorization."
+  "next_exact_action": "Audit HedonicValuationModal, NeighborhoodPriceTrendModal, and the correctly located src/components/modals/InstantListingVerifierModal.tsx for focus refs, Escape listeners, aria-modal semantics, portal ownership, and independent state transitions; then update the complete overlay matrix."
 }
