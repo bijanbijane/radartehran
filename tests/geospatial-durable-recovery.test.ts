@@ -175,6 +175,36 @@ async function runTests(): Promise<void> {
     (error) => error.startsWith('BOUNDARY_SIMPLIFIED_GEOMETRY_INVALID:bnd-1:'),
   ));
 
+  const malformedListing = sampleState();
+  (malformedListing.spatialListingsByCity as unknown as Record<string, unknown>).tehran = { listing-1: null };
+  assert.ok(validatePersistedGeospatialState(malformedListing).errors.includes(
+    'SPATIAL_LISTING_NOT_OBJECT:tehran:listing-1',
+  ));
+
+  const malformedListingCity = sampleState();
+  (malformedListingCity.spatialListingsByCity as unknown as Record<string, unknown>).tehran = null;
+  assert.ok(validatePersistedGeospatialState(malformedListingCity).errors.includes(
+    'SPATIAL_LISTING_CITY_NOT_OBJECT:tehran',
+  ));
+
+  const orphanDedupeReference = sampleState();
+  orphanDedupeReference.poiDedupeIndex['orphan-key'] = 'missing-poi';
+  assert.ok(validatePersistedGeospatialState(orphanDedupeReference).errors.includes(
+    'POI_DEDUPE_INDEX_REFERENCE_INVALID:orphan-key',
+  ));
+
+  const malformedOverlay = sampleState();
+  (malformedOverlay.overlayStore as unknown as Record<string, unknown>)['overlay-1'] = null;
+  assert.ok(validatePersistedGeospatialState(malformedOverlay).errors.includes(
+    'OVERLAY_RECORD_NOT_OBJECT:overlay-1',
+  ));
+
+  const malformedImportBatch = sampleState();
+  (malformedImportBatch.importBatches as unknown as Record<string, unknown>)['batch-1'] = null;
+  assert.ok(validatePersistedGeospatialState(malformedImportBatch).errors.includes(
+    'IMPORT_BATCH_NOT_OBJECT:batch-1',
+  ));
+
   const ready = assessGeospatialSnapshot(sampleState(), { remoteSnapshotPresent: true, snapshotRevision: 3 });
   assert.equal(ready.health, 'READY');
 
