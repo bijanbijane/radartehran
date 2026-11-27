@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "6b63d1560c0849b554da3c1f3627aaf3db9928d1",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; WORKER_JSON_BODY_STREAMING_BOUNDARY_AND_NIPS_PUBLIC_SERIALIZER_HARDENING_COMMITTED_IMPLEMENTED_NOT_VERIFIED; NO_ACTIONS_RUNS_FOR_LATEST_WORKER_COMMIT; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "3004fd05714137a6129212d1ca27e81f1660dff7",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; NIPS_PUBLIC_SERIALIZER_AND_WORKER_JSON_STREAMING_BOUNDARY_IMPLEMENTED_NOT_VERIFIED; FIVE_PR67_ACTIONS_RUNS_FAIL_WITHOUT_EXPOSED_STEPS_OR_LOGS; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-208-WORKER-JSON-STREAMING-BOUNDARY-IMPLEMENTED-NOT-VERIFIED",
-    "checkpoint_timestamp_utc": "2026-11-27T13:45:00.000Z",
-    "last_safe_operation": "Replaced unbounded request.text() buffering in Worker JSON parsing with byte-bounded stream reads, strict JSON media type and Content-Length validation, fatal UTF-8 decoding, and non-blocking stream cancellation. Added regression tests and reconciled RMEP records.",
-    "last_completed_operation": "Worker parser and tests are committed; source and tests were re-read from GitHub. No workflow runs/checks are associated with the latest code commit and no local Node executor was available, so runtime/type verification has not been performed. NIPS public serializer hardening remains implemented but unverified.",
-    "next_exact_action": "Obtain an authorized Node 22/npm 10 executor or functioning GitHub Actions runner. Run npm run test:worker first; then npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Fix actual failures and rerun. Keep both security changes IMPLEMENTED_BUT_NOT_VERIFIED until these checks execute.",
+    "checkpoint_id": "CHK-209-WORKER-CALLSITE-AUDIT-AND-CI-EVIDENCE-RECONCILIATION",
+    "checkpoint_timestamp_utc": "2026-11-27T14:00:00.000Z",
+    "last_safe_operation": "Re-inspected PR #67 head and all discovered readValidatedJsonBody call sites. Every inspected caller propagates parser status/code; body ceilings range from 4 KiB to 14 MiB. Confirmed five Actions runs are associated with current head; all fail, their jobs expose null/empty steps and log downloads return BlobNotFound.",
+    "last_completed_operation": "Static call-site audit found no caller that drops the parser's error status or code. The 14 MiB JSON/base64 upload route is the highest-memory caller and remains a bounded but potentially high transient-memory path; no change made without runtime measurements. No workflow command execution or passing test evidence is available.",
+    "next_exact_action": "Restore a usable GitHub Actions runner/log path or obtain an authorized Node 22/npm 10 executor. Run npm ci, npm run test:worker, npm run test:nips, npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Diagnose only command-level failures with actual step/log evidence.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -2015,7 +2015,6 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: GitHub Actions runner allocation fails before workflow execution. Latest PR #67 reruns #46005639001, #46005638842, #46005638770, #46005638783 and #46005638768 all fail; jobs 140527968883, 140527967743, 140527967160, 140527966504 and 140527966731 report runner_id=0, blank runner_name, zero steps and immediate completion. Job log downloads return BlobNotFound. No workflow command ran.",
     "B-002: NIPS persistence requires a separately versioned, authenticated, purpose-scoped IRNI-owned storage RPC and owner-side nips_ migration. Radar direct D1 binding to radar-neighborhood-db is prohibited.",
     "B-003: Version-pinned IRNI geography provider/Service Binding is not verified or available to the Radar runtime.",
     "B-004: Native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions execution.",
@@ -2025,7 +2024,9 @@
     "B-008: Browser Firebase SDK import guard in scripts/check-architecture.ts and tests/architecture-guardrails.test.ts is IMPLEMENTED_BUT_NOT_VERIFIED because no Actions runner executes steps.",
     "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified.",
     "B-010: NIPS public-profile serializer allow-list hardening and its nested-metadata disclosure regression are committed but unverified; all five Actions workflows fail before runner allocation. Run npm run test:nips and required type/architecture/security gates when an executor is available.",
-    "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification."
+    "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification.",
+    "B-001: GitHub Actions execution remains blocked before steps. Current PR #67 head 3004fd05714137a6129212d1ca27e81f1660dff7 has five associated failed runs (Native Auth 46008493815, IRNI RPC 46008493886, Backend Triad 46008493813, Root CI 46008493882, Path-Filtered 46008493914). Returned jobs expose null/empty steps; log retrieval returns BlobNotFound. No workflow command failure is established.",
+    "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit of nine route modules confirmed callers propagate parser status/code; body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route has a bounded but potentially high transient-memory profile; runtime measurements are unavailable. Run worker/backend gates before verification."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
