@@ -6,7 +6,7 @@
 
 | Command | Coverage | Current status in this session |
 |---|---|---|
-| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | NOT VERIFIED on HEAD 039ad4f17d70042f83cd67754a4f22b049ccd1c3 — both dedicated GIS runs failed before exposing any steps; logs unavailable |
+| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | NOT VERIFIED on HEAD `2d6c707303dc2e48723c3a8869e59984199c9608` — latest dedicated GIS jobs failed with no step metadata and logs unavailable |
 | `npm run test:unit` | Existing unit gates plus `test:geospatial` | Updated to include geospatial suite; NOT RUN by this session |
 | `npm run lint` | Repository lint | NOT RUN |
 | `npm run arch:check` | Architecture rules | NOT RUN |
@@ -135,3 +135,12 @@ GitHub log retrieval remains unavailable. Issue #49 records a matching hosted-ru
 - Spatial market summary returns null boundary version metadata when no unique ACTIVE boundary is present.
 - A sub-neighborhood edge point does not inherit a sub-neighborhood ID and does not qualify for valuation interior assignment.
 - Branch HEAD reviewed: `2d6c707303dc2e48723c3a8869e59984199c9608`. CI failure remains undiagnosed because GitHub exposes no job steps and logs are unavailable.
+
+
+## Sub-neighborhood edge regression — latest HEAD `2d6c707303dc2e48723c3a8869e59984199c9608`
+
+- A point strictly inside a parent neighborhood but exactly on the edge of a matched sub-neighborhood must be classified `RESOLVED_ON_EDGE`.
+- The resolver must not emit the sub-neighborhood ID for that edge match.
+- Valuation feature generation must reject the non-interior result.
+- Dedicated workflow run `45980848999`: GIS regression job `140444049218` and typecheck job `140444048835` concluded FAILURE; both expose no steps and logs return `BlobNotFound`. The regression is committed but NOT VERIFIED.
+- Retry of previous GIS run `45980295987` also failed (new job IDs `140442697746`, `140442699939`) with empty steps and unavailable logs.
