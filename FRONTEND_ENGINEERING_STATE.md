@@ -123,4 +123,12 @@
 - **Merge/deployment:** Not performed. PR remains Draft.
 - **Next exact action:** Obtain the failed check annotations/logs for PR #68, compare the failures against the same workflows on the base commit, then run `npm run lint`, `npm run arch:check`, the focused `tests/buyer-alert-contract.test.ts`, and `npm run build`. Only after those pass, inspect the drawer at mobile viewports (at minimum 320×568 and 390×844) and update this record.
 
+### Work Package FE-MOBILE-GESTURE-002
+- **Scope:** Prevent a short, non-snap-changing pointer movement on the mobile inspector handle from falling through to the button click handler and unintentionally toggling the sheet.
+- **Branch / PR:** `fix/frontend-mobile-sheet-handle-target-2026-11-27` / [PR #68](https://github.com/bijanbijane/radartehran/pull/68) (Draft).
+- **Implementation:** `src/components/NeighborhoodInspectorDrawer.tsx` now classifies pointer movement of at least 8 CSS pixels as a drag before calculating the next snap state. The click handler therefore suppresses the synthetic click following a drag, even when the gesture does not cross the 45px snap threshold.
+- **Regression guard:** `tests/buyer-alert-contract.test.ts` now asserts the movement guard and click-suppression branch alongside the existing 44px touch-target and accessible-name checks.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. GitHub confirmed commits `e682efa8b637c4b1886407933bb843dc680d3465` (component) and `6ff99b9ef6ff5dd24b3d82794b00fc5f8baf728c` (regression assertion). No local test, typecheck, build, or browser run was possible because the registered MacBook Air device is offline.
+- **CI comparison:** The same repository CI Quality Gates workflow on the current `main` commit `456dcacb387b908797756863b10da1f7104b658e` also concluded `failure` (run `45837739418`), with the primary job reporting no step details. This confirms the failure predates this frontend branch, but does not establish the exact platform-side cause.
+- **Next action:** Inspect the new CI runs for the updated PR head; when a runner is available, run `npm run lint`, `npm run arch:check`, `npx tsx tests/buyer-alert-contract.test.ts`, and `npm run build`; then visually test 320×568 and 390×844 mobile viewports. Keep the PR Draft until all required verification passes.
 
