@@ -1,6 +1,6 @@
 # NIPS Backend Profile Structure — v1
 
-**Status:** Backend domain schema scaffold; no persistence, API, ingestion, or production integration.
+**Status:** Runtime foundation implemented on a feature branch. The owner approved sharing the existing physical `radar-neighborhood-db` on 2026-11-27. The Radar API must not receive a direct D1 binding to this database: NIPS storage must be accessed through a separately versioned, authenticated RPC implemented by the database-owning IRNI Worker. NIPS tables use the `nips_` prefix and migrations remain under `migrations/neighborhood-d1`; IRNI canonical geography reads continue through the read-only `IRNI_GEOGRAPHY` RPC. No direct reads or writes to IRNI-owned registry tables are permitted.
 **Scope:** One canonical neighborhood profile. This is not a user profile and does not replace IRNI.
 **Design rule:** Begin from a clean profile contract. Legacy frontend profile structures are not authoritative schema inputs.
 
@@ -112,7 +112,7 @@ No buffer, display radius, Voronoi cell or fallback geometry may be represented 
 - Logical ERD and ownership boundaries: `docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-DATABASE-ERD-V1.md`
 - D1 logical schema reference (design only; never apply as a migration): `docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql`
 
-The proposed profile store is separate from IRNI, USER_DB and RESEARCH_DB. No D1 binding or migration has been created.
+NIPS is a separate logical data domain inside the existing shared physical D1 database `radar-neighborhood-db`, which is owned by IRNI. NIPS tables use the `nips_` prefix; the physical database is not separate from IRNI. The Radar API must not receive a direct D1 binding to this database. Only the database-owning IRNI Worker may expose NIPS persistence through a separately versioned, authenticated and purpose-scoped RPC. `USER_DB` and `RESEARCH_DB` remain isolated and are not substitutes. No owner-side NIPS storage RPC, D1 repository adapter, migration or write path is currently implemented or verified.
 
 ## 10. Current implementation status
 
@@ -139,3 +139,16 @@ The next engineering stage is to review this schema against actual IRNI, Source 
 - Publication readiness is product/audience/version-specific. The default public profile policy requires identity, geography, and evidence to be READY; optional domains may be READY, PARTIAL, UNAVAILABLE, or explicitly NOT_APPLICABLE.
 - Optional domains are not required to contain a metric merely to publish the profile. A policy may set per-required-domain minimum metric counts and a maximum blocked-metric count.
 - A published snapshot is validated against the exact policy supplied by the assembler. Persist the policy version and decision with the publication record; do not treat this default as a production approval.
+
+
+## 10. Runtime foundation added (2026-11-26)
+
+The implementation now includes:
+- Explicit mapping of the twelve NIPS catalog categories / 120 variable IDs into the fourteen profile domains. The \`history\` domain is cross-cutting rather than a catalog category.
+- Golden Reference structural validation; the fixture cannot be treated as real neighborhood data.
+- Strict deterministic JSON serialization and SHA-256 snapshot content hashing.
+- Confirmed-identity-gated profile assembly and profile/readiness validation.
+- Separate publication decisions, immutable snapshot repository port and compare-and-swap activation contract.
+- Public allow-list serialization that suppresses values without PUBLIC_REDISTRIBUTION or DERIVED_ONLY evidence permission.
+
+The repository port is intentionally not wired to USER_DB or RESEARCH_DB and has no direct D1 binding. The approved target is the shared physical `radar-neighborhood-db`, owned by IRNI. The owner-side NIPS storage RPC, D1 repository adapter, additive `nips_` migration, migration-ledger verification and transactional integration tests are still absent. A production adapter, route mounting and migrations remain blocked until IRNI implements and verifies that owner-controlled contract. See \`docs/engineering/NIPS-NEIGHBORHOOD-PROFILE-V2/NIPS-BACKEND-IMPLEMENTATION-FOUNDATION-V1.md\`.

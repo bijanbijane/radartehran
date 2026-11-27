@@ -89,7 +89,14 @@ test('publication policy allows optional domains to be unavailable while enforci
     metadata: { profileId: 'nips:neighborhood:test', schemaVersion: '1.0.0', profileVersion: 1, publicationState: 'PUBLISHED',
       createdAt: '2026-11-26T00:00:00Z', assembledAt: '2026-11-26T00:00:00Z', publishedAt: '2026-11-26T00:00:00Z', assemblyBuildId: 'test',
       methodologyVersion: '1', publicationPolicyVersion: '1.0.0', sourceWatermarks: {}, contentHash: null },
-    identity: envelope('identity', 'READY'),
+    identity: {
+      ...envelope('identity', 'READY'),
+      data: {
+        canonicalEntityId: 'irni:neighborhood:test',
+        registryRevision: 1,
+        identityStatus: 'CONFIRMED_CANONICAL',
+      },
+    },
     domains,
     quality: { domainCount: 14, readyDomainCount: 3, partialDomainCount: 0, blockedDomainCount: 0,
       staleDomainCount: 0, publishableMetricCount: 0, blockedMetricCount: 0, unavailableMetricCount: 0, overallReasons: [] },

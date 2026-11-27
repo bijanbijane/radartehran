@@ -44,7 +44,30 @@ verify('Current workspace passes runArchitectureCheck() with zero blocking viola
   );
 });
 
-// 2. Failing Case: Newly added oversized file (>= 500 lines) is rejected
+// 2. Client boundary: every Firebase SDK/Admin package is forbidden in browser modules
+verify('Guardrail rejects Firebase client and Admin SDK imports from browser modules', () => {
+  const result = runArchitectureCheck({
+    rootDir,
+    virtualOverrides: [
+      {
+        relPath: 'src/components/IllegalFirebaseAuthImport.tsx',
+        content: `import { getAuth } from 'firebase/auth';\nexport const auth = getAuth();\n`,
+      },
+      {
+        relPath: 'src/platform/IllegalFirebaseCoreImport.ts',
+        content: `import { initializeApp } from '@firebase/app';\nexport const app = initializeApp({});\n`,
+      },
+      {
+        relPath: 'src/features/IllegalFirebaseAdminImport.ts',
+        content: `import { getFirestore } from 'firebase-admin/firestore';\nexport const db = getFirestore();\n`,
+      },
+    ],
+  });
+  const violations = result.errors.filter((item) => item.code === 'CLIENT_FIREBASE_SDK_IMPORT');
+  assert.equal(violations.length, 3, `Expected all 3 Firebase SDK imports to be rejected, got: ${JSON.stringify(violations)}`);
+});
+
+// 3. Failing Case: Newly added oversized file (>= 500 lines) is rejected
 verify('Guardrail rejects newly created non-baseline file exceeding 500 lines (NEW_FILE_OVERSIZED)', () => {
   const fakeLines = Array.from({ length: 505 }, (_, i) => `export const line_${i} = ${i};`).join('\n');
   const result = runArchitectureCheck({

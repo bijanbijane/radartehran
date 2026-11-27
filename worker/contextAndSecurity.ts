@@ -208,8 +208,8 @@ export async function readValidatedJsonBody(
   request: Request,
   maxBytes = 32 * 1024
 ): Promise<ValidatedJsonBodyResult> {
-  const contentType = (request.headers.get('content-type') || '').toLowerCase();
-  if (!contentType.includes('application/json')) {
+  const contentType = (request.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
+  if (contentType !== 'application/json') {
     return {
       ok: false,
       body: {},
@@ -219,38 +219,88 @@ export async function readValidatedJsonBody(
     };
   }
 
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+    throw new RangeError('maxBytes must be a non-negative safe integer');
+  }
+
   const contentLengthHeader = request.headers.get('content-length');
-  if (contentLengthHeader && Number(contentLengthHeader) > maxBytes) {
-    return {
-      ok: false,
-      body: {},
-      status: 413,
-      code: 'PAYLOAD_TOO_LARGE',
-      messageFa: 'حجم بدنه درخواست بیش از سقف مجاز است.',
-    };
+  if (contentLengthHeader !== null) {
+    if (!/^\d+$/.test(contentLengthHeader.trim())) {
+      return {
+        ok: false,
+        body: {},
+        status: 400,
+        code: 'INVALID_CONTENT_LENGTH',
+        messageFa: 'طول بدنه درخواست نامعتبر است.',
+      };
+    }
+    const declaredLength = Number(contentLengthHeader);
+    if (!Number.isSafeInteger(declaredLength) || declaredLength > maxBytes) {
+      return {
+        ok: false,
+        body: {},
+        status: 413,
+        code: 'PAYLOAD_TOO_LARGE',
+        messageFa: 'حجم بدنه درخواست بیش از سقف مجاز است.',
+      };
+    }
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  const reader = request.body?.getReader();
+
+  if (reader) {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+          // Do not await the underlying source's cancel hook: it may never settle.
+          void reader.cancel('Request body exceeds configured byte limit').catch(() => undefined);
+          return {
+            ok: false,
+            body: {},
+            status: 413,
+            code: 'PAYLOAD_TOO_LARGE',
+            messageFa: 'حجم بدنه درخواست بیش از سقف مجاز است.',
+          };
+        }
+        chunks.push(value);
+      }
+    } catch {
+      return {
+        ok: false,
+        body: {},
+        status: 400,
+        code: 'BODY_READ_FAILED',
+        messageFa: 'خواندن بدنه درخواست ناموفق بود.',
+      };
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
   }
 
   let rawText: string;
   try {
-    rawText = await request.text();
+    rawText = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     return {
       ok: false,
       body: {},
       status: 400,
-      code: 'BODY_READ_FAILED',
-      messageFa: 'خواندن بدنه درخواست ناموفق بود.',
-    };
-  }
-
-  const byteLength = new TextEncoder().encode(rawText).byteLength;
-  if (byteLength > maxBytes) {
-    return {
-      ok: false,
-      body: {},
-      status: 413,
-      code: 'PAYLOAD_TOO_LARGE',
-      messageFa: 'حجم بدنه درخواست بیش از سقف مجاز است.',
+      code: 'INVALID_JSON_BODY',
+      messageFa: 'ساختار JSON ارسالی نامعتبر است.',
     };
   }
 
