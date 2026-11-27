@@ -17,7 +17,7 @@ export interface ArchitectureBaselineConfig {
 export interface FileViolation {
   file: string;
   severity: 'ERROR' | 'WARN' | 'LEGACY_TRACKED';
-  code: 'NEW_FILE_OVERSIZED' | 'LEGACY_FILE_GREW' | 'DATASET_EXCEEDED_CAP' | 'DATASET_IMPORTS_UI' | 'UPWARD_DEPENDENCY' | 'SIZE_REVIEW_WARNING' | 'LEGACY_DEBT_NOTICE' | 'CLIENT_FIRESTORE_IMPORT';
+  code: 'NEW_FILE_OVERSIZED' | 'LEGACY_FILE_GREW' | 'DATASET_EXCEEDED_CAP' | 'DATASET_IMPORTS_UI' | 'UPWARD_DEPENDENCY' | 'SIZE_REVIEW_WARNING' | 'LEGACY_DEBT_NOTICE' | 'CLIENT_FIRESTORE_IMPORT' | 'CLIENT_FIREBASE_SDK_IMPORT';
   lines: number;
   limit: number;
   message: string;
@@ -34,6 +34,28 @@ export interface ArchitectureCheckResult {
 export interface VirtualFileOverride { relPath: string; content: string; }
 
 const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', '__tests__']);
+
+const CLIENT_MODULE_PREFIXES = [
+  'src/app/',
+  'src/components/',
+  'src/data/',
+  'src/design-system/',
+  'src/features/',
+  'src/interaction-system/',
+  'src/navigation/',
+  'src/platform/',
+] as const;
+
+function isBrowserClientModule(relPath: string): boolean {
+  return relPath === 'src/App.tsx' || relPath === 'src/main.tsx' ||
+    CLIENT_MODULE_PREFIXES.some((prefix) => relPath.startsWith(prefix));
+}
+
+function isFirebaseSdkImport(moduleSpecifier: string): boolean {
+  return moduleSpecifier === 'firebase' || moduleSpecifier.startsWith('firebase/') ||
+    moduleSpecifier === '@firebase' || moduleSpecifier.startsWith('@firebase/') ||
+    moduleSpecifier === 'firebase-admin' || moduleSpecifier.startsWith('firebase-admin/');
+}
 
 export function collectSourceFiles(rootDir: string): string[] {
   const seen = new Set<string>();
@@ -126,6 +148,17 @@ export function runArchitectureCheck(options?: {
         lines,
         limit: 0,
         message: `RT-DATA-001: '${relPath}' must not import client Firestore SDK. Use Express /api/* via src/platform/data/clientDataPolicy.ts.`,
+      });
+    }
+
+    if (isBrowserClientModule(relPath) && imports.some(isFirebaseSdkImport)) {
+      errors.push({
+        file: relPath,
+        severity: 'ERROR',
+        code: 'CLIENT_FIREBASE_SDK_IMPORT',
+        lines,
+        limit: 0,
+        message: `RT-DATA-001: '${relPath}' must not import Firebase client/Admin SDK packages. Use the Cloudflare session facade and same-origin API contracts.`,
       });
     }
 
