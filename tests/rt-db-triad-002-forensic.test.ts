@@ -1444,7 +1444,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         () => dispatch(makeEnvelope('q_after_revoke', 3)),
         (err: unknown) =>
           err instanceof QueueJobExecutionError &&
-          err.code === 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' &&
+          err.code === 'CONSENT_REVISION_STALE_OR_REVOKED' &&
           err.retryable === false,
       );
     });
