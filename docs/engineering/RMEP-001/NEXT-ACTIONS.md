@@ -60,3 +60,7 @@ Updated: 2026-11-27
 32. Verify direct consent-revocation bypass tests in TRIAD-001 and the updated HTTP/Queue race and stale-revision assertions in TRIAD-002.
 33. Run npm test and npm run typecheck only after runner assignment is restored; then run Wrangler local D1/Worker integration against isolated databases with migrations 0007 and 0008.
 34. Do not proceed to Firestore adapter replacement until TRIAD-001/002/003 pass and their runtime behavior is evidenced.
+
+
+35. **Next live Firestore adapter identified (audit only; no migration started):** community is mounted by apps/api/server.ts through registerCommunityRoutes. communityUnifiedRepository defaults to createDefaultCommunityDatabaseStore, which selects FirestoreAdminCommunityStore in production, emulator, or credentialed environments. It owns 16 social collections and transactional/idempotent operations. After TRIAD tests pass, map every community collection, transaction boundary, rate-limit/idempotency key, query/order/cursor and route contract before designing USER_DB/D1 migration. Do not change its store until D1 parity tests and an approved migration/rollback plan exist.
+36. Legal-regulatory is another mounted Firestore-backed module and remains a later candidate; it has explicit transaction and audit semantics and must not be replaced with a naive CRUD adapter.
