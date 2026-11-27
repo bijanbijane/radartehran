@@ -240,6 +240,17 @@ export async function updateUserPrivacyConsentInD1(
   const nowIso = params.nowIso ?? new Date().toISOString();
 
   const nextResearch = params.researchAnalyticsConsent ?? current.researchAnalyticsConsent;
+  if (nextResearch && !current.researchAnalyticsConsent) {
+    const pendingRevocation = await userDb
+      .prepare(
+        `SELECT revocation_id FROM research_consent_revocation_jobs
+         WHERE uid = ?1 AND status IN ('DRAINING_PERMITS', 'PENDING_ERASURE')
+         LIMIT 1`,
+      )
+      .bind(params.uid)
+      .first<{ revocation_id: string }>();
+    if (pendingRevocation) throw new Error('RESEARCH_CONSENT_REVOCATION_PENDING');
+  }
   const nextTelemetry = params.behavioralTelemetryConsent ?? current.behavioralTelemetryConsent;
   const nextMarketing = params.marketingCommunicationsConsent ?? current.marketingCommunicationsConsent;
   const consentVersion = (params.consentVersion ?? current.consentVersion ?? 'v1').trim().slice(0, 24);
