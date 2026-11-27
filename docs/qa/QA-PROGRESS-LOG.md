@@ -42,3 +42,26 @@
 
 ### Exact next action
 Inspect GitHub Actions account/repository runner eligibility and billing policy; once a runner is actually allocated, run `npm run test:contracts` first and capture the real test output.
+
+
+## 2026-11-27 16:42 +03:30 — Independent CI evidence refresh
+
+- Re-inspected repository metadata and confirmed the current `main` commit is `456dcacb387b908797756863b10da1f7104b658e`; the QA branch head before this documentation update was `c502b5f3f476fabf802535bd0499dafdaf6cab85`.
+- Confirmed PR #74 remains open, Draft, and unmerged. Existing QA work already includes `tests/nips-golden-reference.test.ts` (five substantive cases) and the `test:contracts` script integration; no duplicate test suite was created.
+- Retrieved GitHub Actions job metadata for the five latest PR workflows (run IDs: 46004991418, 46004991653, 46004991515, 46004991666, 46004991463). Each failed job had `runner_id=0`, empty `runner_name`, and `steps=[]`, completing within 1–2 seconds.
+- The primary CI job's log endpoint (job 140525806828) returned HTTP 404 `BlobNotFound`. No test command output exists. The primary Playwright job and three path-filtered downstream gates were skipped.
+- Latest observed test execution accounting remains **0 executed / 0 passed / 0 failed / 0 test-runner-skipped**. Workflow job failures before runner assignment are tracked separately and are not counted as test failures.
+- No confirmed application defect was reproduced. No application code, workflow configuration, production data, secrets, migrations, or deployment targets were changed in this reconciliation.
+
+### Latest CI evidence
+
+| Workflow | Run ID | Job ID | Result | Runner evidence |
+|---|---:|---:|---|---|
+| IRNI Geographic RPC Consumer Contract | 46004991418 | 140525804740 | Failed before runner | runner_id=0; steps=0 |
+| Cloudflare Native Auth Validation | 46004991653 | 140525805946 | Failed before runner | runner_id=0; steps=0 |
+| Radar Backend Triad & Frontend Service Binding | 46004991515 | 140525805246 | Failed before runner | runner_id=0; steps=0 |
+| Tehran Radar CI Quality Gates | 46004991666 | 140525806828 | Failed before runner | runner_id=0; steps=0; log BlobNotFound |
+| Tehran Radar Path-Filtered Checks | 46004991463 | 140525805962 | Failed before runner | runner_id=0; steps=0; downstream jobs skipped |
+
+### Exact next action
+Resolve hosted-runner eligibility/billing or repository Actions policy. Do not alter workflow YAML to compensate. Once a runner is allocated, execute `npm run test:contracts` first and capture actual test output.
