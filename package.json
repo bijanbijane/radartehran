@@ -117,5 +117,6 @@
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "vite": "^6.2.0"
-  }
+  },
+  "packageManager": "npm@10.9.2"
 }
