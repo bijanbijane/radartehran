@@ -211,6 +211,85 @@ function validatePoi(value: unknown, poiKey: string, errors: string[], limit: nu
   }
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validateSpatialListing(value: unknown, cityKey: string, listingKey: string, errors: string[], limit: number): void {
+  if (!isPlainRecord(value)) {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_NOT_OBJECT:${cityKey}:${listingKey}`);
+    return;
+  }
+  if (!isNonEmptyString(value.id) || value.id !== listingKey) {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_ID_KEY_MISMATCH:${cityKey}:${listingKey}`);
+  }
+  if (!isNonEmptyString(value.cityId) || value.cityId !== cityKey) {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_CITY_KEY_MISMATCH:${cityKey}:${listingKey}`);
+  }
+  const coordinates = value.coordinates;
+  if (!isPlainRecord(coordinates) || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number'
+    || !isFiniteCoord(coordinates.lat, coordinates.lng)) {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_COORDINATES_INVALID:${listingKey}`);
+  }
+  if (!isNonEmptyString(value.propertyId) || !isNonEmptyString(value.cityId)
+    || !Number.isSafeInteger(value.hoodId) || (value.hoodId as number) <= 0
+    || typeof value.sqm !== 'number' || !Number.isFinite(value.sqm) || value.sqm <= 0
+    || typeof value.priceMillion !== 'number' || !Number.isFinite(value.priceMillion) || value.priceMillion < 0
+    || !['PUBLISHED', 'DRAFT', 'ARCHIVED'].includes(String(value.publicationStatus))
+    || !['VERIFIED', 'PENDING', 'REJECTED'].includes(String(value.verificationStatus))
+    || typeof value.available !== 'boolean') {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_FIELDS_INVALID:${listingKey}`);
+  }
+  if (Object.prototype.hasOwnProperty.call(value, 'exactPrivateAddress') && value.exactPrivateAddress !== undefined
+    && typeof value.exactPrivateAddress !== 'string') {
+    pushValidationError(errors, limit, `SPATIAL_LISTING_PRIVATE_ADDRESS_INVALID:${listingKey}`);
+  }
+}
+
+function validateOverlay(value: unknown, key: string, errors: string[], limit: number): void {
+  if (!isPlainRecord(value)) {
+    pushValidationError(errors, limit, `OVERLAY_RECORD_NOT_OBJECT:${key}`);
+    return;
+  }
+  if (!isNonEmptyString(value.layerId) || value.layerId !== key
+    || !isNonEmptyString(value.cityId) || !isNonEmptyString(value.dataSourceReference)
+    || !Number.isSafeInteger(value.version) || (value.version as number) < 1
+    || !Number.isSafeInteger(value.featuresCount) || (value.featuresCount as number) < 0
+    || !isNonEmptyString(value.updatedAtIso)
+    || !['NEIGHBORHOOD_BOUNDARIES', 'DISTRICT_BOUNDARIES', 'PUBLISHED_LISTINGS', 'MARKET_PRICE_HEATMAP', 'POINTS_OF_INTEREST', 'TRANSIT_NETWORK', 'INTERNAL_ADMIN_AUDIT_LAYER'].includes(String(value.layerType))
+    || !['PUBLIC', 'ADMIN_ONLY'].includes(String(value.visibilityPolicy))
+    || !['PUBLIC_READ', 'PRIVILEGED_ADMIN'].includes(String(value.accessPolicy))
+    || !Object.prototype.hasOwnProperty.call(value, 'payload')) {
+    pushValidationError(errors, limit, `OVERLAY_FIELDS_INVALID:${key}`);
+  }
+  if (value.visibilityPolicy === 'ADMIN_ONLY' && value.accessPolicy !== 'PRIVILEGED_ADMIN') {
+    pushValidationError(errors, limit, `OVERLAY_ADMIN_POLICY_MISMATCH:${key}`);
+  }
+}
+
+function validateImportBatch(value: unknown, key: string, errors: string[], limit: number): void {
+  if (!isPlainRecord(value)) {
+    pushValidationError(errors, limit, `IMPORT_BATCH_NOT_OBJECT:${key}`);
+    return;
+  }
+  const counters = ['importedBoundariesCount', 'importedPoisCount', 'duplicateSkippedCount', 'conflictCount'];
+  if (!isNonEmptyString(value.batchId) || !isNonEmptyString(value.idempotencyKey) || value.idempotencyKey !== key
+    || typeof value.dryRun !== 'boolean'
+    || !['PREVIEW_READY', 'COMMITTED', 'PARTIAL_WITH_FAILURES'].includes(String(value.status))
+    || counters.some((field) => !Number.isSafeInteger(value[field]) || (value[field] as number) < 0)
+    || !Array.isArray(value.failedRecords)
+    || !isNonEmptyString(value.sourceProvenance) || !isNonEmptyString(value.processedAtIso)) {
+    pushValidationError(errors, limit, `IMPORT_BATCH_FIELDS_INVALID:${key}`);
+    return;
+  }
+  for (let i = 0; i < value.failedRecords.length; i += 1) {
+    const failure = value.failedRecords[i];
+    if (!isPlainRecord(failure) || !Number.isSafeInteger(failure.index) || (failure.index as number) < 0 || typeof failure.reason !== 'string') {
+      pushValidationError(errors, limit, `IMPORT_BATCH_FAILURE_INVALID:${key}:${i}`);
+    }
+  }
+}
+
 export function validatePersistedGeospatialState(
   state: unknown,
   options?: { maxErrors?: number },
@@ -280,6 +359,36 @@ export function validatePersistedGeospatialState(
 
   for (const [poiKey, poi] of Object.entries(s.poiStore)) {
     validatePoi(poi, poiKey, errors, maxErrors);
+  }
+
+  const validPoiIds = new Set(Object.entries(s.poiStore)
+    .filter(([key, value]) => isPlainRecord(value) && value.id === key)
+    .map(([key]) => key));
+  for (const [dedupeKey, poiId] of Object.entries(s.poiDedupeIndex)) {
+    if (!isNonEmptyString(dedupeKey) || !isNonEmptyString(poiId) || !validPoiIds.has(poiId)) {
+      pushValidationError(errors, maxErrors, `POI_DEDUPE_INDEX_REFERENCE_INVALID:${dedupeKey}`);
+    } else {
+      const poi = s.poiStore[poiId];
+      if (isPlainRecord(poi) && poi.dedupeKey !== dedupeKey) {
+        pushValidationError(errors, maxErrors, `POI_DEDUPE_INDEX_KEY_MISMATCH:${dedupeKey}`);
+      }
+    }
+  }
+
+  for (const [cityKey, cityListings] of Object.entries(s.spatialListingsByCity)) {
+    if (!isNonEmptyString(cityKey) || !isPlainRecord(cityListings)) {
+      pushValidationError(errors, maxErrors, `SPATIAL_LISTING_CITY_NOT_OBJECT:${cityKey}`);
+      continue;
+    }
+    for (const [listingKey, listing] of Object.entries(cityListings)) {
+      validateSpatialListing(listing, cityKey, listingKey, errors, maxErrors);
+    }
+  }
+  for (const [overlayKey, overlay] of Object.entries(s.overlayStore)) {
+    validateOverlay(overlay, overlayKey, errors, maxErrors);
+  }
+  for (const [batchKey, batch] of Object.entries(s.importBatches)) {
+    validateImportBatch(batch, batchKey, errors, maxErrors);
   }
 
   const counts = countRecords(s);
