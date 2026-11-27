@@ -13,7 +13,7 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "3004fd05714137a6129212d1ca27e81f1660dff7",
+    "head_commit": "ee6d5e490ac85410bb944c3bd2d27a79da5bd94a",
     "working_tree_status": "REMOTE_GITHUB_BRANCH; NIPS_PUBLIC_SERIALIZER_AND_WORKER_JSON_STREAMING_BOUNDARY_IMPLEMENTED_NOT_VERIFIED; FIVE_PR67_ACTIONS_RUNS_FAIL_WITHOUT_EXPOSED_STEPS_OR_LOGS; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
@@ -30,10 +30,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-209-WORKER-CALLSITE-AUDIT-AND-CI-EVIDENCE-RECONCILIATION",
-    "checkpoint_timestamp_utc": "2026-11-27T14:00:00.000Z",
+    "checkpoint_timestamp_utc": "2026-11-27T14:05:00.000Z",
     "last_safe_operation": "Re-inspected PR #67 head and all discovered readValidatedJsonBody call sites. Every inspected caller propagates parser status/code; body ceilings range from 4 KiB to 14 MiB. Confirmed five Actions runs are associated with current head; all fail, their jobs expose null/empty steps and log downloads return BlobNotFound.",
-    "last_completed_operation": "Static call-site audit found no caller that drops the parser's error status or code. The 14 MiB JSON/base64 upload route is the highest-memory caller and remains a bounded but potentially high transient-memory path; no change made without runtime measurements. No workflow command execution or passing test evidence is available.",
-    "next_exact_action": "Restore a usable GitHub Actions runner/log path or obtain an authorized Node 22/npm 10 executor. Run npm ci, npm run test:worker, npm run test:nips, npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Diagnose only command-level failures with actual step/log evidence.",
+    "last_completed_operation": "CHK-209 state, blocker and next-action records were reconciled. Current PR head CI evidence is five failed workflow runs with null/empty job steps and BlobNotFound logs; route call-site audit is complete. Runtime/type verification remains unavailable.",
+    "next_exact_action": "Restore usable Actions runner/log access or obtain an authorized Node 22/npm 10 executor. Execute npm ci, npm run test:worker, npm run test:nips, npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Do not mark the changes verified without actual passing command results.",
     "resume_status": "READY"
   },
   "execution_history": {
