@@ -32,6 +32,22 @@ export function normalizeSubmissionLocationPrecision(value: LocationPrecision): 
   return value === 'unavailable' ? 'unavailable' : 'neighborhood';
 }
 
+/** Downgrade legacy user-submitted records that mislabeled a neighborhood centroid as street-level. */
+export function normalizeUserSubmittedListingLocation(record: PropertyListingRecord): PropertyListingRecord {
+  if (record.listing.sourceKind !== 'user_submitted') return record;
+  const locationPrecision = normalizeSubmissionLocationPrecision(record.property.locationPrecision);
+  return {
+    ...record,
+    property: {
+      ...record.property,
+      lat: locationPrecision === 'unavailable' ? null : record.property.lat,
+      lng: locationPrecision === 'unavailable' ? null : record.property.lng,
+      locationPrecision,
+      privacyRadiusMeters: locationPrecision === 'unavailable' ? 0 : 600,
+    },
+  };
+}
+
 export interface SavedPropertySnapshot {
   listingId: string;
   titleSnapshot: string;
@@ -116,7 +132,7 @@ export function clearSubmissionDraft(uid?: string | null): void {
 }
 
 export function loadMyListings(uid?: string | null): PropertyListingRecord[] {
-  return readScopedStorageJson<PropertyListingRecord[]>(
+  const records = readScopedStorageJson<PropertyListingRecord[]>(
     MY_LISTINGS_KEY,
     [],
     uid,
@@ -127,10 +143,11 @@ export function loadMyListings(uid?: string | null): PropertyListingRecord[] {
           ) as PropertyListingRecord[])
         : null,
   );
+  return records.map(normalizeUserSubmittedListingLocation);
 }
 
 export function saveMyListings(items: PropertyListingRecord[], uid?: string | null): void {
-  writeScopedStorageJson(MY_LISTINGS_KEY, items, uid);
+  writeScopedStorageJson(MY_LISTINGS_KEY, items.map(normalizeUserSubmittedListingLocation), uid);
 }
 
 export function loadUserListingHistory(uid?: string | null): ListingHistoryEvent[] {
