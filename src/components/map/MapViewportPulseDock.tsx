@@ -64,7 +64,9 @@ export function computeViewportPulseSnapshot(params: {
   const inBounds = viewportBounds
     ? listNeighborhoodsInMapViewport(evaluatedNeighborhoods, viewportBounds)
     : [];
-  const usingFullCityFallback = !viewportBounds || inBounds.length === 0;
+  // Fall back to city-wide data only when no viewport has been established.
+  // An established viewport with zero matching neighborhoods is a genuine empty state.
+  const usingFullCityFallback = viewportBounds === null;
   const activeSet = usingFullCityFallback ? [...evaluatedNeighborhoods] : inBounds;
 
   const cityMedianBuyPerSqm = computeMedian(evaluatedNeighborhoods.map((h) => Number(h.buyPerSqm)));
