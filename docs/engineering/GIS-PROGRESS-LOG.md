@@ -212,3 +212,21 @@ Added a regression test with all three supported legacy encodings converging on 
 - Added focused client tests for READY, BLOCKED, malformed evidence, invalid IDs and HTTP-unavailable responses; registered the suite in `test:unit`.
 - Updated the NIPS reference design to distinguish completed frontend transport from the still-incomplete production server resolver bridge. This change does not claim that live canonical evidence is currently available.
 - No production API resolver, Worker binding, database, secret, deployment or IRNI repository was changed. The focused tests and browser E2E remain unverified until GitHub Actions actually allocates a runner.
+
+
+## 2026-11-27 — IRNI Worker-to-Express profile identity bridge audit
+
+**Reviewed PR head:** `6f53e08d508054e72ccf8f2c7e025e323240e966`  
+**Architecture decision:** [RT-IRNI-EXPRESS-BRIDGE-001](../architecture/RT-IRNI-EXPRESS-BRIDGE-001.md)
+
+- Confirmed that `IRNI_GEOGRAPHY` is a Worker Service Binding and that Express is a separate Node process; importing the Worker RPC client or reading process environment variables does not transfer that binding into Express.
+- Confirmed that the public Worker facade at `/api/v2/reference/irni/canonical` is read-only canonical reference access, not an authenticated internal bridge.
+- Confirmed that the Worker identity resolver has no production composition call site in the reviewed Radar repository. It remains exercised by its focused tests only.
+- Confirmed that the IRNI v2 entity contract returns a boundary reference, not an authoritative Polygon/MultiPolygon, immutable geometry digest, or source-registry evidence record.
+- Confirmed that the Express profile evidence builder independently requires both `resolveIdentity` and `resolveSource`; production composition supplies neither. The current BLOCKED response is therefore correct.
+- Rejected a shortcut that would forward client-supplied identity headers or have Express call the public Worker facade. Any future bridge requires a dedicated versioned contract, Worker-minted HMAC assertion, durable nonce replay defense, isolated key material, strict schemas, and negative end-to-end tests.
+- Recorded the upstream geometry/source contract and staged implementation sequence in the architecture decision. No IRNI repository, production binding, secret, database, or deployment was changed.
+
+**Outcome:** No bridge code was added because the required trusted geometry/source contract and production-safe replay boundary are not present in the reviewed source. Profile evidence remains fail-closed. This is an intentional architecture gate, not a completed integration.
+
+**Verification:** Source/configuration inspection only. No automated tests or typecheck were run for this documentation-only update. CI execution remains unverified.
