@@ -2068,8 +2068,8 @@ async function runSuite(): Promise<void> {
         topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center flex-1 py-1.5 rounded-[8px]'),
       'Mobile building-age and budget-status choices must retain 44px minimum touch targets'
     );
-    const saveActionTag = topBarSrc.match(/<button\\b(?=[^>]*onClick={onSaveUserPreferences})[^>]*>/)?.[0] ?? '';
-    const shareActionTag = topBarSrc.match(/<button\\b(?=[^>]*onClick={onCopyBudgetShareLink})[^>]*>/)?.[0] ?? '';
+    const saveActionTag = topBarSrc.match(/<button\b(?=[^>]*onClick={onSaveUserPreferences})[^>]*>/)?.[0] ?? '';
+    const shareActionTag = topBarSrc.match(/<button\b(?=[^>]*onClick={onCopyBudgetShareLink})[^>]*>/)?.[0] ?? '';
     assert.ok(
       topBarSrc.includes('className="grid grid-cols-1 sm:grid-cols-2 gap-2"') &&
         saveActionTag.includes('min-w-0') &&
