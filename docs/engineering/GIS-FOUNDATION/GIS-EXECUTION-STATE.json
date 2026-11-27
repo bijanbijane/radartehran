@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0.0",
+  "workstream": "RADAR_TEHRAN_GIS_FOUNDATION",
+  "status": "PARTIALLY_VERIFIED",
+  "repository": "bijanbijane/radartehran",
+  "working_branch": "feat/gis-spatial-integrity-2026-11-27",
+  "branch_exists": true,
+  "branch_head_sha": "c66e0e19234b86a66573e0dbf5cac26f07aaa0c2",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint before this documentation synchronization. Each documentation update creates a new commit and advances the branch head; read the branch endpoint for the authoritative current HEAD after synchronization. last_verified_source_commit identifies the separately scoped application source/test checkpoint.",
+  "last_verified_source_commit": "172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2",
+  "last_verified_source_commit_scope": "Application source/test checkpoint; subsequent commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2 is a CI workflow path-filter correction only. No application source behavior was changed in that commit.",
+  "verified_findings": [
+    "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
+    "Radar Worker IRNI v2 client and neighborhood identity resolver validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
+    "The Express Geospatial module has a boundary evidence read model and review/approval scaffold with geometry hash and explicit EPSG:4326 CRS.",
+    "apps/api/server.ts constructs createProductionGeospatialModule() without canonical identity, trusted source-registry or approval authorization dependencies; read model must remain BLOCKED and approval fail-closed.",
+    "Worker-generated computed_hex_fallback geometry is approximate and visualization-only.",
+    "The geography geometry engine implements WGS84 validation, ring closure, self-intersection checks, hole containment, point-in-polygon and selected CRS transformations.",
+    "Geospatial service persistence is AtomicJsonRepository('geospatial-state.json') with optional remote repository-snapshot persistence, not a relational D1 schema.",
+    "wrangler.backend.jsonc declares USER_DB, DB, RESEARCH_DB and IRNI_GEOGRAPHY; no Radar-owned GIS D1 binding is declared.",
+    "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it.",
+    "At exact branch HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c, GIS workflow run 46005295667 attempt 2 completed failure for both jobs; job summaries expose steps=null and logs_url=null, so no source test or typecheck execution can be attributed.",
+    "Code search found no production Firebase token-verifier or delegated-admin store adapter wired for geospatial; do not construct placeholder auth adapters. Production approval remains fail-closed.",
+    "Cloudflare-native D1 sessions are already bridged Worker-to-Express by a 30-second HMAC-SHA256 assertion bound to method, exact path/query, correlation ID and Worker-hop marker; Express mounts the verification middleware globally.",
+    "GIS boundary approval now consumes the verified request-scoped Cloudflare session principal first, requires consistent admin role flags, and does not fall back to Firebase when a Cloudflare session context exists.",
+    "The Worker/Express AUTH_INTERNAL_HMAC_SECRET is documented as required and absent from committed .env.example; no evidence establishes that the secret is provisioned in either runtime or that the production hop is live.",
+    "The GIS HTTP regression test covers anonymous denial, non-admin denial, creator self-approval denial and independent Cloudflare-session admin approval; it is registered in npm run test:geospatial but remains unexecuted.",
+    "Read-only Cloudflare inspection of deployed radartehran-api confirms AUTH_INTERNAL_HMAC_SECRET is absent from its secret bindings and STRANGLER_ORIGIN_URL is absent from its plain-text variables; staging Worker radartehran-api-staging has neither any secret bindings nor STRANGLER_ORIGIN_URL. The separate Express process environment remains unverified.",
+    "The Worker router returns AUTH_SESSION_BRIDGE_NOT_CONFIGURED when AUTH_INTERNAL_HMAC_SECRET is missing; the fallback requires STRANGLER_ORIGIN_URL. Therefore the deployed Worker-side assertion/proxy path is not enabled by its current runtime configuration. No secret values were read or changed.",
+    "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced.",
+    "Cloudflare Preview build 290f16e3-e364-46b5-875d-73266852335c for branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 stopped during dependency installation: Bun 1.4.4 ran bun install --frozen-lockfile and reported @tailwindcss/vite is in a different dependency group from bun.lock. Repository comparison confirms bun.lock is byte-identical on main and this branch; the lockfile mismatch predates the GIS branch. The Preview build never reached the configured frontend build command. No lockfile was manually edited.",
+    "Deeper manifest/lock inspection confirms bun.lock is not a valid representation of the current monorepo workspace graph: root package.json declares workspaces apps/* and packages/*, but bun.lock contains only the empty-root workspace named react-example and no app/package workspace entries. In that root lock workspace, @tailwindcss/vite is recorded under dependencies while root package.json declares it under devDependencies. apps/frontend/package.json independently declares @tailwindcss/vite under devDependencies and both root and frontend Vite configs import it. Do not hand-edit the generated lockfile or change dependency classification without a reproducible Bun 1.4.4 regeneration and validation.",
+    "Latest PR workflow runs associated with exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84: GIS run 46011798449, native-auth run 46011798372, and backend triad run 46011798588 all concluded failure. Their jobs expose steps=null and logs_url=null; no job step execution is evidenced. The same pattern affects all seven PR-triggered workflows returned for this commit.",
+    "Latest exact branch HEAD adfa8b15851c7b6c1e35e5505a233f72160e3c81 has seven PR-triggered workflow runs, all concluded failure. GIS run 46017942983, IRNI RPC run 46017943177 and backend triad run 46017943056 were inspected through the raw Jobs API: all sampled jobs have runner_id=0, empty runner_name and zero steps; GIS jobs completed in approximately two seconds. This is runner allocation/dispatch failure before any job step, not evidence of an application test or typecheck failure.",
+    "Static workflow review found that .github/workflows/gis-spatial-integrity.yml declared valuation service/types and tests/property-valuation-engine-module.test.ts in push.paths but omitted them from pull_request.paths, so valuation-only PR changes could skip the GIS/valuation regression workflow. Added the three matching pull_request path filters in commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2; GitHub read-back confirms the workflow now has symmetric relevant path coverage.",
+    "Latest checks for workflow-path correction commit c66e0e19234b86a66573e0dbf5cac26f07aaa0c2 triggered both PR and push GIS runs (46018889303 and 46018881113). Raw job inspection shows both GIS jobs still fail before steps; sibling workflow jobs in run 46018889506 show the same failure/skip pattern. No tests or typecheck executed.",
+    "Durable geospatial snapshot validation previously checked top-level store objects plus boundary histories and POIs, but did not validate nested spatial listing city maps/records, POI dedupe-index references, overlay records or import-batch records. Added bounded structural validation for those stores, including listing city/id consistency, Iran-bounded coordinates, public lifecycle fields, overlay access-policy consistency, import-batch counters/failure entries and POI dedupe references. Regression cases cover malformed nested listing maps/records, orphan dedupe references, malformed overlays and malformed import batches. Changes are committed on the GIS branch; execution remains unverified because the latest inspected Actions jobs have steps=null.",
+    "Exact-head CI recheck after the durable snapshot validation commits: GIS workflow run 46019880163 was triggered for execution-state documentation commit fa14e4577fedac23ef623785d52b0f348b9e72fb; both GIS jobs concluded failure with steps=null. This remains pre-step runner failure evidence, not a test or TypeScript diagnostic. The final branch head after the subsequent progress-log documentation commit is 996216e605baf384ba08199b678db991e8a1e428."
+  ],
+  "database_decision": {
+    "current_relational_runtime": "Cloudflare D1",
+    "current_geospatial_persistence": "Atomic JSON repository with optional remote repository snapshot",
+    "rtree_runtime_support": "UNVERIFIED",
+    "geopoly_runtime_support": "UNVERIFIED",
+    "spatialite_runtime_support": "NOT_ESTABLISHED",
+    "rule": "Do not create RTree virtual tables or claim D1-native spatial predicates until a disposable/staging D1 Worker runtime probe succeeds.",
+    "evidence": "D1 SQL documentation lists FTS5, JSON and math functions in its supported extension subset. The 2026-11-12 virtual-table export changelog is export support, not proof of runtime SQL support."
+  },
+  "completed_work_packages": [
+    {
+      "id": "GIS-RECON-001",
+      "status": "VERIFIED_BY_REPOSITORY_INSPECTION",
+      "summary": "Inspected AGENTS.md, ARCHITECTURE.md, RMEP persistent memory and execution state; located existing GIS and NIPS V2 implementation; identified canonical ownership and production wiring blockers."
+    },
+    {
+      "id": "GIS-D1-CAPABILITY-001",
+      "status": "DOCUMENTED_PENDING_RUNTIME_PROBE",
+      "summary": "Checked current Cloudflare D1 SQL extension documentation and export changelog; RTree runtime capability remains unverified."
+    },
+    {
+      "id": "GIS-PERSISTENCE-001",
+      "status": "VERIFIED_BY_SOURCE_INSPECTION",
+      "summary": "Confirmed Geospatial boundary/POI/overlay/import state is persisted through geospatial-state.json AtomicJsonRepository and optional remote snapshots, not a D1 relational schema."
+    },
+    {
+      "id": "GIS-GUARD-001",
+      "status": "IMPLEMENTED_NOT_TESTED",
+      "summary": "At branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923, added defense-in-depth rejection of computed_hex_fallback in the neighborhood profile evidence builder and a regression test simulating an over-permissive source resolver; test execution remains unverified."
+    },
+    {
+      "id": "GIS-AUTH-003",
+      "status": "IMPLEMENTED_NOT_TESTED",
+      "summary": "GIS boundary approval consumes verified Cloudflare Worker session assertions without Firebase downgrade for present sessions. HTTP regression covers anonymous/non-admin/creator-self-approval denial and independent admin approval, and is registered in the focused GIS suite. Runtime secret provisioning and test execution remain unverified."
+    }
+  ],
+  "blockers": [
+    {
+      "id": "GIS-BLK-001",
+      "severity": "CRITICAL",
+      "description": "No authenticated, version-pinned IRNI Worker-to-Express identity resolver bridge is wired."
+    },
+    {
+      "id": "GIS-BLK-002",
+      "severity": "CRITICAL",
+      "description": "Trusted source-registry resolver is not implemented or injected."
+    },
+    {
+      "id": "GIS-BLK-003",
+      "severity": "HIGH",
+      "description": "Read-only Cloudflare inspection confirms deployed radartehran-api lacks AUTH_INTERNAL_HMAC_SECRET and STRANGLER_ORIGIN_URL; radartehran-api-staging lacks both. Express process environment remains unverified. Worker-side assertion/proxy cannot be enabled with current configuration; HTTP regression remains unexecuted."
+    },
+    {
+      "id": "GIS-BLK-004",
+      "severity": "HIGH",
+      "description": "Current IRNI neighborhood entities are point-only; no verified neighborhood polygons or measured areas are available."
+    },
+    {
+      "id": "GIS-BLK-005",
+      "severity": "HIGH",
+      "description": "D1 RTree virtual-table runtime support has not been demonstrated against an actual D1 Worker binding."
+    },
+    {
+      "id": "GIS-BLK-006",
+      "severity": "MEDIUM",
+      "description": "Cross-neighborhood topology consistency remains unimplemented/unverified; committed ring/hole/MultiPolygon regression suite has not been executed on exact branch HEAD because GitHub Actions runner jobs fail before steps."
+    },
+    {
+      "id": "GIS-BLK-007",
+      "severity": "HIGH",
+      "description": "Radar geospatial state is not stored in a relational D1 schema; storage owner and migration boundary for Radar-owned GIS records are unresolved."
+    }
+  ],
+  "tests": {
+    "identified": [
+      "tests/cloudflare-neighborhood-boundary-route.test.ts",
+      "tests/neighborhood-profile-boundary-read-model.test.ts",
+      "server/modules/geography/__tests__/employee18Geography.test.ts",
+      "tests/geospatial-gis-module.test.ts",
+      "tests/geospatial-valuation-location-assignment.test.ts",
+      "tests/geospatial-boundary-approval.test.ts",
+      "tests/geospatial-durable-recovery.test.ts",
+      "tests/irni-geographic-rpc-v2.test.ts",
+      "tests/irni-neighborhood-profile-identity-resolver.test.ts",
+      "tests/geospatial-cloudflare-session-approval.test.ts"
+    ],
+    "executed_in_this_session": [],
+    "implemented_not_executed": [
+      "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
+      "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval",
+      "tests/geospatial-durable-recovery.test.ts — malformed spatial listing/city maps, orphan POI dedupe references, malformed overlay records and malformed import-batch records"
+    ],
+    "note": "No test or typecheck command has been verified as passing. GIS run 46019880163 for the immediately preceding exact source/test head fa14e4577fedac23ef623785d52b0f348b9e72fb failed both jobs with steps=null. The final branch head 996216e605baf384ba08199b678db991e8a1e428 contains documentation-only changes after that source/test head. No local checkout or runnable test environment is available in this session."
+  },
+  "production_changes": {
+    "migrations": false,
+    "data_mutations": false,
+    "deployment": false,
+    "merge": false,
+    "release": false
+  },
+  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Run tests/geospatial-durable-recovery.test.ts via npm run test:geospatial and the GIS module typecheck; resolve any compiler/test findings before further source changes. Do not rerun GitHub workflows while jobs fail before steps. Regenerate bun.lock only with Bun 1.4.4 from the actual apps/* and packages/* workspace graph, then verify frozen install and Cloudflare Preview build. Keep PR #72 Draft; no Production configuration, secret, migration, deployment or merge changes.",
+  "updated_at": "2026-11-27"
+}

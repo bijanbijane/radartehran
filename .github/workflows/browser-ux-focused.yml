@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'src/components/FloatingTopBar.tsx'
+      - 'src/components/NeighborhoodInspectorDrawer.tsx'
+      - 'src/features/neighborhoods/components/NeighborhoodIntelligenceProfilePanel.tsx'
+      - 'src/features/neighborhoods/services/neighborhoodProfileBoundaryApi.ts'
       - 'tests/e2e/helpers/multicityRtlResponsiveHelpers.ts'
       - 'tests/tehran-radar.e2e.spec.ts'
       - 'tests/e2e/journeys/critical-journeys-matrix.e2e.spec.ts'

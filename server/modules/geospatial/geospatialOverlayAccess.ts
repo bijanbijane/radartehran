@@ -1,12 +1,24 @@
 import { CoreApiError } from '../core';
 import type { GeographicOverlayLayer, GeospatialObservabilityMetrics } from './types';
 
-export function executeUpsertGeographicOverlay(
+export async function executeUpsertGeographicOverlay(
   layer: GeographicOverlayLayer,
   overlayStore: Map<string, GeographicOverlayLayer>,
   overlayCache: Map<string, GeographicOverlayLayer>,
-): GeographicOverlayLayer {
+  persistRuntime: () => Promise<void>,
+): Promise<GeographicOverlayLayer> {
+  const previousLayer = overlayStore.get(layer.layerId);
+  const previousCache = overlayCache.get(layer.layerId);
   overlayStore.set(layer.layerId, structuredClone(layer));
+  try {
+    await persistRuntime();
+  } catch (error) {
+    if (previousLayer) overlayStore.set(layer.layerId, previousLayer);
+    else overlayStore.delete(layer.layerId);
+    if (previousCache) overlayCache.set(layer.layerId, previousCache);
+    else overlayCache.delete(layer.layerId);
+    throw error;
+  }
   overlayCache.delete(layer.layerId);
   return structuredClone(layer);
 }

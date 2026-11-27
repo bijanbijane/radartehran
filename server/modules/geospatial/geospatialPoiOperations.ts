@@ -19,14 +19,14 @@ export type UpsertPoiParams = {
   attributes?: Record<string, string | number | boolean>;
 };
 
-export function executeUpsertPointOfInterest(params: {
+export async function executeUpsertPointOfInterest(params: {
   input: UpsertPoiParams;
   poiStore: Map<string, PointOfInterestRecord>;
   poiDedupeIndex: Map<string, string>;
   nowIso: string;
   invalidateGeoCaches: (cityId: string) => void;
-  persistRuntime: () => void;
-}): { record: PointOfInterestRecord; isDuplicate: boolean } {
+  persistRuntime: () => Promise<void>;
+}): Promise<{ record: PointOfInterestRecord; isDuplicate: boolean }> {
   const coordCheck = normalizeAndValidateCoordinate(params.input.coordinates.lat, params.input.coordinates.lng);
   if (!coordCheck.valid || !coordCheck.coordinate) {
     throw new CoreApiError('VALIDATION_FAILED', 400, coordCheck.errorMessage ?? 'Invalid POI coordinates.');
@@ -38,13 +38,9 @@ export function executeUpsertPointOfInterest(params: {
     nameFa: params.input.nameFa,
     coordinates: coordCheck.coordinate,
   });
-
   const existingId = params.poiDedupeIndex.get(dedupeKey);
   if (existingId && params.poiStore.has(existingId)) {
-    return {
-      record: structuredClone(params.poiStore.get(existingId)!),
-      isDuplicate: true,
-    };
+    return { record: structuredClone(params.poiStore.get(existingId)!), isDuplicate: true };
   }
 
   const record: PointOfInterestRecord = {
@@ -64,10 +60,37 @@ export function executeUpsertPointOfInterest(params: {
     dedupeKey,
   };
 
+  const previousRecord = params.poiStore.get(record.id);
+  const previousDedupeOwner = params.poiDedupeIndex.get(dedupeKey);
+  const previousRecordDedupeOwner = previousRecord
+    ? params.poiDedupeIndex.get(previousRecord.dedupeKey)
+    : undefined;
+  if (previousDedupeOwner && previousDedupeOwner !== record.id) {
+    throw new CoreApiError('CONFLICT', 409, 'POI deduplication key is already assigned to another record.');
+  }
+
   params.poiStore.set(record.id, record);
+  if (previousRecord && previousRecord.dedupeKey !== dedupeKey
+      && params.poiDedupeIndex.get(previousRecord.dedupeKey) === record.id) {
+    params.poiDedupeIndex.delete(previousRecord.dedupeKey);
+  }
   params.poiDedupeIndex.set(dedupeKey, record.id);
+  try {
+    await params.persistRuntime();
+  } catch (error) {
+    if (previousRecord) params.poiStore.set(record.id, previousRecord);
+    else params.poiStore.delete(record.id);
+    if (previousDedupeOwner === undefined) params.poiDedupeIndex.delete(dedupeKey);
+    else params.poiDedupeIndex.set(dedupeKey, previousDedupeOwner);
+    if (previousRecord && previousRecordDedupeOwner !== undefined) {
+      params.poiDedupeIndex.set(previousRecord.dedupeKey, previousRecordDedupeOwner);
+    }
+    throw error;
+  }
   params.invalidateGeoCaches(record.cityId);
-  params.persistRuntime();
+  if (previousRecord && previousRecord.cityId !== record.cityId) {
+    params.invalidateGeoCaches(previousRecord.cityId);
+  }
   return { record: structuredClone(record), isDuplicate: false };
 }
 

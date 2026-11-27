@@ -6,6 +6,7 @@ import type {
   SpatialPublishableListing,
 } from './types';
 import { AtomicJsonRepository } from '../shared/atomicJsonRepository';
+import { getGeospatialPersistenceHealth } from './geospatialDurableRecovery';
 
 export interface PersistedGeospatialState {
   boundaryHistoryByEntity: Record<string, BoundaryVersionRecord[]>;
@@ -29,7 +30,16 @@ function defaultState(): PersistedGeospatialState {
   };
 }
 
+function assertGeospatialPersistenceWritable(): void {
+  const health = getGeospatialPersistenceHealth();
+  if (health !== 'READY') {
+    throw new Error(`GEOSPATIAL_PERSISTENCE_${health}`);
+  }
+}
+
 export function loadGeospatialState(): PersistedGeospatialState {
+  // Do not expose a cached snapshot after recovery has rejected it.
+  if (getGeospatialPersistenceHealth() !== 'READY') return defaultState();
   return geoRepo.load(defaultState);
 }
 
@@ -56,11 +66,22 @@ export async function ensureGeospatialRepositoryHydrated(): Promise<PersistedGeo
 }
 
 export function persistGeospatialState(state: PersistedGeospatialState): void {
+  assertGeospatialPersistenceWritable();
   geoRepo.writeImmediate(state);
 }
 
 export async function persistGeospatialStateAwait(state: PersistedGeospatialState): Promise<void> {
+  assertGeospatialPersistenceWritable();
   await geoRepo.writeImmediateAwait(state);
+}
+
+/** Activate only a previously validated staged snapshot through the recovery state machine. */
+export async function activateStagedGeospatialRepositorySnapshot() {
+  const { activateStagedGeospatialSnapshot } = await import('./geospatialDurableRecovery');
+  return activateStagedGeospatialSnapshot({
+    // This is the sole write path allowed to persist while recovery is RECOVERING.
+    persist: async (state) => geoRepo.writeImmediateAwait(state),
+  });
 }
 
 export function resetGeospatialRepositoryForTests(): void {
@@ -100,6 +121,16 @@ export function hydrateMaps(
     importBatches: Map<string, GeospatialImportBatchResult>;
   },
 ): void {
+  // Hydration is a full snapshot replacement, not a merge. Clear first so a
+  // repeated recovery/hydration cannot leave records from an older snapshot
+  // visible in the runtime maps.
+  maps.boundaryHistoryByEntity.clear();
+  maps.poiStore.clear();
+  maps.poiDedupeIndex.clear();
+  maps.spatialListingsByCity.clear();
+  maps.overlayStore.clear();
+  maps.importBatches.clear();
+
   for (const [k, v] of Object.entries(state.boundaryHistoryByEntity)) maps.boundaryHistoryByEntity.set(k, v);
   for (const [k, v] of Object.entries(state.poiStore)) maps.poiStore.set(k, v);
   for (const [k, v] of Object.entries(state.poiDedupeIndex)) maps.poiDedupeIndex.set(k, v);

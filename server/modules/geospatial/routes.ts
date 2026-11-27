@@ -9,12 +9,35 @@ import {
 } from '../core';
 import type { GeospatialModuleDependencies } from './types';
 import type { GeospatialService } from './service';
+import { getCloudflareSessionContext } from '../../../src/utils/serverCloudflareSessionBridge';
+import { getGeospatialPersistenceHealth } from './geospatialDurableRecovery';
 
 export function createGeospatialRouter(
   service: GeospatialService,
   deps: GeospatialModuleDependencies = {},
 ): Router {
   const router = Router();
+
+  router.use((req: Request, res: Response, next) => {
+    const health = getGeospatialPersistenceHealth();
+    if (health === 'READY') {
+      next();
+      return;
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(503).json(buildErrorEnvelope({
+      code: 'GEOSPATIAL_PERSISTENCE_UNAVAILABLE',
+      message: 'Geospatial services are unavailable until a verified durable snapshot is recovered.',
+      // Keep public outage responses intentionally low-detail. Recovery
+      // diagnostics can contain internal validation context and belong in
+      // authenticated operational telemetry, not an unauthenticated API body.
+      details: {
+        health,
+        recoveryRequired: true,
+      },
+      correlationId: resolveCorrelationId(req),
+    }));
+  });
 
   function handleRouteError(res: Response, err: unknown, correlationId: string) {
     if (err instanceof CoreApiError) {
@@ -38,6 +61,16 @@ export function createGeospatialRouter(
   }
 
   async function checkIsAdmin(req: Request): Promise<{ isAdmin: boolean; uid?: string }> {
+    // A verified Worker assertion is the canonical identity path. Never downgrade
+    // a present Cloudflare session to legacy Firebase authorization.
+    const sessionPrincipal = getCloudflareSessionContext();
+    if (sessionPrincipal) {
+      return {
+        isAdmin: sessionPrincipal.isAdmin
+          && (sessionPrincipal.isPrimaryAdmin || sessionPrincipal.isDelegatedAdmin),
+        uid: sessionPrincipal.uid,
+      };
+    }
     if (!deps.tokenVerifier || !deps.adminStore) return { isAdmin: false };
     const authRes = await extractAuthenticatedPrincipal(req, deps.tokenVerifier, { requireVerifiedEmail: false });
     if (!authRes.ok || !authRes.principal) return { isAdmin: false };

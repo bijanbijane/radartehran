@@ -217,7 +217,9 @@ A cache hit must not survive a change to a source permission, canonical record, 
 
 ## 9. API integration contract — server scaffold exists; live providers are pending
 
-The frontend accepts an optional approvedBoundaryEvidence object. It is intentionally not populated from the display-boundary fallback. A server-side read model now exists in the Geospatial service:
+The profile panel accepts an optional approvedBoundaryEvidence object and, when the caller does not explicitly inject one, now requests the read-only evidence endpoint through a dedicated frontend client. The panel is mounted in the map's NeighborhoodInspectorDrawer. The client uses same-origin credentials and `cache: 'no-store'`, accepts only a valid success envelope with either a complete READY evidence object or a BLOCKED result, and treats malformed payloads, HTTP failures and network errors as UNAVAILABLE. Only READY evidence is passed to the profile engine; BLOCKED reason codes are rendered in the Sources section. The browser does not create identity/source facts or set `geometryHashVerified`. This is a frontend transport integration only; it does not resolve the server-side production dependency gap.
+
+A server-side read model now exists in the Geospatial service:
 
 - Service method: `getNeighborhoodProfileBoundaryReadModel({ cityId, hoodId })`.
 - Read-only Express route: `GET /api/v1/geospatial/neighborhood-boundaries/:cityId/:hoodId/profile-evidence`.
@@ -237,11 +239,11 @@ The server resolver contract is injected through `GeospatialModuleDependencies.n
 - Existing boundary records created before the hash/CRS fields were added remain ineligible until re-ingested/reviewed through a governed process.
 - A boundary that was auto-approved by its creator is not eligible for a profile and cannot be approved again through the new pending-only flow.
 
-A Worker-side IRNI identity adapter has now been implemented at `worker/irni/neighborhoodProfileIdentityResolver.ts`. It uses the configured `IRNI_GEOGRAPHY` Service Binding and the existing v2 RPC client; checks the approved registry revision, checksum, identity-contract version and ID algorithm; matches only the three versioned Radar legacy alias encodings; requires exactly one active alias marked `automaticResolutionEligible`; then fetches and validates the canonical entity as an active `URBAN_NEIGHBORHOOD`. It never matches by name, coordinate or bare numeric ID. Eight dedicated tests cover success, absent binding, contract mismatch, missing/ambiguous/manual-only aliases, wrong entity type and malformed identifiers.
+A Worker-side IRNI identity adapter has now been implemented at `worker/irni/neighborhoodProfileIdentityResolver.ts`. It uses the configured `IRNI_GEOGRAPHY` Service Binding and the existing v2 RPC client; checks the approved registry revision, checksum, identity-contract version and ID algorithm; matches only the three exact, versioned Radar legacy alias encodings; permits multiple distinct encodings only when each key is unique, every alias is marked `automaticResolutionEligible`, and all aliases converge on the same canonical entity; then fetches and validates the canonical entity as an active `URBAN_NEIGHBORHOOD`. It never matches by name, coordinate or bare numeric ID. Nine dedicated tests cover success, convergent legacy encodings, absent binding, contract mismatch, missing/conflicting/manual-only aliases, wrong entity type and malformed identifiers.
 
 **Important topology boundary:** `IRNI_GEOGRAPHY` is a Cloudflare Workers Service Binding configured in `wrangler.backend.jsonc`. It is not a Node/Express environment variable or binding. `apps/api/server.ts` is a separate Express process and cannot receive that binding by passing `process.env` or by importing the Worker client. The Worker-side identity adapter is therefore implemented and tested but is not yet injected into the Express read model. A production bridge must be designed at the Worker/API boundary with an authenticated, version-pinned contract; direct D1 access or an untrusted public HTTP fallback is prohibited. The trusted source-registry resolver remains unimplemented.
 
-The frontend must eventually call the read-only endpoint and pass its validated evidence to the profile panel. Do not fabricate identity/source facts or set `geometryHashVerified` in the browser.
+The frontend read-only client is now implemented in `src/features/neighborhoods/services/neighborhoodProfileBoundaryApi.ts`; `NeighborhoodIntelligenceProfilePanel` loads it when no evidence prop is explicitly supplied, and `NeighborhoodInspectorDrawer` mounts the panel for the selected neighborhood. The client is fail-closed and never fabricates identity/source facts or sets `geometryHashVerified` in the browser.
 
 The observation provider still requires independent source, mapping, evidence, canonical record and variable registry contexts. No guessed endpoint or browser-side trust assertion is acceptable.
 
@@ -250,7 +252,7 @@ The observation provider still requires independent source, mapping, evidence, c
 1. Verify canonical entity ↔ Radar legacy neighborhood mapping, with unresolved/ambiguous states.
 2. Wire the new server read model to the actual IRNI v2 identity registry and the trusted source registry; keep the endpoint BLOCKED until both return validated records.
 3. Inject authenticated admin dependencies and test the independent approval route with real admin/delegation policy.
-4. Build a frontend read-only provider that fetches the evidence endpoint and supplies the validated result to the panel.
+4. Frontend read-only endpoint client and map-inspector panel integration are implemented; retain the existing API blocker display until production resolvers are wired and verify this path in browser E2E.
 5. Populate a read-only observation view from the existing Source Registry, Evidence and Canonical Record owners.
 6. Build IRNI/Radar adapter parity tests using the same independent fixtures and expected decisions.
 7. Pilot one Tehran neighborhood with an official/reviewed polygon and independently sourced observations.

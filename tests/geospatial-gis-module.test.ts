@@ -281,6 +281,100 @@ test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, cluste
   assert.equal(clusteredRes.mode, 'CLUSTERED_VIEWPORT');
   assert.ok((clusteredRes.clusters?.length ?? 0) >= 1);
 
+  // Spatial listing index mutations must survive repository rehydration.
+  resetGeospatialRepositoryForTests();
+  const rehydratedGis = createGeospatialService();
+  const rehydratedSearch = rehydratedGis.searchListingsSpatially({
+    cityId: 'tehran',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  assert.equal(rehydratedSearch.totalMatched, 4);
+
+  // Re-indexing a globally unique listing ID under another city must remove its stale entry.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_1',
+    propertyId: 'prop_1',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 110,
+    priceMillion: 16500,
+    bedrooms: 2,
+    hasParking: true,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    exactPrivateAddress: 'private address',
+    publicationStatus: 'PUBLISHED',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  const tehranAfterCityMove = rehydratedGis.searchListingsSpatially({
+    cityId: 'tehran',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  const karajAfterCityMove = rehydratedGis.searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  assert.equal(tehranAfterCityMove.totalMatched, 3);
+  assert.equal(karajAfterCityMove.totalMatched, 1);
+
+  // A same-ID status update must replace the published record and fail closed in public search.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_1',
+    propertyId: 'prop_1',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 110,
+    priceMillion: 16500,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    publicationStatus: 'DRAFT',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  const karajAfterUnpublish = rehydratedGis.searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+  });
+  assert.equal(karajAfterUnpublish.totalMatched, 0);
+
+  // Explicit deletion removes a listing from every city index and persists the removal.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_remove',
+    propertyId: 'prop_remove',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 90,
+    priceMillion: 12000,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    publicationStatus: 'PUBLISHED',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  assert.equal(rehydratedGis.removeListingFromSpatialSearch('lst_remove'), true);
+  assert.equal(rehydratedGis.removeListingFromSpatialSearch('lst_remove'), false);
+  resetGeospatialRepositoryForTests();
+  const afterRemovalReload = createGeospatialService().searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+  });
+  assert.equal(afterRemovalReload.totalMatched, 0);
+
   // Reject excessive radius query (> 25,000 meters)
   assert.throws(
     () =>
@@ -307,6 +401,11 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   const gis = createIsolatedGeospatialService({
     marketIntelligenceService: miService,
   });
+
+  const summaryWithoutActiveBoundary = gis.getSpatialMarketSummary({ cityId: 'tehran', hoodId: 1 });
+  assert.equal(summaryWithoutActiveBoundary.boundaryVersionId, null);
+  assert.equal(summaryWithoutActiveBoundary.boundaryVersion, null);
+  assert.equal(summaryWithoutActiveBoundary.simplifiedGeometry, null);
 
   // Import boundary and POIs via safe import pipeline (dryRun preview then commit)
   const preview = await gis.importGeographicDataset({
@@ -408,7 +507,7 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   assert.ok(gis.getActiveBoundary('hood:tehran:1'));
 
   // Duplicate POI prevention
-  const dupPoi = gis.upsertPointOfInterest({
+  const dupPoi = await gis.upsertPointOfInterest({
     nameFa: 'پارک نیاوران',
     category: 'park',
     coordinates: { lat: 35.812, lng: 51.471 },
@@ -432,10 +531,14 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   const spatialSummary = gis.getSpatialMarketSummary({ cityId: 'tehran', hoodId: 1 });
   assert.equal(spatialSummary.hoodName, 'نیاوران');
   assert.ok((spatialSummary.medianVerifiedPsmMillion ?? 0) > 0);
+  const activeMarketBoundary = gis.getActiveBoundary('hood:tehran:1');
+  assert.ok(activeMarketBoundary);
+  assert.equal(spatialSummary.boundaryVersionId, activeMarketBoundary.id);
+  assert.equal(spatialSummary.boundaryVersion, activeMarketBoundary.version);
   assert.ok(spatialSummary.simplifiedGeometry);
 
   // Public vs Admin overlay permission enforcement
-  gis.upsertGeographicOverlay({
+  await gis.upsertGeographicOverlay({
     layerId: 'layer_admin_audit',
     layerType: 'INTERNAL_ADMIN_AUDIT_LAYER',
     dataSourceReference: 'internal_ops',
@@ -453,6 +556,15 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   );
   const adminOverlay = gis.getGeographicOverlay({ layerId: 'layer_admin_audit', isAdminCaller: true });
   assert.equal(adminOverlay.layerId, 'layer_admin_audit');
+
+  // Geographic overlay mutations must survive repository rehydration.
+  resetGeospatialRepositoryForTests();
+  const rehydratedOverlayService = createGeospatialService();
+  const rehydratedOverlay = rehydratedOverlayService.getGeographicOverlay({
+    layerId: 'layer_admin_audit',
+    isAdminCaller: true,
+  });
+  assert.equal(rehydratedOverlay.payload.internalNotes, 'restricted');
 
   // Geocoding failure handling when provider is unconfigured
   const geocodeRes = await gis.forwardGeocode('تهران، نیاوران');

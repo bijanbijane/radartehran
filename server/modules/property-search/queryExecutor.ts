@@ -74,7 +74,7 @@ export function matchesSearchFilters(
 
   // 5. Geographic Bounding Box
   if (filters.boundingBox) {
-    if (!item.coordinates) return false;
+    if (!item.coordinates || item.coordinates.isApproximate) return false;
     const { minLat, maxLat, minLng, maxLng } = filters.boundingBox;
     if (
       item.coordinates.lat < minLat ||
@@ -88,7 +88,7 @@ export function matchesSearchFilters(
 
   // 6. Proximity / Nearby filter
   if (filters.nearLocation) {
-    if (!item.coordinates) return false;
+    if (!item.coordinates || item.coordinates.isApproximate) return false;
     const dist = calculateDistanceMeters(
       filters.nearLocation.lat,
       filters.nearLocation.lng,

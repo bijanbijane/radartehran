@@ -13,7 +13,10 @@ import type {
 import {
   buildNeighborhoodProfileBoundaryReadModel,
   calculateNeighborhoodBoundaryGeometrySha256,
+  pickActiveBoundaryVersion,
 } from '../server/modules/geospatial/neighborhoodProfileBoundaryReadModel';
+import { detectActiveBoundaryBboxOverlaps } from '../server/modules/geospatial/geospatialBoundaryReadModel';
+import { resetGeospatialRecoveryStateForTests, stageGeospatialSnapshotForActivation } from '../server/modules/geospatial/geospatialDurableRecovery';
 import { evaluateNeighborhoodProfileBoundary } from '../src/features/neighborhoods/profile-contract/neighborhoodProfileBoundaryContract';
 
 const geometry: BoundaryVersionRecord['geometry'] = {
@@ -208,6 +211,28 @@ test('blocks algorithmic or unknown source authority even when an entry exists',
   }
 });
 
+test('always blocks computed display fallback geometry from profile evidence, even if a resolver labels it publishable', async () => {
+  const result = await buildNeighborhoodProfileBoundaryReadModel({
+    boundary: makeBoundary({ sourceProvenance: 'computed_hex_fallback' }),
+    expectedCityId: 'tehran',
+    expectedLegacyNeighborhoodId: 13,
+    resolvers: makeResolvers({
+      resolveSource: async (sourceProvenance) => ({
+        sourceProvenance,
+        sourceReference: 'https://data.example.org/display-fallback',
+        authority: 'OFFICIAL_PRIMARY',
+        crs: 'EPSG:4326',
+        verificationStatus: 'VERIFIED_OFFICIAL_PRIMARY',
+      }),
+    }),
+  });
+  assert.equal(result.status, 'BLOCKED');
+  if (result.status === 'BLOCKED') {
+    assert.ok(result.reasonCodes.includes('BOUNDARY_SOURCE_NON_AUTHORITATIVE'));
+    assert.equal(result.evidence, null);
+  }
+});
+
 test('blocks resolver failures without returning a partial evidence object', async () => {
   const result = await buildNeighborhoodProfileBoundaryReadModel({
     boundary: makeBoundary(),
@@ -322,6 +347,37 @@ test('HTTP profile endpoint stays fail-closed and approval route denies callers 
     const readPayload = await readResponse.json();
     assert.match(JSON.stringify(readPayload), /ACTIVE_BOUNDARY_NOT_FOUND/);
 
+    // Mirror the production composition root: no IRNI identity or source-registry
+    // resolvers are injected. Even an independently approved local polygon must
+    // remain unavailable as canonical profile evidence until both are connected.
+    const pending = await service.upsertNeighborhoodBoundary({
+      actorUid: 'creator-1',
+      entityId: 'hood:tehran:13',
+      cityId: 'tehran',
+      hoodId: 13,
+      level: 'neighborhood',
+      nameFa: 'محله آزمایشی',
+      geometry: structuredClone(geometry),
+      sourceProvenance: 'tehran_municipality_gis_2025',
+      autoApprove: false,
+    });
+    assert.equal(pending.status, 'PENDING_REVIEW');
+    await service.approveNeighborhoodBoundary({
+      entityId: 'hood:tehran:13',
+      versionId: pending.id,
+      reviewerUid: 'reviewer-2',
+    });
+
+    const approvedLocalBoundaryResponse = await fetch(
+      `${baseUrl}/neighborhood-boundaries/tehran/13/profile-evidence`,
+    );
+    assert.equal(approvedLocalBoundaryResponse.status, 200);
+    const approvedLocalBoundaryPayload = await approvedLocalBoundaryResponse.json();
+    const serializedPayload = JSON.stringify(approvedLocalBoundaryPayload);
+    assert.match(serializedPayload, /CANONICAL_IDENTITY_RESOLVER_NOT_CONFIGURED/);
+    assert.match(serializedPayload, /BOUNDARY_SOURCE_REGISTRY_NOT_CONFIGURED/);
+    assert.match(serializedPayload, /"evidence":null/);
+
     const approveResponse = await fetch(
       `${baseUrl}/neighborhood-boundaries/tehran/13/versions/bnd_hood_tehran_13_v1/approve`,
       { method: 'POST' },
@@ -335,4 +391,89 @@ test('HTTP profile endpoint stays fail-closed and approval route denies callers 
     setRepositoryBaseDirForTests(null);
     rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+test('public GIS 503 omits internal recovery validation diagnostics', async () => {
+  const express = (await import('express')).default;
+  const { createGeospatialRouter } = await import('../server/modules/geospatial/routes');
+  const tempRoot = mkdtempSync(join(tmpdir(), 'gis-public-503-'));
+  setRepositoryBaseDirForTests(tempRoot);
+  resetGeospatialRepositoryForTests();
+  resetGeospatialRecoveryStateForTests();
+  const service = createGeospatialService();
+  const app = express();
+  app.use('/api/v1/geospatial', createGeospatialRouter(service));
+  const server = app.listen(0, '127.0.0.1');
+
+  try {
+    const blocked = stageGeospatialSnapshotForActivation({
+      boundaryHistoryByEntity: {},
+      poiStore: {},
+      poiDedupeIndex: {},
+      spatialListingsByCity: {},
+      overlayStore: {},
+      importBatches: {},
+    });
+    assert.equal(blocked.health, 'BLOCKED');
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('listening', resolve);
+      server.once('error', reject);
+    });
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/v1/geospatial/resolve-point?lat=35.7&lng=51.3`);
+    assert.equal(response.status, 503);
+    const payload = await response.json() as { error?: { details?: Record<string, unknown> } };
+    const details = payload.error?.details ?? {};
+    assert.equal(details.health, 'BLOCKED');
+    assert.equal(details.recoveryRequired, true);
+    assert.equal('validationErrors' in details, false);
+    assert.equal('recoveryRequirement' in details, false);
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    resetGeospatialRecoveryStateForTests();
+    resetGeospatialRepositoryForTests();
+    setRepositoryBaseDirForTests(null);
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('does not expose an arbitrary boundary when a history has multiple ACTIVE versions', () => {
+  const v1 = makeBoundary();
+  const v2 = makeBoundary({ id: 'bnd_hood_tehran_13_v2', version: 2 });
+  const superseded = makeBoundary({ id: 'bnd_hood_tehran_13_v0', version: 0, status: 'SUPERSEDED' });
+
+  assert.equal(pickActiveBoundaryVersion([v1, v2]), null);
+  assert.equal(pickActiveBoundaryVersion([v1, superseded])?.id, v1.id);
+});
+
+test('bbox overlap diagnostics skip duplicate ACTIVE histories instead of selecting the first record', () => {
+  const duplicateV1 = makeBoundary();
+  const duplicateV2 = makeBoundary({ id: 'bnd_hood_tehran_13_v2', version: 2 });
+  const singleA = makeBoundary({
+    id: 'bnd_hood_tehran_14_v1',
+    entityId: 'hood:tehran:14',
+    hoodId: 14,
+  });
+  const singleB = makeBoundary({
+    id: 'bnd_hood_tehran_15_v1',
+    entityId: 'hood:tehran:15',
+    hoodId: 15,
+  });
+
+  const overlaps = detectActiveBoundaryBboxOverlaps(
+    new Map([
+      [duplicateV1.entityId, [duplicateV1, duplicateV2]],
+      [singleA.entityId, [singleA]],
+      [singleB.entityId, [singleB]],
+    ]),
+    'tehran',
+    'neighborhood',
+    () => true,
+  );
+
+  assert.deepEqual(overlaps, [{ entityA: singleA.entityId, entityB: singleB.entityId }]);
 });

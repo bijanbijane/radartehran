@@ -155,12 +155,14 @@ export class AtomicJsonRepository<T> {
     this.loaded = true;
     if (isRepositoryRemotePersistenceActive()) {
       this.lastPersistError = null;
-      this.durablePersistChain = this.durablePersistChain.then(async () => {
+      // A failed snapshot must not poison the queue permanently. Preserve the
+      // failure for awaitPendingPersistence(), then allow the next write to retry.
+      this.durablePersistChain = this.durablePersistChain.catch(() => undefined).then(async () => {
+        this.lastPersistError = null;
         try {
           await persistRepositorySnapshot(this.fileName, targetDataForPersist(data));
         } catch (error) {
           this.lastPersistError = error instanceof Error ? error : new Error(String(error));
-          throw this.lastPersistError;
         }
       });
       return;

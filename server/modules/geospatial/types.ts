@@ -101,7 +101,10 @@ export interface PolygonValidationReport {
       | 'TOO_FEW_VERTICES'
       | 'SELF_INTERSECTION'
       | 'INVALID_COORDINATE'
-      | 'DEGENERATE_ZERO_AREA';
+      | 'DEGENERATE_ZERO_AREA'
+      | 'HOLE_OUTSIDE_OUTER'
+      | 'HOLE_OVERLAP'
+      | 'MULTIPOLYGON_COMPONENT_OVERLAP';
     message: string;
   }>;
   boundingBox?: { minLat: number; maxLat: number; minLng: number; maxLng: number };
@@ -109,7 +112,7 @@ export interface PolygonValidationReport {
 
 export interface PointResolutionResult {
   resolved: boolean;
-  status: 'RESOLVED_INSIDE' | 'RESOLVED_ON_EDGE' | 'AMBIGUOUS_OVERLAP' | 'OUTSIDE_KNOWN_BOUNDARIES';
+  status: 'RESOLVED_INSIDE' | 'RESOLVED_ON_EDGE' | 'AMBIGUOUS_OVERLAP' | 'OUTSIDE_KNOWN_BOUNDARIES' | 'MULTIPLE_ACTIVE_BOUNDARY_VERSIONS';
   confidence: 'high' | 'medium' | 'none';
   cityId?: string;
   districtId?: string;

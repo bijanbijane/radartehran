@@ -39,7 +39,8 @@ function mapBargainRecord(b: ServerPublishedBargainRecord): SearchPropertyItem {
     priceDisplayTextFa: b.priceText || `${total} میلیون تومان`,
     rooms: sqm >= 130 ? 3 : sqm >= 75 ? 2 : 1,
     coordinates: coords ? { lat: coords.lat, lng: coords.lng, isApproximate: true } : undefined,
-    isVerifiedListing: true,
+    // No independent verification evidence exists in this source record.
+    isVerifiedListing: false,
     publishedAtIso: b.createdAtIso,
     updatedAtIso: b.updatedAtIso || b.createdAtIso,
   };
@@ -62,7 +63,9 @@ function pushdownFilter(item: SearchPropertyItem, params: Parameters<ListingData
   if (params.minAreaSqm != null && item.areaSqm < params.minAreaSqm) return false;
   if (params.maxAreaSqm != null && item.areaSqm > params.maxAreaSqm) return false;
   if (params.bedroomsMin != null && (item.rooms ?? 0) < params.bedroomsMin) return false;
-  if (params.boundingBox && item.coordinates) {
+  if (params.boundingBox) {
+    // Neighborhood centroids are context hints, not property coordinates.
+    if (!item.coordinates || item.coordinates.isApproximate) return false;
     const bb = params.boundingBox;
     const { lat, lng } = item.coordinates;
     if (lat < bb.minLat || lat > bb.maxLat || lng < bb.minLng || lng > bb.maxLng) return false;

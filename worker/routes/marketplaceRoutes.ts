@@ -201,6 +201,94 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     const body = await readValidatedJsonBody(ctx.request, 12 * 1024);
     if (!body.ok) return jsonWorkerResponse(ctx, body.status, { status: 'error', code: body.code, message: body.messageFa });
     const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
+    const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
+    const requestedHoodName = safeText(body.body.hoodName, 120);
+    const title = safeText(body.body.title, 160);
+    const listingType = body.body.type === 'اجاره' ? 'اجاره' : body.body.type === 'خرید' ? 'خرید' : null;
+    const sqm = boundedNumber(body.body.sqm, 25, 1000);
+    const priceMillions = boundedNumber(body.body.priceMillions, 0.01, 10_000_000);
+    const priceText = safeText(body.body.priceText, 160);
+    const discountPercent = boundedNumber(body.body.discountPercent, 10, 60);
+    const buyerProfitText = safeText(body.body.buyerProfitText, 160);
+    const street = safeText(body.body.street, 120);
+    const mediaObjectIds = Array.isArray(body.body.mediaObjectIds)
+      ? body.body.mediaObjectIds.filter((id): id is string => typeof id === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(id)).slice(0, 6)
+      : [];
+    if (!SUPPORTED_CITY_IDS.has(cityId) || hoodId === null || !Number.isInteger(hoodId) ||
+        !title || !listingType || sqm === null || !Number.isInteger(sqm) ||
+        priceMillions === null || !priceText || discountPercent === null ||
+        (Array.isArray(body.body.mediaObjectIds) && mediaObjectIds.length !== body.body.mediaObjectIds.length)) {
+      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_BARGAIN_REQUEST' });
+    }
+    // R2-backed media attachment is deferred; never silently discard uploaded object references.
+    if (mediaObjectIds.length > 0 || safeText(body.body.videoUrl, 500)) {
+      return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'MARKET_BARGAIN_MEDIA_NOT_AVAILABLE' });
+    }
+    const neighborhood = await auth.db.prepare(
+      'SELECT name_fa FROM neighborhood_projections WHERE city_id = ?1 AND hood_id = ?2 LIMIT 1',
+    ).bind(cityId, hoodId).first<{ name_fa: string }>();
+    if (!neighborhood) return jsonWorkerResponse(ctx, 404, { status: 'error', code: 'MARKET_NEIGHBORHOOD_NOT_FOUND' });
+    const hoodName = safeText(neighborhood.name_fa, 120);
+    if (requestedHoodName && requestedHoodName !== hoodName) {
+      return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'MARKET_NEIGHBORHOOD_NAME_MISMATCH' });
+    }
+    const key = readIdempotencyKey(ctx);
+    if (!key) return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'IDEMPOTENCY_KEY_REQUIRED' });
+    const rateLimited = await enforceMutationLimit(ctx, auth.db, auth.uid, 'buyer_lead', 8);
+    if (rateLimited) return rateLimited;
+    const now = new Date().toISOString();
+    const normalized = { cityId, hoodId, hoodName, title, listingType, sqm, priceMillions, priceText, discountPercent, buyerProfitText, street };
+    const requestHash = await sha256Hex(JSON.stringify(normalized));
+    const resourceId = 'brg_' + (await sha256Hex(auth.uid + ':bargain.create:' + key)).slice(0, 32);
+    const mutation = await persistIdempotentMutation({
+      db: auth.db, uid: auth.uid, operationName: 'bargain.create', idempotencyKey: key,
+      requestHash, resourceId, createdAtIso: now,
+      resourceStatements: [
+        auth.db.prepare(
+          `INSERT INTO bargains (
+            bargain_id, owner_uid, city_id, hood_id, title, listing_type, sqm, price_millions,
+            price_text, discount_percent, buyer_profit_text, street, media_metadata_json,
+            status, created_at_iso, updated_at_iso
+          )
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, '[]', 'pending', ?13, ?13
+          WHERE EXISTS (
+            SELECT 1 FROM market_mutation_idempotency
+            WHERE uid = ?2 AND operation_name = 'bargain.create' AND idempotency_key = ?14 AND request_hash = ?15
+          )
+          ON CONFLICT(bargain_id) DO NOTHING`,
+        ).bind(resourceId, auth.uid, cityId, hoodId, title, listingType, sqm, priceMillions, priceText, discountPercent, buyerProfitText, street, now, key, requestHash),
+        auth.db.prepare(
+          `INSERT INTO bargain_projections (
+            bargain_id, city_id, hood_id, hood_name, title, sqm, price_millions,
+            discount_percent, lifecycle_state, updated_at_iso, owner_uid
+          )
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'pending', ?9, ?10
+          WHERE EXISTS (
+            SELECT 1 FROM market_mutation_idempotency
+            WHERE uid = ?10 AND operation_name = 'bargain.create' AND idempotency_key = ?11 AND request_hash = ?12
+          )
+          ON CONFLICT(bargain_id) DO NOTHING`,
+        ).bind(resourceId, cityId, hoodId, hoodName, title, sqm, priceMillions, discountPercent, now, auth.uid, key, requestHash),
+      ],
+    });
+    if (mutation.status === 'conflict' || mutation.status === 'not_committed') return idempotencyFailure(ctx, mutation.status);
+    const record = await auth.db.prepare(
+      'SELECT bargain_id, status FROM bargains WHERE bargain_id = ?1 AND owner_uid = ?2 LIMIT 1',
+    ).bind(mutation.resourceId, auth.uid).first<{ bargain_id: string; status: string }>();
+    if (!record) return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'BARGAIN_RECORD_NOT_FOUND_AFTER_COMMIT' });
+    return jsonWorkerResponse(ctx, mutation.status === 'replayed' ? 200 : 201, {
+      status: 'ok', durable: true, bargainId: record.bargain_id, listingStatus: record.status,
+      idempotentReplay: mutation.status === 'replayed',
+    }, { cacheControl: 'private, no-store' });
+  }
+
+  if (ctx.method === 'POST' && ctx.pathname === '/api/v1/market/sponsor-requests') {
+    const auth = await requireAuthenticatedMutation(ctx);
+    if (auth.response !== null) return auth.response;
+    if (!auth.db || !auth.uid) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'USER_DB_NOT_BOUND' });
+    const body = await readValidatedJsonBody(ctx.request, 12 * 1024);
+    if (!body.ok) return jsonWorkerResponse(ctx, body.status, { status: 'error', code: body.code, message: body.messageFa });
+    const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
     const requestedHoodId = boundedNumber(body.body.hoodId, 1, 9999);
     const requestedHoodName = safeText(body.body.hoodName, 120);
     const agencyName = safeText(body.body.agencyName, 120);

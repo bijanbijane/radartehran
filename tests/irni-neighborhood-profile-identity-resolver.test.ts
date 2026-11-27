@@ -9,7 +9,11 @@ import type {
   IrniRpcMetadataV2,
   IrniRpcResult,
 } from '../worker/irni/irniGeographicRpcV2Types';
-import { encodeRadarCityNeighborhoodAlias } from '../worker/irni/radarLegacyIdentifiers';
+import {
+  encodeRadarCityNeighborhoodAlias,
+  encodeRadarGeographyCatalogAlias,
+  encodeRadarUrbanIntelligenceAlias,
+} from '../worker/irni/radarLegacyIdentifiers';
 
 const CHECKSUM = 'a'.repeat(64);
 const ID = 'IRGEO1-' + 'b'.repeat(64);
@@ -117,6 +121,34 @@ test('resolves a neighborhood only through an approved versioned Radar alias and
     assert.equal(result.identity.identityStatus, 'CONFIRMED_CANONICAL');
     assert.equal(result.identity.verificationStatus, 'VERIFIED_SECONDARY_GAZETTEER');
   }
+});
+
+test('accepts distinct approved legacy encodings when they converge on one canonical neighborhood', async () => {
+  const aliases = [
+    encodeRadarCityNeighborhoodAlias('tehran', 13),
+    encodeRadarGeographyCatalogAlias('hood:tehran:13'),
+    encodeRadarUrbanIntelligenceAlias('tehran:hood:13'),
+  ];
+  const binding = createBinding({
+    listApprovedLegacyAliases: async (_system, revision) => ok({
+      registryRevision: revision,
+      registryChecksum: CHECKSUM,
+      aliases: aliases.map((legacyIdentifierValue, index) => ({
+        aliasId: 'alias-' + (index + 1),
+        legacySystemCode: 'TEHRAN_RADAR' as const,
+        legacyIdentifierValue,
+        canonicalGeographicEntityId: ID,
+        aliasStatus: 'ACTIVE_COMPATIBILITY_ALIAS' as const,
+        resolutionEvidenceRef: 'evidence:reviewed-crosswalk-' + (index + 1),
+        recordedAtRegistryRevision: revision,
+        automaticResolutionEligible: true,
+      })),
+    }),
+  });
+  const resolver = createIrniNeighborhoodProfileIdentityResolver(binding, CONFIG);
+  const result = await resolver({ cityId: 'tehran', legacyNeighborhoodId: 13 });
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.identity.geographicEntityId, ID);
 });
 
 test('fails closed when the Worker Service Binding is missing', async () => {

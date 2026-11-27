@@ -28,6 +28,7 @@ import type {
 } from './types';
 import {
   createGeospatialPersistHook,
+  createGeospatialPersistHookAsync,
   hydrateGeospatialRuntimeFromRepository,
 } from './geospatialRuntimePersistence';
 import { executePublicSpatialListingSearch } from './geospatialPublicListingSearch';
@@ -77,6 +78,8 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   };
   hydrateGeospatialRuntimeFromRepository(runtimeMaps);
   const persistRuntime = createGeospatialPersistHook(runtimeMaps);
+  const persistBoundaryRuntime = createGeospatialPersistHookAsync(runtimeMaps);
+  const persistDurableRuntime = createGeospatialPersistHookAsync(runtimeMaps);
 
   const metrics: GeospatialObservabilityMetrics = {
     spatialQueriesCount: 0,
@@ -119,7 +122,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       metrics,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistBoundaryRuntime,
     });
   }
 
@@ -130,7 +133,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       activeBoundaryLocks,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistBoundaryRuntime,
     });
   }
 
@@ -163,14 +166,14 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     return resolvePointInBoundaryStore({ boundaryHistoryByEntity, metrics, rawLat, rawLng });
   }
 
-  function upsertPointOfInterest(params: UpsertPoiParams) {
+  async function upsertPointOfInterest(params: UpsertPoiParams) {
     return executeUpsertPointOfInterest({
       input: params,
       poiStore,
       poiDedupeIndex,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistDurableRuntime,
     });
   }
 
@@ -185,12 +188,39 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     if (!coordCheck.valid || !coordCheck.coordinate) {
       throw new CoreApiError('VALIDATION_FAILED', 400, coordCheck.errorMessage ?? 'Invalid listing coordinates.');
     }
+    // A listing ID is globally unique in this index. Remove any previous city entry
+    // before inserting the latest record so city changes cannot leave stale duplicates.
+    for (const [indexedCityId, indexedListings] of spatialListingsByCity.entries()) {
+      if (indexedCityId === listing.cityId || !indexedListings.has(listing.id)) continue;
+      indexedListings.delete(listing.id);
+      if (indexedListings.size === 0) spatialListingsByCity.delete(indexedCityId);
+    }
     const cityMap = spatialListingsByCity.get(listing.cityId) ?? new Map<string, SpatialPublishableListing>();
     cityMap.set(listing.id, {
       ...structuredClone(listing),
       coordinates: coordCheck.coordinate,
     });
     spatialListingsByCity.set(listing.cityId, cityMap);
+    // Spatial listings are part of the durable geospatial repository; persist each index mutation.
+    persistRuntime();
+  }
+
+  function removeListingFromSpatialSearch(listingId: string): boolean {
+    const normalizedId = listingId.trim();
+    if (!normalizedId) {
+      throw new CoreApiError('VALIDATION_FAILED', 400, 'Listing ID is required.');
+    }
+
+    let removed = false;
+    for (const [cityId, cityMap] of spatialListingsByCity.entries()) {
+      if (!cityMap.delete(normalizedId)) continue;
+      removed = true;
+      if (cityMap.size === 0) spatialListingsByCity.delete(cityId);
+    }
+
+    // Avoid unnecessary writes when the listing is already absent.
+    if (removed) persistRuntime();
+    return removed;
   }
 
   function searchListingsSpatially(query: SpatialSearchQuery): SpatialSearchResult {
@@ -226,10 +256,49 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     hoodId?: number;
   }): ValuationLocationFeatureVector {
     const resolved = resolvePointToGeography(params.coordinates.lat, params.coordinates.lng);
-    const hoodId = resolved.hoodId ?? params.hoodId ?? 1;
+    if (
+      !resolved.resolved
+      || resolved.status !== 'RESOLVED_INSIDE'
+      || !resolved.cityId
+      || typeof resolved.hoodId !== 'number'
+      || !Number.isSafeInteger(resolved.hoodId)
+      || resolved.hoodId <= 0
+      || typeof resolved.boundaryVersion !== 'number'
+      || !Number.isSafeInteger(resolved.boundaryVersion)
+      || resolved.boundaryVersion < 1
+      || typeof resolved.boundaryVersionId !== 'string'
+      || !resolved.boundaryVersionId.trim()
+    ) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'A unique point strictly inside an active neighborhood boundary is required for valuation features.',
+        {
+          resolutionStatus: resolved.status,
+          candidateBoundaryIds: resolved.candidateBoundaryIds,
+        },
+      );
+    }
+    if (resolved.cityId !== params.cityId) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'Resolved neighborhood city does not match the requested city.',
+        { requestedCityId: params.cityId, resolvedCityId: resolved.cityId },
+      );
+    }
+    if (params.hoodId !== undefined && params.hoodId !== resolved.hoodId) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'Caller-supplied neighborhood ID does not match the spatially resolved neighborhood.',
+        { requestedHoodId: params.hoodId, resolvedHoodId: resolved.hoodId },
+      );
+    }
+    const hoodId = resolved.hoodId!;
     const context = getLocationContext({
       coordinates: params.coordinates,
-      cityId: resolved.cityId ?? params.cityId,
+      cityId: resolved.cityId,
       hoodId,
     });
     return buildValuationLocationFeatureVector({
@@ -238,13 +307,13 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       districtId: resolved.districtId,
       hoodId,
       subNeighborhoodId: resolved.subNeighborhoodId,
-      boundaryVersion: resolved.boundaryVersion ?? 1,
+      boundaryVersion: resolved.boundaryVersion,
       context,
     });
   }
 
-  function upsertGeographicOverlay(layer: GeographicOverlayLayer): GeographicOverlayLayer {
-    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache);
+  async function upsertGeographicOverlay(layer: GeographicOverlayLayer): Promise<GeographicOverlayLayer> {
+    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache, persistDurableRuntime);
   }
 
   function getGeographicOverlay(params: { layerId: string; isAdminCaller: boolean }): GeographicOverlayLayer {
@@ -270,8 +339,10 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       cityId: params.cityId,
       hoodId: params.hoodId,
       hoodName: profile.hoodName,
-      boundaryVersionId: activeBnd?.id ?? profile.boundaryReference,
-      boundaryVersion: activeBnd?.version ?? 1,
+      // A market-profile boundaryReference is not a verified active GIS version.
+      // Do not synthesize v1 when the boundary registry has no unique ACTIVE record.
+      boundaryVersionId: activeBnd?.id ?? null,
+      boundaryVersion: activeBnd?.version ?? null,
       simplifiedGeometry: activeBnd?.simplifiedGeometry ?? null,
       medianAskingPsmMillion: profile.saleIndicators.medianAskingPricePerSqmMillion,
       medianVerifiedPsmMillion: profile.saleIndicators.medianVerifiedPricePerSqmMillion,
@@ -294,7 +365,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       nowIso: nowFn().toISOString(),
       upsertNeighborhoodBoundary,
       upsertPointOfInterest,
-      persistRuntime,
+      persistRuntime: persistDurableRuntime,
     });
   }
 
@@ -327,6 +398,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     upsertPointOfInterest,
     findNearbyPointsOfInterest,
     indexListingForSpatialSearch,
+    removeListingFromSpatialSearch,
     searchListingsSpatially,
     getLocationContext,
     getValuationLocationFeatures,

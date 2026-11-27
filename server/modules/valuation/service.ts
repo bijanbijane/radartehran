@@ -227,7 +227,36 @@ export function createValuationService(deps: ValuationModuleDependencies) {
       throw new CoreApiError('VALIDATION_FAILED', 400, 'Invalid property valuation input.', validated.issues);
     }
 
-    const input = validated.value;
+    const input = { ...validated.value };
+    if (input.coordinates) {
+      if (!deps.valuationLocationResolver) {
+        throw new CoreApiError(
+          'CONFLICT',
+          409,
+          'Coordinate-based valuation requires an active canonical neighborhood resolver.',
+        );
+      }
+      const resolvedLocation = deps.valuationLocationResolver.getValuationLocationFeatures({
+        coordinates: input.coordinates,
+        cityId: input.cityId,
+        hoodId: input.hoodId,
+      });
+      if (resolvedLocation.cityId !== input.cityId || resolvedLocation.hoodId !== input.hoodId) {
+        throw new CoreApiError(
+          'CONFLICT',
+          409,
+          'Submitted valuation neighborhood does not match the canonical spatial resolution.',
+          {
+            requestedCityId: input.cityId,
+            requestedHoodId: input.hoodId,
+            resolvedCityId: resolvedLocation.cityId,
+            resolvedHoodId: resolvedLocation.hoodId,
+          },
+        );
+      }
+      input.districtId = resolvedLocation.districtId;
+      input.subNeighborhoodId = resolvedLocation.subNeighborhoodId;
+    }
     const config = getActiveConfig(input.modelVersionOverride);
     const nowIso = nowFn().toISOString();
     const valuationDateIso = input.valuationDateIso ?? nowIso;

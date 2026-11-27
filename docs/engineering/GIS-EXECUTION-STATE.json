@@ -1,0 +1,299 @@
+{
+  "schema_version": "1.4",
+  "workstream": "RADAR-TEHRAN-GIS",
+  "status": "IN_PROGRESS",
+  "status_date": "2026-11-27",
+  "repository": "bijanbijane/radartehran",
+  "branch": "feat/gis-spatial-integrity-2026-11-27",
+  "review_pr": 72,
+  "review_pr_state": "DRAFT",
+  "baseline_main_sha": "456dcacb387b908797756863b10da1f7104b658e",
+  "code_revision_reviewed_at_start_of_D1_audit": "bb367e530b30429897ccc957a437760ae76f2275",
+  "phase": "GIS-FOUNDATION-AND-SPATIAL-INTEGRITY",
+  "completed": [
+    "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and GIS branch delta.",
+    "Reviewed strict spatial assignment, edge/overlap rejection, Polygon hole validation, duplicate ACTIVE boundary fail-closed behavior, and dedicated regression tests.",
+    "Opened draft PR #72; no merge performed.",
+    "Inspected live Cloudflare D1 inventory and schemas read-only: three Radar databases; no radar-profile-db and no nips_ tables.",
+    "Verified read-only D1 SELECT, JSON and math probes; documented that RTree runtime support remains unverified because introspection/EXPLAIN was denied by the REST query surface.",
+    "Corrected GIS ownership documentation to align with the NIPS ERD proposal for a dedicated radar-profile-db; no database was created.",
+    "Hardened point resolution, profile reads and boundary mutations against multiple ACTIVE versions within one entity history; added regression tests for fail-closed assignment and independent repair.",
+    "Verified the current branch HEAD and exact-SHA GitHub Actions workflow/job conclusions; job logs were unavailable, so no automated test result is claimed.",
+    "Added strict MultiPolygon component topology validation: reject touching/intersecting components and overlapping filled interiors; preserve valid island-in-hole cases.",
+    "Added regression tests for overlapping/touching MultiPolygon components and valid disjoint/island-in-hole components.",
+    "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck.",
+    "Hardened geospatial snapshot validation across every boundary history: reject malformed history/record shapes, map-key/entity mismatches, duplicate record IDs, duplicate or out-of-order versions, and multiple ACTIVE versions; added durable-recovery regression coverage.",
+    "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage.",
+    "Added durable snapshot validation for canonical geometry, simplified geometry and exact persisted bounding-box consistency; added malformed geometry, malformed simplified geometry and stale bbox regression cases.",
+    "Audited valuation and spatial market summary consumers: valuation now requires an explicit valid boundary version ID/version; market summary returns null boundary metadata instead of synthesizing version 1 when no unique ACTIVE boundary exists.",
+    "Hardened sub-neighborhood assignment: a point on a micro-neighborhood edge does not inherit its sub-neighborhood ID, and any matched active boundary edge prevents an interior valuation result.",
+    "Fixed a point-resolution integrity gap: a parent-neighborhood interior no longer masks a matched sub-neighborhood boundary edge; edge matches do not emit a sub-neighborhood ID.",
+    "Added a regression proving a point on a sub-neighborhood edge is marked RESOLVED_ON_EDGE and rejected by valuation feature generation.",
+    "Fixed bbox overlap diagnostics to require exactly one ACTIVE record across the complete entity history before filtering by city or boundary level; added a mixed-metadata duplicate-ACTIVE regression.",
+    "Added an injectable canonical ValuationLocationResolver contract to the valuation module; coordinate-bearing estimates fail closed when the resolver is absent or its canonical city/neighborhood differs from the request.",
+    "Added valuation regression coverage for missing resolver, successful coordinate resolution, and mismatched neighborhood identity; added test:valuation-location and included it in the GIS focused workflow.",
+    "Audited production API composition: apps/api/server.ts mounts the GIS router but does not construct or mount createValuationService/createValuationRouter; documented that production valuation API integration remains unresolved.",
+    "Re-audited the current branch IRNI RPC v2 consumer: the Worker Service Binding and revision/checksum-verified identity facade exist, but the v2 entity DTO does not provide authoritative polygon geometry.",
+    "Confirmed the Worker neighborhood-boundary endpoint generates explicitly approximate visualization hexagons and is not a valid valuation boundary source.",
+    "Confirmed Express GIS point resolution reads its boundary-history snapshot repository; no verified IRNI geometry ingestion path was established.",
+    "Confirmed valuation production composition remains incomplete: apps/api/server.ts does not mount the valuation router, and no production ValuationDataConsumerAdapter or IRNI-backed ValuationLocationResolver was established.",
+    "Expanded GIS blocker documentation with the exact IRNI geometry, production composition, and API integration acceptance gates.",
+    "Queried GitHub Actions Jobs API for GIS, IRNI RPC and Worker bundle failures; all four jobs report runner_id=0, empty runner_name and zero steps, confirming no workflow step was recorded.",
+    "Expanded the GIS workflow push and pull_request path filters to cover all changed valuation, property-search, persistence, IRNI identity and marketplace regression paths; added those focused test files to the regression command.",
+    "Expanded Browser UX workflow source watches to include the changed Neighborhood Inspector and NIPS profile UI files; verified both workflow files by GitHub read-back."
+  ],
+  "not_verified": [
+    "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
+    "Execution success of npm run typecheck on the same code revision",
+    "Repository-wide TypeScript typecheck, lint, architecture check and build",
+    "Complete end-to-end recovery/hydration verification against a real durable snapshot backend",
+    "Execution of the new durable snapshot recovery regression cases",
+    "D1 RTree support through the actual Worker binding runtime",
+    "Production IRNI read-only resolver/service binding wiring",
+    "NIPS profile database provisioning, owner/writer policy, migrations and repository",
+    "Authoritative Tehran neighborhood polygon dataset, license and CRS",
+    "Execution of exact-head GIS tests covering durable snapshot geometry and sub-neighborhood edge behavior",
+    "Execution of the sub-neighborhood edge regression and latest GIS typecheck on HEAD 2d6c707303dc2e48723c3a8869e59984199c9608",
+    "Execution of the mixed-metadata duplicate-ACTIVE bbox diagnostic regression on code revision 4a66e3ed9d06a93b051d5b549a688826d0c4da01",
+    "Execution of tests/property-valuation-engine-module.test.ts and npm run test:valuation-location on the latest branch head",
+    "Production composition of the valuation service with an authoritative IRNI read-only resolver",
+    "Public API valuation endpoint registration and end-to-end coordinate-to-neighborhood integration",
+    "Authoritative IRNI polygon/MultiPolygon geometry contract and version-pinned geometry artifact",
+    "Verified ingestion/refresh path from IRNI-approved geometries into the production GIS boundary repository",
+    "Production ValuationDataConsumerAdapter and canonical IRNI-backed ValuationLocationResolver",
+    "Public valuation HTTP endpoint registration and API-boundary tests",
+    "Exact-head execution of GIS, IRNI RPC and Worker bundle workflows on code revision 3aafd609702b270c1a49be3d52ba4175662829a6",
+    "Root cause of GitHub hosted-runner allocation/dispatch failure (account/repository Actions entitlement, usage/billing, policy or GitHub service state)",
+    "Execution of expanded GIS regression and Browser UX suites on exact PR head 625490e51e434a722ddfe0357258c748e36de720; latest jobs failed without step metadata."
+  ],
+  "production_changes": false,
+  "production_deployment": false,
+  "database_migrations_added": false,
+  "database_created": false,
+  "tests": {
+    "command": "npm run test:geospatial && npm run test:valuation-location && npx tsx --test tests/durable-repository-snapshots.test.ts tests/irni-neighborhood-profile-identity-resolver.test.ts tests/cloudflare-marketplace-bargain-write.test.ts tests/property-search/__tests__/propertySearch.test.ts",
+    "status": "NOT_VERIFIED_NO_JOB_STEPS",
+    "reviewed_head_sha": "625490e51e434a722ddfe0357258c748e36de720",
+    "workflow_run_id": 46018956272,
+    "jobs": [
+      {
+        "name": "GIS module TypeScript typecheck",
+        "job_id": 140573277590,
+        "conclusion": "failure",
+        "steps": null,
+        "logs": null
+      },
+      {
+        "name": "GIS geometry, identity, persistence and valuation regressions",
+        "job_id": 140573277971,
+        "conclusion": "failure",
+        "steps": null,
+        "logs": null
+      }
+    ],
+    "retry_of_prior_gis_jobs": {
+      "original_run_id": 45980295987,
+      "retry_job_ids": [
+        140442697746,
+        140442699939
+      ],
+      "conclusion": "failure",
+      "steps": [],
+      "logs": "BlobNotFound"
+    },
+    "reason": "Exact-head GIS run 46018956272 on branch head 625490e51e434a722ddfe0357258c748e36de720 concluded failure. Both job payloads expose steps=null and no log evidence. It is not established whether checkout, dependency installation, test files or typecheck started.",
+    "latest_observed_prior_run": {
+      "run_id": 45981367653,
+      "reviewed_branch_head": "8797133f34c5e75a84d5462b6d562c5e2e2a6dc4",
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "name": "GIS module TypeScript typecheck",
+          "job_id": 140445807098,
+          "steps": null,
+          "logs": "BlobNotFound"
+        },
+        {
+          "name": "GIS geometry and boundary regression",
+          "job_id": 140445807429,
+          "steps": null,
+          "logs": "BlobNotFound"
+        }
+      ]
+    }
+  },
+  "d1_runtime_probes": {
+    "read_only": true,
+    "passed": [
+      "SELECT 1",
+      "json_valid",
+      "json_extract",
+      "sqrt"
+    ],
+    "denied_by_rest_query_surface": [
+      "sqlite_version",
+      "PRAGMA module_list",
+      "EXPLAIN CREATE VIRTUAL TABLE USING rtree"
+    ],
+    "rtree_support": "UNVERIFIED"
+  },
+  "cloudflare_d1_inventory": {
+    "radar-neighborhood-db": {
+      "application_tables": 19,
+      "applied_migrations": 5,
+      "nips_tables": 0
+    },
+    "radar-user-db": {
+      "application_tables": 29,
+      "nips_tables": 0
+    },
+    "radar-researcher-db": {
+      "application_tables": 9,
+      "nips_tables": 0
+    },
+    "radar-profile-db": "NOT_FOUND"
+  },
+  "next_exact_action": "Restore usable GitHub Actions diagnostics and execute npm run test:geospatial, npm run test:valuation-location, and npm run typecheck against code revision 69f6e972e5b6583a82e6da2200515b08cb47f4a8. Then implement production valuation composition only after confirming the authoritative IRNI read-only resolver and data-consumer contracts.",
+  "blockers": [
+    "No usable execution runner or exact-SHA GIS test evidence. The latest observed GIS run for the preceding code revision failed with steps=null and BlobNotFound; Desktop Commander MacBook remains offline.",
+    "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
+    "The GIS runtime persists atomic JSON/durable snapshots and is not a D1 spatial query engine.",
+    "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
+    "RTree support is not verified in the D1 Worker runtime.",
+    "Production IRNI read-only resolver/service binding is not verified.",
+    "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
+    "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed.",
+    "The production API bootstrap does not register a valuation router or construct a valuation service; the new canonical resolver guard is only a service-level seam until production composition and an IRNI read-only resolver are implemented.",
+    "The exact-head GIS workflow run failed without step metadata or logs, so the new valuation-location regression suite and typecheck remain unverified.",
+    "Exact-head workflow runs 46018956272 (GIS), 46018956332 (Browser UX) and 46018956178 (path-filter detect) failed with steps=null; no command execution is evidenced and no runner metadata is exposed for these sampled jobs."
+  ],
+  "last_recorded_action": "Corrected GIS and Browser UX workflow path coverage, expanded targeted GIS regressions, and synchronized GIS execution-state/progress records. Runtime validation remains blocked by exact-head GitHub Actions jobs with steps=null.",
+  "latest_inspected_pr_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
+  "latest_branch_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
+  "last_verified_commit_sha": null,
+  "ci": {
+    "branch_head_sha": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
+    "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
+    "compare_main": {
+      "ahead_by": 254,
+      "behind_by": 0,
+      "base_sha": "456dcacb387b908797756863b10da1f7104b658e"
+    },
+    "workflow_runs": [
+      {
+        "name": "GIS Spatial Integrity",
+        "run_id": 46018956272,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "GIS module TypeScript typecheck",
+            "job_id": 140573277590,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "GIS geometry, identity, persistence and valuation regressions",
+            "job_id": 140573277971,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "Radar Browser UX Focused Regressions",
+        "run_id": 46018956332,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "Five-city context and 8-viewport browser regression",
+            "job_id": 140573278296,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 46018956178,
+        "conclusion": "failure",
+        "jobs": [
+          {
+            "name": "detect",
+            "job_id": 140573277447,
+            "conclusion": "failure",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "contracts-gates",
+            "job_id": 140573294495,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "frontend-gates",
+            "job_id": 140573294688,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          },
+          {
+            "name": "api-gates",
+            "job_id": 140573294789,
+            "conclusion": "skipped",
+            "steps": null,
+            "logs": null
+          }
+        ]
+      },
+      {
+        "name": "Cloudflare Native Auth Validation",
+        "run_id": 46018956249,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "Tehran Radar CI Quality Gates",
+        "run_id": 46018956240,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "run_id": 46018956302,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 46018956267,
+        "conclusion": "failure",
+        "jobs": []
+      },
+      {
+        "name": "Radar Initial Frontend Bundle Budget",
+        "run_id": 46018956312,
+        "conclusion": "failure",
+        "jobs": []
+      }
+    ],
+    "interpretation": "Exact-head workflow runs on 625490e51e434a722ddfe0357258c748e36de720 failed. The sampled GIS, Browser UX and path-filter detector job payloads expose steps=null; no runner metadata is exposed in those sampled payloads. No test, typecheck, browser, lint or build command execution is evidenced. The workflow path coverage corrections are verified by source read-back only; runtime validation remains blocked and the precise GitHub-side cause is unknown."
+  },
+  "latest_branch_sha_at_record": "3473ee174f156f7d6f2aa51175696a1934ea2a79",
+  "latest_code_revision_sha": "4a66e3ed9d06a93b051d5b549a688826d0c4da01",
+  "valuation_integration": {
+    "status": "SERVICE_GUARD_IMPLEMENTED_PRODUCTION_WIRING_BLOCKED",
+    "api_bootstrap": "GIS router mounted at /api/v1/geospatial; no valuation service construction or valuation router mount in apps/api/server.ts",
+    "resolver_contract": "ValuationLocationResolver exists only as an injectable service dependency; current cross-module test injects local GeospatialService",
+    "irni_identity_rpc": "Worker IRNI RPC v2 exists through IRNI_GEOGRAPHY and validates active registry metadata/revision/checksum; entity DTO does not provide polygon geometry",
+    "worker_boundary_route": "/api/neighborhood-boundaries/resolve returns explicitly approximate visualization-only hexagons; not authoritative",
+    "gis_persistence": "Express GIS service hydrates/persists boundary history through AtomicJsonRepository geospatial-state.json and durable snapshot adapter; IRNI ingestion not established",
+    "data_consumer": "ValuationDataConsumerAdapter is required by createValuationService; production adapter/composition not established",
+    "tests": "Service-level and local cross-module regression cases added; execution unverified; no public HTTP-to-IRNI-geometry integration test",
+    "acceptance": "Require approved versioned geometry provider, exact canonical linkage, production ingestion, production adapters, public route tests, and fail-closed behavior before route registration."
+  }
+}
