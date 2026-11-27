@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-006",
+  "package_id": "DESIGN-MAP-007",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -35,7 +35,11 @@
     "Reviewed PAGE-02 acceptance status and identified the need to distinguish observed listing evidence, reference baselines, estimates, community reports, and live signals at the point of use.",
     "Created DESIGN-MAP-005 neighborhood inspector information hierarchy and data provenance specification; no application code changed.",
     "Inventoried active-branch map workspace z-index declarations, fixed viewport anchors, inspector backdrop/surface, mobile navigation safe-bottom padding, map toolbar offsets, and workspace status/validation overlays.",
-    "Documented semantic overlay layer roles, interaction/focus invariants, safe-area and visual-viewport requirements, responsive test matrix, and explicit limits of source-only stacking analysis in DESIGN-MAP-006; no application code changed."
+    "Documented semantic overlay layer roles, interaction/focus invariants, safe-area and visual-viewport requirements, responsive test matrix, and explicit limits of source-only stacking analysis in DESIGN-MAP-006; no application code changed.",
+    "Inspected active-branch AppModalsPortal, RadarWorkspaceShell, representative modal consumers, shared useDialogFocus hook, dialogStack helper, and RadarPrimitives dialog implementation.",
+    "Verified AppModalsPortal is an ordinary conditional React modal aggregator in the inspected source, not itself a createPortal host; full-app portal-root inventory remains unverified.",
+    "Identified non-uniform modal focus management: shared hook adoption in selected dialogs, a separate primitive dialog keydown implementation, and SecondaryModals hook activation limited to pulse/SEO states.",
+    "Documented topmost DOM-order dependency, focus restoration and body-scroll-lock behavior, background inertness gap in inspected hook, and conditional z-50/z-55 layer collision risk in DESIGN-MAP-007; no application code changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -60,7 +64,11 @@
     "Prioritize scorecard affordability decisions above secondary calculators and deep analytical modules; defer long content without hiding methodology.",
     "Treat overlay z-index values as semantic layer roles governed by a workspace contract; inspect stacking-context ancestry and portal ownership before changing numeric tokens.",
     "Position map utilities against a shared measured mobile-navigation/safe-area contract rather than undocumented per-breakpoint bottom offsets.",
-    "Treat source z-index inventory as risk evidence only; rendered overlap requires computed styles, bounding boxes, and pointer/focus verification."
+    "Treat source z-index inventory as risk evidence only; rendered overlap requires computed styles, bounding boxes, and pointer/focus verification.",
+    "Use one documented overlay coordinator for modal stack order, focus ownership, dismissal policy, and scroll-lock lifecycle.",
+    "Keep coordinator stack order, DOM order, and visual stacking order aligned; only the topmost dialog handles Escape and sequential focus.",
+    "Require stack-aware focus restoration, explicit background inertness, accessible naming, and independent modal content scrolling.",
+    "Treat current modal z-index conflicts as source-level risks until simultaneous states and rendered stacking contexts are verified."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -82,7 +90,14 @@
     "overlay_semantic_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
     "stacking_context_ancestry": "NOT VERIFIED",
     "safe_area_visual_viewport": "NOT RUN",
-    "overlay_pointer_focus_ownership": "NOT RUN"
+    "overlay_pointer_focus_ownership": "NOT RUN",
+    "modal_portal_source_review": "VERIFIED",
+    "modal_focus_management_source_review": "VERIFIED",
+    "modal_runtime_focus_behavior": "NOT RUN",
+    "modal_background_inertness": "NOT VERIFIED",
+    "modal_scroll_lock_runtime": "NOT RUN",
+    "modal_stack_visual_order": "NOT VERIFIED",
+    "full_portal_root_inventory": "NOT VERIFIED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -90,7 +105,9 @@
     "Frontend implementation remains unauthorized.",
     "Desktop Commander MacBook-Air.local remains offline; DESIGN-MAP-004 component/browser integration tests and rendered geometry cannot be captured.",
     "DESIGN-MAP-005 responsive hierarchy, rendered content density, and keyboard/screen-reader behavior remain unverified because browser/device inspection is unavailable.",
-    "DESIGN-MAP-006 computed stacking contexts, safe-area geometry, visual-viewport behavior, and overlay hit testing remain unverified without an available browser/device."
+    "DESIGN-MAP-006 computed stacking contexts, safe-area geometry, visual-viewport behavior, and overlay hit testing remain unverified without an available browser/device.",
+    "DESIGN-MAP-007 full-app portal-root inventory and nested modal runtime behavior remain unverified without complete source-tree/runtime inspection.",
+    "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA."
   ],
-  "next_exact_action": "Reconnect development browser/device; validate DESIGN-MAP-002/004/005/006 together across viewport, safe-area, overlay, focus, and RTL/LTR matrices; reconcile semantic layers with global modal/portal ownership; then request explicit frontend implementation authorization."
+  "next_exact_action": "Complete full modal entry-point and portal-root inventory; reconnect development browser/device and validate nested-dialog focus, background inertness, body scroll locking, and layer order across viewport/RTL matrices; then prepare the overlay coordinator implementation handoff for explicit frontend authorization."
 }
