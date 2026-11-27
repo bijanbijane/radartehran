@@ -3,8 +3,8 @@
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
 import type { GeospatialRecordCounts } from './geospatialSnapshotValidation';
-import { validatePersistedGeospatialState } from './geospatialSnapshotValidation';
-export { getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+import { createEmptyGeospatialState, getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+export { createEmptyGeospatialState, getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 export type { GeospatialRecordCounts } from './geospatialSnapshotValidation';
 
 export const GEOSPATIAL_SNAPSHOT_SCHEMA = 'geospatial_state_v1';
@@ -26,9 +26,6 @@ let lastRecoveryReport: GeospatialRecoveryReport | null = null;
 let recoveryInFlight: Promise<GeospatialRecoveryReport> | null = null;
 let stagedSnapshot: PersistedGeospatialState | null = null;
 
-const IRAN_LAT = { min: 24, max: 40.5 };
-const IRAN_LNG = { min: 44, max: 64 };
-
 export function getGeospatialPersistenceHealth(): GeospatialPersistenceHealth {
   return persistenceHealth;
 }
@@ -44,16 +41,6 @@ export function resetGeospatialRecoveryStateForTests(): void {
   stagedSnapshot = null;
 }
 
-function defaultEmpty(): PersistedGeospatialState {
-  return {
-    boundaryHistoryByEntity: {},
-    poiStore: {},
-    poiDedupeIndex: {},
-    spatialListingsByCity: {},
-    overlayStore: {},
-    importBatches: {},
-  };
-}
 
 export function hasAuthoritativeGeospatialMinimum(counts: GeospatialRecordCounts): boolean {
   return (
@@ -127,7 +114,7 @@ export async function activateStagedGeospatialSnapshot(options: {
     const blocked: GeospatialRecoveryReport = {
       health: 'BLOCKED',
       schemaVersion: GEOSPATIAL_SNAPSHOT_SCHEMA,
-      recordCounts: countRecords(defaultEmpty()),
+      recordCounts: getGeospatialRecordCounts(createEmptyGeospatialState()),
       validationErrors: ['GEOSPATIAL_NO_STAGED_SNAPSHOT'],
       recoveryRequirement: 'Stage a validated snapshot before activation.',
       activated: false,
