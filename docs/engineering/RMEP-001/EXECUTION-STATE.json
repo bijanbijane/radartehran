@@ -11,11 +11,11 @@
     "verification_status": "VERIFIED"
   },
   "repository": {
-    "remote_identity": "local-sandbox-no-git-remote",
-    "current_branch": "sandbox-main",
-    "head_commit": "FILESYSTEM_PINNED_SHA256",
-    "working_tree_status": "UNINITIALIZED_GIT_SANDBOX_FILESYSTEM_VERIFIED",
-    "last_verified_commit": "FILESYSTEM_PINNED_SHA256"
+    "remote_identity": "github.com/bijanbijane/radartehran",
+    "current_branch": "qa/triad-regression-coverage-2026-11-27",
+    "head_commit": "a488f9750211d9afec46d4ed33258c47e70171f2",
+    "working_tree_status": "REMOTE_BRANCH_COMMITTED; LOCAL_CHECKOUT_UNAVAILABLE",
+    "last_verified_commit": "a488f9750211d9afec46d4ed33258c47e70171f2"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -29,12 +29,12 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-25T22:15:00.000Z",
-    "last_safe_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "last_completed_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "next_exact_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
-    "resume_status": "READY"
+    "checkpoint_id": "CHK-195-CI-WORKFLOW-SCRIPT-REPAIR",
+    "checkpoint_timestamp_utc": "2026-11-27T10:03:45.000Z",
+    "last_safe_operation": "OP-194 committed to the existing QA branch: corrected .github/workflows/cloudflare-native-auth-validation.yml to invoke the existing npm run test:auth script; confirmed the exact file content and branch tip through GitHub.",
+    "last_completed_operation": "OP-193 remains the last fully verified engineering package. OP-194 is implemented but not test-verified.",
+    "next_exact_action": "Restore local or GitHub Actions job execution; run npm run test:auth, npm run test:triad, write-pause, Cloudflare, security and root suites. Then resume Phase 6 residual Express Firestore-to-D1 domain migrations in isolated, backward-compatible packages.",
+    "resume_status": "BLOCKED_BY_VERIFICATION_ENVIRONMENT"
   },
   "execution_history": {
     "completed_tasks": [
@@ -237,7 +237,8 @@
     "in_progress_tasks": [
       "CLOUDFLARE_NATIVE_AUTH_FIREBASE_RETIREMENT",
       "RADAR_WORKER_TYPECHECK_AND_UI_E2E_REMEDIATION",
-      "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT"
+      "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT",
+      "P6-CI-WORKFLOW-TEST-GATE-REMEDIATION"
     ],
     "verified_commits": [
       "f8b066f76c9053ce9b3c53fb136b9ec34fc57f7a",
@@ -1811,6 +1812,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-25T22:15:00.000Z"
+    },
+    {
+      "operation_id": "OP-194",
+      "phase": "PHASE-6",
+      "description": "Repair the Cloudflare Native Auth GitHub Actions workflow's stale test:cloudflare-native-auth command by switching to the existing test:auth script on the existing PR #71 QA branch; verify the committed file and branch tip through GitHub.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T10:03:45.000Z"
     }
   ],
   "tests": [
@@ -1931,7 +1940,22 @@
     "MED-005: Declarative Atomic Execution State Persistence",
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "id": "BLK-CI-RUNNER-001",
+      "status": "BLOCKED",
+      "severity": "HIGH",
+      "summary": "GitHub Actions jobs terminate before exposing steps or logs; the workflow runner/root cause remains unconfirmed.",
+      "evidence": "Latest PR #71 runs 45978898737, 45978898927, 45978898828, 45978898874, and 45978898800; jobs expose no step list or log URL. Log retrieval previously returned 404 BlobNotFound."
+    },
+    {
+      "id": "BLK-LOCAL-RUNNER-001",
+      "status": "BLOCKED",
+      "severity": "HIGH",
+      "summary": "The linked MacBook Desktop Commander device is offline, preventing local test execution.",
+      "evidence": "Device ae251c1c-bfb2-441d-8716-ffa91b6e4ae5 reported Offline (last seen 20h before inspection)."
+    }
+  ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
   ],
@@ -2172,6 +2196,9 @@
     "must_verify_before_resume": [
       "Verify MASTER-PROMPT.md SHA-256 matches 4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
     ],
-    "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass."
+    "next_action": "Restore a runnable local or GitHub Actions environment; first execute npm run test:auth, npm run test:triad, npx tsx --test worker/db/writePause.test.ts, npm run test:cloudflare and npm run test:security. Do not mark OP-194 verified until the auth suite runs successfully. Then continue residual Express Firestore-to-D1 migration by domain, preserving current legacy fallback until an equivalent D1 adapter and tests exist.",
+    "current_branch": "qa/triad-regression-coverage-2026-11-27",
+    "current_head_commit": "a488f9750211d9afec46d4ed33258c47e70171f2",
+    "last_session_status": "OP-194 IMPLEMENTED_BUT_NOT_VERIFIED; CI AND LOCAL EXECUTION BLOCKED"
   }
 }
