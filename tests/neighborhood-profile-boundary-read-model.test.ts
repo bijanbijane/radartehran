@@ -15,6 +15,7 @@ import {
   calculateNeighborhoodBoundaryGeometrySha256,
   pickActiveBoundaryVersion,
 } from '../server/modules/geospatial/neighborhoodProfileBoundaryReadModel';
+import { detectActiveBoundaryBboxOverlaps } from '../server/modules/geospatial/geospatialBoundaryReadModel';
 import { evaluateNeighborhoodProfileBoundary } from '../src/features/neighborhoods/profile-contract/neighborhoodProfileBoundaryContract';
 
 const geometry: BoundaryVersionRecord['geometry'] = {
@@ -345,4 +346,32 @@ test('does not expose an arbitrary boundary when a history has multiple ACTIVE v
 
   assert.equal(pickActiveBoundaryVersion([v1, v2]), null);
   assert.equal(pickActiveBoundaryVersion([v1, superseded])?.id, v1.id);
+});
+
+test('bbox overlap diagnostics skip duplicate ACTIVE histories instead of selecting the first record', () => {
+  const duplicateV1 = makeBoundary();
+  const duplicateV2 = makeBoundary({ id: 'bnd_hood_tehran_13_v2', version: 2 });
+  const singleA = makeBoundary({
+    id: 'bnd_hood_tehran_14_v1',
+    entityId: 'hood:tehran:14',
+    hoodId: 14,
+  });
+  const singleB = makeBoundary({
+    id: 'bnd_hood_tehran_15_v1',
+    entityId: 'hood:tehran:15',
+    hoodId: 15,
+  });
+
+  const overlaps = detectActiveBoundaryBboxOverlaps(
+    new Map([
+      [duplicateV1.entityId, [duplicateV1, duplicateV2]],
+      [singleA.entityId, [singleA]],
+      [singleB.entityId, [singleB]],
+    ]),
+    'tehran',
+    'neighborhood',
+    () => true,
+  );
+
+  assert.deepEqual(overlaps, [{ entityA: singleA.entityId, entityB: singleB.entityId }]);
 });
