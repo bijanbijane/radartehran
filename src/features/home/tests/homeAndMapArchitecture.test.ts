@@ -36,6 +36,7 @@ import {
 } from '../../../components/map/interactiveSpatialMeasureLayer';
 import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
 import { resolveSelectedNeighborhoodById } from '../../../components/selectedNeighborhoodResolver';
+import { resolveUrlNeighborhoodEntry } from '../../../components/useAppUrlAndTitleSync';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
@@ -49,6 +50,28 @@ const MOCK_HOODS: EvaluatedNeighborhood[] = [
     overallScore: 8.1, status: 'yellow', diffPercent: 12, bargains: [],
   } as unknown as EvaluatedNeighborhood,
 ];
+
+
+describe('URL neighborhood selection resolution', () => {
+  const urlHoods = [
+    { cityId: 'tehran' as const, hood: { id: 1, name: 'ونک', lat: 35.75, lng: 51.41 } as any },
+    { cityId: 'mashhad' as const, hood: { id: 101, name: 'احمدآباد', lat: 36.29, lng: 59.59 } as any },
+  ];
+
+  it('resolves a valid URL neighborhood ID in its requested city', () => {
+    assert.equal(resolveUrlNeighborhoodEntry('101', 'mashhad', urlHoods)?.hood.id, 101);
+  });
+
+  it('rejects malformed, unknown, and cross-city URL neighborhood IDs', () => {
+    assert.equal(resolveUrlNeighborhoodEntry('not-a-number', undefined, urlHoods), null);
+    assert.equal(resolveUrlNeighborhoodEntry('999999', undefined, urlHoods), null);
+    assert.equal(resolveUrlNeighborhoodEntry('101', 'tehran', urlHoods), null);
+  });
+
+  it('distinguishes an absent URL neighborhood parameter from an invalid one', () => {
+    assert.equal(resolveUrlNeighborhoodEntry(null, undefined, urlHoods), undefined);
+  });
+});
 
 describe('Stage 14 (RT-UI-HOME-001) Homepage Experience Architecture', () => {
   it('builds 4 Market Snapshot metrics with full provenance and handles unavailable/partial states without fake numbers', () => {
