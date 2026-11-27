@@ -127,7 +127,47 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     // Verify mobile inspector sheet handle has accessible role and label
     const sheetHandle = page.getByRole('button', { name: /پنل کالبدشکافی/ });
     await expect(sheetHandle).toBeVisible();
-    await sheetHandle.click();
+    const sheet = page.locator('aside[data-snap-state]');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    const initialHandleBox = await sheetHandle.boundingBox();
+    expect(initialHandleBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    // A deliberate downward drag must move the sheet to peek without toggling it closed.
+    const handleCenterX = initialHandleBox!.x + initialHandleBox!.width / 2;
+    const handleCenterY = initialHandleBox!.y + initialHandleBox!.height / 2;
+    await page.mouse.move(handleCenterX, handleCenterY);
+    await page.mouse.down();
+    await page.mouse.move(handleCenterX, handleCenterY + 80, { steps: 8 });
+    await page.mouse.up();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // An 8px+ movement below the snap threshold must suppress the synthetic click.
+    const peekHandleBox = await sheetHandle.boundingBox();
+    expect(peekHandleBox).not.toBeNull();
+    const peekX = peekHandleBox!.x + peekHandleBox!.width / 2;
+    const peekY = peekHandleBox!.y + peekHandleBox!.height / 2;
+    await page.mouse.move(peekX, peekY);
+    await page.mouse.down();
+    await page.mouse.move(peekX, peekY + 12, { steps: 2 });
+    await page.waitForTimeout(120);
+    await page.mouse.up();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
+    // Upward drag returns the inspector to its expanded state.
+    const finalHandleBox = await sheetHandle.boundingBox();
+    expect(finalHandleBox).not.toBeNull();
+    const finalX = finalHandleBox!.x + finalHandleBox!.width / 2;
+    const finalY = finalHandleBox!.y + finalHandleBox!.height / 2;
+    await page.mouse.move(finalX, finalY);
+    await page.mouse.down();
+    await page.mouse.move(finalX, finalY - 80, { steps: 8 });
+    await page.mouse.up();
+    await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
+
     const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
     await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
     const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
