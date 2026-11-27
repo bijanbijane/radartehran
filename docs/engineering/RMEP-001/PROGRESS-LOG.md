@@ -1301,3 +1301,11 @@
 - **Code inspection:** Account-deletion research erasure is coordinated through USER_DB `research_erasure_outbox` and RESEARCH_DB inbox receipts. Migration 0005 has no explicit outbox claim/lease columns. This is a concurrency-hardening investigation item, not yet a confirmed defect or completed fix.
 - **Verification limits:** No local test/build run was possible because the connected MacBook execution device is Offline. GitHub Actions failure details were not retrievable (BlobNotFound/empty job-step metadata). No production operation was attempted.
 - **Next:** Restore repository execution or Actions log access; diagnose the actual failed PR checks first, then continue residual Express Firestore-to-D1 adapter inventory and focused tests. Keep deployment/merge blocked pending explicit approval.
+
+
+## 2026-11-27 — Research erasure inbox receipt race remediation
+- **Finding:** `executeResearchSubjectErasure` previously used random receipt IDs and `INSERT OR REPLACE` against a table with UNIQUE(`outbox_id`). Two concurrent deliveries could both pass the initial lookup, then replace each other's inbox row after returning different receipt IDs. This could make a USER_DB outbox receipt refer to an inbox receipt that was subsequently replaced.
+- **Change:** Stable `erasure_id`/`receipt_id` derived from the durable `outbox_id`; `INSERT OR IGNORE` preserves the first committed inbox row; a post-transaction read validates and returns the canonical receipt. Added regression assertions that duplicate delivery retains exactly one canonical receipt.
+- **Files:** `worker/research/researchService.ts`, `tests/rt-db-triad-001.test.ts`.
+- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. No local test/typecheck execution because the connected MacBook is Offline. The added regression currently covers duplicate delivery/replay; a deterministic overlapping-delivery test remains required.
+- **Code commits:** `8c014f249d61ead95ec005974a29d900bb907e60`, `a3713a1f05eb03639c127c6d995f805839f9292e`.
