@@ -15,8 +15,8 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "b1d25357d780963282061b486be70c5004e804a0",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; documentation checkpoint commit follows last verified code commit; local execution device unavailable",
+    "head_commit": "567bba7507cab12ef3566413a06fafe4ee8e8fdb",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; state checkpoint records the immediately preceding docs commit; local execution device unavailable",
     "last_verified_commit": "34e2aaad37ba4b3793df7a9a5eecd8e364de6b15"
   },
   "current_phase": {
@@ -32,10 +32,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T11:38:00.000Z",
-    "last_safe_operation": "Confirmed the live legal-regulatory Express→Firestore persistence path; authored a D1 migration design covering all ten logical collections, indexes, transactional guard/CAS protocol, parity tests, data reconciliation, and no-fallback cutover; recorded the unresolved database ownership blocker.",
-    "last_completed_operation": "Confirmed the live legal-regulatory Express→Firestore persistence path; authored a D1 migration design covering all ten logical collections, indexes, transactional guard/CAS protocol, parity tests, data reconciliation, and no-fallback cutover; recorded the unresolved database ownership blocker.",
-    "next_exact_action": "Confirm the D1 database binding that owns legal-regulatory curated content (researcher DB is only a candidate); verify D1 batch conditional SQL semantics; then implement the D1 transaction runner behind LegalRegulatoryStore and run parity tests before changing production composition.",
+    "checkpoint_timestamp_utc": "2026-11-27T11:44:00.000Z",
+    "last_safe_operation": "Verified the legal-regulatory live Firestore route chain and authored/reviewed the D1 migration design; progress, blocker, remediation, next-action, and execution-state records synchronized.",
+    "last_completed_operation": "Verified the legal-regulatory live Firestore route chain and authored/reviewed the D1 migration design; progress, blocker, remediation, next-action, and execution-state records synchronized.",
+    "next_exact_action": "Confirm legal-regulatory database ownership and the actual binding available to apps/api (radar_researcher_db remains a candidate only); verify conditional D1 batch/SQL semantics in isolated tests; implement D1 transaction runner behind LegalRegulatoryStore with parity coverage; do not change production composition before all gates pass.",
     "resume_status": "READY_WITH_ARCHITECTURE_GATE"
   },
   "execution_history": {
@@ -2214,7 +2214,7 @@
       "Latest branch CI checks on code commit 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 failed in detect, TypeScript/Architecture/Unit/Storage/Stress/Build, D1 domain isolation/Worker bundle, and native-auth. E2E and downstream path-filtered gates were skipped. Job step metadata is null and job log retrieval returns BlobNotFound; root causes are not known.",
       "No legal-regulatory D1 migration or D1 store exists. The target database binding is not confirmed; radar_researcher_db is only a candidate. A design-only architecture document was committed; no schema, adapter, production composition, data migration, or deployment was changed."
     ],
-    "next_action": "Confirm legal-regulatory D1 ownership/binding; verify the conditional transaction-guard SQL against D1; implement a D1 transaction runner behind LegalRegulatoryStore; prove parity for CAS, idempotency, atomic rollback, and concurrency; only then plan read-only data reconciliation and explicit cutover approval.",
+    "next_action": "Confirm legal-regulatory database ownership and the actual binding available to apps/api (radar_researcher_db remains a candidate only); verify conditional D1 batch/SQL semantics in isolated tests; implement D1 transaction runner behind LegalRegulatoryStore with parity coverage; do not change production composition before all gates pass.",
     "code_work": {
       "id": "BE-002",
       "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
