@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0.0",
+  "workstream": "RADAR_TEHRAN_GIS_FOUNDATION",
+  "status": "PARTIALLY_VERIFIED",
+  "repository": "bijanbijane/radartehran",
+  "working_branch": "feat/gis-spatial-integrity-2026-11-27",
+  "branch_exists": true,
+  "branch_head_sha": null,
+  "branch_head_sha_note": "Not exposed by the branch-search result in this session; do not infer it from file blob SHAs.",
+  "last_verified_source_commit": "456dcacb387b908797756863b10da1f7104b658e",
+  "last_verified_source_commit_scope": "GitHub code-search result revision used to retrieve the current GIS/profile source files; not asserted as the feature branch HEAD.",
+  "verified_findings": [
+    "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
+    "Radar Worker IRNI v2 client and neighborhood identity resolver exist and validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
+    "The Express Geospatial module has a boundary evidence read model and review/approval scaffold with geometry hash and explicit EPSG:4326 CRS.",
+    "apps/api/server.ts constructs createProductionGeospatialModule() without the required neighborhood identity resolver, trusted source resolver or approval authorization dependencies; read model must remain BLOCKED and approval fail-closed.",
+    "Worker-generated computed_hex_fallback geometry is explicitly approximate and visualization-only.",
+    "The geography geometry engine implements WGS84 validation, ring closure, self-intersection checks, hole containment, point-in-polygon and selected CRS transformations.",
+    "The existing NIPS V2 reference design is the authoritative neighborhood profile specification; do not duplicate it."
+  ],
+  "database_decision": {
+    "current_relational_runtime": "Cloudflare D1",
+    "rtree_runtime_support": "UNVERIFIED",
+    "geopoly_runtime_support": "UNVERIFIED",
+    "spatialite_runtime_support": "NOT_ESTABLISHED",
+    "rule": "Do not create RTree virtual tables or claim D1-native spatial predicates until a disposable/staging D1 Worker runtime probe succeeds.",
+    "evidence": "Cloudflare D1 SQL documentation lists FTS5, JSON and math functions in its supported extension subset. The 2026-11-12 virtual-table export changelog is export support, not proof of runtime SQL support."
+  },
+  "completed_work_packages": [
+    {
+      "id": "GIS-RECON-001",
+      "status": "VERIFIED_BY_REPOSITORY_INSPECTION",
+      "summary": "Inspected AGENTS.md, ARCHITECTURE.md, RMEP persistent memory and execution state; located existing GIS and NIPS V2 implementation; identified canonical ownership and production wiring blockers."
+    },
+    {
+      "id": "GIS-D1-CAPABILITY-001",
+      "status": "DOCUMENTED_PENDING_RUNTIME_PROBE",
+      "summary": "Checked current Cloudflare D1 SQL extension documentation and export changelog; RTree runtime capability remains unverified."
+    }
+  ],
+  "blockers": [
+    {
+      "id": "GIS-BLK-001",
+      "severity": "CRITICAL",
+      "description": "No authenticated, version-pinned IRNI Worker-to-Express identity resolver bridge is wired."
+    },
+    {
+      "id": "GIS-BLK-002",
+      "severity": "CRITICAL",
+      "description": "Trusted source-registry resolver is not implemented or injected."
+    },
+    {
+      "id": "GIS-BLK-003",
+      "severity": "HIGH",
+      "description": "Boundary approval HTTP route lacks injected admin token verification and authorization store."
+    },
+    {
+      "id": "GIS-BLK-004",
+      "severity": "HIGH",
+      "description": "Current IRNI neighborhood entity inventory is point-only; no verified neighborhood polygons or measured areas are available."
+    },
+    {
+      "id": "GIS-BLK-005",
+      "severity": "HIGH",
+      "description": "D1 RTree virtual-table runtime support has not been demonstrated against an actual D1 Worker binding."
+    },
+    {
+      "id": "GIS-BLK-006",
+      "severity": "MEDIUM",
+      "description": "Geometry validation still needs explicit tests for hole-ring intersections, overlapping MultiPolygon components and cross-neighborhood topology."
+    }
+  ],
+  "tests": {
+    "repository_test_files_identified": [
+      "tests/cloudflare-neighborhood-boundary-route.test.ts",
+      "tests/neighborhood-profile-boundary-read-model.test.ts",
+      "server/modules/geography/__tests__/employee18Geography.test.ts"
+    ],
+    "executed_in_this_session": [],
+    "note": "GitHub source inspection and documentation verification only; no local test runner or live D1 runtime was executed."
+  },
+  "production_changes": {
+    "migrations": false,
+    "data_mutations": false,
+    "deployment": false,
+    "merge": false,
+    "release": false
+  },
+  "next_exact_action": "Inspect and extend tests/neighborhood-profile-boundary-read-model.test.ts and server/modules/geospatial/moduleFactory.ts to verify the production factory remains fail-closed when canonical identity and source-registry resolvers are absent; then design the Worker/API bridge without direct IRNI D1 access.",
+  "updated_at": "2026-11-27"
+}
