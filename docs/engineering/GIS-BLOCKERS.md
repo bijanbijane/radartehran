@@ -298,3 +298,8 @@ The above are intermediate results only. The latest head is being revalidated by
 The hosted GIS/valuation regression exposed a baseline with zero verified samples even after ingesting a record explicitly typed as VERIFIED_COMPLETED_TRANSACTION. Root cause: resolveInitialEvidenceVerificationStatus returned PENDING_REVIEW for every non-outlier source, including explicitly verified completed transactions and rental contracts. This contradicted the source-type contract and caused official baseline eligibility to discard authoritative transaction evidence.
 
 Implemented on the current PR branch: VERIFIED_COMPLETED_TRANSACTION and VERIFIED_RENTAL_CONTRACT now receive VERIFIED status on ingestion unless outlier detection flags the record; all other source types remain PENDING_REVIEW by default. Added a regression assertion for the completed-transaction status. The existing reviewer correction path remains unchanged. Fresh CI is required to verify this fix.
+
+
+## Latest validation follow-up — 2026-11-28
+
+The hosted GIS regression suite passed on head cc0c920 after the exact-coordinate fixture, boundary-history assertion, polygon simplification, and valuation source-status fixes. The hosted API architecture and contract checks also passed on that head. Both the GIS module typecheck and frontend lint then exposed one remaining reference to the old defaultEmpty helper in geospatialSnapshotValidation.ts; this final reference was changed to createEmptyGeospatialState() in commit 4ea0ecad. The new head requires fresh CI confirmation; previous results are not being carried forward as proof for the new commit.
