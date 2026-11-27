@@ -296,6 +296,66 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
     }
   }
 
+  // A MultiPolygon is a set of disjoint polygonal components. Reject component
+  // boundary contact/crossing and interior overlap, while allowing a component
+  // that is completely contained by another component's valid hole.
+  if (geometry.type === 'MultiPolygon') {
+    const usableRing = (ring: LinearRingCoords | undefined): ring is LinearRingCoords =>
+      Array.isArray(ring) && ring.length >= 4 && ring.every(
+        (position) => Array.isArray(position) && position.length >= 2
+          && Number.isFinite(position[0]) && Number.isFinite(position[1]),
+      );
+    const componentContainsPoint = (
+      point: Wgs84Coordinate,
+      component: LinearRingCoords[],
+    ): boolean => {
+      const outerRing = component[0];
+      if (!usableRing(outerRing) || classifyPointInRing(point, outerRing) !== 'INSIDE') return false;
+      return !component.slice(1).some((hole) =>
+        usableRing(hole) && classifyPointInRing(point, hole) !== 'OUTSIDE',
+      );
+    };
+    for (let leftIndex = 0; leftIndex < polygons.length; leftIndex += 1) {
+      const left = polygons[leftIndex];
+      if (!usableRing(left?.[0])) continue;
+      for (let rightIndex = leftIndex + 1; rightIndex < polygons.length; rightIndex += 1) {
+        const right = polygons[rightIndex];
+        if (!usableRing(right?.[0])) continue;
+        let componentsIntersect = false;
+        for (const leftRing of left) {
+          if (!usableRing(leftRing)) continue;
+          for (const rightRing of right) {
+            if (!usableRing(rightRing)) continue;
+            for (let i = 0; i < leftRing.length - 1 && !componentsIntersect; i += 1) {
+              for (let j = 0; j < rightRing.length - 1; j += 1) {
+                if (segmentsIntersectIncludingTouch(
+                  leftRing[i], leftRing[i + 1], rightRing[j], rightRing[j + 1],
+                )) {
+                  componentsIntersect = true;
+                  break;
+                }
+              }
+            }
+            if (componentsIntersect) break;
+          }
+          if (componentsIntersect) break;
+        }
+        const leftInsideRight = left[0].slice(0, -1).some(([lng, lat]) =>
+          componentContainsPoint({ lat, lng }, right),
+        );
+        const rightInsideLeft = right[0].slice(0, -1).some(([lng, lat]) =>
+          componentContainsPoint({ lat, lng }, left),
+        );
+        if (componentsIntersect || leftInsideRight || rightInsideLeft) {
+          issues.push({
+            code: 'MULTIPOLYGON_COMPONENT_OVERLAP',
+            message: `MultiPolygon components ${leftIndex} and ${rightIndex} intersect, touch, or overlap.`,
+          });
+        }
+      }
+    }
+  }
+
   return {
     valid: issues.length === 0,
     issues,
