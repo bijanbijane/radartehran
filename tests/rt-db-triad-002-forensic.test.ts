@@ -1436,17 +1436,15 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       const okQueue = await dispatch(makeEnvelope('q_fresh_rev', 3));
       assert.equal(okQueue.affectedCount, 1);
 
-      // Revoke consent -> queued message with revision=3 MUST now be rejected!
-      await updateUserPrivacyConsentInD1(userSqlite.db, {
-        uid,
-        actorUid: uid,
-        researchAnalyticsConsent: false,
-      });
+      // Revoke through the durable barrier -> revision=3 queue messages are fenced.
+      const queueRevocation = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+      assert.ok(queueRevocation.revocation);
+      assert.equal(queueRevocation.revocation!.status, 'COMPLETED');
       await assert.rejects(
         () => dispatch(makeEnvelope('q_after_revoke', 3)),
         (err: unknown) =>
           err instanceof QueueJobExecutionError &&
-          err.code === 'RESEARCH_CONSENT_REQUIRED' &&
+          err.code === 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' &&
           err.retryable === false,
       );
     });
