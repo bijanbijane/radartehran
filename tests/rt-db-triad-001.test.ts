@@ -803,6 +803,12 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         subjectKeyVersion: String(outboxRows[0].subject_key_version),
       });
       assert.equal(replayErasure.idempotentReplay, true);
+      const canonicalInbox = researchSqlite.raw
+        .prepare('SELECT receipt_id, COUNT(*) OVER () AS inbox_count FROM research_erasure_inbox WHERE outbox_id = ?')
+        .get(String(outboxRows[0].outbox_id)) as { receipt_id: string; inbox_count: number } | undefined;
+      assert.ok(canonicalInbox, 'A completed outbox command must retain its canonical inbox receipt');
+      assert.equal(canonicalInbox?.receipt_id, replayErasure.receiptId);
+      assert.equal(canonicalInbox?.inbox_count, 1, 'Duplicate delivery must not replace or duplicate the immutable inbox receipt');
     });
 
     it('enforces Legal Hold blocking account deletion (423)', async () => {
