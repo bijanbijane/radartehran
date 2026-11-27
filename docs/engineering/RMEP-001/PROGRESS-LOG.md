@@ -1453,3 +1453,13 @@
 - Commits: `9b94d84e3a036d58580ff2f702057568f37f1053` (streaming parser), `bf41454a0a06d26609feaab8c285abd0b584c03a` (regression tests), `34adeb686f04162a97e305b391ea7aa714b53ebf` (non-blocking cancellation).
 - Static source reinspection confirms the parser no longer calls `request.text()` and the tests contain the expected cases. **No runtime tests or TypeScript checks executed**: no workflow run/checks were created for these commits, and the prior Actions runner-allocation blocker remains unresolved.
 - Status: **IMPLEMENTED_BUT_NOT_VERIFIED**.
+
+ 
+## CHK-210 — NIPS public moderation-state disclosure hardening (2026-11-27)
+
+- Static security review found that `serializePublicMetric` counted `UNDER_REVIEW` as blocked in readiness summaries but still returned its numeric value when all evidence permissions were `DERIVED_ONLY` or `PUBLIC_REDISTRIBUTION`.
+- The serializer now treats both `UNDER_REVIEW` and `SUPPRESSED` as non-publishable states, regardless of evidence redistribution permission. Public output maps them to `SUPPRESSED`, nulls the value/unit/currency, clears evidence count and uses the existing safe quality placeholder.
+- Added a regression fixture with a redistributable evidence permission and a sentinel numeric value on an `UNDER_REVIEW` metric. The test asserts that the value is absent from serialized public output and the metric is counted as suppressed.
+- Source: `server/modules/neighborhood-profile/repository.ts`; regression: `tests/nips-backend-runtime-foundation.test.ts`.
+- **Status: IMPLEMENTED_BUT_NOT_VERIFIED.** GitHub-only session; no Node/npm test command executed. Required: `npm run test:nips`, typecheck, architecture and security gates.
+- No database, migration, RPC, production configuration, or deployment was changed.
