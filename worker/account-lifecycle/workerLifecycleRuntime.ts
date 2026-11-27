@@ -180,15 +180,34 @@ export async function processPendingResearchErasureOutbox(params: {
       completed += 1;
     } catch {
       const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
-      await params.userDb
+      const retryUpdate = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
            SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
                last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?3
-           WHERE outbox_id = ?4`,
+           WHERE outbox_id = ?4 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
         .bind(attempts, nowMs + backoffMs, nowIso, outboxId)
         .run();
+      if (!retryUpdate.success) throw new Error('RESEARCH_ERASURE_RETRY_STATE_UPDATE_FAILED');
+
+      // A competing Worker may have completed this outbox item after our attempt failed.
+      // Never downgrade its durable COMPLETED state back to RETRY_PENDING.
+      if ((retryUpdate.meta?.changes ?? 0) === 0) {
+        const currentOutbox = await params.userDb
+          .prepare('SELECT status, erased_events_count FROM research_erasure_outbox WHERE outbox_id = ?1')
+          .bind(outboxId)
+          .first<{ status: string; erased_events_count: number }>();
+        if (
+          currentOutbox?.status === 'COMPLETED' &&
+          Number.isSafeInteger(Number(currentOutbox.erased_events_count)) &&
+          Number(currentOutbox.erased_events_count) >= 0
+        ) {
+          completed += 1;
+          erasedEventsTotal += Number(currentOutbox.erased_events_count);
+          continue;
+        }
+      }
       pending += 1;
     }
   }
