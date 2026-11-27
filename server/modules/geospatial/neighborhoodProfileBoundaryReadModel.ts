@@ -25,7 +25,8 @@ export type NeighborhoodProfileBoundaryBlockCode =
   | 'BOUNDARY_SOURCE_REGISTRY_NOT_CONFIGURED'
   | 'BOUNDARY_SOURCE_REGISTRY_FAILED'
   | 'BOUNDARY_SOURCE_NOT_REGISTERED'
-  | 'BOUNDARY_SOURCE_METADATA_INVALID';
+  | 'BOUNDARY_SOURCE_METADATA_INVALID'
+  | 'BOUNDARY_SOURCE_NON_AUTHORITATIVE';
 
 export interface NeighborhoodProfileBoundaryEvidence {
   readonly geographicEntityId: string;
@@ -130,6 +131,10 @@ export async function buildNeighborhoodProfileBoundaryReadModel(params: {
   }
 
   const reasons: NeighborhoodProfileBoundaryBlockCode[] = [];
+  // The map-only fallback is never valid evidence, even if a source resolver is misconfigured.
+  if (boundary.sourceProvenance === 'computed_hex_fallback') {
+    reasons.push('BOUNDARY_SOURCE_NON_AUTHORITATIVE');
+  }
   if (boundary.cityId !== params.expectedCityId) reasons.push('BOUNDARY_CITY_MISMATCH');
   if (boundary.hoodId !== params.expectedLegacyNeighborhoodId) reasons.push('BOUNDARY_LEGACY_ID_MISMATCH');
   if (boundary.level !== 'neighborhood') reasons.push('BOUNDARY_LEVEL_UNSUPPORTED');
