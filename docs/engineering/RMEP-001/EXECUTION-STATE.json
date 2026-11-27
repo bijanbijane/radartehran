@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "1a33b00db205303dfd2603698cceea051c424398",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 seven-scenario barrier and post-drain registry rescan committed; npm test runs all three DB triad suites; CI path filters include TRIAD-001/003 tests; latest exact-head Actions jobs fail before runner assignment; no tests/typecheck execution; local MacBook Offline",
-    "last_verified_commit": "1a33b00db205303dfd2603698cceea051c424398"
+    "head_commit": "d622a1958d567140731f7ac87d6aa3140ed4a44e",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 seven-scenario race regression committed and syntax-reviewed; npm test runs all DB triad suites; workflow path filters include TRIAD-001/003; test-only commit triggers Backend Triad but hosted jobs fail before runner assignment; no tests/typecheck execution; local MacBook Offline",
+    "last_verified_commit": "d622a1958d567140731f7ac87d6aa3140ed4a44e"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -33,10 +33,10 @@
     "next_task_id": "BE-013"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-204-EXACT-HEAD-VERIFICATION-BLOCKED",
-    "checkpoint_timestamp_utc": "2026-11-27T12:14:12Z",
-    "last_safe_operation": "Completed deterministic revocation/outbox identities, expected-consent-revision CAS and stale-intent cleanup; always reconcile after revocation and rescan registry only after active permits drain; added seventh race regression; all three triad suites run from npm test and workflow paths include TRIAD-001/003.",
-    "last_completed_operation": "Re-read current source, seven-scenario TRIAD-003 test, package scripts, workflow path filters and latest PR state. Updated issue #49 with exact-head run/job evidence. Latest Actions jobs failed before runner allocation (runner_id=0, zero steps); no tests/typecheck/build/migration/deployment or production mutation executed.",
+    "checkpoint_id": "CHK-205-TRIAD-003-TEST-TRIGGER-CONFIRMED-RUNNER-BLOCKED",
+    "checkpoint_timestamp_utc": "2026-11-27T12:16:38Z",
+    "last_safe_operation": "Completed post-drain registry rescan, deterministic revocation/outbox identities, expected-revision CAS, stale-intent cleanup, and seventh regression that models permit acquisition before the in-flight write. Confirmed test-only TRIAD-003 change triggers Backend Triad via corrected workflow path filters.",
+    "last_completed_operation": "Re-read latest PR #78 source, seven-scenario test, npm test scripts and workflow path filters. Inspected run 45997297157/45997297169/45997297190/45997297120 at job level; all primary jobs failed before runner assignment with runner_id=0 and zero steps. Updated issue #49 and engineering logs. No test/typecheck/build/migration/deployment or production mutation executed.",
     "next_exact_action": "Resolve hosted GitHub Actions runner allocation through issue #49 or reconnect the local executor. Then run npm test, npm run typecheck, Worker/API typecheck and Backend Triad bundle checks against the exact current PR #78 head. Capture actual output and fix demonstrated failures only. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
