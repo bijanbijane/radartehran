@@ -1064,7 +1064,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       );
     });
 
-    it('does not erase research events when impacted aggregation scopes cannot be read', async () => {
+    it('does not erase research events when atomic aggregation-window invalidation fails', async () => {
       const researchSqlite = createForensicSqliteD1();
       applyMigrations(researchSqlite.raw, 'migrations/research-d1');
       await researchSqlite.db.prepare(
