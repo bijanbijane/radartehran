@@ -9,7 +9,7 @@
     "base_branch": "main",
     "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
-    "last_inspected_qa_commit_before_state_update": "8dd2788927f993f15bfb1362d2ea8140112d41e5",
+    "last_inspected_qa_commit_before_state_update": "727c1bad8ff523b4bbdc24ea99cc045282574940",
     "pull_request": {
       "number": 74,
       "url": "https://github.com/bijanbijane/radartehran/pull/74",
@@ -18,7 +18,7 @@
       "merged": false,
       "head_sha": "a1e03d3983d2ef3d63d50017eea79399a8645d9c"
     },
-    "qa_head_commit": "a1e03d3983d2ef3d63d50017eea79399a8645d9c"
+    "qa_head_commit": "727c1bad8ff523b4bbdc24ea99cc045282574940"
   },
   "test_results": {
     "test_suites_added": 1,
@@ -29,7 +29,7 @@
     "test_cases_skipped": 0,
     "ci_jobs_failed_before_runner": 5,
     "ci_jobs_skipped": 4,
-    "reason": "No test cases executed. Latest inspected PR #74 head is a1e03d3983d2ef3d63d50017eea79399a8645d9c. Five latest PR-triggered workflows (46006382299, 46006382295, 46006382131, 46006382100, 46006382103) completed with primary jobs exposing zero steps; E2E and path-filtered dependent jobs were skipped. PR #79 static CI command corrections remain unmerged and unverified. Additional review finding: PR #79 changes root Vitest to ^5.1.2 but its changed-file list omits package-lock.json; its latest Cloudflare build for head 1907920698c24e950fbccc57cb80f7d5603205b0 failed. PR body reports 22 npm audit advisories (14 moderate, 6 high, 2 critical); audit details/post-upgrade verification remain pending."
+    "reason": "No test cases executed. On PR #74 head 727c1bad8ff523b4bbdc24ea99cc045282574940, the five latest PR-triggered workflow runs (46008370790, 46008370818, 46008370760, 46008370819, 46008371081) each had a failed primary job with zero steps; Playwright and path-filtered dependent jobs were skipped. PR #79 static CI command corrections remain unmerged and unverified. PR #79 also has an open dependency reproducibility/security review finding: package.json Vitest range is ^5.1.2 but package-lock.json is not part of the PR diff; current-head Cloudflare build failed; PR body reports 22 audit advisories pending lockfile regeneration and post-upgrade audit."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -132,40 +132,45 @@
       "classification": "PRE_RUNNER_CI_FAILURE"
     },
     "path_filtered_downstream_jobs": "frontend-gates, api-gates, contracts-gates skipped because detect failed before runner",
-    "latest_qa_head_commit": "a1e03d3983d2ef3d63d50017eea79399a8645d9c",
-    "latest_qa_run_timestamp_utc": "2026-11-27T13:34:08Z",
+    "latest_qa_head_commit": "727c1bad8ff523b4bbdc24ea99cc045282574940",
+    "latest_qa_run_timestamp_utc": "2026-11-27T13:36:00Z",
     "latest_workflow_evidence_commit": "95ed139433437bd51688fc3acbe190a87e7e0685",
     "latest_observed_runs_after_documentation_updates": [
       {
-        "id": 46006382299,
+        "id": 46008370790,
         "name": "Cloudflare Native Auth Validation",
-        "conclusion": "failure",
-        "primary_job_steps": 0
+        "job_id": 140537210587,
+        "conclusion": "failure_before_steps",
+        "steps": 0
       },
       {
-        "id": 46006382295,
-        "name": "Tehran Radar CI Quality Gates",
-        "conclusion": "failure",
-        "primary_job_steps": 0,
-        "e2e": "skipped"
-      },
-      {
-        "id": 46006382131,
+        "id": 46008370818,
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "conclusion": "failure",
-        "primary_job_steps": 0
+        "job_id": 140537219320,
+        "conclusion": "failure_before_steps",
+        "steps": 0
       },
       {
-        "id": 46006382100,
+        "id": 46008370760,
+        "name": "Tehran Radar CI Quality Gates",
+        "job_id": 140537210579,
+        "conclusion": "failure_before_steps",
+        "steps": 0,
+        "e2e_job": "skipped"
+      },
+      {
+        "id": 46008370819,
         "name": "IRNI Geographic RPC Consumer Contract",
-        "conclusion": "failure",
-        "primary_job_steps": 0
+        "job_id": 140537210667,
+        "conclusion": "failure_before_steps",
+        "steps": 0
       },
       {
-        "id": 46006382103,
+        "id": 46008371081,
         "name": "Tehran Radar Path-Filtered Checks",
-        "conclusion": "failure",
-        "primary_job_steps": 0,
+        "job_id": 140537213652,
+        "conclusion": "failure_before_steps",
+        "steps": 0,
         "dependent_jobs": "skipped"
       }
     ],
