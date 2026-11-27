@@ -36,7 +36,6 @@ export default defineConfig({
     command: 'npm run dev',
     url: `${SMOKE_BASE_URL}/api/healthz`,
     env: {
-      ...process.env,
       PORT: new URL(SMOKE_BASE_URL).port || '3000',
       APP_URL: SMOKE_BASE_URL,
     },
