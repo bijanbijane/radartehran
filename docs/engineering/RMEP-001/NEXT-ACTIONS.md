@@ -142,3 +142,11 @@ Before any Radar production deployment:
 2. Obtain an authorized Node 22/npm 10 executor and run `npm ci`, `npm run test:worker`, `npm run test:nips`, `npm run test:cloudflare`, `npm run test:auth`, `npm run test:security`, `npm run typecheck`, `npm run arch:check`, and `tsc --noEmit -p tsconfig.worker.json`. Capture exact command output and exit codes.
 3. Worker call-site audit is complete: all nine inspected route modules propagate parser status/code. Preserve existing endpoint-specific limits; specifically measure the 14 MiB JSON/base64 upload path before changing its accepted payload ceiling or parser strategy.
 4. Keep NIPS serializer and Worker parser **IMPLEMENTED_BUT_NOT_VERIFIED** until executable tests pass. Keep PR #67 Draft. No merge, Production deployment, remote migration, or production binding/secret changes without explicit approval.
+
+ 
+## CHK-210 — immediate verification queue
+
+1. First executable check: `npm run test:nips`; confirm the new `UNDER_REVIEW` public-disclosure regression and prior NIPS serializer tests pass.
+2. Run root typecheck, `npm run arch:check`, `npm run test:security`, and the applicable Worker/auth/Cloudflare suites.
+3. Keep SEC-NIPS-002, NIPS serializer hardening, and Worker streaming parser **IMPLEMENTED_BUT_NOT_VERIFIED** until commands execute successfully.
+4. Keep PR #67 Draft. Do not implement Radar-side NIPS persistence until the IRNI-owned authenticated/versioned storage RPC and canonical geography Service Binding are available and verified.
