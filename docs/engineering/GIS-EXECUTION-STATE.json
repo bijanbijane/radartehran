@@ -21,17 +21,19 @@
     "Verified the current branch HEAD and exact-SHA GitHub Actions workflow/job conclusions; job logs were unavailable, so no automated test result is claimed.",
     "Added strict MultiPolygon component topology validation: reject touching/intersecting components and overlapping filled interiors; preserve valid island-in-hole cases.",
     "Added regression tests for overlapping/touching MultiPolygon components and valid disjoint/island-in-hole components.",
-    "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck."
+    "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck.",
+    "Hardened geospatial snapshot validation across every boundary history: reject malformed history/record shapes, map-key/entity mismatches, duplicate record IDs, duplicate or out-of-order versions, and multiple ACTIVE versions; added durable-recovery regression coverage.",
+    "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage."
   ],
   "not_verified": [
-    "Successful execution of npm run test:geospatial on the current code revision",
-    "Successful GIS module TypeScript typecheck on the current code revision",
+    "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
+    "Execution success of npm run typecheck on the same code revision",
     "Repository-wide TypeScript typecheck, lint, architecture check and build",
     "D1 RTree support through the actual Worker binding runtime",
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
     "Authoritative Tehran neighborhood polygon dataset, license and CRS",
-    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories"
+    "Complete end-to-end recovery/hydration verification against a real durable snapshot backend"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -40,7 +42,7 @@
   "tests": {
     "command": "npm run test:geospatial",
     "status": "NOT_VERIFIED",
-    "reason": "On exact branch/PR HEAD 039ad4f17d70042f83cd67754a4f22b049ccd1c3, both the GIS push run 45979357361 and GIS PR run 45979368572 concluded failure for the regression and typecheck jobs. Both jobs have steps=null; log retrieval returns BlobNotFound. The broader repository workflows at the same HEAD also failed before exposing steps. It is not established whether checkout, dependency installation, tests or typecheck executed. The authorized Desktop Commander MacBook is offline. No test result is claimed."
+    "reason": "Exact PR HEAD 76b27e99840dcd486375c5fb5be76e85027ec041 triggered GIS Spatial Integrity run 45980072524. Both GIS jobs (typecheck and geometry/boundary regression) concluded failure with steps=null; log retrieval returned BlobNotFound. The path-filtered workflow also failed at detect and dependent jobs were skipped. It is not established whether checkout, npm ci, tests or typecheck executed. The authorized Desktop Commander MacBook is offline. No test result is claimed."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -73,59 +75,40 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore an online runner and/or access to GitHub Actions job logs. Re-run npm run test:geospatial and npm run typecheck on HEAD 039ad4f17d70042f83cd67754a4f22b049ccd1c3, investigate the actual first failing step, fix it, then rerun repository gates. Do not provision radar-profile-db or alter production bindings until ownership and authorization are explicitly approved.",
+  "next_exact_action": "Restore an online execution runner or usable GitHub Actions diagnostics. Rerun npm run test:geospatial and npm run typecheck on code revision 76b27e99840dcd486375c5fb5be76e85027ec041; inspect the first real failure before altering code. Then run repository-wide tests, typechecks, lint, architecture checks and build. Keep production D1, Worker bindings and datasets unchanged until approvals and verified tests exist.",
   "blockers": [
-    "No usable execution runner or job logs. Dedicated GIS push and PR workflows and broader repository workflows fail with steps=null; job-log retrieval returns BlobNotFound. Desktop Commander MacBook is offline.",
+    "No usable execution runner or GitHub Actions logs; dedicated GIS jobs and broader workflows conclude failure with steps=null/BlobNotFound. Desktop Commander MacBook is offline.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
-    "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine.",
+    "The GIS runtime persists atomic JSON/durable snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
     "RTree support is not verified in the D1 Worker runtime.",
     "Production IRNI read-only resolver/service binding is not verified.",
-    "Legacy snapshot validation, hydration and all non-point consumers still need an integrity audit for multiple ACTIVE boundary versions."
+    "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted."
   ],
-  "last_recorded_action": "Reviewed current PR/branch head 039ad4f17d70042f83cd67754a4f22b049ccd1c3, confirmed MultiPolygon guard hardening, inspected both dedicated GIS runs and broader workflow failures, and updated the draft PR. No tests are claimed as passing; no production changes performed.",
-  "latest_inspected_pr_head_sha": "039ad4f17d70042f83cd67754a4f22b049ccd1c3",
-  "latest_branch_head_sha": "039ad4f17d70042f83cd67754a4f22b049ccd1c3",
+  "last_recorded_action": "Added complete persisted boundary-history lifecycle validation and excluded duplicate-active histories from bbox diagnostics; added regression tests. Exact-head GIS PR workflow then failed before exposing step logs. No tests are marked passed.",
+  "latest_inspected_pr_head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
+  "latest_branch_head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
   "last_verified_commit_sha": null,
   "ci": {
-    "branch_head_sha": "039ad4f17d70042f83cd67754a4f22b049ccd1c3",
-    "latest_code_revision_sha": "039ad4f17d70042f83cd67754a4f22b049ccd1c3",
+    "branch_head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
+    "latest_code_revision_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
     "combined_statuses": [],
     "workflow_runs": [
       {
-        "name": "GIS Spatial Integrity (push)",
-        "run_id": 45979357361,
-        "conclusion": "failure",
-        "jobs": [
-          {
-            "name": "GIS module TypeScript typecheck",
-            "job_id": 140439007297,
-            "conclusion": "failure",
-            "steps": null
-          },
-          {
-            "name": "GIS geometry and boundary regression",
-            "job_id": 140439007696,
-            "conclusion": "failure",
-            "steps": null
-          }
-        ],
-        "logs": "BlobNotFound"
-      },
-      {
         "name": "GIS Spatial Integrity (pull_request)",
-        "run_id": 45979368572,
+        "run_id": 45980072524,
         "conclusion": "failure",
+        "head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
         "jobs": [
           {
             "name": "GIS module TypeScript typecheck",
-            "job_id": 140439046307,
+            "job_id": 140441432099,
             "conclusion": "failure",
             "steps": null
           },
           {
             "name": "GIS geometry and boundary regression",
-            "job_id": 140439046895,
+            "job_id": 140441432442,
             "conclusion": "failure",
             "steps": null
           }
@@ -134,40 +117,39 @@
       },
       {
         "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 45979368732,
+        "run_id": 45980072523,
         "conclusion": "failure",
-        "failed_job": "detect",
+        "head_sha": "76b27e99840dcd486375c5fb5be76e85027ec041",
+        "failed_job": {
+          "name": "detect",
+          "job_id": 140441432615
+        },
         "dependent_jobs": "skipped"
       },
       {
         "name": "Tehran Radar CI Quality Gates",
-        "run_id": 45979368511,
-        "conclusion": "failure",
-        "failed_job": "TypeScript, Architecture, Unit, Storage, Stress & Build",
-        "skipped_job": "Real Browser E2E & Accessibility Suite (Playwright)"
+        "run_id": 45980072532,
+        "conclusion": "failure"
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45979368524,
-        "conclusion": "failure",
-        "failed_job": "D1 domain isolation, Worker bundle & frontend RPC binding"
+        "run_id": 45980072531,
+        "conclusion": "failure"
       },
       {
         "name": "Cloudflare Native Auth Validation",
-        "run_id": 45979368581,
-        "conclusion": "failure",
-        "failed_job": "native-auth"
+        "run_id": 45980072536,
+        "conclusion": "failure"
       },
       {
         "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45979368679,
-        "conclusion": "failure",
-        "failed_job": "irni-rpc-contract"
+        "run_id": 45980072521,
+        "conclusion": "failure"
       }
     ],
     "job_log_retrieval": "BlobNotFound",
-    "interpretation": "Failed workflow conclusions are confirmed; all inspected job records exposed no steps. It is not established whether the underlying commands executed, so no successful verification or code-level assertion failure is claimed."
+    "interpretation": "Dedicated GIS check conclusions are confirmed failures with no step metadata; exact failure point and whether the commands executed are unknown. No GIS test or typecheck pass is claimed."
   },
-  "latest_branch_sha_at_record": "039ad4f17d70042f83cd67754a4f22b049ccd1c3",
-  "latest_code_revision_sha": "039ad4f17d70042f83cd67754a4f22b049ccd1c3"
+  "latest_branch_sha_at_record": "76b27e99840dcd486375c5fb5be76e85027ec041",
+  "latest_code_revision_sha": "76b27e99840dcd486375c5fb5be76e85027ec041"
 }
