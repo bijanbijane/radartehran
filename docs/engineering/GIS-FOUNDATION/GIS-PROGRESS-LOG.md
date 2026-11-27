@@ -43,3 +43,15 @@ Resolve the storage owner and authenticated Worker/API bridge. Then add targeted
 - Updated `GIS-BLOCKERS.md` to distinguish implemented route safeguards from missing production dependencies, and to record the exact runner retry evidence.
 - No application source code was changed in this checkpoint because the required trusted identity/source adapters and an authorized executable test environment are not available; fabricating adapters or weakening fail-closed behavior would be unsafe.
 - Next: restore an operational runner/authorized checkout, then implement a supported authenticated IRNI identity bridge and trusted source resolver as independently testable adapters. Keep profile evidence blocked until both adapters are wired and verified.
+
+
+## 2026-11-27 — Cloudflare-native GIS approval integration
+
+- Audited the Firebase retirement architecture rather than wiring a new GIS feature to legacy Firebase Admin. The repository already contains a Worker D1-session assertion signer, Express HMAC verifier and globally mounted Express bridge middleware.
+- Verified the bridge contract binds the short-lived assertion to HTTP method, exact path/query, correlation ID and Worker-hop marker; Express strips the private assertion header and stores the principal in request-scoped AsyncLocalStorage.
+- Updated `server/modules/geospatial/routes.ts`: boundary approval now uses the verified Cloudflare session principal, requires the verified admin role flags, and does not fall back to Firebase if a Cloudflare session context is present.
+- Added `tests/geospatial-cloudflare-session-approval.test.ts`, covering anonymous denial, non-admin denial and an independent admin reviewer. Added it to `npm run test:geospatial`.
+- GitHub confirmed source, test and package-script commits through `f2374ae21de3cb16908d7cc6147f7a3566fd871a`. The new regression has not been executed.
+- The shared `AUTH_INTERNAL_HMAC_SECRET` is required by both runtimes; code/docs evidence does not establish that it is provisioned. No secret was read or modified and no deployment was attempted.
+- GIS workflow run [46006117704](https://github.com/bijanbijane/radartehran/actions/runs/46006117704) failed both jobs with `steps=null` and `logs_url=null`; no test or typecheck run can be inferred.
+- Next: restore executable Node 22 verification, run the new route regression plus focused GIS/valuation/typecheck suites, and verify bridge configuration through an authorized read-only runtime check. Keep PR #72 Draft.
