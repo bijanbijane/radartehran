@@ -21,3 +21,13 @@
 - Classification: CI infrastructure/runner startup blocker suspected; exact root cause unconfirmed. No test assertions or test counts are available.
 - Local execution remains unavailable because the linked MacBook device is offline.
 - Work package remains blocked. No merge or deployment performed.
+
+
+## 2026-11-27 — QA-002 / OP-194: Native-auth workflow script repair
+
+- Updated `.github/workflows/cloudflare-native-auth-validation.yml` on PR #71 from the nonexistent `test:cloudflare-native-auth` script to the existing `test:auth` script.
+- Confirmed the five test files run by the root `test:auth` script from the same QA branch's `package.json`.
+- Code commit: `a488f9750211d9afec46d4ed33258c47e70171f2`; the corrected workflow content was fetched again from GitHub.
+- Five PR workflows triggered after this commit still reported `failure` before exposing usable steps or logs: `45978898874`, `45978898800`, `45978898927`, `45978898737`, and `45978898828`. The exact cause is unconfirmed.
+- No test commands or assertions were observed; test counts remain 0 executed. The connected MacBook runner is offline.
+- Status: `IMPLEMENTED_BUT_NOT_VERIFIED`; no merge or deployment.
