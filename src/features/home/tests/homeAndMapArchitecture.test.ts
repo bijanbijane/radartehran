@@ -35,6 +35,7 @@ import {
   undoInteractiveSpatialPoint,
 } from '../../../components/map/interactiveSpatialMeasureLayer';
 import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
+import { resolveSelectedNeighborhoodById } from '../../../components/selectedNeighborhoodResolver';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
@@ -386,6 +387,22 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
       }),
       'active',
     );
+  });
+});
+
+
+
+describe('Global selected neighborhood resolution', () => {
+  it('returns nullish when the selected ID is absent instead of silently choosing the first city result', () => {
+    assert.equal(resolveSelectedNeighborhoodById(999, MOCK_HOODS, []), undefined);
+  });
+
+  it('prefers the matching current-city neighborhood', () => {
+    assert.equal(resolveSelectedNeighborhoodById(2, MOCK_HOODS, [MOCK_HOODS[0]]), MOCK_HOODS[1]);
+  });
+
+  it('resolves a matching nationwide neighborhood when it is outside the current city list', () => {
+    assert.equal(resolveSelectedNeighborhoodById(1, [MOCK_HOODS[1]], [MOCK_HOODS[0]]), MOCK_HOODS[0]);
   });
 });
 
