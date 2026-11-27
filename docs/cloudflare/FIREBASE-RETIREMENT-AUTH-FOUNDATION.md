@@ -69,3 +69,10 @@ The Worker and Express origin must both receive the same `AUTH_INTERNAL_HMAC_SEC
 - Replaced the obsolete App Check project-pinning workflow with `.github/workflows/worker-native-auth-config.yml`, a lightweight Node-only config guard. This avoids treating Firebase App Check as the active Worker auth mechanism.
 - **Scope limitation:** this removes Firebase configuration from Worker runtime manifests only. Legacy Express adapters, Firestore-backed domain modules, frontend compatibility code, Firebase packages, and legacy emulator tests still exist and remain a separate migration program. Do not claim complete Firebase/Firestore retirement.
 - **Verification status:** source/config changes committed on branch `fix/backend-remove-retired-firebase-worker-vars-2026-11-27`. The workflow is expected to run on the PR, but no CI pass is claimed until a GitHub runner actually executes it. No Worker deployment, production secret change, database mutation, Firebase project deletion, or Firestore data deletion was performed.
+
+
+### CI execution note — PR #81
+
+- Draft PR #81 triggered the new native-auth config workflow as run `45987535979`.
+- GitHub assigned `runner_id: 0`, returned zero steps, and completed the job in approximately two seconds. A rerun (attempt 2) produced the same runner allocation failure (`runner_id: 0`, zero steps).
+- The config validator and test suite have therefore **not executed** in GitHub Actions. This is an execution infrastructure blocker; it is not a source-level pass or source-level test failure.
