@@ -157,7 +157,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
         await expect(dialog).toBeVisible();
 
         const scopedControls = [
-          dialog.getByRole('button', { name: 'یافتن محله با بودجه من' }),
+          dialog.getByRole('button', { name: /با بودجه من کجای/ }),
           dialog.getByRole('button', { name: 'راهنما' }),
           dialog.getByRole('button', { name: /نوساز/ }),
           dialog.getByRole('button', { name: /۶ تا ۱۵ سال/ }),
