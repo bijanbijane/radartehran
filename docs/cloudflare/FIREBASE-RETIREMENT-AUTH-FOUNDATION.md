@@ -59,3 +59,13 @@ Cloudflare-native sessions are verified against D1 at the Worker edge. When a ro
 
 The Worker and Express origin must both receive the same `AUTH_INTERNAL_HMAC_SECRET` as a secret (at least 32 random bytes). The value is intentionally blank in `.env.example`; do not commit or provision it through plaintext Worker vars. Missing bridge configuration returns HTTP 503 for a request carrying a D1 session cookie. No runtime secret has been provisioned and no deployment/cutover is included in this code change.
 
+
+
+## 27 November 2026 — Worker runtime configuration retirement
+
+- Removed obsolete `FIREBASE_PROJECT_ID`, `FIREBASE_PROJECT_NUMBER`, `FIREBASE_APP_CHECK_APP_ID`, and `FIREBASE_APP_CHECK_MODE` values from the Cloudflare API Worker configuration (`wrangler.backend.jsonc`), its preview-check configuration, and the legacy root Worker configuration (`wrangler.jsonc`).
+- The Worker runtime's `WorkerEnv` contract and native OIDC/session authorization path do not declare or consume these Firebase variables. Worker browser authentication is Google OIDC + D1 opaque sessions; Firebase App Check is not part of the Worker session contract.
+- Extended `scripts/cloudflare/validate-backend-config.mjs` to reject `FIREBASE_*` and `FIRESTORE_*` runtime variables across production, previews, and named environments. Added regression assertions to `tests/rt-db-triad-001.test.ts`.
+- Replaced the obsolete App Check project-pinning workflow with `.github/workflows/worker-native-auth-config.yml`, a lightweight Node-only config guard. This avoids treating Firebase App Check as the active Worker auth mechanism.
+- **Scope limitation:** this removes Firebase configuration from Worker runtime manifests only. Legacy Express adapters, Firestore-backed domain modules, frontend compatibility code, Firebase packages, and legacy emulator tests still exist and remain a separate migration program. Do not claim complete Firebase/Firestore retirement.
+- **Verification status:** source/config changes committed on branch `fix/backend-remove-retired-firebase-worker-vars-2026-11-27`. The workflow is expected to run on the PR, but no CI pass is claimed until a GitHub runner actually executes it. No Worker deployment, production secret change, database mutation, Firebase project deletion, or Firestore data deletion was performed.
