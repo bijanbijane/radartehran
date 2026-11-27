@@ -56,7 +56,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Focused RPC consumer behavior tests
-        run: npx tsx --test tests/irni-geographic-rpc-client.test.ts tests/irni-geographic-rpc-v2.test.ts
+        run: npm run test:irni-geographic-rpc
 
       - name: Strict isolated RPC consumer typecheck
-        run: npx tsc --noEmit -p tsconfig.irni-geographic-rpc.json
+        run: npm run typecheck:irni-geographic-rpc
