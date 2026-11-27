@@ -633,15 +633,26 @@ export async function executeResearchSubjectErasure(params: {
       `INSERT INTO research_subject_consent_fences (
         subject_key, subject_key_version, revoked_through_revision,
         last_outbox_id, last_receipt_id, updated_at_iso
-      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+      )
+      SELECT ?1, ?2, ?3, ?4, ?5, ?6
+      WHERE EXISTS (
+        SELECT 1 FROM research_erasure_inbox
+        WHERE outbox_id = ?4 AND subject_key = ?1 AND subject_key_version = ?2
+      )
       ON CONFLICT(subject_key, subject_key_version) DO UPDATE SET
         revoked_through_revision = MAX(
           research_subject_consent_fences.revoked_through_revision,
           excluded.revoked_through_revision
         ),
-        last_outbox_id = excluded.last_outbox_id,
-        last_receipt_id = excluded.last_receipt_id,
-        updated_at_iso = excluded.updated_at_iso`,
+        last_outbox_id = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.last_outbox_id ELSE research_subject_consent_fences.last_outbox_id END,
+        last_receipt_id = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.last_receipt_id ELSE research_subject_consent_fences.last_receipt_id END,
+        updated_at_iso = CASE
+          WHEN excluded.revoked_through_revision >= research_subject_consent_fences.revoked_through_revision
+          THEN excluded.updated_at_iso ELSE research_subject_consent_fences.updated_at_iso END`,
     )
     .bind(
       params.subjectKey,
