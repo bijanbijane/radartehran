@@ -7,25 +7,25 @@
   [data-apple-theme='dark'],
   html.dark {
     color-scheme: dark;
-    /* Unified Petroleum Dark Surface Scale (synced with colorSystem.ts) */
-    --color-bg-canvas: #0D1513;
-    --color-bg-surface: #131F1C;
-    --color-bg-elevated: #1A2A26;
-    --color-bg-subtle: #172522;
-    --color-bg-muted: #172522;
-    --color-text-primary: #EEF4F2;
-    --color-text-secondary: #C8D6D1;
-    --color-text-muted: #A9BEB7;
-    --color-border-subtle: #243833;
-    --color-border-strong: #324B44;
-    --color-focus: #60A5FA;
+    /* Dark surfaces mirror RADAR_DARK_SURFACE_TEXT_TOKENS in colorSystem.ts. */
+    --color-bg-canvas: #0A110F;
+    --color-bg-surface: #111C19;
+    --color-bg-elevated: #172521;
+    --color-bg-subtle: #172521;
+    --color-bg-muted: #0D1614;
+    --color-text-primary: #F1F5F3;
+    --color-text-secondary: #C5D0CA;
+    --color-text-muted: #8A9891;
+    --color-border-subtle: #22312C;
+    --color-border-strong: #2E423B;
+    --color-focus: #2864DC;
 
     --color-brand-50: rgba(23, 107, 99, 0.24);
     --color-brand-100: rgba(23, 107, 99, 0.36);
     --color-brand-200: rgba(39, 148, 135, 0.48);
     --color-brand-primary: #279487;
     --color-brand-fg: #6FE0D0;
-    --color-brand-hover: #3AA397;
+    --color-brand-hover: #176B63;
     --color-brand-soft: rgba(23, 107, 99, 0.28);
 
     --color-success: #4ADE80;
