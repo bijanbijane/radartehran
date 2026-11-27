@@ -23,6 +23,9 @@ export function toPublicSpatialListing(listing: SpatialPublishableListing): Publ
 }
 
 export function isListingEligibleForPublicSpatialSearch(listing: SpatialPublishableListing): boolean {
-  const status = String(listing.publicationStatus ?? 'PUBLISHED');
-  return !['DRAFT', 'REJECTED', 'ARCHIVED', 'EXPIRED', 'PENDING_REVIEW'].includes(status);
+  // Public discovery is opt-in: every eligibility dimension must be explicitly approved.
+  // Missing or unknown values fail closed rather than inheriting a public default.
+  return listing.publicationStatus === 'PUBLISHED'
+    && listing.verificationStatus === 'VERIFIED'
+    && listing.available === true;
 }
