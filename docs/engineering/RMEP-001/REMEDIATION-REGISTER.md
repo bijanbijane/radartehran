@@ -106,3 +106,9 @@ Do not label GitHub Actions failures as source-code test failures unless a runne
 | ID | Finding / change | Status | Required verification |
 |---|---|---|---|
 | RT-NIPS-SEC-002 | Public serialization previously passed nested metric metadata and free-form readiness/quality diagnostics through without a nested allow-list. Added field projections and safe generic diagnostics; regression fixture injects private sentinel values and checks that none appear in public JSON. | IMPLEMENTED_BUT_NOT_VERIFIED | Run `npm run test:nips`, root typecheck and architecture/security gates when a runner/executor is available. |
+
+## 2026-11-27 — Worker request-body memory bound
+
+| ID | Finding / change | Status | Required verification |
+|---|---|---|---|
+| RT-WORKER-SEC-003 | `readValidatedJsonBody()` buffered the entire request via `request.text()` before enforcing its byte ceiling. Content-Type substring matching could also accept non-JSON lookalikes. Replaced with bounded streaming, exact media type validation, strict declared-length handling and fatal UTF-8 decoding; added regression tests for over-limit cancellation and malformed payloads. | IMPLEMENTED_BUT_NOT_VERIFIED | Run `npm run test:worker`, `npm run test:cloudflare`, `npm run typecheck`, `npm run arch:check`, and `npm run test:security` when an executor is available. |
