@@ -680,7 +680,11 @@ export async function executeResearchSubjectErasure(params: {
     invalidateWindowsStmt,
     deleteEventsStmt,
     updateConsentFenceStmt,
-  ]);
+  ]).catch(() => {
+    // D1 batch failures roll back atomically; expose the stable erasure contract code,
+    // not adapter/runtime-specific SQL error text.
+    throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
+  });
   if (
     batchResults.length !== 4 ||
     batchResults.some((r) => !r.success)
