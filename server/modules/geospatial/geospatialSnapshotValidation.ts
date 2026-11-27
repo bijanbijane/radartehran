@@ -2,6 +2,20 @@ import type { PersistedGeospatialState } from './geospatialRepository';
 import type { BoundaryVersionRecord, PointOfInterestRecord, PolygonGeometry } from './types';
 import { validatePolygonGeometry } from './coordinateAndPolygonEngine';
 
+const IRAN_LAT = { min: 24, max: 40.5 };
+const IRAN_LNG = { min: 44, max: 64 };
+
+export function createEmptyGeospatialState(): PersistedGeospatialState {
+  return {
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  };
+}
+
 export interface GeospatialRecordCounts {
   boundaryEntities: number;
   activeBoundaries: number;
@@ -260,7 +274,7 @@ export function validatePersistedGeospatialState(
     : 12;
   const errors: string[] = [];
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
-    return { valid: false, errors: ['GEOSPATIAL_STATE_NOT_OBJECT'], counts: countRecords(defaultEmpty()) };
+    return { valid: false, errors: ['GEOSPATIAL_STATE_NOT_OBJECT'], counts: countRecords(createEmptyGeospatialState()) };
   }
   const s = state as PersistedGeospatialState;
   for (const required of [
