@@ -56,3 +56,15 @@ Current `PointResolutionResult` includes:
 - This value is not a network travel time or route distance.
 - Do not perform planar metric calculations directly on degree coordinates.
 - A verified local projected CRS for each source/measurement workflow remains to be selected and documented from its source metadata.
+
+
+## Polygon validation issue codes
+
+- `UNCLOSED_RING`: first and last positions do not match within the configured tolerance.
+- `TOO_FEW_VERTICES`: a ring has fewer than four positions.
+- `SELF_INTERSECTION`: non-adjacent segments in one ring properly intersect.
+- `DEGENERATE_ZERO_AREA`: a ring has zero or near-zero signed area.
+- `HOLE_OUTSIDE_OUTER`: an interior ring is not strictly contained by its exterior ring or touches/crosses it.
+- `HOLE_OVERLAP`: interior rings overlap, touch, or nest within one another.
+
+These are code-level validation semantics; the new regression tests have not yet been executed in this session. Distinct MultiPolygon component overlap remains outside the current validator.
