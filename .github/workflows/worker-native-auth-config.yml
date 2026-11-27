@@ -8,6 +8,7 @@ on:
       - 'wrangler.backend.preview-check.jsonc'
       - 'wrangler.jsonc'
       - 'scripts/cloudflare/validate-backend-config.mjs'
+      - 'tests/rt-db-triad-001.test.ts'
       - 'worker/auth/**'
       - 'worker/routes/authRoutes.ts'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'wrangler.backend.preview-check.jsonc'
       - 'wrangler.jsonc'
       - 'scripts/cloudflare/validate-backend-config.mjs'
+      - 'tests/rt-db-triad-001.test.ts'
       - 'worker/auth/**'
       - 'worker/routes/authRoutes.ts'
   workflow_dispatch:
