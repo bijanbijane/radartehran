@@ -1438,3 +1438,11 @@
 ## 2026-11-27 — documentation-head CI reproduction
 - On documentation-only PR #78 head `b8e5e4a1e499c890a9de90cf9fd4c7fede123433`, Backend Triad 45998616590, Quality Gates 45998616563, Path-Filtered Checks 45998616641, Geographic RPC Contract 45998616575, Native Auth 45998616562 and Frontend Bundle Budget 45998616558 all failed before runner assignment (runner_id=0, empty runner_name, zero steps); downstream jobs skipped.
 - This reproduces the hosted-runner issue independently of a source change. Issue #49 updated; no tests/typecheck/build ran and no rerun was issued.
+
+
+## 2026-11-27 — TRIAD-003 parent-job crash recovery
+- Found a crash window: the final consent-revocation outbox row can be committed as COMPLETED while the parent revocation job remains PENDING_ERASURE. The regular pending-row scan excludes that completed row, and the existing recovery scan covered account-deletion parents only; a retry could therefore leave the consent job stuck indefinitely.
+- Added an independent recovery scan for PENDING_ERASURE consent-revocation jobs with at least one outbox row and no non-COMPLETED outbox rows. Such parents are fed through the existing receipt aggregation/completion path; DRAINING_PERMITS jobs are deliberately excluded.
+- Added TRIAD-003 Scenario 9: SQLite-backed simulation of a crash after the last outbox completion but before parent completion. It asserts recovery of COMPLETED status, erased-event count and receipt IDs.
+- Source commit: `ea5c70062704c76dd004ea8d75b6008fdd0db651`; regression test commit / PR head: `c0da26dc3be660c32e9e78bbdb66a0b4d3b23604`.
+- Verification remains BLOCKED: seven Actions workflows on the exact head failed before runner assignment (runner_id=0, empty runner_name, zero steps). No checkout, tests, typecheck or build ran. Issue #49 updated. PR #78 remains Draft.
