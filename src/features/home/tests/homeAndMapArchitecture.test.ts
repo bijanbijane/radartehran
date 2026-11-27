@@ -302,6 +302,22 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
     assert.equal(airSnap.topNeighborhoods[0].id, 3);
     assert.ok(airSnap.viewportMedianRahn !== null && airSnap.viewportMedianRahn > 0);
 
+    const emptyViewport = computeViewportPulseSnapshot({
+      evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
+      viewportBounds: { north: 36, south: 35.9, east: 52, west: 51.9, zoom: 12 },
+      mode: 'buy',
+      targetSqm: 80,
+      rentAgeMultiplier: 1,
+      mapLens: 'budget',
+    });
+    assert.equal(emptyViewport.inViewportCount, 0);
+    assert.equal(emptyViewport.usingFullCityFallback, false);
+    assert.equal(emptyViewport.affordableCount, 0);
+    assert.equal(emptyViewport.viewportMedianBuyPerSqm, null);
+    assert.equal(emptyViewport.viewportNegotiatedBuyPerSqm, null);
+    assert.equal(emptyViewport.diffVsCityPct, null);
+    assert.deepEqual(emptyViewport.topNeighborhoods, []);
+
     const trafficSnap = computeViewportPulseSnapshot({
       evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
       viewportBounds: null,
