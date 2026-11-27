@@ -2069,9 +2069,10 @@ async function runSuite(): Promise<void> {
       'Mobile building-age and budget-status choices must retain 44px minimum touch targets'
     );
     assert.ok(
-      topBarSrc.includes('flex-1 min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center py-2 px-3 rounded-[10px] bg-slate-900') &&
-        topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50'),
-      'Mobile save-preferences and share-budget actions must retain 44px minimum touch targets'
+      topBarSrc.includes('className="grid grid-cols-1 sm:grid-cols-2 gap-2"') &&
+        topBarSrc.includes('min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center') &&
+        topBarSrc.includes('whitespace-normal text-center leading-snug'),
+      'Mobile save/share actions must retain 44px touch targets and wrap safely without forcing horizontal overflow'
     );
     assert.equal(
       (topBarSrc.match(/min-h-\[44px\] md:min-h-\[32px\] inline-flex items-center gap-1 px-2 py-0\.5 rounded-\[6px\] bg-emerald-50/g) || []).length,
