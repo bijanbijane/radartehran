@@ -300,18 +300,20 @@ export function simplifyPolygonGeometry(geometry: PolygonGeometry, stepStride = 
     return simplified;
   };
 
-  if (geometry.type === 'Polygon') {
-    const rings = geometry.coordinates as LinearRingCoords[];
-    return {
+  const candidate: PolygonGeometry = geometry.type === 'Polygon'
+    ? {
       type: 'Polygon',
-      coordinates: rings.map(simplifyRing),
+      coordinates: (geometry.coordinates as LinearRingCoords[]).map(simplifyRing),
+    }
+    : {
+      type: 'MultiPolygon',
+      coordinates: (geometry.coordinates as LinearRingCoords[][]).map((polygon) => polygon.map(simplifyRing)),
     };
-  }
-  const multi = geometry.coordinates as LinearRingCoords[][];
-  return {
-    type: 'MultiPolygon',
-    coordinates: multi.map((poly) => poly.map(simplifyRing)),
-  };
+
+  // Simplification is only a display optimization. Never publish a simplified
+  // geometry that fails the same topology/coordinate checks as its source.
+  // The canonical input geometry remains untouched and is the safe fallback.
+  return validatePolygonGeometry(candidate).valid ? candidate : structuredClone(geometry);
 }
 
 function isPointOnSegment(
