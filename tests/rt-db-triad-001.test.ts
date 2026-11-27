@@ -997,6 +997,134 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(job.status, 'COMPLETED');
     });
 
+    it('increments retry attempts atomically when concurrent workers fail the same outbox item', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO account_deletion_jobs (
+            job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+          ) VALUES ('job_retry_counter_001', 'uid_retry_counter', 'idem_retry_counter_001',
+            'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', 'uid_retry_counter',
+            'USER_REQUESTED_ERASURE', ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO research_erasure_outbox (
+            outbox_id, job_id, subject_key, subject_key_version, status,
+            attempt_count, next_retry_at_ms, created_at_iso, updated_at_iso
+          ) VALUES ('outbox_retry_counter_001', 'job_retry_counter_001',
+            'sk_retry_counter_001', 'v1', 'PENDING', 0, 0, ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+
+      // Force both workers to read the same PENDING row with attempt_count=0.
+      let scanCount = 0;
+      let releaseScans!: () => void;
+      const scansBarrier = new Promise<void>((resolve) => {
+        releaseScans = resolve;
+      });
+      const wrapUserStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapUserStatement(target.bind(...values), sql);
+            }
+            if (
+              property === 'all' &&
+              sql.includes('SELECT * FROM research_erasure_outbox') &&
+              sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
+            ) {
+              return async (...args: unknown[]) => {
+                const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                scanCount += 1;
+                if (scanCount === 2) releaseScans();
+                await scansBarrier;
+                return rows;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const racingUserDb: D1Database = {
+        prepare(sql: string) {
+          return wrapUserStatement(userSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          return userSqlite.db.batch<T>(statements);
+        },
+        async exec(query: string) {
+          return userSqlite.db.exec(query);
+        },
+      };
+
+      const failingResearchDb: D1Database = {
+        prepare() {
+          const statement: D1PreparedStatement = {
+            bind() {
+              return statement;
+            },
+            async first<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async all<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async run<T = unknown>() {
+              throw new Error('INJECTED_RESEARCH_DB_WRITE_FAILURE');
+            },
+          };
+          return statement;
+        },
+        async batch<T = unknown>() {
+          throw new Error('INJECTED_RESEARCH_DB_BATCH_FAILURE');
+        },
+        async exec() {
+          throw new Error('INJECTED_RESEARCH_DB_EXEC_FAILURE');
+        },
+      };
+
+      const [first, second] = await Promise.all([
+        processPendingResearchErasureOutbox({
+          userDb: racingUserDb,
+          researchDb: failingResearchDb,
+          jobId: 'job_retry_counter_001',
+          nowMs,
+          receiptSecret: TEST_RECEIPT_SECRET,
+        }),
+        processPendingResearchErasureOutbox({
+          userDb: racingUserDb,
+          researchDb: failingResearchDb,
+          jobId: 'job_retry_counter_001',
+          nowMs,
+          receiptSecret: TEST_RECEIPT_SECRET,
+        }),
+      ]);
+
+      assert.equal(scanCount, 2);
+      assert.equal(first.pending, 1);
+      assert.equal(second.pending, 1);
+      const outbox = userSqlite.raw
+        .prepare('SELECT status, attempt_count, next_retry_at_ms FROM research_erasure_outbox WHERE outbox_id = ?')
+        .get('outbox_retry_counter_001') as {
+          status: string;
+          attempt_count: number;
+          next_retry_at_ms: number;
+        };
+      assert.equal(outbox.status, 'RETRY_PENDING');
+      assert.equal(outbox.attempt_count, 2, 'Concurrent failures must not lose an attempt_count increment');
+      assert.ok(
+        Number(outbox.next_retry_at_ms) >= nowMs + 40_000,
+        'Retry backoff must reflect both atomic failure attempts',
+      );
+    });
+
     it('connects Account Deletion to UID-free Outbox -> RESEARCH_DB Inbox across rotated keys with transient failure recovery', async () => {
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
