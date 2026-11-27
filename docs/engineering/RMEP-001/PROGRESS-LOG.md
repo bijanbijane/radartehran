@@ -1319,3 +1319,14 @@
 - **GitHub:** PR #78 remains Draft. Latest code commit: 0f1818e488e12580bfc9c01356cd9de04d3970fc; execution-state reconciliation commit: 399a93a2de17ccddf914a7981d46981567001fe3.
 - **CI:** PR workflow run 45980515216 failed at detect; downstream api/frontend/contracts gates were skipped. A Cloudflare Workers Builds check for radartehran-frontend also failed. Job logs still return BlobNotFound, so failure causes are not attributed to source changes.
 - **Next:** Obtain detect/Cloudflare build diagnostics, run tests/rt-db-triad-001.test.ts and Worker typecheck, then add deterministic concurrent delivery coverage.
+
+
+## 2026-11-27 — Concurrent cross-subject erasure collision fix
+- **Finding:** A deeper race existed beyond duplicate receipt replacement. Two Workers could both read an empty inbox for the same outbox_id but different subject keys. The old D1 batch deleted the requested subject's events before INSERT OR IGNORE established which subject owned that outbox ID; the losing request could therefore delete another subject's events and only then fail canonical receipt validation.
+- **Fix:** Reordered the atomic D1 batch to claim/insert the inbox identity first. Research event deletion and aggregation invalidation now require an EXISTS row matching the exact outbox_id + subject_key + subject_key_version. Reordered replay detection to inspect batch result index 0 (the inbox insert).
+- **Regression:** Added a deterministic two-delivery test. A barrier forces both callers to observe an empty inbox; D1 batches are serialized; the test requires one winner, one rejected identity collision, zero remaining events for the winner, and the losing subject's event preserved.
+- **Files:** worker/research/researchService.ts; tests/rt-db-triad-001.test.ts.
+- **Verification:** Source, D1 schema and generated outbox ID format reviewed. Tests/typecheck not run because the connected MacBook remains Offline. Status: IMPLEMENTED_BUT_NOT_VERIFIED.
+- **GitHub:** PR #78 remains Draft. Code head: 2b71c9a1eac38f02255f58c8676926de49a490de; execution-state update commit: 41b29102f964159a4ecc6d7c6fdebbabd109224a.
+- **CI:** On code head 2b71c9a, runs 45986000419 (Tehran Radar CI Quality Gates), 45986000574 (Cloudflare Native Auth Validation), 45986000519 (Path-Filtered Checks), and 45986000654 (Radar Backend Triad) failed. E2E/downstream path jobs were skipped. Job-step arrays are empty and log downloads return BlobNotFound; root causes remain unknown.
+- **Next:** Execute focused test and Worker typecheck; diagnose CI; then inspect USER_DB outbox concurrent status regressions and continue Express Firestore adapter retirement.
