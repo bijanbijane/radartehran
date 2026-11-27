@@ -8,6 +8,7 @@ import { createGeospatialService, type GeospatialService } from '../server/modul
 import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
 import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 import type { PolygonGeometry } from '../server/modules/geospatial/types';
+import { classifyPointInPolygon, validatePolygonGeometry } from '../server/modules/geospatial/coordinateAndPolygonEngine';
 
 const SQUARE_A: PolygonGeometry = {
   type: 'Polygon',
@@ -18,6 +19,40 @@ const SQUARE_A: PolygonGeometry = {
     [51.30, 35.80],
     [51.30, 35.70],
   ]],
+};
+
+const POLYGON_WITH_HOLE: PolygonGeometry = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [51.30, 35.70],
+      [51.40, 35.70],
+      [51.40, 35.80],
+      [51.30, 35.80],
+      [51.30, 35.70],
+    ],
+    [
+      [51.32, 35.72],
+      [51.38, 35.72],
+      [51.38, 35.78],
+      [51.32, 35.78],
+      [51.32, 35.72],
+    ],
+  ],
+};
+
+const MULTIPOLYGON_WITH_HOLE: PolygonGeometry = {
+  type: 'MultiPolygon',
+  coordinates: [
+    POLYGON_WITH_HOLE.coordinates as [number, number][][],
+    [[
+      [51.50, 35.70],
+      [51.60, 35.70],
+      [51.60, 35.80],
+      [51.50, 35.80],
+      [51.50, 35.70],
+    ]],
+  ],
 };
 
 const SQUARE_OVERLAP: PolygonGeometry = {
@@ -147,4 +182,47 @@ test('rejects a spatial match from a different city than the requested city', as
       isConflict,
     );
   });
+});
+
+
+
+test('point-in-polygon respects interior rings for Polygon and MultiPolygon geometries', () => {
+  assert.equal(
+    classifyPointInPolygon({ lat: 35.75, lng: 51.35 }, POLYGON_WITH_HOLE),
+    'OUTSIDE',
+  );
+  assert.equal(
+    classifyPointInPolygon({ lat: 35.71, lng: 51.35 }, POLYGON_WITH_HOLE),
+    'INSIDE',
+  );
+  assert.equal(
+    classifyPointInPolygon({ lat: 35.72, lng: 51.35 }, POLYGON_WITH_HOLE),
+    'ON_EDGE',
+  );
+  assert.equal(
+    classifyPointInPolygon({ lat: 35.75, lng: 51.35 }, MULTIPOLYGON_WITH_HOLE),
+    'OUTSIDE',
+  );
+  assert.equal(
+    classifyPointInPolygon({ lat: 35.75, lng: 51.55 }, MULTIPOLYGON_WITH_HOLE),
+    'INSIDE',
+  );
+});
+
+test('polygon validation checks closure and self-intersection of interior rings', () => {
+  const unclosedHole: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [
+      SQUARE_A.coordinates as [number, number][][],
+      [[
+        [51.32, 35.72],
+        [51.38, 35.72],
+        [51.38, 35.78],
+        [51.32, 35.78],
+      ]],
+    ] as unknown as [number, number][][],
+  };
+  const validation = validatePolygonGeometry(unclosedHole);
+  assert.equal(validation.valid, false);
+  assert.ok(validation.issues.some((issue) => issue.code === 'UNCLOSED_RING'));
 });
