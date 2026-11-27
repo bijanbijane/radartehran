@@ -1,39 +1,60 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "workstream": "RADAR-TEHRAN-GIS",
   "status": "IN_PROGRESS",
   "status_date": "2026-11-27",
   "repository": "bijanbijane/radartehran",
   "branch": "feat/gis-spatial-integrity-2026-11-27",
+  "review_pr": 72,
+  "review_pr_state": "DRAFT",
   "baseline_main_sha": "456dcacb387b908797756863b10da1f7104b658e",
-  "latest_branch_sha_at_record": "825fde0c4095361c7f9a08827746684bc8ee0421",
+  "code_revision_reviewed_at_start_of_D1_audit": "bb367e530b30429897ccc957a437760ae76f2275",
   "phase": "GIS-FOUNDATION-AND-SPATIAL-INTEGRITY",
   "completed": [
-    "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and current GIS branch delta.",
-    "Added strict interior-ring containment and hole-to-hole topology validation.",
-    "Added regression tests for holes outside/touching the exterior ring and overlapping/nested holes.",
-    "Updated GIS architecture, data dictionary, source register and execution tracking."
+    "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and GIS branch delta.",
+    "Reviewed strict spatial assignment, edge/overlap rejection, Polygon hole validation, duplicate ACTIVE boundary fail-closed behavior, and dedicated regression tests.",
+    "Opened draft PR #72; no merge performed.",
+    "Inspected live Cloudflare D1 inventory and schemas read-only: three Radar databases; no radar-profile-db and no nips_ tables.",
+    "Verified read-only D1 SELECT, JSON and math probes; documented that RTree runtime support remains unverified because introspection/EXPLAIN was denied by the REST query surface.",
+    "Corrected GIS ownership documentation to align with the NIPS ERD proposal for a dedicated radar-profile-db; no database was created."
   ],
   "not_verified": [
-    "Automated GIS test suite execution",
-    "TypeScript typecheck",
-    "D1 runtime spatial capability",
-    "Production IRNI resolver wiring",
-    "Authoritative Tehran neighborhood polygon dataset and license"
+    "Automated GIS test suite execution on current PR head",
+    "Repository-wide TypeScript typecheck, lint, architecture check and build",
+    "D1 RTree support through the actual Worker binding runtime",
+    "Production IRNI read-only resolver/service binding wiring",
+    "NIPS profile database provisioning, owner/writer policy, migrations and repository",
+    "Authoritative Tehran neighborhood polygon dataset, license and CRS"
   ],
   "production_changes": false,
   "production_deployment": false,
   "database_migrations_added": false,
+  "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "CI_FAILED_UNDIAGNOSED",
-    "reason": "PR-triggered GitHub Actions checks on ee1e5b259dea69809545eacc9dbf0b6991ae70a4 and 825fde0c4095361c7f9a08827746684bc8ee0421 reported failures; test job logs returned BlobNotFound, so test execution/failure cause cannot be established."
+    "status": "NOT_VERIFIED",
+    "reason": "The inspected PR head returned zero workflow runs and zero status checks. The authorized Desktop Commander MacBook is offline; repository issue #49 documents hosted runner allocation failures."
   },
-  "next_exact_action": "Recover usable GitHub Actions logs or run npm run test:geospatial and TypeScript checks on an online local runner; diagnose CI failures before claiming verification.",
+  "d1_runtime_probes": {
+    "read_only": true,
+    "passed": ["SELECT 1", "json_valid", "json_extract", "sqrt"],
+    "denied_by_rest_query_surface": ["sqlite_version", "PRAGMA module_list", "EXPLAIN CREATE VIRTUAL TABLE USING rtree"],
+    "rtree_support": "UNVERIFIED"
+  },
+  "cloudflare_d1_inventory": {
+    "radar-neighborhood-db": {"application_tables": 19, "applied_migrations": 5, "nips_tables": 0},
+    "radar-user-db": {"application_tables": 29, "nips_tables": 0},
+    "radar-researcher-db": {"application_tables": 9, "nips_tables": 0},
+    "radar-profile-db": "NOT_FOUND"
+  },
+  "next_exact_action": "Restore an online execution runner, run npm run test:geospatial on the current branch head, then run the relevant typecheck and repository gates. Do not provision radar-profile-db or alter production bindings until its ownership and authorization are explicitly approved.",
   "blockers": [
-    "No available execution runner in this session; Desktop Commander device reported offline.",
-    "No verified licensed Tehran neighborhood boundary dataset in the current GIS source register.",
-    "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine; IRNI owns canonical geographic registry writes."
+    "No online execution runner; Desktop Commander MacBook offline and GitHub Actions runner allocation issue #49.",
+    "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
+    "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine.",
+    "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
+    "RTree support is not verified in the D1 Worker runtime.",
+    "Production IRNI read-only resolver/service binding is not verified."
   ],
-  "last_recorded_action": "Strict Polygon interior-ring containment and hole-to-hole topology validation; regression tests added; GIS registers reconciled."
+  "last_recorded_action": "Opened draft PR #72, inspected live D1 inventory read-only, and corrected GIS/NIPS database ownership documentation."
 }
