@@ -1472,3 +1472,11 @@
 - Added `npm run test:worker 2>&1 | tee ci-gate-g-worker-tests.log` to `.github/workflows/ci.yml`. The change is committed as `c65f6478473c890ed5ea8754faf3f5f896bf2ed7`.
 - Retried failed jobs on all five PR #67 workflows for prior head `c2dd01f31ae211972c46c48cf687334b5d65f355`. Rerun requests were accepted, but all jobs again failed with empty step arrays; log retrieval returned `BlobNotFound`. No command executed.
 - **Status:** CI coverage change IMPLEMENTED_BUT_NOT_VERIFIED; NIPS and Worker code changes remain IMPLEMENTED_BUT_NOT_VERIFIED. Await a new workflow run on the updated PR head and confirm actual step allocation before interpreting any test outcome.
+
+
+## CHK-214 — Workflow/package contract and executor availability (2026-11-27)
+
+- Audited the complete PR #67 changed-file list and the three modified workflow commands against root `package.json`. `test:worker`, `test:auth`, and `test:geography-catalog` all exist; root `npm test` includes `test:nips` through `test:unit`.
+- Reviewed `package-lock.json`: nested `@cloudflare/workers-utils` under Wrangler declares optional Vitest peer `^4.1.0 || ^5.0.0`, while the root lock resolves Vitest `3.2.7`; this supports the `.npmrc` `legacy-peer-deps=true` rationale.
+- Confirmed the tool container has Node `v22.16.0` and npm `10.9.2`, but no Radar Tehran checkout is mounted (`/openai/project` is not a Git repository; `/mnt/data` is empty) and container networking is disabled. The GitHub integration provides repository operations, not a remote shell or checkout executor.
+- **Status:** static contract audit VERIFIED; application tests remain NOT RUN. A permitted Node 22/npm 10 executor with repository checkout and dependency access is required.
