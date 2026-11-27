@@ -399,3 +399,22 @@ test('rejects malformed Polygon and MultiPolygon coordinate containers without t
     'OUTSIDE',
   );
 });
+
+test('polygon validation detects collinear overlap between non-adjacent ring segments', () => {
+  const collinearSelfOverlap: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [[
+      [51.30, 35.70],
+      [51.40, 35.70],
+      [51.40, 35.80],
+      [51.35, 35.80],
+      [51.35, 35.70],
+      [51.40, 35.70],
+      [51.30, 35.70],
+    ]],
+  };
+
+  const report = validatePolygonGeometry(collinearSelfOverlap);
+  assert.equal(report.valid, false);
+  assert.ok(report.issues.some((issue) => issue.code === 'SELF_INTERSECTION'));
+});
