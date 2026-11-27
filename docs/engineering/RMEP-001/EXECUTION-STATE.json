@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc",
+    "head_commit": "18e1de0041f053171318b0031c46bf092c66d3d7",
     "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; local execution device unavailable",
-    "last_verified_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc"
+    "last_verified_commit": "18e1de0041f053171318b0031c46bf092c66d3d7"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -32,10 +32,10 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-27T10:27:24.000Z",
-    "last_safe_operation": "Committed research erasure inbox idempotency hardening and fail-closed validation that an existing outbox ID cannot be replayed against a different subject key/version; regression assertion added.",
-    "last_completed_operation": "Committed research erasure inbox idempotency hardening and fail-closed validation that an existing outbox ID cannot be replayed against a different subject key/version; regression assertion added.",
-    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker typecheck on head 0f1818e488e12580bfc9c01356cd9de04d3970fc; obtain CI detect-job and Cloudflare Worker build diagnostics; add deterministic concurrent-delivery regression; then continue residual Express Firestore adapter retirement.",
+    "checkpoint_timestamp_utc": "2026-11-27T10:29:20.000Z",
+    "last_safe_operation": "Research erasure inbox replay now fails closed on outbox ID / subject identity mismatch; regression assertion added; engineering records reconciled to GitHub branch and latest CI blockers.",
+    "last_completed_operation": "Research erasure inbox replay now fails closed on outbox ID / subject identity mismatch; regression assertion added; engineering records reconciled to GitHub branch and latest CI blockers.",
+    "next_exact_action": "Obtain diagnostic output for CI runs 45982446365 and 45982446011; run tests/rt-db-triad-001.test.ts and Worker typecheck when local execution is available; implement a deterministic overlapping-delivery regression; then inventory and retire remaining live Express Firestore adapters.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2197,9 +2197,10 @@
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
       "GitHub Actions failed-job logs and annotations were unavailable through the connected GitHub API wrapper (BlobNotFound / empty step metadata); exact CI failure root cause remains unknown.",
       "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194.",
-      "PR #78 workflow run 45980515216 failed in the detect job before api/frontend/contracts gates ran; the only detailed job logs available through the connector still return BlobNotFound. Cloudflare Workers Builds check for radartehran-frontend also reports failure without diagnostic annotations."
+      "PR #78 workflow run 45980515216 failed in the detect job before api/frontend/contracts gates ran; the only detailed job logs available through the connector still return BlobNotFound. Cloudflare Workers Builds check for radartehran-frontend also reports failure without diagnostic annotations.",
+      "Latest CI runs on head e7053f53d8c69605ee6bf0037c9442650c95e7cf failed: Tehran Radar CI run 45982446365 failed in TypeScript/Architecture/Unit/Storage/Stress/Build; Cloudflare Native Auth Validation run 45982446011 failed in native-auth. E2E was skipped; job logs and step metadata remain unavailable."
     ],
-    "next_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck on the latest branch head; obtain the failed detect and Cloudflare build diagnostics; add a deterministic concurrent-delivery regression; then continue the residual Express Firestore adapter retirement.",
+    "next_action": "Obtain diagnostic output for CI runs 45982446365 and 45982446011; run tests/rt-db-triad-001.test.ts and Worker typecheck when local execution is available; add deterministic overlapping-delivery coverage; then continue residual Express Firestore adapter retirement.",
     "code_work": {
       "id": "BE-002",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
