@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-002",
+  "package_id": "DESIGN-MAP-003",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -21,7 +21,12 @@
     "Confirmed drawer handle min-height remains 24px; pointerdown/up exist but pointermove and pointercancel are absent.",
     "Confirmed drawer scroll and drag CSS classes are now applied in JSX; historical orphan-token claim is stale.",
     "Produced a second interactive three-state mobile inspector concept and independent critique.",
-    "Created DESIGN-MAP-002 mobile inspector specification."
+    "Created DESIGN-MAP-002 mobile inspector specification.",
+    "Re-read execution state and prior design packages from the active design branch; confirmed prior blob SHAs and branch continuity.",
+    "Rechecked Desktop Commander; development MacBook remains offline (last seen 23h ago), so browser capture and DOM geometry remain blocked.",
+    "Inspected current FloatingTopBar, MapQuickControlsStrip, MapExplorerToolbar, and RadarWorkspaceShell source on the active branch.",
+    "Verified MapQuickControlsStrip is imported but not rendered; identified overlapping ruler ownership wiring between FloatingTopBar and MapExplorerToolbar.",
+    "Created DESIGN-MAP-003 control ownership and integration contract with breakpoint placement, state invariants, and implementation acceptance criteria."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -32,7 +37,11 @@
     "Reuse Vazirmatn, existing semantic tokens, 4px spacing scale, and 44px primary mobile touch targets.",
     "Use one canonical collapsed/peek/expanded state to drive visual geometry, aria state, backdrop, and map availability.",
     "Keep 40dvh peek and 86dvh expanded as utility/test baseline; resolve 72px vs 78px collapsed after validating nav and safe-area geometry.",
-    "Use a dedicated >=44px drag handle, full pointer lifecycle, and explicit tap alternatives."
+    "Use a dedicated >=44px drag handle, full pointer lifecycle, and explicit tap alternatives.",
+    "Assign one canonical visible owner to every map action; keep global navigation, map context actions, and canvas navigation controls in separate groups.",
+    "Treat MapQuickControlsStrip as an integration gap to resolve deliberately; do not mount it without reconciling duplicate buy/rent and ruler controls.",
+    "Keep the spatial ruler in one canonical location and delegate to the existing RadarWorkspaceShell mode handler.",
+    "Require rendered-DOM target-size, overlap, focus, RTL/LTR, and light/dark evidence before accepting placement."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -41,13 +50,16 @@
     "responsive_browser_validation": "NOT_RUN",
     "rtl_device_validation": "NOT_RUN",
     "screen_reader_validation": "NOT_RUN",
-    "application_code_changed": false
+    "application_code_changed": false,
+    "control_ownership_source_review": "VERIFIED",
+    "control_ownership_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
+    "browser_dom_geometry": "BLOCKED_DESKTOP_DEVICE_OFFLINE"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
     "Schematic prototype is not a real map and must not be treated as spatially accurate.",
     "Frontend implementation remains unauthorized.",
-    "Desktop Commander MacBook device is offline (last seen 23h ago), preventing current product screenshots and DOM geometry capture."
+    "Desktop Commander MacBook-Air.local remains offline (last seen 23h ago); visual and DOM verification for DESIGN-MAP-003 cannot run."
   ],
-  "next_exact_action": "Reconnect development machine/browser; capture 320x568, 360x800, 390x844, and 844x390 screenshots; measure sheet states and FloatingTopBar overlap; reconcile D1-D4 and PAGE-02 before implementation."
+  "next_exact_action": "Reconnect development machine/browser; capture the DESIGN-MAP-003 viewport matrix and inspector detent geometry; then reconcile D1-D4 and PAGE-02 before requesting or performing implementation."
 }
