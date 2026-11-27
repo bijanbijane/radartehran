@@ -29,3 +29,8 @@ The latest dedicated GIS run `45980564390` and its rerun attempt 2 both fail bot
 ## Additional point-resolution integrity finding — 2026-11-27
 
 A parent-neighborhood interior match previously masked a point that lay exactly on the edge of a matched sub-neighborhood. The resolver could therefore return the sub-neighborhood ID even though that finer assignment was not strictly interior. Point resolution now reports `RESOLVED_ON_EDGE` whenever any matched active boundary is an edge match, and emits a sub-neighborhood ID only for a strictly interior sub-neighborhood match. Valuation feature generation rejects this edge result. Regression coverage is committed; execution remains unverified because the focused workflow has no usable logs.
+
+
+## Bbox diagnostic integrity correction — 2026-11-27
+
+A second audit found that bbox overlap diagnostics counted ACTIVE records only after filtering by city and boundary level. A corrupt history with two ACTIVE records carrying inconsistent city/level metadata could therefore be reduced to one apparently valid record and enter the overlap scan. The scan now checks the complete entity history first and excludes any history whose total ACTIVE count is not exactly one; city/level filtering is applied only after lifecycle uniqueness is established. A regression test covers this mixed-metadata case. The new test is committed but not yet verified by an accessible CI run.
