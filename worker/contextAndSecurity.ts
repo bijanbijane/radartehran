@@ -259,11 +259,8 @@ export async function readValidatedJsonBody(
 
         totalBytes += value.byteLength;
         if (totalBytes > maxBytes) {
-          try {
-            await reader.cancel('Request body exceeds configured byte limit');
-          } catch {
-            // The payload is already rejected; cancellation is best-effort.
-          }
+          // Do not await the underlying source's cancel hook: it may never settle.
+          void reader.cancel('Request body exceeds configured byte limit').catch(() => undefined);
           return {
             ok: false,
             body: {},
