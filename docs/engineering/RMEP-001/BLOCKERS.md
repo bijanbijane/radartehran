@@ -38,3 +38,6 @@ These blockers do not authorize merging, production deployment, production datab
 
 
 17. **Latest CI on PR #78 head `7b4330e19603327aca6c662e3b43db2f8b606cf7` — BLOCKED before runner allocation.** Quality Gates run 45996050993 (job 140495589525), Backend Triad run 45996051002 (job 140495589489), Native Auth run 45996050998 (job 140495589170), and Path-Filtered Checks run 45996051233 (detect job 140495590567) report runner_id=0, empty runner_name and zero steps; downstream jobs were skipped. No checkout, install, test, typecheck or build ran. Issue #49 updated; do not infer source failure.
+
+
+18. **Latest CI reproduction on PR #78 head `91226a55389ccf77e25b1dc070678d3f6c1fb9cd` — BLOCKED before runner allocation.** Backend Triad run 45996474063 job 140497002675, Quality Gates run 45996473971 job 140497002393, Native Auth run 45996473979 job 140497001806, and Path-Filtered Checks run 45996473964 detect job 140497002382 all report runner_id=0, empty runner_name and zero steps; downstream E2E/API/frontend/contracts jobs skipped. No code-level check executed. Issue #49 updated.
