@@ -119,3 +119,11 @@ During production repository bootstrap, the hydrated geospatial snapshot must pa
 - A sub-neighborhood ID is included only when that sub-neighborhood match is strictly interior.
 - Valuation feature generation continues to require `RESOLVED_INSIDE`, so edge cases fail closed.
 - Regression coverage is present in `tests/geospatial-valuation-location-assignment.test.ts`; the latest CI job did not expose steps/logs, so this change is not yet test-verified.
+
+
+## Bbox diagnostic lifecycle guard — 2026-11-27
+
+- Bbox overlap diagnostics must verify exactly one ACTIVE record across the entire entity history before applying city or boundary-level filters.
+- Mixed-metadata duplicate ACTIVE records must not be reduced to a seemingly unique city/level match.
+- Histories with zero or multiple ACTIVE records are excluded from the geometric overlap scan; snapshot validation remains responsible for surfacing lifecycle corruption.
+- Regression coverage is present in `tests/geospatial-valuation-location-assignment.test.ts`; CI execution remains unverified.
