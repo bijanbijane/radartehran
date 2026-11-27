@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-008",
+  "package_id": "DESIGN-MAP-009",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -53,7 +53,11 @@
     "Traced direct open-state writers for pulse/SEO, buyer-alert, visited-log, and trade-up modal families across useAppUiState, FloatingTopBar, ProductViewRouter, NeighborhoodInspectorTabs/Drawer, NeighborhoodBargainsAndVotesTabs, and RadarWorkspaceShell.",
     "Verified a source-level Escape conflict: useDialogFocus handles the topmost dialog on document and only preventDefault()s, while useAppUiState registers a window keydown handler that clears all modal flags on Escape; the event is not stopped in the inspected hook.",
     "Expanded DESIGN-MAP-008 with writer inventory and a priority finding that one Escape may clear multiple modal flags; runtime reproduction remains NOT RUN.",
-    "Reviewed react-component-interactions, frontend-debug-regressions, and engineering-quality-foundation tests; verified current coverage is helper/source-contract based and does not exercise bubbling Escape across document/window listeners with multiple mounted dialogs."
+    "Reviewed react-component-interactions, frontend-debug-regressions, and engineering-quality-foundation tests; verified current coverage is helper/source-contract based and does not exercise bubbling Escape across document/window listeners with multiple mounted dialogs.",
+    "Audited additional Escape and keyboard owners on the active design branch: useAppUiState global close-all, shared useDialogFocus, independent RadarPrimitives dialog handler, notification dropdown, map legend, FloatingTopBar, and other searched keydown owners.",
+    "Verified three shared-hook consumers attach one returned ref to multiple independently rendered dialog roots: SecondaryModals (pulse/SEO), BuyerAlertPwaLegalModals (buyer alert/PWA/legal), and PortfolioModals (visited/trade-up).",
+    "Verified RadarPrimitives dialog installs a separate document keydown handler without the shared topmost-modal guard; notification dropdown uses a window Escape listener and its inspected root lacks aria-modal.",
+    "Created DESIGN-MAP-009 modal accessibility and keyboard interaction audit with source evidence, accessibility risks, coordinator contract, regression acceptance tests, and explicit runtime QA boundaries; no application code or tests changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -85,7 +89,10 @@
     "Treat current modal z-index conflicts as source-level risks until simultaneous states and rendered stacking contexts are verified.",
     "Represent active modal ownership explicitly in a central typed coordinator; allow concurrency only for intentional parent-child dialog stacks.",
     "Associate each focus-management ref with exactly one dialog root and ensure only the coordinator's top stack entry handles Escape and Tab.",
-    "Do not assume independently supplied modal booleans are mutually exclusive unless source transitions or behavioral tests prove that invariant."
+    "Do not assume independently supplied modal booleans are mutually exclusive unless source transitions or behavioral tests prove that invariant.",
+    "Give every independently rendered dialog its own focus-management registration and root ref; never reuse one hook ref across multiple dialog roots.",
+    "Centralize modal and non-modal overlay keyboard dismissal policy so one Escape closes only the top interaction layer.",
+    "Keep non-modal popovers out of the modal stack unless they truly block the application; align dialog semantics with actual modality."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -124,7 +131,13 @@
     "modal_behavioral_transition_tests": "NOT RUN",
     "modal_flag_writer_inventory": "PARTIAL — 7 STATE FAMILIES TRACED",
     "modal_escape_handler_conflict": "SOURCE CONFLICT VERIFIED — RUNTIME NOT REPRODUCED",
-    "modal_escape_regression_coverage": "GAP VERIFIED — NO DOM-LEVEL MULTI-DIALOG PROPAGATION TEST FOUND IN REVIEWED TESTS"
+    "modal_escape_regression_coverage": "GAP VERIFIED — NO DOM-LEVEL MULTI-DIALOG PROPAGATION TEST FOUND IN REVIEWED TESTS",
+    "modal_accessibility_source_review": "VERIFIED — SHARED REF REUSE, PRIMITIVE HANDLER, GLOBAL ESCAPE, AND SELECTED OVERLAY LISTENERS REVIEWED",
+    "modal_focus_ref_multiplexing": "SOURCE RISK VERIFIED — THREE SHARED-HOOK CONSUMERS ATTACH ONE REF TO MULTIPLE ROOTS",
+    "modal_primitive_escape_topmost": "SOURCE RISK VERIFIED — RADAR PRIMITIVES HANDLER LACKS SHARED TOPMOST GUARD",
+    "modal_nonmodal_escape_inventory": "PARTIAL — NOTIFICATION, MAP LEGEND, FLOATING BAR, SEARCH, NAVIGATION, AND MAP TOOL LISTENERS SURFACED",
+    "modal_dialog_semantics": "PARTIAL — NOTIFICATION PREVIEW ROLE DIALOG WITHOUT ARIA-MODAL IN INSPECTED ROOT; PRODUCT MODALITY CLASSIFICATION OPEN",
+    "modal_runtime_accessibility": "NOT RUN — BROWSER/DEVICE UNAVAILABLE"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -136,7 +149,8 @@
     "DESIGN-MAP-007 full-app portal-root inventory and nested modal runtime behavior remain unverified without complete source-tree/runtime inspection.",
     "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA.",
     "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
-    "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device."
+    "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device.",
+    "DESIGN-MAP-009 runtime validation remains blocked: no connected browser/device to reproduce stacked modal, primitive-dialog, non-modal overlay, keyboard, or focus-restoration behavior."
   ],
-  "next_exact_action": "Add a DOM-level two-dialog Escape propagation regression test only after explicit frontend implementation authorization; until then, preserve the evidence-backed test specification. Reconnect browser/device for runtime reproduction and verify topmost-only dismissal, focus restoration, and body overflow restoration."
+  "next_exact_action": "After explicit frontend implementation authorization, implement per-dialog focus registration and a single overlay keyboard coordinator with DOM-level regression tests; before that, reconnect browser/device and reproduce the documented Escape/ref-ownership conflicts without changing application code."
 }
