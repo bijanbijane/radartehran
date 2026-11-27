@@ -80,3 +80,12 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - PR #67, #69, #70 and #71 remain Draft/open; latest checks show failure for detect, root quality gates, native auth, backend triad and IRNI RPC workflows.
 - Job step arrays are empty and job-log downloads return `BlobNotFound`.
 - **Next:** use an execution environment with GitHub Actions logs or a local Node/npm worktree; do not guess at root causes from check conclusions alone.
+
+
+## B-008 — Production IRNI ownership cutover is incomplete
+- Live production API Worker settings still include `NEIGHBORHOOD_DB` -> `radar-neighborhood-db` and `IRNI_PUBLISH_HMAC_SECRET`; no `IRNI_GEOGRAPHY` Service Binding exists.
+- The production `DB_WRITES_PAUSED_UNTIL_UTC` value is `2026-11-24T00:00:00Z`; code semantics treat an expired deadline as unpaused.
+- Cloudflare confirms Worker `irni-api` does not exist (HTTP 404, error 10007).
+- IRNI read RPC PR #22 and NIPS persistence PR #25 are Draft; ADR-0002 is proposed and does not authorize an owner-side NIPS persistence migration/RPC.
+- **Risk:** current production geography publication still depends on the legacy Radar-side D1 binding/secret path. The new Radar branch cannot be deployed until IRNI replacement read/write contracts and the service are deployed and tested.
+- **Do not:** remove production binding/secret, change the production write-pause deadline, run a D1 migration, or deploy a replacement Worker without the required approval and ordered cutover.
