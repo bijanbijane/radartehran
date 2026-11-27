@@ -154,7 +154,7 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
     () => executeUpsertNeighborhoodBoundary({
       ...common,
       boundaryHistoryByEntity: rollbackUpsertStore,
-      persistRuntime: () => { throw persistenceError; },
+      persistRuntime: async () => { throw persistenceError; },
       input: {
         actorUid: 'replacement-creator',
         entityId,
@@ -188,7 +188,7 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
     () => executeApproveNeighborhoodBoundary({
       ...common,
       boundaryHistoryByEntity: rollbackApprovalStore,
-      persistRuntime: () => { throw persistenceError; },
+      persistRuntime: async () => { throw persistenceError; },
       input: { entityId, versionId: approvalPending.id, reviewerUid: 'independent-reviewer' },
     }),
     (error: unknown) => error === persistenceError,
