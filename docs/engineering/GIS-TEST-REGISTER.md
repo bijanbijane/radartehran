@@ -88,3 +88,21 @@ The checks are failed, but no evidence identifies whether the underlying command
 | Pull request | 45979368572 | GIS geometry and boundary regression | 140439046895 | FAILURE |
 
 Every job record has `steps=null`; log retrieval returns `BlobNotFound`. The broader repository workflows at this HEAD also failed before exposing usable steps. It is not established whether checkout, dependency installation, GIS tests or typecheck began. Keep both focused checks **NOT VERIFIED** until rerun with usable diagnostics.
+
+
+## Current code revision — `76b27e99840dcd486375c5fb5be76e85027ec041`
+
+| Workflow | Run ID | Job | Job ID | Result |
+|---|---:|---|---:|---|
+| GIS Spatial Integrity (pull request) | 45980072524 | GIS module TypeScript typecheck | 140441432099 | FAILURE, no steps |
+| GIS Spatial Integrity (pull request) | 45980072524 | GIS geometry and boundary regression | 140441432442 | FAILURE, no steps |
+| Path-Filtered Checks | 45980072523 | detect | 140441432615 | FAILURE, downstream gates skipped |
+
+Log retrieval for the focused GIS jobs returned `BlobNotFound`. A failed check with no step metadata does not establish that `npm ci`, `npm run typecheck` or `npm run test:geospatial` started. These checks remain **NOT VERIFIED**, not passed and not a confirmed assertion failure.
+
+### Newly added recovery and boundary-read-model coverage
+
+- Persisted recovery rejects duplicate ACTIVE boundary histories, key/entity mismatch, malformed history and record values, and invalid version sequences.
+- Validation includes histories beyond the former first-50 entity and first-20-version slices.
+- Bbox overlap diagnostics skip duplicate-ACTIVE entity histories rather than selecting the first record.
+- Tests are committed but remain unexecuted until the focused workflow can expose usable diagnostics.
