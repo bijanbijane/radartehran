@@ -84,3 +84,11 @@ Before any Radar production deployment:
 4. Review Wrangler staging environment config. Do not add inherited production D1/services/vars wholesale; staging must use explicit staging-only IDs and a verified IRNI service endpoint.
 5. Resume NIPS persistent storage only after the IRNI-owned authenticated/versioned RPC and canonical geography Service Binding are confirmed.
 6. Reconcile execution state after each verified work package.
+
+
+## Immediate next action — runner infrastructure
+
+1. Re-attempt the dedicated PR #81 config guard only after runner allocation becomes available; current attempts fail with runner_id=0 before steps.
+2. Obtain a working Node 22/npm 10 executor to run the validator, `npm ci`, `npm audit --json`, `npm run test:triad`, and native auth contracts.
+3. Do not attribute GitHub Actions failures to source code until a runner executes the workflow steps.
+4. Keep NIPS persistent storage blocked until the IRNI-owned authenticated/versioned RPC and canonical geography service binding are verified.
