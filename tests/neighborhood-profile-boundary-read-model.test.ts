@@ -210,6 +210,28 @@ test('blocks algorithmic or unknown source authority even when an entry exists',
   }
 });
 
+test('always blocks computed display fallback geometry from profile evidence, even if a resolver labels it publishable', async () => {
+  const result = await buildNeighborhoodProfileBoundaryReadModel({
+    boundary: makeBoundary({ sourceProvenance: 'computed_hex_fallback' }),
+    expectedCityId: 'tehran',
+    expectedLegacyNeighborhoodId: 13,
+    resolvers: makeResolvers({
+      resolveSource: async (sourceProvenance) => ({
+        sourceProvenance,
+        sourceReference: 'https://data.example.org/display-fallback',
+        authority: 'OFFICIAL_PRIMARY',
+        crs: 'EPSG:4326',
+        verificationStatus: 'VERIFIED_OFFICIAL_PRIMARY',
+      }),
+    }),
+  });
+  assert.equal(result.status, 'BLOCKED');
+  if (result.status === 'BLOCKED') {
+    assert.ok(result.reasonCodes.includes('BOUNDARY_SOURCE_NON_AUTHORITATIVE'));
+    assert.equal(result.evidence, null);
+  }
+});
+
 test('blocks resolver failures without returning a partial evidence object', async () => {
   const result = await buildNeighborhoodProfileBoundaryReadModel({
     boundary: makeBoundary(),
