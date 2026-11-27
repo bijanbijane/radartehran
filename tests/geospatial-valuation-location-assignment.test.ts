@@ -66,6 +66,17 @@ const SQUARE_OVERLAP: PolygonGeometry = {
   ]],
 };
 
+const SQUARE_EDGE_OVERLAP: PolygonGeometry = {
+  type: 'Polygon',
+  coordinates: [[
+    [51.36, 35.70],
+    [51.46, 35.70],
+    [51.46, 35.80],
+    [51.36, 35.80],
+    [51.36, 35.70],
+  ]],
+};
+
 async function withGeospatialService(
   run: (service: GeospatialService) => Promise<void>,
 ): Promise<void> {
@@ -266,4 +277,23 @@ test('polygon validation checks closure and self-intersection of interior rings'
   const validation = validatePolygonGeometry(unclosedHole);
   assert.equal(validation.valid, false);
   assert.ok(validation.issues.some((issue) => issue.code === 'UNCLOSED_RING'));
+});
+
+
+
+test('classifies a point inside one neighborhood but on another neighborhood edge as ambiguous', async () => {
+  await withGeospatialService(async (service) => {
+    await addBoundary(service, { hoodId: 10, geometry: SQUARE_A });
+    await addBoundary(service, { hoodId: 11, geometry: SQUARE_EDGE_OVERLAP });
+    const resolution = service.resolvePointToGeography(35.75, 51.36);
+    assert.equal(resolution.status, 'AMBIGUOUS_OVERLAP');
+    assert.equal(resolution.candidateBoundaryIds.length, 2);
+    assert.throws(
+      () => service.getValuationLocationFeatures({
+        coordinates: { lat: 35.75, lng: 51.36 },
+        cityId: 'tehran',
+      }),
+      isConflict,
+    );
+  });
 });
