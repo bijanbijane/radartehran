@@ -132,3 +132,14 @@
 - **CI comparison:** The same repository CI Quality Gates workflow on the current `main` commit `456dcacb387b908797756863b10da1f7104b658e` also concluded `failure` (run `45837739418`), with the primary job reporting no step details. This confirms the failure predates this frontend branch, but does not establish the exact platform-side cause.
 - **Next action:** Inspect the new CI runs for the updated PR head; when a runner is available, run `npm run lint`, `npm run arch:check`, `npx tsx tests/buyer-alert-contract.test.ts`, and `npm run build`; then visually test 320×568 and 390×844 mobile viewports. Keep the PR Draft until all required verification passes.
 
+
+
+### Session continuation — 2026-11-27 10:00 UTC
+- **Additional interaction hardening:** `src/components/NeighborhoodInspectorDrawer.tsx` now clears `dragStartRef` and `didDragRef` on `pointercancel`. This prevents an interrupted pointer gesture from carrying stale drag state into a later interaction.
+- **Regression coverage:** `tests/buyer-alert-contract.test.ts` now asserts that the mobile drag handle retains its 44px minimum target and accessible label, and explicitly handles pointer cancellation.
+- **Commits:** implementation `b45ba6317f76ddaf2717f4a9a5985d11a317ff9e`; focused regression assertion `82db55aa3cc959a74f8b5737708466802d84df77`.
+- **Latest CI evidence:** PR #68 run `45977842523` (quality gates), `45977842486` (native auth), `45977842527` (bundle budget), and `45977842488` (path-filtered checks) all concluded `failure`. Their failed jobs expose **zero executed steps**; the Playwright E2E job was skipped. Workflow job-log retrieval returned `BlobNotFound`, so no underlying command output or platform-side failure reason is available.
+- **Base-branch comparison:** `main` also has failed runs `45837739418` (quality gates) and `45836836240` (bundle budget) with zero executed steps. This confirms the same pre-execution CI failure is not isolated to the frontend branch; it does not establish whether the cause is runner provisioning, account eligibility, or a GitHub-side service issue.
+- **Local execution and visual verification:** still blocked because `MacBook-Air.local` is offline (last seen 20 hours ago). No local typecheck, focused unit test, architecture check, build, or 320×568 / 390×844 rendered viewport inspection has been run.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Do not mark this work package complete, approve, merge, or deploy until focused tests, required frontend gates, and mobile visual verification succeed.
+- **Next exact action:** when a runner or authorized local device is available, run `npm run lint`, `npm run arch:check`, `npx tsx tests/buyer-alert-contract.test.ts`, and `npm run build`; then visually inspect the drawer and legend at 320×568 and 390×844 and update this record with actual outputs.
