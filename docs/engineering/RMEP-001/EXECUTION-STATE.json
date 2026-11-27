@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "cbbd49d192be8458df3a7aa236ee2946cbf8ff1f",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NIPS_PUBLIC_SERIALIZER_ALLOWLIST_AND_REGRESSION_COMMITTED_IMPLEMENTED_NOT_VERIFIED; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "6b63d1560c0849b554da3c1f3627aaf3db9928d1",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; WORKER_JSON_BODY_STREAMING_BOUNDARY_AND_NIPS_PUBLIC_SERIALIZER_HARDENING_COMMITTED_IMPLEMENTED_NOT_VERIFIED; NO_ACTIONS_RUNS_FOR_LATEST_WORKER_COMMIT; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -23,17 +23,17 @@
     "phase_status": "PARTIALLY_VERIFIED"
   },
   "current_workstream": {
-    "workstream_id": "WS-NIPS-BACKEND-RUNTIME",
-    "workstream_name": "NIPS neighborhood profile runtime, public serialization security, shared persistence RPC, and backend verification",
-    "task_id": "P6-NIPS-001",
+    "workstream_id": "WS-WORKER-SECURITY-AND-NIPS-BACKEND",
+    "workstream_name": "Worker request-body memory safety, NIPS public serialization, and backend verification",
+    "task_id": "P6-WORKER-SEC-003",
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-207-NIPS-PUBLIC-SERIALIZER-SECURITY-HARDENING-CI-BLOCKED",
-    "checkpoint_timestamp_utc": "2026-11-27T13:16:30.000Z",
-    "last_safe_operation": "Committed nested public-profile serializer allow-list hardening and a sentinel-based disclosure regression test. Re-ran all five PR #67 workflows; raw job payloads show runner_id=0, blank runner identity, zero steps and immediate failure. Job logs return BlobNotFound.",
-    "last_completed_operation": "Serializer hardening and regression fixture are committed on the existing NIPS feature branch. Status is IMPLEMENTED_BUT_NOT_VERIFIED because no test command ran. Execution records were reconciled. No database, binding, secret, deployment, merge or production mutation occurred.",
-    "next_exact_action": "When GitHub Actions runner allocation or an authorized Node 22/npm 10 executor is available, run npm run test:nips first, then npm run typecheck, npm run arch:check and npm run test:contracts. Continue with auth, IRNI RPC, geography, Cloudflare, D1 triad and security gates. Do not implement Radar NIPS persistence until the IRNI-owned authenticated/versioned storage RPC and migration contract are executable.",
+    "checkpoint_id": "CHK-208-WORKER-JSON-STREAMING-BOUNDARY-IMPLEMENTED-NOT-VERIFIED",
+    "checkpoint_timestamp_utc": "2026-11-27T13:45:00.000Z",
+    "last_safe_operation": "Replaced unbounded request.text() buffering in Worker JSON parsing with byte-bounded stream reads, strict JSON media type and Content-Length validation, fatal UTF-8 decoding, and non-blocking stream cancellation. Added regression tests and reconciled RMEP records.",
+    "last_completed_operation": "Worker parser and tests are committed; source and tests were re-read from GitHub. No workflow runs/checks are associated with the latest code commit and no local Node executor was available, so runtime/type verification has not been performed. NIPS public serializer hardening remains implemented but unverified.",
+    "next_exact_action": "Obtain an authorized Node 22/npm 10 executor or functioning GitHub Actions runner. Run npm run test:worker first; then npm run test:cloudflare, npm run test:auth, npm run test:security, npm run typecheck, npm run arch:check and tsc --noEmit -p tsconfig.worker.json. Fix actual failures and rerun. Keep both security changes IMPLEMENTED_BUT_NOT_VERIFIED until these checks execute.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1878,6 +1878,22 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T13:16:30.000Z"
+    },
+    {
+      "operation_id": "OP-202",
+      "phase": "PHASE-6",
+      "description": "Replace unbounded Worker JSON request.text() buffering with bounded streaming, strict content type and Content-Length checks, fatal UTF-8 decode, and early non-blocking cancellation.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T13:45:00.000Z"
+    },
+    {
+      "operation_id": "OP-203",
+      "phase": "PHASE-6",
+      "description": "Add Worker JSON body boundary regression tests for media type lookalikes, declared lengths, streamed oversize cancellation, invalid UTF-8 and non-object JSON.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T13:45:00.000Z"
     }
   ],
   "tests": [
@@ -2008,7 +2024,8 @@
     "B-007: Firebase Admin/Firestore and Sharp remain active in legacy Express/runtime code. Verified call-site inventory: docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Removing dependencies before migrating consumers would break backend behavior.",
     "B-008: Browser Firebase SDK import guard in scripts/check-architecture.ts and tests/architecture-guardrails.test.ts is IMPLEMENTED_BUT_NOT_VERIFIED because no Actions runner executes steps.",
     "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified.",
-    "B-010: NIPS public-profile serializer allow-list hardening and its nested-metadata disclosure regression are committed but unverified; all five Actions workflows fail before runner allocation. Run npm run test:nips and required type/architecture/security gates when an executor is available."
+    "B-010: NIPS public-profile serializer allow-list hardening and its nested-metadata disclosure regression are committed but unverified; all five Actions workflows fail before runner allocation. Run npm run test:nips and required type/architecture/security gates when an executor is available.",
+    "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
@@ -2253,7 +2270,7 @@
     "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass."
   },
   "resume": {
-    "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Run npm run test:nips as the first executable check when a runner is available; then run typecheck, architecture, contracts, auth, IRNI RPC, geography, Cloudflare, D1 triad and security gates. Keep NIPS persistence blocked on the IRNI-owned authenticated/versioned storage RPC."
+    "resume_from_task_id": "P6-WORKER-SEC-003",
+    "next_action": "Run npm run test:worker using an authorized Node 22/npm 10 executor, then test:cloudflare, test:auth, test:security, typecheck, arch:check and tsconfig.worker.json compilation. Reconcile test results before continuing."
   }
 }
