@@ -9,6 +9,7 @@ import {
   hydrateMaps,
   loadGeospatialState,
   persistGeospatialState,
+  persistGeospatialStateAwait,
   snapshotFromMaps,
 } from './geospatialRepository';
 
@@ -31,4 +32,9 @@ export function persistGeospatialRuntimeToRepository(maps: GeospatialRuntimeMaps
 
 export function createGeospatialPersistHook(maps: GeospatialRuntimeMaps): () => void {
   return () => persistGeospatialRuntimeToRepository(maps);
+}
+
+/** Await the durable snapshot commit for lifecycle transitions that must be atomic. */
+export function createGeospatialPersistHookAsync(maps: GeospatialRuntimeMaps): () => Promise<void> {
+  return async () => persistGeospatialStateAwait(snapshotFromMaps(maps));
 }
