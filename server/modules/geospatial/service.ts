@@ -66,6 +66,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   const overlayCache = new Map<string, GeographicOverlayLayer>();
   const geocodeCache = new Map<string, GeocodeCacheEntry>();
   const importBatches = new Map<string, GeospatialImportBatchResult>();
+  const activeImportKeys = new Set<string>();
   const activeBoundaryLocks = new Set<string>();
 
   const runtimeMaps = {
@@ -361,6 +362,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       boundaryHistoryByEntity,
       poiDedupeIndex,
       importBatches,
+      activeImportKeys,
       metrics,
       nowIso: nowFn().toISOString(),
       upsertNeighborhoodBoundary,
