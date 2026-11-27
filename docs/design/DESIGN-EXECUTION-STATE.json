@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-009",
+  "package_id": "DESIGN-MAP-010",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -57,7 +57,9 @@
     "Audited additional Escape and keyboard owners on the active design branch: useAppUiState global close-all, shared useDialogFocus, independent RadarPrimitives dialog handler, notification dropdown, map legend, FloatingTopBar, and other searched keydown owners.",
     "Verified three shared-hook consumers attach one returned ref to multiple independently rendered dialog roots: SecondaryModals (pulse/SEO), BuyerAlertPwaLegalModals (buyer alert/PWA/legal), and PortfolioModals (visited/trade-up).",
     "Verified RadarPrimitives dialog installs a separate document keydown handler without the shared topmost-modal guard; notification dropdown uses a window Escape listener and its inspected root lacks aria-modal.",
-    "Created DESIGN-MAP-009 modal accessibility and keyboard interaction audit with source evidence, accessibility risks, coordinator contract, regression acceptance tests, and explicit runtime QA boundaries; no application code or tests changed."
+    "Created DESIGN-MAP-009 modal accessibility and keyboard interaction audit with source evidence, accessibility risks, coordinator contract, regression acceptance tests, and explicit runtime QA boundaries; no application code or tests changed.",
+    "Audited the shared RadarSheet primitive on the active design branch; verified per-instance document Escape/Tab listeners without topmost ownership, independent focus restoration, and aria-modal=true semantics; cross-checked shared useDialogFocus and global window Escape handler.",
+    "Created RT-MAP-OVERLAY-PRIMITIVE-ACCESSIBILITY-SPEC.md with source evidence, modal/non-modal semantics, coordinator contract, and DOM-level regression acceptance tests; no application code or tests changed."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -92,7 +94,9 @@
     "Do not assume independently supplied modal booleans are mutually exclusive unless source transitions or behavioral tests prove that invariant.",
     "Give every independently rendered dialog its own focus-management registration and root ref; never reuse one hook ref across multiple dialog roots.",
     "Centralize modal and non-modal overlay keyboard dismissal policy so one Escape closes only the top interaction layer.",
-    "Keep non-modal popovers out of the modal stack unless they truly block the application; align dialog semantics with actual modality."
+    "Keep non-modal popovers out of the modal stack unless they truly block the application; align dialog semantics with actual modality.",
+    "Treat RadarSheet and hook-managed dialogs as participants in one overlay ownership system; per-instance Escape and Tab listeners must not independently compete.",
+    "Only the topmost truly modal surface may trap focus or dismiss on Escape; nested focus restoration must follow explicit parent ownership."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -137,7 +141,12 @@
     "modal_primitive_escape_topmost": "SOURCE RISK VERIFIED — RADAR PRIMITIVES HANDLER LACKS SHARED TOPMOST GUARD",
     "modal_nonmodal_escape_inventory": "PARTIAL — NOTIFICATION, MAP LEGEND, FLOATING BAR, SEARCH, NAVIGATION, AND MAP TOOL LISTENERS SURFACED",
     "modal_dialog_semantics": "PARTIAL — NOTIFICATION PREVIEW ROLE DIALOG WITHOUT ARIA-MODAL IN INSPECTED ROOT; PRODUCT MODALITY CLASSIFICATION OPEN",
-    "modal_runtime_accessibility": "NOT RUN — BROWSER/DEVICE UNAVAILABLE"
+    "modal_runtime_accessibility": "NOT RUN — BROWSER/DEVICE UNAVAILABLE",
+    "overlay_primitive_source_review": "VERIFIED — RadarSheet, useDialogFocus, and useAppUiState active-branch source reviewed",
+    "radar_sheet_escape_topmost": "SOURCE RISK VERIFIED — PER-INSTANCE HANDLER HAS NO TOPMOST GUARD; RUNTIME NOT REPRODUCED",
+    "radar_sheet_tab_topmost": "SOURCE RISK VERIFIED — PER-INSTANCE FOCUS TRAP HAS NO TOPMOST GUARD; RUNTIME NOT REPRODUCED",
+    "radar_sheet_focus_restore": "SOURCE RISK VERIFIED — PER-INSTANCE PREVIOUS-FOCUS RESTORE; MULTI-SURFACE ORDER NOT REPRODUCED",
+    "overlay_primitive_accessibility_contract": "DOCUMENTED — NOT RUNTIME VERIFIED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -150,7 +159,8 @@
     "DESIGN-MAP-007 background inertness, mobile scroll-lock, nested focus restoration, and visual z-layer ordering require connected browser/device QA.",
     "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
     "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device.",
-    "DESIGN-MAP-009 runtime validation remains blocked: no connected browser/device to reproduce stacked modal, primitive-dialog, non-modal overlay, keyboard, or focus-restoration behavior."
+    "DESIGN-MAP-009 runtime validation remains blocked: no connected browser/device to reproduce stacked modal, primitive-dialog, non-modal overlay, keyboard, or focus-restoration behavior.",
+    "DESIGN-MAP-010 RadarSheet multi-instance Escape/Tab/focus behavior and modality semantics require connected browser/device reproduction; application implementation remains unauthorized."
   ],
-  "next_exact_action": "After explicit frontend implementation authorization, implement per-dialog focus registration and a single overlay keyboard coordinator with DOM-level regression tests; before that, reconnect browser/device and reproduce the documented Escape/ref-ownership conflicts without changing application code."
+  "next_exact_action": "Reconnect browser/device and reproduce two simultaneous RadarSheet surfaces with bubbling Escape, Tab/Shift+Tab, focus restoration, and the global close-all listener. After explicit frontend implementation authorization, implement a shared overlay coordinator and DOM-level regression tests; until then, continue source-only design audits."
 }
