@@ -2087,7 +2087,7 @@ async function runSuite(): Promise<void> {
       3,
       'All three active map-filter dismissal actions must expose 44px mobile touch targets'
     );
-    const activeFilterDismissalButtons = topBarSrc.match(/<button\\b(?=[^>]*aria-label="حذف فیلتر[^"]*")[^>]*>/g) || [];
+    const activeFilterDismissalButtons = topBarSrc.match(/<button(?=[^>]*aria-label="حذف فیلتر[^"]*")[^>]*>/g) || [];
     assert.equal(activeFilterDismissalButtons.length, 3, 'All active map-filter dismissal actions must remain individually labelled buttons');
     assert.equal(
       activeFilterDismissalButtons.every((tag) =>
