@@ -134,3 +134,13 @@
 - **Modified files:** `tests/tehran-radar.e2e.spec.ts` only.
 - **Verification:** GitHub accepted the commit and the file was fetched back. No local or browser test has been executed in this session. Status: `IMPLEMENTED_BUT_NOT_VERIFIED`.
 - **Next exact action:** Verify the updated PR head and its workflow runs; when an executable runner is available, run `npx playwright test tests/tehran-radar.e2e.spec.ts --grep "Mobile budget filter controls"`, `npm run test:contracts`, `npm run lint`, `npm run arch:check`, and `npm run build`. Keep PR #76 Draft until runtime and visual checks pass.
+
+### Session continuation — 2026-11-27
+- **Work package:** FE-A11Y-ACTIVE-FILTER-FOCUS-001 on `fix/frontend-budget-filter-touch-targets-2026-11-27` / PR #76 (Draft).
+- **Finding:** The three active map-filter dismissal buttons had 44px mobile hit areas and accessible names, but no explicit `focus-visible` indicator.
+- **Implementation:** Added `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600` to all three dismissal buttons in `src/components/FloatingTopBar.tsx`. Added source-contract assertions that all three individually labelled buttons retain the visible focus treatment.
+- **Commits:** `766a0106c7e74375c84eabe3f7a2936110b755bc` (UI); `4e192a37060433135be2a957a44759a4c3557866` (test); `721fbd067c6ea709c3e5d9126abc8c59fd0e5051` (corrected test selector).
+- **Repository verification:** Source and test files were fetched back from GitHub; all three focus class tokens are present on each dismissal button and the contract selector uses a direct button/aria-label match. This is source-level verification only.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. No test runner or browser was available; the registered Desktop Commander device is offline. Latest PR workflows still fail before exposing job steps, so no test outcome is inferred.
+- **Build dependency:** PR #70 independently removes the stale `bun.lock`; its Cloudflare frontend preview build/deployment on commit `f05b6228de9e36b38b039cb60d407048a0067720` reported success. PR #76 does not contain that lockfile change and its own CI runs remain pre-step failures. Do not duplicate PR #70's lockfile fix in this PR.
+- **Next exact action:** After PR #70's lockfile fix is integrated through normal review, update the Frontend branch through a reviewable commit, then run `npm run test:contracts`, `npm run lint`, `npm run arch:check`, `npm run build`, and the focused Playwright mobile budget-filter test. Inspect keyboard focus at 320×568 and 390×844 before changing verification status.
