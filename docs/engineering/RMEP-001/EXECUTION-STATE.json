@@ -13,9 +13,9 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "ede0dac6e57cb06191d434877eeab997f7801cb2",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; DOCS_COMMITTED; RUNTIME_TESTS_NOT_EXECUTED; CI_JOB_DIAGNOSTICS_UNAVAILABLE",
-    "last_verified_commit": "b79ce5ff15778bce968508478c7e024db80353d9"
+    "head_commit": "9a1678fb037511856c3d0e58143cf997c89fb114",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; CI_AND_STAGING_DIAGNOSTICS_RECORDED; RUNTIME_TESTS_NOT_EXECUTED",
+    "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-200-CLOUDFLARE-AUDIT-AND-CI-DIAGNOSTICS",
-    "checkpoint_timestamp_utc": "2026-11-27T10:53:00.000Z",
-    "last_safe_operation": "Read-only inspection of GitHub Actions and Cloudflare Workers Builds. Confirmed the five PR #67 workflow jobs fail within 0-2 seconds with zero steps and BlobNotFound logs; frontend Workers preview check passed. Retrieved Cloudflare npm audit JSON output: 21 vulnerabilities (14 moderate, 5 high, 2 critical). Confirmed staging backend build stops at BLOCKED_STAGING_DATABASES_NOT_PROVISIONED before Wrangler dry-run/deploy.",
-    "last_completed_operation": "Recorded the package-level security audit and CI diagnostic findings. No dependency upgrades, code runtime changes, production resource changes, database mutations, secrets, merges or deployments were performed.",
-    "next_exact_action": "Triage the exact critical/high npm audit findings against the dependency graph and remove residual Firebase dependencies according to the approved Firebase retirement plan; do not run npm audit fix --force. In parallel, recover GitHub Actions job annotations/runner diagnostics or obtain a Node/npm executor. Keep staging provisioning fail-closed and continue NIPS storage only through an approved IRNI-owned RPC.",
+    "checkpoint_id": "CHK-201-CI-LOCKFILE-STAGING-BINDINGS",
+    "checkpoint_timestamp_utc": "2026-11-27T11:15:00.000Z",
+    "last_safe_operation": "Retrieved Cloudflare build logs proving npm ci lock mismatch, successful PR70 frontend preview and staging API build, explicit staging missing-binding warnings and unprovisioned staging DB block, and npm audit count 21 (14 moderate, 5 high, 2 critical). Updated PR69 and PR71 branches with .npmrc legacy-peer-deps=true; fresh CI remains failed with unavailable logs.",
+    "last_completed_operation": "Updated PROGRESS-LOG.md, REMEDIATION-REGISTER.md, BLOCKERS.md, NEXT-ACTIONS.md on NIPS branch. No runtime code, D1 schema/data, staging provisioning, production resources, secrets, merge, or manual deployment changed.",
+    "next_exact_action": "Use an available Node 22/npm 10 executor to validate npm ci with committed .npmrc and retrieve npm audit JSON; otherwise recover CI runner annotations/logs. In parallel, verify explicit staging-only D1 and IRNI service IDs before any staging config changes. Keep NIPS persistence blocked pending the IRNI-owned authenticated/versioned storage RPC.",
     "resume_status": "READY"
   },
   "execution_history": {
