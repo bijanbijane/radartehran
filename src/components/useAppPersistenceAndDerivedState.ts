@@ -50,19 +50,12 @@ export function useAppPersistenceAndDerivedState({
   );
 
   const compHood1 = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.compareId1) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId1) ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.compareId1, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.compareId1]
   );
 
   const compHood2 = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.compareId2) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId2) ||
-      evaluatedNeighborhoods[1] ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.compareId2, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.compareId2]
   );
 
