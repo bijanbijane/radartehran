@@ -465,15 +465,27 @@ export async function executeResearchSubjectErasure(params: {
 
   const existing = await params.researchDb
     .prepare(
-      'SELECT receipt_id, deleted_events_count, completed_at_iso, status FROM research_erasure_inbox WHERE outbox_id = ?1',
+      'SELECT subject_key, subject_key_version, receipt_id, deleted_events_count, completed_at_iso, status FROM research_erasure_inbox WHERE outbox_id = ?1',
     )
     .bind(params.outboxId)
     .first<{
+      subject_key: string;
+      subject_key_version: string;
       receipt_id: string;
       deleted_events_count: number;
       completed_at_iso: string | null;
       status: string;
     }>();
+
+  // An outbox ID is an idempotency key, not an authorization to reuse a receipt
+  // for another pseudonymous subject or key version.
+  if (
+    existing &&
+    (existing.subject_key !== params.subjectKey ||
+      existing.subject_key_version !== params.subjectKeyVersion)
+  ) {
+    throw new Error('RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT');
+  }
 
   if (existing && existing.status === 'COMPLETED' && existing.completed_at_iso) {
     return {
