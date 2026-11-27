@@ -2,8 +2,6 @@
  * RT-INFRA-009 — Deterministic geospatial snapshot validation, recovery & activation.
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
-import type { BoundaryVersionRecord, PointOfInterestRecord, PolygonGeometry } from './types';
-import { validatePolygonGeometry } from './coordinateAndPolygonEngine';
 import { getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 export { getGeospatialRecordCounts, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 
