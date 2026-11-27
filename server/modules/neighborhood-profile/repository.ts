@@ -154,7 +154,11 @@ function serializePublicMetric(metric: NipsMetric): NipsPublicMetric {
   const permissions = metric.provenance.evidence.map((item) => item.permissionStatus);
   const evidenceAllowed = permissions.every(isPublicEvidencePermission);
   const evidenceRequired = !isNonValueState(metric.state);
-  const suppressed = !evidenceAllowed || (evidenceRequired && permissions.length === 0);
+  // Review and explicitly suppressed states are never publishable, even when
+  // their source evidence permits redistribution. Evidence rights do not
+  // override the metric's own moderation/publication state.
+  const blockedState = metric.state === 'SUPPRESSED' || metric.state === 'UNDER_REVIEW';
+  const suppressed = blockedState || !evidenceAllowed || (evidenceRequired && permissions.length === 0);
 
   if (suppressed) {
     return {
