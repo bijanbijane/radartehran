@@ -5,9 +5,11 @@ export function executeUpsertGeographicOverlay(
   layer: GeographicOverlayLayer,
   overlayStore: Map<string, GeographicOverlayLayer>,
   overlayCache: Map<string, GeographicOverlayLayer>,
+  persistRuntime: () => void,
 ): GeographicOverlayLayer {
   overlayStore.set(layer.layerId, structuredClone(layer));
   overlayCache.delete(layer.layerId);
+  persistRuntime();
   return structuredClone(layer);
 }
 
