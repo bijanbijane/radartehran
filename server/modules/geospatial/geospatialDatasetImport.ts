@@ -43,7 +43,7 @@ export async function executeImportGeographicDataset(params: {
   metrics: GeospatialObservabilityMetrics;
   nowIso: string;
   upsertNeighborhoodBoundary: (input: UpsertNeighborhoodBoundaryParams) => Promise<BoundaryVersionRecord>;
-  upsertPointOfInterest: (input: UpsertPoiParams) => { record: unknown; isDuplicate: boolean };
+  upsertPointOfInterest: (input: UpsertPoiParams) => Promise<{ record: unknown; isDuplicate: boolean }>;
   persistRuntime: () => void;
 }): Promise<GeospatialImportBatchResult> {
   const input = params.input;
@@ -109,7 +109,7 @@ export async function executeImportGeographicDataset(params: {
       continue;
     }
     if (!input.dryRun) {
-      params.upsertPointOfInterest({
+      await params.upsertPointOfInterest({
         nameFa: p.nameFa,
         category: p.category,
         coordinates: check.coordinate,
