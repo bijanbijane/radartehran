@@ -4,7 +4,7 @@
 **Active branch:** `feat/gis-spatial-integrity-2026-11-27`  
 **Review PR:** [#72 — Draft](https://github.com/bijanbijane/radartehran/pull/72)
 
-1. Restore an online runner and execute `npm run test:geospatial` on HEAD `b2c7265fda504af48726a19317c420058efbeef7`. Then run `npm run test:unit`, lint, architecture checks, typechecks and builds. Resolve failures before marking the work VERIFIED.
+1. Restore an online runner and obtain usable logs for GIS workflow run `45979096386`. Re-run `npm run test:geospatial` and `npm run typecheck` on HEAD `24e4c66af8c67195b46f7d3878d1cc846b6bdf8c`; investigate and resolve the failed checks before moving on. Then run `npm run test:unit`, lint, architecture checks, typechecks and builds. Resolve failures before marking the work VERIFIED.
 2. Audit every consumer of `resolvePointToGeography`. Align the meaning of `resolved` with `RESOLVED_ON_EDGE` and `AMBIGUOUS_OVERLAP`; do not let non-valuation consumers use an arbitrary hood ID.
 3. Complete persisted-snapshot and hydration validation for one ACTIVE boundary per entity, unique version/id sequences, entity/history key consistency, and explicit legacy-history reconciliation. Point resolution, profile reads and boundary mutations now fail closed for duplicate ACTIVE histories.
 4. Run the newly added hole-topology and MultiPolygon component regression tests through `.github/workflows/gis-spatial-integrity.yml`. The component validator now rejects touching/intersecting/overlapping components and permits a separate component inside a valid hole. Then audit collinear ring-touch and malformed-component fixtures.
