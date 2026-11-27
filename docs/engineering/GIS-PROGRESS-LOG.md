@@ -202,3 +202,13 @@ Added a regression test with all three supported legacy encodings converging on 
 - Extended the HTTP regression in `tests/neighborhood-profile-boundary-read-model.test.ts`: after independently approving a local boundary under the default production-like composition, the profile-evidence endpoint must return both resolver-not-configured blockers and `evidence: null`.
 - Recorded the explicit production wiring gate and dependency order in `GIS-BLOCKERS.md`. No bypass, mock-to-production substitution, IRNI repository edit, binding change, database mutation, secret change or deployment was made.
 - The commit-triggered workflows for the current head again failed before any runner executed a step: observed jobs report `runner_id=0`, empty `runner_name`, and empty `steps`. The cause remains outside the available job evidence; the new regression has not been confirmed as executed.
+
+## 2026-11-27 — Neighborhood profile frontend evidence transport
+
+- Added `src/features/neighborhoods/services/neighborhoodProfileBoundaryApi.ts` to call the read-only Express profile-evidence endpoint with same-origin credentials and `cache: no-store`.
+- The client accepts only a valid success envelope and a complete READY evidence shape. BLOCKED responses preserve reason codes; malformed payloads, HTTP failures and network errors become UNAVAILABLE. Only READY evidence can reach the profile engine.
+- Updated `NeighborhoodIntelligenceProfilePanel` to load evidence when no explicit evidence prop is provided, abort stale requests when the selected neighborhood/city changes, and show backend blocker reasons in the Sources section.
+- Mounted the panel in `NeighborhoodInspectorDrawer` for the currently selected neighborhood and its city-coherent neighborhood collection.
+- Added focused client tests for READY, BLOCKED, malformed evidence, invalid IDs and HTTP-unavailable responses; registered the suite in `test:unit`.
+- Updated the NIPS reference design to distinguish completed frontend transport from the still-incomplete production server resolver bridge. This change does not claim that live canonical evidence is currently available.
+- No production API resolver, Worker binding, database, secret, deployment or IRNI repository was changed. The focused tests and browser E2E remain unverified until GitHub Actions actually allocates a runner.
