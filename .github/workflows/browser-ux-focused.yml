@@ -10,6 +10,7 @@ on:
       - 'tests/tehran-radar.e2e.spec.ts'
       - 'tests/e2e/journeys/critical-journeys-matrix.e2e.spec.ts'
       - 'vite.config.ts'
+      - 'playwright.config.ts'
       - '.github/workflows/browser-ux-focused.yml'
 
 permissions:
