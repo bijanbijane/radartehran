@@ -106,3 +106,12 @@ Log retrieval for the focused GIS jobs returned `BlobNotFound`. A failed check w
 - Validation includes histories beyond the former first-50 entity and first-20-version slices.
 - Bbox overlap diagnostics skip duplicate-ACTIVE entity histories rather than selecting the first record.
 - Tests are committed but remain unexecuted until the focused workflow can expose usable diagnostics.
+
+
+## Durable snapshot integrity additions — 2026-11-27
+
+- Canonical persisted Polygon/MultiPolygon geometry is revalidated during snapshot recovery using the same spatial topology validator.
+- Persisted bounding boxes are recomputed from canonical geometry and must match within 1e-6 degrees; plausible but stale boxes are rejected.
+- Persisted simplified geometry is independently validated before a snapshot can be activated.
+- Regression cases cover an unclosed canonical ring, a stale/mismatched bounding box (which must block recovery), and malformed simplified geometry.
+- Status: committed, NOT RUN / NOT VERIFIED. Exact-head GIS jobs failed without exposing steps; job logs returned BlobNotFound.
