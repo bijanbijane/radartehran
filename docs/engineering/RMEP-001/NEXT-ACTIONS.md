@@ -109,3 +109,8 @@ Before any Radar production deployment:
 
 ### Call-site inventory added
 - `docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md` records the verified active Firebase Admin/Firestore and Sharp consumers, the SDK-free browser compatibility facade, stale Vite chunk/prebundle references, architecture-guard gap, and a safe migration sequence. Use it as the working inventory; do not remove packages until each runtime consumer has a tested replacement.
+
+
+### Browser Firebase import guard — verification pending
+- Added `CLIENT_FIREBASE_SDK_IMPORT` in `scripts/check-architecture.ts` for browser-facing source layers and regression fixtures in `tests/architecture-guardrails.test.ts`. It blocks future Firebase client/Admin SDK imports in browser modules while allowing transitional Node-only Express adapters to remain temporarily.
+- **Next:** run `npm run arch:check` and `npm run test:contracts` once GitHub Actions runner allocation recovers. Treat the guard as IMPLEMENTED_BUT_NOT_VERIFIED until those commands execute and pass.
