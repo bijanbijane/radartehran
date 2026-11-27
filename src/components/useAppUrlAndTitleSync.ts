@@ -16,6 +16,7 @@ import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
 import { CANONICAL_BRAND_FA, formatBrandCityTitle, parseStrictCityId } from '../utils/geo/cityGeospatialResolver';
 import { resolveRoutePageMeta } from '../navigation/url/routePageMeta';
 import type { MapNavigationIntent } from './useLeafletRadarMap';
+import { resolveUrlNeighborhoodEntry } from './urlNeighborhoodResolver';
 
 export interface UseAppUrlAndTitleSyncParams {
   activeCity: CityId; setActiveCity: (c: CityId) => void; selectedHood?: EvaluatedNeighborhood;
@@ -36,20 +37,6 @@ export interface UseAppUrlAndTitleSyncParams {
 export function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
   return getAllMultiCityNeighborhoods().map((hood) => ({ cityId: resolveCityIdForNeighborhood(hood.id), hood }));
 }
-
-export function resolveUrlNeighborhoodEntry(
-  hoodParam: string | null,
-  validCityParam: CityId | undefined,
-  allCityHoods: { cityId: CityId; hood: Neighborhood }[],
-): { cityId: CityId; hood: Neighborhood } | null | undefined {
-  if (hoodParam === null) return undefined;
-  const hoodId = Number(hoodParam.trim());
-  if (!Number.isSafeInteger(hoodId) || hoodId <= 0) return null;
-  const entry = allCityHoods.find((item) => item.hood.id === hoodId);
-  if (!entry || (validCityParam && entry.cityId !== validCityParam)) return null;
-  return entry;
-}
-
 
 export function applyUrlParamsFromLocation(
   pathname: string,
