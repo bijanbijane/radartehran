@@ -6,7 +6,7 @@
   "base_branch": "main",
   "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
   "qa_branch": "qa/triad-regression-coverage-2026-11-27",
-  "latest_qa_commit": "d0227fd834d8a552af775d2feb21bbf768b508da",
+  "latest_qa_commit": "4a20d2e84527d2aab7b3a28c2cc469ab702fa4ee",
   "pull_request": 71,
   "status": "IMPLEMENTED_PENDING_EXECUTION",
   "tests": {
@@ -42,7 +42,7 @@
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
       "summary": "Radar Backend Triad workflow invoked missing npm script test:geo; changed to existing test:geography-catalog.",
       "evidence": "package.json contained test:geography-catalog but no test:geo; workflow command was read directly.",
-      "verification": "Workflow read-back confirms replacement; GitHub Actions execution/log review still pending."
+      "verification": "Final read-back confirms exact npm run test:geography-catalog command after correction commit 4a20d2e84527d2aab7b3a28c2cc469ab702fa4ee; runtime execution pending."
     },
     {
       "id": "QA-004",
@@ -60,7 +60,7 @@
     "No local test execution was possible because the authorized MacBook Desktop Commander device remained offline."
   ],
   "next_action": "Obtain executable runner and run npm run test:auth, npm run test:triad, npm run test:irni-geographic-rpc, npm run typecheck:irni-geographic-rpc, npm run test:geography-catalog, write-pause, test:cloudflare and full CI. Inspect actual job logs.",
-  "updated_at": "2026-11-27T10:22:00Z",
+  "updated_at": "2026-11-27T10:25:00Z",
   "ci_observation": {
     "pull_request": 71,
     "head_commit_at_last_inspection": "a488f9750211d9afec46d4ed33258c47e70171f2",
