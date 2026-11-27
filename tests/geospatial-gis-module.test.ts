@@ -328,6 +328,53 @@ test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, cluste
   assert.equal(tehranAfterCityMove.totalMatched, 3);
   assert.equal(karajAfterCityMove.totalMatched, 1);
 
+  // A same-ID status update must replace the published record and fail closed in public search.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_1',
+    propertyId: 'prop_1',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 110,
+    priceMillion: 16500,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    publicationStatus: 'DRAFT',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  const karajAfterUnpublish = rehydratedGis.searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+  });
+  assert.equal(karajAfterUnpublish.totalMatched, 0);
+
+  // Explicit deletion removes a listing from every city index and persists the removal.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_remove',
+    propertyId: 'prop_remove',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 90,
+    priceMillion: 12000,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    publicationStatus: 'PUBLISHED',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  assert.equal(rehydratedGis.removeListingFromSpatialSearch('lst_remove'), true);
+  assert.equal(rehydratedGis.removeListingFromSpatialSearch('lst_remove'), false);
+  resetGeospatialRepositoryForTests();
+  const afterRemovalReload = createGeospatialService().searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+  });
+  assert.equal(afterRemovalReload.totalMatched, 0);
+
   // Reject excessive radius query (> 25,000 meters)
   assert.throws(
     () =>
