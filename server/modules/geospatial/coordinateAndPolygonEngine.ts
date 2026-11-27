@@ -81,22 +81,34 @@ export function normalizeAndValidateCoordinate(
   };
 }
 
-function segmentsProperlyIntersect(
+function segmentsIntersectIncludingTouch(
   a1: [number, number],
   a2: [number, number],
   b1: [number, number],
   b2: [number, number],
 ): boolean {
-  const ccw = (p1: [number, number], p2: [number, number], p3: [number, number]) =>
-    (p3[1] - p1[1]) * (p2[0] - p1[0]) - (p2[1] - p1[1]) * (p3[0] - p1[0]);
+  const epsilon = 1e-10;
+  const orientation = (p: [number, number], q: [number, number], r: [number, number]) =>
+    (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  const onSegment = (p: [number, number], q: [number, number], r: [number, number]) =>
+    q[0] >= Math.min(p[0], r[0]) - epsilon
+    && q[0] <= Math.max(p[0], r[0]) + epsilon
+    && q[1] >= Math.min(p[1], r[1]) - epsilon
+    && q[1] <= Math.max(p[1], r[1]) + epsilon;
 
-  const d1 = ccw(b1, b2, a1);
-  const d2 = ccw(b1, b2, a2);
-  const d3 = ccw(a1, a2, b1);
-  const d4 = ccw(a1, a2, b2);
+  const o1 = orientation(a1, a2, b1);
+  const o2 = orientation(a1, a2, b2);
+  const o3 = orientation(b1, b2, a1);
+  const o4 = orientation(b1, b2, a2);
+  const opposite = (left: number, right: number) =>
+    (left > epsilon && right < -epsilon) || (left < -epsilon && right > epsilon);
 
-  return ((d1 > 1e-10 && d2 < -1e-10) || (d1 < -1e-10 && d2 > 1e-10)) &&
-    ((d3 > 1e-10 && d4 < -1e-10) || (d3 < -1e-10 && d4 > 1e-10));
+  if (opposite(o1, o2) && opposite(o3, o4)) return true;
+  if (Math.abs(o1) <= epsilon && onSegment(a1, b1, a2)) return true;
+  if (Math.abs(o2) <= epsilon && onSegment(a1, b2, a2)) return true;
+  if (Math.abs(o3) <= epsilon && onSegment(b1, a1, b2)) return true;
+  if (Math.abs(o4) <= epsilon && onSegment(b1, a2, b2)) return true;
+  return false;
 }
 
 function extractPolygonRings(geometry: PolygonGeometry): LinearRingCoords[][] {
@@ -215,7 +227,7 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
           if (
             Array.isArray(a1) && Array.isArray(a2) && Array.isArray(b1) && Array.isArray(b2)
             && a1.length >= 2 && a2.length >= 2 && b1.length >= 2 && b2.length >= 2
-            && segmentsProperlyIntersect(a1, a2, b1, b2)
+            && segmentsIntersectIncludingTouch(a1, a2, b1, b2)
           ) {
             issues.push({
               code: 'SELF_INTERSECTION',
@@ -239,7 +251,7 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
     const ringsIntersect = (left: LinearRingCoords, right: LinearRingCoords): boolean => {
       for (let i = 0; i < left.length - 1; i += 1) {
         for (let j = 0; j < right.length - 1; j += 1) {
-          if (segmentsProperlyIntersect(left[i], left[i + 1], right[j], right[j + 1])) return true;
+          if (segmentsIntersectIncludingTouch(left[i], left[i + 1], right[j], right[j + 1])) return true;
         }
       }
       return false;
