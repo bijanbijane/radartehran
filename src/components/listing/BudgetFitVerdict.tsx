@@ -1,5 +1,6 @@
 /** First-page budget ruling for active-city neighborhoods. formatMillionTomanAsIntlCurrency */
 import React, { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { toPersianNum } from '../../data/neighborhoods';
 import type { CityId } from '../../types/models';
 import {
@@ -106,22 +107,28 @@ export function BudgetFitVerdict(p: BudgetFitVerdictProps): React.ReactElement {
         <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-1">{isTehran ? 'سه محله از بیست محلهٔ تاریخ‌دار تهران' : `سه محلهٔ نمونه در ${placeFa}`}، برای حدود {formatAreaShort(Math.round(p.targetSqm || 80), areaUnit)}.</p>
       </div>
       <ul className="space-y-2">
-        {lines.map((line) => (
-          <li key={line.hoodId} className="rounded-xl border border-slate-200/80 dark:border-[var(--color-border-strong)] px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <strong className="text-sm text-slate-950 dark:text-white">{line.nameFa}</strong>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                line.fit === 'fits'
-                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                  : line.fit === 'tight'
-                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
-              }`}>{line.fitLabelFa}</span>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] mt-1">{line.referenceLabelFa}</p>
-            <p className="text-[11px] text-amber-800 dark:text-amber-200 mt-1">{line.truthFa}</p>
-          </li>
-        ))}
+        {lines.map((line) => {
+          const FitIcon = line.fit === 'fits' ? CheckCircle2 : line.fit === 'tight' ? AlertTriangle : XCircle;
+          return (
+            <li key={line.hoodId} className="rounded-xl border border-slate-200/80 dark:border-[var(--color-border-strong)] px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <strong className="text-sm text-slate-950 dark:text-white">{line.nameFa}</strong>
+                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+                  line.fit === 'fits'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    : line.fit === 'tight'
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                }`}>
+                  <FitIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  {line.fitLabelFa}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-[var(--color-text-secondary)] mt-1">{line.referenceLabelFa}</p>
+              <p className="text-[11px] text-amber-800 dark:text-amber-200 mt-1">{line.truthFa}</p>
+            </li>
+          );
+        })}
       </ul>
       {lines.length > 0 && lines.every((l) => l.fit === 'over') && (
         <div data-testid="budget-fit-affordability-bridge" className="rounded-xl border border-amber-200/90 bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/30 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-100 space-y-1">
