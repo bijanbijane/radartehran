@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "87a28e2ca09e7ed5694f611ce5db89c75f11618a",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 implementation, migration 0008 and test alignment committed; no test/typecheck execution; Actions runner allocation fails before steps; local MacBook Offline",
-    "last_verified_commit": "352ada76f71159b48f662df05c0909e2369176da"
+    "head_commit": "1c42fc9db72eecb30621bbb7a16811c8e1edd263",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 runtime, deterministic revocation/outbox identity, expected-revision CAS, post-drain registry rescan, seven-scenario regression and default npm test integration committed; dedicated workflow path filters include TRIAD-001/003; tests/typecheck not executed; hosted Actions jobs fail before runner allocation; local MacBook Offline",
+    "last_verified_commit": "1c42fc9db72eecb30621bbb7a16811c8e1edd263"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -33,11 +33,11 @@
     "next_task_id": "BE-013"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-200-TRIAD-003-CAS-AND-RACE-TEST-ALIGNMENT",
-    "checkpoint_timestamp_utc": "2026-11-27T12:07:18.443Z",
-    "last_safe_operation": "Added unique USER_DB revocation identity and outbox retry indexes in migration 0008; made revocation/outbox IDs deterministic; added expected-consent-revision CAS and stale-intent cleanup; blocked unrelated privacy changes/re-grants while a revocation drains; aligned the TRIAD-002 race test with permit-drain semantics; added all three triad suites to npm test.",
-    "last_completed_operation": "Committed migration, service/repository/route/test changes and engineering documentation. Re-read the branch, PR #78 and latest Actions job metadata. No test/typecheck command executed.",
-    "next_exact_action": "Resolve hosted runner allocation issue #49 or reconnect MacBook-Air.local; run npm test, npm run typecheck, and Worker bundle/API contract checks; inspect all TRIAD-001/002/003 test outcomes; then resume one mounted Express Firestore adapter migration with domain-specific D1 parity tests.",
+    "checkpoint_id": "CHK-201-TRIAD-003-POST-DRAIN-REGISTRY-RACE-CLOSURE",
+    "checkpoint_timestamp_utc": "2026-11-27T12:07:37.000Z",
+    "last_safe_operation": "Added deterministic revocation and outbox identities, expected-consent-revision CAS with stale-intent cleanup, and post-drain registry rescan before empty-outbox completion. Revocation always reconciles after the admission barrier; added seventh regression that injects a completed ingestion between the initial registry read and revocation commit. Added recent-auth protection to privacy reconciliation and CI path filters for TRIAD-001/003 tests.",
+    "last_completed_operation": "Committed source/test race closure, TRIAD-002 test alignment, migration 0008 unique revocation identity and outbox retry index, npm test integration for all three triad suites, and Radar Backend Triad workflow path updates. Re-read latest GitHub source and workflow; updated issue #49 with runner evidence. No test/typecheck/build/migration/deployment or production mutation executed.",
+    "next_exact_action": "Resolve hosted GitHub Actions runner allocation through issue #49 or reconnect the local executor. Then run npm test, npm run typecheck, Worker/API typecheck and Backend Triad bundle checks against the exact current PR #78 head. Capture actual output and fix only demonstrated failures. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
