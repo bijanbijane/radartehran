@@ -159,3 +159,10 @@ Before any Radar production deployment:
 3. If commands execute, diagnose concrete output from `npm run test:worker`, `npm test`, typecheck, architecture, security and Cloudflare gates; do not infer results from job conclusion alone.
 4. Keep SEC-NIPS-002, Worker streaming parser, and CI workflow change **IMPLEMENTED_BUT_NOT_VERIFIED** until executable checks pass.
 5. Keep PR #67 Draft. Preserve the IRNI-owned storage RPC and geography Service Binding prerequisites; no direct Radar binding to IRNI D1 or Production changes.
+
+
+## CHK-214 — execution prerequisite update
+
+- Before testing, obtain a permitted executor containing the actual PR checkout at `2921a3d37e2f11982c51191d26b07aa7734d0e57`, Node 22/npm 10 and dependency access. The current tool container has Node/npm but no checkout and no network.
+- Then run `npm ci`, `npm run test:nips`, `npm run test:worker`, `npm run typecheck`, `npm run arch:check`, `npm run test:security`, `npm run test:auth`, and `npm run test:cloudflare`; capture outputs and exit codes.
+- Diagnose GitHub Actions runner allocation/log retention separately. Do not infer test failures from zero-step job failures.
