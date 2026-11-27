@@ -43,3 +43,13 @@ The GitHub connector returned empty step summaries for the failed jobs and the j
 ## CHK-198 — additional CI script audit
 
 Static comparison of workflow invocations against root `package.json` found and corrected two more mismatches: added `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc` scripts for the existing client test and isolated tsconfig; replaced the nonexistent `test:geo` invocation with the existing `test:geography-catalog` script. The workflow files and package scripts were re-fetched after the commits and the references match. The new Actions runs still fail before exposing steps; therefore no workflow execution is marked passed.
+
+
+## 2026-11-27 — New evidence and remediation
+
+| ID | Evidence / correction | Status |
+|---|---|---|
+| RT-CI-005 | PR #71 branch removed stale `bun.lock` and corrected `test:geo` and nonexistent IRNI workflow scripts. Latest checks still fail; no runner logs available. | IMPLEMENTED_BUT_NOT_VERIFIED |
+| RT-STG-001 | API staging Worker build deployed with no staging D1/IRNI Service Binding because validator warning did not fail the build. | CONFIRMED_DEFECT |
+| RT-STG-002 | API staging Build Trigger now passes `--require-staging-provisioned` to validator before dry-run/deploy. Trigger is branch-scoped to the staging QA branch. Manual verification build remains queued. | IMPLEMENTED_BUT_NOT_VERIFIED |
+| RT-SEC-001 | Successful Cloudflare npm install reports 21 vulnerabilities, including 2 critical; package-level details unavailable. | BLOCKED — audit details required |
