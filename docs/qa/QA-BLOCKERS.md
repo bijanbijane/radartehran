@@ -3,24 +3,22 @@
 ## Active
 
 1. **GitHub Actions jobs fail before runner assignment**
-   - Five latest independent workflows triggered by PR #74 failed before execution: 46004991418, 46004991653, 46004991515, 46004991666, 46004991463.
-   - Each failed job reports `runner_id: 0`, empty `runner_name`, and `steps: []`; completion occurred within 1–2 seconds.
-   - The primary CI Playwright job and three path-filtered downstream jobs were skipped because prerequisite jobs failed.
-   - Primary CI job-log retrieval (job 140525806828) returns HTTP 404 `BlobNotFound`; no test command output exists.
-   - This is a CI startup/infrastructure failure, not evidence that application code or tests failed.
-   - Root cause is unconfirmed. Check account Actions usage/billing and hosted-runner eligibility, then repository Actions policy. If those are clear, escalate run IDs to GitHub Support.
+   - Latest five PR #74 runs on head `b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d`: 46005424220, 46005424339, 46005424528, 46005424288, 46005424272.
+   - Each primary job reports zero steps; CI E2E and three path-filtered dependent jobs were skipped.
+   - Root cause remains unconfirmed. This is an infrastructure startup failure, not a test failure.
 
-2. **No independent command-execution host is available through the current GitHub repository integration**
-   - GitHub repository APIs permit source inspection and commits but do not execute npm/Node/Wrangler/Playwright commands.
-   - No repository test command has been executed in this session. The prior QA register records the configured MacBook execution device as offline; current session did not verify a device reconnection.
+2. **Local execution device offline**
+   - Desktop Commander lists `MacBook-Air.local` as Offline, last seen 23 hours ago.
+   - GitHub repository APIs allow source inspection and commits but do not execute npm/Node/Wrangler/Playwright commands.
 
-## External status check
-
-- The earlier public GitHub Status check reported all systems operational on 2026-11-27. That does not establish that this account/repository has no billing, policy, or runner-eligibility restriction.
+3. **Four confirmed CI workflow contract defects on main await PR #79**
+   - Missing commands: `test:cloudflare-native-auth`, `test:irni-geographic-rpc`, `typecheck:irni-geographic-rpc`, and `test:geo`.
+   - PR #79 branch contains matching fixes; its static audit shows 0 missing commands across 16 workflows / 40 invocations.
+   - PR #79 remains Draft/open/unmerged. No runtime validation has occurred.
 
 ## Not blockers
 
-- GitHub repository access and branch write permissions are available.
-- Dedicated QA branch and Draft PR #74 exist.
-- QA suite and all six persistent QA records exist on the QA branch.
-- Repository file inspection and isolated branch commits are available.
+- Repository read/write access is available.
+- PR #74 and PR #79 are open, Draft, and unmerged.
+- NIPS test is correctly wired into `test:contracts` on PR #74's QA branch.
+- Persistent QA records are available and updated on the QA branch.
