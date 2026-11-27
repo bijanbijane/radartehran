@@ -506,8 +506,11 @@ export async function executeResearchSubjectErasure(params: {
   if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
   const impactedScopes = impactedScopesRes.results ?? [];
 
-  const erasureId = `rerase_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
-  const receiptId = `ercpt_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
+  // Stable IDs make concurrent deliveries of the same durable outbox command converge
+  // on one immutable receipt. INSERT OR REPLACE could overwrite a receipt already returned
+  // to a competing USER_DB worker.
+  const erasureId = `rerase_${params.outboxId}`;
+  const receiptId = `ercpt_${params.outboxId}`;
 
   const deleteEventsStmt = params.researchDb
     .prepare('DELETE FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
@@ -521,7 +524,7 @@ export async function executeResearchSubjectErasure(params: {
 
   const insertInboxStmt = params.researchDb
     .prepare(
-      `INSERT OR REPLACE INTO research_erasure_inbox (
+      `INSERT OR IGNORE INTO research_erasure_inbox (
         erasure_id, outbox_id, subject_key, subject_key_version, status,
         deleted_events_count, receipt_id, received_at_iso, completed_at_iso
       ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
@@ -550,14 +553,41 @@ export async function executeResearchSubjectErasure(params: {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
   }
 
+  // Read the canonical row after commit. A competing Worker may have inserted it first.
+  const canonicalInbox = await params.researchDb
+    .prepare(
+      'SELECT subject_key, subject_key_version, status, deleted_events_count, receipt_id, completed_at_iso FROM research_erasure_inbox WHERE outbox_id = ?1',
+    )
+    .bind(params.outboxId)
+    .first<{
+      subject_key: string;
+      subject_key_version: string;
+      status: string;
+      deleted_events_count: number;
+      receipt_id: string;
+      completed_at_iso: string | null;
+    }>();
+  if (
+    !canonicalInbox ||
+    canonicalInbox.subject_key !== params.subjectKey ||
+    canonicalInbox.subject_key_version !== params.subjectKeyVersion ||
+    canonicalInbox.status !== 'COMPLETED' ||
+    !canonicalInbox.completed_at_iso ||
+    !canonicalInbox.receipt_id ||
+    !Number.isSafeInteger(Number(canonicalInbox.deleted_events_count)) ||
+    Number(canonicalInbox.deleted_events_count) < 0
+  ) {
+    throw new Error('RESEARCH_SUBJECT_ERASURE_CANONICAL_RECEIPT_UNAVAILABLE');
+  }
+
   return {
     ok: true,
     outboxId: params.outboxId,
-    receiptId,
-    deletedEventsCount: targetCount,
+    receiptId: canonicalInbox.receipt_id,
+    deletedEventsCount: Number(canonicalInbox.deleted_events_count),
     invalidatedAggregationWindowsCount: impactedScopes.length,
-    idempotentReplay: false,
-    completedAtIso: nowIso,
+    idempotentReplay: canonicalInbox.receipt_id !== receiptId || Number(batchResults[batchResults.length - 1]?.meta?.changes ?? 1) === 0,
+    completedAtIso: canonicalInbox.completed_at_iso,
   };
 }
 
