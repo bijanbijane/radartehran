@@ -237,12 +237,10 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     maxConsentRevision: revokedConsentRevision,
     nowMs,
   });
-  const hasErasureScope = registryRows.length > 0 || (await userDb.prepare('SELECT 1 FROM research_erasure_outbox WHERE job_id = ?1 LIMIT 1').bind(revocationId).first()) !== null;
-  const status = activePermitsRemaining > 0
-    ? 'DRAINING_PERMITS'
-    : !hasErasureScope
-      ? 'COMPLETED'
-      : 'PENDING_ERASURE';
+  // Never complete from the pre-barrier registry snapshot. A permit may have
+  // registered a subject after that snapshot and finished before this count.
+  // Reconciliation always performs the authoritative post-drain registry scan.
+  const status = activePermitsRemaining > 0 ? 'DRAINING_PERMITS' : 'PENDING_ERASURE';
   const statusWrite = await userDb
     .prepare(
       `UPDATE research_consent_revocation_jobs
@@ -256,31 +254,16 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     throw new Error('RESEARCH_CONSENT_REVOCATION_STATUS_WRITE_FAILED');
   }
 
-  if (hasErasureScope && activePermitsRemaining === 0) {
-    const researchDb = resolveResearchDb(params.env);
-    const receiptSecret = resolveDedicatedLifecycleReceiptSecret(params.env);
-    if (receiptSecret) {
-      await processPendingResearchErasureOutbox({
-        userDb,
-        researchDb,
-        jobId: revocationId,
-        nowMs,
-        receiptSecret,
-      });
-    }
-  }
-
-  const finalJob = await readRevocationJob(userDb, revocationId);
-  if (!finalJob) throw new Error('RESEARCH_CONSENT_REVOCATION_READBACK_FAILED');
-  const finalActive = await countActiveResearchProcessingPermitsInD1({
-    userDb,
-    uid: params.uid,
-    maxConsentRevision: revokedConsentRevision,
-    nowMs,
-  });
+  // Always reconcile, even when the initial registry snapshot was empty. The
+  // reconciliation pass re-reads registry state after all admitted permits drain.
+  const reconciled = await reconcileResearchConsentRevocation({ env: params.env, revocationId, nowMs });
   return {
     privacy,
-    revocation: { ...toResponse(finalJob, finalActive, expiredPermitsReclaimed), revocationId },
+    revocation: {
+      ...reconciled,
+      expiredPermitsReclaimed: expiredPermitsReclaimed + reconciled.expiredPermitsReclaimed,
+      revocationId,
+    },
   };
 }
 

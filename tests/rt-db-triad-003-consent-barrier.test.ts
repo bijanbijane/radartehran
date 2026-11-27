@@ -919,7 +919,7 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     }
   });
 
-  it('Scenario 7: Post-drain registry rescan captures a subject registered after the revocation snapshot', async () => {
+  it('Scenario 7: Post-snapshot registration and completed permit are recovered before revocation completes', async () => {
     const { userSqlite, researchSqlite, env } = createTestTriad();
     const uid = 'uid_barrier_late_registry_7';
     const t0 = Date.parse('2026-11-22T13:00:00.000Z');
@@ -928,55 +928,59 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     });
     assert.equal(granted.consentRevision, 1);
 
-    // Simulate a permit that was admitted just before the durable revocation job appeared.
-    // Its subject registry row lands after the first snapshot and must be recovered later.
-    const revocationId = 'rrev_late_registry_7';
-    await userSqlite.db.prepare(
-      `INSERT INTO research_consent_revocation_jobs (
-        revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
-        erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
-      ) VALUES (?1, ?2, 1, 2, 'DRAINING_PERMITS', 0, '[]', ?3, ?3, NULL)`,
-    ).bind(revocationId, uid, new Date(t0 + 10).toISOString()).run();
-    const revoked = await updateUserPrivacyConsentInD1(userSqlite.db, {
-      uid, actorUid: uid, researchAnalyticsConsent: false, nowIso: new Date(t0 + 20).toISOString(),
-    });
-    assert.equal(revoked.consentRevision, 2);
-
     const derived = await deriveResearchSubjectKey({
       uid, secret: env.RESEARCH_HMAC_SECRET, keyVersion: 'v1',
     });
     assert.equal(derived.ok, true);
     if (!derived.ok) return;
     const subjectKey = derived.derived.subjectKey;
-    await userSqlite.db.prepare(
-      `INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
-       VALUES (?1, ?2, ?3, ?4)`,
-    ).bind(uid, subjectKey, 'v1', new Date(t0 + 30).toISOString()).run();
-
     const checked = validateAndMinimizeResearchEvent(makeSampleEvent('idem_late_registry_007', 707), t0 + 40);
     assert.equal(checked.ok, true);
     if (!('event' in checked)) return;
-    const written = await writePseudonymizedEventsToResearchDb({
-      researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
-      consentRevision: 1, events: [checked.event], nowMs: t0 + 40,
+
+    let injected = false;
+    const wrappedUserDb: D1Database = {
+      prepare: (query) => userSqlite.db.prepare(query),
+      exec: (query) => userSqlite.db.exec(query),
+      batch: async (statements) => {
+        if (!injected) {
+          injected = true;
+          // This represents an ingestion that completes after the initial registry read
+          // but before the revocation job is committed.
+          await userSqlite.db.prepare(
+            \`INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
+             VALUES (?1, ?2, 'v1', ?3)\`,
+          ).bind(uid, subjectKey, new Date(t0 + 30).toISOString()).run();
+          const written = await writePseudonymizedEventsToResearchDb({
+            researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
+            consentRevision: 1, events: [checked.event], nowMs: t0 + 40,
+          });
+          assert.equal(written.acceptedCount, 1);
+          await userSqlite.db.prepare(
+            \`INSERT INTO research_processing_permits (
+              permit_id, uid, subject_key, subject_key_version, consent_revision,
+              consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
+            ) VALUES ('rperm_late_registry_7', ?1, ?2, 'v1', 1, 'http_ingest', ?3, ?4, NULL)\`,
+          ).bind(uid, subjectKey, t0 + 15, t0 + 30_000).run();
+        }
+        return userSqlite.db.batch(statements);
+      },
+    };
+    const raceEnv: WorkerEnv = { ...env, USER_DB: wrappedUserDb, DB: wrappedUserDb };
+
+    const revoked = await revokeUserResearchConsentWithBarrier({
+      env: raceEnv, uid, actorUid: uid, nowMs: t0 + 100,
     });
-    assert.equal(written.acceptedCount, 1);
-
-    await userSqlite.db.prepare(
-      `INSERT INTO research_processing_permits (
-        permit_id, uid, subject_key, subject_key_version, consent_revision,
-        consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
-      ) VALUES (?1, ?2, ?3, 'v1', 1, 'http_ingest', ?4, ?5, NULL)`,
-    ).bind('rperm_late_registry_7', uid, subjectKey, t0 + 15, t0 + 30_000).run();
-
-    const draining = await reconcileResearchConsentRevocation({ env, revocationId, nowMs: t0 + 100 });
-    assert.equal(draining.status, 'DRAINING_PERMITS');
-    assert.equal(draining.activePermitsRemaining, 1);
+    assert.ok(revoked.revocation);
+    assert.equal(revoked.revocation.status, 'DRAINING_PERMITS');
+    assert.equal(revoked.revocation.activePermitsRemaining, 1);
 
     await releaseResearchProcessingPermitInD1({
       userDb: userSqlite.db, permitId: 'rperm_late_registry_7', nowMs: t0 + 200,
     });
-    const completed = await reconcileResearchConsentRevocation({ env, revocationId, nowMs: t0 + 300 });
+    const completed = await reconcileResearchConsentRevocation({
+      env: raceEnv, revocationId: revoked.revocation.revocationId, nowMs: t0 + 300,
+    });
     assert.equal(completed.status, 'COMPLETED');
     assert.equal(completed.completed, true);
     assert.equal(
@@ -985,7 +989,7 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     );
     const outbox = await userSqlite.db.prepare(
       'SELECT status, max_consent_revision FROM research_erasure_outbox WHERE job_id = ?1',
-    ).bind(revocationId).first<{ status: string; max_consent_revision: number }>();
+    ).bind(revoked.revocation.revocationId).first<{ status: string; max_consent_revision: number }>();
     assert.equal(outbox?.status, 'COMPLETED');
     assert.equal(outbox?.max_consent_revision, 2);
   });
