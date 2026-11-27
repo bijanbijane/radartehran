@@ -9,7 +9,7 @@ export interface RmepExecutionState { schema_version: '1.0'; program_id: 'RMEP-0
   execution_history: { completed_tasks: string[]; in_progress_tasks: string[]; verified_commits: string[]; uncommitted_changes_summary: string; };
   phase_statuses: { phase_1: RmepPhaseStatus; phase_2: RmepPhaseStatus; phase_3: RmepPhaseStatus; phase_4: RmepPhaseStatus; phase_5: RmepPhaseStatus; phase_6: RmepPhaseStatus; };
   operations: Array<{ operation_id: string; phase: string; description: string; status: RmepOperationStatus; idempotent: boolean; timestamp_utc: string; }>;
-  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number; outcome: 'PASSED' | 'FAILED' | 'NOT_RUN'; evidence_path: string | null; }>;
+  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code?: number | null; outcome: 'PASSED' | 'FAILED' | 'NOT_RUN'; evidence_path: string | null; }>;
   engineering_decisions: string[];
   blockers: Array<{ blocker_id: string; phase: string; description: string; requires_explicit_user_authorization: boolean; }>;
   pending_authorization: string[];
@@ -141,9 +141,21 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
   if (parsed.approved_master_prompt.sha256 !== masterPromptVerification.sha256) {
     discrepancies.push('Recorded master prompt SHA-256 in state differs from actual file hash');
   }
-  for (const testItem of parsed.tests) {
+  for (const testItem of Array.isArray(parsed.tests) ? parsed.tests : []) {
+    if (testItem.outcome === 'NOT_RUN' && testItem.evidence_path === null) {
+      // A deliberately unexecuted check has no exit code or evidence artifact by design.
+      // Preserve that truth without treating it as a passed test or attempting path resolution.
+      if (!testItem.command?.trim() || !testItem.environment?.includes('NOT_RUN')) {
+        discrepancies.push(`NOT_RUN test '${testItem.test_name}' must record its command and NOT_RUN environment`);
+      }
+      continue;
+    }
     if (testItem.exit_code !== 0 || testItem.outcome !== 'PASSED' || !testItem.command?.trim()) {
       discrepancies.push(`Test '${testItem.test_name}' is not PASSED with exit_code=0 and valid command`);
+    }
+    if (typeof testItem.evidence_path !== 'string' || !testItem.evidence_path.trim()) {
+      discrepancies.push(`Test '${testItem.test_name}' has no evidence path`);
+      continue;
     }
     const absEvidence = path.resolve(rootDir, testItem.evidence_path);
     if (!fs.existsSync(absEvidence)) {
