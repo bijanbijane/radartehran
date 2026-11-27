@@ -1292,3 +1292,14 @@
 - Completed operation: OP-193 (D1-native OIDC/session auth, Worker Firebase auth/App Check retirement, D1-only sponsor and buyer-alert client flows, Worker typecheck and platform regressions, readiness/IRNI registry corrections, RMEP evidence reconciliation).
 - Verification: native auth suite 62/62; D1 marketplace/privacy/budget tests 27/27; Worker Platform integration PASS; Express readiness 1/1; IRNI route registry 2/2; frontend/API typechecks PASS; Worker typecheck PASS; frontend/API builds PASS; Worker dry-run PASS.
 - Remaining: Docker local Worker+USER_DB runtime and Google callback, full root/security suite, residual Express Firestore data adapters. Phase 6 remains PARTIALLY_VERIFIED; no deploy/commit/push/merge.
+
+
+## 2026-11-27 — OP-194 / CHK-195: Native-auth CI command repair
+
+- **Actual repository state:** `bijanbijane/radartehran`; base `main` at `456dcacb387b908797756863b10da1f7104b658e`; active existing QA branch `qa/triad-regression-coverage-2026-11-27`.
+- **Code correction:** `.github/workflows/cloudflare-native-auth-validation.yml` invoked the nonexistent `npm run test:cloudflare-native-auth`; replaced it with the existing `npm run test:auth` script. The corrected file was fetched again from GitHub and verified.
+- **Code commit:** `a488f9750211d9afec46d4ed33258c47e70171f2`.
+- **State reconciliation:** Replaced stale `sandbox-main` / local-sandbox repository metadata in `EXECUTION-STATE.json` with the actual GitHub branch and commit; added OP-194, CHK-195, and current blockers. State update commit: `93cc9309a9df968be6892f5a8552f95ae4fd4b30`.
+- **Verification:** GitHub file read-back passed. The subsequent five PR workflows again reported failures before exposing job steps or logs; no local tests ran. Do not classify these as application-test failures. The connected MacBook runner is offline.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Phase 6 remains `PARTIALLY_VERIFIED`; no merge, deployment, migration, or production data operation was performed.
+- **Next action:** Restore a local/CI runner, run `test:auth`, `test:triad`, write-pause, Cloudflare and security suites, then proceed to the next residual Express Firestore-to-D1 domain migration.
