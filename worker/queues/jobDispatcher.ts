@@ -8,6 +8,10 @@ import { getValidatedCityConfig } from '../../src/data/multiCityData';
 import type { CityId } from '../../src/types/models';
 import { processPendingResearchErasureOutbox, resolveDedicatedLifecycleReceiptSecret } from '../account-lifecycle/workerLifecycleRuntime';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
+import {
+  acquireQueuedResearchProcessingPermitInD1,
+  releaseResearchProcessingPermitInD1,
+} from '../research/researchConsentBarrier';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import {
   MAX_RESEARCH_BATCH_SIZE,
@@ -467,6 +471,7 @@ async function handleTelemetryArchiveFlush(
 async function handleResearchEventIngestJob(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
+  options: { nowMs?: number; beforeResearchWriteBarrier?: () => Promise<void> } = {},
 ): Promise<QueueJobExecutionResult> {
   const userDb = resolveUserDb(env);
   const researchDb = resolveResearchDb(env);
@@ -500,61 +505,68 @@ async function handleResearchEventIngestJob(
     );
   }
 
-  // Re-verify active consent, monotonic consent_revision, write-blocks, and erasure outbox
-  // against USER_DB immediately before committing queued events to RESEARCH_DB.
-  const consentCheck = await verifyQueuedResearchSubjectConsent({
-    userDb,
-    subjectKey,
-    subjectKeyVersion,
-    expectedConsentRevision,
-  });
-  if (consentCheck.allowed === false) {
-    throw new QueueJobExecutionError(
-      consentCheck.code,
-      `Queued research_event_ingest rejected by USER_DB consent gate: ${consentCheck.code}`,
-      consentCheck.statusCode === 503,
-    );
-  }
-
   const validated: ValidatedResearchEvent[] = [];
   for (const item of rawEvents) {
-    const check = validateAndMinimizeResearchEvent(item);
+    const check = validateAndMinimizeResearchEvent(item, options.nowMs);
     if ('event' in check && check.ok) validated.push(check.event);
   }
   if (validated.length === 0) {
     throw new QueueJobExecutionError('INVALID_RESEARCH_EVENTS', 'Zero valid research events in queue payload', false);
   }
 
-  // Consent can be revoked while the queue payload is being validated. Re-check
-  // immediately before the cross-database RESEARCH_DB commit.
-  const preCommitConsent = await verifyQueuedResearchSubjectConsent({
+  // The UID-free queue gate resolves the subject owner, checks the revision-scoped
+  // erasure outbox, and atomically issues a bounded processing permit.
+  const permit = await acquireQueuedResearchProcessingPermitInD1({
     userDb,
     subjectKey,
     subjectKeyVersion,
     expectedConsentRevision,
+    nowMs: options.nowMs,
   });
-  if (preCommitConsent.allowed === false) {
+  if (permit.ok === false) {
     throw new QueueJobExecutionError(
-      preCommitConsent.code,
-      `Queued research_event_ingest pre-commit consent check failed: ${preCommitConsent.code}`,
-      preCommitConsent.statusCode === 503,
+      permit.code,
+      `Queued research_event_ingest rejected by USER_DB permit gate: ${permit.code}`,
+      permit.statusCode === 503,
     );
   }
 
-  const res = await writePseudonymizedEventsToResearchDb({
-    researchDb,
-    subjectKey,
-    subjectKeyVersion,
-    events: validated,
-    rejectedCount: rawEvents.length - validated.length,
-  });
-  return {
-    jobType: 'research_event_ingest',
-    idempotencyKey: envelope.idempotencyKey,
-    executedAtIso: new Date().toISOString(),
-    affectedCount: res.acceptedCount,
-    summary: { ...res, consentRevision: consentCheck.consentRevision },
-  };
+  try {
+    if (options.beforeResearchWriteBarrier) await options.beforeResearchWriteBarrier();
+    const res = await writePseudonymizedEventsToResearchDb({
+      researchDb,
+      subjectKey,
+      subjectKeyVersion,
+      consentRevision: permit.consentRevision,
+      events: validated,
+      nowMs: options.nowMs,
+      rejectedCount: rawEvents.length - validated.length,
+    });
+    return {
+      jobType: 'research_event_ingest',
+      idempotencyKey: envelope.idempotencyKey,
+      executedAtIso: new Date(options.nowMs ?? Date.now()).toISOString(),
+      affectedCount: res.acceptedCount,
+      summary: { ...res, consentRevision: permit.consentRevision },
+    };
+  } finally {
+    await releaseResearchProcessingPermitInD1({
+      userDb,
+      permitId: permit.permitId,
+      nowMs: Date.now(),
+    });
+  }
+}
+
+export async function executeQueuedResearchEventIngest(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+  options: { nowMs?: number; beforeResearchWriteBarrier?: () => Promise<void> } = {},
+): Promise<QueueJobExecutionResult> {
+  if (envelope.jobType !== 'research_event_ingest') {
+    throw new QueueJobExecutionError('UNSUPPORTED_JOB_TYPE', 'Expected research_event_ingest envelope.', false);
+  }
+  return handleResearchEventIngestJob(envelope, env, options);
 }
 
 async function handleResearchSubjectErasureJob(
