@@ -118,5 +118,5 @@
     "@vitejs/plugin-react": "^5.0.4",
     "vite": "^6.2.0"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "npm@12.2.3"
 }
