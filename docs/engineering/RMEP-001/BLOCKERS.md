@@ -176,3 +176,12 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Fixed in `server/modules/neighborhood-profile/repository.ts`: `UNDER_REVIEW` and `SUPPRESSED` now always serialize as `SUPPRESSED` with null value and zero evidence count. Regression fixtures cover both states with redistributable evidence and sentinel values.
 - Added a regression test using `DERIVED_ONLY` permission and a sentinel value.
 - **Verification blocker:** no local Node/npm executor and current Actions runner diagnostics remain unavailable. The change is IMPLEMENTED_BUT_NOT_VERIFIED pending `npm run test:nips`, typecheck, architecture and security gates.
+
+ 
+## CHK-211 — Worker test coverage gate and Actions retry (2026-11-27)
+
+- Root CI previously omitted `npm run test:worker` from Gate G, despite the package script existing and containing the request-body streaming regressions.
+- Added the explicit Worker suite command to `.github/workflows/ci.yml`, retaining output at `ci-gate-g-worker-tests.log`. Commit: `c65f6478473c890ed5ea8754faf3f5f896bf2ed7`.
+- Confirmed root `npm test` includes `test:unit`, which in turn includes `npm run test:nips`.
+- Retried all five failed PR #67 workflows on prior head `c2dd01f31ae211972c46c48cf687334b5d65f355`; every rerun again completed failure with empty step arrays and unavailable BlobNotFound logs. No command-level failure is established.
+- **Status:** CI workflow change IMPLEMENTED_BUT_NOT_VERIFIED; runtime tests remain unexecuted. Recheck the new PR synchronization run on the updated head before further code diagnosis.
