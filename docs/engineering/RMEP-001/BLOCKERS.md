@@ -67,10 +67,16 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Build logs confirm no staging D1 bindings or IRNI service binding; staging environment inherited only APP_ENV, WORKER_ENV and APP_URL. Top-level vars, D1 bindings and services were explicitly warned as non-inherited.
 - Validator's optional staging gate was not enabled and returned a warning rather than an error.
 - **Mitigation:** the staging-only Build Trigger now requires `--require-staging-provisioned` before the deploy command.
-- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED until the queued verification build completes and proves deploy is skipped.
+- **Status:** COMPLETED_AND_VERIFIED. Manual build ee140164-3d69-49f8-8f22-7849d19e4e80 stopped at BLOCKED_STAGING_DATABASES_NOT_PROVISIONED before dry-run/deploy.
 - Do not create or bind new databases or IRNI service names by assumption.
 
 ## B-006 — Dependency security audit
 - Cloudflare npm install reports 21 vulnerabilities: 14 moderate, 5 high, 2 critical.
 - Exact package names, paths and fix availability have not yet been retrieved.
 - **Next:** capture `npm audit --json` from a reproducible executor; prioritize critical/high direct or runtime dependencies. No blind `npm audit fix --force`.
+
+
+### B-007 — GitHub Actions runner diagnostics remain unavailable
+- PR #67, #69, #70 and #71 remain Draft/open; latest checks show failure for detect, root quality gates, native auth, backend triad and IRNI RPC workflows.
+- Job step arrays are empty and job-log downloads return `BlobNotFound`.
+- **Next:** use an execution environment with GitHub Actions logs or a local Node/npm worktree; do not guess at root causes from check conclusions alone.
