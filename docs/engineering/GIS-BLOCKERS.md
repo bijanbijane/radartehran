@@ -255,3 +255,17 @@ The active Draft PR branch currently points to `adfa8b15851c7b6c1e35e5505a233f72
 **Verification:** GitHub read-back confirms the changed source/test files and PR head. Exact-head GIS workflow results remain unusable: the prior run `46024395473` failed both jobs with `steps=null` and no logs URL. The follow-up test commit `39e5bde28ef6cec7441058abf1a0b301810cd57d` has no workflow run returned by the commit-run query yet. Tests and typecheck are therefore **NOT VERIFIED**.
 
 The PR remains Draft and unmerged. No production deployment, migration, authoritative data replacement, or IRNI write was performed.
+
+
+## Public spatial listing coordinate eligibility hardening — 2026-11-28
+
+A focused review of `SpatialPublishableListing` and `isListingEligibleForPublicSpatialSearch` found that the public projection required `PUBLISHED`, `VERIFIED`, and `available === true`, but the record contract had no coordinate-quality field. The index accepted every numerically valid Iran-bounded coordinate. This meant an approximate neighborhood centroid or a legacy record with unknown coordinate precision could pass the GIS public eligibility gate if its publication and listing-verification flags were set.
+
+**Implemented on `fix/gis-exact-coordinate-eligibility-2026-11-28`:**
+- Added optional `coordinateAccuracy` metadata to `SpatialPublishableListing` with explicit values `EXACT_VERIFIED`, `APPROXIMATE`, and `UNVERIFIED`.
+- Public spatial eligibility now additionally requires `coordinateAccuracy === 'EXACT_VERIFIED'`. Missing/legacy values fail closed, preserving backward compatibility for persisted snapshots while preventing their public exposure.
+- Updated the spatial-search regression fixtures to mark exact-coordinate controls explicitly and added approximate and legacy-coordinate records that must not appear in public results.
+
+**Boundary of this fix:** this field is an eligibility assertion carried by the internal listing projection; it does not itself establish the underlying evidence or replace an authoritative coordinate-verification workflow. The canonical listing producer and evidence source remain disconnected from the GIS index, as documented above. No approximate coordinate was promoted, no data backfill was run, and no production index was modified.
+
+**Verification:** GitHub read-back confirms the type, public projection, and regression-test changes. Local test/typecheck execution is unavailable in this session; hosted workflow execution must be checked against the exact PR head. Status: **IMPLEMENTED — NOT VERIFIED**.
