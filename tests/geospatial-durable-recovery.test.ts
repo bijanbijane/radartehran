@@ -19,6 +19,7 @@ import {
   persistGeospatialState,
   resetGeospatialRepositoryForTests,
   activateStagedGeospatialRepositorySnapshot,
+  hydrateMaps,
   type PersistedGeospatialState,
 } from '../server/modules/geospatial/geospatialRepository';
 import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
@@ -86,6 +87,31 @@ async function runTests(): Promise<void> {
 
   const valid = validatePersistedGeospatialState(sampleState());
   assert.equal(valid.valid, true);
+
+  // Rehydration must replace, not merge, all runtime collections. Otherwise a
+  // second hydration can leak records that are absent from the accepted snapshot.
+  const runtimeMaps = {
+    boundaryHistoryByEntity: new Map([['stale-boundary', sampleState().boundaryHistoryByEntity['hood-tehran-1']]]),
+    poiStore: new Map([['stale-poi', {} as never]]),
+    poiDedupeIndex: new Map([['stale-dedupe', 'stale-poi']]),
+    spatialListingsByCity: new Map([['stale-city', new Map([['stale-listing', {} as never]])]]),
+    overlayStore: new Map([['stale-overlay', {} as never]]),
+    importBatches: new Map([['stale-batch', {} as never]]),
+  };
+  hydrateMaps({
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  }, runtimeMaps);
+  assert.equal(runtimeMaps.boundaryHistoryByEntity.size, 0);
+  assert.equal(runtimeMaps.poiStore.size, 0);
+  assert.equal(runtimeMaps.poiDedupeIndex.size, 0);
+  assert.equal(runtimeMaps.spatialListingsByCity.size, 0);
+  assert.equal(runtimeMaps.overlayStore.size, 0);
+  assert.equal(runtimeMaps.importBatches.size, 0);
 
   const duplicateActive = sampleState();
   const originalActive = duplicateActive.boundaryHistoryByEntity['hood-tehran-1'][0];
