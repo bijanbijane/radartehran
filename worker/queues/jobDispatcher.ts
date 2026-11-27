@@ -583,10 +583,10 @@ export function buildCanonicalCronEnvelopes(params: {
   };
 
   if (params.cron === '30 0 * * *' || tehranClock.matchedScheduleTask === 'morning_market_and_d1_sync') {
-    return [
-      makeEnvelope('firestore_d1_projection_sync', 'morning_sync'),
-      makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup'),
-    ];
+    // The legacy Firestore projection handler is intentionally disabled. Keep
+    // accepting in-flight legacy messages for DLQ compatibility, but never
+    // enqueue new messages for a job with no verified authoritative source.
+    return [makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup')];
   }
 
   if (params.cron === '30 18 * * *' || tehranClock.matchedScheduleTask === 'nightly_orphan_and_telemetry_flush') {
