@@ -135,3 +135,11 @@ Re-fetched package scripts and both workflow files to verify the command names n
 ### NIPS shared-store target correction
 - `server/modules/neighborhood-profile/README.md` and `NIPS-D1-LOGICAL-SCHEMA-V1.DESIGN-ONLY.sql` now consistently state that NIPS is a logical `nips_*` data domain in the existing IRNI-owned physical `radar-neighborhood-db`. IRNI alone owns D1 migrations; Radar consumes a versioned authenticated RPC and must not bind the database directly.
 - The SQL remains design-only. No migration, D1 binding, repository adapter or RPC route was created.
+
+
+## CHK-205 — latest CI and browser SDK guard status (2026-11-27)
+
+- Latest PR #67 head before this checkpoint: `2744b32bfac8765687df8c5433d56a3d99b1ee1e`.
+- Runs #45989808778 (Path-Filtered), #45989808702 (Root CI), #45989808715 (Native Auth), #45989808637 (Backend Triad) and #45989808717 (IRNI RPC) all conclude FAILURE. Their job step arrays are empty. Logs for jobs 140474467939, 140474467803 and 140474468270 return `BlobNotFound`.
+- No command-level failure is established. The repository progress log contains raw payload evidence of runner_id=0 in the wider PR run set; classify these empty-step failures as runner allocation/infrastructure blocked, not failed application tests.
+- A browser Firebase SDK import guard and regression fixtures were added in `scripts/check-architecture.ts` and `tests/architecture-guardrails.test.ts`. Status: IMPLEMENTED_BUT_NOT_VERIFIED until `npm run arch:check` and `npm run test:contracts` execute and pass.
