@@ -64,7 +64,9 @@ export function computeViewportPulseSnapshot(params: {
   const inBounds = viewportBounds
     ? listNeighborhoodsInMapViewport(evaluatedNeighborhoods, viewportBounds)
     : [];
-  const usingFullCityFallback = !viewportBounds || inBounds.length === 0;
+  // Fall back to city-wide data only when no viewport has been established.
+  // An established viewport with zero matching neighborhoods is a genuine empty state.
+  const usingFullCityFallback = viewportBounds === null;
   const activeSet = usingFullCityFallback ? [...evaluatedNeighborhoods] : inBounds;
 
   const cityMedianBuyPerSqm = computeMedian(evaluatedNeighborhoods.map((h) => Number(h.buyPerSqm)));
@@ -249,7 +251,9 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
         >
           <Radar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
           <span className="tabular-nums truncate">
-            {isEn ? `${snapshot.inViewportCount} in view` : `${toPersianNum(snapshot.inViewportCount)} محله کادر`} · {medianPrimaryText}
+            {snapshot.usingFullCityFallback
+              ? isEn ? `${snapshot.totalCityCount} city areas` : `${toPersianNum(snapshot.totalCityCount)} محله کل شهر`
+              : isEn ? `${snapshot.inViewportCount} in view` : `${toPersianNum(snapshot.inViewportCount)} محله در کادر`} · {medianPrimaryText}
           </span>
           <ChevronUp className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
         </button>
@@ -271,7 +275,9 @@ export const MapViewportPulseDock: React.FC<MapViewportPulseDockProps> = ({
             <span>{isEn ? 'Viewport Radar' : 'رادار کادر دید'}</span>
           </span>
           <span className="text-slate-600 dark:text-[var(--color-text-secondary)] font-semibold tabular-nums whitespace-nowrap">
-            {toPersianNum(snapshot.inViewportCount)} محله
+            {snapshot.usingFullCityFallback
+              ? `${toPersianNum(snapshot.totalCityCount)} محله کل شهر`
+              : `${toPersianNum(snapshot.inViewportCount)} محله در کادر`}
             <span className="text-emerald-700 dark:text-emerald-400 font-bold"> ({toPersianNum(snapshot.affordableCount)} مناسب بودجه)</span>
           </span>
           <span className="font-bold text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
