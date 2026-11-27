@@ -1350,3 +1350,9 @@
 - **Files:** worker/account-lifecycle/workerLifecycleRuntime.ts; tests/rt-db-triad-001.test.ts.
 - **Verification:** GitHub source and test contents re-read after commit. Local test/typecheck not executed (MacBook Offline). CI on the latest prior branch head still reports failures with unavailable logs; no pass is claimed.
 - **Commits:** 0bd488aa5aee3c1494f85eaebe63fce03f296d59 (fix); 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 (test).
+
+
+## 2026-11-27 — Live Firestore adapter triage
+- Confirmed `server/modules/property-viewings` is not currently mounted by `apps/api/server.ts`; its facade reference is confined to the module and its tests in repository search. It is not the first production migration target.
+- Confirmed `server/modules/legal-regulatory` is mounted by the active Express API (`registerLegalRegulatoryRoutes`); its route registration explicitly creates `FirestoreLegalRegulatoryStore`, whose persistence spans 10 domain collections.
+- No legal-regulatory-specific D1 migration exists in the repository migration tree. Migration is therefore not safe as a quick store substitution; schema, transaction semantics, indexes/pagination, compatibility plan, and route parity tests must be designed first.
