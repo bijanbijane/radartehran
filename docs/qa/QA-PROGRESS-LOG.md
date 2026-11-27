@@ -14,3 +14,13 @@
 - The connected MacBook runner is offline. Recent Actions job records have null step arrays; logs and diagnostic artifacts have not been retrievable.
 - Test counts remain **0 executed / 0 passed / 0 failed / 0 skipped**. No test pass is claimed.
 - No merge, deployment, production migration, secret rotation, or production data mutation was performed.
+
+
+## 2026-11-27 — Runner allocation diagnosis and one controlled retry
+
+- Inspected the raw GitHub Actions job payloads for all five workflows on PR #79. Each failed job had `runner_id=0`, an empty `runner_name`, and `steps=[]`; jobs completed in approximately 2–5 seconds.
+- Affected runs: `45982139278` (CI Quality Gates), `45982139311` (Path-Filtered Checks), `45982139268` (Native Auth), `45982139346` (IRNI RPC), and `45982139324` (Backend Triad).
+- This confirms runner allocation did not occur; none of the jobs reached checkout, npm install, typecheck, or test execution.
+- Requested one controlled rerun of CI Quality Gates. Retry job `140448953174` repeated the same zero-runner, zero-step failure.
+- Classification: GitHub-hosted runner allocation failure confirmed from API job metadata. No application test failure can be inferred.
+- Further blind retries are paused until runner allocation changes. Local MacBook remains Offline.
