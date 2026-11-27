@@ -37,6 +37,19 @@ export function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
   return getAllMultiCityNeighborhoods().map((hood) => ({ cityId: resolveCityIdForNeighborhood(hood.id), hood }));
 }
 
+export function resolveUrlNeighborhoodEntry(
+  hoodParam: string | null,
+  validCityParam: CityId | undefined,
+  allCityHoods: { cityId: CityId; hood: Neighborhood }[],
+): { cityId: CityId; hood: Neighborhood } | null | undefined {
+  if (hoodParam === null) return undefined;
+  const hoodId = Number(hoodParam.trim());
+  if (!Number.isSafeInteger(hoodId) || hoodId <= 0) return null;
+  const entry = allCityHoods.find((item) => item.hood.id === hoodId);
+  if (!entry || (validCityParam && entry.cityId !== validCityParam)) return null;
+  return entry;
+}
+
 
 export function applyUrlParamsFromLocation(
   pathname: string,
@@ -166,10 +179,14 @@ export function applyUrlParamsFromLocation(
   }
 
   if (hoodParam && !compareAccepted) {
-    const targetEntry = allCityHoods.find((item) => item.hood.id === Number(hoodParam.trim()));
-    if (targetEntry && (!validCityParam || targetEntry.cityId === validCityParam)) {
+    const targetEntry = resolveUrlNeighborhoodEntry(hoodParam, validCityParam, allCityHoods);
+    if (targetEntry) {
       setActiveCity(targetEntry.cityId); setSelectedHoodId(targetEntry.hood.id);
       if (flyMap && mapInstanceRef.current) mapInstanceRef.current.flyTo([targetEntry.hood.lat, targetEntry.hood.lng], 13, { duration: 0.6 });
+    } else {
+      // Keep an invalid or cross-city URL selection from silently retaining a stale neighborhood.
+      setSelectedHoodId(-1);
+      setShowCompareModal(false);
     }
   }
 
