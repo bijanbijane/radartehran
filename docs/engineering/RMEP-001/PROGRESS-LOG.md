@@ -1459,7 +1459,7 @@
 
 - Static security review found that `serializePublicMetric` counted `UNDER_REVIEW` as blocked in readiness summaries but still returned its numeric value when all evidence permissions were `DERIVED_ONLY` or `PUBLIC_REDISTRIBUTION`.
 - The serializer now treats both `UNDER_REVIEW` and `SUPPRESSED` as non-publishable states, regardless of evidence redistribution permission. Public output maps them to `SUPPRESSED`, nulls the value/unit/currency, clears evidence count and uses the existing safe quality placeholder.
-- Added a regression fixture with a redistributable evidence permission and a sentinel numeric value on an `UNDER_REVIEW` metric. The test asserts that the value is absent from serialized public output and the metric is counted as suppressed.
+- Added regression fixtures with redistributable evidence permissions and sentinel numeric values on both `UNDER_REVIEW` and explicit `SUPPRESSED` metrics. Tests assert both values are absent from serialized public output and both metrics are counted as suppressed.
 - Source: `server/modules/neighborhood-profile/repository.ts`; regression: `tests/nips-backend-runtime-foundation.test.ts`.
 - **Status: IMPLEMENTED_BUT_NOT_VERIFIED.** GitHub-only session; no Node/npm test command executed. Required: `npm run test:nips`, typecheck, architecture and security gates.
 - No database, migration, RPC, production configuration, or deployment was changed.
