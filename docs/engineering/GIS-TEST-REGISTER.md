@@ -153,3 +153,11 @@ GitHub log retrieval remains unavailable. Issue #49 records a matching hosted-ru
 - Expected behavior: a corrupt two-ACTIVE history is excluded before bbox comparisons, so it cannot create a false overlap report against a neighboring authoritative boundary.
 - Code revision: `4a66e3ed9d06a93b051d5b549a688826d0c4da01`.
 - Status: COMMITTED / NOT VERIFIED. No successful GIS test run is available.
+
+
+## Valuation/GIS resolver integration — 2026-11-27
+
+- `tests/property-valuation-engine-module.test.ts`: coordinate-bearing valuation rejects missing resolver, accepts a resolver-confirmed canonical identity, and rejects a city/neighborhood mismatch.
+- `tests/geospatial-valuation-location-assignment.test.ts`: injects the real `GeospatialService` into `createValuationService`; verifies boundary-edge rejection, strictly interior acceptance, and caller hood-ID mismatch rejection.
+- Focused command: `npm run test:geospatial && npm run test:valuation-location`.
+- Verification: NOT VERIFIED. Exact-head GIS run [45987481282](https://github.com/bijanbijane/radartehran/actions/runs/45987481282) failed both jobs with `steps=null` and no logs URL; no test execution or pass is established.
