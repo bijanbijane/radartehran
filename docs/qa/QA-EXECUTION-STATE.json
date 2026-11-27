@@ -9,7 +9,7 @@
     "base_branch": "main",
     "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
-    "last_inspected_qa_commit_before_state_update": "b00b01881c33ddc7ed5898dc6812d6dac81e8dbd",
+    "last_inspected_qa_commit_before_state_update": "c502b5f3f476fabf802535bd0499dafdaf6cab85",
     "pull_request": {
       "number": 74,
       "url": "https://github.com/bijanbijane/radartehran/pull/74",
@@ -17,7 +17,7 @@
       "draft": true,
       "merged": false
     },
-    "qa_head_commit": "6c6dae13de92e9b4ebfcf32e77e67f03b18d6f84"
+    "qa_head_commit": "c502b5f3f476fabf802535bd0499dafdaf6cab85"
   },
   "test_results": {
     "test_suites_added": 1,
@@ -26,9 +26,9 @@
     "test_cases_passed": 0,
     "test_cases_failed": 0,
     "test_cases_skipped": 0,
-    "ci_jobs_failed_before_runner": 6,
-    "ci_jobs_skipped": 1,
-    "reason": "No repository test command was executed in this session. GitHub repository APIs permit source inspection and commits but do not execute npm commands. Previously observed GitHub Actions failures occurred before runner allocation; runner_id=0 and steps=[]. A controlled rerun of the primary CI workflow (run 45978213208) also completed failure with zero job steps; job log retrieval returned BlobNotFound. No repository test command ran."
+    "ci_jobs_failed_before_runner": 5,
+    "ci_jobs_skipped": 4,
+    "reason": "No repository test command executed in this session. The five latest PR-triggered workflows all failed before runner allocation: each failed job had runner_id=0, empty runner_name, and steps=[]. The primary CI E2E job and three path-filtered downstream jobs were skipped. The primary CI job-log endpoint returned BlobNotFound. These are CI startup failures, not test failures; executed/passed/failed/skipped test counts remain 0/0/0/0."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -53,13 +53,13 @@
       "classification": "PRE_RUNNER_CI_FAILURE",
       "severity": "BLOCKER",
       "run_ids": [
-        45978213208,
-        45978213210,
-        45978213295,
-        45978213292,
-        45978213244
+        46004991418,
+        46004991653,
+        46004991515,
+        46004991666,
+        46004991463
       ],
-      "evidence": "Every failed job completed within approximately 2-3 seconds with runner_id=0, empty runner_name, and zero steps. Job log retrieval returned BlobNotFound.",
+      "evidence": "Five latest PR-triggered workflow runs (46004991418, 46004991653, 46004991515, 46004991666, 46004991463) each have one failed pre-runner job with runner_id=0, runner_name='', steps=[]. Jobs completed in 1–2 seconds. Primary CI job log retrieval returned BlobNotFound. Four dependent jobs were skipped. Root cause remains unconfirmed.",
       "root_cause": "UNCONFIRMED",
       "likely_investigation": [
         "GitHub Actions included minutes, usage, and spending budget",
@@ -77,32 +77,47 @@
     "workflow_files_inspected": [
       ".github/workflows/ci.yml"
     ],
-    "latest_main_commit_status": "No status checks were returned for the inspected main commit.",
+    "latest_main_commit_status": "No status checks returned for inspected main commit; this is not evidence of a green build.",
     "qa_pr_workflows": [
       {
-        "name": "Tehran Radar CI Quality Gates",
-        "run_id": 45978213208,
-        "conclusion": "failure_before_runner"
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 46004991418,
+        "job_id": 140525804740,
+        "conclusion": "failure_before_runner",
+        "runner_id": 0,
+        "steps": 0
       },
       {
         "name": "Cloudflare Native Auth Validation",
-        "run_id": 45978213210,
-        "conclusion": "failure_before_runner"
-      },
-      {
-        "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 45978213295,
-        "conclusion": "failure_before_runner"
+        "run_id": 46004991653,
+        "job_id": 140525805946,
+        "conclusion": "failure_before_runner",
+        "runner_id": 0,
+        "steps": 0
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 45978213292,
-        "conclusion": "failure_before_runner"
+        "run_id": 46004991515,
+        "job_id": 140525805246,
+        "conclusion": "failure_before_runner",
+        "runner_id": 0,
+        "steps": 0
       },
       {
-        "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 45978213244,
-        "conclusion": "failure_before_runner"
+        "name": "Tehran Radar CI Quality Gates",
+        "run_id": 46004991666,
+        "job_id": 140525806828,
+        "conclusion": "failure_before_runner",
+        "runner_id": 0,
+        "steps": 0
+      },
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 46004991463,
+        "job_id": 140525805962,
+        "conclusion": "failure_before_runner",
+        "runner_id": 0,
+        "steps": 0
       }
     ],
     "e2e_job": "skipped_due_to_dependency_failure",
@@ -117,8 +132,11 @@
       "steps": 0,
       "logs": "BlobNotFound",
       "classification": "PRE_RUNNER_CI_FAILURE"
-    }
+    },
+    "path_filtered_downstream_jobs": "frontend-gates, api-gates, contracts-gates skipped because detect failed before runner",
+    "latest_qa_head_commit": "c502b5f3f476fabf802535bd0499dafdaf6cab85",
+    "latest_qa_run_timestamp_utc": "2026-11-27T13:11:39Z"
   },
-  "next_exact_action": "Investigate hosted-runner eligibility/billing and Actions policy. Once GitHub allocates a runner, run npm run test:contracts first; do not infer test results from a pre-runner workflow failure.",
-  "updated_at": "2026-11-27T16:40:00+03:30"
+  "next_exact_action": "Resolve GitHub-hosted runner allocation at account/repository Actions policy or billing level. Do not change workflow YAML to mask the pre-runner failure. Once a runner is allocated, execute npm run test:contracts first, then inspect the first failing step in the primary CI job.",
+  "updated_at": "2026-11-27T16:42:00+03:30"
 }
