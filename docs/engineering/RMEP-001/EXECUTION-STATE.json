@@ -15,7 +15,7 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "ff4540a4139b3e733f88f861dedf9375f6d10610",
+    "head_commit": "fbb09b96e29680af67ad68eafc4910cead925e9a",
     "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; barrier-only consent revocation and TRIAD-001/002 regression updates committed; no tests/typecheck executed; hosted runners fail before assignment; local MacBook Offline",
     "last_verified_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae"
   },
@@ -29,15 +29,15 @@
     "workstream_name": "Leased research consent permits, durable revocation drain, revision-scoped erasure and zombie-writer fencing",
     "task_id": "BE-011",
     "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED",
-    "next_workstream": "LIVE-EXPRESS-FIRESTORE-ADAPTER-RETIREMENT",
-    "next_task_id": "BE-013"
+    "next_workstream": "COMMUNITY-FIRESTORE-TO-D1-ADAPTER-AUDIT",
+    "next_task_id": "BE-014"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-201-TRIAD-003-BARRIER-ONLY-CONSENT-REVOCATION",
-    "checkpoint_timestamp_utc": "2026-11-27T12:19:01.668Z",
+    "checkpoint_id": "CHK-202-TRIAD-VERIFICATION-BLOCKER-AND-NEXT-ADAPTER",
+    "checkpoint_timestamp_utc": "2026-11-27T12:21:15.188Z",
     "last_safe_operation": "Required all research consent true-to-false transitions to pass through a durable revocation intent and barrier CAS; forwarded consentVersion through the account route; aligned TRIAD-001/002 regressions with permit drain, erasure, and stale queue revision semantics; updated engineering records.",
     "last_completed_operation": "Committed source, migration, test, package and documentation changes; re-read affected source/test files, PR #78 and latest Actions metadata. No tests/typecheck executed.",
-    "next_exact_action": "Resolve GitHub Actions runner allocation issue #49 or reconnect MacBook-Air.local; run npm test and npm run typecheck; inspect all TRIAD-001/002/003 outcomes; run isolated Wrangler D1/Worker integration after validating migrations 0007/0008; only then continue one live Express Firestore adapter replacement.",
+    "next_exact_action": "Restore GitHub Actions runner allocation issue #49 or reconnect MacBook-Air.local; run npm test and npm run typecheck; verify TRIAD-001/002/003 and isolated D1 migrations. Only after passes, audit the mounted community Firestore adapter (16 collections, transactional/idempotent semantics) for D1 parity; do not modify its store before a parity/rollback plan.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2220,7 +2220,9 @@
       "npm test now starts by running npm run test:triad, which executes TRIAD-001, TRIAD-002 and TRIAD-003.",
       "Direct true-to-false research consent mutation through updateUserPrivacyConsentInD1 is now rejected unless the durable revocation job exists and the caller is the barrier/reconcile transition. The account API routes revocation through that barrier.",
       "TRIAD-001 now asserts direct repository bypass rejection and completes consent erasure through the barrier; TRIAD-002 race coverage follows permit-drain semantics, and its queue assertions use CONSENT_REVISION_STALE_OR_REVOKED for old revisions.",
-      "Account privacy PATCH forwards consentVersion to the barrier; route registration and catalog remain in place."
+      "Account privacy PATCH forwards consentVersion to the barrier; route registration and catalog remain in place.",
+      "Next live Firestore target was identified without modification: apps/api/server.ts mounts registerCommunityRoutes; communityUnifiedRepository uses createDefaultCommunityDatabaseStore, selecting FirestoreAdminCommunityStore in production/emulator/credentialed environments. The adapter owns 16 social collections and transactional/idempotent behavior.",
+      "Legal-regulatory is also mounted and Firestore-backed; its explicit transaction/audit semantics make it a later migration candidate requiring careful parity."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
@@ -2242,7 +2244,7 @@
       "Latest CI on head d622a1958d567140731f7ac87d6aa3140ed4a44e: Quality Gates run 45997297169 job 140499789069 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45997297157 and Native Auth run 45997297190 have null step metadata; E2E skipped. This matches issue #49 and does not establish a source-level test failure.",
       "MacBook-Air.local remains Offline."
     ],
-    "next_action": "Restore hosted runner allocation or reconnect MacBook-Air.local; run npm test, npm run typecheck and isolated Wrangler D1/Worker integration; inspect all TRIAD suite outcomes before any next adapter replacement.",
+    "next_action": "Restore runner allocation or reconnect local executor; run npm test and npm run typecheck; verify all DB triad suites and isolated D1 migrations. Then audit the mounted community Firestore adapter for D1 parity, preserving all 16 collections, transactions, idempotency, rate limits, pagination and route contracts.",
     "code_work": {
       "id": "BE-002",
       "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
