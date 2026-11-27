@@ -72,3 +72,12 @@ These are code-level validation semantics; the new regression tests have not yet
 - `HOLE_OUTSIDE_OUTER`: an interior ring is not strictly contained by its exterior ring or touches/crosses it.
 - `HOLE_OVERLAP`: two interior rings overlap, touch, or nest.
 - `MULTIPOLYGON_COMPONENT_OVERLAP`: distinct MultiPolygon components intersect/touch or have overlapping filled interiors. A component contained in another component's valid hole is not considered overlapping.
+
+
+## Durable snapshot boundary-integrity error codes
+
+- `BOUNDARY_GEOMETRY_INVALID`: canonical persisted Polygon/MultiPolygon fails coordinate or topology validation.
+- `BOUNDARY_BBOX_GEOMETRY_MISMATCH`: persisted bounding box differs from the bounds recomputed from canonical geometry by more than 1e-6 degrees.
+- `BOUNDARY_SIMPLIFIED_GEOMETRY_INVALID`: display/simplified geometry fails the same geometry validation before snapshot activation.
+
+These errors block snapshot readiness/activation; recovery does not repair geometry or rewrite canonical records automatically.
