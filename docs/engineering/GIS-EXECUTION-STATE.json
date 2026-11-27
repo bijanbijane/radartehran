@@ -6,7 +6,7 @@
   "repository": "bijanbijane/radartehran",
   "branch": "feat/gis-spatial-integrity-2026-11-27",
   "baseline_main_sha": "456dcacb387b908797756863b10da1f7104b658e",
-  "latest_branch_sha_at_record": "bf2aa76f92d9a78cdd9a51c9836def9a6ba322d8",
+  "latest_branch_sha_at_record": "c00e24f7a5d4ac7df32880d48a2da50f4bb4a4c8",
   "phase": "GIS-FOUNDATION-AND-SPATIAL-INTEGRITY",
   "completed": [
     "Inspected repository governance, RMEP memory/state, GIS modules, D1 geographic registry baseline, NIPS boundary evidence contract, and current GIS branch delta.",
@@ -27,12 +27,13 @@
   "tests": {
     "command": "npm run test:geospatial",
     "status": "NOT_RUN",
-    "reason": "No connected local execution device; GitHub Actions query returned no workflow runs and commit checks returned no check-runs."
+    "reason": "Authorized local runner offline; no GitHub Actions run/check-run available for this branch in this session."
   },
   "next_exact_action": "Run npm run test:geospatial and the relevant TypeScript check on an online repository runner; fix any failures before expanding topology validation to MultiPolygon component overlap.",
   "blockers": [
     "No available execution runner in this session; Desktop Commander device reported offline.",
     "No verified licensed Tehran neighborhood boundary dataset in the current GIS source register.",
     "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine; IRNI owns canonical geographic registry writes."
-  ]
+  ],
+  "last_recorded_action": "Strict Polygon interior-ring containment and hole-to-hole topology validation; regression tests added; GIS registers reconciled."
 }
