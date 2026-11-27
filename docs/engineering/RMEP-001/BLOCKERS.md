@@ -151,3 +151,10 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Raw job payloads: 140527968883, 140527967743, 140527967160, 140527966504, and 140527966731 each report `runner_id=0`, empty `runner_name`, `steps=[]`, and completion within approximately two seconds. Log downloads return `BlobNotFound`.
 - No workflow command ran. The NIPS serializer fix and regression test are committed but **IMPLEMENTED_BUT_NOT_VERIFIED**. Do not infer a source-code failure or success from these runs.
 - Next: restore runner allocation or obtain an authorized Node 22/npm 10 executor, then run `npm run test:nips`, `npm run typecheck`, `npm run arch:check`, and the mandatory auth/Cloudflare/D1 gates.
+
+## CHK-208 — Worker streaming parser verification blocked (2026-11-27)
+
+- Commits: `9b94d84e3a036d58580ff2f702057568f37f1053`, `bf41454a0a06d26609feaab8c285abd0b584c03a`, `34adeb686f04162a97e305b391ea7aa714b53ebf`.
+- Source and regression test files were re-read from the branch and the expected bounded-stream implementation/test cases were confirmed.
+- Commit `34adeb686f04162a97e305b391ea7aa714b53ebf` has no associated Actions workflow runs or check-runs in the GitHub API response. This is not a passing result; local execution is unavailable in this GitHub-only session.
+- Keep this change **IMPLEMENTED_BUT_NOT_VERIFIED** until the worker test suite and required backend gates execute.
