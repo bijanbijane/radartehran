@@ -127,50 +127,77 @@ export async function processPendingResearchErasureOutbox(params: {
     const jobId = String(row.job_id);
     const subjectKey = String(row.subject_key);
     const subjectKeyVersion = String(row.subject_key_version);
-    const attempts = Number(row.attempt_count ?? 0) + 1;
     touchedJobIds.add(jobId);
     attempted += 1;
 
     if (!params.researchDb) {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
-      await params.userDb
+      const retryUpdate = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
-               last_error_code = 'RESEARCH_DB_UNAVAILABLE', updated_at_iso = ?3
-           WHERE outbox_id = ?4`,
+           SET status = 'RETRY_PENDING',
+               attempt_count = attempt_count + 1,
+               next_retry_at_ms = MAX(next_retry_at_ms, ?1 + MIN(300000, 10000 * (1 << MIN(attempt_count + 1, 5)))),
+               last_error_code = 'RESEARCH_DB_UNAVAILABLE', updated_at_iso = ?2
+           WHERE outbox_id = ?3 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(attempts, nowMs + backoffMs, nowIso, outboxId)
+        .bind(nowMs, nowIso, outboxId)
         .run();
+      if (!retryUpdate.success) throw new Error('RESEARCH_ERASURE_UNAVAILABLE_RETRY_STATE_UPDATE_FAILED');
+
+      // A competing Worker may have completed this item after our pending-row scan.
+      // The unavailable-DB path must never downgrade that durable completion.
+      if ((retryUpdate.meta?.changes ?? 0) === 0) {
+        const currentOutbox = await params.userDb
+          .prepare('SELECT status, erased_events_count FROM research_erasure_outbox WHERE outbox_id = ?1')
+          .bind(outboxId)
+          .first<{ status: string; erased_events_count: number }>();
+        if (
+          currentOutbox?.status === 'COMPLETED' &&
+          Number.isSafeInteger(Number(currentOutbox.erased_events_count)) &&
+          Number(currentOutbox.erased_events_count) >= 0
+        ) {
+          completed += 1;
+          erasedEventsTotal += Number(currentOutbox.erased_events_count);
+          continue;
+        }
+      }
       pending += 1;
       continue;
     }
 
     try {
+      const maxConsentRevision =
+        row.max_consent_revision === null || row.max_consent_revision === undefined
+          ? null
+          : Number(row.max_consent_revision);
       const erasureRes = await executeResearchSubjectErasure({
         researchDb: params.researchDb,
         outboxId,
         subjectKey,
         subjectKeyVersion,
+        maxConsentRevision,
         nowMs,
       });
 
-      // Remove subject key mapping from USER_DB registry ONLY after verifiable RESEARCH_DB receipt
-      const registryDelete = await params.userDb
-        .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
-        .bind(subjectKey, subjectKeyVersion)
-        .run();
-      if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+      // Consent revocation preserves the subject registry so a later explicit re-grant can
+      // derive the same pseudonymized subject. Full account deletion removes the mapping.
+      if (maxConsentRevision === null) {
+        const registryDelete = await params.userDb
+          .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
+          .bind(subjectKey, subjectKeyVersion)
+          .run();
+        if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+      }
 
       const outboxComplete = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'COMPLETED', attempt_count = ?1, receipt_id = ?2,
-               erased_events_count = ?3, last_error_code = NULL,
-               updated_at_iso = ?4, completed_at_iso = ?5
-           WHERE outbox_id = ?6`,
+           SET status = 'COMPLETED', attempt_count = attempt_count + 1, receipt_id = ?1,
+               erased_events_count = ?2, last_error_code = NULL,
+               updated_at_iso = ?3, completed_at_iso = ?4
+           WHERE outbox_id = ?5 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(attempts, erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
+        .bind(erasureRes.receiptId, erasureRes.deletedEventsCount, nowIso, erasureRes.completedAtIso, outboxId)
         .run();
       if (!outboxComplete.success || (outboxComplete.meta?.changes ?? 0) !== 1) {
         throw new Error('RESEARCH_ERASURE_OUTBOX_COMPLETION_UNCONFIRMED');
@@ -179,16 +206,36 @@ export async function processPendingResearchErasureOutbox(params: {
       erasedEventsTotal += erasureRes.deletedEventsCount;
       completed += 1;
     } catch {
-      const backoffMs = Math.min(300_000, 10_000 * Math.pow(2, Math.min(attempts, 5)));
-      await params.userDb
+      const retryUpdate = await params.userDb
         .prepare(
           `UPDATE research_erasure_outbox
-           SET status = 'RETRY_PENDING', attempt_count = ?1, next_retry_at_ms = ?2,
-               last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?3
-           WHERE outbox_id = ?4`,
+           SET status = 'RETRY_PENDING',
+               attempt_count = attempt_count + 1,
+               next_retry_at_ms = MAX(next_retry_at_ms, ?1 + MIN(300000, 10000 * (1 << MIN(attempt_count + 1, 5)))),
+               last_error_code = 'RESEARCH_ERASURE_EXECUTION_FAILED', updated_at_iso = ?2
+           WHERE outbox_id = ?3 AND status IN ('PENDING', 'RETRY_PENDING')`,
         )
-        .bind(attempts, nowMs + backoffMs, nowIso, outboxId)
+        .bind(nowMs, nowIso, outboxId)
         .run();
+      if (!retryUpdate.success) throw new Error('RESEARCH_ERASURE_RETRY_STATE_UPDATE_FAILED');
+
+      // A competing Worker may have completed this outbox item after our attempt failed.
+      // Never downgrade its durable COMPLETED state back to RETRY_PENDING.
+      if ((retryUpdate.meta?.changes ?? 0) === 0) {
+        const currentOutbox = await params.userDb
+          .prepare('SELECT status, erased_events_count FROM research_erasure_outbox WHERE outbox_id = ?1')
+          .bind(outboxId)
+          .first<{ status: string; erased_events_count: number }>();
+        if (
+          currentOutbox?.status === 'COMPLETED' &&
+          Number.isSafeInteger(Number(currentOutbox.erased_events_count)) &&
+          Number(currentOutbox.erased_events_count) >= 0
+        ) {
+          completed += 1;
+          erasedEventsTotal += Number(currentOutbox.erased_events_count);
+          continue;
+        }
+      }
       pending += 1;
     }
   }
@@ -213,8 +260,74 @@ export async function processPendingResearchErasureOutbox(params: {
     if (row.job_id) touchedJobIds.add(String(row.job_id));
   }
 
-  // Reconcile parent deletion jobs: mark COMPLETED only when 0 incomplete outbox entries remain
+  // Recover consent-revocation parents when the final outbox item committed but
+  // the parent status update was interrupted. Completed outbox rows are excluded
+  // from the pending scan above, so this independent scan is required for replay.
+  const alreadyErasedRevocations = await params.userDb
+    .prepare(
+      `SELECT j.revocation_id
+       FROM research_consent_revocation_jobs j
+       WHERE j.status = 'PENDING_ERASURE'
+         AND EXISTS (SELECT 1 FROM research_erasure_outbox o WHERE o.job_id = j.revocation_id)
+         AND NOT EXISTS (
+           SELECT 1 FROM research_erasure_outbox o
+           WHERE o.job_id = j.revocation_id AND o.status != 'COMPLETED'
+         )
+       LIMIT 50`,
+    )
+    .all<{ revocation_id: string }>();
+  if (!alreadyErasedRevocations.success) {
+    throw new Error('RESEARCH_CONSENT_REVOCATION_COMPLETED_JOB_SCAN_FAILED');
+  }
+  for (const row of alreadyErasedRevocations.results ?? []) {
+    if (row.revocation_id) touchedJobIds.add(String(row.revocation_id));
+  }
+
+  // Reconcile consent-revocation jobs separately from account-deletion jobs.
+  // A revocation job must never enter the account-deletion completion path.
   for (const jobId of touchedJobIds) {
+    const consentJob = await params.userDb
+      .prepare('SELECT revocation_id FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
+      .bind(jobId)
+      .first<{ revocation_id: string }>();
+    if (consentJob) {
+      const remaining = await params.userDb
+        .prepare(`SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1 AND status != 'COMPLETED'`)
+        .bind(jobId)
+        .first<{ cnt: number }>();
+      if (!remaining || !Number.isSafeInteger(Number(remaining.cnt)) || Number(remaining.cnt) < 0) {
+        throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_RECONCILIATION_UNAVAILABLE');
+      }
+      if (Number(remaining.cnt) === 0) {
+        const completedRows = await params.userDb
+          .prepare(`SELECT receipt_id, erased_events_count FROM research_erasure_outbox WHERE job_id = ?1 AND status = 'COMPLETED' ORDER BY outbox_id`)
+          .bind(jobId)
+          .all<{ receipt_id: string; erased_events_count: number }>();
+        if (!completedRows.success) throw new Error('RESEARCH_CONSENT_REVOCATION_RECEIPT_READ_FAILED');
+        const receiptIds = (completedRows.results ?? []).map((item) => item.receipt_id).filter(Boolean);
+        const erasedTotal = (completedRows.results ?? []).reduce(
+          (sum, item) => sum + Math.max(0, Number(item.erased_events_count) || 0),
+          0,
+        );
+        const complete = await params.userDb
+          .prepare(
+            `UPDATE research_consent_revocation_jobs
+             SET status = 'COMPLETED', erased_events_count = ?1, receipt_ids_json = ?2,
+                 updated_at_iso = ?3, completed_at_iso = ?3
+             WHERE revocation_id = ?4 AND status != 'COMPLETED'`,
+          )
+          .bind(erasedTotal, JSON.stringify(receiptIds), nowIso, jobId)
+          .run();
+        if (!complete.success) throw new Error('RESEARCH_CONSENT_REVOCATION_COMPLETION_FAILED');
+      } else {
+        await params.userDb
+          .prepare(`UPDATE research_consent_revocation_jobs SET status = 'PENDING_ERASURE', updated_at_iso = ?1 WHERE revocation_id = ?2 AND status = 'DRAINING_PERMITS'`)
+          .bind(nowIso, jobId)
+          .run();
+      }
+      continue;
+    }
+
     const remainingRow = await params.userDb
       .prepare(`SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1 AND status != 'COMPLETED'`)
       .bind(jobId)

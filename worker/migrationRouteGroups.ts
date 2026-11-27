@@ -47,6 +47,7 @@ export const GROUP_3A_AUTH_PATHS = new Set<string>([
 export const GROUP_4_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/profile', 'PATCH /api/account/profile',
   'GET /api/account/privacy', 'PATCH /api/account/privacy',
+  'POST /api/account/privacy/reconcile',
   'GET /api/account/sessions', 'POST /api/account/sessions/:id/revoke',
   'GET /api/account/data-requests', 'POST /api/account/data-requests',
   'GET /api/account/export-data', 'POST /api/account/deletion-requests',

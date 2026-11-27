@@ -47,3 +47,18 @@
 - **Regression**: `tests/engineering-quality-foundation.test.ts` scans components for forbidden labels; `tests/real-market-price-aggregator.test.ts` asserts zero-sample paths do not fabricate listings or present verified deal facts.
 - **Listing verdict (client)**: `ListingVerdictHero` and `InstantListingVerifierModal` must both call `buildListingVerdict` in `src/utils/listingVerdictService.ts` (live comparables + `disclaimerFa` + hood mismatch guard). Never call `diagnoseListingDeal` directly from UI. Covered by `tests/listing-verdict-service.test.ts`.
 
+
+
+
+## Research consent revocation and stale-worker fencing
+
+Research ingestion is admitted only through a leased permit tied to the current consent_revision. The permit is acquired atomically with the USER_DB consent and write-block checks and is released in a finally block. Revocation first advances the consent revision and stops new permit issuance, then drains active leases (reclaiming expired leases after worker crashes) before creating/processing revision-scoped erasure work.
+
+Each RESEARCH_DB event stores its consent revision. Erasure advances a pseudonymous subject fence in the same D1 batch as receipt creation, aggregation-window invalidation and deletion. Event insertion uses a conditional SQL predicate against that fence, so delayed Queue messages and zombie workers cannot reinsert events at or below the revoked revision after completion. A later explicit re-grant uses a higher revision and does not un-fence older revisions. Raw UIDs remain confined to USER_DB; the research outbox and RESEARCH_DB contain only pseudonymous subject keys and versions.
+
+PATCH /api/account/privacy may return 202 while a revocation drains. The authenticated POST /api/account/privacy/reconcile endpoint advances the durable job and returns 200 only after verifiable RESEARCH_DB receipts are recorded.
+
+Implementation status is not verification status: tests/rt-db-triad-003-consent-barrier.test.ts is wired into npm run test:triad, but execution remains pending until a local or hosted runner completes the suite.
+
+
+Revocation intents are unique per user and revoked consent revision. A stale intent whose expected consent-revision CAS loses to another privacy mutation is canceled rather than left as a permanent write-admission block. While a revocation is pending, unrelated consent mutations and re-grants are rejected; only the barrier's own revocation/reconciliation transition may update the consent row.

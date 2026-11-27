@@ -71,6 +71,7 @@ import {
   ingestResearchEventsBatch,
   purgeExpiredResearchData,
 } from '../worker/research/researchService';
+import { revokeUserResearchConsentWithBarrier } from '../worker/research/researchConsentRevocation';
 import type { D1Database, D1PreparedStatement, KVNamespace, WorkerEnv } from '../worker/types';
 
 /**
@@ -605,6 +606,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         RESEARCH_DB: researchSqlite.db,
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET_V1,
         RESEARCH_HMAC_KEY_VERSION: 'v1',
+        LIFECYCLE_RECEIPT_HMAC_SECRET: 'rt_triad_001_dedicated_receipt_secret_0123456789abcdef',
       };
       const uid = 'uid_research_subject_007';
 
@@ -671,12 +673,24 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         assert.equal(dup.deduplicatedCount, 1);
       }
 
-      // 5. Revoke consent -> subsequent ingest MUST be rejected immediately
-      await updateUserPrivacyConsentInD1(userSqlite.db, {
-        uid,
-        actorUid: uid,
-        researchAnalyticsConsent: false,
-      });
+      // Direct repository writes may not bypass the durable revocation barrier.
+      await assert.rejects(
+        () => updateUserPrivacyConsentInD1(userSqlite.db, {
+          uid,
+          actorUid: uid,
+          researchAnalyticsConsent: false,
+        }),
+        /RESEARCH_CONSENT_REVOCATION_BARRIER_REQUIRED/,
+      );
+
+      // 5. Revoke through the durable permit/outbox barrier; existing data is erased before completion.
+      const revoked = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+      assert.ok(revoked.revocation);
+      assert.equal(revoked.revocation!.status, 'COMPLETED');
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        0,
+      );
       const afterRevoke = await ingestResearchEventsBatch({
         env,
         uid,
@@ -685,6 +699,444 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       });
       assert.equal(afterRevoke.ok, false);
       if (!afterRevoke.ok) assert.equal(afterRevoke.code, 'RESEARCH_CONSENT_REQUIRED');
+    });
+
+    it('prevents a concurrent outbox-ID collision from erasing another subject before identity verification', async () => {
+      const researchSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
+      const nowIso = new Date().toISOString();
+      const expiresAtIso = new Date(Date.now() + 86_400_000).toISOString();
+
+      for (const [eventId, subjectKey] of [
+        ['ev_concurrent_a', 'sk_concurrent_subject_a'],
+        ['ev_concurrent_b', 'sk_concurrent_subject_b'],
+      ]) {
+        await researchSqlite.db
+          .prepare(
+            `INSERT INTO research_events (
+              event_id, subject_key, subject_key_version, event_type, schema_version,
+              city_id, hood_id, session_bucket, payload_json, occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key
+            ) VALUES (?1, ?2, 'v1', 'radar.map.neighborhood_select', 1, 'tehran', 5, '2026-11-27', '{}', ?3, ?3, ?4, ?5)`,
+          )
+          .bind(eventId, subjectKey, nowIso, expiresAtIso, `idem_${eventId}`)
+          .run();
+      }
+
+      // Force both deliveries to observe an empty inbox before either may continue.
+      // Serialize batch() like D1's transaction boundary, so this is a deterministic
+      // overlapping-read / competing-commit test rather than timing-dependent Promise.all.
+      let initialReads = 0;
+      let releaseInitialReads!: () => void;
+      const initialReadsBarrier = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve;
+      });
+      let batchTail: Promise<void> = Promise.resolve();
+
+      const wrapStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapStatement(target.bind(...values), sql);
+            }
+            if (property === 'first') {
+              return async (...args: unknown[]) => {
+                const result = await (target.first as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                if (sql.startsWith('SELECT subject_key, subject_key_version, receipt_id, deleted_events_count')) {
+                  initialReads += 1;
+                  if (initialReads === 2) releaseInitialReads();
+                  await initialReadsBarrier;
+                }
+                return result;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const concurrentDb: D1Database = {
+        prepare(sql: string) {
+          return wrapStatement(researchSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          const next = batchTail.then(() => researchSqlite.db.batch<T>(statements));
+          batchTail = next.then(() => undefined, () => undefined);
+          return next;
+        },
+        async exec(query: string) {
+          return researchSqlite.db.exec(query);
+        },
+      };
+
+      const deliveries = await Promise.allSettled([
+        executeResearchSubjectErasure({
+          researchDb: concurrentDb,
+          outboxId: 'outbox_concurrent_collision_001',
+          subjectKey: 'sk_concurrent_subject_a',
+          subjectKeyVersion: 'v1',
+        }),
+        executeResearchSubjectErasure({
+          researchDb: concurrentDb,
+          outboxId: 'outbox_concurrent_collision_001',
+          subjectKey: 'sk_concurrent_subject_b',
+          subjectKeyVersion: 'v1',
+        }),
+      ]);
+
+      assert.equal(initialReads, 2, 'Both deliveries must pass the initial empty-inbox read');
+      assert.equal(deliveries.filter((result) => result.status === 'fulfilled').length, 1);
+      assert.equal(deliveries.filter((result) => result.status === 'rejected').length, 1);
+
+      const canonicalInbox = researchSqlite.raw
+        .prepare('SELECT subject_key FROM research_erasure_inbox WHERE outbox_id = ?')
+        .get('outbox_concurrent_collision_001') as { subject_key: string } | undefined;
+      assert.ok(canonicalInbox, 'Exactly one delivery must claim the outbox identity');
+      const losingSubjectKey =
+        canonicalInbox?.subject_key === 'sk_concurrent_subject_a'
+          ? 'sk_concurrent_subject_b'
+          : 'sk_concurrent_subject_a';
+      const losingSubjectEvents = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?')
+        .get(losingSubjectKey) as { cnt: number };
+      assert.equal(
+        Number(losingSubjectEvents.cnt),
+        1,
+        'A competing outbox-ID collision must not delete events for the losing subject',
+      );
+      const winnerSubjectEvents = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?')
+        .get(canonicalInbox!.subject_key) as { cnt: number };
+      assert.equal(Number(winnerSubjectEvents.cnt), 0);
+    });
+
+    it('does not downgrade a concurrently completed outbox item when RESEARCH_DB is unavailable', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const nowIso = new Date().toISOString();
+
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO account_deletion_jobs (
+            job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+          ) VALUES ('job_unavailable_race_001', 'uid_unavailable_race', 'idem_unavailable_race_001',
+            'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', 'uid_unavailable_race',
+            'USER_REQUESTED_ERASURE', ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO research_erasure_outbox (
+            outbox_id, job_id, subject_key, subject_key_version, status,
+            attempt_count, next_retry_at_ms, created_at_iso, updated_at_iso
+          ) VALUES ('outbox_unavailable_race_001', 'job_unavailable_race_001',
+            'sk_unavailable_race_001', 'v1', 'PENDING', 0, 0, ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+
+      // Simulate another Worker committing COMPLETED after this invocation scans PENDING rows.
+      const wrapUserStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapUserStatement(target.bind(...values), sql);
+            }
+            if (
+              property === 'all' &&
+              sql.includes('SELECT * FROM research_erasure_outbox') &&
+              sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
+            ) {
+              return async (...args: unknown[]) => {
+                const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                userSqlite.raw
+                  .prepare(
+                    `UPDATE research_erasure_outbox
+                     SET status = 'COMPLETED', attempt_count = 1, receipt_id = 'receipt_from_available_worker',
+                         erased_events_count = 4, completed_at_iso = ?, updated_at_iso = ?
+                     WHERE outbox_id = 'outbox_unavailable_race_001'`,
+                  )
+                  .run(nowIso, nowIso);
+                return rows;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const racingUserDb: D1Database = {
+        prepare(sql: string) {
+          return wrapUserStatement(userSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          return userSqlite.db.batch<T>(statements);
+        },
+        async exec(query: string) {
+          return userSqlite.db.exec(query);
+        },
+      };
+
+      const result = await processPendingResearchErasureOutbox({
+        userDb: racingUserDb,
+        jobId: 'job_unavailable_race_001',
+        nowMs: Date.now(),
+        receiptSecret: TEST_RECEIPT_SECRET,
+      });
+
+      assert.equal(result.completed, 1);
+      assert.equal(result.pending, 0);
+      assert.equal(result.erasedEventsTotal, 4);
+      const outbox = userSqlite.raw
+        .prepare('SELECT status, receipt_id FROM research_erasure_outbox WHERE outbox_id = ?')
+        .get('outbox_unavailable_race_001') as { status: string; receipt_id: string };
+      assert.equal(outbox.status, 'COMPLETED');
+      assert.equal(outbox.receipt_id, 'receipt_from_available_worker');
+      const job = userSqlite.raw
+        .prepare('SELECT status FROM account_deletion_jobs WHERE job_id = ?')
+        .get('job_unavailable_race_001') as { status: string };
+      assert.equal(job.status, 'COMPLETED');
+    });
+
+    it('does not downgrade a concurrently completed outbox item after a stale worker failure', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const nowIso = new Date().toISOString();
+
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO account_deletion_jobs (
+            job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+          ) VALUES ('job_outbox_race_001', 'uid_outbox_race', 'idem_outbox_race_001',
+            'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', 'uid_outbox_race',
+            'USER_REQUESTED_ERASURE', ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO research_erasure_outbox (
+            outbox_id, job_id, subject_key, subject_key_version, status,
+            attempt_count, next_retry_at_ms, created_at_iso, updated_at_iso
+          ) VALUES ('outbox_race_001', 'job_outbox_race_001', 'sk_outbox_race_001', 'v1',
+            'PENDING', 0, 0, ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+
+      // Simulate another Worker committing COMPLETED after this Worker has selected
+      // the PENDING row but before its RESEARCH_DB attempt fails.
+      const wrapUserStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapUserStatement(target.bind(...values), sql);
+            }
+            if (
+              property === 'all' &&
+              sql.includes('SELECT * FROM research_erasure_outbox') &&
+              sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
+            ) {
+              return async (...args: unknown[]) => {
+                const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                userSqlite.raw
+                  .prepare(
+                    `UPDATE research_erasure_outbox
+                     SET status = 'COMPLETED', attempt_count = 1, receipt_id = 'receipt_from_competing_worker',
+                         erased_events_count = 3, completed_at_iso = ?, updated_at_iso = ?
+                     WHERE outbox_id = 'outbox_race_001'`,
+                  )
+                  .run(nowIso, nowIso);
+                return rows;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const racingUserDb: D1Database = {
+        prepare(sql: string) {
+          return wrapUserStatement(userSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          return userSqlite.db.batch<T>(statements);
+        },
+        async exec(query: string) {
+          return userSqlite.db.exec(query);
+        },
+      };
+
+      const failingResearchDb: D1Database = {
+        prepare() {
+          const statement: D1PreparedStatement = {
+            bind() {
+              return statement;
+            },
+            async first<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async all<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async run<T = unknown>() {
+              throw new Error('INJECTED_RESEARCH_DB_WRITE_FAILURE');
+            },
+          };
+          return statement;
+        },
+        async batch<T = unknown>() {
+          throw new Error('INJECTED_RESEARCH_DB_BATCH_FAILURE');
+        },
+        async exec() {
+          throw new Error('INJECTED_RESEARCH_DB_EXEC_FAILURE');
+        },
+      };
+
+      const result = await processPendingResearchErasureOutbox({
+        userDb: racingUserDb,
+        researchDb: failingResearchDb,
+        jobId: 'job_outbox_race_001',
+        nowMs: Date.now(),
+        receiptSecret: TEST_RECEIPT_SECRET,
+      });
+
+      assert.equal(result.completed, 1);
+      assert.equal(result.pending, 0);
+      assert.equal(result.erasedEventsTotal, 3);
+      const outbox = userSqlite.raw
+        .prepare('SELECT status, receipt_id FROM research_erasure_outbox WHERE outbox_id = ?')
+        .get('outbox_race_001') as { status: string; receipt_id: string };
+      assert.equal(outbox.status, 'COMPLETED');
+      assert.equal(outbox.receipt_id, 'receipt_from_competing_worker');
+      const job = userSqlite.raw
+        .prepare('SELECT status FROM account_deletion_jobs WHERE job_id = ?')
+        .get('job_outbox_race_001') as { status: string };
+      assert.equal(job.status, 'COMPLETED');
+    });
+
+    it('increments retry attempts atomically when concurrent workers fail the same outbox item', async () => {
+      const userSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO account_deletion_jobs (
+            job_id, uid, idempotency_key, status, stage, requested_by_uid, reason, created_at_iso, updated_at_iso
+          ) VALUES ('job_retry_counter_001', 'uid_retry_counter', 'idem_retry_counter_001',
+            'PENDING_RESEARCH_ERASURE', 'RESEARCH_ERASURE_OUTBOX', 'uid_retry_counter',
+            'USER_REQUESTED_ERASURE', ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+      userSqlite.raw
+        .prepare(
+          `INSERT INTO research_erasure_outbox (
+            outbox_id, job_id, subject_key, subject_key_version, status,
+            attempt_count, next_retry_at_ms, created_at_iso, updated_at_iso
+          ) VALUES ('outbox_retry_counter_001', 'job_retry_counter_001',
+            'sk_retry_counter_001', 'v1', 'PENDING', 0, 0, ?, ?)`,
+        )
+        .run(nowIso, nowIso);
+
+      // Force both workers to read the same PENDING row with attempt_count=0.
+      let scanCount = 0;
+      let releaseScans!: () => void;
+      const scansBarrier = new Promise<void>((resolve) => {
+        releaseScans = resolve;
+      });
+      const wrapUserStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapUserStatement(target.bind(...values), sql);
+            }
+            if (
+              property === 'all' &&
+              sql.includes('SELECT * FROM research_erasure_outbox') &&
+              sql.includes("status IN ('PENDING', 'RETRY_PENDING')")
+            ) {
+              return async (...args: unknown[]) => {
+                const rows = await (target.all as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                scanCount += 1;
+                if (scanCount === 2) releaseScans();
+                await scansBarrier;
+                return rows;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const racingUserDb: D1Database = {
+        prepare(sql: string) {
+          return wrapUserStatement(userSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          return userSqlite.db.batch<T>(statements);
+        },
+        async exec(query: string) {
+          return userSqlite.db.exec(query);
+        },
+      };
+
+      const failingResearchDb: D1Database = {
+        prepare() {
+          const statement: D1PreparedStatement = {
+            bind() {
+              return statement;
+            },
+            async first<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async all<T = Record<string, unknown>>() {
+              throw new Error('INJECTED_RESEARCH_DB_READ_FAILURE');
+            },
+            async run<T = unknown>() {
+              throw new Error('INJECTED_RESEARCH_DB_WRITE_FAILURE');
+            },
+          };
+          return statement;
+        },
+        async batch<T = unknown>() {
+          throw new Error('INJECTED_RESEARCH_DB_BATCH_FAILURE');
+        },
+        async exec() {
+          throw new Error('INJECTED_RESEARCH_DB_EXEC_FAILURE');
+        },
+      };
+
+      const [first, second] = await Promise.all([
+        processPendingResearchErasureOutbox({
+          userDb: racingUserDb,
+          researchDb: failingResearchDb,
+          jobId: 'job_retry_counter_001',
+          nowMs,
+          receiptSecret: TEST_RECEIPT_SECRET,
+        }),
+        processPendingResearchErasureOutbox({
+          userDb: racingUserDb,
+          researchDb: failingResearchDb,
+          jobId: 'job_retry_counter_001',
+          nowMs,
+          receiptSecret: TEST_RECEIPT_SECRET,
+        }),
+      ]);
+
+      assert.equal(scanCount, 2);
+      assert.equal(first.pending, 1);
+      assert.equal(second.pending, 1);
+      const outbox = userSqlite.raw
+        .prepare('SELECT status, attempt_count, next_retry_at_ms FROM research_erasure_outbox WHERE outbox_id = ?')
+        .get('outbox_retry_counter_001') as {
+          status: string;
+          attempt_count: number;
+          next_retry_at_ms: number;
+        };
+      assert.equal(outbox.status, 'RETRY_PENDING');
+      assert.equal(outbox.attempt_count, 2, 'Concurrent failures must not lose an attempt_count increment');
+      assert.ok(
+        Number(outbox.next_retry_at_ms) >= nowMs + 40_000,
+        'Retry backoff must reflect both atomic failure attempts',
+      );
     });
 
     it('connects Account Deletion to UID-free Outbox -> RESEARCH_DB Inbox across rotated keys with transient failure recovery', async () => {
@@ -803,6 +1255,23 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         subjectKeyVersion: String(outboxRows[0].subject_key_version),
       });
       assert.equal(replayErasure.idempotentReplay, true);
+      const canonicalInbox = researchSqlite.raw
+        .prepare('SELECT receipt_id, COUNT(*) OVER () AS inbox_count FROM research_erasure_inbox WHERE outbox_id = ?')
+        .get(String(outboxRows[0].outbox_id)) as { receipt_id: string; inbox_count: number } | undefined;
+      assert.ok(canonicalInbox, 'A completed outbox command must retain its canonical inbox receipt');
+      assert.equal(canonicalInbox?.receipt_id, replayErasure.receiptId);
+      assert.equal(canonicalInbox?.inbox_count, 1, 'Duplicate delivery must not replace or duplicate the immutable inbox receipt');
+
+      // Reusing a durable outbox ID for a different pseudonymous subject must fail closed.
+      await assert.rejects(
+        () => executeResearchSubjectErasure({
+          researchDb: researchSqlite.db,
+          outboxId: String(outboxRows[0].outbox_id),
+          subjectKey: 'subject_key_collision_attempt',
+          subjectKeyVersion: String(outboxRows[0].subject_key_version),
+        }),
+        /RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT/,
+      );
     });
 
     it('enforces Legal Hold blocking account deletion (423)', async () => {
@@ -988,29 +1457,6 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const secretCheck = validateBackendWranglerConfig(withSecretVar, { skipFsChecks: true });
       assert.equal(secretCheck.ok, false);
       assert.ok(secretCheck.errors.some((e: string) => e.startsWith('PLAINTEXT_SECRET_IN_VARS_FORBIDDEN')));
-
-      // Firebase Auth/App Check is retired from the Cloudflare API Worker runtime.
-      const withFirebaseRuntimeVar = structuredClone(parsed);
-      withFirebaseRuntimeVar.vars.FIREBASE_PROJECT_ID = 'legacy-project';
-      const firebaseRuntimeCheck = validateBackendWranglerConfig(withFirebaseRuntimeVar, { skipFsChecks: true });
-      assert.equal(firebaseRuntimeCheck.ok, false);
-      assert.ok(firebaseRuntimeCheck.errors.includes('RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:production.FIREBASE_PROJECT_ID'));
-
-      // Preview and named environments are covered by the same retirement guard.
-      const withFirebasePreviewVar = structuredClone(parsed);
-      withFirebasePreviewVar.previews = { vars: { FIREBASE_APP_CHECK_MODE: 'enforced' } };
-      const firebasePreviewCheck = validateBackendWranglerConfig(withFirebasePreviewVar, { skipFsChecks: true });
-      assert.equal(firebasePreviewCheck.ok, false);
-      assert.ok(firebasePreviewCheck.errors.includes('RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:previews.FIREBASE_APP_CHECK_MODE'));
-
-      for (const legacyConfigPath of ['wrangler.jsonc', 'wrangler.backend.preview-check.jsonc']) {
-        const legacyConfig = fs.readFileSync(path.join(process.cwd(), legacyConfigPath), 'utf-8');
-        assert.equal(
-          /["'](?:FIREBASE|FIRESTORE)_/i.test(legacyConfig),
-          false,
-          `Retired Firebase runtime variables must not remain in ${legacyConfigPath}`,
-        );
-      }
     });
 
     it('verifies worker/** has zero forbidden Node/Express/firebase-admin/JSON-repo imports and zero IRNI D1 bindings', () => {

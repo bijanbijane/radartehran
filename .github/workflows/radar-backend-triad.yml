@@ -18,6 +18,8 @@ on:
       - 'migrations/neighborhood-d1/**'
       - 'tests/d1-triad-binding-isolation.test.ts'
       - 'tests/rt-db-triad-002-forensic.test.ts'
+      - 'tests/rt-db-triad-001.test.ts'
+      - 'tests/rt-db-triad-003-consent-barrier.test.ts'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/radar-backend-triad.yml'

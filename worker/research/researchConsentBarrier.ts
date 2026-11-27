@@ -312,7 +312,7 @@ export async function acquireQueuedResearchProcessingPermitInD1(params: {
       }
       // Consent-revocation outbox blocks if caller's revision is <= revoked revision or unspecified.
       if (params.expectedConsentRevision === undefined || params.expectedConsentRevision <= maxRev) {
-        return { ok: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
+        return { ok: false, statusCode: 403, code: 'CONSENT_REVISION_STALE_OR_REVOKED' };
       }
     }
 

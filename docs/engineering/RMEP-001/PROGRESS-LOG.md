@@ -1299,3 +1299,12 @@
   - **Files Affected**: `worker/queues/jobDispatcher.ts`, `docs/engineering/RMEP-001/EXECUTION-STATE.json`, `docs/engineering/RMEP-001/PROGRESS-LOG.md`, and the missing RMEP blocker/remediation/next-action registers created in this checkpoint.
   - **Verification**: GitHub source re-read confirms the handler, seeded city config imports, and D1 projection writer import are removed; dispatcher returns permanent `FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE`; existing `tests/cloudflare-worker-queue-entrypoint.test.ts` asserts DLQ routing, permanent failure code, and zero projection rows. **Test execution NOT RUN**: connected Mac device is Offline and the GitHub workflow run list for this branch is empty. Status: `IMPLEMENTED_BUT_NOT_VERIFIED`.
   - **Next Action**: Run `npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts` and the queue/D1 triad suites in an online checkout; then audit the cron producer and remove remaining live Express Firestore adapters in bounded D1-backed changes. Phase 6 remains `PARTIALLY_VERIFIED`.
+
+
+## 2026-11-27 — RT-DB-TRIAD-003 consent revocation barrier integrated
+
+- Integrated leased research-processing permits, durable consent-revocation jobs, revision-scoped erasure outbox, and RESEARCH_DB consent-fence enforcement.
+- Queue ingestion now acquires and releases a bounded processing permit; the existing legacy Firestore projection job remains fail-closed and is not re-enqueued.
+- Added migration 0008 with a unique (uid, revoked_consent_revision) index and an outbox retry-scan index. Migration is committed but has not been applied to any database.
+- Added TRIAD-003 regression cases and wired them into npm run test:triad. Test execution, typecheck, and Worker build remain NOT VERIFIED in this session.
+- Added a design-only legal-regulatory D1 migration plan; ownership remains unresolved and no migration or binding was introduced for that domain.

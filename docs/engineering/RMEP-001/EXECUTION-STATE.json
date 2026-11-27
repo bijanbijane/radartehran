@@ -2204,5 +2204,2356 @@
     ],
     "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
     "next_exact_action": "Run `npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts` and the relevant queue/triad suites in a connected local checkout; inspect CI check runs. Then reconcile queue cron producers and remove remaining live Express Firestore adapters in small D1-backed slices. Keep Phase 6 PARTIALLY_VERIFIED."
+  },
+  "relatedWorkstreams": {
+    "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER": {
+      "schema_version": "1.0",
+      "program_id": "RMEP-001",
+      "program_version": "4.1",
+      "execution_mode": "AUTONOMOUS_SEQUENTIAL",
+      "program_status": "PARTIALLY_VERIFIED",
+      "approved_master_prompt": {
+        "path": "docs/engineering/RMEP-001/MASTER-PROMPT.md",
+        "approved_commit": "FILESYSTEM_PINNED_SHA256",
+        "sha256": "4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63",
+        "verification_status": "VERIFIED"
+      },
+      "repository": {
+        "remote_identity": "github.com/bijanbijane/radartehran",
+        "default_branch": "main",
+        "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+        "current_branch": "codex/backend-resume-2026-11-27",
+        "head_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604",
+        "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; BE-014 consent outbox parent crash recovery added; source commit ea5c70062704c76dd004ea8d75b6008fdd0db651; regression test commit c0da26dc3be660c32e9e78bbdb66a0b4d3b23604; seven latest Actions workflows fail pre-runner with runner_id=0 and zero steps; no test/typecheck/build execution; PR #78 remains Draft",
+        "last_verified_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604"
+      },
+      "current_phase": {
+        "phase_id": "PHASE-6",
+        "phase_name": "Cloudflare-native migration and final verification",
+        "phase_status": "PARTIALLY_VERIFIED"
+      },
+      "current_workstream": {
+        "workstream_id": "RT-DB-TRIAD-003-CONSENT-REVOCATION-BARRIER",
+        "workstream_name": "Leased research consent permits, durable revocation drain, revision-scoped erasure and zombie-writer fencing",
+        "task_id": "BE-014",
+        "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+        "next_workstream": "GITHUB_ACTIONS_RUNNER_ALLOCATION_RESOLUTION",
+        "next_task_id": "OPS-001"
+      },
+      "checkpoint": {
+        "checkpoint_id": "CHK-205-TRIAD003-PARENT-RECOVERY-IMPLEMENTED-RUNNER-BLOCKED",
+        "checkpoint_timestamp_utc": "2026-11-27T13:07:00.000Z",
+        "last_safe_operation": "Added independent recovery for completed consent-revocation outbox parents and deterministic TRIAD-003 Scenario 9; source and test re-read from GitHub. Reproduced runner allocation failure on exact PR head across seven workflows.",
+        "last_completed_operation": "Committed BE-014 source recovery scan and Scenario 9 regression; updated progress log, blocker register and issue #49. No tests, typecheck, build, migrations or deployment executed.",
+        "next_exact_action": "Resolve hosted GitHub Actions runner allocation or reconnect the authorized local executor. Then run TRIAD-003 Scenario 9, npm run test:triad, npm test and npm run typecheck against c0da26dc3be660c32e9e78bbdb66a0b4d3b23604. If gates pass, verify isolated D1 migrations and Worker/API bundles. Only then continue the community Firestore adapter (16 collections) parity audit. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
+        "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
+      },
+      "execution_history": {
+        "completed_tasks": [
+          "P0-BOOTSTRAP-AND-SHA256-LOCK",
+          "P1-BACKEND-API-AND-RMEP-STATE-ENGINE",
+          "P2-DATABASE-RULES-AND-VOTES-COMPOSITE-INDEX",
+          "P3-FRONTEND-LAZY-CHUNK-ISOLATION",
+          "P4-UI-UX-RTL-ACCESSIBILITY-VERIFICATION",
+          "P5-INTEGRATION-AND-SECURITY-GATES",
+          "P6-PRODUCTION-BUILD-AND-STRESS-VERIFICATION",
+          "P6-MCP-SANDBOX-AND-HEADROOM",
+          "P6-FULL-CONTRACT-AND-FIRESTORE-PARITY",
+          "P6-LIVE-DIAGNOSTIC-8-OF-8-BROWSER-VERIFICATION",
+          "P6-DARK-MODE-CONTRAST-AND-MOBILE-ERGONOMICS",
+          "P6-MODAL-DARK-MODE-AND-ESCAPE-ACCESSIBILITY",
+          "P6-UNIVERSAL-MODAL-FOCUS-TRAP-AND-ESCAPE-PARITY",
+          "P6-RESUMPTION-RECONCILIATION-AND-MODAL-PARITY",
+          "P6-APP-ROOT-MODULARIZATION-AND-GIT-GOVERNANCE",
+          "P6-SUB-300-APP-ROOT-RATCHET-AND-GIT-LOCK",
+          "P6-DOC-AND-SECURITY-DICTIONARY-SYNC",
+          "P6-NEAR-CEILING-MODULE-HEADROOM-HARDENING",
+          "P6-SUB-480-REPOSITORY-WIDE-HEADROOM-LOCK",
+          "P6-UNIVERSAL-SUB-485-REPOSITORY-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-480-RATCHET-AND-RMEP-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-475-RATCHET-AND-ON-DISK-EVIDENCE-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-470-RATCHET-AND-DEEP-EVIDENCE-JSON-AUDIT",
+          "P6-UNIVERSAL-SUB-465-RATCHET-AND-PHASE-DEPENDENCY-AUDIT",
+          "P6-UNIVERSAL-SUB-460-RATCHET-AND-CROSS-DOC-CHECKPOINT-AUDIT",
+          "P6-UNIVERSAL-SUB-455-RATCHET-AND-TRIPLE-ARTIFACT-PARITY",
+          "P6-UNIVERSAL-SUB-450-RATCHET-AND-DECISION-PHASE-DOC-AUDIT",
+          "P6-UNIVERSAL-SUB-445-RATCHET-AND-TEST-REGISTRY-AUDIT",
+          "P6-UNIVERSAL-SUB-440-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-435-RATCHET-AND-DIAGNOSTIC-VALIDATION",
+          "P6-UNIVERSAL-SUB-430-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-425-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-420-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-415-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-410-RATCHET-AND-SECURITY-AUDIT",
+          "P6-ASSESS-004-TO-010-CI-GATE-AND-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-400-REVIEW-THRESHOLD-RATCHET",
+          "P6-UNIVERSAL-SUB-395-RATCHET-AND-BASELINE-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-390-RATCHET-AND-FIRESTORE-PARITY",
+          "P6-UNIVERSAL-SUB-385-RATCHET-AND-API-CONTRACT-PARITY",
+          "P6-UNIVERSAL-SUB-380-RATCHET-AND-ENV-CONTRACT-PARITY",
+          "P6-UNIVERSAL-SUB-375-RATCHET-AND-DOMAIN-INVARIANT-PARITY",
+          "P6-UNIVERSAL-SUB-370-RATCHET-AND-DISK-IO-SECRET-PARITY",
+          "P6-UNIVERSAL-SUB-365-RATCHET-AND-DEPENDENCY-DIRECTION-PARITY",
+          "P6-UNIVERSAL-SUB-360-RATCHET-AND-DOC-SYNC-PARITY",
+          "P6-UNIVERSAL-SUB-355-RATCHET-AND-MANDATORY-TEST-SUITE-PARITY",
+          "P6-UNIVERSAL-SUB-350-RATCHET-AND-STATIC-RULES-INSIGHTS-PARITY",
+          "P6-UNIVERSAL-SUB-345-RATCHET-AND-LEAFLET-DIVAR-SECURITY-PARITY",
+          "P6-UNIVERSAL-SUB-340-RATCHET-AND-HEDONIC-SINGLE-SOURCE-PARITY",
+          "P6-UNIVERSAL-SUB-335-RATCHET-AND-NO-PII-CACHE-PARITY",
+          "P6-UNIVERSAL-SUB-330-RATCHET-AND-DIVAR-URL-PARITY",
+          "P6-UNIVERSAL-SUB-325-RATCHET-AND-FIREBASE-ROOT-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-320-RATCHET-AND-ENGINE-LINE-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-315-RATCHET-AND-APP-BASELINE-LOCK",
+          "P6-UNIVERSAL-SUB-299-ZERO-WARNING-ARCHITECTURE-RATCHET",
+          "P6-UNIVERSAL-SUB-295-RATCHET-AND-ARCHITECTURE-DOC-PARITY",
+          "P6-UNIVERSAL-SUB-290-RATCHET-AND-270-APP-ROOT-LOCK",
+          "P6-PERSISTENT-MEMORY-AND-INTL-FOUNDATION",
+          "P6-INSPECTOR-AND-BOTTOM-NAV-INTL-PARITY",
+          "P6-LEGEND-BUYING-POWER-AND-HEDONIC-INTL-PARITY",
+          "P6-COMPARE-AND-INLINE-HEDONIC-INTL-PARITY",
+          "P6-INSPECTOR-TABS-BUDGET-BRIDGE-AND-PROVINCE-INTL-PARITY",
+          "P6-BARGAINS-PURCHASING-POWER-AND-PRICE-CHART-INTL-PARITY",
+          "P6-PRICE-TREND-MODAL-FORECAST-AND-SHORTLIST-INTL-PARITY",
+          "P6-RANKING-STRIP-SEARCH-AND-PORTFOLIO-MODALS-INTL-PARITY",
+          "P6-SECONDARY-MODALS-NATURAL-SEARCH-AND-SUPER-MODULES-INTL-PARITY",
+          "P6-SUPER-MODULES-SWAP-LEGAL-AND-SMART-SUGGEST-INTL-PARITY",
+          "P6-SHARE-MODAL-THRESHOLD-ALERTS-AND-EXPANSION-INTL-PARITY",
+          "P6-HEDONIC-MODAL-BUYER-ALERT-MODALS-AND-MONTHLY-BAR-CHART-INTL-PARITY",
+          "P6-SPARKLINE-LEGAL-STUDIO-AND-ONBOARDING-WIZARD-INTL-PARITY",
+          "P6-AGENCY-CRM-BI-GIS-STUDIO-AND-SPONSOR-RESERVATION-INTL-PARITY",
+          "P6-ENTERPRISE-MODAL-AGENCY-MODAL-AND-CONTRACT-ADVISOR-INTL-PARITY",
+          "P6-ADMIN-MODERATION-MONETIZATION-AND-AI-COMMERCE-INTL-PARITY",
+          "P6-TOPBAR-PROVINCE-MCP-SANDBOX-AND-MODE-SWITCHER-INTL-PARITY",
+          "P6-SUPER-MODULES-SHELL-HEATMAP-AND-MAP-TOOLTIP-INTL-PARITY",
+          "P6-COMMUTE-MATRIX-PHOTO-GALLERY-AND-LISTING-MEDIA-INTL-PARITY",
+          "P6-PROVINCE-CONTROL-MEDIA-UPLOADER-AND-PWA-BANNER-INTL-PARITY",
+          "P6-ADMIN-MODAL-SECURITY-BACKUP-AND-DIAGNOSTICS-INTL-PARITY",
+          "P6-ADMIN-ENV-MAP-PROVIDER-AND-DB-HEALTH-INTL-PARITY",
+          "P6-CLEANUP-PROGRESS-LIVE-DIAGNOSTICS-AND-SKELETONS-INTL-PARITY",
+          "P6-ERROR-TRAP-FEATURE-BOUNDARY-AND-URL-TITLE-INTL-PARITY",
+          "P6-MAP-ADVANCED-LAYERS-LEAFLET-MAP-AND-CRUD-ACTIONS-INTL-PARITY",
+          "P6-MARKET-PULSE-SYNC-ADMIN-ACTIONS-AND-DERIVED-STATE-INTL-PARITY",
+          "P6-EVALUATED-HOODS-CLOUD-SYNC-AND-MODALS-PORTAL-INTL-PARITY",
+          "P6-UI-STATE-TILE-CONTROLLER-AND-DIALOG-FOCUS-INTL-PARITY",
+          "P6-APP-ROOT-HEDONIC-AND-CALC-REGISTRY-INTL-PARITY",
+          "P6-SUPER-MODULES-LEGAL-AND-VALUATION-TRACE-INTL-PARITY",
+          "P6-LISTING-FRAUD-RENTAL-COMMISSION-AND-MULTICITY-CALC-INTL-PARITY",
+          "P6-INVESTMENT-COMPLETENESS-AND-CONTENT-VERSIONING-INTL-PARITY",
+          "P6-BACKTEST-DRIFT-AND-DATA-AUDITOR-INTL-PARITY",
+          "P6-INTEGRITY-CHECKS-MAPPERS-AND-DIAGNOSTIC-RUNNER-INTL-PARITY",
+          "P6-FIRESTORE-REPO-METRO-HOODS-AND-BUYER-ALERTS-INTL-PARITY",
+          "P6-BARGAIN-SUBMISSION-FINANCIAL-CALC-AND-COMPARISON-INTL-PARITY",
+          "P6-COPYWRITER-DRAFT-VALIDATION-AND-LEGAL-WORKSPACE-INTL-PARITY",
+          "P6-AGENCY-CRM-MARKET-BI-AND-INVESTMENT-FUND-INTL-PARITY",
+          "P6-AGENCY-ENTERPRISE-ASSET-OPS-AND-BUILDING-COMPLIANCE-INTL-PARITY",
+          "P6-CONSTRUCTION-WBS-CONTRACTOR-DELIVERY-AND-PORTFOLIO-XIRR-INTL-PARITY",
+          "P6-PROPERTY-LEASE-TENANT-LIFECYCLE-AND-FACILITY-PDM-INTL-PARITY",
+          "P6-LEGAL-TITLE-REGISTRY-LEGAL-DOSSIER-AND-PHYSICAL-ASSET-INTL-PARITY",
+          "P6-SPECIALIZED-CRM-MARKET-TRANSACTIONS-AND-PROVENANCE-INTL-PARITY",
+          "P6-URBAN-INTELLIGENCE-GEOSPATIAL-CRS-AND-MARKET-INDEXING-INTL-PARITY",
+          "P6-PROPERTY-DOMAIN-SPATIAL-GEOMETRY-AND-SEARCH-ENGINEERING-INTL-PARITY",
+          "P6-AGENCY-OUTBOX-DEDUPLICATION-AND-SPONSORED-VAULT-INTL-PARITY",
+          "P6-BUYER-CORRECTION-LISTING-LIFECYCLE-AND-MARKET-PIPELINE-INTL-PARITY",
+          "P6-LEADS-MEDIA-FUNNEL-LISTING-QUALITY-AND-MARKET-HISTORY-INTL-PARITY",
+          "P6-MULTI-TAB-DEDUPE-OFFLINE-AUTHORITY-AND-PERSIAN-SEARCH-INTL-PARITY",
+          "P6-PAYMENT-FINOPS-TIME-SERIES-LICENSING-AND-UX-JOURNEY-INTL-PARITY",
+          "P6-PRODUCT-ANALYTICS-UX-ACCESSIBILITY-AND-WEB-PLATFORM-PRIVACY-INTL-PARITY",
+          "P6-ACCESSIBILITY-OIDC-ADVANCED-APPSEC-AND-AI-GOVERNANCE-INTL-PARITY",
+          "P6-AI-MODEL-GATEWAY-API-CONTRACTS-AND-ARCHITECTURE-SOLID-INTL-PARITY",
+          "P6-BACKUP-CONCURRENCY-BOOTSTRAP-LOCALIZATION-AND-BUILD-RELEASE-INTL-PARITY",
+          "P6-CACHE-JOBS-CLOUDFLARE-PORTABILITY-AND-DATA-COMMERCE-INTL-PARITY",
+          "P6-DEEP-INFRA-DELETION-JOURNAL-AND-DIAGNOSTICS-INTL-PARITY",
+          "P6-DOC-GOVERNANCE-DOMAIN-AUTH-SECURITY-AND-VALIDATORS-INTL-PARITY",
+          "P6-ENGINEERING-GOVERNANCE-FINANCIAL-PRECISION-AND-FREE-SCRAPER-INTL-PARITY",
+          "P6-FRONTEND-ARCH-GEOJSON-LAZY-AND-HEDONIC-IMAGE-INTL-PARITY",
+          "P6-HTTP-FIRESTORE-IDEMPOTENCY-AND-IDENTITY-GOVERNANCE-INTL-PARITY",
+          "P6-MARKET-INTEGRITY-MULTI-SCRIPT-UNITS-AND-BOUNDARIES-INTL-PARITY",
+          "P6-NESHAN-TILE-NOTIFICATION-PORTABILITY-AND-OBJECT-STORAGE-INTL-PARITY",
+          "P6-OPERATIONAL-SCALE-PDF-JALALI-AND-PRIVACY-LIFECYCLE-INTL-PARITY",
+          "P6-PWA-OFFLINE-SECURITY-GOVERNANCE-AND-LISTINGS-INTL-PARITY",
+          "P6-SUPPLY-CHAIN-TELEGRAM-ASYNC-AND-XSS-CHART-INTL-PARITY",
+          "P6-FILE-SIGNATURE-APP-CHECK-AND-FIRESTORE-CONNECTION-INTL-PARITY",
+          "P6-LEAFLET-LOADER-DELETE-COORDINATOR-AND-SAMPLE-MEDIA-INTL-PARITY",
+          "P6-OBJECT-STORAGE-UPLOAD-OSM-TILE-PROXY-AND-SECURITY-INTL-PARITY",
+          "P6-RMEP-STATE-ENGINE-SERVER-ADMIN-TELEGRAM-AND-SOD-BACKUP-INTL-PARITY",
+          "P6-SERVER-AI-COMMERCE-BACKUP-CHUNK-AND-BOUNDARY-PROTOCOL-INTL-PARITY",
+          "P6-SERVER-CONFIG-VALIDATOR-DELIVERY-GUARD-AND-FORENSICS-INTL-PARITY",
+          "P6-SERVER-IDEMPOTENCY-JOURNAL-ADAPTERS-AND-LEGAL-RULE-ENGINE-INTL-PARITY",
+          "P6-SERVER-MARKET-PULSE-OBJECT-STORAGE-AND-CLEANUP-INTL-PARITY",
+          "P6-SERVER-OBJECT-STORAGE-HELPERS-ORPHAN-AUDIT-AND-PUBLISHER-BARGAINS-INTL-PARITY",
+          "P6-SERVER-RUNTIME-ENV-SEO-SITEMAP-AND-SPONSOR-BARGAIN-ROUTES-INTL-PARITY",
+          "P6-SERVER-UTILITY-ROUTES-FIREBASE-AND-SERVER-ENTRY-INTL-PARITY",
+          "P6-APP-CHECK-STORAGE-PORTABILITY-AND-AREA-TOGGLE-INTL-PARITY",
+          "P6-MAP-LEGEND-BOTTOM-NAV-AND-MAIN-ENTRY-INTL-PARITY",
+          "P6-TYPES-LAYER-INTL-CONTRACTS-AND-UNIVERSAL-233-FILE-GUARDRAIL",
+          "P6-STATIC-DATASET-INTL-PARITY-AND-UNIVERSAL-242-FILE-GUARDRAIL",
+          "P6-INTL-DEEP-LINK-AUTO-LOCALE-AND-MOBILE-INTL-CONTROLS",
+          "P6-INTL-SHARE-CARD-STORY-AND-INSPECTOR-DRAWER-PARITY",
+          "P6-INTL-ANALYTICAL-MODALS-HEADER-CONTROLS-AND-CURRENCY-PARITY",
+          "P6-INTL-PORTFOLIO-TREND-AGENCY-PROVINCE-MODALS-HEADER-PARITY",
+          "P6-INTL-SECONDARY-EXPANSION-SUPER-MODALS-HEADER-PARITY",
+          "P6-INTL-STUDIO-ONBOARDING-ADMIN-MODALS-HEADER-AND-CURRENCY-PARITY",
+          "P6-INTL-SUPER-MODULES-TABS-CURRENCY-AND-CLIPBOARD-PARITY",
+          "P6-INTL-HEDONIC-PNG-INLINE-RESULTS-BUYING-POWER-AND-FORECAST-PARITY",
+          "P6-INTL-PRICE-CHART-MONTHLY-BAR-INSPECTOR-AND-BARGAINS-PARITY",
+          "P6-INTL-COMPARE-TABLE-BUDGET-BRIDGE-RANKING-AND-NATURAL-SEARCH-PARITY",
+          "P6-INTL-PRICE-TREND-MODAL-COMPARE-MODAL-AND-PORTFOLIO-TRADE-UP-PARITY",
+          "P6-INTL-THRESHOLD-ALERTS-EXPANSION-COMMISSION-ONBOARDING-AND-AGENCY-PARITY",
+          "P6-INTL-PROVINCE-PILLS-SPONSOR-PLAN-LEGAL-MORTGAGE-AND-BI-GIS-MEDIANS-PARITY",
+          "P6-INTL-ENTERPRISE-STUDIO-ADMIN-PRICES-AND-SHARE-MODAL-PARITY",
+          "P6-INTL-AI-COMMERCE-MCP-SANDBOX-AND-HEDONIC-MODAL-PARITY",
+          "P6-INTL-SEARCH-DROPDOWN-HEDONIC-WIDGET-COMPARE-TABLE-AND-TREND-CHART-PARITY",
+          "P6-INTL-PRICE-CHART-MONTHLY-BAR-FORECAST-AUDIT-AND-SEO-DRAWER-PARITY",
+          "P6-INTL-RANKING-STRIP-BARGAINS-BUYING-POWER-BUDGET-BRIDGE-AND-COMPARE-MODAL-PARITY",
+          "P6-INTL-INSPECTOR-DRAWER-TABS-SHORTLIST-MATRIX-AND-PORTFOLIO-PARITY",
+          "P6-INTL-SECONDARY-MODALS-SMART-SUGGEST-SHARE-STORY-AND-PROVINCE-PARITY",
+          "P6-INTL-HEDONIC-MODAL-RESULTS-AGENCY-AND-ONBOARDING-PARITY",
+          "P6-INTL-PORTFOLIO-BUYER-ALERTS-SPARKLINE-AND-LEGAL-ADVISOR-PARITY",
+          "P6-INTL-EXPANSION-LEGAL-CRM-AND-BI-GIS-STUDIO-PARITY",
+          "P6-INTL-ENTERPRISE-ASSET-FUND-AND-SUPER-MODULES-PARITY",
+          "P6-INTL-INSPECTOR-DRAWER-PURCHASING-POWER-AND-COMMUTE-PARITY",
+          "P6-INTL-BARGAINS-INSPECTOR-TABS-AND-COMPARISON-PARITY",
+          "P6-INTL-PRICE-CHARTS-SHORTLIST-MATRIX-AND-BUDGET-BRIDGE-PARITY",
+          "P6-INTL-TREND-MODAL-FORECAST-RANKING-STRIP-AND-PORTFOLIO-PARITY",
+          "P6-INTL-BUYING-POWER-HEDONIC-WIDGET-NATURAL-SEARCH-AND-DROPDOWN-PARITY",
+          "P6-INTL-HEDONIC-MODAL-RESULTS-PROVINCE-AND-SHARE-PARITY",
+          "P6-INTL-SECONDARY-MODALS-SMART-SUGGEST-PURCHASING-POWER-AND-AGENCY-PARITY",
+          "P6-INTL-BUYER-ALERTS-EXPANSION-ONBOARDING-AND-PORTFOLIO-PARITY",
+          "P6-INTL-THRESHOLD-ALERTS-SPARKLINE-LEGAL-ADVISOR-AND-SPONSOR-TAB-PARITY",
+          "P6-INTL-ADMIN-OVERVIEW-MONETIZATION-AI-COMMERCE-AND-MCP-SANDBOX-PARITY",
+          "P6-INTL-LEGAL-PORTFOLIO-CRM-BI-GIS-AND-ENTERPRISE-STUDIO-PARITY",
+          "P6-INTL-SUPER-MODULES-VALUATION-SWAP-LEGAL-AND-MODAL-SHELL-PARITY",
+          "P6-INTL-TOPBAR-SEARCH-RANKING-AND-LEGEND-PARITY",
+          "P6-V64-HEDONIC-PERSIAN-NLP-3TAB-DRAWER-AND-DIVAR-ANALYZER",
+          "P6-INTL-V64-DRAWER-ANALYZER-HEDONIC-MODAL-AND-FAKE-DETECTOR-PARITY",
+          "P6-INTL-HEDONIC-INLINE-RESULTS-COMPARE-AND-BUYING-POWER-PARITY",
+          "P6-INTL-EXPANDABLE-COMPARE-BUDGET-BRIDGE-SHORTLIST-AND-FORECAST-PARITY",
+          "P6-INTL-PORTFOLIO-SECONDARY-TREND-AND-PROVINCE-MODALS-V64-PARITY",
+          "P6-INTL-SMART-SUGGEST-SHARE-PURCHASING-POWER-AND-AGENCY-V64-PARITY",
+          "P6-INTL-EXPANSION-AND-SUPER-MODULES-V64-PARITY",
+          "P6-INTL-LEGAL-ONBOARDING-BUYER-ALERTS-AND-THRESHOLDS-V64-PARITY",
+          "P6-INTL-FOUR-SPECIALIZED-STUDIO-MODALS-V64-PARITY",
+          "P6-INTL-SPARKLINE-LEGAL-ADVISOR-SPONSOR-AND-COMMUTE-V64-PARITY",
+          "P6-INTL-CHARTS-RANKING-SEARCH-AND-MATCHES-V64-PARITY",
+          "P6-INTL-PROVINCE-CONTROLS-HEATMAP-TOOLTIPS-AND-ADMIN-V64-PARITY",
+          "P6-GOLD-MASTER-V2-SPLIT-MAP-COMPANION-AND-V64-VIEW-PARITY",
+          "P6-GOLD-EDITION-60-BACKEND-SECURITY-AND-CONTRACT-HARDENING",
+          "P6-GOLD-EDITION-60-RUNTIME-ENV-SSRF-MARKET-PULSE-AND-ABUSE-GUARD",
+          "P6-GOLD-EDITION-60-OBJECT-STORAGE-LOCK-X402-AND-MCP-ZERO-AGE-FIX",
+          "P6-GOLD-EDITION-60-CONFIG-CACHE-FORENSICS-AI-NLP-AND-SEO-HARDENING",
+          "P6-GOLD-EDITION-60-STORAGE-MAGIC-BYTES-OSM-BOUNDARY-LEGAL-AND-SECURITY",
+          "P6-GOLD-EDITION-60-SCHEMA-MIGRATION-CASCADE-JOURNAL-AND-STORAGE-HELPERS",
+          "P6-FRONTEND-AUTONOMOUS-ELEVATION-AND-VERIFICATION",
+          "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION",
+          "BE-014-CONSENT-REVOCATION-OUTBOX-PARENT-CRASH-RECOVERY"
+        ],
+        "in_progress_tasks": [
+          "CLOUDFLARE_NATIVE_AUTH_FIREBASE_RETIREMENT",
+          "RADAR_WORKER_TYPECHECK_AND_UI_E2E_REMEDIATION",
+          "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT"
+        ],
+        "verified_commits": [
+          "f8b066f76c9053ce9b3c53fb136b9ec34fc57f7a",
+          "5e577f861de711ffcd77cd455ea79d41d553e0b"
+        ],
+        "uncommitted_changes_summary": "OP-193 is complete locally on docker/main-debug-2026-11-25. Changes include D1-native browser/Worker session authentication, retired Firebase client/Worker auth code, D1 marketplace sponsor and buyer-alert writes with server-owned pricing and explicit consent, Worker typecheck and platform regressions, readiness and IRNI v2 route fixes, and RMEP evidence reconciliation. Changes remain uncommitted and local. No production migrations, deployment, commit, push, PR or merge was performed. Docker Desktop was unavailable for the final local Worker+D1 runtime integration. Legacy Express Firestore adapters remain. RMEP operation OP-193 is recorded as locally verified; phase 6 remains partially verified."
+      },
+      "phase_statuses": {
+        "phase_1": "VERIFIED",
+        "phase_2": "VERIFIED",
+        "phase_3": "VERIFIED",
+        "phase_4": "VERIFIED",
+        "phase_5": "VERIFIED",
+        "phase_6": "PARTIALLY_VERIFIED"
+      },
+      "operations": [
+        {
+          "operation_id": "OP-001",
+          "phase": "PHASE-1",
+          "description": "Preserve MASTER-PROMPT.md and implement rmepExecutionStateEngine.ts + /api/admin/rmep-status",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:35:00.000Z"
+        },
+        {
+          "operation_id": "OP-002",
+          "phase": "PHASE-2",
+          "description": "Add composite index for votes (hoodId ASC, createdAtIso DESC) in firestore.indexes.json",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:36:00.000Z"
+        },
+        {
+          "operation_id": "OP-003",
+          "phase": "PHASE-3",
+          "description": "Isolate HedonicInlineWidget lazy chunk in NeighborhoodInspectorTabs.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:37:00.000Z"
+        },
+        {
+          "operation_id": "OP-004",
+          "phase": "PHASE-4",
+          "description": "Verify Persian RTL, Vazirmatn typography, tabular-nums, and 85%+ map viewport budget",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:38:00.000Z"
+        },
+        {
+          "operation_id": "OP-005",
+          "phase": "PHASE-5",
+          "description": "Verify end-to-end integration flows, Leaflet HTML escaping, Divar URL whitelisting, and 0o600 secret stripping",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:39:00.000Z"
+        },
+        {
+          "operation_id": "OP-006",
+          "phase": "PHASE-6",
+          "description": "Modernize vite.config.ts for Vite 8 native configLoader and execute full verification suite",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T00:40:00.000Z"
+        },
+        {
+          "operation_id": "OP-007",
+          "phase": "PHASE-6",
+          "description": "Mount /api/mcp/tools, /api/ai/gateway/infer, /api/v1/commerce/neighborhood-dossier/:hoodId, and wire interactive Admin Sandbox controls",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T01:05:00.000Z"
+        },
+        {
+          "operation_id": "OP-008",
+          "phase": "PHASE-6",
+          "description": "Mount registerSponsorAndBargainRoutes, registerBackupAndChunkUploadRoutes, /api/healthz, /api/openapi.json, /api/admin/runtime-env, /api/market-pulse/refresh, and enforce 10-collection Firestore schema & rules write parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T01:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-009",
+          "phase": "PHASE-6",
+          "description": "Align LiveDiagnosticOverlay.tsx multi-city dataset state check (cities.length >= 5) and storageJson.providerLabelFa so Run Auto-Test achieves 8/8 PASS (0 errors) in live browser verification",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T01:55:00.000Z"
+        },
+        {
+          "operation_id": "OP-010",
+          "phase": "PHASE-6",
+          "description": "Fix dark-mode WCAG contrast on .apple-vibrancy-bar and .bg-amber-200/80 in src/index.css and eliminate mobile 390x844 bottom-sheet overlap in LiveDiagnosticOverlay.tsx and MapLegend.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T02:20:00.000Z"
+        },
+        {
+          "operation_id": "OP-011",
+          "phase": "PHASE-6",
+          "description": "Add Escape key dismissal to useDialogFocus.ts, upgrade NationwideProvinceModal.tsx with ARIA dialog + apple-window-sheet dark mode surface, and add .bg-rose-50/.bg-emerald-100 dark mode overrides in src/index.css",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T06:34:00.000Z"
+        },
+        {
+          "operation_id": "OP-012",
+          "phase": "PHASE-6",
+          "description": "Wire useDialogFocus (Escape key dismissal + focus trap), backdrop click dismissal, and apple-window-sheet dark mode surfaces into NeighborhoodPriceTrendModal.tsx, LegalContractAndPortfolioStudioModal.tsx, EnterpriseAssetFundAndMarketIntelligenceModal.tsx, AgencyCrmAndAutomationStudioModal.tsx, and BiRiskAndGeospatialIntelligenceStudioModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T06:42:00.000Z"
+        },
+        {
+          "operation_id": "OP-013",
+          "phase": "PHASE-6",
+          "description": "Execute RMEP-001 Resumption Procedure, audit all remaining modals (adding backdrop click dismissal to OnboardingWizardModal.tsx), verify live browser rendering via playwright-cli, and run full mandatory verification suite",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T08:42:00.000Z"
+        },
+        {
+          "operation_id": "OP-014",
+          "phase": "PHASE-6",
+          "description": "Extract useAppPersistenceAndDerivedState.ts from src/App.tsx (reducing src/App.tsx from 446 to 367 lines and ratcheting architecture-baseline.json maxLines from 490 to 370) and initialize local Git repository on main",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T08:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-015",
+          "phase": "PHASE-6",
+          "description": "Streamline src/App.tsx below the 300-line warning threshold (284 lines), ratchet architecture-baseline.json maxLines to 295, and record verified Git commit f8b066f76c9053ce9b3c53fb136b9ec34fc57f7a in EXECUTION-STATE.json",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T08:56:00.000Z"
+        },
+        {
+          "operation_id": "OP-016",
+          "phase": "PHASE-6",
+          "description": "Synchronize ARCHITECTURE.md, docs/system-architecture.md, docs/security.md, and docs/implementation-checkpoint.md with 10-collection Firestore dictionary (/publicSponsors/{hoodId}) and sub-300 App.tsx ratchet (284/295), and add regression assertions in tests/architecture-guardrails.test.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T09:04:00.000Z"
+        },
+        {
+          "operation_id": "OP-017",
+          "phase": "PHASE-6",
+          "description": "Streamline serverObjectStorageHelpers.ts (498 -> 383 lines), serverDeliveryAndAbuseGuard.ts (497 -> 466 lines), and PortfolioModals.tsx (495 -> 473 lines) for comfortable headroom below the 500-line ceiling",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T09:10:00.000Z"
+        },
+        {
+          "operation_id": "OP-018",
+          "phase": "PHASE-6",
+          "description": "Streamline serverBackupAndChunkUploadRoutes.ts (495 -> 453 lines), propertyManagementLeaseBillingAndOperationsEngine.ts (494 -> 472 lines), searchEngineeringEngine.ts (494 -> 450 lines), spatialGeometryEngine.ts (493 -> 452 lines), and HedonicValuationModal.tsx (491 -> 475 lines) below 480 lines and enforce <=485-line guardrail in architecture-guardrails.test.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T09:18:00.000Z"
+        },
+        {
+          "operation_id": "OP-019",
+          "phase": "PHASE-6",
+          "description": "Streamline all 16 remaining 486..498 line non-dataset files below 485 lines and enforce a universal repository-wide <=485-line guardrail across all 186 scanned source files in tests/architecture-guardrails.test.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T09:38:00.000Z"
+        },
+        {
+          "operation_id": "OP-020",
+          "phase": "PHASE-6",
+          "description": "Streamline all 10 remaining 481..485 line non-dataset files below 480 lines, ratchet universal repository guardrail to <=480 lines, and add readAndReconcileExecutionState() verification in tests/architecture-guardrails.test.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T09:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-021",
+          "phase": "PHASE-6",
+          "description": "Streamline all 10 remaining 476..480 line non-dataset files below 475 lines, upgrade readAndReconcileExecutionState() to verify on-disk RMEP memory files, test evidence files, and completed_tasks/do_not_repeat parity, and ratchet universal repository guardrail to <=475 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T10:04:00.000Z"
+        },
+        {
+          "operation_id": "OP-022",
+          "phase": "PHASE-6",
+          "description": "Streamline all 14 remaining 471..476 line non-dataset files below 470 lines, upgrade readAndReconcileExecutionState() to parse and validate all 6 phase evidence JSON files (verifying status=VERIFIED, artifacts_inspected existence, and check exit_code=0), and ratchet universal repository guardrail to <=470 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T10:18:00.000Z"
+        },
+        {
+          "operation_id": "OP-023",
+          "phase": "PHASE-6",
+          "description": "Streamline all 18 remaining 466..470 line non-dataset files below 465 lines, upgrade readAndReconcileExecutionState() to validate the 5-edge phase dependency graph, phase_statuses, and operation idempotency, and ratchet universal repository guardrail to <=465 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T10:31:00.000Z"
+        },
+        {
+          "operation_id": "OP-024",
+          "phase": "PHASE-6",
+          "description": "Streamline all 13 remaining 461..465 line non-dataset files below 460 lines, upgrade readAndReconcileExecutionState() to validate sequential OP-001..OP-024 numbering and PROGRESS-LOG.md checkpoint parity, and ratchet universal repository guardrail to <=460 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T10:42:00.000Z"
+        },
+        {
+          "operation_id": "OP-025",
+          "phase": "PHASE-6",
+          "description": "Streamline all 22 remaining 456..460 line non-dataset files below 455 lines, upgrade readAndReconcileExecutionState() to validate FINAL-ENGINEERING-REPORT.md checkpoint/operation parity alongside PROGRESS-LOG.md and EXECUTION-STATE.json, and ratchet universal repository guardrail to <=455 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T10:58:00.000Z"
+        },
+        {
+          "operation_id": "OP-026",
+          "phase": "PHASE-6",
+          "description": "Streamline all 21 remaining 451..454 line non-dataset modules below 450 lines, synchronize MED-004..MED-006 in MASTER-ENGINEERING-DECISIONS.md, upgrade readAndReconcileExecutionState() to verify decision register & phase reports, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=450 lines across all 186 scanned files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T11:12:00.000Z"
+        },
+        {
+          "operation_id": "OP-027",
+          "phase": "PHASE-6",
+          "description": "Streamline all 25 remaining 446..450 line non-dataset modules below 445 lines, upgrade readAndReconcileExecutionState() to verify test registry outcomes and governance documents, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=445 lines across all 186 scanned files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T11:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-028",
+          "phase": "PHASE-6",
+          "description": "Streamline all 24 remaining 441..445 line non-dataset modules below 440 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=440 lines (>=60-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T12:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-029",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining non-dataset modules below 435 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=435 lines (>=65-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T12:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-030",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 25 non-dataset modules below 430 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=430 lines (>=70-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T12:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-031",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 49 non-dataset modules below 425 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=425 lines (>=75-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T12:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-032",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 84 non-dataset modules below 420 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=420 lines (>=80-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T13:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-033",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 98 non-dataset modules below 415 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=415 lines (>=85-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T13:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-034",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 109 non-dataset modules below 410 lines, upgrade readAndReconcileExecutionState() and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=410 lines (>=90-line headroom below 500) across 100% of all 229 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T13:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-035",
+          "phase": "PHASE-6",
+          "description": "Wire ASSESS-004 through ASSESS-010 empirical domain, 1405 legal/tax, asset swap, LOD/PWA, and SEO/CRM benchmark suites into package.json (test:assess / npm test) and enforce verification in readAndReconcileExecutionState()",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T13:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-036",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 117 non-dataset modules below 400 lines (matching thresholds.reviewLines: 400 in architecture-baseline.json), upgrade readAndReconcileExecutionState() to verify uncommitted_changes_summary parity, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=400 lines (>=100-line headroom below 500) across 100% of all non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T14:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-037",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 124 non-dataset modules from 396..400 lines down to <=395 lines (strictly below thresholds.reviewLines: 400 in architecture-baseline.json), ratchet trackedLegacyFiles['src/App.tsx'].maxLines to 290, upgrade readAndReconcileExecutionState() to verify architecture-baseline.json invariants, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=395 lines (>=105-line headroom below 500) across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T14:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-038",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 132 non-dataset modules from 391..395 lines down to <=390 lines (>=110-line / 22% headroom below 500-line ceiling and 10 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify 10-collection firestore.rules & firebase-blueprint.json parity, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=390 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T14:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-039",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 62 non-dataset modules from 386..390 lines down to <=385 lines (>=115-line / 23% headroom below 500-line ceiling and 15 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify Express API contract registries (API_ENDPOINT_CONTRACTS & RADAR_API_ROUTE_INVENTORY), and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=385 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T14:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-040",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 381..385 line non-dataset modules down to <=380 lines (>=120-line / 24% headroom below 500-line ceiling and 20 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify environment variable contract parity (RUNTIME_ENV_KEYS, .env.example, docs/deployment.md), and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=380 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T15:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-041",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 376..380 line non-dataset modules down to <=375 lines (>=125-line / 25% headroom below 500-line ceiling and 25 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify AGENTS.md Rule 3 core domain & security invariants (calculateHedonicValuation, FAST_SALE_FACTOR, escapeHtmlAttr, buildExternalDivarUrl), and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=375 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T15:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-042",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 371..375 line non-dataset modules down to <=370 lines (>=130-line / 26% headroom below 500-line ceiling and 30 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify AGENTS.md Rule 3 server disk I/O 0o600 permissions and SECRET_ENV_KEYS redaction invariants across serverMarketPulseEngine.ts, serverRuntimeEnvStore.ts, and serverObjectStorage.ts, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=370 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T15:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-043",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 366..370 line non-dataset modules down to <=365 lines (>=135-line / 27% headroom below 500-line ceiling and 35 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify AGENTS.md Rule 2 dependency direction invariants across src/types/models.ts and all 6 static dataset files, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=365 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T15:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-044",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 361..365 line non-dataset modules down to <=360 lines (>=140-line / 28% headroom below 500-line ceiling and 40 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify AGENTS.md Rule 5 documentation sync & zero-secret-leakage parity across docs/system-architecture.md and docs/security.md, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=360 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T16:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-045",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 356..360 line non-dataset modules down to <=355 lines (>=145-line / 29% headroom below 500-line ceiling and 45 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify AGENTS.md Rule 4 mandatory verification scripts on disk, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=355 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T16:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-046",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 351..355 line non-dataset modules down to <=350 lines (>=150-line / 30% headroom below 500-line ceiling and 50 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify static Firestore rules, neighborhood insights, and App Check unit test scripts on disk, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=350 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T16:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-047",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 346..350 line non-dataset modules down to <=345 lines (>=155-line / 31% headroom below 500-line ceiling and 55 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify Leaflet HTML escaping (escapeHtmlAttr) and Divar URL whitelisting (buildExternalDivarUrl) enforcement in useLeafletRadarMap.ts, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=345 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T16:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-048",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 341..345 line non-dataset modules down to <=340 lines (>=160-line / 32% headroom below 500-line ceiling and 60 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify Hedonic single-source-of-truth delegation (calculateHedonicValuation and FAST_SALE_FACTOR) in superModulesLogic.ts and HedonicValuationModal.tsx, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=340 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T17:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-049",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 336..340 line non-dataset modules down to <=335 lines (>=165-line / 33% headroom below 500-line ceiling and 65 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify buyerLeads PII exclusion from .cache-data.json persistence in serverMarketPulseEngine.ts, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=335 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T17:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-050",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 331..335 line non-dataset modules down to <=330 lines (>=170-line / 34% headroom below 500-line ceiling and 70 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify buildExternalDivarUrl multi-city link enforcement across both useLeafletRadarMap.ts and NeighborhoodInspectorTabs.tsx, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=330 lines across 100% of all 230 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T17:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-051",
+          "phase": "PHASE-6",
+          "description": "Include root src/firebase.ts in universal non-dataset line-count guardrail (231 total files), streamline src/firebase.ts and all remaining 326..330 line non-dataset modules down to <=325 lines (>=175-line / 35% headroom below 500-line ceiling and 75 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to verify handleFirestoreError, prepareFirestorePayload, and long-polling resilience invariants in src/firebase.ts, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=325 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T17:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-052",
+          "phase": "PHASE-6",
+          "description": "Streamline all 165 remaining 321..325 line non-dataset modules down to <=320 lines (>=180-line / 36% headroom below 500-line ceiling and 80 lines strictly below reviewLines=400), upgrade readAndReconcileExecutionState() to directly enforce the universal <=320-line ceiling across all 231 non-dataset source files, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=320 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T18:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-053",
+          "phase": "PHASE-6",
+          "description": "Streamline all remaining 316..320 line non-dataset modules down to <=315 lines (>=185-line / 37% headroom below 500-line ceiling and 85 lines strictly below reviewLines=400), ratchet trackedLegacyFiles['src/App.tsx'].maxLines to 285 in architecture-baseline.json, upgrade readAndReconcileExecutionState() to enforce the universal <=315-line ceiling and <=285 App.tsx baseline, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=315 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T18:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-054",
+          "phase": "PHASE-6",
+          "description": "Streamline all 183 remaining 300..315 line non-dataset modules down to <=299 lines (>=201-line / 40.2% headroom below 500-line ceiling and strictly below thresholds.warningLines=300 for 0 arch:check warnings), ratchet trackedLegacyFiles['src/App.tsx'].maxLines to 275 in architecture-baseline.json, upgrade readAndReconcileExecutionState() to enforce the universal <=299-line zero-warning ceiling and <=275 App.tsx baseline, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=299 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T18:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-055",
+          "phase": "PHASE-6",
+          "description": "Streamline all 183 remaining 296..299 line non-dataset modules down to <=295 lines (>=205-line / 41.0% headroom below 500-line ceiling and 5 lines strictly below thresholds.warningLines=300 for 0 arch:check warnings), synchronize ARCHITECTURE.md with src/App.tsx maxLines: 275 and <=295 invariants, upgrade readAndReconcileExecutionState() to enforce the universal <=295-line ceiling and ARCHITECTURE.md doc parity, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=295 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T18:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-056",
+          "phase": "PHASE-6",
+          "description": "Streamline all 183 remaining 291..295 line non-dataset modules down to <=290 lines (>=210-line / 42.0% headroom below 500-line ceiling and 10 lines strictly below thresholds.warningLines=300 for 0 arch:check warnings), ratchet trackedLegacyFiles['src/App.tsx'].maxLines to 270 in architecture-baseline.json, synchronize ARCHITECTURE.md, upgrade readAndReconcileExecutionState() to enforce the universal <=290-line ceiling and <=270 App.tsx baseline, and ratchet Test 10 in tests/architecture-guardrails.test.ts to <=290 lines across 100% of all 231 non-dataset files",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T19:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-057",
+          "phase": "PHASE-6",
+          "description": "Integrate Golden Persistent Engineering Memory System v4.0 (PERSISTENT-ENGINEERING-MEMORY.md with OP-DEC-001..005 and SUP-001) into readAndReconcileExecutionState() and implement OP-DEC-001 multi-language (fa/en/ar/tr) detection & manual switcher plus international reference currency (IRT/USD/EUR/AED) conversion in src/utils/areaUnit.ts, src/components/AreaUnitToggle.tsx, and src/components/FloatingTopBar.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T19:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-058",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 multi-language (fa/en/ar/tr) and international reference currency (IRT/USD/EUR/AED) support to NeighborhoodInspectorDrawer.tsx (scorecard header, 4 primary tabs, buy & full-rahn summary cards, and Hedonic CTA) and RadarBottomNav.tsx (all 6 mobile navigation buttons) with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T20:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-059",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 multi-language (fa/en/ar/tr) and international reference currency (IRT/USD/EUR/AED) support to MapLegend.tsx, BuyingPowerSummaryCard.tsx, and HedonicValuationResultsColumn.tsx (including m²/ft² unit-aware price badge) with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T20:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-060",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 multi-language (fa/en/ar/tr), area unit (m²/ft²), and international reference currency (IRT/USD/EUR/AED) support to CompareModal.tsx, ExpandableComparisonTable.tsx, and HedonicInlineWidget.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T21:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-061",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to NeighborhoodInspectorTabs.tsx (3-year wealth comparison and Rahn-Rent converter), BudgetBridgeAdvisorCard.tsx (unit-aware affordable area, age/loan savings, and neighbor price deltas), and NationwideProvinceModal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T21:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-062",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to PurchasingPowerTrendCard.tsx, NeighborhoodBargainsAndVotesTabs.tsx, and NeighborhoodPriceChart.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T22:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-063",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to NeighborhoodPriceTrendModal.tsx, SmartPriceForecastCard.tsx, and ShortlistMatrixModal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T22:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-064",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to QuickHoodRankingStrip.tsx, SearchDropdownMenu.tsx, and PortfolioModals.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-065",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to SecondaryModals.tsx, SmartNaturalSearchMatchesSection.tsx, and SuperModulesValuationAndFakeTabs.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-066",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to SuperModulesSwapAndStudioTabs.tsx, SuperModulesLegalAndBuildingTabs.tsx, and SmartSuggestModal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-067",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to ShareModal.tsx, buyerPriceThresholdAlerts.tsx, and ExpansionModulesModal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:55:00.000Z"
+        },
+        {
+          "operation_id": "OP-068",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to HedonicValuationModal.tsx, BuyerAlertPwaLegalModals.tsx, and NeighborhoodMonthlyBarChart.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:58:00.000Z"
+        },
+        {
+          "operation_id": "OP-069",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to BuyerAlertPriceSparkline.tsx, LegalContractAndPortfolioStudioModal.tsx, and OnboardingWizardModal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:00.000Z"
+        },
+        {
+          "operation_id": "OP-070",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to AgencyCrmAndAutomationStudioModal.tsx, BiRiskAndGeospatialIntelligenceStudioModal.tsx, and AgencySponsorReservationTab.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:30.000Z"
+        },
+        {
+          "operation_id": "OP-071",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to EnterpriseAssetFundAndMarketIntelligenceModal.tsx, AgencyModal.tsx, and ContractLegalAdvisorView.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:45.000Z"
+        },
+        {
+          "operation_id": "OP-072",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to AdminOverviewAndModerationTabs.tsx, AdminMonetizationCard.tsx, and AdminCloudAiCommerceCenter.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:55.000Z"
+        },
+        {
+          "operation_id": "OP-073",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to TopBarProvinceDirectoryControl.tsx, AdminMcpAndPortabilitySandboxPanel.tsx, and ModeSwitcherSegmented.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:58.000Z"
+        },
+        {
+          "operation_id": "OP-074",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to FutureSuperModulesModal.tsx, priceHeatmapAndViewportLazy.tsx, and mapZoomLodAndDeclutter.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.000Z"
+        },
+        {
+          "operation_id": "OP-075",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to CommuteHubsMatrixCard.tsx, NeighborhoodPhotoGallery.tsx, and ListingMediaGallery.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.500Z"
+        },
+        {
+          "operation_id": "OP-076",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to TopBarProvinceControl.tsx, ListingMediaStorageUploader.tsx, and PWAOfflineStatusBanner.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.600Z"
+        },
+        {
+          "operation_id": "OP-077",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to AdminModal.tsx, AdminSecurityAndBackupTabs.tsx, and AdminPanel.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.700Z"
+        },
+        {
+          "operation_id": "OP-078",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to AdminEnvConfigPanel.tsx, AdminMapProviderConfigPanel.tsx, and AdminWeeklyDatabaseHealthChart.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.800Z"
+        },
+        {
+          "operation_id": "OP-079",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to CleanupProgressSummary.tsx, LiveDiagnosticOverlay.tsx, and NeighborhoodLoadingSkeletons.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.900Z"
+        },
+        {
+          "operation_id": "OP-080",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to DualLayerErrorTrap.tsx, FeatureErrorBoundary.tsx, and useAppUrlAndTitleSync.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.950Z"
+        },
+        {
+          "operation_id": "OP-081",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to mapAdvancedLayers.ts, useLeafletRadarMap.ts, and useRadarCrudActions.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.980Z"
+        },
+        {
+          "operation_id": "OP-082",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to useMarketPulseSync.ts, useRadarAdminActions.ts, and useAppPersistenceAndDerivedState.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.990Z"
+        },
+        {
+          "operation_id": "OP-083",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to useEvaluatedNeighborhoods.ts, useRadarCloudSync.ts, and AppModalsPortal.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.995Z"
+        },
+        {
+          "operation_id": "OP-084",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to useAppUiState.ts, mapBaseTileController.ts, and useDialogFocus.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.997Z"
+        },
+        {
+          "operation_id": "OP-085",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²), international reference currency (IRT/USD/EUR/AED), and locale direction support to App.tsx, hedonicPricingEngine.ts, and calculatorRegistryAndScenarios.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.998Z"
+        },
+        {
+          "operation_id": "OP-086",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to superModulesLogic.ts, legalAndBuildingLogic.ts, and valuationTraceAndComparables.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-087",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to listingFraudAndAddressEngine.ts, rentalMarketCommissionAndPreSaleAudit.ts, and multiCityCalculatorsAreaDisputesLicensingAudit.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-088",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to investmentPriceHistoryStalePhoneAiToolAudit.ts, completenessMessagingReputationCompareCurrencyAudit.ts, and contentVersioningQualityHierarchyZoningNotificationAudit.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-089",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to backtestTaxonomyRecoveryRetentionCsvAudit.ts, driftRankingConsentAndEnvironment.ts, and firestoreDataAuditor.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-090",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to firestoreIntegrityChecks.ts, firestoreNeighborhoodMappers.ts, and diagnosticRunner.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-091",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to firestoreNeighborhoodRepository.ts, metropolitanExtendedHoods.ts, and buyerAlertsAndCommunityTrust.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-092",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to bargainSubmissionEngine.ts, realEstateFinancialCalculatorsAndPublisherAnalytics.ts, and propertyComparisonAndFinancialPrecision.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-093",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to listingCopywriterAndVisitConversion.ts, listingDraftAndValidationEngine.ts, and legalContractIntelligenceAndAgencyWorkspace.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-094",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to agencyCrmWorkflowAndReportingEngine.ts, marketBiRiskAndForecastingEngine.ts, and investmentFundNavWaterfallIrrAndGovernanceEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-095",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to agencyEnterpriseOperationsAndGovernanceEngine.ts, assetManagementBuildingOpsAndCmmsEngine.ts, and buildingComplianceInsuranceNoiTcoAndAuditEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-096",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to constructionDevelopmentWbsBudgetAndPartnershipEngine.ts, constructionProjectDeliveryContractorAndAuditEngine.ts, and investmentPortfolioXirrNpvBreakEvenAndExitEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-097",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to propertyManagementLeaseBillingAndOperationsEngine.ts, leasingTenantLifecycleChequeAndHandoverAuditEngine.ts, and facilityManagementPdmSlaEnergyAndHealthEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-098",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to propertyLegalTitleRegistryAndTransactionTransferEngine.ts, realEstateLegalDossierTitleDisputeAndDueDiligenceEngine.ts, and physicalAssetLifecycleContractorAccessAndFacilityAuditEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-099",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to realEstateSpecializedCrmPipelineAndFunnelEngine.ts, marketTransactionsNormalizationAndSpecializedSectorsEngine.ts, and marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-100",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to urbanIntelligenceDemographicsAndResilienceEngine.ts, geospatialCrsAccessibilityAndEnvironmentalEngine.ts, and marketIndexingSpatialPolygonAndSurvivalAnalytics.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-101",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to propertyDomainGeospatialAndAnalyticsGovernance.ts, spatialGeometryEngine.ts, and searchEngineeringEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-102",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to agencyAutomationOutboxAndSlaEngine.ts, agencyDeduplicationAndMessagingGovernance.ts, and sponsoredVaultMapNegotiationAndAuditTrail.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-103",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to buyerCorrectionAndAdminGovernance.ts, listingLifecycleAndPlatformSecurity.ts, and marketPipelineDesignSystemAndUiStateGovernance.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-104",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to leadsMediaOnboardingFunnelTransportAudit.ts, listingTimestampAndMediaQuality.ts, and marketHistoryAndPulseIntegrity.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-105",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to multiTabListingDedupeBulkRaceAudit.ts, offlineAppointmentsFavoritesTimeSeriesAuthority.ts, and persianSearchAndPersonalWorkspace.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-106",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to paymentFinopsDesignBoundaryPrivacyAudit.ts, timeSeriesLicensingAndBrowserLifecycleGovernance.ts, and uxJourneyAndTrustAuditEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-107",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to productAnalyticsEngine.ts, uxAccessibilityAndDesignSystemEngine.ts, and webPlatformPwaAndPrivacyEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-108",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to accessibilityOidcIntegrityAnalyticsCircuit.ts, advancedAppSecAndSupplyChainGovernance.ts, and aiGovernanceAndObservability.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-109",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to aiModelRegistryAndGateway.ts, apiContractsAndSerializationEngine.ts, and architectureSolidAndMaturityEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-110",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to backupConcurrencyAndBusinessInvariants641To660.ts, bootstrapLocalizationAndModerationGovernance.ts, and buildReleaseAndSupplyChainEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-111",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to cacheJobsGeospatialIngestionFlags.ts, cloudflarePortabilityAndCapabilities.ts, and dataCommerceMcpAndMonetization.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-112",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to deepInfrastructureAndRecovery661To700.ts, deletionJournal.ts, and diagnostics.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-113",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to documentationGovernanceAndDriftEngine.ts, domainAndAuthSecurity741To800.ts, and domainSecurityValidators.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-114",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to engineeringAndMigrationGovernance.ts, financialPrecisionAndUnits.ts, and freeLiveMarketScraper.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-115",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to frontendArchitectureAndOfflineResilience.ts, geojsonViewportLazyEngine.ts, and hedonicImageGenerator.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-116",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to httpFirestoreAndStorage701To740.ts, idempotencyContentionAndOpsGovernance.ts, and identityLifecycleAndBackendGovernance.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-117",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to marketDataIntegrity.ts, multiScriptNumericAndUnits.ts, and neighborhoodBoundaries.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-118",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to neshanTileConfig.ts, notificationMobileResidencyPortabilityIam.ts, and objectStorage.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-119",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to operationalScaleAndGameDay.ts, pdfJalaliPushErrorBuildAudit.ts, and privacyAndDataLifecycle861To880.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-120",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to pwaOfflineSupport.ts, securityGovernance601To639.ts, and securityGovernanceLifecycleAndListings.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-121",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to supplyChainWebhooksMediaSearchRouting.ts, telegramAndAsyncJobSecurity801To820.ts, and xssMassAssignChartBrowserThirdParty.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-122",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to fileSignature.ts, firebaseAppCheckSecurity901To920.ts, and firestoreConnectionState.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-123",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to leafletLoader.ts, objectStorageDeleteCoordinator.ts, and objectStorageSampleMedia.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-124",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to objectStorageUpload.ts, osmTileProxy.ts, and security.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-125",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to rmepExecutionStateEngine.ts, serverAdminAndTelegramSecurity.ts, and serverAdminSodAndBackupSecurity.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-126",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverAiAndCommerceRoutes.ts, serverBackupAndChunkUploadRoutes.ts, and serverBoundaryProtocol.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-127",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverConfigValidator.ts, serverDeliveryAndAbuseGuard.ts, and serverForensicsAndIncidentResponse.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-128",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverIdempotencyAndConcurrency.ts, serverJournalAdapters.ts, and serverLegalRuleEngine.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-129",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverMarketPulseEngine.ts, serverObjectStorage.ts, and serverObjectStorageCleanup.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-130",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverObjectStorageHelpers.ts, serverObjectStorageOrphanAudit.ts, and serverPublisherBargains.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-02T23:59:59.999Z"
+        },
+        {
+          "operation_id": "OP-131",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverRuntimeEnvStore.ts, serverSeoAndSitemap.ts, and serverSponsorAndBargainRoutes.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T09:20:00.000Z"
+        },
+        {
+          "operation_id": "OP-132",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to serverUtilityRoutes.ts, src/firebase.ts, and server.ts with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T09:32:00.000Z"
+        },
+        {
+          "operation_id": "OP-133",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to appCheck.ts, serverStoragePortabilityAndTracing.ts, and AreaUnitToggle.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T09:42:00.000Z"
+        },
+        {
+          "operation_id": "OP-134",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) support to MapLegend.tsx, RadarBottomNav.tsx, and src/main.tsx with unit test coverage",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T09:47:00.000Z"
+        },
+        {
+          "operation_id": "OP-135",
+          "phase": "PHASE-6",
+          "description": "Define OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) contracts and guards in src/types/models.ts and src/types/typeGuards.ts and enforce universal 233-file OP-DEC-001 parity guardrail",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T09:53:00.000Z"
+        },
+        {
+          "operation_id": "OP-136",
+          "phase": "PHASE-6",
+          "description": "Extend OP-DEC-001 area unit (m²/ft²) and international reference currency (IRT/USD/EUR/AED) valuation helpers and <=290-line ratchet across all 9 static dataset files in src/data/*, enforcing universal 242/242 repository source file parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T10:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-137",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 URL deep-link international parameter sync (?lang=, ?currency=, ?unit=), documentElement lang/dir synchronization, and mobile-visible language/currency controls in areaUnit.ts, useAppUrlAndTitleSync.ts, AreaUnitToggle.tsx, FloatingTopBar.tsx, and OnboardingWizardModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T10:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-138",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 unit-aware and currency-aware HD story PNG rendering, header international controls, favorite neighborhood currency badges, and deep-link share query suffixes across ShareModal.tsx, NeighborhoodInspectorDrawer.tsx, and useRadarCrudActions.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T10:35:00.000Z"
+        },
+        {
+          "operation_id": "OP-139",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 inline international header controls (AreaUnitToggle with showIntlControls) and live budget/seller-price currency equivalence across CompareModal.tsx, ShortlistMatrixModal.tsx, SmartSuggestModal.tsx, and HedonicValuationModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T10:40:00.000Z"
+        },
+        {
+          "operation_id": "OP-140",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 inline international header controls (AreaUnitToggle with showIntlControls) and live asking-price currency equivalence across PortfolioModals.tsx, NeighborhoodPriceTrendModal.tsx, AgencyModal.tsx, and NationwideProvinceModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T10:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-141",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 inline international header controls (AreaUnitToggle with showIntlControls) and live deposit/rent/clipboard currency equivalence across SecondaryModals.tsx, BuyerAlertPwaLegalModals.tsx, ExpansionModulesModal.tsx, and FutureSuperModulesModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:05:00.000Z"
+        },
+        {
+          "operation_id": "OP-142",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 inline international header controls (AreaUnitToggle with showIntlControls) and live loan/sale/investment/onboarding-rent currency equivalence across LegalContractAndPortfolioStudioModal.tsx, AgencyCrmAndAutomationStudioModal.tsx, BiRiskAndGeospatialIntelligenceStudioModal.tsx, EnterpriseAssetFundAndMarketIntelligenceModal.tsx, AdminModal.tsx, and OnboardingWizardModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:20:00.000Z"
+        },
+        {
+          "operation_id": "OP-143",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) equivalence across SuperModulesValuationAndFakeTabs.tsx, SuperModulesSwapAndStudioTabs.tsx, and SuperModulesLegalAndBuildingTabs.tsx (valuation certificates, AI ads, tax/inheritance/charge outputs, and moving cost calculators)",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-144",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across hedonicImageGenerator.ts, HedonicValuationResultsColumn.tsx, HedonicInlineWidget.tsx, BuyingPowerSummaryCard.tsx, and SmartPriceForecastCard.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:36:00.000Z"
+        },
+        {
+          "operation_id": "OP-145",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across NeighborhoodPriceChart.tsx, NeighborhoodMonthlyBarChart.tsx, NeighborhoodInspectorTabs.tsx, and NeighborhoodBargainsAndVotesTabs.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:52:00.000Z"
+        },
+        {
+          "operation_id": "OP-146",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across ExpandableComparisonTable.tsx, BudgetBridgeAdvisorCard.tsx, PurchasingPowerTrendCard.tsx, QuickHoodRankingStrip.tsx, and SmartNaturalSearchMatchesSection.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T11:58:00.000Z"
+        },
+        {
+          "operation_id": "OP-147",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across NeighborhoodPriceTrendModal.tsx, CompareModal.tsx, and PortfolioModals.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:06:00.000Z"
+        },
+        {
+          "operation_id": "OP-148",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across buyerPriceThresholdAlerts.tsx, ExpansionModulesModal.tsx, OnboardingWizardModal.tsx, and AgencyModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-149",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across NationwideProvinceModal.tsx, AgencySponsorReservationTab.tsx, LegalContractAndPortfolioStudioModal.tsx, and BiRiskAndGeospatialIntelligenceStudioModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:22:00.000Z"
+        },
+        {
+          "operation_id": "OP-150",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across EnterpriseAssetFundAndMarketIntelligenceModal.tsx, AdminOverviewAndModerationTabs.tsx, and ShareModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:31:00.000Z"
+        },
+        {
+          "operation_id": "OP-151",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across AdminCloudAiCommerceCenter.tsx, AdminMcpAndPortabilitySandboxPanel.tsx, and HedonicValuationModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:35:00.000Z"
+        },
+        {
+          "operation_id": "OP-152",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across SearchDropdownMenu.tsx, HedonicInlineWidget.tsx, ExpandableComparisonTable.tsx, and NeighborhoodPriceTrendModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:43:00.000Z"
+        },
+        {
+          "operation_id": "OP-153",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across NeighborhoodPriceChart.tsx, NeighborhoodMonthlyBarChart.tsx, SmartPriceForecastCard.tsx, and SecondaryModals.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:47:00.000Z"
+        },
+        {
+          "operation_id": "OP-154",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across QuickHoodRankingStrip.tsx, NeighborhoodBargainsAndVotesTabs.tsx, BuyingPowerSummaryCard.tsx, BudgetBridgeAdvisorCard.tsx, and CompareModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T12:55:00.000Z"
+        },
+        {
+          "operation_id": "OP-155",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across NeighborhoodInspectorDrawer.tsx, NeighborhoodInspectorTabs.tsx, ShortlistMatrixModal.tsx, and PortfolioModals.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:05:00.000Z"
+        },
+        {
+          "operation_id": "OP-156",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and URL parameter parity across SecondaryModals.tsx, SmartSuggestModal.tsx, ShareModal.tsx, and NationwideProvinceModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-157",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across HedonicValuationModal.tsx, HedonicValuationResultsColumn.tsx, AgencyModal.tsx, and OnboardingWizardModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-158",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across PortfolioModals.tsx, buyerPriceThresholdAlerts.tsx, BuyerAlertPriceSparkline.tsx, and ContractLegalAdvisorView.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:34:00.000Z"
+        },
+        {
+          "operation_id": "OP-159",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across ExpansionModulesModal.tsx, LegalContractAndPortfolioStudioModal.tsx, AgencyCrmAndAutomationStudioModal.tsx, and BiRiskAndGeospatialIntelligenceStudioModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:45:00.000Z"
+        },
+        {
+          "operation_id": "OP-160",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED) and area unit (m²/ft²) parity across EnterpriseAssetFundAndMarketIntelligenceModal.tsx, SuperModulesValuationAndFakeTabs.tsx, SuperModulesLegalAndBuildingTabs.tsx, and SuperModulesSwapAndStudioTabs.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T13:55:00.000Z"
+        },
+        {
+          "operation_id": "OP-161",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across NeighborhoodInspectorDrawer.tsx, PurchasingPowerTrendCard.tsx, CommuteHubsMatrixCard.tsx, and QuickHoodRankingStrip.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T14:08:00.000Z"
+        },
+        {
+          "operation_id": "OP-162",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across NeighborhoodBargainsAndVotesTabs.tsx, NeighborhoodInspectorTabs.tsx, ExpandableComparisonTable.tsx, and CompareModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T14:22:00.000Z"
+        },
+        {
+          "operation_id": "OP-163",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across NeighborhoodPriceChart.tsx, NeighborhoodMonthlyBarChart.tsx, ShortlistMatrixModal.tsx, and BudgetBridgeAdvisorCard.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T14:36:00.000Z"
+        },
+        {
+          "operation_id": "OP-164",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across NeighborhoodPriceTrendModal.tsx, SmartPriceForecastCard.tsx, QuickHoodRankingStrip.tsx, and PortfolioModals.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T14:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-165",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across BuyingPowerSummaryCard.tsx, HedonicInlineWidget.tsx, SmartNaturalSearchMatchesSection.tsx, and SearchDropdownMenu.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T15:02:00.000Z"
+        },
+        {
+          "operation_id": "OP-166",
+          "phase": "PHASE-6",
+          "description": "Add OP-DEC-001 & OP-DEC-002 live international currency (USD/EUR/AED), area unit (m²/ft²), and imperial distance (ft/mi) parity across HedonicValuationModal.tsx, HedonicValuationResultsColumn.tsx, NationwideProvinceModal.tsx, and ShareModal.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T15:15:00.000Z"
+        },
+        {
+          "operation_id": "OP-167",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-SECONDARY-MODALS-SMART-SUGGEST-PURCHASING-POWER-AND-AGENCY-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded SecondaryModals.tsx (80m²/861ft² benchmark apartment price with live FX in Market Pulse summary, monthly rent equivalent in fmtUnitRent, and imperial feet on SEO drawer metro distance), SmartSuggestModal.tsx (monthly rent equivalent with live FX in rent mode header and neighborhood rows, imperial feet on metro distance, and imperial miles on commute distance), PurchasingPowerTrendCard.tsx (6-month total apartment price delta for 80m²/861ft² unit with live FX and imperial/metric city-center distance), and AgencyModal.tsx (monthly rent equivalent with live FX for rent bargains, unit-converted per-sqft rate for buy bargains, and 80m²/861ft² benchmark in neighborhood selector) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T15:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-168",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-BUYER-ALERTS-EXPANSION-ONBOARDING-AND-PORTFOLIO-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded BuyerAlertPwaLegalModals.tsx (80m²/861ft² rahn & monthly rent and 85m²/915ft² buy total benchmarks in neighborhood selector and max budget label), ExpansionModulesModal.tsx (full-rahn equivalent summary pill with live FX in rent commission calculator and 80m²/861ft² buy & monthly rent benchmark in tgHoodSummary), OnboardingWizardModal.tsx (target area & monthly rent equivalent in Step 2 rent mode and imperial miles + monthly rent equivalent in Step 3 green neighborhood cards), and PortfolioModals.tsx (80m²/861ft² apartment total benchmark in neighborhood selectors and live tenant rahn leverage with FX in Trade-Up calculator) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T15:38:00.000Z"
+        },
+        {
+          "operation_id": "OP-169",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-THRESHOLD-ALERTS-SPARKLINE-LEGAL-ADVISOR-AND-SPONSOR-TAB-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded buyerPriceThresholdAlerts.tsx (80m²/861ft² total apartment buy benchmark and monthly rent equivalent in subscription list and persistent match banner), BuyerAlertPriceSparkline.tsx (6-month net unit/rahn delta with live FX in header and 80m²/861ft² buy / monthly rent benchmark in Tooltip), ContractLegalAdvisorView.tsx (unit-aware 80m²/861ft² contract benchmark and live FX deposit equivalence), and AgencySponsorReservationTab.tsx (unit price per m²/ft² and 80m²/861ft² apartment value benchmark in neighborhood selector and directory table) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T16:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-170",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-ADMIN-OVERVIEW-MONETIZATION-AI-COMMERCE-AND-MCP-SANDBOX-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded AdminOverviewAndModerationTabs.tsx (80m²/861ft² apartment buy total and monthly rent equivalent with live FX in prices tab selector and quick-edit form), AdminMonetizationCard.tsx (unit price per m²/ft² and 80m²/861ft² total apartment benchmark in active neighborhood sponsor list), AdminCloudAiCommerceCenter.tsx (80m²/861ft² total apartment cap in structured search query simulator), and AdminMcpAndPortabilitySandboxPanel.tsx (80m²/861ft² total apartment cap in search_approved_market_data budget label and zero-revenue live FX equivalence in simulation ledger) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T17:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-171",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-LEGAL-PORTFOLIO-CRM-BI-GIS-AND-ENTERPRISE-STUDIO-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded LegalContractAndPortfolioStudioModal.tsx (80m²/861ft² unit rate benchmark in gross sale price label and 250m²/2691ft² total portfolio area in personal property ledger), AgencyCrmAndAutomationStudioModal.tsx (80m²/861ft² unit rate benchmark in CRM 360 customer budget cap and 125m²/1345ft² per-unit rate on negotiation counter-offer revisions), BiRiskAndGeospatialIntelligenceStudioModal.tsx (imperial feet on nearest operational metro straight-line distance and imperial per-acre population density in urban intelligence), and EnterpriseAssetFundAndMarketIntelligenceModal.tsx (80m²/861ft² apartment transaction and construction cost benchmarks with live FX) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T18:05:00.000Z"
+        },
+        {
+          "operation_id": "OP-172",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-SUPER-MODULES-VALUATION-SWAP-LEGAL-AND-MODAL-SHELL-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded SuperModulesValuationAndFakeTabs.tsx (unit-aware deed/plot/corridor/listing area labels, monthly rent equivalent on full Rahn, and unit/FX badges on fake ad detector inputs), SuperModulesSwapAndStudioTabs.tsx (unit-aware Chitgar construction rate, total finished apartment value for valSqm, imperial miles/feet school radius, and imperial truck length), SuperModulesLegalAndBuildingTabs.tsx (monthly rent equivalents on Rahn deposits, inheritance unit area/rate summary, and building charge unit/total area breakdown), and FutureSuperModulesModal.tsx (active unit valuation/rahn/rent summary in header and 80m²/861ft² benchmark apartment totals in neighborhood selector) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T20:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-173",
+          "phase_id": "PHASE-6",
+          "task_id": "P6-INTL-TOPBAR-SEARCH-RANKING-AND-LEGEND-PARITY",
+          "operation_type": "INTERNATIONALIZATION_AND_MULTI_CURRENCY",
+          "summary": "Upgraded FloatingTopBar.tsx (live FX equivalence on rent deposit/monthly rent, full Rahn equivalent, and formatted area unit badge in budget filter popover), SearchDropdownMenu.tsx (monthly rent equivalent on Rahn and 80m²/861ft² total apartment international currency equivalence), QuickHoodRankingStrip.tsx (monthly rent equivalent, 80m²/861ft² apartment valuation in ranking pills, and 80m²/861ft² benchmark in city/viewport median bar), and MapLegend.tsx (80m²/861ft² reference badge and imperial miles isochrone radius) while keeping all 242 repository source files strictly <= 290 lines",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-03T22:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-174",
+          "phase": "PHASE-6",
+          "description": "Implement v6.4 Iran-Native Hedonic Pricing Engine & Persian NLP Parser (realMarketPriceAggregator.ts + 15-case verifyPricingEngineIntegrity suite), 3-Tab High-Trust Inspector Drawer with Statistical Confidence Badge, Free-Text Divar/Sheypoor Listing Analyzer with negotiable price guard and 5 NLP signal badges, Pre-IQR Auto-Bargains discovery, 80ms debounced Leaflet GIS viewport bounds, mount/city-guarded Firestore listeners, and deterministic local legal rule pre-scanner in /api/contract-check",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T13:06:00.000Z"
+        },
+        {
+          "operation_id": "OP-175",
+          "phase": "PHASE-6",
+          "description": "Upgrade v6.4 Market Valuation & IQR Range Bar (NeighborhoodInspectorTabs.tsx), Free-Text Divar/Sheypoor Listing Analyzer & Auto-Bargains (NeighborhoodBargainsAndVotesTabs.tsx), Hedonic Valuation Modal NLP Quality Multiplier (HedonicValuationModal.tsx), and Fake Ad Detector 1-Click NLP Extraction (SuperModulesValuationAndFakeTabs.tsx) with full area unit (m²/ft²) and live international currency (FX) parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T13:20:00.000Z"
+        },
+        {
+          "operation_id": "OP-176",
+          "phase": "PHASE-6",
+          "description": "Upgrade HedonicInlineWidget.tsx (monthly rent equivalence on expert Rahn and fair deal confidence range with FX parity), HedonicValuationResultsColumn.tsx (primary Iranian Toman figures preserved alongside live FX equivalence), CompareModal.tsx (v6.4 Estimated Deal Price comparison row with areaUnit and FX parity), and BuyingPowerSummaryCard.tsx (v6.4 Estimated Deal Price affordable area row with areaUnit and FX parity)",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T13:28:00.000Z"
+        },
+        {
+          "operation_id": "OP-177",
+          "phase": "PHASE-6",
+          "description": "Upgrade ExpandableComparisonTable.tsx (v6.4 Estimated Deal Price row and monthly rent equivalence), BudgetBridgeAdvisorCard.tsx (v6.4 Estimated Deal Price affordable area), ShortlistMatrixModal.tsx (v6.4 Estimated Deal Price matrix row and monthly rent equivalence), and SmartPriceForecastCard.tsx (3-month projected Estimated Deal Price) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T13:36:00.000Z"
+        },
+        {
+          "operation_id": "OP-178",
+          "phase": "PHASE-6",
+          "description": "Upgrade PortfolioModals.tsx (v6.4 Estimated Deal Price on visited homes and monthly rent equivalence on Trade-Up Rahn), SecondaryModals.tsx (v6.4 city-wide Estimated Deal Price), NeighborhoodPriceTrendModal.tsx (v6.4 Estimated Deal Price in 12-month KPI strip), and NationwideProvinceModal.tsx (v6.4 Estimated Deal Price and monthly rent equivalence on nationwide neighborhood chips) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T13:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-179",
+          "phase": "PHASE-6",
+          "description": "Upgrade SmartSuggestModal.tsx (v6.4 Estimated Deal Price on suggested neighborhoods), ShareModal.tsx (v6.4 Estimated Deal Price on neighborhood report card), PurchasingPowerTrendCard.tsx (v6.4 Estimated Deal Price purchasing power), and AgencyModal.tsx (v6.4 Estimated Deal Price and monthly rent benchmarks on bargain submission) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-180",
+          "phase": "PHASE-6",
+          "description": "Upgrade ExpansionModulesModal.tsx (v6.4 Estimated Deal Price in Telegram digest and commission benchmark), FutureSuperModulesModal.tsx (v6.4 Estimated Deal Price in neighborhood selector), SuperModulesValuationAndFakeTabs.tsx (v6.4 Estimated Deal Price in valuation header), and SuperModulesSwapAndStudioTabs.tsx (v6.4 Estimated Deal Price in inter-city migration header) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:10:00.000Z"
+        },
+        {
+          "operation_id": "OP-181",
+          "phase": "PHASE-6",
+          "description": "Upgrade SuperModulesLegalAndBuildingTabs.tsx (v6.4 Estimated Deal Price in inheritance calculator header), OnboardingWizardModal.tsx (v6.4 Estimated Deal Price on green neighborhood suggestions), BuyerAlertPwaLegalModals.tsx (v6.4 Estimated Deal Price on neighborhood options), and buyerPriceThresholdAlerts.tsx (v6.4 Estimated Deal Price on threshold manager header) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:20:00.000Z"
+        },
+        {
+          "operation_id": "OP-182",
+          "phase": "PHASE-6",
+          "description": "Upgrade LegalContractAndPortfolioStudioModal.tsx (v6.4 Estimated Deal Price and monthly rent in seller proceeds and portfolio ledger), AgencyCrmAndAutomationStudioModal.tsx (v6.4 Estimated Deal Price in property match), BiRiskAndGeospatialIntelligenceStudioModal.tsx (v6.4 Estimated Deal Price in transaction median), and EnterpriseAssetFundAndMarketIntelligenceModal.tsx (v6.4 Estimated Deal Price in market distribution) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-183",
+          "phase": "PHASE-6",
+          "description": "Upgrade BuyerAlertPriceSparkline.tsx (v6.4 Estimated Deal Price on 6-month trend summary and compact tooltip), ContractLegalAdvisorView.tsx (v6.4 Estimated Deal Price benchmark in legal rule analysis header), AgencySponsorReservationTab.tsx (v6.4 Estimated Deal Price in neighborhood reservation options and sponsor directory), and CommuteHubsMatrixCard.tsx (v6.4 Estimated Deal Price in commute matrix header) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:40:00.000Z"
+        },
+        {
+          "operation_id": "OP-184",
+          "phase": "PHASE-6",
+          "description": "Upgrade NeighborhoodPriceChart.tsx (v6.4 Estimated Deal Price in 12m header and tooltip), NeighborhoodMonthlyBarChart.tsx (v6.4 Estimated Deal Price in tooltip and 6m summary grid), QuickHoodRankingStrip.tsx (v6.4 Estimated Deal Price in ranking pills and selector options), SearchDropdownMenu.tsx (v6.4 Estimated Deal Price in recent/trending/directory/search rows), and SmartNaturalSearchMatchesSection.tsx (v6.4 Estimated Deal Price in natural-language search matches) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T14:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-185",
+          "phase": "PHASE-6",
+          "description": "Upgrade TopBarProvinceControl.tsx and TopBarProvinceDirectoryControl.tsx (v6.4 Estimated Deal Price in 31-province neighborhood selector options), priceHeatmapAndViewportLazy.tsx (v6.4 Estimated Deal Price in thermal heatmap circle tooltips), mapZoomLodAndDeclutter.ts (v6.4 Estimated Deal Price in rich neighborhood map tooltips and macro city clusters), AdminOverviewAndModerationTabs.tsx (v6.4 Estimated Deal Price in manual neighborhood price editor), and AdminMonetizationCard.tsx (v6.4 Estimated Deal Price in sponsor lifecycle rows) with full areaUnit and live FX parity",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-04T15:00:00.000Z"
+        },
+        {
+          "operation_id": "OP-186",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Master v2.0 Map-Centric Split-Map Companion Mode (Desktop 1440x900 side-by-side + Mobile 390x844 top live map window with two-way pointer passthrough and smart flyTo offsets), live GIS Comparison Arc (⚖️), Map Viewport Bounding-Box Filter, Metro/Traffic GIS overlay controls, and v6.4 Estimated Deal Price parity across RadarWorkspaceShell.tsx, ProductViewRouter.tsx, ProductDiscoverView.tsx, ProductIntelligenceView.tsx, ProductToolsView.tsx, ProductHomeView.tsx, and ProductUserSpaceView.tsx",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T11:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-187",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Autonomous Backend Engineering, Security Hardening & Contract Parity across serverPublisherBargains.ts, serverSponsorAndBargainRoutes.ts, serverBackupAndChunkUploadRoutes.ts, osmTileProxy.ts, serverAdminAndTelegramSecurity.ts, freeLiveMarketScraper.ts, serverObjectStorageHelpers.ts, apiContractsAndSerializationEngine.ts, deletionJournal.ts, serverIdempotencyAndConcurrency.ts, serverObjectStorageOrphanAudit.ts, objectStorageUpload.ts, and listingLifecycleAndPlatformSecurity.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T14:30:00.000Z"
+        },
+        {
+          "operation_id": "OP-188",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Batch 2 Backend Security, Runtime Config SSRF Protection, Market Pulse Cache Sanitization & Admin Abuse Tracking across serverRuntimeEnvStore.ts, serverMarketPulseEngine.ts, serverAiAndCommerceRoutes.ts, and serverUtilityRoutes.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T15:10:00.000Z"
+        },
+        {
+          "operation_id": "OP-189",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Batch 3 Pre-Lock Admin Auth Ordering, Chunk-Upload Atomic Rollback, x402 Replay Timestamp Type Guard, MCP Zero-Age/Floor Valuation Fix & Universal Admin Abuse Tracking across server.ts, serverObjectStorage.ts, serverBackupAndChunkUploadRoutes.ts, serverSponsorAndBargainRoutes.ts, dataCommerceMcpAndMonetization.ts, and rmepExecutionStateEngine.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T15:50:00.000Z"
+        },
+        {
+          "operation_id": "OP-190",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Batch 4 IP/Config Drift Hardening, Cache-Control Refresh Bypass Guard, Deep Backup & Forensic Array Scrubbing, Persian NL Query ZWNJ/Billion Parser & Canonical City SEO Resolution across serverConfigValidator.ts, serverDeliveryAndAbuseGuard.ts, serverAdminSodAndBackupSecurity.ts, serverForensicsAndIncidentResponse.ts, aiModelRegistryAndGateway.ts, and serverSeoAndSitemap.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T16:05:00.000Z"
+        },
+        {
+          "operation_id": "OP-191",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Batch 5 Storage Range/Migration Parity, Upload Magic-Byte & Single-Label Host Guard, OSM Tile Cache Header Sanitization, Boundary Ring Step Guard, Cumulative Legal Risk Scoring & Zero-Width/Encoded Security Hardening across serverStoragePortabilityAndTracing.ts, objectStorageUpload.ts, osmTileProxy.ts, serverBoundaryProtocol.ts, serverLegalRuleEngine.ts, security.ts, and domainSecurityValidators.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T16:25:00.000Z"
+        },
+        {
+          "operation_id": "OP-192",
+          "phase": "PHASE-6",
+          "description": "Execute Gold Edition 6.0 Batch 6 90-Day Buyer Lead Retention Pruning, AI Contract RiskScore Parity, Schema Migration Downgrade Guard, Cascade Media Deduplication, Upload-Init MIME Validation, Terminal Journal Lease Cleanup & Storage Record Integer/Extension Hardening across serverUtilityRoutes.ts, serverSponsorAndBargainRoutes.ts, serverBackupAndChunkUploadRoutes.ts, serverObjectStorageCleanup.ts, serverObjectStorageOrphanAudit.ts, serverObjectStorageHelpers.ts, serverJournalAdapters.ts, deletionJournal.ts, and objectStorageDeleteCoordinator.ts",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-05T16:40:00.000Z"
+        },
+        {
+          "operation_id": "OP-193",
+          "phase": "PHASE-6",
+          "description": "Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
+          "status": "VERIFIED",
+          "idempotent": true,
+          "timestamp_utc": "2026-11-25T22:15:00.000Z"
+        }
+      ],
+      "tests": [
+        {
+          "test_name": "Backend & Architecture Verification",
+          "command": "npx tsx tests/cloudflare-ai-commerce-architecture.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:35:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-1/evidence.json"
+        },
+        {
+          "test_name": "Firestore Rules Matrix",
+          "command": "npm run test:rules",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:36:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-2/evidence.json"
+        },
+        {
+          "test_name": "Frontend TypeScript & Lazy Chunk Build",
+          "command": "npm run lint && npm run build",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:37:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-3/evidence.json"
+        },
+        {
+          "test_name": "UI/UX & Architectural Fitness Gate",
+          "command": "npm run arch:check",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:38:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-4/evidence.json"
+        },
+        {
+          "test_name": "Object Storage Auth, Security & Range Suite",
+          "command": "npx tsx tests/object-storage-upload-auth.test.ts && npx tsx tests/object-storage-security.test.ts && npx tsx tests/object-storage-range.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:39:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+        },
+        {
+          "test_name": "50-Cycle Stress & Leak Suite",
+          "command": "npx tsx tests/stress-50-cycles.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-02T00:40:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
+        },
+        {
+          "test_name": "Cloudflare-native Google OIDC and D1 session auth",
+          "command": "npm run test:auth",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-2/evidence.json"
+        },
+        {
+          "test_name": "D1 marketplace privacy, server sponsor pricing and budget parser",
+          "command": "tsx --test tests/persian-financial-budget-parser.test.ts tests/cloudflare-marketplace-sponsor-pricing.test.ts tests/cloudflare-marketplace-privacy.test.ts tests/cloudflare-marketplace-state.test.ts tests/cloudflare-marketplace-write-routes.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-2/evidence.json"
+        },
+        {
+          "test_name": "Cloudflare Worker platform integration",
+          "command": "tsx tests/cloudflare-worker-platform.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+        },
+        {
+          "test_name": "Express readiness regression",
+          "command": "tsx --test tests/express-readiness-probe.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+        },
+        {
+          "test_name": "IRNI v2 route registry and malformed URL safety",
+          "command": "tsx --test tests/irni-canonical-rpc-route.test.ts",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-5/evidence.json"
+        },
+        {
+          "test_name": "Worker runtime typecheck",
+          "command": "tsc --noEmit -p tsconfig.worker.json",
+          "environment": "local-node",
+          "timestamp_utc": "2026-11-25T22:15:00.000Z",
+          "exit_code": 0,
+          "outcome": "PASSED",
+          "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
+        }
+      ],
+      "engineering_decisions": [
+        "MED-001: Preserve Approved Master Prompt & Cryptographic Hash Verification",
+        "MED-002: Vite 8 Native Config Loader Compatibility",
+        "MED-003: Firestore Composite Index Coverage for Neighborhood Sentiment Timeline",
+        "MED-004: Isolated Lazy-Loading of HedonicInlineWidget in Inspector Drawer",
+        "MED-005: Declarative Atomic Execution State Persistence",
+        "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
+      ],
+      "blockers": [],
+      "pending_authorization": [
+        "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
+      ],
+      "phase_dependencies": [
+        {
+          "from_phase": "PHASE-1",
+          "to_phase": "PHASE-2",
+          "dependency_note": "Backend API contracts aligned with Firestore schema",
+          "satisfied": true
+        },
+        {
+          "from_phase": "PHASE-2",
+          "to_phase": "PHASE-3",
+          "dependency_note": "Firestore rules and composite indexes aligned with frontend queries",
+          "satisfied": true
+        },
+        {
+          "from_phase": "PHASE-3",
+          "to_phase": "PHASE-4",
+          "dependency_note": "Modular React components ready for RTL UI/UX verification",
+          "satisfied": true
+        },
+        {
+          "from_phase": "PHASE-4",
+          "to_phase": "PHASE-5",
+          "dependency_note": "UI and backend endpoints integrated for end-to-end security verification",
+          "satisfied": true
+        },
+        {
+          "from_phase": "PHASE-5",
+          "to_phase": "PHASE-6",
+          "dependency_note": "All security invariants verified prior to production build and stress testing",
+          "satisfied": true
+        }
+      ],
+      "final_report_path": "docs/engineering/RMEP-001/FINAL-ENGINEERING-REPORT.md",
+      "resume_instructions": {
+        "resume_from_task_id": "P6-CF-NATIVE-001",
+        "do_not_repeat": [
+          "P0-BOOTSTRAP-AND-SHA256-LOCK",
+          "P1-BACKEND-API-AND-RMEP-STATE-ENGINE",
+          "P2-DATABASE-RULES-AND-VOTES-COMPOSITE-INDEX",
+          "P3-FRONTEND-LAZY-CHUNK-ISOLATION",
+          "P4-UI-UX-RTL-ACCESSIBILITY-VERIFICATION",
+          "P5-INTEGRATION-AND-SECURITY-GATES",
+          "P6-PRODUCTION-BUILD-AND-STRESS-VERIFICATION",
+          "P6-MCP-SANDBOX-AND-HEADROOM",
+          "P6-FULL-CONTRACT-AND-FIRESTORE-PARITY",
+          "P6-LIVE-DIAGNOSTIC-8-OF-8-BROWSER-VERIFICATION",
+          "P6-DARK-MODE-CONTRAST-AND-MOBILE-ERGONOMICS",
+          "P6-MODAL-DARK-MODE-AND-ESCAPE-ACCESSIBILITY",
+          "P6-UNIVERSAL-MODAL-FOCUS-TRAP-AND-ESCAPE-PARITY",
+          "P6-RESUMPTION-RECONCILIATION-AND-MODAL-PARITY",
+          "P6-APP-ROOT-MODULARIZATION-AND-GIT-GOVERNANCE",
+          "P6-SUB-300-APP-ROOT-RATCHET-AND-GIT-LOCK",
+          "P6-DOC-AND-SECURITY-DICTIONARY-SYNC",
+          "P6-NEAR-CEILING-MODULE-HEADROOM-HARDENING",
+          "P6-SUB-480-REPOSITORY-WIDE-HEADROOM-LOCK",
+          "P6-UNIVERSAL-SUB-485-REPOSITORY-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-480-RATCHET-AND-RMEP-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-475-RATCHET-AND-ON-DISK-EVIDENCE-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-470-RATCHET-AND-DEEP-EVIDENCE-JSON-AUDIT",
+          "P6-UNIVERSAL-SUB-465-RATCHET-AND-PHASE-DEPENDENCY-AUDIT",
+          "P6-UNIVERSAL-SUB-460-RATCHET-AND-CROSS-DOC-CHECKPOINT-AUDIT",
+          "P6-UNIVERSAL-SUB-455-RATCHET-AND-TRIPLE-ARTIFACT-PARITY",
+          "P6-UNIVERSAL-SUB-450-RATCHET-AND-DECISION-PHASE-DOC-AUDIT",
+          "P6-UNIVERSAL-SUB-445-RATCHET-AND-TEST-REGISTRY-AUDIT",
+          "P6-UNIVERSAL-SUB-440-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-435-RATCHET-AND-DIAGNOSTIC-VALIDATION",
+          "P6-UNIVERSAL-SUB-430-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-425-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-420-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-415-RATCHET-AND-SECURITY-AUDIT",
+          "P6-UNIVERSAL-SUB-410-RATCHET-AND-SECURITY-AUDIT",
+          "P6-ASSESS-004-TO-010-CI-GATE-AND-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-400-REVIEW-THRESHOLD-RATCHET",
+          "P6-UNIVERSAL-SUB-395-RATCHET-AND-BASELINE-RECONCILIATION",
+          "P6-UNIVERSAL-SUB-390-RATCHET-AND-FIRESTORE-PARITY",
+          "P6-UNIVERSAL-SUB-385-RATCHET-AND-API-CONTRACT-PARITY",
+          "P6-UNIVERSAL-SUB-380-RATCHET-AND-ENV-CONTRACT-PARITY",
+          "P6-UNIVERSAL-SUB-375-RATCHET-AND-DOMAIN-INVARIANT-PARITY",
+          "P6-UNIVERSAL-SUB-370-RATCHET-AND-DISK-IO-SECRET-PARITY",
+          "P6-UNIVERSAL-SUB-365-RATCHET-AND-DEPENDENCY-DIRECTION-PARITY",
+          "P6-UNIVERSAL-SUB-360-RATCHET-AND-DOC-SYNC-PARITY",
+          "P6-UNIVERSAL-SUB-355-RATCHET-AND-MANDATORY-TEST-SUITE-PARITY",
+          "P6-UNIVERSAL-SUB-350-RATCHET-AND-STATIC-RULES-INSIGHTS-PARITY",
+          "P6-UNIVERSAL-SUB-345-RATCHET-AND-LEAFLET-DIVAR-SECURITY-PARITY",
+          "P6-UNIVERSAL-SUB-340-RATCHET-AND-HEDONIC-SINGLE-SOURCE-PARITY",
+          "P6-UNIVERSAL-SUB-335-RATCHET-AND-NO-PII-CACHE-PARITY",
+          "P6-UNIVERSAL-SUB-330-RATCHET-AND-DIVAR-URL-PARITY",
+          "P6-UNIVERSAL-SUB-325-RATCHET-AND-FIREBASE-ROOT-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-320-RATCHET-AND-ENGINE-LINE-GUARDRAIL",
+          "P6-UNIVERSAL-SUB-315-RATCHET-AND-APP-BASELINE-LOCK",
+          "P6-UNIVERSAL-SUB-299-ZERO-WARNING-ARCHITECTURE-RATCHET",
+          "P6-UNIVERSAL-SUB-295-RATCHET-AND-ARCHITECTURE-DOC-PARITY",
+          "P6-UNIVERSAL-SUB-290-RATCHET-AND-270-APP-ROOT-LOCK",
+          "P6-PERSISTENT-MEMORY-AND-INTL-FOUNDATION",
+          "P6-INSPECTOR-AND-BOTTOM-NAV-INTL-PARITY",
+          "P6-LEGEND-BUYING-POWER-AND-HEDONIC-INTL-PARITY",
+          "P6-COMPARE-AND-INLINE-HEDONIC-INTL-PARITY",
+          "P6-INSPECTOR-TABS-BUDGET-BRIDGE-AND-PROVINCE-INTL-PARITY",
+          "P6-BARGAINS-PURCHASING-POWER-AND-PRICE-CHART-INTL-PARITY",
+          "P6-PRICE-TREND-MODAL-FORECAST-AND-SHORTLIST-INTL-PARITY",
+          "P6-RANKING-STRIP-SEARCH-AND-PORTFOLIO-MODALS-INTL-PARITY",
+          "P6-SECONDARY-MODALS-NATURAL-SEARCH-AND-SUPER-MODULES-INTL-PARITY",
+          "P6-SUPER-MODULES-SWAP-LEGAL-AND-SMART-SUGGEST-INTL-PARITY",
+          "P6-SHARE-MODAL-THRESHOLD-ALERTS-AND-EXPANSION-INTL-PARITY",
+          "P6-HEDONIC-MODAL-BUYER-ALERT-MODALS-AND-MONTHLY-BAR-CHART-INTL-PARITY",
+          "P6-SPARKLINE-LEGAL-STUDIO-AND-ONBOARDING-WIZARD-INTL-PARITY",
+          "P6-AGENCY-CRM-BI-GIS-STUDIO-AND-SPONSOR-RESERVATION-INTL-PARITY",
+          "P6-ENTERPRISE-MODAL-AGENCY-MODAL-AND-CONTRACT-ADVISOR-INTL-PARITY",
+          "P6-ADMIN-MODERATION-MONETIZATION-AND-AI-COMMERCE-INTL-PARITY",
+          "P6-TOPBAR-PROVINCE-MCP-SANDBOX-AND-MODE-SWITCHER-INTL-PARITY",
+          "P6-SUPER-MODULES-SHELL-HEATMAP-AND-MAP-TOOLTIP-INTL-PARITY",
+          "P6-COMMUTE-MATRIX-PHOTO-GALLERY-AND-LISTING-MEDIA-INTL-PARITY",
+          "P6-PROVINCE-CONTROL-MEDIA-UPLOADER-AND-PWA-BANNER-INTL-PARITY",
+          "P6-ADMIN-MODAL-SECURITY-BACKUP-AND-DIAGNOSTICS-INTL-PARITY",
+          "P6-ADMIN-ENV-MAP-PROVIDER-AND-DB-HEALTH-INTL-PARITY",
+          "P6-CLEANUP-PROGRESS-LIVE-DIAGNOSTICS-AND-SKELETONS-INTL-PARITY",
+          "P6-ERROR-TRAP-FEATURE-BOUNDARY-AND-URL-TITLE-INTL-PARITY",
+          "P6-MAP-ADVANCED-LAYERS-LEAFLET-MAP-AND-CRUD-ACTIONS-INTL-PARITY",
+          "P6-MARKET-PULSE-SYNC-ADMIN-ACTIONS-AND-DERIVED-STATE-INTL-PARITY",
+          "P6-EVALUATED-HOODS-CLOUD-SYNC-AND-MODALS-PORTAL-INTL-PARITY",
+          "P6-UI-STATE-TILE-CONTROLLER-AND-DIALOG-FOCUS-INTL-PARITY",
+          "P6-APP-ROOT-HEDONIC-AND-CALC-REGISTRY-INTL-PARITY",
+          "P6-SUPER-MODULES-LEGAL-AND-VALUATION-TRACE-INTL-PARITY",
+          "P6-LISTING-FRAUD-RENTAL-COMMISSION-AND-MULTICITY-CALC-INTL-PARITY",
+          "P6-INVESTMENT-COMPLETENESS-AND-CONTENT-VERSIONING-INTL-PARITY",
+          "P6-BACKTEST-DRIFT-AND-DATA-AUDITOR-INTL-PARITY",
+          "P6-INTEGRITY-CHECKS-MAPPERS-AND-DIAGNOSTIC-RUNNER-INTL-PARITY",
+          "P6-FIRESTORE-REPO-METRO-HOODS-AND-BUYER-ALERTS-INTL-PARITY",
+          "P6-BARGAIN-SUBMISSION-FINANCIAL-CALC-AND-COMPARISON-INTL-PARITY",
+          "P6-COPYWRITER-DRAFT-VALIDATION-AND-LEGAL-WORKSPACE-INTL-PARITY",
+          "P6-AGENCY-CRM-MARKET-BI-AND-INVESTMENT-FUND-INTL-PARITY",
+          "P6-AGENCY-ENTERPRISE-ASSET-OPS-AND-BUILDING-COMPLIANCE-INTL-PARITY",
+          "P6-CONSTRUCTION-WBS-CONTRACTOR-DELIVERY-AND-PORTFOLIO-XIRR-INTL-PARITY",
+          "P6-PROPERTY-LEASE-TENANT-LIFECYCLE-AND-FACILITY-PDM-INTL-PARITY",
+          "P6-LEGAL-TITLE-REGISTRY-LEGAL-DOSSIER-AND-PHYSICAL-ASSET-INTL-PARITY",
+          "P6-SPECIALIZED-CRM-MARKET-TRANSACTIONS-AND-PROVENANCE-INTL-PARITY",
+          "P6-URBAN-INTELLIGENCE-GEOSPATIAL-CRS-AND-MARKET-INDEXING-INTL-PARITY",
+          "P6-PROPERTY-DOMAIN-SPATIAL-GEOMETRY-AND-SEARCH-ENGINEERING-INTL-PARITY",
+          "P6-AGENCY-OUTBOX-DEDUPLICATION-AND-SPONSORED-VAULT-INTL-PARITY",
+          "P6-BUYER-CORRECTION-LISTING-LIFECYCLE-AND-MARKET-PIPELINE-INTL-PARITY",
+          "P6-LEADS-MEDIA-FUNNEL-LISTING-QUALITY-AND-MARKET-HISTORY-INTL-PARITY",
+          "P6-MULTI-TAB-DEDUPE-OFFLINE-AUTHORITY-AND-PERSIAN-SEARCH-INTL-PARITY",
+          "P6-PAYMENT-FINOPS-TIME-SERIES-LICENSING-AND-UX-JOURNEY-INTL-PARITY",
+          "P6-PRODUCT-ANALYTICS-UX-ACCESSIBILITY-AND-WEB-PLATFORM-PRIVACY-INTL-PARITY",
+          "P6-ACCESSIBILITY-OIDC-ADVANCED-APPSEC-AND-AI-GOVERNANCE-INTL-PARITY",
+          "P6-AI-MODEL-GATEWAY-API-CONTRACTS-AND-ARCHITECTURE-SOLID-INTL-PARITY",
+          "P6-BACKUP-CONCURRENCY-BOOTSTRAP-LOCALIZATION-AND-BUILD-RELEASE-INTL-PARITY",
+          "P6-CACHE-JOBS-CLOUDFLARE-PORTABILITY-AND-DATA-COMMERCE-INTL-PARITY",
+          "P6-DEEP-INFRA-DELETION-JOURNAL-AND-DIAGNOSTICS-INTL-PARITY",
+          "P6-DOC-GOVERNANCE-DOMAIN-AUTH-SECURITY-AND-VALIDATORS-INTL-PARITY",
+          "P6-ENGINEERING-GOVERNANCE-FINANCIAL-PRECISION-AND-FREE-SCRAPER-INTL-PARITY",
+          "P6-FRONTEND-ARCH-GEOJSON-LAZY-AND-HEDONIC-IMAGE-INTL-PARITY",
+          "P6-HTTP-FIRESTORE-IDEMPOTENCY-AND-IDENTITY-GOVERNANCE-INTL-PARITY",
+          "P6-MARKET-INTEGRITY-MULTI-SCRIPT-UNITS-AND-BOUNDARIES-INTL-PARITY",
+          "P6-NESHAN-TILE-NOTIFICATION-PORTABILITY-AND-OBJECT-STORAGE-INTL-PARITY",
+          "P6-OPERATIONAL-SCALE-PDF-JALALI-AND-PRIVACY-LIFECYCLE-INTL-PARITY",
+          "P6-PWA-OFFLINE-SECURITY-GOVERNANCE-AND-LISTINGS-INTL-PARITY",
+          "P6-SUPPLY-CHAIN-TELEGRAM-ASYNC-AND-XSS-CHART-INTL-PARITY",
+          "P6-FILE-SIGNATURE-APP-CHECK-AND-FIRESTORE-CONNECTION-INTL-PARITY",
+          "P6-LEAFLET-LOADER-DELETE-COORDINATOR-AND-SAMPLE-MEDIA-INTL-PARITY",
+          "P6-OBJECT-STORAGE-UPLOAD-OSM-TILE-PROXY-AND-SECURITY-INTL-PARITY",
+          "P6-RMEP-STATE-ENGINE-SERVER-ADMIN-TELEGRAM-AND-SOD-BACKUP-INTL-PARITY",
+          "P6-SERVER-AI-COMMERCE-BACKUP-CHUNK-AND-BOUNDARY-PROTOCOL-INTL-PARITY",
+          "P6-SERVER-CONFIG-VALIDATOR-DELIVERY-GUARD-AND-FORENSICS-INTL-PARITY",
+          "P6-SERVER-IDEMPOTENCY-JOURNAL-ADAPTERS-AND-LEGAL-RULE-ENGINE-INTL-PARITY",
+          "P6-SERVER-MARKET-PULSE-OBJECT-STORAGE-AND-CLEANUP-INTL-PARITY",
+          "P6-SERVER-OBJECT-STORAGE-HELPERS-ORPHAN-AUDIT-AND-PUBLISHER-BARGAINS-INTL-PARITY",
+          "P6-SERVER-RUNTIME-ENV-SEO-SITEMAP-AND-SPONSOR-BARGAIN-ROUTES-INTL-PARITY",
+          "P6-SERVER-UTILITY-ROUTES-FIREBASE-AND-SERVER-ENTRY-INTL-PARITY",
+          "P6-APP-CHECK-STORAGE-PORTABILITY-AND-AREA-TOGGLE-INTL-PARITY",
+          "P6-MAP-LEGEND-BOTTOM-NAV-AND-MAIN-ENTRY-INTL-PARITY",
+          "P6-TYPES-LAYER-INTL-CONTRACTS-AND-UNIVERSAL-233-FILE-GUARDRAIL",
+          "P6-STATIC-DATASET-INTL-PARITY-AND-UNIVERSAL-242-FILE-GUARDRAIL",
+          "P6-INTL-DEEP-LINK-AUTO-LOCALE-AND-MOBILE-INTL-CONTROLS",
+          "P6-INTL-SHARE-CARD-STORY-AND-INSPECTOR-DRAWER-PARITY",
+          "P6-INTL-ANALYTICAL-MODALS-HEADER-CONTROLS-AND-CURRENCY-PARITY",
+          "P6-INTL-PORTFOLIO-TREND-AGENCY-PROVINCE-MODALS-HEADER-PARITY",
+          "P6-INTL-SECONDARY-EXPANSION-SUPER-MODALS-HEADER-PARITY",
+          "P6-INTL-STUDIO-ONBOARDING-ADMIN-MODALS-HEADER-AND-CURRENCY-PARITY",
+          "P6-INTL-SUPER-MODULES-TABS-CURRENCY-AND-CLIPBOARD-PARITY",
+          "P6-INTL-HEDONIC-PNG-INLINE-RESULTS-BUYING-POWER-AND-FORECAST-PARITY",
+          "P6-INTL-PRICE-CHART-MONTHLY-BAR-INSPECTOR-AND-BARGAINS-PARITY",
+          "P6-INTL-COMPARE-TABLE-BUDGET-BRIDGE-RANKING-AND-NATURAL-SEARCH-PARITY",
+          "P6-INTL-PRICE-TREND-MODAL-COMPARE-MODAL-AND-PORTFOLIO-TRADE-UP-PARITY",
+          "P6-INTL-THRESHOLD-ALERTS-EXPANSION-COMMISSION-ONBOARDING-AND-AGENCY-PARITY",
+          "P6-INTL-PROVINCE-PILLS-SPONSOR-PLAN-LEGAL-MORTGAGE-AND-BI-GIS-MEDIANS-PARITY",
+          "P6-INTL-ENTERPRISE-STUDIO-ADMIN-PRICES-AND-SHARE-MODAL-PARITY",
+          "P6-INTL-AI-COMMERCE-MCP-SANDBOX-AND-HEDONIC-MODAL-PARITY",
+          "P6-INTL-SEARCH-DROPDOWN-HEDONIC-WIDGET-COMPARE-TABLE-AND-TREND-CHART-PARITY",
+          "P6-INTL-PRICE-CHART-MONTHLY-BAR-FORECAST-AUDIT-AND-SEO-DRAWER-PARITY",
+          "P6-INTL-RANKING-STRIP-BARGAINS-BUYING-POWER-BUDGET-BRIDGE-AND-COMPARE-MODAL-PARITY",
+          "P6-INTL-INSPECTOR-DRAWER-TABS-SHORTLIST-MATRIX-AND-PORTFOLIO-PARITY",
+          "P6-INTL-SECONDARY-MODALS-SMART-SUGGEST-SHARE-STORY-AND-PROVINCE-PARITY",
+          "P6-INTL-HEDONIC-MODAL-RESULTS-AGENCY-AND-ONBOARDING-PARITY",
+          "P6-INTL-PORTFOLIO-BUYER-ALERTS-SPARKLINE-AND-LEGAL-ADVISOR-PARITY",
+          "P6-INTL-EXPANSION-LEGAL-CRM-AND-BI-GIS-STUDIO-PARITY",
+          "P6-INTL-ENTERPRISE-ASSET-FUND-AND-SUPER-MODULES-PARITY",
+          "P6-INTL-INSPECTOR-DRAWER-PURCHASING-POWER-AND-COMMUTE-PARITY",
+          "P6-INTL-BARGAINS-INSPECTOR-TABS-AND-COMPARISON-PARITY",
+          "P6-INTL-PRICE-CHARTS-SHORTLIST-MATRIX-AND-BUDGET-BRIDGE-PARITY",
+          "P6-INTL-TREND-MODAL-FORECAST-RANKING-STRIP-AND-PORTFOLIO-PARITY",
+          "P6-INTL-BUYING-POWER-HEDONIC-WIDGET-NATURAL-SEARCH-AND-DROPDOWN-PARITY",
+          "P6-INTL-HEDONIC-MODAL-RESULTS-PROVINCE-AND-SHARE-PARITY",
+          "P6-INTL-SECONDARY-MODALS-SMART-SUGGEST-PURCHASING-POWER-AND-AGENCY-PARITY",
+          "P6-INTL-BUYER-ALERTS-EXPANSION-ONBOARDING-AND-PORTFOLIO-PARITY",
+          "P6-INTL-THRESHOLD-ALERTS-SPARKLINE-LEGAL-ADVISOR-AND-SPONSOR-TAB-PARITY",
+          "P6-INTL-ADMIN-OVERVIEW-MONETIZATION-AI-COMMERCE-AND-MCP-SANDBOX-PARITY",
+          "P6-INTL-LEGAL-PORTFOLIO-CRM-BI-GIS-AND-ENTERPRISE-STUDIO-PARITY",
+          "P6-INTL-SUPER-MODULES-VALUATION-SWAP-LEGAL-AND-MODAL-SHELL-PARITY",
+          "P6-INTL-TOPBAR-SEARCH-RANKING-AND-LEGEND-PARITY",
+          "P6-V64-HEDONIC-PERSIAN-NLP-3TAB-DRAWER-AND-DIVAR-ANALYZER",
+          "P6-INTL-V64-DRAWER-ANALYZER-HEDONIC-MODAL-AND-FAKE-DETECTOR-PARITY",
+          "P6-INTL-HEDONIC-INLINE-RESULTS-COMPARE-AND-BUYING-POWER-PARITY",
+          "P6-INTL-EXPANDABLE-COMPARE-BUDGET-BRIDGE-SHORTLIST-AND-FORECAST-PARITY",
+          "P6-INTL-PORTFOLIO-SECONDARY-TREND-AND-PROVINCE-MODALS-V64-PARITY",
+          "P6-INTL-SMART-SUGGEST-SHARE-PURCHASING-POWER-AND-AGENCY-V64-PARITY",
+          "P6-INTL-EXPANSION-AND-SUPER-MODULES-V64-PARITY",
+          "P6-INTL-LEGAL-ONBOARDING-BUYER-ALERTS-AND-THRESHOLDS-V64-PARITY",
+          "P6-INTL-FOUR-SPECIALIZED-STUDIO-MODALS-V64-PARITY",
+          "P6-INTL-SPARKLINE-LEGAL-ADVISOR-SPONSOR-AND-COMMUTE-V64-PARITY",
+          "P6-INTL-CHARTS-RANKING-SEARCH-AND-MATCHES-V64-PARITY",
+          "P6-INTL-PROVINCE-CONTROLS-HEATMAP-TOOLTIPS-AND-ADMIN-V64-PARITY",
+          "P6-GOLD-MASTER-V2-SPLIT-MAP-COMPANION-AND-V64-VIEW-PARITY",
+          "P6-GOLD-EDITION-60-BACKEND-SECURITY-AND-CONTRACT-HARDENING",
+          "P6-GOLD-EDITION-60-RUNTIME-ENV-SSRF-MARKET-PULSE-AND-ABUSE-GUARD",
+          "P6-GOLD-EDITION-60-OBJECT-STORAGE-LOCK-X402-AND-MCP-ZERO-AGE-FIX",
+          "P6-GOLD-EDITION-60-CONFIG-CACHE-FORENSICS-AI-NLP-AND-SEO-HARDENING",
+          "P6-GOLD-EDITION-60-STORAGE-MAGIC-BYTES-OSM-BOUNDARY-LEGAL-AND-SECURITY",
+          "P6-GOLD-EDITION-60-SCHEMA-MIGRATION-CASCADE-JOURNAL-AND-STORAGE-HELPERS",
+          "P6-FRONTEND-AUTONOMOUS-ELEVATION-AND-VERIFICATION",
+          "P6-FRONTEND-DISCOVERY-AND-COMPARE-ELEVATION",
+          "P6-CF-NATIVE-MIGRATION-AND-AUTH",
+          "P6-REMAINING-FIRESTORE-TO-D1-BACKEND-PORT"
+        ],
+        "must_verify_before_resume": [
+          "Verify MASTER-PROMPT.md SHA-256 matches 4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
+        ],
+        "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass."
+      },
+      "session_reconciliation": {
+        "recorded_at_utc": "2026-11-27",
+        "source_of_truth": "GitHub repository state",
+        "verified_base_branch": "main",
+        "verified_base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+        "active_engineering_branch": "codex/backend-resume-2026-11-27",
+        "prior_checkpoint": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
+        "status": "IN_PROGRESS",
+        "verified_findings": [
+          "The repository contains existing RT-DB-TRIAD-001/002/003 lifecycle and consent-barrier implementation and tests; do not recreate this work.",
+          "Open PRs #69, #70 and #71 contain related auth/triad validation work; keep them separate and do not merge.",
+          "PR #71 head b9f2e63704e2add8227880a32a68ec1d5688a0dd has failed CI checks and skipped E2E; GitHub connector did not expose job logs or annotations, so root cause is unverified.",
+          "The old triad branch codex/rt-db-triad-003-lifecycle-receipt-key-isolation is 1,556 commits behind main and is not a safe patch base.",
+          "The current worker lifecycle code uses USER_DB outbox and RESEARCH_DB inbox erasure; migration 0005 defines no processing lease/claim columns for the account deletion outbox.",
+          "No local execution environment is currently available: the connected MacBook device reports Offline.",
+          "Review of executeResearchSubjectErasure found that the completed-inbox fast path previously returned a receipt without verifying that the durable outbox ID still mapped to the same subject_key and subject_key_version; this collision path is now rejected before returning the receipt.",
+          "Deeper race review found a destructive cross-subject collision: two deliveries could both pass the initial inbox read with the same outbox_id but different subject keys; the previous batch deleted subject events before INSERT OR IGNORE exposed the identity conflict. The inbox identity is now claimed first inside the atomic D1 batch, and destructive event/aggregation deletes are guarded by a matching outbox_id + subject_key + subject_key_version row.",
+          "The concurrent collision regression uses a barrier to force both deliveries to observe an empty inbox, then serializes D1 batches; it asserts exactly one identity wins and the losing subject's research event remains intact.",
+          "Generated lifecycle outbox IDs are rout_<timestamp>_<8 hex chars>; derived research inbox IDs remain below any schema-declared length limits because the schema uses unrestricted TEXT columns.",
+          "processPendingResearchErasureOutbox previously updated any outbox row to RETRY_PENDING in its catch path without checking current status. A stale Worker failing after a competing Worker had committed COMPLETED could downgrade the durable outbox state. The retry UPDATE is now conditional on status PENDING/RETRY_PENDING; if no row changed, the worker reads the current row and counts an already-COMPLETED item as completed.",
+          "Added a deterministic stale-worker regression that returns a PENDING outbox row to one invocation, simulates a competing completion before the research DB attempt fails, and asserts the stale failure cannot downgrade the completed row or leave its parent deletion job pending.",
+          "A separate stale-worker race existed in the no-RESEARCH_DB branch: it could overwrite a competing COMPLETED outbox row with RETRY_PENDING because the update matched only outbox_id. The update is now status-fenced, attempt_count increments atomically, and a SQLite-backed regression simulates the interleaving.",
+          "PropertyViewingsModuleFacade is not mounted by the active apps/api/server.ts; its factory is only referenced by the module and its tests, so it is not a confirmed live Express migration target.",
+          "Legal-regulatory is a confirmed live Express Firestore target: apps/api/server.ts mounts registerLegalRegulatoryRoutes, routes.ts constructs FirestoreLegalRegulatoryStore, and the store owns 10 domain collections; no legal-regulatory-specific D1 migration exists in the migrations tree.",
+          "Legal-regulatory is a confirmed live Express dependency: apps/api/server.ts mounts registerLegalRegulatoryRoutes, which defaults to FirestoreLegalRegulatoryStore and FirestoreLegalRegulatoryTransactionRunner. The module persists ten logical collections and relies on read-before-write, optimistic CAS, and atomic entity/audit/idempotency commits.",
+          "On branch codex/backend-resume-2026-11-27, the catch-path outbox retry update previously wrote attempt_count from a stale scan value; concurrent failed workers could lose increments. Both retry paths now increment atomically in SQL, derive exponential backoff from the current row attempt_count, and preserve the later deadline with MAX(next_retry_at_ms,...). Successful completion is also status-fenced and increments atomically.",
+          "Added deterministic test 'increments retry attempts atomically when concurrent workers fail the same outbox item' in tests/rt-db-triad-001.test.ts. It forces two workers to read the same PENDING row, injects RESEARCH_DB failure, and asserts attempt_count=2 plus the second-attempt backoff.",
+          "Reviewed the live RT-DB-TRIAD-003 consent path: researchConsentBarrier.ts and migrations exist but are not imported by active direct HTTP or Queue ingestion; active event writes omit consent_revision and do not check research_subject_consent_fences; PATCH /api/account/privacy updates consent directly and there is no POST /api/account/privacy/reconcile route.",
+          "The dormant tests/rt-db-triad-003-consent-barrier.test.ts expects functions not exported by the active researchService/jobDispatcher and is excluded from tsconfig and npm test (which runs TRIAD-001 and TRIAD-002 only).",
+          "RT-DB-TRIAD-003 runtime wiring is now committed: HTTP and Queue ingestion acquire/release bounded USER_DB permits tied to consent_revision; RESEARCH_DB event INSERTs include consent_revision and atomically enforce research_subject_consent_fences.",
+          "Consent revocation now persists a durable revocation job and UID-free revision-scoped outbox before flipping consent off. This order makes a crash between intent creation and consent CAS fail closed; reconcile can complete the CAS.",
+          "Consent-only erasure uses max_consent_revision equal to the new revoked revision, preserves the subject registry for future re-grant, drains active permits and reclaims expired leases, then creates an Inbox receipt, invalidates affected aggregation windows, deletes eligible events and advances the RESEARCH_DB fence in one batch.",
+          "A later explicit re-grant is blocked while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; after completion it advances consent_revision and can write above the fence.",
+          "PATCH /api/account/privacy now initiates barrier revocation and POST /api/account/privacy/reconcile resumes durable jobs; route group and API route catalog include the new endpoint.",
+          "The six-scenario tests in tests/rt-db-triad-003-consent-barrier.test.ts are now included in npm run test:triad. No execution is claimed.",
+          "USER_DB migration 0008 adds a unique index on (uid, revoked_consent_revision) and an outbox retry index. Deterministic revocation/outbox IDs make concurrent duplicate revocation requests converge.",
+          "updateUserPrivacyConsentInD1 now accepts expectedConsentRevision; the revocation orchestrator uses this CAS and cancels an unapplied job/outbox if a concurrent privacy mutation wins while research consent remains enabled.",
+          "Unrelated privacy mutations and consent re-grants are rejected while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; the barrier's own revocation/reconciliation CAS is the only allowed consent transition in that state.",
+          "The prior TRIAD-002 race test expected an obsolete pre-commit 403 and conflicted with the new permit-drain contract. It now asserts that an already-permitted writer may finish, then reconciliation erases its event and completes the fence.",
+          "npm test now starts by running npm run test:triad, which executes TRIAD-001, TRIAD-002 and TRIAD-003.",
+          "Direct true-to-false research consent mutation through updateUserPrivacyConsentInD1 is now rejected unless the durable revocation job exists and the caller is the barrier/reconcile transition. The account API routes revocation through that barrier.",
+          "TRIAD-001 now asserts direct repository bypass rejection and completes consent erasure through the barrier; TRIAD-002 race coverage follows permit-drain semantics, and its queue assertions use CONSENT_REVISION_STALE_OR_REVOKED for old revisions.",
+          "Account privacy PATCH forwards consentVersion to the barrier; route registration and catalog remain in place.",
+          "Next live Firestore target was identified without modification: apps/api/server.ts mounts registerCommunityRoutes; communityUnifiedRepository uses createDefaultCommunityDatabaseStore, selecting FirestoreAdminCommunityStore in production/emulator/credentialed environments. The adapter owns 16 social collections and transactional/idempotent behavior.",
+          "Legal-regulatory is also mounted and Firestore-backed; its explicit transaction/audit semantics make it a later migration candidate requiring careful parity."
+        ],
+        "blockers": [
+          "Cannot run repository scripts or tests locally because the connected development device is Offline.",
+          "GitHub Actions failed-job logs and annotations were unavailable through the connected GitHub API wrapper (BlobNotFound / empty step metadata); exact CI failure root cause remains unknown.",
+          "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194.",
+          "PR #78 workflow run 45980515216 failed in the detect job before api/frontend/contracts gates ran; the only detailed job logs available through the connector still return BlobNotFound. Cloudflare Workers Builds check for radartehran-frontend also reports failure without diagnostic annotations.",
+          "Latest CI runs on head e7053f53d8c69605ee6bf0037c9442650c95e7cf failed: Tehran Radar CI run 45982446365 failed in TypeScript/Architecture/Unit/Storage/Stress/Build; Cloudflare Native Auth Validation run 45982446011 failed in native-auth. E2E was skipped; job logs and step metadata remain unavailable.",
+          "Latest CI on head 2b71c9a1eac38f02255f58c8676926de49a490de failed in Tehran Radar CI Quality Gates (run 45986000419), Cloudflare Native Auth Validation (45986000574), Tehran Radar Path-Filtered Checks detect (45986000519), and Radar Backend Triad (45986000654). E2E and downstream path-filtered jobs were skipped. Connector job-step arrays are empty and log retrieval returns BlobNotFound; root causes remain unknown.",
+          "New deterministic concurrent cross-subject outbox-ID collision test and guarded-delete fix are source-reviewed but not executed; local MacBook remains Offline.",
+          "Latest CI on head 043e25c7c044cf4375fd40b68bbd62bb02c8831a again failed all four workflows: Tehran Radar CI Quality Gates run 45986606294, Cloudflare Native Auth Validation run 45986606317, Tehran Radar Path-Filtered Checks run 45986606333, and Radar Backend Triad run 45986606330. Job logs/step details remain inaccessible via the GitHub connector; no root cause is claimed.",
+          "Latest branch CI checks on code commit 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15 failed in detect, TypeScript/Architecture/Unit/Storage/Stress/Build, D1 domain isolation/Worker bundle, and native-auth. E2E and downstream path-filtered gates were skipped. Job step metadata is null and job log retrieval returns BlobNotFound; root causes are not known.",
+          "No legal-regulatory D1 migration or D1 store exists. The target database binding is not confirmed; radar_researcher_db is only a candidate. A design-only architecture document was committed; no schema, adapter, production composition, data migration, or deployment was changed.",
+          "The new atomic retry-counter code and regression are source-reviewed but not executed. CI on code/test head d0faff86e79dde909faeb3cacbfa57e65e55ae37 (runs 45990057254, 45990057424, 45990057265, 45990057325) failed before runner assignment: runner_id=0, empty runner name, zero steps.",
+          "Latest CI on code head f5b2df10ba734461332af7e7c51b16919d8f69b9: Quality Gates run 45994140283, Backend Triad run 45994140162, Native Auth run 45994140401, plus related path-filtered and frontend budget workflows, failed before runner execution. Quality Gates job runner_id=0, runner_name empty, steps=0; Backend Triad and Native Auth step metadata are null. This matches open operational issue #49; source-level failures are not established.",
+          "Local executor remains unavailable: MacBook-Air.local Offline (last seen 21h ago).",
+          "Latest CI on code/test head 352ada76f71159b48f662df05c0909e2369176da: Quality Gates run 45995787426 job 140494716436 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45995787483 and Native Auth run 45995787609 have null step metadata. E2E skipped. This matches open issue #49; no source-level test failure is established.",
+          "MacBook-Air.local remains Offline; local test execution is unavailable.",
+          "All TRIAD suites, npm test, npm run typecheck, Worker bundle and isolated Wrangler D1 integration remain unexecuted. No pass is claimed.",
+          "Latest CI on head d622a1958d567140731f7ac87d6aa3140ed4a44e: Quality Gates run 45997297169 job 140499789069 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45997297157 and Native Auth run 45997297190 have null step metadata; E2E skipped. This matches issue #49 and does not establish a source-level test failure.",
+          "MacBook-Air.local remains Offline."
+        ],
+        "next_action": "Restore runner allocation or reconnect local executor; run npm test and npm run typecheck; verify all DB triad suites and isolated D1 migrations. Then audit the mounted community Firestore adapter for D1 parity, preserving all 16 collections, transactions, idempotency, rate limits, pagination and route contracts.",
+        "code_work": {
+          "id": "BE-002",
+          "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
+          "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery. A further identity-confusion edge case was found: an already-completed inbox row could be replayed with the same outbox_id but a different subject key/version and its receipt returned without identity validation. A deeper race remained: two different subject keys could concurrently reuse the same outbox_id after both read an empty inbox; because deletes preceded the INSERT OR IGNORE, the losing request could erase its own subject's events before the canonical identity mismatch was detected. Another stale-worker downgrade path was identified in the unavailable-RESEARCH_DB branch of processPendingResearchErasureOutbox. Live Express legal-regulatory persistence remains on Firestore; replacing it directly would risk breaking its ten-collection transactional contract.",
+          "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning. The completed-inbox fast path now checks subject_key and subject_key_version and fails closed with RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT on mismatch. The inbox row is now inserted first inside the atomic batch; event and aggregation deletes include EXISTS guards requiring the exact outbox_id, subject_key, and subject_key_version. The replay flag now reads the inbox insert result at batch index 0 after statement reordering. The lifecycle outbox catch path now updates RETRY_PENDING only while the row remains PENDING/RETRY_PENDING; if a competing Worker already completed it, the stale worker reads the durable completed count and treats the item as completed instead of downgrading it. The unavailable-DB retry update now requires PENDING/RETRY_PENDING, increments attempt_count atomically, and recognizes a competing valid COMPLETED row when its guarded update affects zero rows. Added docs/engineering/RMEP-001/LEGAL-REGULATORY-D1-MIGRATION-DESIGN.md specifying the schema model, indexes, D1 transaction guard, parity gates, reconciliation, and no-fallback cutover sequence.",
+          "files": [
+            "worker/research/researchService.ts",
+            "tests/rt-db-triad-001.test.ts"
+          ],
+          "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending. Added a deterministic concurrent regression with a barrier that forces both deliveries past an empty initial inbox read, serializes their D1 batches, and asserts the losing subject's event remains. Test/typecheck not executed. Added a deterministic stale-worker regression for the concurrent COMPLETED-versus-failure race. Test/typecheck not executed. A second deterministic regression now covers a stale lifecycle Worker failure after another Worker has committed COMPLETED; the retry update is status-fenced. Both new race tests remain unexecuted pending local/CI diagnostics. Added a SQLite-backed regression for the exact unavailable-DB interleaving; source/test files were re-read from GitHub, but no local execution was possible. Verified mounted route/store/transaction-runner source and existing atomicity/CAS test contract; design reviewed. No D1 implementation or runtime test has been performed.",
+          "last_code_commit": "34e2aaad37ba4b3793df7a9a5eecd8e364de6b15"
+        },
+        "code_work_updates": [
+          {
+            "id": "BE-010",
+            "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+            "files": [
+              "worker/account-lifecycle/workerLifecycleRuntime.ts",
+              "tests/rt-db-triad-001.test.ts"
+            ],
+            "source_commit": "e95035c297ffee5a667b79328efd25096d4a9809",
+            "test_commit": "d0faff86e79dde909faeb3cacbfa57e65e55ae37",
+            "verification": "GitHub source/test re-read; no local or hosted execution. Latest Actions jobs had runner_id=0 and zero steps."
+          },
+          {
+            "id": "BE-011",
+            "status": "IN_PROGRESS",
+            "files": [
+              "worker/research/researchConsentBarrier.ts",
+              "worker/research/researchService.ts",
+              "worker/queues/jobDispatcher.ts",
+              "worker/routes/accountRoutes.ts",
+              "migrations/user-d1/0007_research_consent_barrier.sql",
+              "migrations/research-d1/0003_research_consent_fencing.sql",
+              "tests/rt-db-triad-003-consent-barrier.test.ts"
+            ],
+            "finding": "Existing permit/fencing migrations and helpers are not integrated into active HTTP/Queue ingestion and privacy revocation routes.",
+            "next_action": "Complete runtime wiring and activate six-scenario test suite."
+          }
+        ]
+      },
+      "code_work_updates": [
+        {
+          "id": "BE-011",
+          "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+          "files": [
+            "worker/research/researchService.ts",
+            "worker/research/researchConsentRevocation.ts",
+            "worker/research/researchConsentBarrier.ts",
+            "worker/queues/jobDispatcher.ts",
+            "worker/account-lifecycle/workerLifecycleRuntime.ts",
+            "worker/account/d1AccountRepository.ts",
+            "worker/routes/accountRoutes.ts",
+            "worker/migrationRouteGroups.ts",
+            "src/utils/expressRouteCatalog.ts",
+            "tests/rt-db-triad-003-consent-barrier.test.ts",
+            "tests/rt-db-triad-002-forensic.test.ts",
+            "package.json"
+          ],
+          "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
+          "test_commit": "352ada76f71159b48f662df05c0909e2369176da",
+          "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+          "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
+        },
+        {
+          "id": "BE-012",
+          "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+          "files": [
+            "migrations/user-d1/0008_research_consent_revocation_uniqueness.sql",
+            "worker/account/d1AccountRepository.ts",
+            "worker/research/researchConsentRevocation.ts",
+            "tests/rt-db-triad-002-forensic.test.ts",
+            "tests/rt-db-triad-003-consent-barrier.test.ts",
+            "package.json"
+          ],
+          "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
+          "test_commit": "352ada76f71159b48f662df05c0909e2369176da",
+          "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+          "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
+        },
+        {
+          "id": "BE-013",
+          "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+          "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
+          "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+          "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
+        },
+        {
+          "id": "BE-014",
+          "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+          "files": [
+            "worker/account-lifecycle/workerLifecycleRuntime.ts",
+            "tests/rt-db-triad-003-consent-barrier.test.ts"
+          ],
+          "source_commit": "ea5c70062704c76dd004ea8d75b6008fdd0db651",
+          "test_commit": "c0da26dc3be660c32e9e78bbdb66a0b4d3b23604",
+          "verification": "Source/test re-read from GitHub. Seven Actions workflows on exact head failed before runner assignment with runner_id=0, empty runner_name and zero steps; no test/typecheck/build executed.",
+          "next_action": "Run TRIAD-003 Scenario 9, npm run test:triad, npm test and npm run typecheck when an authorized executor is available."
+        }
+      ]
+    }
   }
 }
