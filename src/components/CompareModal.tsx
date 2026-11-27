@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
-  compareId1: number; setCompareId1: React.Dispatch<React.SetStateAction<number>>; compareId2: number; setCompareId2: React.Dispatch<React.SetStateAction<number>>; compHood1: EvaluatedNeighborhood; compHood2: EvaluatedNeighborhood; mode?: 'rent' | 'buy'; buyTotalBudget?: number; totalRahnEquivalent?: number; rentAgeMultiplier?: number; deductTenantRahnInBuy?: boolean; onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; } interface ComparisonMetricRow { label: string; v1: string; v2: string; win: 0 | 1 | 2; }
+  compareId1: number; setCompareId1: React.Dispatch<React.SetStateAction<number>>; compareId2: number; setCompareId2: React.Dispatch<React.SetStateAction<number>>; compHood1?: EvaluatedNeighborhood; compHood2?: EvaluatedNeighborhood; mode?: 'rent' | 'buy'; buyTotalBudget?: number; totalRahnEquivalent?: number; rentAgeMultiplier?: number; deductTenantRahnInBuy?: boolean; onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; } interface ComparisonMetricRow { label: string; v1: string; v2: string; win: 0 | 1 | 2; }
 export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1, setCompareId1, compareId2, setCompareId2, compHood1, compHood2, mode = 'buy', buyTotalBudget = 8500, totalRahnEquivalent = 1500, rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, }: CompareModalProps): React.ReactElement | null { const dialogRef = useDialogFocus(open, onClose); const overlayState = useMapAdvancedOverlayState(); const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const isEn = radarLocale === 'en'; const compareCopy = getRadarCompareCopy(radarLocale);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<number | null>(null);
@@ -65,10 +65,11 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
     const fx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(val, intlCurrency, radarLocale)}` : '';
     return `${n.name} (${n.zone}) — ${unitTag} ${toPersianNum(val)} م${fx}${n.id === otherId ? ' (انتخاب‌شده در ستون مقابل)' : ''}`;
   };
-  const handleSwapHoods = (): void => { const id1 = validateNeighborhoodId(compareId1, compHood1?.id || 1); const id2 = validateNeighborhoodId(compareId2, compHood2?.id || 2); setCompareId1(id2); setCompareId2(id1); };
+  const handleSwapHoods = (): void => { if (!compHood1 || !compHood2) return; const id1 = validateNeighborhoodId(compareId1, compHood1.id); const id2 = validateNeighborhoodId(compareId2, compHood2.id); setCompareId1(id2); setCompareId2(id1); };
   const handleSelectHood1 = (rawVal: string) => { const newId = validateNeighborhoodId(rawVal, 1); if (newId === compareId2) setCompareId2(compareId1); setCompareId1(newId); };
   const handleSelectHood2 = (rawVal: string) => { const newId = validateNeighborhoodId(rawVal, 5); if (newId === compareId1) setCompareId1(compareId2); setCompareId2(newId); };
   const handleCopySummary = async () => {
+    if (!compHood1 || !compHood2) return;
     try {
       const summaryText = `رادارتهران: مقایسه ${compHood1.name} با ${compHood2.name}\n` +
         `• بودجه: ${toPersianNum(activeBudgetMillion)} م.ت\n` +
@@ -98,7 +99,9 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
             <AreaUnitToggle compact showIntlControls />
             <button
               type="button"
+              disabled={!compHood1 || !compHood2 || compHood1.id === compHood2.id}
               onClick={() => {
+                if (!compHood1 || !compHood2 || compHood1.id === compHood2.id) return;
                 const nextPinned = !isArcPinned;
                 updateMapAdvancedOverlayState({ comparisonArc: { active: true, isPinned: nextPinned, hoodA: compHood1, hoodB: compHood2 } });
                 if (nextPinned) onClose();
@@ -112,7 +115,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <MapPin className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{isArcPinned ? 'کمان نقشه پین شد' : 'پین کمان روی نقشه'}</span>
             </button>
-            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
+            <button type="button" disabled={!compHood1 || !compHood2} onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)]'}`}>
               {copied ? <Check className="w-3.5 h-3.5 stroke-[2]" /> : <Copy className="w-3.5 h-3.5 stroke-[1.75]" />}
               <span>{copied ? 'کپی شد' : 'کپی خلاصه'}</span>
             </button>
@@ -120,7 +123,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <Printer className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.printBtnLabel}</span>
             </button>
-            <button type="button" onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
+            <button type="button" disabled={!compHood1 || !compHood2} onClick={handleSwapHoods} aria-label={compareCopy.swapBtnLabel} title="جابه‌جایی دو محله" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[var(--color-bg-muted)] hover:bg-slate-50 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200/80 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
               <RefreshCw className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{compareCopy.swapBtnLabel}</span>
             </button>
