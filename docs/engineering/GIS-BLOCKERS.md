@@ -130,3 +130,7 @@ A focused re-audit of the current branch distinguishes the existing identity RPC
 6. Keep the endpoint disabled/not registered until all of the above are verified. Do not use approximate geometry, neighborhood centers, legacy numeric IDs, names or proximity as canonical identity or official boundaries.
 
 No code path, binding, database, secret or deployment was changed by this audit. The current exact-head GIS, IRNI RPC and Worker bundle workflows still fail with `steps=null` and no logs URL; execution of their commands is not established.
+
+## Hosted runner allocation evidence — 2026-11-27
+
+The GitHub Actions Jobs API was queried directly for the latest GIS, IRNI RPC consumer and Radar Worker bundle runs listed above. All four job records report `runner_id=0`, an empty `runner_name`, and an empty `steps` array; each job completed as `failure` within approximately 1–3 seconds of its start timestamp. This confirms that no job step was recorded and strongly indicates failure before a hosted runner began executing the workflow. It does not identify the account/repository-level reason (for example, runner entitlement, usage/billing enforcement, repository Actions policy or service-side dispatch failure). Treat this as a runner-allocation/dispatch blocker, not an application test failure, until GitHub account and repository Actions diagnostics identify the cause. No code change can be justified from these empty job records.
