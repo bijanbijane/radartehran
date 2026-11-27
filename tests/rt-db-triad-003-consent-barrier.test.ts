@@ -13,6 +13,14 @@ import {
   getResearchConsentRevocationJobFromD1,
   updateUserPrivacyConsentInD1,
 } from '../worker/account/d1AccountRepository';
+import {
+  acquireResearchProcessingPermitInD1,
+  releaseResearchProcessingPermitInD1,
+} from '../worker/research/researchConsentBarrier';
+import {
+  reconcileResearchConsentRevocation,
+  revokeUserResearchConsentWithBarrier,
+} from '../worker/research/researchConsentRevocation';
 import { processPendingResearchErasureOutbox } from '../worker/account-lifecycle/workerLifecycleRuntime';
 import {
   clearTestJwksForEdgeAuth,
@@ -25,12 +33,8 @@ import {
 import { deriveResearchSubjectKey } from '../worker/research/pseudonymizer';
 import { validateAndMinimizeResearchEvent } from '../worker/research/researchEventContract';
 import {
-  acquireResearchProcessingPermitInD1,
   executeResearchSubjectErasure,
   ingestResearchEventsBatch,
-  reconcileResearchConsentRevocation,
-  releaseResearchProcessingPermitInD1,
-  revokeUserResearchConsentWithBarrier,
   writePseudonymizedEventsToResearchDb,
 } from '../worker/research/researchService';
 import { handleAccountWorkerRoute } from '../worker/routes/accountRoutes';
@@ -167,6 +171,7 @@ function createTestTriad() {
     RESEARCH_HMAC_SECRET: 'rt_triad_003_barrier_hmac_secret_0123456789abcdef',
     RESEARCH_HMAC_KEY_VERSION: 'v1',
     INTERNAL_LIFECYCLE_RPC_SECRET: 'rt_triad_003_receipt_secret_0123456789abcdef',
+    LIFECYCLE_RECEIPT_HMAC_SECRET: 'rt_triad_003_dedicated_receipt_secret_0123456789abcdef',
     APP_ENV: 'development',
   };
 
