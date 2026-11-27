@@ -18,7 +18,7 @@
       "merged": false,
       "head_sha": "a1e03d3983d2ef3d63d50017eea79399a8645d9c"
     },
-    "qa_head_commit": "727c1bad8ff523b4bbdc24ea99cc045282574940"
+    "qa_head_commit": "807fa962ac6886a1d10ac62c46055cf4f51c66e9"
   },
   "test_results": {
     "test_suites_added": 1,
@@ -29,7 +29,7 @@
     "test_cases_skipped": 0,
     "ci_jobs_failed_before_runner": 5,
     "ci_jobs_skipped": 4,
-    "reason": "No test cases executed. On PR #74 head 727c1bad8ff523b4bbdc24ea99cc045282574940, the five latest PR-triggered workflow runs (46008370790, 46008370818, 46008370760, 46008370819, 46008371081) each had a failed primary job with zero steps; Playwright and path-filtered dependent jobs were skipped. PR #79 static CI command corrections remain unmerged and unverified. PR #79 also has an open dependency reproducibility/security review finding: package.json Vitest range is ^5.1.2 but package-lock.json is not part of the PR diff; current-head Cloudflare build failed; PR body reports 22 audit advisories pending lockfile regeneration and post-upgrade audit."
+    "reason": "No repository test cases executed. Latest five workflows for PR #74 head 807fa962ac6886a1d10ac62c46055cf4f51c66e9 failed before steps. One failed CI quality-gates job was retried (job 140538295439); retry also completed failure with zero steps and E2E skipped. Job logs return BlobNotFound, so runner allocation root cause is not established."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -71,10 +71,10 @@
   ],
   "self_remediated_defects": [],
   "blockers": [
-    "GitHub Actions latest five PR #74 primary jobs failed before executing any step; runner allocation root cause remains unconfirmed.",
+    "GitHub Actions primary jobs repeatedly fail before executing steps. A targeted retry of the CI quality-gates job also failed with zero steps; logs are unavailable (BlobNotFound), so account quota, policy, or hosted-runner root cause remains unconfirmed.",
     "Authorized Desktop Commander MacBook-Air.local was previously reported offline; no local execution path has been verified.",
-    "PR #79 has a dependency manifest/lockfile consistency concern: root Vitest range changed to ^5.1.2 but package-lock.json is absent from the PR changed-file list; latest Cloudflare build for exact head 1907920 failed.",
-    "PR #79 reports 22 npm audit advisories (14 moderate, 6 high, 2 critical); lockfile regeneration and post-upgrade audit are pending per PR description."
+    "PR #79 has a confirmed package manifest/lockfile mismatch: package.json declares Vitest ^5.1.2 while package-lock.json declares ^3.0.8 and resolves 3.2.7. A clean npm ci has not been executed.",
+    "PR #79 reports 22 npm audit advisories (14 moderate, 6 high, 2 critical); remediation and post-upgrade audit remain unverified."
   ],
   "ci": {
     "workflow_files_inspected": [
@@ -132,57 +132,69 @@
       "classification": "PRE_RUNNER_CI_FAILURE"
     },
     "path_filtered_downstream_jobs": "frontend-gates, api-gates, contracts-gates skipped because detect failed before runner",
-    "latest_qa_head_commit": "727c1bad8ff523b4bbdc24ea99cc045282574940",
+    "latest_qa_head_commit": "807fa962ac6886a1d10ac62c46055cf4f51c66e9",
     "latest_qa_run_timestamp_utc": "2026-11-27T13:36:00Z",
     "latest_workflow_evidence_commit": "95ed139433437bd51688fc3acbe190a87e7e0685",
     "latest_observed_runs_after_documentation_updates": [
       {
-        "id": 46008370790,
+        "id": 46008470844,
+        "name": "Tehran Radar Path-Filtered Checks",
+        "primary_job": 140537546390,
+        "conclusion": "failure_before_steps",
+        "steps": 0,
+        "dependent_jobs": "skipped"
+      },
+      {
+        "id": 46008470272,
         "name": "Cloudflare Native Auth Validation",
-        "job_id": 140537210587,
+        "primary_job": 140537543716,
         "conclusion": "failure_before_steps",
         "steps": 0
       },
       {
-        "id": 46008370818,
-        "name": "Radar Backend Triad & Frontend Service Binding",
-        "job_id": 140537219320,
-        "conclusion": "failure_before_steps",
-        "steps": 0
-      },
-      {
-        "id": 46008370760,
+        "id": 46008470407,
         "name": "Tehran Radar CI Quality Gates",
-        "job_id": 140537210579,
+        "primary_job": 140537544549,
         "conclusion": "failure_before_steps",
         "steps": 0,
         "e2e_job": "skipped"
       },
       {
-        "id": 46008370819,
-        "name": "IRNI Geographic RPC Consumer Contract",
-        "job_id": 140537210667,
+        "id": 46008470481,
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "primary_job": 140537545342,
         "conclusion": "failure_before_steps",
         "steps": 0
       },
       {
-        "id": 46008371081,
-        "name": "Tehran Radar Path-Filtered Checks",
-        "job_id": 140537213652,
+        "id": 46008470506,
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "primary_job": 140537544878,
         "conclusion": "failure_before_steps",
-        "steps": 0,
-        "dependent_jobs": "skipped"
+        "steps": 0
       }
     ],
     "pr79_review_finding": {
       "head": "1907920698c24e950fbccc57cb80f7d5603205b0",
-      "changed_files": 11,
+      "manifest": "package.json:115 declares vitest ^5.1.2",
+      "lockfile": "package-lock.json:50 declares vitest ^3.0.8; lock resolves Vitest 3.2.7",
       "package_lock_changed": false,
-      "package_json_vitest_range": "^5.1.2",
       "latest_cloudflare_build": "0158ddf9-b519-44de-929a-4ac555403ffd",
       "latest_cloudflare_build_status": "failed",
-      "classification": "DEPENDENCY_MANIFEST_LOCKFILE_MISMATCH_RISK",
-      "verification": "PR diff and complete changed-file list inspected; npm ci not executed in this session."
+      "classification": "CONFIRMED_NPM_MANIFEST_LOCKFILE_MISMATCH",
+      "verification": "Exact package.json/package-lock.json lines and complete PR changed-file list inspected. npm ci not executed; npm clean-install rejection is expected by npm lockfile contract, not runtime-confirmed in this session.",
+      "pr_comment_id": 7219718994
+    },
+    "retried_job": {
+      "run_id": 46008470407,
+      "job_id": 140538295439,
+      "original_job_id": 140537544549,
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": 0,
+      "e2e": "skipped",
+      "log_retrieval": "BlobNotFound",
+      "interpretation": "Retry reproduced pre-step failure; root cause still not established."
     }
   },
   "next_exact_action": "Restore an execution path (GitHub-hosted runner or online authorized Desktop Commander device). Then execute npm run test:contracts on the QA branch, followed by focused auth/triad/IRNI/geography suites. Review PR #79 fixes; do not mark CI defects resolved until merged and executed.",
