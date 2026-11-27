@@ -45,3 +45,8 @@ Updated: 2026-11-27
 22. **Activate the dormant TRIAD-003 suite only after its missing implementation is complete.** Add `tests/rt-db-triad-003-consent-barrier.test.ts` to an explicit npm test script and verify the typecheck/test inclusion contract; do not claim the suite is active while `tsconfig.json` excludes tests and `npm test` runs only TRIAD-001/002.
 23. **Verify concurrent outbox retry accounting.** Run `npm test` (TRIAD-001 and TRIAD-002) and `npm run typecheck` against the current PR #78 head when a local executor or hosted runner is available. Confirm the new overlapping-worker test yields attempt_count=2 and the later exponential backoff; current GitHub Actions runs failed before any runner was assigned.
 24. **Resolve hosted runner allocation through issue #49.** Do not repeatedly rerun unchanged workflows, weaken permissions, or attribute failures to application code until GitHub account-level Actions entitlement/billing/policy is checked.
+
+25. Reconnect MacBook-Air.local or resolve the GitHub Actions hosted-runner allocation blocker tracked in issue #49; do not rerun unchanged workflows until runner assignment works.
+26. Run npm run test:triad (TRIAD-001, TRIAD-002, TRIAD-003) and the AGENTS.md Worker/API typecheck gates on the latest PR #78 head. Capture actual output and fix only demonstrated failures.
+27. Verify the new account route through migration register and API contract tests; confirm migrations user-d1/0007 and research-d1/0003 are applied only in a non-production test/staging environment after explicit authorization.
+28. After TRIAD-003 passes, resume the next bounded backend item: audit one mounted Express Firestore adapter and establish its D1 schema/transaction parity before replacing it.
