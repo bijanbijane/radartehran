@@ -59,3 +59,6 @@ Each RESEARCH_DB event stores its consent revision. Erasure advances a pseudonym
 PATCH /api/account/privacy may return 202 while a revocation drains. The authenticated POST /api/account/privacy/reconcile endpoint advances the durable job and returns 200 only after verifiable RESEARCH_DB receipts are recorded.
 
 Implementation status is not verification status: tests/rt-db-triad-003-consent-barrier.test.ts is wired into npm run test:triad, but execution remains pending until a local or hosted runner completes the suite.
+
+
+Revocation intents are unique per user and revoked consent revision. A stale intent whose expected consent-revision CAS loses to another privacy mutation is canceled rather than left as a permanent write-admission block. While a revocation is pending, unrelated consent mutations and re-grants are rejected; only the barrier's own revocation/reconciliation transition may update the consent row.
