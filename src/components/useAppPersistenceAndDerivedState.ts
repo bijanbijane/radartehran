@@ -18,6 +18,7 @@ import {
 } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import type { useAppUiState } from './useAppUiState';
+import { resolveSelectedNeighborhoodById } from './selectedNeighborhoodResolver';
 
 export const FEATURE_FLAGS_STORAGE_KEY = 'tehran_radar_feature_flags_v1';
 
@@ -44,27 +45,17 @@ export function useAppPersistenceAndDerivedState({
   rentAgeMultiplier, totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
 }: UseAppPersistenceAndDerivedStateParams) {
   const selectedHood = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.selectedHoodId) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.selectedHoodId) ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.selectedHoodId, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.selectedHoodId]
   );
 
   const compHood1 = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.compareId1) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId1) ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.compareId1, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.compareId1]
   );
 
   const compHood2 = useMemo(
-    () =>
-      evaluatedNeighborhoods.find((n) => n.id === ui.compareId2) ||
-      nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId2) ||
-      evaluatedNeighborhoods[1] ||
-      evaluatedNeighborhoods[0],
+    () => resolveSelectedNeighborhoodById(ui.compareId2, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods),
     [evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, ui.compareId2]
   );
 

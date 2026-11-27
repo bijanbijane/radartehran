@@ -96,7 +96,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           open={ui.showCompareModal} onClose={() => ui.setShowCompareModal(false)}
           evaluatedNeighborhoods={p.evaluatedNeighborhoods} compareId1={ui.compareId1}
           setCompareId1={ui.setCompareId1} compareId2={ui.compareId2}
-          setCompareId2={ui.setCompareId2} compHood1={p.compHood1 || p.evaluatedNeighborhoods[0]} compHood2={p.compHood2 || p.evaluatedNeighborhoods[1] || p.evaluatedNeighborhoods[0]}
+          setCompareId2={ui.setCompareId2} compHood1={p.compHood1} compHood2={p.compHood2}
           mode={p.mode} buyTotalBudget={effectiveBuyBudget}
           totalRahnEquivalent={p.totalRahnEquivalent}
           rentAgeMultiplier={p.rentAgeMultiplier}

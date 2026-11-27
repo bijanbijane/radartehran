@@ -16,6 +16,7 @@ import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
 import { CANONICAL_BRAND_FA, formatBrandCityTitle, parseStrictCityId } from '../utils/geo/cityGeospatialResolver';
 import { resolveRoutePageMeta } from '../navigation/url/routePageMeta';
 import type { MapNavigationIntent } from './useLeafletRadarMap';
+import { resolveUrlNeighborhoodEntry } from './urlNeighborhoodResolver';
 
 export interface UseAppUrlAndTitleSyncParams {
   activeCity: CityId; setActiveCity: (c: CityId) => void; selectedHood?: EvaluatedNeighborhood;
@@ -36,7 +37,6 @@ export interface UseAppUrlAndTitleSyncParams {
 export function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
   return getAllMultiCityNeighborhoods().map((hood) => ({ cityId: resolveCityIdForNeighborhood(hood.id), hood }));
 }
-
 
 export function applyUrlParamsFromLocation(
   pathname: string,
@@ -166,10 +166,19 @@ export function applyUrlParamsFromLocation(
   }
 
   if (hoodParam && !compareAccepted) {
-    const targetEntry = allCityHoods.find((item) => item.hood.id === Number(hoodParam.trim()));
-    if (targetEntry && (!validCityParam || targetEntry.cityId === validCityParam)) {
+    const targetEntry = resolveUrlNeighborhoodEntry(hoodParam, validCityParam, allCityHoods);
+    if (targetEntry) {
       setActiveCity(targetEntry.cityId); setSelectedHoodId(targetEntry.hood.id);
       if (flyMap && mapInstanceRef.current) mapInstanceRef.current.flyTo([targetEntry.hood.lat, targetEntry.hood.lng], 13, { duration: 0.6 });
+    } else {
+      // Invalid URL IDs must not leave a neighborhood selected from a previous city/history entry.
+      const fallbackCity = validCityParam || p.activeCity;
+      const fallbackEntry = allCityHoods.find((item) => item.cityId === fallbackCity);
+      setShowCompareModal(false);
+      if (fallbackEntry) {
+        setActiveCity(fallbackEntry.cityId);
+        setSelectedHoodId(fallbackEntry.hood.id);
+      }
     }
   }
 
