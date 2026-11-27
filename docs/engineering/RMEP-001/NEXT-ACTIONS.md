@@ -127,3 +127,10 @@ Before any Radar production deployment:
 3. Keep the public serializer change **IMPLEMENTED_BUT_NOT_VERIFIED** until these checks actually execute and pass.
 4. Continue NIPS persistence only after the IRNI owner implements and verifies the authenticated, versioned, purpose-scoped storage RPC and additive `nips_*` migration. Radar must not receive a direct binding to `radar-neighborhood-db`.
 5. Keep PR #67 Draft; no merge, production deployment, production migration, secret change, or destructive operation without explicit approval.
+
+## CHK-208 — Worker request body streaming
+
+1. Run `npm run test:worker` and confirm the five new request-body boundary cases pass.
+2. Run `npm run test:cloudflare`, `npm run test:auth`, `npm run test:security`, `npm run typecheck`, `npm run arch:check`, and Worker TypeScript compilation using `tsc --noEmit -p tsconfig.worker.json`.
+3. If a runner remains unavailable, use an authorized Node 22/npm 10 executor; do not mark the work verified based on source inspection alone.
+4. Resume NIPS serialization tests and the IRNI-owned persistence RPC dependency after the Worker security gate.
