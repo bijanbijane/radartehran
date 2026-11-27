@@ -127,3 +127,11 @@ Log retrieval for the focused GIS jobs returned `BlobNotFound`. A failed check w
 | 45980564390 | 2 (rerun) | GIS geometry and boundary regression | 140443495590 | FAILURE; steps unavailable |
 
 GitHub log retrieval remains unavailable. Issue #49 records a matching hosted-runner allocation failure pattern on both project repositories, but the current job records do not expose runner IDs. Treat runner allocation as suspected, not confirmed. Both focused checks remain **NOT VERIFIED**; there is no passing evidence.
+
+
+## Additional consumer regression coverage — 2026-11-27
+
+- Valuation rejects missing/invalid boundary version identity instead of synthesizing a version.
+- Spatial market summary returns null boundary version metadata when no unique ACTIVE boundary is present.
+- A sub-neighborhood edge point does not inherit a sub-neighborhood ID and does not qualify for valuation interior assignment.
+- Branch HEAD reviewed: `2d6c707303dc2e48723c3a8869e59984199c9608`. CI failure remains undiagnosed because GitHub exposes no job steps and logs are unavailable.
