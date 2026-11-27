@@ -4,7 +4,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import type { EvaluatedNeighborhood, Neighborhood } from '../../../data/neighborhoods';
 import {
   HOME_ACCEPTANCE_CHECKLIST_18, HOME_IMPLEMENTATION_PACKAGES, HOME_QUICK_ACCESS_ITEMS, STAGE_15_MAP_ARCHITECTURE_SPEC,
   buildHomeMarketSnapshotMetrics, buildPrivacySafeHomeTelemetry, executeCategorizedHomeSearch, normalizeHomePersianQuery, selectCuratedHomeNeighborhoods,
@@ -54,8 +54,8 @@ const MOCK_HOODS: EvaluatedNeighborhood[] = [
 
 describe('URL neighborhood selection resolution', () => {
   const urlHoods = [
-    { cityId: 'tehran' as const, hood: { id: 1, name: 'ونک', lat: 35.75, lng: 51.41 } as any },
-    { cityId: 'mashhad' as const, hood: { id: 101, name: 'احمدآباد', lat: 36.29, lng: 59.59 } as any },
+    { cityId: 'tehran' as const, hood: { id: 1, name: 'ونک', lat: 35.75, lng: 51.41 } as unknown as Neighborhood },
+    { cityId: 'mashhad' as const, hood: { id: 101, name: 'احمدآباد', lat: 36.29, lng: 59.59 } as unknown as Neighborhood },
   ];
 
   it('resolves a valid URL neighborhood ID in its requested city', () => {
