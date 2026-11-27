@@ -87,3 +87,13 @@ Static comparison of workflow invocations against root `package.json` found and 
 | RT-CI-011 | PR #70 frontend preview build #3072ec23-b98d-476d-b247-498a45cc0989 succeeded. | COMPLETED_AND_VERIFIED for this preview build only |
 
 Do not label GitHub Actions failures as source-code test failures unless a runner actually starts and executes steps.
+
+## CHK-203 — dependency and ownership evidence update (2026-11-27)
+
+| ID | Finding / evidence | Status | Required remediation |
+|---|---|---|---|
+| RT-SEC-001 | Exact audit JSON: 21 findings (14 moderate, 5 high, 2 critical). Critical dev-only packages: `vitest@3.2.7`, `tinypool@1.1.1`. High production paths: `firebase@12.19.0`, `@firebase/firestore@4.17.2`, `@grpc/grpc-js@1.9.16`, `sharp@0.33.5`. `firebase-admin@13.10.0` has moderate findings. | FINDINGS_INVENTORIED; FIX_NOT_STARTED | Map import/runtime reachability; migrate Firebase Admin/Firestore and Sharp consumers; choose compatible patched versions, regenerate lockfile, run all relevant tests. Major upgrades are indicated by audit; no force fix. |
+| RT-CI-009 | PR #67 latest five runs on `93328807ff66153827cc05a4c6c72acabe6d4080` all fail before steps. Jobs have empty step arrays; log downloads return `BlobNotFound`. Existing raw job payload evidence shows `runner_id=0` and blank runner identity. | BLOCKED — GitHub Actions runner allocation | Wait for runner allocation recovery or obtain a connected Node executor; do not infer source failure. |
+| RT-NIPS-OWN-003 | NIPS README and design-only SQL previously described the shared physical database inconsistently / referenced the superseded `radar-profile-db` target. Both now consistently describe `nips_*` logical tables inside IRNI-owned `radar-neighborhood-db`, with Radar access only through owner RPC. | COMPLETED_AND_VERIFIED — documentation only | Keep SQL design-only; require IRNI owner-side migration/RPC and acceptance tests before adapter or route work. |
+
+**Verification boundary:** documentation was re-fetched from the active GitHub branch after commits. No package update, lockfile regeneration, runtime test, migration, deployment or merge occurred.
