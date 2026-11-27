@@ -143,3 +143,11 @@
 - **Local execution and visual verification:** still blocked because `MacBook-Air.local` is offline (last seen 20 hours ago). No local typecheck, focused unit test, architecture check, build, or 320×568 / 390×844 rendered viewport inspection has been run.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Do not mark this work package complete, approve, merge, or deploy until focused tests, required frontend gates, and mobile visual verification succeed.
 - **Next exact action:** when a runner or authorized local device is available, run `npm run lint`, `npm run arch:check`, `npx tsx tests/buyer-alert-contract.test.ts`, and `npm run build`; then visually inspect the drawer and legend at 320×568 and 390×844 and update this record with actual outputs.
+
+
+### Session continuation — 2026-11-27 11:05 UTC
+- **Latest branch head before this session:** `e65a37e9322a6378bac9dc752d423ed527077d11` (17 commits ahead of `main`, 0 behind).
+- **Additional browser regression:** Extended `tests/tehran-radar.e2e.spec.ts` with a pointer-cancellation sequence: dispatch touch `pointerdown`, `pointercancel`, then a stale `pointerup`; assert the sheet remains expanded, then verify a subsequent ordinary handle click closes it. This checks that a cancelled gesture cannot be applied by a later pointer-up and that normal click interaction still works.
+- **Commits:** `371a0cae3981c1521237990145e686d44a7e2130` added the first test block; `a36bcd5717f6500b7e860eccc6c90c2047397936` relocated it after existing inspector assertions; `d33ad093bd7afcfc283fb49316934d563a01dea4` removed an invalid attempt to click the handle again after the sheet had been hidden. Final intended sequence ends with the sheet collapsed.
+- **Verification:** GitHub accepted the commits. No Playwright execution result is available yet. The browser UX workflow was queued for the previous test commit; the repository quality-gate, path-filtered, native-auth, and bundle-budget workflows again reported failures before useful command-level diagnostics. Do not interpret these as proof of a test failure.
+- **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`. Keep PR #68 Draft. Do not merge or deploy. Await the focused browser workflow and the required build/typecheck/test gates, then visually verify 320×568 and 390×844.
