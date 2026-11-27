@@ -293,6 +293,41 @@ test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, cluste
   });
   assert.equal(rehydratedSearch.totalMatched, 4);
 
+  // Re-indexing a globally unique listing ID under another city must remove its stale entry.
+  rehydratedGis.indexListingForSpatialSearch({
+    id: 'lst_1',
+    propertyId: 'prop_1',
+    cityId: 'karaj',
+    hoodId: 1,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+    sqm: 110,
+    priceMillion: 16500,
+    bedrooms: 2,
+    hasParking: true,
+    coordinates: { lat: 35.812, lng: 51.455 },
+    exactPrivateAddress: 'private address',
+    publicationStatus: 'PUBLISHED',
+    verificationStatus: 'VERIFIED',
+    available: true,
+  });
+  const tehranAfterCityMove = rehydratedGis.searchListingsSpatially({
+    cityId: 'tehran',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  const karajAfterCityMove = rehydratedGis.searchListingsSpatially({
+    cityId: 'karaj',
+    center: { lat: 35.812, lng: 51.455 },
+    radiusMeters: 1500,
+    propertyCategory: 'residential',
+    transactionType: 'sale',
+  });
+  assert.equal(tehranAfterCityMove.totalMatched, 3);
+  assert.equal(karajAfterCityMove.totalMatched, 1);
+
   // Reject excessive radius query (> 25,000 meters)
   assert.throws(
     () =>
