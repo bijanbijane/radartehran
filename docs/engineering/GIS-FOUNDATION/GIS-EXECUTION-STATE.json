@@ -5,8 +5,8 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "062740891fed40bd2bb39aa7ef902bb267eeebc5",
-  "branch_head_sha_note": "Verified from GitHub branch endpoint before this documentation synchronization. This state-file update itself advances the branch head; last application source/test commit remains 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2.",
+  "branch_head_sha": "adfa8b15851c7b6c1e35e5505a233f72160e3c81",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint immediately before this documentation synchronization. Each documentation update creates a new commit and advances the branch head; read the branch endpoint for the authoritative current HEAD after synchronization. last_verified_source_commit remains the separately identified application source/test checkpoint.",
   "last_verified_source_commit": "172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2",
   "last_verified_source_commit_scope": "Inspected Worker-to-Express HMAC assertion signing/verification and proxy header behavior, Express middleware mount, GIS approval route, new HTTP regression including anonymous/non-admin/creator-self-approval/independent-admin cases, and npm run test:geospatial registration through 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. No tests/typecheck execution is evidenced.",
   "verified_findings": [
@@ -30,7 +30,8 @@
     "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced.",
     "Cloudflare Preview build 290f16e3-e364-46b5-875d-73266852335c for branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 stopped during dependency installation: Bun 1.4.4 ran bun install --frozen-lockfile and reported @tailwindcss/vite is in a different dependency group from bun.lock. Repository comparison confirms bun.lock is byte-identical on main and this branch; the lockfile mismatch predates the GIS branch. The Preview build never reached the configured frontend build command. No lockfile was manually edited.",
     "Deeper manifest/lock inspection confirms bun.lock is not a valid representation of the current monorepo workspace graph: root package.json declares workspaces apps/* and packages/*, but bun.lock contains only the empty-root workspace named react-example and no app/package workspace entries. In that root lock workspace, @tailwindcss/vite is recorded under dependencies while root package.json declares it under devDependencies. apps/frontend/package.json independently declares @tailwindcss/vite under devDependencies and both root and frontend Vite configs import it. Do not hand-edit the generated lockfile or change dependency classification without a reproducible Bun 1.4.4 regeneration and validation.",
-    "Latest PR workflow runs associated with exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84: GIS run 46011798449, native-auth run 46011798372, and backend triad run 46011798588 all concluded failure. Their jobs expose steps=null and logs_url=null; no job step execution is evidenced. The same pattern affects all seven PR-triggered workflows returned for this commit."
+    "Latest PR workflow runs associated with exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84: GIS run 46011798449, native-auth run 46011798372, and backend triad run 46011798588 all concluded failure. Their jobs expose steps=null and logs_url=null; no job step execution is evidenced. The same pattern affects all seven PR-triggered workflows returned for this commit.",
+    "Latest exact branch HEAD adfa8b15851c7b6c1e35e5505a233f72160e3c81 has seven PR-triggered workflow runs, all concluded failure. GIS run 46017942983, IRNI RPC run 46017943177 and backend triad run 46017943056 were inspected through the raw Jobs API: all sampled jobs have runner_id=0, empty runner_name and zero steps; GIS jobs completed in approximately two seconds. This is runner allocation/dispatch failure before any job step, not evidence of an application test or typecheck failure."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -123,7 +124,7 @@
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
       "tests/geospatial-cloudflare-session-approval.test.ts — anonymous/non-admin/creator-self-approval denial and independent Cloudflare-session admin approval"
     ],
-    "note": "No test or typecheck command has been verified as passing. Latest exact branch HEAD 4d3755d274beca85988eba1cecafdec7e40fdd84 has seven PR workflow runs concluded failure. GIS run 46011798449 and sampled native-auth/backend-triad runs 46011798372/46011798588 expose steps=null and logs_url=null; no test-step execution can be inferred. The previously registered Desktop Commander device was offline; this session has no available Remote Desktop Commander tool."
+    "note": "No test or typecheck command has been verified as passing. Latest exact branch HEAD adfa8b15851c7b6c1e35e5505a233f72160e3c81 has seven PR-triggered workflow runs, all concluded failure. GIS run 46017942983, IRNI RPC run 46017943177 and backend triad run 46017943056 were sampled; raw Jobs API confirms runner_id=0, empty runner_name and zero steps. No test-step execution can be inferred. The previously registered Desktop Commander device was offline; no Remote Desktop Commander tool is available in this session."
   },
   "production_changes": {
     "migrations": false,
@@ -132,6 +133,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Regenerate bun.lock from the actual apps/* and packages/* workspace graph using Bun 1.4.4; verify the root dependency group and all workspace entries, then rerun frozen install and Cloudflare Preview build. Do not hand-edit bun.lock. Separately, obtain explicit approval before any non-production AUTH_INTERNAL_HMAC_SECRET or STRANGLER_ORIGIN_URL configuration changes; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
+  "next_exact_action": "Restore an operational Node.js 22/Bun 1.4.4 execution environment. Regenerate bun.lock from the actual apps/* and packages/* workspace graph using Bun 1.4.4; verify all workspace entries and dependency groups, then run frozen install and the Cloudflare Preview build. Do not hand-edit bun.lock. GitHub-hosted runner dispatch is currently failing before steps; do not repeatedly rerun until runner availability is restored. Separately, obtain explicit approval before any non-production AUTH_INTERNAL_HMAC_SECRET or STRANGLER_ORIGIN_URL configuration changes; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
