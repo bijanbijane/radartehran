@@ -445,7 +445,8 @@ export function assessGeospatialSnapshot(
     recordCounts,
     validationErrors,
     recoveryRequirement,
-    activated: health === 'READY',
+    // Assessment is read-only; only activateStagedGeospatialSnapshot can activate.
+    activated: false,
   };
 }
 
