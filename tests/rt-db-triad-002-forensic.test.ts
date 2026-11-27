@@ -1076,7 +1076,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           1, 'tehran', 12, '2026-11-22', '{}', '2026-11-22T10:00:00.000Z',
           '2026-11-22T10:00:00.000Z', '2027-01-01T00:00:00.000Z', 'idem_scope_read_failure')`,
       ).run();
-      researchSqlite.setFailResultOnSqlContains('SELECT DISTINCT event_type, city_id');
+      researchSqlite.setFailResultOnSqlContains('DELETE FROM research_aggregation_windows');
       await assert.rejects(
         () => executeResearchSubjectErasure({
           researchDb: researchSqlite.db,
@@ -1084,7 +1084,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           subjectKey: 'sk_v1_test',
           subjectKeyVersion: 'v1',
         }),
-        /RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED/,
+        /RESEARCH_SUBJECT_ERASURE_BATCH_FAILED/,
       );
       assert.equal(
         (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE event_id = ?').get('evt_scope_read_failure') as { cnt: number }).cnt,
