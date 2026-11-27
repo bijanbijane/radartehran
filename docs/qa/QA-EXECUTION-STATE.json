@@ -9,7 +9,7 @@
     "base_branch": "main",
     "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
-    "last_inspected_qa_commit_before_state_update": "c502b5f3f476fabf802535bd0499dafdaf6cab85",
+    "last_inspected_qa_commit_before_state_update": "b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d",
     "pull_request": {
       "number": 74,
       "url": "https://github.com/bijanbijane/radartehran/pull/74",
@@ -17,7 +17,7 @@
       "draft": true,
       "merged": false
     },
-    "qa_head_commit": "c502b5f3f476fabf802535bd0499dafdaf6cab85"
+    "qa_head_commit": "b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d"
   },
   "test_results": {
     "test_suites_added": 1,
@@ -28,7 +28,7 @@
     "test_cases_skipped": 0,
     "ci_jobs_failed_before_runner": 5,
     "ci_jobs_skipped": 4,
-    "reason": "No repository test command executed in this session. The five latest PR-triggered workflows all failed before runner allocation: each failed job had runner_id=0, empty runner_name, and steps=[]. The primary CI E2E job and three path-filtered downstream jobs were skipped. The primary CI job-log endpoint returned BlobNotFound. These are CI startup failures, not test failures; executed/passed/failed/skipped test counts remain 0/0/0/0."
+    "reason": "On latest QA head b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d, five PR workflows completed with zero steps; no test commands ran. The test suite is wired into test:contracts on this QA branch. Main-branch static workflow audit found four npm run invocations with no matching package script; PR #79 corrects all four in its unmerged branch. Static audit is not test execution."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -70,8 +70,8 @@
   ],
   "self_remediated_defects": [],
   "blockers": [
-    "No online remote execution device is available for local test execution.",
-    "GitHub Actions jobs are failing before runner allocation; repository tests have not executed."
+    "GitHub Actions jobs fail before runner allocation; latest five PR jobs have zero steps.",
+    "Registered Desktop Commander MacBook-Air.local is offline; no local command execution host is currently available."
   ],
   "ci": {
     "workflow_files_inspected": [
@@ -80,43 +80,38 @@
     "latest_main_commit_status": "No status checks returned for inspected main commit; this is not evidence of a green build.",
     "qa_pr_workflows": [
       {
-        "name": "IRNI Geographic RPC Consumer Contract",
-        "run_id": 46004991418,
-        "job_id": 140525804740,
-        "conclusion": "failure_before_runner",
-        "runner_id": 0,
-        "steps": 0
-      },
-      {
         "name": "Cloudflare Native Auth Validation",
-        "run_id": 46004991653,
-        "job_id": 140525805946,
+        "run_id": 46005424220,
+        "job_id": 140527260012,
         "conclusion": "failure_before_runner",
-        "runner_id": 0,
         "steps": 0
       },
       {
         "name": "Radar Backend Triad & Frontend Service Binding",
-        "run_id": 46004991515,
-        "job_id": 140525805246,
+        "run_id": 46005424339,
+        "job_id": 140527261353,
         "conclusion": "failure_before_runner",
-        "runner_id": 0,
         "steps": 0
       },
       {
         "name": "Tehran Radar CI Quality Gates",
-        "run_id": 46004991666,
-        "job_id": 140525806828,
+        "run_id": 46005424528,
+        "job_id": 140527262712,
         "conclusion": "failure_before_runner",
-        "runner_id": 0,
         "steps": 0
       },
       {
         "name": "Tehran Radar Path-Filtered Checks",
-        "run_id": 46004991463,
-        "job_id": 140525805962,
+        "run_id": 46005424288,
+        "job_id": 140527261036,
         "conclusion": "failure_before_runner",
-        "runner_id": 0,
+        "steps": 0
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 46005424272,
+        "job_id": 140527260479,
+        "conclusion": "failure_before_runner",
         "steps": 0
       }
     ],
@@ -134,9 +129,78 @@
       "classification": "PRE_RUNNER_CI_FAILURE"
     },
     "path_filtered_downstream_jobs": "frontend-gates, api-gates, contracts-gates skipped because detect failed before runner",
-    "latest_qa_head_commit": "c502b5f3f476fabf802535bd0499dafdaf6cab85",
+    "latest_qa_head_commit": "b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d",
     "latest_qa_run_timestamp_utc": "2026-11-27T13:11:39Z"
   },
-  "next_exact_action": "Resolve GitHub-hosted runner allocation at account/repository Actions policy or billing level. Do not change workflow YAML to mask the pre-runner failure. Once a runner is allocated, execute npm run test:contracts first, then inspect the first failing step in the primary CI job.",
-  "updated_at": "2026-11-27T16:42:00+03:30"
+  "next_exact_action": "Restore an execution path (GitHub-hosted runner or online authorized Desktop Commander device). Then execute npm run test:contracts on the QA branch, followed by focused auth/triad/IRNI/geography suites. Review PR #79 fixes; do not mark CI defects resolved until merged and executed.",
+  "updated_at": "2026-11-27",
+  "confirmed_ci_defects": [
+    {
+      "id": "QA-CI-001",
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/cloudflare-native-auth-validation.yml",
+      "missing_command": "test:cloudflare-native-auth",
+      "corrected_command": "test:auth",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
+    },
+    {
+      "id": "QA-CI-002",
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/irni-geographic-rpc-contract.yml",
+      "missing_commands": [
+        "test:irni-geographic-rpc",
+        "typecheck:irni-geographic-rpc"
+      ],
+      "status": "SCRIPTS_ADDED_IN_PR_79_NOT_MERGED"
+    },
+    {
+      "id": "QA-CI-003",
+      "severity": "MEDIUM",
+      "workflow": ".github/workflows/radar-backend-triad.yml",
+      "missing_command": "test:geo",
+      "corrected_command": "test:geography-catalog",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
+    },
+    {
+      "id": "QA-CI-004",
+      "severity": "LOW",
+      "workflow": ".github/workflows/ci.yml",
+      "finding": "A branch name is listed under pull_request.types instead of pull_request.branches; PR #79 moves the branch targets into branches.",
+      "status": "FIX_PROPOSED_IN_PR_79_NOT_MERGED"
+    }
+  ],
+  "static_ci_audit": {
+    "audited_base": "main",
+    "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "workflow_files": 16,
+    "npm_run_invocations": 40,
+    "missing_script_invocations": 4,
+    "missing": [
+      {
+        "workflow": "cloudflare-native-auth-validation.yml",
+        "script": "test:cloudflare-native-auth"
+      },
+      {
+        "workflow": "irni-geographic-rpc-contract.yml",
+        "script": "test:irni-geographic-rpc"
+      },
+      {
+        "workflow": "irni-geographic-rpc-contract.yml",
+        "script": "typecheck:irni-geographic-rpc"
+      },
+      {
+        "workflow": "radar-backend-triad.yml",
+        "script": "test:geo"
+      }
+    ],
+    "fix_branch": "qa/ci-contract-fixes-2026-11-27",
+    "fix_pr": 79,
+    "fix_head": "1907920698c24e950fbccc57cb80f7d5603205b0",
+    "fix_branch_audit": {
+      "workflow_files": 16,
+      "npm_run_invocations": 40,
+      "missing_script_invocations": 0
+    },
+    "execution_status": "STATIC_SOURCE_AUDIT_ONLY_NO_WORKFLOW_STEPS_EXECUTED"
+  }
 }
