@@ -213,3 +213,19 @@ A branch-head composition trace confirms the following:
 A regression was added to `tests/neighborhood-profile-boundary-read-model.test.ts`: it creates and independently approves a local polygon through the default service composition, calls the HTTP profile-evidence endpoint, and asserts that the response remains blocked with null evidence until both trusted resolvers are wired. This strengthens the previous no-boundary test and prevents a local approval from being mistaken for canonical profile readiness.
 
 This is an intentional fail-closed state, not a defect to bypass by weakening the resolver requirement. The remaining implementation gate is a supported server-side bridge to an active IRNI identity contract plus an independently verified source registry; the upstream IRNI geometry contract and runtime adapter remain incomplete as recorded above. No route, production dependency, database, binding, secret, deployment or external repository was changed.
+
+
+## Worker-to-Express neighborhood-profile identity bridge — blocked
+
+**Audit:** 2026-11-27  
+**Decision record:** [RT-IRNI-EXPRESS-BRIDGE-001](../architecture/RT-IRNI-EXPRESS-BRIDGE-001.md)
+
+- Radar's `IRNI_GEOGRAPHY` is available only in the Cloudflare Worker runtime as a Service Binding. The Express API process cannot access it through `process.env` or by importing the Worker client.
+- The Worker-side profile identity resolver is implemented, but no production composition call site was found in the reviewed Radar repository.
+- The public `/api/v2/reference/irni/canonical/*` facade is a public read-only reference API, not a private authenticated bridge. Express must not use it as an implicit trust channel.
+- The IRNI v2 entity response carries a boundary reference, not authoritative geometry or a source-registry evidence record.
+- The Express profile evidence read model requires independent identity and source resolvers. Neither is wired in production composition; BLOCKED with null evidence is the correct behavior.
+- A future bridge requires a dedicated versioned contract, Worker-minted request authentication, isolated key material, durable nonce replay defense, strict DTO validation and end-to-end negative security tests. The existing session HMAC key must not be reused as a geography-bridge key.
+- Even after identity bridging, READY remains prohibited until the upstream owner supplies a version-pinned authoritative geometry/source contract and Radar implements trusted source-registry verification.
+
+**Release gate:** Keep profile evidence fail-closed. Do not add a mock resolver, public-HTTP shortcut, approximate geometry, or unverified source mapping.
