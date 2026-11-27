@@ -47,3 +47,28 @@ The focused workflow now includes `npm run test:valuation-location` alongside `n
 **Production integration remains unresolved:** the API bootstrap still does not construct or mount the valuation module, and no production resolver is wired. Do not claim a production valuation endpoint or coordinate guard is live until a real canonical read-only resolver is composed with a registered route and tested at the public API boundary.
 
 The exact-head GIS workflow run [45987033491](https://github.com/bijanbijane/radartehran/actions/runs/45987033491) failed both jobs; the job records returned `steps=null` and no logs URL. Test and typecheck execution remain unverified.
+
+
+## Listing lifecycle and spatial index integration gap — 2026-11-27
+
+The geospatial service now exposes explicit spatial listing removal, and its focused tests cover status replacement, removal idempotency and persistence after rehydration. This is an index-level capability, not proof of integration with the canonical listing lifecycle.
+
+A repository-wide search of the reviewed branch found:
+- `indexListingForSpatialSearch` only at its geospatial service definition and in geospatial tests; no production listing lifecycle caller was found.
+- `removeListingFromSpatialSearch` has no production caller.
+- `SearchIntelligenceService.synchronizeCanonicalPropertyToIndex` is defined and exercised in tests, but no production caller or event consumer was found.
+- `createSearchIntelligenceRouter` exposes query, interpretation, similar-property, recommendations and ranking-policy routes; it does not expose or internally consume canonical listing synchronization events.
+
+Consequently, current GIS and Search Intelligence indexes are not demonstrated to be fed by the same authoritative listing lifecycle. The production public search must not be represented as synchronized with live listing inventory.
+
+The Search Intelligence public filter currently rejects non-public visibility, unpublished records and `OFF_MARKET`, but allows `UNDER_OFFER`, `SOLD` and `RENTED` records through this status gate. Whether these statuses should remain discoverable (for example, with explicit labels) or be excluded from active inventory requires an explicit product policy; no silent behavior change is made in this GIS workstream.
+
+Follow-up acceptance criteria:
+1. Identify the canonical listing write model and its authoritative event/outbox producer.
+2. Define a versioned, idempotent event contract for create/update, price, availability, publication, verification, expiry and deletion/restriction.
+3. Add a production consumer that updates Search Intelligence and the spatial index from the same canonical event, with retry/dead-letter and replay behavior.
+4. Ensure deletion/restriction and every non-public state fail closed in public queries before asynchronous index convergence.
+5. Add integration tests from canonical listing mutation through public API search, including out-of-order versions, duplicate events, retries and city/coordinate changes.
+6. Obtain an explicit product decision for `UNDER_OFFER`, `SOLD` and `RENTED` visibility.
+
+No producer, consumer, live data backfill or production index mutation is introduced by this blocker record.
