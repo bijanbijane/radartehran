@@ -25,7 +25,46 @@ Reconcile the map workspace overlay contract (DESIGN-MAP-006) with the repositor
 | Primitive dialog | `ui/RadarPrimitives.tsx` contains a separate dialog implementation with its own keydown listener, focus cycling, Escape close, and z-index `70`. | There are at least two dialog-management implementations; the primitive does not use the shared topmost-dialog guard in the inspected block. |
 | Layer values | Map workspace layers from DESIGN-MAP-006 include inspector backdrop/surface 34/35, bottom nav 43, geo-context banner 45, invalid-city overlay 55. Several feature dialogs use z-index 50; the primitive dialog uses 70. | A dialog at 50 can be visually below the invalid-city overlay at 55 if both states coexist. This is a conditional collision risk, not a verified rendered defect. |
 
-## 3. Additional modal entry-point inventory\n\nThe following active-branch modules were fetched and checked for dialog semantics, focus-hook use, or portal mounting:\n\n| Component | Source-level result |\n|---|---|\n| `AgencyModal` | Declares dialog surfaces at z-50; shared `useDialogFocus` adoption was not found in the inspected file signals. |\n| `CompareModal` | Imports the shared focus hook; dialog surface at z-50. |\n| `ShortlistMatrixModal` | Uses the shared focus hook; dialog surface at z-50. |\n| `ShareModal` | Uses the shared focus hook; contains multiple dialog render branches. |\n| `SecondaryModals` | One shared hook instance is activated by pulse/SEO state; buyer-alert, PWA, and legal states are also passed into this component. |\n| `OnboardingWizardModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `HedonicValuationModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `PortfolioModals` | Contains visited-log and trade-up dialog surfaces; shared hook adoption was not found in inspected signals. |\n| `NationwideProvinceModal` | Uses the shared focus hook. |\n| `NeighborhoodPriceTrendModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `InstantListingVerifierModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `ReverseBudgetDiscoveryModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n\nThis inventory is limited to components directly imported by the inspected workspace/modal aggregator and the separately rendered reverse-budget modal. It is not proof that no other dialogs or portals exist elsewhere.\n\n## 4. Confirmed design risks and limits
+## 3. Additional modal entry-point inventory\n\nThe following active-branch modules were fetched and checked for dialog semantics, focus-hook use, or portal mounting:\n\n| Component | Source-level result |\n|---|---|\n| `AgencyModal` | Declares dialog surfaces at z-50; shared `useDialogFocus` adoption was not found in the inspected file signals. |\n| `CompareModal` | Imports the shared focus hook; dialog surface at z-50. |\n| `ShortlistMatrixModal` | Uses the shared focus hook; dialog surface at z-50. |\n| `ShareModal` | Uses the shared focus hook; contains multiple dialog render branches. |\n| `SecondaryModals` | One shared hook instance is activated by pulse/SEO state; buyer-alert, PWA, and legal states are also passed into this component. |\n| `OnboardingWizardModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `HedonicValuationModal` | Uses the shared focus hook and an `aria-labelledby` name. |\n| `PortfolioModals` | Contains visited-log and trade-up dialog surfaces; shared hook adoption was not found in inspected signals. |\n| `NationwideProvinceModal` | Uses the shared focus hook. |\n| `NeighborhoodPriceTrendModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `InstantListingVerifierModal` | Uses shared focus hook and portals to `document.body`; z-9500. |\n| `ReverseBudgetDiscoveryModal` | Uses shared focus hook and portals to `document.body`; z-9500. |
+
+## 3.1 Repository contract test: explicit portal inventory
+
+The active branch's `tests/form-input-handling.test.ts` contains a literal `portaledModals` inventory of 14 source paths. For each path, the test asserts both `createPortal(` and the `z-[9500]` class, explicitly describing the portal as protection from `backdrop-filter` containing blocks and the high layer as above the global top bar.
+
+The 14 tested paths are:
+
+1. `src/components/modals/ContractRoomShieldModal.tsx`
+2. `src/components/modals/InstantListingVerifierModal.tsx`
+3. `src/components/modals/ReverseBudgetDiscoveryModal.tsx`
+4. `src/components/ListingMediaGallery.tsx`
+5. `src/components/NeighborhoodPriceTrendModal.tsx`
+6. `src/features/properties/filters/PropertyFilterPanel.tsx`
+7. `src/features/properties/comparison/PropertyComparisonModal.tsx`
+8. `src/features/properties/detail/PropertyGallery.tsx`
+9. `src/features/properties/detail/PropertyDetailSections.tsx`
+10. `src/features/services/components/ServiceProviderModal.tsx`
+11. `src/features/services/components/ServiceRequestModal.tsx`
+12. `src/features/market/saved-analysis/SavedAnalysisPanel.tsx`
+13. `src/features/market/methodology/MethodologyPanel.tsx`
+14. `src/features/market/filters/MarketFilterPanel.tsx`
+
+All 11 additional paths beyond the three already discussed were fetched from the active design branch. Each contained one `createPortal(` call, one `role="dialog"` match, and a `useDialogFocus` reference. The three previously inventoried workspace portal files are also present in the test list. This verifies 14 explicit portal-bearing modules under the repository's test contract.
+
+**Important limitation:** GitHub code search indexes the default branch, not this design branch. Search results were used only to discover candidate paths; all 11 additional source files and the contract test were then fetched with the design branch ref. This is a verified 14-file contract inventory, not proof that no further portal or dialog implementation exists outside the list.
+
+## 3.2 Existing automated contract and its limits
+
+The test's assertions protect the existence of the portal call and the `z-[9500]` class for all 14 listed modules. They do not establish runtime stacking-context ancestry, topmost-dialog keyboard ownership, background inertness, focus restoration, or correct behavior when multiple portaled dialogs are open.
+
+The shared `useDialogFocus` implementation was also fetched. It:
+- Saves the previously focused element and restores it on cleanup, with a fallback to `main, [role="main"], h1` if the trigger is no longer connected.
+- Reference-counts a global `document.body.style.overflow = 'hidden'` lock and restores the saved inline overflow when the count returns to zero.
+- Moves initial focus, traps Tab/Shift+Tab within the hook's container, and checks the last DOM-ordered `[role="dialog"][aria-modal="true"]` before handling Escape/Tab.
+- Does not, in the inspected implementation, set `inert` or `aria-hidden` on the background application root.
+
+The implementation is a useful shared baseline, but the DOM-order topmost rule and per-hook cleanup focus restoration still require nested body-portal runtime validation.
+
+This inventory is limited to components directly imported by the inspected workspace/modal aggregator and the separately rendered reverse-budget modal. It is not proof that no other dialogs or portals exist elsewhere.\n\n## 4. Confirmed design risks and limits
 
 1. **Portal ownership is fragmented.** `AppModalsPortal` is an ordinary React aggregator, while at least 14 explicit modules are covered by the repository's portal contract test and create portals to `document.body`. This is a verified mixed mounting model, not one canonical portal host. The 14-file test-backed inventory is verified; repository-wide completeness beyond that explicit contract remains open.
 2. **Modal behavior is not uniformly delegated.** Shared hook adoption is visible in selected dialogs, while `RadarPrimitives` has an independent implementation and the secondary-modal group uses one ref for only a subset of its modal states.
