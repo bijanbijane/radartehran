@@ -68,3 +68,7 @@ Current `PointResolutionResult` includes:
 - `HOLE_OVERLAP`: interior rings overlap, touch, or nest within one another.
 
 These are code-level validation semantics; the new regression tests have not yet been executed in this session. Distinct MultiPolygon component overlap remains outside the current validator.
+
+- `HOLE_OUTSIDE_OUTER`: an interior ring is not strictly contained by its exterior ring or touches/crosses it.
+- `HOLE_OVERLAP`: two interior rings overlap, touch, or nest.
+- `MULTIPOLYGON_COMPONENT_OVERLAP`: distinct MultiPolygon components intersect/touch or have overlapping filled interiors. A component contained in another component's valid hole is not considered overlapping.
