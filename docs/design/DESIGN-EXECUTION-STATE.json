@@ -1,0 +1,83 @@
+{
+  "project": "Radar Tehran",
+  "repository": "bijanbijane/radartehran",
+  "branch": "design/entity-detail-package-001",
+  "updatedAt": "2026-11-27",
+  "currentTask": "Design the shared entity-detail experience for property, listing, building and neighborhood records.",
+  "status": "DESIGN_PROTOTYPE_READY_RUNTIME_NOT_VERIFIED",
+  "scope": {
+    "productDesign": true,
+    "interactionDesign": true,
+    "designHandoff": true,
+    "applicationCodeModified": false,
+    "backendOrDatabaseModified": false,
+    "figmaUsed": false
+  },
+  "completed": [
+    "Inspected the active search selection handler and route resolver.",
+    "Inspected UnifiedEntityDetailPage, useEntityDetail, DetailPageShell, DetailHeader, DetailMetadata, DetailSection, entity types, registry and section contracts.",
+    "Identified the canonical detail page as unmounted from ProductViewRouter.",
+    "Identified that UnifiedEntityDetailPage does not call useEntityDetail.loadEntity.",
+    "Identified that DetailPageShell highlights a selected section but renders every visible section.",
+    "Identified that DetailMetadata omits sourceId and observedAt even though the field contract supports them.",
+    "Created an interactive ChatGPT prototype with entity-type switching, tabs, favorite/compare demo states and source disclosure.",
+    "Added docs/design/ENTITY-DETAIL-DESIGN-PACKAGE-001.md to this branch.",
+    "Added interactive state explorer for Loading, Success, Partial, Stale, Conflict, Restricted, Deleted, Archived, Not Found and Error variants."
+  ],
+  "designDecisions": {
+    "selectedDirection": "Editorial data dossier with optional spatial context",
+    "supportedEntityTypes": [
+      "property",
+      "listing",
+      "building",
+      "neighborhood"
+    ],
+    "primaryBrand": "#176B63",
+    "secondaryBrand": "#279487",
+    "canvas": "#F6F8F6",
+    "surface": "#FFFFFF",
+    "primaryText": "#182522",
+    "font": "Vazirmatn",
+    "minimumTouchTargetPx": 44,
+    "missingData": "Keep missing values unavailable/unknown; never coerce to zero.",
+    "provenance": "Show confidence, source identifier, observation time and limitation at field level.",
+    "financialRoles": [
+      "asking price",
+      "registered deal price",
+      "estimated valuation"
+    ]
+  },
+  "qa": {
+    "designCritic": "Reviewed; corrections incorporated into the prototype direction.",
+    "responsive": "Prototype uses wrapping/minimum-width layouts; real device verification outstanding.",
+    "rtl": "Persian-first layout designed; browser bidi/device verification outstanding.",
+    "interaction": "Prototype controls operate locally in ChatGPT; no product API persistence.",
+    "runtime": "Not tested in Radar Tehran application.",
+    "stateVariants": "Visually represented as selectable prototype states; runtime transitions and API behavior remain unverified."
+  },
+  "blockers": [
+    "Canonical route handling is inconsistent across entity types.",
+    "UnifiedEntityDetailPage is not mounted in the active router.",
+    "The detail page does not invoke loadEntity.",
+    "Selected section does not currently control rendered content.",
+    "Field-level source and observed-at metadata are not rendered."
+  ],
+  "nextAction": "Define canonical entity-type route mapping and data-loading contract; do not modify application code until separately authorized.",
+  "sourceFiles": [
+    "src/components/views/ProductViewRouter.tsx",
+    "src/navigation/url/navigationUrlContract.ts",
+    "src/navigation/registry/public.routes.ts",
+    "src/features/entity-detail/pages/UnifiedEntityDetailPage.tsx",
+    "src/features/entity-detail/hooks/useEntityDetail.ts",
+    "src/shared/entity-detail-ui/DetailPageShell.tsx",
+    "src/shared/entity-detail-ui/DetailHeader.tsx",
+    "src/shared/entity-detail-ui/DetailMetadata.tsx",
+    "src/shared/entity-detail-ui/DetailSection.tsx",
+    "src/platform/entity-detail/core/EntityDetailTypes.ts",
+    "src/platform/entity-detail/core/EntityDetailRegistry.ts",
+    "src/platform/entity-detail/sections/SectionRegistry.ts",
+    "src/platform/entity-detail/navigation/EntityDetailRoutes.ts",
+    "src/styles/layers/tokens.css",
+    "src/design-system/typographySystem.ts"
+  ]
+}
