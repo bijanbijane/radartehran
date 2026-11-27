@@ -863,40 +863,40 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     };
 
     // PATCH /api/account/privacy while permit active -> HTTP 202 DRAINING_PERMITS
-      const patchRes = await handleAccountWorkerRoute(
-        makeCtx('PATCH', '/api/account/privacy', { researchAnalyticsConsent: false }),
-      );
-      assert.ok(patchRes);
-      assert.equal(patchRes.status, 202);
-      const patchJson = (await patchRes.json()) as {
-        status: string;
-        revocation: { status: string; completed: boolean; activePermitsRemaining: number };
-      };
-      assert.equal(patchJson.status, 'pending');
-      assert.equal(patchJson.revocation.status, 'DRAINING_PERMITS');
-      assert.equal(patchJson.revocation.completed, false);
-      assert.equal(patchJson.revocation.activePermitsRemaining, 1);
+    const patchRes = await handleAccountWorkerRoute(
+      makeCtx('PATCH', '/api/account/privacy', { researchAnalyticsConsent: false }),
+    );
+    assert.ok(patchRes);
+    assert.equal(patchRes.status, 202);
+    const patchJson = (await patchRes.json()) as {
+      status: string;
+      revocation: { status: string; completed: boolean; activePermitsRemaining: number };
+    };
+    assert.equal(patchJson.status, 'pending');
+    assert.equal(patchJson.revocation.status, 'DRAINING_PERMITS');
+    assert.equal(patchJson.revocation.completed, false);
+    assert.equal(patchJson.revocation.activePermitsRemaining, 1);
 
-      // Release permit, then call POST /api/account/privacy/reconcile -> HTTP 200 COMPLETED & 0 events
-      await releaseResearchProcessingPermitInD1({ userDb: userSqlite.db, permitId: activePermit.permitId });
+    // Release permit, then call POST /api/account/privacy/reconcile -> HTTP 200 COMPLETED & 0 events
+    await releaseResearchProcessingPermitInD1({ userDb: userSqlite.db, permitId: activePermit.permitId });
 
-      const reconcileRes = await handleAccountWorkerRoute(makeCtx('POST', '/api/account/privacy/reconcile'));
-      assert.ok(reconcileRes);
-      assert.equal(reconcileRes.status, 200);
-      const reconcileJson = (await reconcileRes.json()) as {
-        status: string;
-        reconciledCount: number;
-        results: Array<{ status: string; completed: boolean; erasedEventsCount: number }>;
-      };
-      assert.equal(reconcileJson.status, 'ok');
-      assert.equal(reconcileJson.reconciledCount, 1);
-      assert.equal(reconcileJson.results[0].status, 'COMPLETED');
-      assert.equal(reconcileJson.results[0].completed, true);
-      assert.equal(reconcileJson.results[0].erasedEventsCount, 1);
-      assert.equal(
-        Number((researchSqlite.raw.prepare('SELECT COUNT(*) AS c FROM research_events').get() as { c: number }).c),
-        0,
-      );
+    const reconcileRes = await handleAccountWorkerRoute(makeCtx('POST', '/api/account/privacy/reconcile'));
+    assert.ok(reconcileRes);
+    assert.equal(reconcileRes.status, 200);
+    const reconcileJson = (await reconcileRes.json()) as {
+      status: string;
+      reconciledCount: number;
+      results: Array<{ status: string; completed: boolean; erasedEventsCount: number }>;
+    };
+    assert.equal(reconcileJson.status, 'ok');
+    assert.equal(reconcileJson.reconciledCount, 1);
+    assert.equal(reconcileJson.results[0].status, 'COMPLETED');
+    assert.equal(reconcileJson.results[0].completed, true);
+    assert.equal(reconcileJson.results[0].erasedEventsCount, 1);
+    assert.equal(
+      Number((researchSqlite.raw.prepare('SELECT COUNT(*) AS c FROM research_events').get() as { c: number }).c),
+      0,
+    );
   });
 
   it('Scenario 7: Post-snapshot registration and completed permit are recovered before revocation completes', async () => {
