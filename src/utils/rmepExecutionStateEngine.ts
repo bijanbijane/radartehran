@@ -138,7 +138,7 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
   ) as RmepExecutionState;
   const check = validateRmepExecutionState(parsed);
   if (!check.valid) discrepancies.push(...check.reasons);
-  if (parsed.approved_master_prompt.sha256 !== masterPromptVerification.sha256) {
+  if (parsed.approved_master_prompt?.sha256 !== masterPromptVerification.sha256) {
     discrepancies.push('Recorded master prompt SHA-256 in state differs from actual file hash');
   }
   for (const testItem of Array.isArray(parsed.tests) ? parsed.tests : []) {
@@ -148,6 +148,10 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       if (!testItem.command?.trim() || !testItem.environment?.includes('NOT_RUN')) {
         discrepancies.push(`NOT_RUN test '${testItem.test_name}' must record its command and NOT_RUN environment`);
       }
+      continue;
+    }
+    if (typeof testItem.evidence_path !== 'string' || !testItem.evidence_path.trim()) {
+      discrepancies.push(`Test '${testItem.test_name}' has no evidence path`);
       continue;
     }
     if (testItem.exit_code !== 0 || testItem.outcome !== 'PASSED' || !testItem.command?.trim()) {
@@ -177,7 +181,7 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       discrepancies.push(`Invalid JSON in test evidence file: ${testItem.evidence_path}`);
     }
   }
-  if (parsed.final_report_path && !fs.existsSync(path.resolve(rootDir, parsed.final_report_path))) {
+  if (typeof parsed.final_report_path === 'string' && parsed.final_report_path && !fs.existsSync(path.resolve(rootDir, parsed.final_report_path))) {
     discrepancies.push(`Missing final_report_path on disk: ${parsed.final_report_path}`);
   }
   const doNotRepeatSet = new Set(parsed.resume_instructions?.do_not_repeat ?? []);
