@@ -71,6 +71,7 @@ import {
   ingestResearchEventsBatch,
   purgeExpiredResearchData,
 } from '../worker/research/researchService';
+import { revokeUserResearchConsentWithBarrier } from '../worker/research/researchConsentRevocation';
 import type { D1Database, D1PreparedStatement, KVNamespace, WorkerEnv } from '../worker/types';
 
 /**
@@ -605,6 +606,7 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         RESEARCH_DB: researchSqlite.db,
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET_V1,
         RESEARCH_HMAC_KEY_VERSION: 'v1',
+        LIFECYCLE_RECEIPT_HMAC_SECRET: 'rt_triad_001_dedicated_receipt_secret_0123456789abcdef',
       };
       const uid = 'uid_research_subject_007';
 
@@ -671,12 +673,14 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
         assert.equal(dup.deduplicatedCount, 1);
       }
 
-      // 5. Revoke consent -> subsequent ingest MUST be rejected immediately
-      await updateUserPrivacyConsentInD1(userSqlite.db, {
-        uid,
-        actorUid: uid,
-        researchAnalyticsConsent: false,
-      });
+      // 5. Revoke through the durable permit/outbox barrier; existing data is erased before completion.
+      const revoked = await revokeUserResearchConsentWithBarrier({ env, uid, actorUid: uid });
+      assert.ok(revoked.revocation);
+      assert.equal(revoked.revocation!.status, 'COMPLETED');
+      assert.equal(
+        (researchSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM research_events').get() as { cnt: number }).cnt,
+        0,
+      );
       const afterRevoke = await ingestResearchEventsBatch({
         env,
         uid,
