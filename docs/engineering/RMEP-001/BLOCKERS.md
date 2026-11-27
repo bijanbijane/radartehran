@@ -50,3 +50,13 @@ Active NIPS branch head: `9180bffe91577e9a53460fcf54e0058549813f0d`
 - No local test execution was available in this GitHub-only session. No migration, binding, secret, production deployment, or merge was performed.
 
 **Next:** restore usable Actions runner/log evidence, then execute the NIPS, typecheck, architecture, auth, and D1 isolation suites in an executable environment. Do not guess at the remaining failure.
+
+
+## CHK-198 update — additional CI script defects fixed
+
+On branch head `e006fda6be0bff13df920b3cdd6b3cdcba117651`, static inspection found two further workflow/package-script mismatches and corrected them:
+
+- `irni-geographic-rpc-contract.yml` invoked `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc`, but neither script existed. Added both scripts to root `package.json`, targeting the existing RPC client test and `tsconfig.irni-geographic-rpc.json` (commit `29dcf30cba962d50de3501364b75d9f0140d0aab`).
+- `radar-backend-triad.yml` invoked missing `npm run test:geo`; changed it to the existing `npm run test:geography-catalog` (commit `e006fda6be0bff13df920b3cdd6b3cdcba117651`).
+
+Re-fetched package scripts and both workflow files to verify the command names now resolve to registered scripts. The five workflows triggered on the updated head still report FAILURE; job steps are null and log retrieval again returns `BlobNotFound`. These source/config fixes remain IMPLEMENTED_BUT_NOT_VERIFIED. No npm commands ran locally.
