@@ -98,6 +98,15 @@ function scanVarsForPlaintextSecrets(varsObj, envLabel, errors) {
   }
 }
 
+function scanRetiredFirebaseRuntimeVars(varsObj, envLabel, errors) {
+  if (!varsObj || typeof varsObj !== 'object' || Array.isArray(varsObj)) return;
+  for (const key of Object.keys(varsObj)) {
+    if (/^(FIREBASE|FIRESTORE)_/i.test(key)) {
+      errors.push(`RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:${envLabel}.${key}`);
+    }
+  }
+}
+
 function validateWritePauseTimestamp(varsObj, envLabel, errors) {
   const value = String(varsObj?.DB_WRITES_PAUSED_UNTIL_UTC ?? '').trim();
   if (!value) return;
@@ -306,9 +315,14 @@ export function validateBackendWranglerConfig(
     if (!hasMediaBucket) errors.push('NIGHTLY_MEDIA_CRON_REQUIRES_MEDIA_BUCKET');
   }
 
-  // 6. Plaintext secrets scan
+  // 6. Plaintext secrets and retired Firebase runtime configuration scan.
   scanVarsForPlaintextSecrets(config.vars, 'production', errors);
   scanVarsForPlaintextSecrets(staging?.vars, 'staging', errors);
+  scanRetiredFirebaseRuntimeVars(config.vars, 'production', errors);
+  scanRetiredFirebaseRuntimeVars(config.previews?.vars, 'previews', errors);
+  for (const [environmentName, environmentConfig] of Object.entries(config.env ?? {})) {
+    scanRetiredFirebaseRuntimeVars(environmentConfig?.vars, environmentName, errors);
+  }
   validateWritePauseTimestamp(config.vars, 'production', errors);
   validateWritePauseTimestamp(staging?.vars, 'staging', errors);
 
