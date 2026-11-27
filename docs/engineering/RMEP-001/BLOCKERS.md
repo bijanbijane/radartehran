@@ -143,3 +143,11 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Runs #45989808778 (Path-Filtered), #45989808702 (Root CI), #45989808715 (Native Auth), #45989808637 (Backend Triad) and #45989808717 (IRNI RPC) all conclude FAILURE. Their job step arrays are empty. Logs for jobs 140474467939, 140474467803 and 140474468270 return `BlobNotFound`.
 - No command-level failure is established. The repository progress log contains raw payload evidence of runner_id=0 in the wider PR run set; classify these empty-step failures as runner allocation/infrastructure blocked, not failed application tests.
 - A browser Firebase SDK import guard and regression fixtures were added in `scripts/check-architecture.ts` and `tests/architecture-guardrails.test.ts`. Status: IMPLEMENTED_BUT_NOT_VERIFIED until `npm run arch:check` and `npm run test:contracts` execute and pass.
+
+## CHK-207 — NIPS serializer verification blocked (2026-11-27)
+
+- Latest PR #67 head before this checkpoint: `676c799b25659363bd04924991521daff6b9792a`.
+- Rerun attempts #46005639001 (Root CI), #46005638842 (Path-Filtered), #46005638770 (Backend Triad), #46005638783 (IRNI RPC), and #46005638768 (Native Auth) all concluded FAILURE.
+- Raw job payloads: 140527968883, 140527967743, 140527967160, 140527966504, and 140527966731 each report `runner_id=0`, empty `runner_name`, `steps=[]`, and completion within approximately two seconds. Log downloads return `BlobNotFound`.
+- No workflow command ran. The NIPS serializer fix and regression test are committed but **IMPLEMENTED_BUT_NOT_VERIFIED**. Do not infer a source-code failure or success from these runs.
+- Next: restore runner allocation or obtain an authorized Node 22/npm 10 executor, then run `npm run test:nips`, `npm run typecheck`, `npm run arch:check`, and the mandatory auth/Cloudflare/D1 gates.
