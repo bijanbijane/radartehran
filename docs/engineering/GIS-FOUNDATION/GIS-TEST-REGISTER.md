@@ -3,7 +3,7 @@
 | Test | Purpose | Repository status | Executed this session |
 |---|---|---|---|
 | `tests/cloudflare-neighborhood-boundary-route.test.ts` | Confirms fallback geometry is labelled approximate/non-official and rejects malformed requests | Existing | No |
-| `tests/neighborhood-profile-boundary-read-model.test.ts` | Checks missing boundary, independent review, identity/source resolver gates, geometry hash, API fail-closed behavior | Existing | No |
+| `tests/neighborhood-profile-boundary-read-model.test.ts` | Checks missing boundary, independent review, identity/source resolver gates, geometry hash, API fail-closed behavior, and computed fallback rejection | Existing + new regression | No |
 | `server/modules/geography/__tests__/employee18Geography.test.ts` | Checks CRS transformations, swapped coordinates and geometry validation | Existing | No |
 
 ## Required additions
