@@ -24,7 +24,9 @@
     "Added a dedicated branch-scoped GIS GitHub Actions workflow for npm run test:geospatial and TypeScript typecheck.",
     "Hardened geospatial snapshot validation across every boundary history: reject malformed history/record shapes, map-key/entity mismatches, duplicate record IDs, duplicate or out-of-order versions, and multiple ACTIVE versions; added durable-recovery regression coverage.",
     "Updated boundary bbox overlap diagnostics to exclude entity histories with multiple ACTIVE versions rather than arbitrarily selecting the first; added regression coverage.",
-    "Added durable snapshot validation for canonical geometry, simplified geometry and exact persisted bounding-box consistency; added malformed geometry, malformed simplified geometry and stale bbox regression cases."
+    "Added durable snapshot validation for canonical geometry, simplified geometry and exact persisted bounding-box consistency; added malformed geometry, malformed simplified geometry and stale bbox regression cases.",
+    "Audited valuation and spatial market summary consumers: valuation now requires an explicit valid boundary version ID/version; market summary returns null boundary metadata instead of synthesizing version 1 when no unique ACTIVE boundary exists.",
+    "Hardened sub-neighborhood assignment: a point on a micro-neighborhood edge does not inherit its sub-neighborhood ID, and any matched active boundary edge prevents an interior valuation result."
   ],
   "not_verified": [
     "Execution success of npm run test:geospatial on code revision 76b27e99840dcd486375c5fb5be76e85027ec041",
@@ -35,7 +37,8 @@
     "D1 RTree support through the actual Worker binding runtime",
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
-    "Authoritative Tehran neighborhood polygon dataset, license and CRS"
+    "Authoritative Tehran neighborhood polygon dataset, license and CRS",
+    "Execution of exact-head GIS tests covering durable snapshot geometry and sub-neighborhood edge behavior"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -44,7 +47,7 @@
   "tests": {
     "command": "npm run test:geospatial",
     "status": "CI_FAILED_UNDIAGNOSED",
-    "reason": "At exact branch HEAD 1ccf9411a4d945fcd4baad0ec11ac7b956b16382, GIS Spatial Integrity run 45980564390 failed on both jobs (typecheck job 140443084890 and geometry/boundary regression job 140443084579). Rerun attempt 2 also failed (jobs 140443495137 and 140443495590), with steps=null and no retrievable logs. The failure pattern matches open operational issue #49, which documents hosted jobs failing before runner assignment (runner_id=0 on earlier runs across Radar and IRNI). Current job records do not expose runner metadata, so runner allocation is the leading operational hypothesis, not a proven diagnosis for these specific jobs. No local runner is available. No tests are claimed as passing."
+    "reason": "GIS workflow run 45980838729 for HEAD 2d6c707303dc2e48723c3a8869e59984199c9608 completed failure. Both GIS jobs expose steps=null; logs remain unavailable (BlobNotFound). No local runner is online. The failure does not establish whether tests/typecheck executed."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -77,7 +80,7 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Resolve repository/account-level GitHub Actions hosted-runner allocation issue tracked by #49. Once a job is assigned a runner and logs are available, rerun npm run test:geospatial and npm run typecheck on the exact current code revision 76b27e99840dcd486375c5fb5be76e85027ec041; fix only evidence-backed failures, then rerun repository gates.",
+  "next_exact_action": "Restore a functioning GitHub Actions/local runner and execute npm run test:geospatial plus npm run typecheck on current PR HEAD. Do not infer test success from a workflow dispatch or failed job conclusion without step/log evidence.",
   "blockers": [
     "GitHub Actions hosted-runner allocation/diagnostics: current GIS jobs fail with steps=null and BlobNotFound. Open issue #49 documents the same runner_id=0/zero-step pattern across Radar and IRNI. Exact current jobs do not expose runner_id, so the cause is suspected, not proven. No local Desktop Commander runner is online.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
@@ -88,7 +91,7 @@
     "End-to-end durable recovery/hydration needs verification against a real snapshot backend; current validator unit regression tests are unexecuted.",
     "Exact-head GIS workflow jobs fail before exposing any steps; logs return BlobNotFound, so test and typecheck execution cannot be confirmed."
   ],
-  "last_recorded_action": "Reviewed exact branch head 1ccf9411a4d945fcd4baad0ec11ac7b956b16382 and current durable snapshot validation implementation; retried GIS workflow (attempt 2) with same no-steps failure. Updated PR/docs; no merge or production change.",
+  "last_recorded_action": "Added durable snapshot validation for canonical/simplified geometry and bbox consistency; additionally audited valuation and market-summary consumers to stop synthesizing missing boundary version metadata, and hardened sub-neighborhood edge semantics. Exact-head GIS CI remains failed with steps/logs unavailable.",
   "latest_inspected_pr_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
   "latest_branch_head_sha": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
   "last_verified_commit_sha": null,
@@ -169,6 +172,6 @@
     "job_log_retrieval": "BlobNotFound",
     "interpretation": "The focused GIS workflow and its retry failed without step metadata. Issue #49 documents a matching cross-repository hosted-runner allocation failure pattern. Runner allocation is suspected but not confirmed for these exact jobs; command execution and code-level failure remain unverified."
   },
-  "latest_branch_sha_at_record": "1ccf9411a4d945fcd4baad0ec11ac7b956b16382",
-  "latest_code_revision_sha": "76b27e99840dcd486375c5fb5be76e85027ec041"
+  "latest_branch_sha_at_record": "2d6c707303dc2e48723c3a8869e59984199c9608",
+  "latest_code_revision_sha": "2d6c707303dc2e48723c3a8869e59984199c9608"
 }
