@@ -185,6 +185,13 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     if (!coordCheck.valid || !coordCheck.coordinate) {
       throw new CoreApiError('VALIDATION_FAILED', 400, coordCheck.errorMessage ?? 'Invalid listing coordinates.');
     }
+    // A listing ID is globally unique in this index. Remove any previous city entry
+    // before inserting the latest record so city changes cannot leave stale duplicates.
+    for (const [indexedCityId, indexedListings] of spatialListingsByCity.entries()) {
+      if (indexedCityId === listing.cityId || !indexedListings.has(listing.id)) continue;
+      indexedListings.delete(listing.id);
+      if (indexedListings.size === 0) spatialListingsByCity.delete(indexedCityId);
+    }
     const cityMap = spatialListingsByCity.get(listing.cityId) ?? new Map<string, SpatialPublishableListing>();
     cityMap.set(listing.id, {
       ...structuredClone(listing),
