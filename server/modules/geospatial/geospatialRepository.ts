@@ -32,7 +32,7 @@ function defaultState(): PersistedGeospatialState {
 
 function assertGeospatialPersistenceWritable(): void {
   const health = getGeospatialPersistenceHealth();
-  if (health === 'BLOCKED' || health === 'RECOVERING') {
+  if (health !== 'READY') {
     throw new Error(`GEOSPATIAL_PERSISTENCE_${health}`);
   }
 }
