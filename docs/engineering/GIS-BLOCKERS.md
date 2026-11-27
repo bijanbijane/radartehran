@@ -248,7 +248,7 @@ The active Draft PR branch currently points to `adfa8b15851c7b6c1e35e5505a233f72
 **Implemented on Draft PR #72, commit `39e5bde28ef6cec7441058abf1a0b301810cd57d`:**
 
 - Repository reads return a non-authoritative empty view while GIS persistence health is not `READY`; the rejected in-memory snapshot is not re-exposed.
-- Synchronous and awaited repository writes reject while recovery is `BLOCKED` or `RECOVERING`, preventing default/partial runtime state from replacing the authoritative snapshot.
+- Synchronous and awaited repository writes reject in every non-`READY` health state (`BLOCKED`, `DEGRADED` or `RECOVERING`), preventing default/partial runtime state from replacing the authoritative snapshot.
 - The mounted GIS router returns HTTP 503 with `GEOSPATIAL_PERSISTENCE_UNAVAILABLE` until recovery is `READY`; the response includes the recovery requirement and validation diagnostics.
 - The regression test primes a real temporary cached snapshot, transitions recovery to `BLOCKED`, verifies the cached records are not returned, and verifies writes are rejected. Temporary repository files are removed in a `finally` block.
 
