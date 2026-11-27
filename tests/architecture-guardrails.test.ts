@@ -6,7 +6,7 @@ import { escapeHtmlAttr, buildExternalDivarUrl } from '../src/utils/security';
 import { calculateHedonicValuation, FAST_SALE_FACTOR } from '../src/data/hedonicPricingEngine';
 import { calculateDetailedValuation } from '../src/data/superModulesLogic';
 import { INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../src/data/neighborhoods';
-import { readAndReconcileExecutionState, PINNED_MASTER_PROMPT_SHA256 } from '../src/utils/rmepExecutionStateEngine';
+import { readAndReconcileExecutionState, validateRmepExecutionState, PINNED_MASTER_PROMPT_SHA256 } from '../src/utils/rmepExecutionStateEngine';
 import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 
 console.log('🛡️ Running Architecture Guardrails & Refactoring Verification Suite...\n');
@@ -307,6 +307,29 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
   assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
+});
+
+// 11a. RMEP-001 safely represents tests that were explicitly NOT_RUN without inventing evidence
+verify('RMEP execution-state validator accepts null evidence only for NOT_RUN and rejects unsafe paths without throwing', () => {
+  const reconciled = readAndReconcileExecutionState(rootDir);
+  assert.ok(reconciled.state);
+  const state = structuredClone(reconciled.state!);
+  const notRunIndex = state.tests.findIndex((record) => record.outcome === 'NOT_RUN');
+  assert.ok(notRunIndex >= 0, 'Expected an explicitly NOT_RUN record in the canonical execution state');
+  assert.equal(state.tests[notRunIndex].evidence_path, null);
+  assert.equal(validateRmepExecutionState(state).valid, true);
+
+  const falselyPassed = structuredClone(state);
+  falselyPassed.tests[notRunIndex].outcome = 'PASSED';
+  assert.equal(validateRmepExecutionState(falselyPassed).valid, false);
+
+  const unsafePath = structuredClone(state);
+  unsafePath.tests[notRunIndex].evidence_path = '../outside/evidence.log';
+  assert.equal(validateRmepExecutionState(unsafePath).valid, false);
+
+  const malformedPrompt = structuredClone(state) as unknown as { approved_master_prompt: { path: null } };
+  malformedPrompt.approved_master_prompt.path = null;
+  assert.equal(validateRmepExecutionState(malformedPrompt as never).valid, false);
 });
 
 // 12. Gold Master v2.0 Map-Centric Split-Map Companion Mode, GIS Comparison Arc, FX & v6.4 Deal Price Parity Across All Views
