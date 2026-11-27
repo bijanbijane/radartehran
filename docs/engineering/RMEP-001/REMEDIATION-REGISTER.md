@@ -97,3 +97,6 @@ Do not label GitHub Actions failures as source-code test failures unless a runne
 | RT-NIPS-OWN-003 | NIPS README and design-only SQL previously described the shared physical database inconsistently / referenced the superseded `radar-profile-db` target. Both now consistently describe `nips_*` logical tables inside IRNI-owned `radar-neighborhood-db`, with Radar access only through owner RPC. | COMPLETED_AND_VERIFIED — documentation only | Keep SQL design-only; require IRNI owner-side migration/RPC and acceptance tests before adapter or route work. |
 
 **Verification boundary:** documentation was re-fetched from the active GitHub branch after commits. No package update, lockfile regeneration, runtime test, migration, deployment or merge occurred.
+
+
+| RT-DATA-002 | Added a static architecture guard prohibiting Firebase client/Admin SDK imports in browser-facing source layers, with virtual-override tests for `firebase/auth`, `@firebase/app`, and `firebase-admin/firestore`. | IMPLEMENTED_BUT_NOT_VERIFIED — CI runner allocation blocked | Run `npm run arch:check` and `npm run test:contracts` when a runner/executor is available; then keep the guard active while legacy Express adapters are migrated separately. |
