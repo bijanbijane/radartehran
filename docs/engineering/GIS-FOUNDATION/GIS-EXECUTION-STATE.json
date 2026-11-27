@@ -27,7 +27,8 @@
     "The GIS HTTP regression test covers anonymous denial, non-admin denial, creator self-approval denial and independent Cloudflare-session admin approval; it is registered in npm run test:geospatial but remains unexecuted.",
     "Read-only Cloudflare inspection of deployed radartehran-api confirms AUTH_INTERNAL_HMAC_SECRET is absent from its secret bindings and STRANGLER_ORIGIN_URL is absent from its plain-text variables; staging Worker radartehran-api-staging has neither any secret bindings nor STRANGLER_ORIGIN_URL. The separate Express process environment remains unverified.",
     "The Worker router returns AUTH_SESSION_BRIDGE_NOT_CONFIGURED when AUTH_INTERNAL_HMAC_SECRET is missing; the fallback requires STRANGLER_ORIGIN_URL. Therefore the deployed Worker-side assertion/proxy path is not enabled by its current runtime configuration. No secret values were read or changed.",
-    "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced."
+    "At exact branch HEAD 062740891fed40bd2bb39aa7ef902bb267eeebc5, seven PR workflow runs concluded failure. The GIS workflow run 46009917366 and sampled native-auth/backend-triad jobs expose steps=null and logs_url=null; no test or typecheck execution is evidenced.",
+    "Cloudflare Preview build 290f16e3-e364-46b5-875d-73266852335c for branch head 062740891fed40bd2bb39aa7ef902bb267eeebc5 stopped during dependency installation: Bun 1.4.4 ran bun install --frozen-lockfile and reported @tailwindcss/vite is in a different dependency group from bun.lock. Repository comparison confirms bun.lock is byte-identical on main and this branch; the lockfile mismatch predates the GIS branch. The Preview build never reached the configured frontend build command. No lockfile was manually edited."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -129,6 +130,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore an operational GitHub-hosted runner or authorized Node.js 22 checkout and run focused GIS, valuation-location and typecheck suites against application source commit 172ba3a83ce7f36d14a3f9ca78e4528d72d6fea2. In a non-production environment, obtain explicit operator approval before provisioning AUTH_INTERNAL_HMAC_SECRET consistently in Worker and Express runtimes or setting STRANGLER_ORIGIN_URL; inspect the separate Express environment without exposing values. Verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
+  "next_exact_action": "Restore executable Node.js 22/Bun 1.4.4 verification capacity. Regenerate and validate bun.lock with the repository's declared workspaces using the exact Cloudflare build Bun version, then verify the Cloudflare Preview build. Separately, in a non-production environment and only after explicit operator approval, provision AUTH_INTERNAL_HMAC_SECRET consistently in Worker and Express runtimes and configure STRANGLER_ORIGIN_URL; verify the Worker-to-Express hop and execute the HTTP approval regression. Keep PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
