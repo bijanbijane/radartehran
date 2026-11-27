@@ -49,7 +49,8 @@ function createRealSqliteD1(): { db: D1Database; raw: DatabaseSync } {
   raw.exec('PRAGMA foreign_keys = OFF;');
 
   const makeStmt = (sql: string, boundArgs: unknown[] = []): D1PreparedStatement => {
-    const normalizedSql = sql.replace(/\?(\d+)/g, '?');
+    // SQLite supports numbered placeholders natively; stripping ?N breaks repeated-parameter semantics.
+    const normalizedSql = sql;
     const bindValues = (args: unknown[]): unknown[] =>
       args.map((v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v));
 
