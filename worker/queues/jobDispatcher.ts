@@ -4,11 +4,8 @@
  * Every registered job executes durable, verifiable work against D1/R2/KV bindings.
  * Zero no-op handlers, zero silent ACKs on missing dependencies.
  */
-import { getValidatedCityConfig } from '../../src/data/multiCityData';
-import type { CityId } from '../../src/types/models';
 import { processPendingResearchErasureOutbox, resolveDedicatedLifecycleReceiptSecret } from '../account-lifecycle/workerLifecycleRuntime';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
-import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import {
   MAX_RESEARCH_BATCH_SIZE,
   validateAndMinimizeResearchEvent,
@@ -29,7 +26,6 @@ import {
 } from './queueAndCronProcessor';
 
 export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
-  'firestore_d1_projection_sync',
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
@@ -39,7 +35,6 @@ export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
 ] as const;
 
 export const UPLOAD_SESSION_TTL_MS = 15 * 60 * 1000;
-const SUPPORTED_CITIES: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'];
 
 export class QueueJobExecutionError extends Error {
   public readonly code: string;
@@ -59,94 +54,6 @@ export interface QueueJobExecutionResult {
   readonly executedAtIso: string;
   readonly affectedCount: number;
   readonly summary: Record<string, unknown>;
-}
-
-async function handleFirestoreD1ProjectionSync(
-  envelope: RadarQueueEnvelope,
-  env: WorkerEnv,
-): Promise<QueueJobExecutionResult> {
-  const userDb = resolveUserDb(env);
-  if (!userDb) {
-    throw new QueueJobExecutionError(
-      'D1_BINDING_UNAVAILABLE',
-      'D1 database binding (USER_DB/DB) is required for firestore_d1_projection_sync',
-      true,
-    );
-  }
-  const nowIso = new Date().toISOString();
-  const rawCity = typeof envelope.payload?.city === 'string' ? envelope.payload.city.trim().toLowerCase() : '';
-  let targetCities: CityId[];
-  if (!rawCity || rawCity === 'all') {
-    targetCities = [...SUPPORTED_CITIES];
-  } else if ((SUPPORTED_CITIES as readonly string[]).includes(rawCity)) {
-    targetCities = [rawCity as CityId];
-  } else {
-    throw new QueueJobExecutionError(
-      'INVALID_CITY_PAYLOAD',
-      `Unsupported city "${rawCity}" in firestore_d1_projection_sync payload`,
-      false,
-    );
-  }
-
-  let syncedRows = 0;
-  for (const cityId of targetCities) {
-    const cfg = getValidatedCityConfig(cityId);
-    const sliceLimit =
-      typeof envelope.payload?.maxNeighborhoodsPerCity === 'number' &&
-      Number.isInteger(envelope.payload.maxNeighborhoodsPerCity) &&
-      envelope.payload.maxNeighborhoodsPerCity > 0
-        ? Math.min(cfg.neighborhoods.length, envelope.payload.maxNeighborhoodsPerCity)
-        : Math.min(cfg.neighborhoods.length, 25);
-
-    for (const hood of cfg.neighborhoods.slice(0, sliceLimit)) {
-      const dealPerSqm = Math.round(hood.buyPerSqm * 0.92 * 10) / 10;
-      const districtMatch = String(hood.zone || '').match(/\d+/);
-      const district = districtMatch ? Number(districtMatch[0]) : 1;
-      await upsertNeighborhoodProjectionD1(userDb, {
-        city_id: cityId,
-        hood_id: hood.id,
-        name_fa: hood.name,
-        district,
-        buy_per_sqm_million: hood.buyPerSqm,
-        deal_per_sqm_million: dealPerSqm,
-        rahn_80m_million: hood.rahn80m,
-        aqi: Math.round(100 - hood.air * 8),
-        investment_score: Math.round((hood.metro + hood.security + hood.internet + hood.flatTerrain) / 4 * 10),
-        firestore_version_iso: nowIso,
-        projected_at_iso: nowIso,
-      });
-      syncedRows += 1;
-    }
-
-    const cityWatermark = await userDb
-      .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-      .bind(`d1_projection_sync:${cityId}`, String(sliceLimit), nowIso)
-      .run();
-    if (!cityWatermark.success) throw new QueueJobExecutionError('D1_PROJECTION_WATERMARK_WRITE_FAILED', 'Unable to persist city projection watermark.', true);
-  }
-
-  const projectionWatermark = await userDb
-    .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('d1_projection_sync:last_run', nowIso, nowIso)
-    .run();
-  if (!projectionWatermark.success) throw new QueueJobExecutionError('D1_PROJECTION_WATERMARK_WRITE_FAILED', 'Unable to persist projection completion watermark.', true);
-
-  if (env.RADAR_KV) {
-    const workerEnv = env.ENVIRONMENT || env.APP_ENV || env.WORKER_ENV || 'staging';
-    await env.RADAR_KV.put(
-      `v1:${workerEnv}:neighborhood_summary:last_sync`,
-      JSON.stringify({ syncedRows, cities: targetCities, syncedAtIso: nowIso }),
-      { expirationTtl: 3600 },
-    );
-  }
-
-  return {
-    jobType: 'firestore_d1_projection_sync',
-    idempotencyKey: envelope.idempotencyKey,
-    executedAtIso: nowIso,
-    affectedCount: syncedRows,
-    summary: { cities: targetCities, syncedRows },
-  };
 }
 
 async function handleExpiredChunkUploadSessionCleanup(
@@ -618,7 +525,11 @@ export function createCanonicalQueueJobDispatcher(
   return async (envelope: RadarQueueEnvelope): Promise<QueueJobExecutionResult> => {
     switch (envelope.jobType) {
       case 'firestore_d1_projection_sync':
-        return handleFirestoreD1ProjectionSync(envelope, env);
+        throw new QueueJobExecutionError(
+          'FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE',
+          'Legacy Firestore projection sync is disabled: no verified authoritative Firestore source adapter is configured.',
+          false,
+        );
       case 'expired_chunk_upload_session_cleanup':
         return handleExpiredChunkUploadSessionCleanup(envelope, env);
       case 'r2_orphan_media_reconcile':
@@ -672,10 +583,10 @@ export function buildCanonicalCronEnvelopes(params: {
   };
 
   if (params.cron === '30 0 * * *' || tehranClock.matchedScheduleTask === 'morning_market_and_d1_sync') {
-    return [
-      makeEnvelope('firestore_d1_projection_sync', 'morning_sync'),
-      makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup'),
-    ];
+    // The legacy Firestore projection handler is intentionally disabled. Keep
+    // accepting in-flight legacy messages for DLQ compatibility, but never
+    // enqueue new messages for a job with no verified authoritative source.
+    return [makeEnvelope('expired_chunk_upload_session_cleanup', 'morning_cleanup')];
   }
 
   if (params.cron === '30 18 * * *' || tehranClock.matchedScheduleTask === 'nightly_orphan_and_telemetry_flush') {
