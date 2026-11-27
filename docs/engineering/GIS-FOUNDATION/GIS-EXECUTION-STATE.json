@@ -5,10 +5,10 @@
   "repository": "bijanbijane/radartehran",
   "working_branch": "feat/gis-spatial-integrity-2026-11-27",
   "branch_exists": true,
-  "branch_head_sha": "439224c0ad44b4d80b8c2f735873a0a198049923",
-  "branch_head_sha_note": "Verified from the GitHub branch endpoint and PR #72 head metadata on 2026-11-27; this is the commit SHA, not a file blob SHA.",
-  "last_verified_source_commit": "439224c0ad44b4d80b8c2f735873a0a198049923",
-  "last_verified_source_commit_scope": "Exact GIS branch HEAD verified from GitHub branch and PR metadata; relevant GIS source, test, and execution-state files fetched at this branch ref. This is repository/source verification only, not test execution.",
+  "branch_head_sha": "0c69135b50b0ed59416f1f471ef18da64fbbbb6c",
+  "branch_head_sha_note": "Verified from GitHub branch endpoint and PR #72 head metadata on 2026-11-27; documentation checkpoint.",
+  "last_verified_source_commit": "0c69135b50b0ed59416f1f471ef18da64fbbbb6c",
+  "last_verified_source_commit_scope": "GIS source, tests, workflow and docs fetched at exact branch HEAD; repository inspection only. GitHub Actions attempt 2 was triggered for this exact SHA and failed before any recorded job steps.",
   "verified_findings": [
     "IRNI is the canonical geography owner; Radar Worker reads through the internal IRNI_GEOGRAPHY Service Binding.",
     "Radar Worker IRNI v2 client and neighborhood identity resolver validate registry metadata, revision, checksum and exact namespaced legacy aliases.",
@@ -19,8 +19,7 @@
     "Geospatial service persistence is AtomicJsonRepository('geospatial-state.json') with optional remote repository-snapshot persistence, not a relational D1 schema.",
     "wrangler.backend.jsonc declares USER_DB, DB, RESEARCH_DB and IRNI_GEOGRAPHY; no Radar-owned GIS D1 binding is declared.",
     "The NIPS V2 reference design is the authoritative neighborhood-profile specification; do not duplicate it.",
-    "Profile evidence builder now explicitly rejects sourceProvenance=computed_hex_fallback even if an injected source resolver returns publishable authority; regression test added but not executed.",
-    "At branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923, the neighborhood profile evidence builder independently blocks computed_hex_fallback even when a source resolver reports publishable authority; regression test is present."
+    "At exact branch HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c, GIS workflow run 46005295667 attempt 2 completed failure for both jobs; job summaries expose steps=null and logs_url=null, so no source test or typecheck execution can be attributed."
   ],
   "database_decision": {
     "current_relational_runtime": "Cloudflare D1",
@@ -67,7 +66,7 @@
     {
       "id": "GIS-BLK-003",
       "severity": "HIGH",
-      "description": "Boundary approval HTTP route lacks injected admin token verification and authorization store."
+      "description": "Approval route implements authenticated administrator verification and independent reviewer checks, but production composition calls createProductionGeospatialModule() without tokenVerifier/adminStore; route therefore fails closed in production."
     },
     {
       "id": "GIS-BLK-004",
@@ -82,7 +81,7 @@
     {
       "id": "GIS-BLK-006",
       "severity": "MEDIUM",
-      "description": "Cross-neighborhood topology consistency and exact-head execution of the ring/hole/MultiPolygon topology regression suite remain unverified."
+      "description": "Cross-neighborhood topology consistency remains unimplemented/unverified; committed ring/hole/MultiPolygon regression suite has not been executed on exact branch HEAD because GitHub Actions runner jobs fail before steps."
     },
     {
       "id": "GIS-BLK-007",
@@ -96,14 +95,17 @@
       "tests/neighborhood-profile-boundary-read-model.test.ts",
       "server/modules/geography/__tests__/employee18Geography.test.ts",
       "tests/geospatial-gis-module.test.ts",
-      "tests/geospatial-valuation-location-assignment.test.ts"
+      "tests/geospatial-valuation-location-assignment.test.ts",
+      "tests/geospatial-boundary-approval.test.ts",
+      "tests/geospatial-durable-recovery.test.ts",
+      "tests/irni-geographic-rpc-v2.test.ts",
+      "tests/irni-neighborhood-profile-identity-resolver.test.ts"
     ],
     "executed_in_this_session": [],
     "implemented_not_executed": [
-      "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression",
       "tests/neighborhood-profile-boundary-read-model.test.ts — computed_hex_fallback rejection regression"
     ],
-    "note": "Source and test files were fetched from exact branch HEAD 439224c0ad44b4d80b8c2f735873a0a198049923. No local test runner was available in this session; GitHub Actions failures have no step metadata/logs, so no test or typecheck execution is claimed."
+    "note": "No test or typecheck command was executed in this session. GIS workflow run 46005295667 attempt 1 failed; failed jobs were re-run successfully as a GitHub API action, but attempt 2 again completed failure with steps=null and logs_url=null. This is a pre-step runner/dispatch failure; test execution status remains unknown."
   },
   "production_changes": {
     "migrations": false,
@@ -112,6 +114,6 @@
     "merge": false,
     "release": false
   },
-  "next_exact_action": "Restore usable GitHub Actions runner diagnostics or an authorized real checkout; run tests/neighborhood-profile-boundary-read-model.test.ts, npm run test:geospatial, npm run test:valuation-location, and npm run typecheck against exact HEAD 439224c0ad44b4d80b8c2f735873a0a198049923. Fix only failures demonstrated by executable diagnostics; keep PR #72 Draft.",
+  "next_exact_action": "Obtain a functioning GitHub Actions runner or authorized local checkout. Run node 22 npm ci, tests/neighborhood-profile-boundary-read-model.test.ts, npm run test:geospatial, npm run test:valuation-location and npm run typecheck on exact HEAD 0c69135b50b0ed59416f1f471ef18da64fbbbb6c. In parallel, implement only the authenticated IRNI Worker/API bridge after identifying a supported internal transport; keep profile evidence BLOCKED and PR #72 Draft.",
   "updated_at": "2026-11-27"
 }
