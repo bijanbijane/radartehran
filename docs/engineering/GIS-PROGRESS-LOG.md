@@ -109,3 +109,12 @@
 - Boundary bbox overlap diagnostics now use an entity history only when it has exactly one ACTIVE record; corrupt histories are not reduced to an arbitrary first version.
 - Regression tests were added for duplicate ACTIVE snapshot recovery, entity mismatch, malformed histories/records, late malformed history, long version histories, and ambiguous-history exclusion in bbox diagnostics.
 - Exact-head GIS PR run `45980072524`: both typecheck and geometry/boundary regression jobs failed with `steps=null`; log retrieval returned `BlobNotFound`. Path-filtered detection also failed. It is not established whether any test command executed; results remain **NOT VERIFIED**.
+
+
+## 2026-11-27 — Durable snapshot geometry integrity
+
+- Audit found that snapshot recovery validated boundary IDs, lifecycle, versions and bbox ranges, but did not validate canonical geometry, simplified geometry, or prove that the persisted bbox matched the canonical polygon. A plausible stale bbox could hide a polygon during point lookup.
+- Added canonical Polygon/MultiPolygon topology validation during recovery, bounding-box recomputation/equality check (1e-6 degree tolerance), and simplified geometry validation.
+- Added regression tests for invalid canonical geometry, stale bbox, and invalid simplified geometry; a stale bbox must block recovery.
+- Exact branch HEAD: `9da716fdd87d4ba412eb4c916076749a4a7fb4a8`.
+- GitHub GIS push/PR jobs again reported failure with `steps=null`; logs unavailable (`BlobNotFound`). The tests and typecheck remain NOT VERIFIED. No production data or deployment was changed.
