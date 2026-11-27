@@ -2,7 +2,7 @@
 
 ## In progress
 
-1. Poll Cloudflare build `06f4dc2e-c773-4c75-8e3a-36841f3db2a0` to completion. It runs clean install, IRNI RPC typecheck, security regression tests, contract foundation tests, and architecture guardrails. Do not dispatch another build while it is queued/running.
+1. Cloudflare build `06f4dc2e-c773-4c75-8e3a-36841f3db2a0` is currently running after initialization, clone, and dependency installation. Its command is `npm ci --ignore-scripts --no-audit --no-fund && npm run typecheck:irni-geographic-rpc && npm run test:security && npm run test:contracts && npm run arch:check`. Poll this build for completion; do not dispatch another build while it is running.
 
 ## Highest priority after the current build
 
