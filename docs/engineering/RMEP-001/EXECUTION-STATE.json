@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "ff8e2091db1a6902e40c181d21eca6b2bb3d0e46",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; CI_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "2f54108451089ee06baf5fbb806742583084aee9",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NO_LOCAL_WORKTREE; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-202-GITHUB-RUNNER-ALLOCATION-ROOT-CAUSE",
-    "checkpoint_timestamp_utc": "2026-11-27T11:08:00.000Z",
-    "last_safe_operation": "Inspected raw GitHub Actions run/job payloads across PRs #67, #69, #70, #71, and #81. Failed jobs consistently have runner_id=0, blank runner name, zero steps, and immediate failure. Re-ran PR #81 guard; attempt 2 failed identically before runner allocation. This is infrastructure failure, not evidence of source test failure. Cloudflare build logs independently prove npm ci lock mismatch for PR #71 and a successful PR #70 frontend preview.",
-    "last_completed_operation": "Updated PROGRESS-LOG.md, REMEDIATION-REGISTER.md, BLOCKERS.md, NEXT-ACTIONS.md with corrected CI classification. No source code, database, secret, deployment, or production resource changed on NIPS branch.",
-    "next_exact_action": "When a GitHub Actions runner becomes available or a connected Node 22/npm 10 executor is available, execute the NIPS tests, native-auth tests, npm ci, backend config validator, and npm audit JSON. Keep NIPS storage blocked until the IRNI-owned authenticated/versioned RPC and canonical geography binding are verified.",
+    "checkpoint_id": "CHK-203-GITHUB-ONLY-DEPENDENCY-INVENTORY-NIPS-OWNERSHIP",
+    "checkpoint_timestamp_utc": "2026-11-27T11:01:00.000Z",
+    "last_safe_operation": "GitHub-only inspection of PR #67, latest Actions runs/jobs/logs, package manifests/lockfile, active Firebase Admin and Sharp consumers, NIPS repository ports, and design documents. Corrected the NIPS README and design-only SQL header to reflect shared IRNI-owned radar-neighborhood-db and RPC-only Radar access. Recorded exact npm audit package/version/advisory inventory in engineering docs.",
+    "last_completed_operation": "Committed documentation updates to NIPS IMPLEMENTATION-TRACKER, NIPS profile README, design-only SQL header, RMEP PROGRESS-LOG, BLOCKERS, REMEDIATION-REGISTER and NEXT-ACTIONS. Re-fetched docs and confirmed the active branch/PR state. No runtime source, dependencies, lockfile, D1 schema/data, binding, secret, deployment or PR state changed.",
+    "next_exact_action": "Continue GitHub-only work. Map all remaining Firebase Admin/Firestore, client SDK, rules/emulator and Sharp consumers to Cloudflare-native replacements before changing dependencies. Keep NIPS storage blocked until IRNI supplies its owner-controlled authenticated/versioned RPC and migration contract. Wait for GitHub Actions runner allocation recovery; do not infer source failures from runner_id=0 / empty-step jobs.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1830,6 +1830,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T10:53:00.000Z"
+    },
+    {
+      "operation_id": "OP-196",
+      "phase": "PHASE-6",
+      "description": "GitHub-only dependency security inventory, NIPS shared D1 ownership-document reconciliation, and latest PR #67 runner allocation evidence capture.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T11:01:00.000Z"
     }
   ],
   "tests": [
@@ -1951,13 +1959,13 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: GitHub Actions jobs for PR #67 fail immediately with zero recorded steps; raw job logs return BlobNotFound. The failing command is not established.",
-    "B-002: NIPS persistence requires an authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
-    "B-003: Version-pinned IRNI geography provider/Service Binding is not yet available to the Radar runtime.",
-    "B-004: Related native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions CI.",
+    "B-001: GitHub Actions runner allocation is failing before execution. Latest PR #67 runs #45987832174, #45987830960, #45987830877, #45987830888 and #45987830940 fail with zero steps; job logs return BlobNotFound. Broader raw payload evidence shows runner_id=0 and blank runner identity. No workflow command ran.",
+    "B-002: NIPS persistence requires a separately versioned, authenticated, purpose-scoped IRNI-owned storage RPC and owner-side nips_ migration. Radar direct D1 binding to radar-neighborhood-db is prohibited.",
+    "B-003: Version-pinned IRNI geography provider/Service Binding is not verified or available to the Radar runtime.",
+    "B-004: Native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions execution.",
     "B-005: Staging D1/IRNI Service Binding provisioning is incomplete. The staging-only Build Trigger correctly fails closed before Wrangler dry-run/deploy.",
-    "B-006: npm audit reports 21 vulnerabilities (14 moderate, 5 high, 2 critical) across the installed dependency graph. Critical findings include tinypool and vitest; high findings include Firebase/Firestore transitive dependencies, @grpc/grpc-js and sharp. Package remediation requires dependency-graph review; no blind force-upgrade.",
-    "B-007: GitHub Actions diagnostics remain unavailable: latest PR #67 jobs complete within 0-2 seconds, step arrays are empty, and log downloads return BlobNotFound. Path-filtered detect fails while downstream gates are skipped.",
+    "B-006: npm audit reports 21 vulnerabilities (14 moderate, 5 high, 2 critical). Critical dev-only packages: vitest@3.2.7 and tinypool@1.1.1 (GHSA-5gmw-xhrv-c9v3, GHSA-85c8-ppgw-ccpr). High production paths include firebase@12.19.0, @firebase/firestore@4.17.2, @grpc/grpc-js@1.9.16 and sharp@0.33.5; firebase-admin@13.10.0 has moderate findings. Major-version fix candidates require compatibility tests; no package changes have been made.",
+    "B-007: Firebase Admin/Firestore and Sharp remain active in legacy Express/runtime code (including src/utils/serverAdminAndTelegramSecurity.ts and src/utils/objectStorageUpload.ts). Removing dependencies before migrating these consumers would break backend behavior.",
     "B-008: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified."
   ],
   "pending_authorization": [
@@ -2204,6 +2212,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Triage critical/high dependency findings, prioritizing direct/runtime packages and Firebase retirement; restore GitHub Actions step/log diagnostics or use a connected Node executor; run NIPS/Auth/IRNI RPC/geography/D1 tests only in a real executor. Continue NIPS storage through the IRNI-owned authenticated/versioned RPC and do not bind Radar directly to radar-neighborhood-db."
+    "next_action": "Continue only on GitHub. Map and migrate remaining Firebase Admin/Firestore and Sharp consumers to Cloudflare-native paths before dependency removal. Do not change package-lock until a Node 22/npm 10 executor and tests are available. NIPS persistence remains blocked on IRNI owner-side authenticated/versioned RPC and migration approval. Keep PR #67 Draft; no merge/deploy/migration."
   }
 }
