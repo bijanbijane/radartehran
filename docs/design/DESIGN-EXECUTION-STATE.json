@@ -44,7 +44,8 @@
     "Reconciled mixed modal mounting model and updated DESIGN-MAP-007 with per-component focus-hook/portal findings; full-repository dialog inventory remains open.",
     "Inspected the existing form-input-handling.test.ts portal contract and verified its explicit 14-file portaledModals inventory; each listed file is asserted to use createPortal and z-[9500].",
     "Fetched all 11 additional portal paths from the active design branch and verified each contains one createPortal call, one dialog role, and shared useDialogFocus adoption.",
-    "Expanded DESIGN-MAP-007 with the 14-file portal inventory, test-contract limits, and exact shared useDialogFocus behavior including body-scroll reference counting, DOM-order topmost checks, focus restoration, and absence of background inert management in the inspected hook."
+    "Expanded DESIGN-MAP-007 with the 14-file portal inventory, test-contract limits, and exact shared useDialogFocus behavior including body-scroll reference counting, DOM-order topmost checks, focus restoration, and absence of background inert management in the inspected hook.",
+    "Verified the final DESIGN-MAP-007 document after correcting its portal-inventory section formatting; the 14-path test inventory and shared-hook behavior are present in the committed document."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -103,7 +104,8 @@
     "modal_scroll_lock_runtime": "NOT RUN",
     "modal_stack_visual_order": "NOT VERIFIED",
     "full_portal_root_inventory": "14-FILE TEST-BACKED PORTAL INVENTORY VERIFIED; GLOBAL COMPLETENESS NOT VERIFIED",
-    "modal_entry_point_inventory": "PARTIAL — 13 WORKSPACE MODAL MODULES"
+    "modal_entry_point_inventory": "PARTIAL — 13 WORKSPACE MODAL MODULES",
+    "modal_portal_documentation": "VERIFIED — FINAL FETCH CONFIRMED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
