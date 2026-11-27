@@ -30,3 +30,11 @@ NIPS PR: #67 (Draft)
 ## CI evidence limitation
 
 The GitHub connector returned empty step summaries for the failed jobs and the job-log download returned `BlobNotFound`. The root quality-gate job was rerun; its replacement job also failed with an empty step list and missing log artifact. The exact failing command and root cause remain unverified. Do not classify this as an application-code defect until logs or reproducible local evidence establish it.
+
+
+## CHK-197 evidence update — 2026-11-27
+
+- **RT-CI-001:** The latest PR #67 head is `ee2023a59128a9bad17f37e144995b5a6d67bc1f`. The native-auth workflow's missing script invocation was corrected to `npm run test:auth` (commit `eb76b22590c70dc81ddff2189fc1cca459099d8d`). The stale `bun.lock` was removed and `.npmrc` added (commits `dd28ff9aa9c2946a60ae9fbd34630ac4d6ad5c5f`, `ee2023a59128a9bad17f37e144995b5a6d67bc1f`). These changes are implemented but not verified: five latest workflows still fail before exposing steps; logs remain unavailable with `BlobNotFound`.
+- **RT-CI-002:** PR #70 independently carries the stale Bun lockfile remediation. Its Cloudflare frontend preview reported a successful build and deployment for commit `f05b6228de9e36b38b039cb60d407048a0067720`; this is evidence for that PR's preview only, not PR #67 or production. Keep PR #69/#70 Draft until their own checks and required preview builds pass.
+- **RT-NIPS-001/002:** No runtime NIPS persistence adapter, schema migration, HTTP route, or ingestion pipeline has been implemented by this checkpoint. These remain dependent on the IRNI-owned authenticated/versioned RPC contract.
+- **Verification boundary:** GitHub confirmed the content commits and file state. No npm test, TypeScript check, architecture check, D1 integration test, production migration, or deployment was executed in this session.
