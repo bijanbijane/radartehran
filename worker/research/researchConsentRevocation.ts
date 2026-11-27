@@ -159,6 +159,21 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_CREATE_FAILED');
   }
 
+  if ((registry.results ?? []).length === 0) {
+    const emptyCompletion = await userDb
+      .prepare(
+        `UPDATE research_consent_revocation_jobs
+         SET status = 'COMPLETED', erased_events_count = 0, receipt_ids_json = '[]',
+             updated_at_iso = ?1, completed_at_iso = ?1
+         WHERE revocation_id = ?2`,
+      )
+      .bind(nowIso, revocationId)
+      .run();
+    if (!emptyCompletion.success || (emptyCompletion.meta?.changes ?? 0) !== 1) {
+      throw new Error('RESEARCH_CONSENT_EMPTY_SCOPE_COMPLETION_FAILED');
+    }
+  }
+
   const expiredPermitsReclaimed = await expireStaleResearchProcessingPermitsInD1({
     userDb,
     uid: params.uid,
