@@ -233,6 +233,54 @@ export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValid
         }
       }
     }
+
+    // GeoJSON interior rings must be strictly inside the exterior ring and must not
+    // touch or overlap the exterior ring or another interior ring.
+    const outer = polygon[0];
+    const isUsableRing = (ring: LinearRingCoords | undefined): ring is LinearRingCoords =>
+      Array.isArray(ring) && ring.length >= 4 && ring.every(
+        (position) => Array.isArray(position) && position.length >= 2
+          && Number.isFinite(position[0]) && Number.isFinite(position[1]),
+      );
+    const ringsIntersect = (left: LinearRingCoords, right: LinearRingCoords): boolean => {
+      for (let i = 0; i < left.length - 1; i += 1) {
+        for (let j = 0; j < right.length - 1; j += 1) {
+          if (segmentsProperlyIntersect(left[i], left[i + 1], right[j], right[j + 1])) return true;
+        }
+      }
+      return false;
+    };
+    if (isUsableRing(outer)) {
+      for (let holeIndex = 1; holeIndex < polygon.length; holeIndex += 1) {
+        const hole = polygon[holeIndex];
+        if (!isUsableRing(hole)) continue;
+        const strictlyContained = hole.slice(0, -1).every(([lng, lat]) =>
+          classifyPointInRing({ lat, lng }, outer) === 'INSIDE',
+        );
+        if (!strictlyContained || ringsIntersect(outer, hole)) {
+          issues.push({
+            code: 'HOLE_OUTSIDE_OUTER',
+            message: `Interior ring ${holeIndex} must be strictly contained by the exterior ring and must not touch it.`,
+          });
+        }
+        for (let otherIndex = 1; otherIndex < holeIndex; otherIndex += 1) {
+          const other = polygon[otherIndex];
+          if (!isUsableRing(other)) continue;
+          const containedByOther = hole.slice(0, -1).some(([lng, lat]) =>
+            classifyPointInRing({ lat, lng }, other) !== 'OUTSIDE',
+          );
+          const containsOther = other.slice(0, -1).some(([lng, lat]) =>
+            classifyPointInRing({ lat, lng }, hole) !== 'OUTSIDE',
+          );
+          if (containedByOther || containsOther || ringsIntersect(other, hole)) {
+            issues.push({
+              code: 'HOLE_OVERLAP',
+              message: `Interior rings ${otherIndex} and ${holeIndex} overlap or touch.`,
+            });
+          }
+        }
+      }
+    }
   }
 
   return {
