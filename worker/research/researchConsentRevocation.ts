@@ -153,7 +153,12 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     revokedConsentRevision = current.consentRevision;
     newConsentRevision = current.consentRevision + 1;
     if (!Number.isSafeInteger(newConsentRevision)) throw new Error('CONSENT_REVISION_EXHAUSTED');
-    revocationId = `rrev_${nowMs}_${crypto.randomUUID().slice(0, 12)}`;
+    const uidDigest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(params.uid));
+    const uidSuffix = Array.from(new Uint8Array(uidDigest))
+      .slice(0, 12)
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
+    revocationId = `rrev_${current.consentRevision}_${uidSuffix}`;
 
     // Commit the durable revocation job and UID-free outbox BEFORE switching consent off.
     // Permit admission checks for this active job, so a crash here fails closed; reconcile
@@ -161,17 +166,17 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     const statements = [
       userDb
         .prepare(
-          `INSERT INTO research_consent_revocation_jobs (
+          `INSERT OR IGNORE INTO research_consent_revocation_jobs (
             revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
             erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
           ) VALUES (?1, ?2, ?3, ?4, 'DRAINING_PERMITS', 0, '[]', ?5, ?5, NULL)`,
         )
         .bind(revocationId, params.uid, revokedConsentRevision, newConsentRevision, nowIso),
       ...registryRows.map((subject) => {
-        const outboxId = `rrevout_${revocationId}_${subject.subject_key_version}_${crypto.randomUUID().slice(0, 6)}`;
+        const outboxId = `rrevout_${revocationId}_${subject.subject_key_version}_${subject.subject_key}`;
         return userDb
           .prepare(
-            `INSERT INTO research_erasure_outbox (
+            `INSERT OR IGNORE INTO research_erasure_outbox (
               outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
               next_retry_at_ms, created_at_iso, updated_at_iso, max_consent_revision
             ) VALUES (?1, ?2, ?3, ?4, 'PENDING', 0, 0, ?5, ?5, ?6)`,
@@ -191,15 +196,31 @@ export async function revokeUserResearchConsentWithBarrier(params: {
       throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_CREATE_FAILED');
     }
 
-    privacy = await updateUserPrivacyConsentInD1(userDb, {
-      uid: params.uid,
-      actorUid: params.actorUid,
-      researchAnalyticsConsent: false,
-      behavioralTelemetryConsent: params.behavioralTelemetryConsent,
-      marketingCommunicationsConsent: params.marketingCommunicationsConsent,
-      consentSource: 'research_consent_revocation_barrier',
-      nowIso,
-    });
+    try {
+      privacy = await updateUserPrivacyConsentInD1(userDb, {
+        uid: params.uid,
+        actorUid: params.actorUid,
+        researchAnalyticsConsent: false,
+        behavioralTelemetryConsent: params.behavioralTelemetryConsent,
+        marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+        consentSource: 'research_consent_revocation_barrier',
+        nowIso,
+      });
+    } catch (error) {
+      // A concurrent revoke with the same deterministic revision key may win the CAS.
+      // Treat that exact durable outcome as idempotent; reject every other conflict.
+      const latestPrivacy = await getUserPrivacyConsentFromD1(userDb, params.uid);
+      const canonicalJob = await readRevocationJob(userDb, revocationId);
+      if (
+        latestPrivacy.researchAnalyticsConsent ||
+        latestPrivacy.consentRevision !== newConsentRevision ||
+        !canonicalJob ||
+        canonicalJob.uid !== params.uid ||
+        canonicalJob.revokedConsentRevision !== revokedConsentRevision ||
+        canonicalJob.newConsentRevision !== newConsentRevision
+      ) throw error;
+      privacy = latestPrivacy;
+    }
     if (privacy.consentRevision !== newConsentRevision) {
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
@@ -217,10 +238,10 @@ export async function revokeUserResearchConsentWithBarrier(params: {
     nowMs,
   });
   const hasErasureScope = registryRows.length > 0 || (await userDb.prepare('SELECT 1 FROM research_erasure_outbox WHERE job_id = ?1 LIMIT 1').bind(revocationId).first()) !== null;
-  const status = !hasErasureScope
-    ? 'COMPLETED'
-    : activePermitsRemaining > 0
-      ? 'DRAINING_PERMITS'
+  const status = activePermitsRemaining > 0
+    ? 'DRAINING_PERMITS'
+    : !hasErasureScope
+      ? 'COMPLETED'
       : 'PENDING_ERASURE';
   const statusWrite = await userDb
     .prepare(
@@ -366,6 +387,65 @@ export async function reconcileResearchConsentRevocation(params: {
       .run();
     const emptyCompleted = (await readRevocationJob(userDb, params.revocationId))!;
     return toResponse(emptyCompleted, 0, expiredPermitsReclaimed);
+  }
+
+  // Re-scan after all old permits have drained. A request may have registered its
+  // subject key and acquired a permit between the initial registry snapshot and the
+  // revocation-job admission barrier; that key must still receive an erasure outbox item.
+  const registry = await userDb
+    .prepare(
+      'SELECT subject_key, subject_key_version FROM user_research_subject_registry WHERE uid = ?1 ORDER BY subject_key_version, subject_key',
+    )
+    .bind(job.uid)
+    .all<{ subject_key: string; subject_key_version: string }>();
+  if (!registry.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_RESCAN_FAILED');
+  const existingOutbox = await userDb
+    .prepare('SELECT subject_key, subject_key_version FROM research_erasure_outbox WHERE job_id = ?1')
+    .bind(params.revocationId)
+    .all<{ subject_key: string; subject_key_version: string }>();
+  if (!existingOutbox.success) throw new Error('RESEARCH_CONSENT_ERASURE_OUTBOX_RESCAN_FAILED');
+  const existingSubjects = new Set(
+    (existingOutbox.results ?? []).map((row) => `${row.subject_key_version}\u0000${row.subject_key}`),
+  );
+  const missingOutboxStatements = (registry.results ?? [])
+    .filter((row) => !existingSubjects.has(`${row.subject_key_version}\u0000${row.subject_key}`))
+    .map((subject) => {
+      const outboxId = `rrevout_${params.revocationId}_${subject.subject_key_version}_${subject.subject_key}`;
+      return userDb.prepare(
+        `INSERT OR IGNORE INTO research_erasure_outbox (
+          outbox_id, job_id, subject_key, subject_key_version, status, attempt_count,
+          next_retry_at_ms, created_at_iso, updated_at_iso, max_consent_revision
+        ) VALUES (?1, ?2, ?3, ?4, 'PENDING', 0, 0, ?5, ?5, ?6)`,
+      ).bind(outboxId, params.revocationId, subject.subject_key, subject.subject_key_version, nowIso, job.newConsentRevision);
+    });
+  for (let offset = 0; offset < missingOutboxStatements.length; offset += 50) {
+    const writes = await userDb.batch(missingOutboxStatements.slice(offset, offset + 50));
+    if (writes.some((result) => !result.success)) {
+      throw new Error('RESEARCH_CONSENT_ERASURE_OUTBOX_RECOVERY_FAILED');
+    }
+  }
+
+  const scopedOutboxCount = await userDb
+    .prepare('SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1')
+    .bind(params.revocationId)
+    .first<{ cnt: number }>();
+  if (!scopedOutboxCount || !Number.isSafeInteger(Number(scopedOutboxCount.cnt))) {
+    throw new Error('RESEARCH_CONSENT_ERASURE_OUTBOX_COUNT_UNAVAILABLE');
+  }
+  if (Number(scopedOutboxCount.cnt) === 0) {
+    const completeEmptyJob = await userDb
+      .prepare(
+        `UPDATE research_consent_revocation_jobs
+         SET status = 'COMPLETED', erased_events_count = 0, receipt_ids_json = '[]',
+             updated_at_iso = ?1, completed_at_iso = ?1
+         WHERE revocation_id = ?2 AND status != 'COMPLETED'`,
+      )
+      .bind(nowIso, params.revocationId)
+      .run();
+    if (!completeEmptyJob.success) throw new Error('RESEARCH_CONSENT_REVOCATION_EMPTY_COMPLETION_FAILED');
+    const emptyCompletedJob = await readRevocationJob(userDb, params.revocationId);
+    if (!emptyCompletedJob) throw new Error('RESEARCH_CONSENT_REVOCATION_READBACK_FAILED');
+    return toResponse(emptyCompletedJob, 0, expiredPermitsReclaimed);
   }
 
   await userDb

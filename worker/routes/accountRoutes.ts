@@ -77,6 +77,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
   const requiresRecentAuth =
     pathname === '/api/account/export-data' ||
     pathname === '/api/account/deletion-requests' ||
+    pathname === '/api/account/privacy/reconcile' ||
     (method === 'POST' && pathname.startsWith('/api/account/sessions/') && pathname.endsWith('/revoke'));
   const auth = await authenticateAccountCaller(ctx, isSensitive, requiresRecentAuth);
   if (!auth.authenticated || !auth.uid) {
