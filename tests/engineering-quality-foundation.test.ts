@@ -2073,6 +2073,11 @@ async function runSuite(): Promise<void> {
         topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50'),
       'Mobile save-preferences and share-budget actions must retain 44px minimum touch targets'
     );
+    assert.equal(
+      (topBarSrc.match(/min-h-\[44px\] md:min-h-\[32px\] inline-flex items-center gap-1 px-2 py-0\.5 rounded-\[6px\] bg-emerald-50/g) || []).length,
+      3,
+      'All three active map-filter dismissal actions must expose 44px mobile touch targets'
+    );
 
     const navCtxSrc = readComp('src/context/RadarNavigationContext.tsx');
     assert.equal(navCtxSrc.includes('if (typeof window === \'undefined\' || !hasExplicitNavChangeRef.current) return;'), true, 'RadarNavigationContext must guard initial URL replaceState with hasExplicitNavChangeRef');
