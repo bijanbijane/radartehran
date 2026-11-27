@@ -207,6 +207,7 @@ async function runTests(): Promise<void> {
 
   const ready = assessGeospatialSnapshot(sampleState(), { remoteSnapshotPresent: true, snapshotRevision: 3 });
   assert.equal(ready.health, 'READY');
+  assert.equal(ready.activated, false);
 
   const blockedReport = await runGeospatialDurableRecovery({
     hydratedState: {
