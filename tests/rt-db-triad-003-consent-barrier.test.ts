@@ -995,4 +995,38 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
   });
 
 
+
+  it('Scenario 8: A stale revocation request cannot downgrade a concurrently completed job', async () => {
+    const { userSqlite } = createTestTriad();
+    const nowIso = '2026-11-22T13:10:00.000Z';
+    await userSqlite.db.prepare(
+      `INSERT INTO research_consent_revocation_jobs (
+        revocation_id, uid, revoked_consent_revision, new_consent_revision, status,
+        erased_events_count, receipt_ids_json, created_at_iso, updated_at_iso, completed_at_iso
+      ) VALUES ('rrev_status_fence_8', 'uid_status_fence_8', 1, 2, 'COMPLETED',
+        0, '[]', ?1, ?1, ?1)`,
+    ).bind(nowIso).run();
+
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'worker/research/researchConsentRevocation.ts'),
+      'utf8',
+    );
+    assert.match(source, /WHERE revocation_id = \\?3 AND status != 'COMPLETED'/);
+
+    const staleTransition = await userSqlite.db.prepare(
+      `UPDATE research_consent_revocation_jobs
+       SET status = ?1, updated_at_iso = ?2,
+           completed_at_iso = CASE WHEN ?1 = 'COMPLETED' THEN ?2 ELSE NULL END
+       WHERE revocation_id = ?3 AND status != 'COMPLETED'`,
+    ).bind('PENDING_ERASURE', '2026-11-22T13:11:00.000Z', 'rrev_status_fence_8').run();
+    assert.equal(staleTransition.meta?.changes, 0);
+
+    const canonical = await userSqlite.db.prepare(
+      'SELECT status, completed_at_iso FROM research_consent_revocation_jobs WHERE revocation_id = ?1',
+    ).bind('rrev_status_fence_8').first<{ status: string; completed_at_iso: string | null }>();
+    assert.equal(canonical?.status, 'COMPLETED');
+    assert.equal(canonical?.completed_at_iso, nowIso);
+  });
+
+
 });
