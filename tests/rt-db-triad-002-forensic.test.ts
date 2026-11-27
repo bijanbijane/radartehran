@@ -1130,18 +1130,20 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         uid: 'uid_consent_cas',
         actorUid: 'uid_consent_cas',
         researchAnalyticsConsent: true,
+        behavioralTelemetryConsent: true,
+        marketingCommunicationsConsent: true,
       });
       concurrentSqlite.setYieldBeforeBatch(true);
       const concurrent = await Promise.allSettled([
         updateUserPrivacyConsentInD1(concurrentSqlite.db, {
           uid: 'uid_consent_cas',
           actorUid: 'uid_consent_cas',
-          researchAnalyticsConsent: false,
+          behavioralTelemetryConsent: false,
         }),
         updateUserPrivacyConsentInD1(concurrentSqlite.db, {
           uid: 'uid_consent_cas',
           actorUid: 'uid_consent_cas',
-          behavioralTelemetryConsent: true,
+          marketingCommunicationsConsent: false,
         }),
       ]);
       assert.equal(concurrent.filter((result) => result.status === 'fulfilled').length, 1);
