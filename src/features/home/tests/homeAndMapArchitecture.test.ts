@@ -36,7 +36,7 @@ import {
 } from '../../../components/map/interactiveSpatialMeasureLayer';
 import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
 import { resolveSelectedNeighborhoodById } from '../../../components/selectedNeighborhoodResolver';
-import { resolveUrlNeighborhoodEntry } from '../../../components/useAppUrlAndTitleSync';
+import { resolveUrlNeighborhoodEntry } from '../../../components/urlNeighborhoodResolver';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
