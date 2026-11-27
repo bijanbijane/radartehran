@@ -166,20 +166,28 @@ export async function processPendingResearchErasureOutbox(params: {
     }
 
     try {
+      const maxConsentRevision =
+        row.max_consent_revision === null || row.max_consent_revision === undefined
+          ? null
+          : Number(row.max_consent_revision);
       const erasureRes = await executeResearchSubjectErasure({
         researchDb: params.researchDb,
         outboxId,
         subjectKey,
         subjectKeyVersion,
+        maxConsentRevision,
         nowMs,
       });
 
-      // Remove subject key mapping from USER_DB registry ONLY after verifiable RESEARCH_DB receipt
-      const registryDelete = await params.userDb
-        .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
-        .bind(subjectKey, subjectKeyVersion)
-        .run();
-      if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+      // Consent revocation preserves the subject registry so a later explicit re-grant can
+      // derive the same pseudonymized subject. Full account deletion removes the mapping.
+      if (maxConsentRevision === null) {
+        const registryDelete = await params.userDb
+          .prepare('DELETE FROM user_research_subject_registry WHERE subject_key = ?1 AND subject_key_version = ?2')
+          .bind(subjectKey, subjectKeyVersion)
+          .run();
+        if (!registryDelete.success) throw new Error('RESEARCH_SUBJECT_REGISTRY_DELETE_FAILED');
+      }
 
       const outboxComplete = await params.userDb
         .prepare(
@@ -252,8 +260,51 @@ export async function processPendingResearchErasureOutbox(params: {
     if (row.job_id) touchedJobIds.add(String(row.job_id));
   }
 
-  // Reconcile parent deletion jobs: mark COMPLETED only when 0 incomplete outbox entries remain
+  // Reconcile consent-revocation jobs separately from account-deletion jobs.
+  // A revocation job must never enter the account-deletion completion path.
   for (const jobId of touchedJobIds) {
+    const consentJob = await params.userDb
+      .prepare('SELECT revocation_id FROM research_consent_revocation_jobs WHERE revocation_id = ?1')
+      .bind(jobId)
+      .first<{ revocation_id: string }>();
+    if (consentJob) {
+      const remaining = await params.userDb
+        .prepare(`SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1 AND status != 'COMPLETED'`)
+        .bind(jobId)
+        .first<{ cnt: number }>();
+      if (!remaining || !Number.isSafeInteger(Number(remaining.cnt)) || Number(remaining.cnt) < 0) {
+        throw new Error('RESEARCH_CONSENT_REVOCATION_OUTBOX_RECONCILIATION_UNAVAILABLE');
+      }
+      if (Number(remaining.cnt) === 0) {
+        const completedRows = await params.userDb
+          .prepare(`SELECT receipt_id, erased_events_count FROM research_erasure_outbox WHERE job_id = ?1 AND status = 'COMPLETED' ORDER BY outbox_id`)
+          .bind(jobId)
+          .all<{ receipt_id: string; erased_events_count: number }>();
+        if (!completedRows.success) throw new Error('RESEARCH_CONSENT_REVOCATION_RECEIPT_READ_FAILED');
+        const receiptIds = (completedRows.results ?? []).map((item) => item.receipt_id).filter(Boolean);
+        const erasedTotal = (completedRows.results ?? []).reduce(
+          (sum, item) => sum + Math.max(0, Number(item.erased_events_count) || 0),
+          0,
+        );
+        const complete = await params.userDb
+          .prepare(
+            `UPDATE research_consent_revocation_jobs
+             SET status = 'COMPLETED', erased_events_count = ?1, receipt_ids_json = ?2,
+                 updated_at_iso = ?3, completed_at_iso = ?3
+             WHERE revocation_id = ?4 AND status != 'COMPLETED'`,
+          )
+          .bind(erasedTotal, JSON.stringify(receiptIds), nowIso, jobId)
+          .run();
+        if (!complete.success) throw new Error('RESEARCH_CONSENT_REVOCATION_COMPLETION_FAILED');
+      } else {
+        await params.userDb
+          .prepare(`UPDATE research_consent_revocation_jobs SET status = 'PENDING_ERASURE', updated_at_iso = ?1 WHERE revocation_id = ?2 AND status = 'DRAINING_PERMITS'`)
+          .bind(nowIso, jobId)
+          .run();
+      }
+      continue;
+    }
+
     const remainingRow = await params.userDb
       .prepare(`SELECT COUNT(*) AS cnt FROM research_erasure_outbox WHERE job_id = ?1 AND status != 'COMPLETED'`)
       .bind(jobId)
