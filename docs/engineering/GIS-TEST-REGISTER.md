@@ -6,7 +6,7 @@
 
 | Command | Coverage | Current status in this session |
 |---|---|---|
-| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | NOT VERIFIED on HEAD 24e4c66af8c67195b46f7d3878d1cc846b6bdf8c — dedicated GIS workflow failed; job steps/logs unavailable, so cause is unknown |
+| `npm run test:geospatial` | New valuation assignment tests; existing GIS module tests; neighborhood-profile boundary evidence tests; boundary approval regression | NOT VERIFIED on HEAD 039ad4f17d70042f83cd67754a4f22b049ccd1c3 — both dedicated GIS runs failed before exposing any steps; logs unavailable |
 | `npm run test:unit` | Existing unit gates plus `test:geospatial` | Updated to include geospatial suite; NOT RUN by this session |
 | `npm run lint` | Repository lint | NOT RUN |
 | `npm run arch:check` | Architecture rules | NOT RUN |
@@ -76,3 +76,15 @@ GitHub log retrieval returned `BlobNotFound`. The current Desktop Commander devi
 | GIS geometry and boundary regression | 140438144408 | FAILURE | No step metadata; log retrieval `BlobNotFound` |
 
 The checks are failed, but no evidence identifies whether the underlying commands executed. Do not report the GIS suite or TypeScript check as passing or as a confirmed code-level test failure until rerun with accessible logs. The other repository CI workflows at the same HEAD also concluded failure.
+
+
+## Current PR HEAD — `039ad4f17d70042f83cd67754a4f22b049ccd1c3`
+
+| Trigger | Run ID | Job | Job ID | Conclusion |
+|---|---:|---|---:|---|
+| Push | 45979357361 | GIS module TypeScript typecheck | 140439007297 | FAILURE |
+| Push | 45979357361 | GIS geometry and boundary regression | 140439007696 | FAILURE |
+| Pull request | 45979368572 | GIS module TypeScript typecheck | 140439046307 | FAILURE |
+| Pull request | 45979368572 | GIS geometry and boundary regression | 140439046895 | FAILURE |
+
+Every job record has `steps=null`; log retrieval returns `BlobNotFound`. The broader repository workflows at this HEAD also failed before exposing usable steps. It is not established whether checkout, dependency installation, GIS tests or typecheck began. Keep both focused checks **NOT VERIFIED** until rerun with usable diagnostics.
