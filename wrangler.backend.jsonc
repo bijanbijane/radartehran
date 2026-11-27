@@ -40,7 +40,30 @@
         "APP_ENV": "staging",
         "WORKER_ENV": "staging",
         "APP_URL": "https://staging.invalid"
-      }
+      },
+      "d1_databases": [
+        {
+          "binding": "USER_DB",
+          "database_name": "radartehran-api-staging-user-db",
+          "database_id": "c5048585-0c40-46da-97e5-97f9cd262cd0",
+          "migrations_dir": "migrations/user-d1",
+          "migrations_table": "d1_migrations"
+        },
+        {
+          "binding": "DB",
+          "database_name": "radartehran-api-staging-user-db",
+          "database_id": "c5048585-0c40-46da-97e5-97f9cd262cd0",
+          "migrations_dir": "migrations/user-d1",
+          "migrations_table": "d1_migrations"
+        },
+        {
+          "binding": "RESEARCH_DB",
+          "database_name": "radartehran-api-staging-research-db",
+          "database_id": "83d1165e-2c0a-4407-8a31-d79150915da4",
+          "migrations_dir": "migrations/research-d1",
+          "migrations_table": "d1_migrations"
+        }
+      ]
     }
   },
   "d1_databases": [
@@ -64,7 +87,7 @@
       "database_id": "a04f9716-fb95-44da-841c-b54be252db70",
       "migrations_dir": "migrations/research-d1",
       "migrations_table": "d1_migrations"
-    },
+    }
   ],
   "services": [
     {
