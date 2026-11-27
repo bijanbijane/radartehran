@@ -16,10 +16,34 @@ export function resolvePointInBoundaryStore(params: {
   const pt = norm.coordinate;
 
   const insideMatches: Array<{ record: BoundaryVersionRecord; classification: 'INSIDE' | 'ON_EDGE' }> = [];
+  const conflictingActiveBoundaryIds: string[] = [];
 
   for (const history of params.boundaryHistoryByEntity.values()) {
-    const active = history.find((b) => b.status === 'ACTIVE');
-    if (!active) continue;
+    const activeRecords = history.filter((record) => record.status === 'ACTIVE');
+    if (activeRecords.length === 0) continue;
+
+    if (activeRecords.length > 1) {
+      // A duplicate ACTIVE lifecycle is relevant only when one of its geometries
+      // could contain this point. Never choose an arbitrary version from that history.
+      const hasRelevantDuplicateVersion = activeRecords.some((record) => {
+        const bb = record.boundingBox;
+        if (
+          pt.lat < bb.minLat - 0.001 ||
+          pt.lat > bb.maxLat + 0.001 ||
+          pt.lng < bb.minLng - 0.001 ||
+          pt.lng > bb.maxLng + 0.001
+        ) {
+          return false;
+        }
+        return classifyPointInPolygon(pt, record.geometry) !== 'OUTSIDE';
+      });
+      if (hasRelevantDuplicateVersion) {
+        conflictingActiveBoundaryIds.push(...activeRecords.map((record) => record.id));
+      }
+      continue;
+    }
+
+    const active = activeRecords[0];
     const bb = active.boundingBox;
     if (
       pt.lat < bb.minLat - 0.001 ||
@@ -33,6 +57,16 @@ export function resolvePointInBoundaryStore(params: {
     if (cls === 'INSIDE' || cls === 'ON_EDGE') {
       insideMatches.push({ record: active, classification: cls });
     }
+  }
+
+  if (conflictingActiveBoundaryIds.length > 0) {
+    params.metrics.pointResolutionFailuresCount += 1;
+    return {
+      resolved: false,
+      status: 'MULTIPLE_ACTIVE_BOUNDARY_VERSIONS',
+      confidence: 'none',
+      candidateBoundaryIds: [...new Set(conflictingActiveBoundaryIds)].sort(),
+    };
   }
 
   if (insideMatches.length === 0) {
