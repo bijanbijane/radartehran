@@ -1433,3 +1433,8 @@
 - Exact PR #78 head `7a54aebecd72cd7425c00cd3a635a2a74fff16ba` (last source/test head `fbb09b96e29680af67ad68eafc4910cead925e9a`) triggered seven workflows: Backend Triad 45997942625, Quality Gates 45997942616, Native Auth 45997942633, Path-Filtered Checks 45997942737, Geographic RPC Contract 45997942650, Frontend Bundle Budget 45997942637 and Shadow Registry Safety 45997942605.
 - Every primary job ended before runner allocation (runner_id=0, empty runner_name, zero steps); downstream jobs skipped. No checkout, dependency install, test, typecheck, build or validation ran. Issue #49 updated; no blind rerun was issued.
 - PR #78 remains Draft. Community Firestore adapter parity audit is gated until the existing verification gates can execute; no adapter changes made.
+
+
+## 2026-11-27 — documentation-head CI reproduction
+- On documentation-only PR #78 head `b8e5e4a1e499c890a9de90cf9fd4c7fede123433`, Backend Triad 45998616590, Quality Gates 45998616563, Path-Filtered Checks 45998616641, Geographic RPC Contract 45998616575, Native Auth 45998616562 and Frontend Bundle Budget 45998616558 all failed before runner assignment (runner_id=0, empty runner_name, zero steps); downstream jobs skipped.
+- This reproduces the hosted-runner issue independently of a source change. Issue #49 updated; no tests/typecheck/build ran and no rerun was issued.
