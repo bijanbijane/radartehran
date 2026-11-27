@@ -11,11 +11,13 @@
     "verification_status": "VERIFIED"
   },
   "repository": {
-    "remote_identity": "local-sandbox-no-git-remote",
-    "current_branch": "sandbox-main",
-    "head_commit": "FILESYSTEM_PINNED_SHA256",
-    "working_tree_status": "UNINITIALIZED_GIT_SANDBOX_FILESYSTEM_VERIFIED",
-    "last_verified_commit": "FILESYSTEM_PINNED_SHA256"
+    "remote_identity": "github.com/bijanbijane/radartehran",
+    "default_branch": "main",
+    "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+    "current_branch": "codex/backend-resume-2026-11-27",
+    "head_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; local execution device unavailable",
+    "last_verified_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -30,11 +32,11 @@
   },
   "checkpoint": {
     "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-25T22:15:00.000Z",
-    "last_safe_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "last_completed_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "next_exact_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
-    "resume_status": "READY"
+    "checkpoint_timestamp_utc": "2026-11-27T10:27:24.000Z",
+    "last_safe_operation": "Committed research erasure inbox idempotency hardening and fail-closed validation that an existing outbox ID cannot be replayed against a different subject key/version; regression assertion added.",
+    "last_completed_operation": "Committed research erasure inbox idempotency hardening and fail-closed validation that an existing outbox ID cannot be replayed against a different subject key/version; regression assertion added.",
+    "next_exact_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker typecheck on head 0f1818e488e12580bfc9c01356cd9de04d3970fc; obtain CI detect-job and Cloudflare Worker build diagnostics; add deterministic concurrent-delivery regression; then continue residual Express Firestore adapter retirement.",
+    "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
     "completed_tasks": [
@@ -2188,25 +2190,27 @@
       "PR #71 head b9f2e63704e2add8227880a32a68ec1d5688a0dd has failed CI checks and skipped E2E; GitHub connector did not expose job logs or annotations, so root cause is unverified.",
       "The old triad branch codex/rt-db-triad-003-lifecycle-receipt-key-isolation is 1,556 commits behind main and is not a safe patch base.",
       "The current worker lifecycle code uses USER_DB outbox and RESEARCH_DB inbox erasure; migration 0005 defines no processing lease/claim columns for the account deletion outbox.",
-      "No local execution environment is currently available: the connected MacBook device reports Offline."
+      "No local execution environment is currently available: the connected MacBook device reports Offline.",
+      "Review of executeResearchSubjectErasure found that the completed-inbox fast path previously returned a receipt without verifying that the durable outbox ID still mapped to the same subject_key and subject_key_version; this collision path is now rejected before returning the receipt."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
       "GitHub Actions failed-job logs and annotations were unavailable through the connected GitHub API wrapper (BlobNotFound / empty step metadata); exact CI failure root cause remains unknown.",
-      "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194."
+      "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194.",
+      "PR #78 workflow run 45980515216 failed in the detect job before api/frontend/contracts gates ran; the only detailed job logs available through the connector still return BlobNotFound. Cloudflare Workers Builds check for radartehran-frontend also reports failure without diagnostic annotations."
     ],
-    "next_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker typecheck on the branch; add a deterministic concurrent-delivery regression if the test harness can model serialized D1 batches. Then diagnose failed PR #71 checks and continue remaining Express Firestore adapter retirement.",
+    "next_action": "Run tests/rt-db-triad-001.test.ts and Worker typecheck on the latest branch head; obtain the failed detect and Cloudflare build diagnostics; add a deterministic concurrent-delivery regression; then continue the residual Express Firestore adapter retirement.",
     "code_work": {
       "id": "BE-002",
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
-      "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery.",
-      "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning.",
+      "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery. A further identity-confusion edge case was found: an already-completed inbox row could be replayed with the same outbox_id but a different subject key/version and its receipt returned without identity validation.",
+      "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning. The completed-inbox fast path now checks subject_key and subject_key_version and fails closed with RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT on mismatch.",
       "files": [
         "worker/research/researchService.ts",
         "tests/rt-db-triad-001.test.ts"
       ],
-      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test.",
-      "last_code_commit": "a3713a1f05eb03639c127c6d995f805839f9292e"
+      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test. Added a regression assertion that reusing a completed outbox ID for a different subject key is rejected; execution remains pending.",
+      "last_code_commit": "0f1818e488e12580bfc9c01356cd9de04d3970fc"
     }
   }
 }
