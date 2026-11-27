@@ -1343,3 +1343,11 @@
 - **CI status:** PR #69/#70/#71 GitHub Actions failures were re-run. Fresh checks remain failed; job step arrays are empty and log downloads return GitHub `BlobNotFound`. Cloudflare build success does not establish GitHub CI success.
 - **Verification boundary:** repository changes were committed through GitHub. No local worktree or Node execution was available; no unit/typecheck/security test pass is claimed. No production deployment, merge, database mutation, secret change, or NIPS runtime implementation occurred.
 - **Next:** verify the queued staging build stops before deployment; retrieve package-level npm audit findings; restore Actions diagnostics or run CI commands in a usable executor; then continue the IRNI-owned NIPS storage RPC.
+
+
+## 2026-11-27 — Staging fail-closed verification
+
+- Manual Cloudflare build `ee140164-3d69-49f8-8f22-7849d19e4e80` reached `stopped/fail` exactly at `npm run cf:backend:validate -- --require-staging-provisioned`, emitting `BLOCKED_STAGING_DATABASES_NOT_PROVISIONED`. The build log ends at “Failed: error occurred while running build command”; the Wrangler dry-run and deploy command did not execute. **Staging fail-closed gate is now COMPLETED_AND_VERIFIED.**
+- Updated the same staging-only trigger to run `npm audit --json || true` before the fail-closed validator, so package-level vulnerability details can be captured without bypassing the staging gate. Audit build `f993d88e-1b92-4e41-9f62-83b1c3ea34b4` was queued; it remained queued at last poll.
+- Current PR checks: PR #67, #69, #70 and #71 remain Draft/open and have failed GitHub Actions checks. PR #70's latest Cloudflare API staging and frontend preview builds succeeded, but GitHub CI still fails. PR #71's latest checks also fail after workflow script corrections. All relevant job-step arrays remain empty; raw GitHub log downloads return `BlobNotFound`.
+- No production Worker, production Build Trigger, production database, secret, merge, or deployment was modified.
