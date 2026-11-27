@@ -140,7 +140,7 @@ export function RadarWorkspaceShell() {
     const cfg = MULTI_CITY_CONFIGS[cityId];
     const firstId = targetHoodId ?? (cityId === 'tehran' ? 5 : cfg.neighborhoods[0]?.id || 101);
     const secondId = cityId === 'tehran' ? 14 : cfg.neighborhoods[1]?.id || firstId;
-    ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId);
+    ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId); ui.setTradeUpCurrentHoodId(firstId);
     if (!ui.showAgencyModal) { ui.setBargainHoodId(firstId); ui.setSponsorHoodId(firstId); }
     if (!ui.showBuyerAlertModal) ui.setAlertHoodId(firstId);
     if (intent !== 'manual_map_pan' && mapInstanceRef.current && (!cityChanged || targetCenter || targetZoom)) {
