@@ -150,3 +150,14 @@
 - Added a regression that places a point on the sub-neighborhood edge while inside the parent; expected status is `RESOLVED_ON_EDGE`, no sub-neighborhood ID, and valuation feature generation must reject it.
 - Latest focused GIS workflow run `45980848999` failed both jobs (`140444048835`, `140444049218`) with no exposed steps and `BlobNotFound` logs. A retry of the preceding GIS run also failed without diagnostics. The new test and typecheck remain **NOT VERIFIED**; no passing result is claimed.
 - No production data, database, binding, secret or deployment was changed.
+
+
+## 2026-11-27 — Full-history lifecycle guard for bbox diagnostics
+
+**Code revision:** `4a66e3ed9d06a93b051d5b549a688826d0c4da01`
+
+- Further review found that bbox overlap diagnostics filtered ACTIVE records by city and level before checking uniqueness. A history containing two ACTIVE records with inconsistent metadata could be incorrectly treated as a single authoritative boundary for one filter combination.
+- Changed the diagnostic to require exactly one ACTIVE record across the complete entity history before applying city/level filters.
+- Added a regression with two ACTIVE records in one history (one Tehran/neighborhood, one Karaj/district) and a second overlapping Tehran neighborhood. The corrupt history must be excluded from the overlap scan.
+- The code and regression are committed. The latest branch code has not been verified by an accessible focused GIS workflow; do not claim test success.
+- No production data, database, binding, secret or deployment was changed.
