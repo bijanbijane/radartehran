@@ -2,7 +2,7 @@
 
 **Status date:** 2026-11-27  
 **Active review:** [Draft PR #72](https://github.com/bijanbijane/radartehran/pull/72)  
-**Latest reviewed code revision:** `2d6c707303dc2e48723c3a8869e59984199c9608`
+**Latest reviewed code revision:** `2e1bdecb73f5fd99ea08c464843dc6e68a804800`
 
 1. **No usable execution runner or CI diagnostics.** Latest focused GIS run [45980848999](https://github.com/bijanbijane/radartehran/actions/runs/45980848999) failed both regression and TypeScript jobs (`140444049218`, `140444048835`). Both expose `steps=null`; log retrieval returns `BlobNotFound`. Path-filtered run `45980848859` failed at `detect`; broader quality, D1/Worker, IRNI RPC and native-auth workflows also failed. A retry of the prior GIS jobs produced new failed job IDs `140442697746` and `140442699939`, again with empty steps and `BlobNotFound`. The authorized Desktop Commander MacBook is offline. The first failing command and whether tests started remain unknown. Repository issue [#49](https://github.com/bijanbijane/radartehran/issues/49) tracks the wider hosted-runner allocation problem.
 2. **Canonical geography provider integration.** The NIPS/profile boundary contract requires an IRNI-owned, version-pinned, read-only geography provider. The intended Worker Service Binding is not verified as deployed/configured for the Radar API.
