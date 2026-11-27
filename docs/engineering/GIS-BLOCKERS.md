@@ -108,3 +108,25 @@ The same adapter derives coordinates from a neighborhood center and explicitly m
 9. Resolve the duplicate `server/modules/bargains` vs legacy publisher model and document the chosen ownership boundary before adding another event producer.
 
 No listing data was mutated, no migration was run, and no production route/binding/deployment was changed by this audit.
+
+## IRNI RPC, authoritative geometry and valuation composition — 2026-11-27
+
+A focused re-audit of the current branch distinguishes the existing identity RPC from the missing spatial/valuation integration:
+
+- Radar has a Worker-native, read-only IRNI RPC v2 client at `worker/irni/irniGeographicRpcV2Client.ts`, exposed through `/api/v2/reference/irni/canonical/*`. It uses the `IRNI_GEOGRAPHY` Service Binding, validates response DTOs, gates reads on an ACTIVE/integrity-verified registry metadata record, and checks expected revision/checksum consistency.
+- The RPC v2 entity DTO contains canonical identity, hierarchy, point coordinates, and a `boundaryReference`; it does not expose a polygon/MultiPolygon geometry payload or a versioned geometry artifact suitable for point-in-polygon valuation assignment. The identity resolver in `worker/irni/neighborhoodProfileIdentityResolver.ts` is not a geometry resolver.
+- The Worker endpoint `/api/neighborhood-boundaries/resolve` in `worker/routes/neighborhoodBoundaryRoutes.ts` generates bounded approximate hexagons from submitted centers/radii. Its response explicitly labels them as visualization-only and not official/registered boundaries. It must never be wired as the valuation boundary authority.
+- The Express GIS service in `server/modules/geospatial/service.ts` resolves points against its in-process boundary-history store. That store hydrates/persists through `server/modules/geospatial/geospatialRepository.ts` and `AtomicJsonRepository('geospatial-state.json')`, with a durable snapshot adapter in production mode. The inspected path does not establish that those boundary records are populated from the approved IRNI registry or a verified IRNI geometry feed.
+- `apps/api/server.ts` mounts the GIS router but does not construct `createValuationService` or mount `createValuationRouter`. The valuation module also requires a `ValuationDataConsumerAdapter`; no production adapter/composition for that service was established by this audit.
+- The new `ValuationLocationResolver` is a service-level fail-closed seam, not a production resolver. The cross-module regression test injects the local `GeospatialService`; it does not prove Worker Service Binding, IRNI geometry provenance, Express production composition, or public HTTP behavior.
+
+### Required integration gates
+
+1. IRNI must publish a read-only, version-pinned geometry contract (or an independently governed geometry provider must be selected) that returns authoritative boundary geometry, CRS, source/provenance, lifecycle status, geometry version and registry revision/checksum. Identity-only DTOs and approximate visualization rings are insufficient.
+2. Radar must validate the geometry contract and prove each boundary is linked to exactly one approved canonical IRNI entity. Retired, disputed, unverified, missing, overlapping or revision-drifted records must fail closed.
+3. The production GIS repository must have an explicit, auditable ingestion/refresh path for those approved geometries; its current snapshot store must not be assumed to be IRNI-backed.
+4. A real production `ValuationDataConsumerAdapter` and `ValuationLocationResolver` must be constructed in the chosen runtime. If valuation is Worker-native, do not import the Express/Node GIS module into the Worker; implement a Worker-compatible adapter against the approved geometry contract. If it remains Express-hosted, define a secure server-side IRNI read path and lifecycle/revision policy.
+5. Register the valuation HTTP route only after dependencies are complete; add public API integration tests for missing binding, registry revision drift, missing geometry, edge/outside/overlap cases, mismatched caller IDs, and successful strictly-interior resolution.
+6. Keep the endpoint disabled/not registered until all of the above are verified. Do not use approximate geometry, neighborhood centers, legacy numeric IDs, names or proximity as canonical identity or official boundaries.
+
+No code path, binding, database, secret or deployment was changed by this audit. The current exact-head GIS, IRNI RPC and Worker bundle workflows still fail with `steps=null` and no logs URL; execution of their commands is not established.
