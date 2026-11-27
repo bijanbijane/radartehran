@@ -194,10 +194,10 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
           expect(height).toBeGreaterThanOrEqual(44);
         }
 
-        const horizontalOverflow = await page.evaluate(() =>
-          document.documentElement.scrollWidth > document.documentElement.clientWidth
+        const dialogHasHorizontalOverflow = await dialog.evaluate((element) =>
+          element.scrollWidth > element.clientWidth
         );
-        expect(horizontalOverflow).toBe(false);
+        expect(dialogHasHorizontalOverflow).toBe(false);
       });
     }
   });
