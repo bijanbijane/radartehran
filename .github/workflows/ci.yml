@@ -15,7 +15,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-      - cursor/rt-infra-001-gate-b-monorepo
   workflow_dispatch:
 
 permissions:
