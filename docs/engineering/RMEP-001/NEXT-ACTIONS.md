@@ -22,3 +22,7 @@ Updated: 2026-11-27
 15. Run the full RT-DB-TRIAD-001 test and Worker typecheck against head 043e25c7c044cf4375fd40b68bbd62bb02c8831a.
 16. Inspect CI run IDs 45986606294, 45986606317, 45986606333, and 45986606330 using actual logs/annotations when available; no inferred root causes.
 17. Audit outbox attempt_count lost-update behavior and whether a lease/claim is still needed; retain status fencing regardless.
+
+18. Add/verify unavailable-RESEARCH_DB completion race test in tests/rt-db-triad-001.test.ts (new test committed at 34e2aaad37ba4b3793df7a9a5eecd8e364de6b15).
+19. Run the focused RT-DB triad suite and Worker typecheck when a local runtime is online; retrieve actionable diagnostics for CI run IDs 45987376314, 45987376378, 45987376493, and 45987376397.
+20. After CI is diagnosable, continue one live Express Firestore adapter migration at a time; do not remove historical Firebase compatibility files or rules merely because their names contain Firebase/Firestore.
