@@ -46,13 +46,13 @@ export function validateRmepExecutionState(state: RmepExecutionState): { valid: 
   const approvedPath = state.approved_master_prompt?.path;
   if (typeof approvedPath !== 'string' || !approvedPath.trim()) {
     reasons.push('Missing approved_master_prompt.path');
-  } else if (approvedPath.includes('..') || approvedPath.startsWith('/') || approvedPath.includes('\\\\')) {
+  } else if (approvedPath.includes('..') || approvedPath.startsWith('/') || approvedPath.includes('\\')) {
     reasons.push('Unsafe path reference in approved_master_prompt.path');
   }
 
   const reportPath: unknown = state.final_report_path;
   if (reportPath !== undefined && reportPath !== null) {
-    if (typeof reportPath !== 'string' || reportPath.includes('..') || reportPath.startsWith('/') || reportPath.includes('\\\\')) {
+    if (typeof reportPath !== 'string' || reportPath.includes('..') || reportPath.startsWith('/') || reportPath.includes('\\')) {
       reasons.push('Unsafe path reference in final_report_path');
     }
   }
@@ -71,7 +71,7 @@ export function validateRmepExecutionState(state: RmepExecutionState): { valid: 
         reasons.push(`Missing evidence_path for test: ${String(testRecord.test_name ?? 'unknown')}`);
         continue;
       }
-      if (evidencePath.includes('..') || evidencePath.startsWith('/') || evidencePath.includes('\\\\')) {
+      if (evidencePath.includes('..') || evidencePath.startsWith('/') || evidencePath.includes('\\')) {
         reasons.push(`Unsafe evidence_path: ${evidencePath}`);
       }
     }
