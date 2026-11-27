@@ -1414,3 +1414,8 @@
 ## 2026-11-27 — latest exact-head CI evidence
 - PR #78 code head `1a33b00db205303dfd2603698cceea051c424398` triggered Backend Triad run 45996787222 job 140498058219, Quality Gates run 45996787220 job 140498058177, Native Auth run 45996787126 job 140498057995 and Path-Filtered Checks run 45996787006 detect job 140498057224. All primary jobs failed with runner_id=0, empty runner_name and zero steps; downstream jobs were skipped.
 - No source checkout, dependency install, tests, typecheck or build executed. Issue #49 updated with the exact run/job IDs.
+
+
+## 2026-11-27 — TRIAD-003 test-only CI trigger verification
+- The TRIAD-003 test-only change on PR #78 head `d622a1958d567140731f7ac87d6aa3140ed4a44e` triggered the Backend Triad workflow (run 45997297157), Quality Gates (45997297169), Native Auth (45997297190) and Path-Filtered Checks (45997297120).
+- Primary jobs again failed before runner assignment (runner_id=0, empty runner_name, zero steps); downstream jobs skipped. This confirms the path filter is now triggering the intended workflow, but the runner issue still prevents test execution. Issue #49 updated.
