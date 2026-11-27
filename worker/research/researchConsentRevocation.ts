@@ -140,6 +140,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
   if (existingActiveJob) {
     const existingJob = mapConsentRevocationJobRow(existingActiveJob);
     if (current.consentRevision !== existingJob.revokedConsentRevision) {
+      await cancelUnappliedRevocationIntent(userDb, existingJob.revocationId);
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
     // Recover a crash after the durable job/outbox commit but before consent was switched off.
@@ -341,6 +342,7 @@ export async function reconcileResearchConsentRevocation(params: {
   const currentPrivacy = await getUserPrivacyConsentFromD1(userDb, job.uid);
   if (currentPrivacy.researchAnalyticsConsent) {
     if (currentPrivacy.consentRevision !== job.revokedConsentRevision) {
+      await cancelUnappliedRevocationIntent(userDb, job.revocationId);
       throw new Error('RESEARCH_CONSENT_REVOCATION_REVISION_CONFLICT');
     }
     let revokedPrivacy;
