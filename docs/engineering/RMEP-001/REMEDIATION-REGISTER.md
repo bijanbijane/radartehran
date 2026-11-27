@@ -53,3 +53,9 @@ Static comparison of workflow invocations against root `package.json` found and 
 | RT-STG-001 | API staging Worker build deployed with no staging D1/IRNI Service Binding because validator warning did not fail the build. | CONFIRMED_DEFECT |
 | RT-STG-002 | API staging Build Trigger now passes `--require-staging-provisioned` to validator before dry-run/deploy. Trigger is branch-scoped to the staging QA branch. Manual verification build remains queued. | IMPLEMENTED_BUT_NOT_VERIFIED |
 | RT-SEC-001 | Successful Cloudflare npm install reports 21 vulnerabilities, including 2 critical; package-level details unavailable. | BLOCKED — audit details required |
+
+
+| ID | New verification | Status |
+|---|---|---|
+| RT-STG-002 | Build `ee140164-3d69-49f8-8f22-7849d19e4e80` stopped at `BLOCKED_STAGING_DATABASES_NOT_PROVISIONED` before Wrangler dry-run/deploy. | COMPLETED_AND_VERIFIED |
+| RT-SEC-001 | Build `f993d88e-1b92-4e41-9f62-83b1c3ea34b4` queued with `npm audit --json` enabled before fail-closed staging gate. | IN_PROGRESS — audit output pending |
