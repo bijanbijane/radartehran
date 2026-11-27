@@ -269,3 +269,25 @@ A focused review of `SpatialPublishableListing` and `isListingEligibleForPublicS
 **Boundary of this fix:** this field is an eligibility assertion carried by the internal listing projection; it does not itself establish the underlying evidence or replace an authoritative coordinate-verification workflow. The canonical listing producer and evidence source remain disconnected from the GIS index, as documented above. No approximate coordinate was promoted, no data backfill was run, and no production index was modified.
 
 **Verification:** GitHub read-back confirms the type, public projection, and regression-test changes. Local test/typecheck execution is unavailable in this session; hosted workflow execution must be checked against the exact PR head. Status: **IMPLEMENTED — NOT VERIFIED**.
+
+
+## CI-driven GIS remediation — 2026-11-28
+
+The first hosted validation of PR #98 exposed three GIS test defects and baseline TypeScript/architecture issues. The failures were inspected from the actual GitHub Actions job logs rather than inferred from check summaries.
+
+**Remediations committed:**
+- Updated the public-projection test fixture to explicitly declare its exact verified coordinate accuracy.
+- Restored the pickActiveBoundaryVersion compatibility export expected by the neighborhood boundary read-model test.
+- Corrected polygon simplification stride sampling so the requested stride vertices are retained; invalid simplified topology falls back to the canonical geometry.
+- Updated the duplicate-active-boundary approval test to assert against the current Map entry after the copy-on-write mutation, rather than a stale array reference.
+- Registered the existing GEOSPATIAL_PERSISTENCE_UNAVAILABLE API error code in the canonical error-code union.
+- Restored missing shared neighborhood-profile validation exports/imports and made the metric-count reducer accumulator explicitly numeric.
+- Split the geospatial distance calculations and persisted-snapshot validation into focused modules. Both former oversized GIS files are now below the 500-line architecture ceiling; the architecture guard subsequently reported **0 blocking errors**.
+
+**Hosted results observed for intermediate head e357251:**
+- Architecture guard: PASS (0 errors).
+- Native Auth contracts, frontend bundle, and Worker dry-run: PASS.
+- GIS regression and TypeScript were still failing because the extraction had missed shared constants/default snapshot factory; these were corrected in subsequent commits.
+- API contract suite failed on a frontend map-filter focus-indicator static assertion. The three dismissal buttons already had visible focus classes, but the assertion's JSX tag matcher stopped at the => in an earlier onClick attribute. Attribute order was adjusted so the existing focus classes are visible to the check; no interaction behavior changed.
+
+The above are intermediate results only. The latest head is being revalidated by fresh GitHub Actions runs. No check is treated as passed for the latest head until its own run completes.
