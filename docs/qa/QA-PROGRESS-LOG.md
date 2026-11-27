@@ -24,3 +24,11 @@
 - Requested one controlled rerun of CI Quality Gates. Retry job `140448953174` repeated the same zero-runner, zero-step failure.
 - Classification: GitHub-hosted runner allocation failure confirmed from API job metadata. No application test failure can be inferred.
 - Further blind retries are paused until runner allocation changes. Local MacBook remains Offline.
+
+
+## 2026-11-27 — Public GitHub status cross-check
+
+- Checked GitHub's public status page after confirming `runner_id=0` on all five workflow jobs.
+- The status page currently lists Actions as operational and reports no incident for November 27, 2026.
+- Therefore the observed runner allocation failure cannot be attributed to a declared GitHub-wide Actions outage. A repository/account-specific runner eligibility, usage-limit, or configuration issue remains possible but unverified.
+- Source: https://www.githubstatus.com/ (checked 2026-11-27).
