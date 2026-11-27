@@ -59,3 +59,9 @@ Static comparison of workflow invocations against root `package.json` found and 
 |---|---|---|
 | RT-STG-002 | Build `ee140164-3d69-49f8-8f22-7849d19e4e80` stopped at `BLOCKED_STAGING_DATABASES_NOT_PROVISIONED` before Wrangler dry-run/deploy. | COMPLETED_AND_VERIFIED |
 | RT-SEC-001 | Build `f993d88e-1b92-4e41-9f62-83b1c3ea34b4` queued with `npm audit --json` enabled before fail-closed staging gate. | IN_PROGRESS — audit output pending |
+
+
+| ID | Production evidence | Status |
+|---|---|---|
+| RT-IRNI-OWN-001 | Production API still binds IRNI-owned `NEIGHBORHOOD_DB` and `IRNI_PUBLISH_HMAC_SECRET`; no `IRNI_GEOGRAPHY` binding. The configured D1 write-pause deadline is expired. | BLOCKED — ordered owner-side RPC cutover required |
+| RT-IRNI-OWN-002 | Cloudflare Worker `irni-api` does not exist (404/10007). IRNI read RPC PR #22 and NIPS persistence proposal PR #25 are Draft; ADR-0002 not accepted. | BLOCKED — owner-side implementation/deployment gate |
