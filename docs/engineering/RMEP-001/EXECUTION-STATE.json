@@ -13,9 +13,9 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "36d5b6fa64c1c5c72dbec4bf41ab59f45c3b66bb",
+    "head_commit": "9e855f40e395b34b4ab1318ce3520e60858599cf",
     "working_tree_status": "REMOTE_BRANCH_UPDATED_VIA_GITHUB_CONTENTS_API; NO_LOCAL_WORKTREE",
-    "last_verified_commit": "006d41662ec3a05c921651b1060c6ca02aac4710"
+    "last_verified_commit": "9180bffe91577e9a53460fcf54e0058549813f0d"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-195-NIPS-RUNTIME-AND-CI-DIAGNOSTICS",
-    "checkpoint_timestamp_utc": "2026-11-27T09:36:00.000Z",
-    "last_safe_operation": "Inspected main and the existing NIPS feature branch; verified the NIPS runtime foundation and PR #67; retried the failed path-filter detect job; recorded CI/log-access limitations; added remediation, blockers, next-actions, and progress documentation.",
-    "last_completed_operation": "Created REMEDIATION-REGISTER.md, BLOCKERS.md, NEXT-ACTIONS.md and appended the 2026-11-27 NIPS resumption record to PROGRESS-LOG.md. No runtime code or production configuration changed.",
-    "next_exact_action": "Recover raw GitHub Actions logs or reproduce the failing detect job for PR #67. Diagnose each failing workflow from exact output. Then implement the paired IRNI-owned authenticated/versioned NIPS storage RPC and Radar repository adapter without a direct Radar D1 binding.",
+    "checkpoint_id": "CHK-196-GITHUB-CI-RERUN-AND-BACKEND-RESUMPTION",
+    "checkpoint_timestamp_utc": "2026-11-27T10:00:00.000Z",
+    "last_safe_operation": "Reconciled the actual GitHub main and NIPS feature branch; inspected PRs #67, #69 and #70; retried the PR #67 quality-gate job and confirmed the rerun still fails without step/log evidence; updated backend blockers, remediation, next actions and NIPS implementation tracker.",
+    "last_completed_operation": "Updated BLOCKERS.md, NEXT-ACTIONS.md, REMEDIATION-REGISTER.md and NIPS/IMPLEMENTATION-TRACKER.md with current workflow run IDs, rerun job ID 140435161931, exact BlobNotFound limitation and current storage ownership blockers. No runtime code or production configuration changed.",
+    "next_exact_action": "Diagnose GitHub Actions job initialization/runner availability for rerun job 140435161931 using GitHub's native Actions UI or restored log access. Once actual steps are available, fix the first reproducible command-level failure; in parallel, continue only owner-authorized IRNI NIPS RPC work without adding a direct Radar D1 binding.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1943,9 +1943,10 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: PR #67 CI failures cannot yet be root-caused because GitHub job step responses are empty and job-log download returns BlobNotFound; retry of detect failed again.",
-    "B-002: NIPS shared persistence requires the authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
-    "B-003: The version-pinned IRNI geography provider/Service Binding must be verified and made available before NIPS runtime integration."
+    "B-001: PR #67 workflows fail; rerun job 140435161931 also failed with an empty step list and BlobNotFound logs, so the failing command is unknown.",
+    "B-002: NIPS persistence requires the authenticated/versioned IRNI-owned storage RPC and owner-side migration; Radar direct D1 binding is prohibited.",
+    "B-003: Version-pinned IRNI geography provider/Service Binding is not yet available to the Radar runtime.",
+    "B-004: PR #69 native-auth workflow fix and PR #70 stale Bun lockfile removal remain Draft and unverified by successful CI/Cloudflare preview builds."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
@@ -2191,6 +2192,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Recover raw GitHub Actions logs or reproduce the failing detect job for PR #67. Diagnose all failing workflows from exact output, then continue the paired IRNI storage RPC and Radar NIPS adapter."
+    "next_action": "Diagnose GitHub Actions job initialization/runner availability for rerun job 140435161931 using GitHub's native Actions UI or restored log access. Once actual steps are available, fix the first reproducible command-level failure; in parallel, continue only owner-authorized IRNI NIPS RPC work without adding a direct Radar D1 binding."
   }
 }
