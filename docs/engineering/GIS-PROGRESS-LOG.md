@@ -69,3 +69,16 @@
 - Audit every point-resolution consumer and add an explicit profile-read reason for duplicate active history.
 - Implement tests for overlapping MultiPolygon components; execute endpoint-touch and collinear-overlap fixtures for segment intersection changes.
 - No production database, geometry dataset, Worker binding, secret, or deployment was modified by this work package.
+
+
+## 2026-11-27 — Exact-HEAD GIS workflow result
+
+**Branch HEAD:** `24e4c66af8c67195b46f7d3878d1cc846b6bdf8c`  
+**Code revision:** `f601b15715d2221c4b7a48d016f9350fcd685d25`
+
+- The dedicated `GIS Spatial Integrity` workflow run `45979096386` concluded `failure`.
+- Job `140438143889` (`GIS module TypeScript typecheck`) concluded `failure`.
+- Job `140438144408` (`GIS geometry and boundary regression`) concluded `failure`.
+- Both job records exposed no steps; downloading either log returned `BlobNotFound`.
+- The result is a failed CI check, not a verified assertion failure. The available evidence does not identify whether setup/runner allocation failed or whether the commands ran and failed.
+- The device is offline; no local rerun is possible in this session. GIS regression and typecheck status remain **NOT VERIFIED** pending a rerun with accessible logs.
