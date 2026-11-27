@@ -71,3 +71,23 @@ The Radar-side source registry adapter must independently verify that the local 
 ## Current release gate
 
 Profile evidence remains BLOCKED until both canonical identity and trusted source evidence are independently verified in the production composition. A READY response must never be inferred from the Worker identity resolver alone.
+
+
+## Existing Worker-to-Express session assertion: reuse assessment
+
+The current authentication bridge was inspected in `worker/auth/sessionAssertion.ts`, `worker/stranglerFallback.ts`, `src/utils/serverCloudflareSessionBridge.ts`, and the Express bootstrap in `apps/api/server.ts`.
+
+Observed properties:
+
+- Worker creates a signed v1 assertion only after validating a Radar D1 session; the Express middleware verifies it before downstream middleware and removes the private assertion header.
+- The assertion is bound to HTTP method, exact path plus query, correlation ID, and `x-radar-worker-hop=1`, and expires after at most 30 seconds.
+- The MAC uses `AUTH_INTERNAL_HMAC_SECRET`, a shared authentication-bridge secret.
+- The signed payload does **not** include a request-body digest or a unique nonce. The Express verifier has no replay-store check. Consequently, a still-valid assertion is not cryptographically bound to one exact body and is not single-use; a captured assertion could be replayed during its validity window against the same method/path/correlation binding if it reaches the Express origin.
+- The Worker removes a client-supplied assertion before forwarding and only inserts the assertion it minted. This is a useful trust-boundary control, but it does not add body binding or replay prevention.
+
+Decision:
+
+- This session assertion is not a suitable contract for an IRNI geography RPC. It authenticates a user principal, not the Worker service identity or a canonical geographic entity.
+- Do not add geography claims to the session payload, reuse `AUTH_INTERNAL_HMAC_SECRET` for geography RPC, or treat `x-radar-worker-hop` as authentication.
+- A dedicated internal RPC must sign its own contract version, exact method/path, timestamp, unique nonce, and canonical body digest, then consume the nonce in durable shared storage before executing the operation.
+- This audit records a design limitation in the existing session bridge; it does not modify or invalidate the current authentication flow. Any remediation to that general-purpose bridge requires a separate auth/security scope and regression plan.
