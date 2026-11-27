@@ -49,7 +49,10 @@
     "Audited SecondaryModals, BuyerAlertPwaLegalModals, PortfolioModals, AppModalsPortal, useDialogFocus, and dialogStack for simultaneous modal states and focus-hook ownership.",
     "Verified SecondaryModals exposes five independent modal visibility conditions while its focus hook activation covers only pulse/SEO; buyer-alert/PWA/legal have one shared hook ref across three conditional dialog surfaces.",
     "Verified PortfolioModals independently renders visited-homes and trade-up dialogs from separate flags without a shared useDialogFocus hook in the inspected component.",
-    "Documented modal concurrency risk register, exclusive/nested modal state contract, focus restoration invariants, and transition acceptance matrix in DESIGN-MAP-008; no application code or tests changed."
+    "Documented modal concurrency risk register, exclusive/nested modal state contract, focus restoration invariants, and transition acceptance matrix in DESIGN-MAP-008; no application code or tests changed.",
+    "Traced direct open-state writers for pulse/SEO, buyer-alert, visited-log, and trade-up modal families across useAppUiState, FloatingTopBar, ProductViewRouter, NeighborhoodInspectorTabs/Drawer, NeighborhoodBargainsAndVotesTabs, and RadarWorkspaceShell.",
+    "Verified a source-level Escape conflict: useDialogFocus handles the topmost dialog on document and only preventDefault()s, while useAppUiState registers a window keydown handler that clears all modal flags on Escape; the event is not stopped in the inspected hook.",
+    "Expanded DESIGN-MAP-008 with writer inventory and a priority finding that one Escape may clear multiple modal flags; runtime reproduction remains NOT RUN."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -114,10 +117,12 @@
     "modal_entry_point_inventory": "PARTIAL — 13 WORKSPACE MODAL MODULES",
     "modal_portal_documentation": "VERIFIED — FINAL FETCH CONFIRMED",
     "modal_concurrency_source_review": "VERIFIED — SECONDARY, BUYER/PWA/LEGAL, PORTFOLIO, WORKSPACE AGGREGATOR",
-    "modal_flag_mutual_exclusion": "NOT VERIFIED — TRANSITION WRITERS NOT YET TRACED",
+    "modal_flag_mutual_exclusion": "NOT VERIFIED — SELECTED WRITERS TRACED; FULL GRAPH OPEN",
     "modal_focus_ref_ownership": "SOURCE RISK VERIFIED — RUNTIME NOT VERIFIED",
     "modal_concurrency_runtime": "NOT RUN",
-    "modal_behavioral_transition_tests": "NOT RUN"
+    "modal_behavioral_transition_tests": "NOT RUN",
+    "modal_flag_writer_inventory": "PARTIAL — 7 STATE FAMILIES TRACED",
+    "modal_escape_handler_conflict": "SOURCE CONFLICT VERIFIED — RUNTIME NOT REPRODUCED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -131,5 +136,5 @@
     "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
     "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device."
   ],
-  "next_exact_action": "Trace all writers and transition handlers for SecondaryModals, BuyerAlert/PWA/Legal, and PortfolioModals flags; build a source-backed transition graph; then validate overlapping states, topmost Escape/Tab, nested focus restoration, background inertness, and scroll lock in a connected browser/device. No app-code changes without explicit frontend authorization."
+  "next_exact_action": "Prioritize the document/window Escape conflict for a controlled browser reproduction with two open dialogs; trace remaining modal state writers and nested transition paths; then validate that Escape dismisses only the topmost dialog and focus returns to its parent. Do not edit application code without explicit frontend authorization."
 }
