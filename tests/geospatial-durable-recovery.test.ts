@@ -18,6 +18,7 @@ import {
   loadGeospatialState,
   persistGeospatialState,
   resetGeospatialRepositoryForTests,
+  activateStagedGeospatialRepositorySnapshot,
   type PersistedGeospatialState,
 } from '../server/modules/geospatial/geospatialRepository';
 import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
@@ -276,6 +277,26 @@ async function runTests(): Promise<void> {
   });
   assert.equal(stagedOnly.health, 'READY');
   assert.equal(stagedOnly.activated, false);
+  // A blocked repository must recover through the explicit activation path;
+  // ordinary writes remain prohibited until the durable activation completes.
+  resetGeospatialRecoveryStateForTests();
+  const blockedBeforeRecovery = stageGeospatialSnapshotForActivation({
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  });
+  assert.equal(blockedBeforeRecovery.health, 'BLOCKED');
+  const stagedRecovery = stageGeospatialSnapshotForActivation(sampleState());
+  assert.equal(stagedRecovery.health, 'READY');
+  assert.throws(() => persistGeospatialState(sampleState()), /GEOSPATIAL_PERSISTENCE_BLOCKED/);
+  const recoveryActivation = await activateStagedGeospatialRepositorySnapshot();
+  assert.equal(recoveryActivation.health, 'READY');
+  assert.equal(recoveryActivation.activated, true);
+  assert.equal(Object.keys(loadGeospatialState().boundaryHistoryByEntity).length, 1);
+
   resetGeospatialRecoveryStateForTests();
   stageGeospatialSnapshotForActivation(sampleState());
   let persisted: PersistedGeospatialState | null = null;
