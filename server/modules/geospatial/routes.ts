@@ -9,6 +9,7 @@ import {
 } from '../core';
 import type { GeospatialModuleDependencies } from './types';
 import type { GeospatialService } from './service';
+import { getCloudflareSessionContext } from '../../../src/utils/serverCloudflareSessionBridge';
 
 export function createGeospatialRouter(
   service: GeospatialService,
@@ -38,6 +39,16 @@ export function createGeospatialRouter(
   }
 
   async function checkIsAdmin(req: Request): Promise<{ isAdmin: boolean; uid?: string }> {
+    // A verified Worker assertion is the canonical identity path. Never downgrade
+    // a present Cloudflare session to legacy Firebase authorization.
+    const sessionPrincipal = getCloudflareSessionContext();
+    if (sessionPrincipal) {
+      return {
+        isAdmin: sessionPrincipal.isAdmin
+          && (sessionPrincipal.isPrimaryAdmin || sessionPrincipal.isDelegatedAdmin),
+        uid: sessionPrincipal.uid,
+      };
+    }
     if (!deps.tokenVerifier || !deps.adminStore) return { isAdmin: false };
     const authRes = await extractAuthenticatedPrincipal(req, deps.tokenVerifier, { requireVerifiedEmail: false });
     if (!authRes.ok || !authRes.principal) return { isAdmin: false };
