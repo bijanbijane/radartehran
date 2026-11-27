@@ -52,7 +52,8 @@
     "Documented modal concurrency risk register, exclusive/nested modal state contract, focus restoration invariants, and transition acceptance matrix in DESIGN-MAP-008; no application code or tests changed.",
     "Traced direct open-state writers for pulse/SEO, buyer-alert, visited-log, and trade-up modal families across useAppUiState, FloatingTopBar, ProductViewRouter, NeighborhoodInspectorTabs/Drawer, NeighborhoodBargainsAndVotesTabs, and RadarWorkspaceShell.",
     "Verified a source-level Escape conflict: useDialogFocus handles the topmost dialog on document and only preventDefault()s, while useAppUiState registers a window keydown handler that clears all modal flags on Escape; the event is not stopped in the inspected hook.",
-    "Expanded DESIGN-MAP-008 with writer inventory and a priority finding that one Escape may clear multiple modal flags; runtime reproduction remains NOT RUN."
+    "Expanded DESIGN-MAP-008 with writer inventory and a priority finding that one Escape may clear multiple modal flags; runtime reproduction remains NOT RUN.",
+    "Reviewed react-component-interactions, frontend-debug-regressions, and engineering-quality-foundation tests; verified current coverage is helper/source-contract based and does not exercise bubbling Escape across document/window listeners with multiple mounted dialogs."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -122,7 +123,8 @@
     "modal_concurrency_runtime": "NOT RUN",
     "modal_behavioral_transition_tests": "NOT RUN",
     "modal_flag_writer_inventory": "PARTIAL — 7 STATE FAMILIES TRACED",
-    "modal_escape_handler_conflict": "SOURCE CONFLICT VERIFIED — RUNTIME NOT REPRODUCED"
+    "modal_escape_handler_conflict": "SOURCE CONFLICT VERIFIED — RUNTIME NOT REPRODUCED",
+    "modal_escape_regression_coverage": "GAP VERIFIED — NO DOM-LEVEL MULTI-DIALOG PROPAGATION TEST FOUND IN REVIEWED TESTS"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -136,5 +138,5 @@
     "Modal flag writers and all transition paths have not yet been fully traced; source findings establish independent conditions but not whether simultaneous states are reachable in production journeys.",
     "Modal concurrency runtime QA remains blocked by unavailable connected development browser/device."
   ],
-  "next_exact_action": "Prioritize the document/window Escape conflict for a controlled browser reproduction with two open dialogs; trace remaining modal state writers and nested transition paths; then validate that Escape dismisses only the topmost dialog and focus returns to its parent. Do not edit application code without explicit frontend authorization."
+  "next_exact_action": "Add a DOM-level two-dialog Escape propagation regression test only after explicit frontend implementation authorization; until then, preserve the evidence-backed test specification. Reconnect browser/device for runtime reproduction and verify topmost-only dismissal, focus restoration, and body overflow restoration."
 }
