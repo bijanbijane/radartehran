@@ -114,3 +114,8 @@ Before any Radar production deployment:
 ### Browser Firebase import guard — verification pending
 - Added `CLIENT_FIREBASE_SDK_IMPORT` in `scripts/check-architecture.ts` for browser-facing source layers and regression fixtures in `tests/architecture-guardrails.test.ts`. It blocks future Firebase client/Admin SDK imports in browser modules while allowing transitional Node-only Express adapters to remain temporarily.
 - **Next:** run `npm run arch:check` and `npm run test:contracts` once GitHub Actions runner allocation recovers. Treat the guard as IMPLEMENTED_BUT_NOT_VERIFIED until those commands execute and pass.
+
+
+### Latest CI retry status — 2026-11-27
+- PR #67 runs #45989808778, #45989808702, #45989808715, #45989808637 and #45989808717 all failed before exposing steps; job logs again return `BlobNotFound`. Do not rerun repeatedly while runner allocation is unavailable.
+- The new browser Firebase SDK guard is implemented but unverified. Required first checks after runner recovery: `npm run arch:check` and `npm run test:contracts`, followed by the full auth/NIPS/RPC/triad suite.
