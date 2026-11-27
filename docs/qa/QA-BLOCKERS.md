@@ -20,3 +20,10 @@
    - Their runtime behavior remains unknown until a job receives a real runner and executes steps.
 
 No production credentials, production data, deployment, migration, secret rotation, or destructive operation was touched.
+
+4. **Cloudflare Workers Preview dependency install failure — confirmed**
+   - Build: `bdf2e772-1133-486a-98bf-f1d26c81355a` for commit `ee9d0d31b17089aa5a3fa9707688c0df0050dfd5`.
+   - Cloudflare selected `bun install --frozen-lockfile` because `bun.lock` exists, then stopped before the build command: `lockfile had changes, but lockfile is frozen`; `@tailwindcss/vite` was recorded in a different dependency group.
+   - The checked-in `bun.lock` root workspace is named `react-example`, while `package.json` is `radartehran`; root dependency groups also differ. The repository's npm lockfile is the intended source for the `npm run build` workflow.
+   - Correction committed in this QA branch: remove the stale Bun lockfile and pin `packageManager` to `npm@10.9.2`. This is intended to make Workers Builds select npm and use `package-lock.json`.
+   - Pending: verify a new Preview build reaches dependency installation and the frontend build command. No successful build is claimed.
