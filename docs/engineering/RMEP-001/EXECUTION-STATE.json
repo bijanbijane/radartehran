@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "9a1678fb037511856c3d0e58143cf997c89fb114",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; CI_AND_STAGING_DIAGNOSTICS_RECORDED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "ff8e2091db1a6902e40c181d21eca6b2bb3d0e46",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; NO_LOCAL_WORKTREE; CI_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-201-CI-LOCKFILE-STAGING-BINDINGS",
-    "checkpoint_timestamp_utc": "2026-11-27T11:15:00.000Z",
-    "last_safe_operation": "Retrieved Cloudflare build logs proving npm ci lock mismatch, successful PR70 frontend preview and staging API build, explicit staging missing-binding warnings and unprovisioned staging DB block, and npm audit count 21 (14 moderate, 5 high, 2 critical). Updated PR69 and PR71 branches with .npmrc legacy-peer-deps=true; fresh CI remains failed with unavailable logs.",
-    "last_completed_operation": "Updated PROGRESS-LOG.md, REMEDIATION-REGISTER.md, BLOCKERS.md, NEXT-ACTIONS.md on NIPS branch. No runtime code, D1 schema/data, staging provisioning, production resources, secrets, merge, or manual deployment changed.",
-    "next_exact_action": "Use an available Node 22/npm 10 executor to validate npm ci with committed .npmrc and retrieve npm audit JSON; otherwise recover CI runner annotations/logs. In parallel, verify explicit staging-only D1 and IRNI service IDs before any staging config changes. Keep NIPS persistence blocked pending the IRNI-owned authenticated/versioned storage RPC.",
+    "checkpoint_id": "CHK-202-GITHUB-RUNNER-ALLOCATION-ROOT-CAUSE",
+    "checkpoint_timestamp_utc": "2026-11-27T11:08:00.000Z",
+    "last_safe_operation": "Inspected raw GitHub Actions run/job payloads across PRs #67, #69, #70, #71, and #81. Failed jobs consistently have runner_id=0, blank runner name, zero steps, and immediate failure. Re-ran PR #81 guard; attempt 2 failed identically before runner allocation. This is infrastructure failure, not evidence of source test failure. Cloudflare build logs independently prove npm ci lock mismatch for PR #71 and a successful PR #70 frontend preview.",
+    "last_completed_operation": "Updated PROGRESS-LOG.md, REMEDIATION-REGISTER.md, BLOCKERS.md, NEXT-ACTIONS.md with corrected CI classification. No source code, database, secret, deployment, or production resource changed on NIPS branch.",
+    "next_exact_action": "When a GitHub Actions runner becomes available or a connected Node 22/npm 10 executor is available, execute the NIPS tests, native-auth tests, npm ci, backend config validator, and npm audit JSON. Keep NIPS storage blocked until the IRNI-owned authenticated/versioned RPC and canonical geography binding are verified.",
     "resume_status": "READY"
   },
   "execution_history": {
