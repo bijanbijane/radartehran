@@ -100,3 +100,9 @@ Do not label GitHub Actions failures as source-code test failures unless a runne
 
 
 | RT-DATA-002 | Added a static architecture guard prohibiting Firebase client/Admin SDK imports in browser-facing source layers, with virtual-override tests for `firebase/auth`, `@firebase/app`, and `firebase-admin/firestore`. | IMPLEMENTED_BUT_NOT_VERIFIED — CI runner allocation blocked | Run `npm run arch:check` and `npm run test:contracts` when a runner/executor is available; then keep the guard active while legacy Express adapters are migrated separately. |
+
+## 2026-11-27 — NIPS public serializer disclosure hardening
+
+| ID | Finding / change | Status | Required verification |
+|---|---|---|---|
+| RT-NIPS-SEC-002 | Public serialization previously passed nested metric metadata and free-form readiness/quality diagnostics through without a nested allow-list. Added field projections and safe generic diagnostics; regression fixture injects private sentinel values and checks that none appear in public JSON. | IMPLEMENTED_BUT_NOT_VERIFIED | Run `npm run test:nips`, root typecheck and architecture/security gates when a runner/executor is available. |
