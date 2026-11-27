@@ -59,3 +59,15 @@ Cloudflare verification build `433532e7-7cd4-4608-9691-7a081052dfe2` completed d
 The Vitest/Tinypool critical findings and Sharp high findings are absent from the post-remediation audit. The remaining four High findings are the Firebase/Firestore chain: `firebase`, `@firebase/firestore`, `@firebase/firestore-compat`, and `@grpc/grpc-js`. The eight Moderate findings remain primarily under `firebase-admin` and its Google Cloud transitive dependencies.
 
 The verification build has reached `npm run typecheck` (`tsc --noEmit`) and remains running. No typecheck, test-suite or build result is claimed yet.
+
+
+## Test-runner compatibility correction
+
+The first verification build `433532e7-7cd4-4608-9691-7a081052dfe2` passed npm ci, typecheck, architecture, security, auth, Cloudflare/D1, triad and storage checks, then failed in `npm run test:vitest`:
+
+- 83 files failed with `No test suite found in file`; 1 Vitest file passed.
+- Root cause: `vitest.config.ts` included `src/**/*.test.ts`, but those source tests import Node's `node:test` API, not Vitest. The repository already runs these files through `tsx --test` in `npm run test:unit`.
+- Correction: removed the broad `src/**/*.test.ts` Vitest include; retained `tests/neighborhood-insights.test.ts` and `tests/**/*.vitest.test.ts`. Added `npm run test:unit` to the verification script before `npm run test:vitest`.
+- Second verification build `202a7a41-4c8a-4547-bb2d-98160c8b82a3` is queued against commit `8215606f0de0136cd89933030c040ace4c378532`.
+
+This is a test-discovery correction; Vitest 5.1.2 remains in place. No test pass is claimed until the second build completes.
