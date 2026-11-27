@@ -44,7 +44,7 @@ export async function executeImportGeographicDataset(params: {
   nowIso: string;
   upsertNeighborhoodBoundary: (input: UpsertNeighborhoodBoundaryParams) => Promise<BoundaryVersionRecord>;
   upsertPointOfInterest: (input: UpsertPoiParams) => Promise<{ record: unknown; isDuplicate: boolean }>;
-  persistRuntime: () => void;
+  persistRuntime: () => Promise<void>;
 }): Promise<GeospatialImportBatchResult> {
   const input = params.input;
   if (!input.dryRun && params.importBatches.has(input.idempotencyKey)) {
@@ -136,8 +136,17 @@ export async function executeImportGeographicDataset(params: {
   };
 
   if (!input.dryRun) {
+    const previousBatch = params.importBatches.get(input.idempotencyKey);
     params.importBatches.set(input.idempotencyKey, result);
-    params.persistRuntime();
+    try {
+      // The batch must not be reported as committed until its durable snapshot
+      // has completed. The runtime hook is asynchronous in remote persistence mode.
+      await params.persistRuntime();
+    } catch (error) {
+      if (previousBatch) params.importBatches.set(input.idempotencyKey, previousBatch);
+      else params.importBatches.delete(input.idempotencyKey);
+      throw error;
+    }
   }
   return structuredClone(result);
 }
