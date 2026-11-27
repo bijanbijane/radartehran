@@ -11,11 +11,11 @@
     "verification_status": "VERIFIED"
   },
   "repository": {
-    "remote_identity": "local-sandbox-no-git-remote",
-    "current_branch": "sandbox-main",
-    "head_commit": "FILESYSTEM_PINNED_SHA256",
-    "working_tree_status": "UNINITIALIZED_GIT_SANDBOX_FILESYSTEM_VERIFIED",
-    "last_verified_commit": "FILESYSTEM_PINNED_SHA256"
+    "remote_identity": "github.com/bijanbijane/radartehran",
+    "current_branch": "fix/backend-disable-fake-firestore-projection-2026-11-27",
+    "head_commit": "c3936150a548f00d83b18a53d1024b32b5267a9a",
+    "working_tree_status": "GITHUB_COMMIT_CREATED; LOCAL_CHECKOUT_UNAVAILABLE",
+    "last_verified_commit": "c3936150a548f00d83b18a53d1024b32b5267a9a"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -25,15 +25,15 @@
   "current_workstream": {
     "workstream_id": "WS-CLOUDFLARE-NATIVE-MIGRATION",
     "workstream_name": "Firebase retirement, D1 session auth, backend and UI verification",
-    "task_id": "P6-CF-NATIVE-001",
-    "task_status": "IN_PROGRESS"
+    "task_id": "P6-FIRESTORE-PROJECTION-FAIL-CLOSED",
+    "task_status": "IMPLEMENTED_BUT_NOT_VERIFIED"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-194-CLOUDFLARE-NATIVE-AUTH-AND-WORKER-TYPECHECK",
-    "checkpoint_timestamp_utc": "2026-11-25T22:15:00.000Z",
-    "last_safe_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "last_completed_operation": "Completed OP-193: Migrate browser and Worker authentication to D1 opaque sessions; remove Firebase client/Worker auth and App Check runtime modules; wire sponsor/buyer alert mutations to D1 with server-side pricing/consent; fix Worker runtime typing, readiness and IRNI v2 ownership; reconcile RMEP evidence to the active D1 architecture.",
-    "next_exact_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
+    "checkpoint_id": "CHK-195-FAIL-CLOSED-LEGACY-FIRESTORE-PROJECTION",
+    "checkpoint_timestamp_utc": "2026-11-27T17:00:00.000Z",
+    "last_safe_operation": "OP-194 removed the legacy Firestore projection handler that wrote seeded neighborhood values into D1; legacy queue messages now fail permanently with FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE and enter the existing DLQ path.",
+    "last_completed_operation": "OP-194: disable fake Firestore-to-D1 neighborhood projection in the canonical queue dispatcher.",
+    "next_exact_action": "Run `npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts` and the relevant queue/triad suites in a connected local checkout; inspect CI check runs. Then reconcile queue cron producers and remove remaining live Express Firestore adapters in small D1-backed slices. Keep Phase 6 PARTIALLY_VERIFIED.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -237,13 +237,14 @@
     "in_progress_tasks": [
       "CLOUDFLARE_NATIVE_AUTH_FIREBASE_RETIREMENT",
       "RADAR_WORKER_TYPECHECK_AND_UI_E2E_REMEDIATION",
-      "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT"
+      "SHAHAB_FLEURS_ERROR_ANALYSIS_AND_ASR_QUALITY_IMPROVEMENT",
+      "RESIDUAL_EXPRESS_FIRESTORE_TO_D1_PORT"
     ],
     "verified_commits": [
       "f8b066f76c9053ce9b3c53fb136b9ec34fc57f7a",
       "5e577f861de711ffcd77cd455ea79d41d553e0b"
     ],
-    "uncommitted_changes_summary": "OP-193 is complete locally on docker/main-debug-2026-11-25. Changes include D1-native browser/Worker session authentication, retired Firebase client/Worker auth code, D1 marketplace sponsor and buyer-alert writes with server-owned pricing and explicit consent, Worker typecheck and platform regressions, readiness and IRNI v2 route fixes, and RMEP evidence reconciliation. Changes remain uncommitted and local. No production migrations, deployment, commit, push, PR or merge was performed. Docker Desktop was unavailable for the final local Worker+D1 runtime integration. Legacy Express Firestore adapters remain. RMEP operation OP-193 is recorded as locally verified; phase 6 remains partially verified."
+    "uncommitted_changes_summary": "OP-194 is committed on a dedicated GitHub branch; local checkout is unavailable. The Firestore projection queue handler was removed because it wrote seeded/static neighborhood values into D1 while claiming Firestore projection sync. Legacy messages now produce permanent FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE and use DLQ. Static source inspection confirms handler/import removal and existing regression test asserts the desired DLQ behavior, but the test has not yet been executed in this session. Remaining Express Firestore adapters and Firebase package dependencies remain open."
   },
   "phase_statuses": {
     "phase_1": "VERIFIED",
@@ -1811,6 +1812,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-25T22:15:00.000Z"
+    },
+    {
+      "operation_id": "OP-194",
+      "phase": "PHASE-6",
+      "description": "Disable fake Firestore-to-D1 neighborhood projection: remove seeded-data handler and its D1 writes; fail closed with FIRESTORE_SOURCE_ADAPTER_UNAVAILABLE so legacy messages route to DLQ.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T17:00:00.000Z"
     }
   ],
   "tests": [
@@ -1921,6 +1930,14 @@
       "exit_code": 0,
       "outcome": "PASSED",
       "evidence_path": "docs/engineering/RMEP-001/evidence/phase-6/evidence.json"
+    },
+    {
+      "test_name": "Legacy Firestore projection DLQ regression",
+      "command": "npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts",
+      "environment": "NOT_RUN_LOCAL_CHECKOUT_UNAVAILABLE",
+      "timestamp_utc": "2026-11-27T17:00:00.000Z",
+      "outcome": "NOT_RUN",
+      "evidence_path": null
     }
   ],
   "engineering_decisions": [
@@ -1931,7 +1948,20 @@
     "MED-005: Declarative Atomic Execution State Persistence",
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "blocker_id": "BLK-195-LOCAL-TEST-RUNTIME",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "description": "No online authorized local checkout is available in this session; GitHub branch writes work, but Node test execution and direct CI job logs are unavailable. The connected Remote Desktop reports the Mac device Offline."
+    },
+    {
+      "blocker_id": "BLK-195-CI-LOG-ACCESS",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "description": "GitHub Actions check runs report failed jobs on prior open PRs, but job log retrieval returned 404 BlobNotFound and no step annotations. Failure root cause remains unverified."
+    }
+  ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
   ],
@@ -1969,7 +1999,7 @@
   ],
   "final_report_path": "docs/engineering/RMEP-001/FINAL-ENGINEERING-REPORT.md",
   "resume_instructions": {
-    "resume_from_task_id": "P6-CF-NATIVE-001",
+    "resume_from_task_id": "P6-FIRESTORE-PROJECTION-FAIL-CLOSED",
     "do_not_repeat": [
       "P0-BOOTSTRAP-AND-SHA256-LOCK",
       "P1-BACKEND-API-AND-RMEP-STATE-ENGINE",
@@ -2172,6 +2202,7 @@
     "must_verify_before_resume": [
       "Verify MASTER-PROMPT.md SHA-256 matches 4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
     ],
-    "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass."
+    "next_action": "Run remaining Cloudflare D1 triad and write-pause suites; complete full security/root test suites; remove residual Firebase client dependencies and port remaining live Express Firestore repositories to D1; restore Docker local Worker+USER_DB and verify actual Google OAuth callback. Keep Phase 6 PARTIALLY_VERIFIED until all acceptance gates pass.",
+    "next_exact_action": "Run `npx tsx --test tests/cloudflare-worker-queue-entrypoint.test.ts` and the relevant queue/triad suites in a connected local checkout; inspect CI check runs. Then reconcile queue cron producers and remove remaining live Express Firestore adapters in small D1-backed slices. Keep Phase 6 PARTIALLY_VERIFIED."
   }
 }
