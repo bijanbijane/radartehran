@@ -332,3 +332,58 @@ test('Employee 59 — 4. Model versioning, configuration rollback, snapshot repr
   assert.equal(job1.id, job2.id);
   assert.equal(job1.status, 'COMPLETED');
 });
+
+
+test('coordinate-based valuation fails closed without canonical spatial resolution', async () => {
+  const input = {
+    cityId: 'tehran',
+    hoodId: 1,
+    propertyCategory: 'residential' as const,
+    transactionType: 'sale' as const,
+    sqm: 100,
+    coordinates: { lat: 35.8, lng: 51.4 },
+  };
+
+  const unconfiguredService = createValuationService({ dataConsumer: mockDataConsumer });
+  await assert.rejects(
+    () => unconfiguredService.estimatePropertyValue(input),
+    (error: unknown) => error instanceof CoreApiError && error.status === 409,
+  );
+
+  let resolverCalls = 0;
+  const configuredService = createValuationService({
+    dataConsumer: mockDataConsumer,
+    valuationLocationResolver: {
+      getValuationLocationFeatures(params) {
+        resolverCalls += 1;
+        assert.deepEqual(params, {
+          coordinates: input.coordinates,
+          cityId: input.cityId,
+          hoodId: input.hoodId,
+        });
+        return {
+          cityId: 'tehran',
+          hoodId: 1,
+          districtId: 'district-1',
+          subNeighborhoodId: 'sub-neighborhood-1',
+        };
+      },
+    },
+  });
+  const result = await configuredService.estimatePropertyValue(input);
+  assert.equal(resolverCalls, 1);
+  assert.ok(result.estimatedTotalMillion > 0);
+
+  const mismatchedService = createValuationService({
+    dataConsumer: mockDataConsumer,
+    valuationLocationResolver: {
+      getValuationLocationFeatures() {
+        return { cityId: 'tehran', hoodId: 2 };
+      },
+    },
+  });
+  await assert.rejects(
+    () => mismatchedService.estimatePropertyValue(input),
+    (error: unknown) => error instanceof CoreApiError && error.status === 409,
+  );
+});
