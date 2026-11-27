@@ -28,6 +28,7 @@ import type {
 } from './types';
 import {
   createGeospatialPersistHook,
+  createGeospatialPersistHookAsync,
   hydrateGeospatialRuntimeFromRepository,
 } from './geospatialRuntimePersistence';
 import { executePublicSpatialListingSearch } from './geospatialPublicListingSearch';
@@ -77,6 +78,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   };
   hydrateGeospatialRuntimeFromRepository(runtimeMaps);
   const persistRuntime = createGeospatialPersistHook(runtimeMaps);
+  const persistBoundaryRuntime = createGeospatialPersistHookAsync(runtimeMaps);
 
   const metrics: GeospatialObservabilityMetrics = {
     spatialQueriesCount: 0,
@@ -119,7 +121,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       metrics,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistBoundaryRuntime,
     });
   }
 
@@ -130,7 +132,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
       activeBoundaryLocks,
       nowIso: nowFn().toISOString(),
       invalidateGeoCaches,
-      persistRuntime,
+      persistRuntime: persistBoundaryRuntime,
     });
   }
 
