@@ -14,6 +14,7 @@ import { type MapViewportBoundsState, updateMapAdvancedOverlayState, useMapAdvan
 import { listNeighborhoodsInMapViewport, resolveMapExplorerNeighborhoodList } from './mapViewportHoodFilter';
 import { formatPersianScore } from '../../utils/persianBidiFormat';
 import { resolveInitialSidebarOpen, type DesktopMapPanelMode } from './mapSheetCoordinator';
+import { calculateNeighborhoodMedianMetric } from './neighborhoodMedianMetric';
 
 const SIDEBAR_STORAGE_KEY = 'radar_map_explorer_sidebar_open_v1';
 
@@ -37,20 +38,10 @@ const STATUS_BADGE: Record<string, 'success' | 'warning' | 'danger'> = {
   red: 'danger',
 };
 
-function computeMedianMetric(hoods: EvaluatedNeighborhood[], mode: 'rent' | 'buy'): number {
-  if (!hoods.length) return 0;
-  const values = hoods
-    .map((h) => (mode === 'buy' ? h.buyPerSqm : h.rahn80m))
-    .filter((v) => Number.isFinite(v) && v > 0)
-    .sort((a, b) => a - b);
-  if (!values.length) return 0;
-  return values[Math.floor(values.length / 2)];
-}
-
 type SidebarPanelProps = {
   filtered: EvaluatedNeighborhood[];
   viewportCount: number;
-  medianMetric: number;
+  medianMetric: number | null;
   filterRankingByViewport: boolean;
   viewportBounds: MapViewportBoundsState | null;
   localQuery: string;
@@ -85,7 +76,9 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [locale] = useRadarLocale();
-  const displayMedian = mode === 'buy' ? convertPricePerSqmToUnit(medianMetric, areaUnit) : medianMetric;
+  const displayMedian = medianMetric === null
+    ? null
+    : mode === 'buy' ? convertPricePerSqmToUnit(medianMetric, areaUnit) : medianMetric;
 
   return (
     <>
@@ -97,7 +90,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
           <p className="text-xs text-[var(--color-text-muted)] tabular-nums truncate">
             {toPersianNum(filtered.length)} {isEn ? 'areas' : 'محله'}
             {viewportBounds ? ` · ${toPersianNum(viewportCount)} ${isEn ? 'in view' : 'در کادر'}` : ''}
-            {displayMedian > 0
+            {displayMedian !== null
               ? ` · ${isEn ? 'Median' : 'میانه'}: ${toPersianNum(displayMedian)} ${mode === 'buy' ? 'م/م²' : 'م'}`
               : ''}
           </p>
@@ -319,7 +312,7 @@ export const MapExplorerResultsSidebar: React.FC<MapExplorerResultsSidebarProps>
     [filtered, viewportBounds],
   );
 
-  const medianMetric = useMemo(() => computeMedianMetric(filtered, mode), [filtered, mode]);
+  const medianMetric = useMemo(() => calculateNeighborhoodMedianMetric(filtered, mode), [filtered, mode]);
 
   const persistOpen = (next: boolean) => {
     try {
