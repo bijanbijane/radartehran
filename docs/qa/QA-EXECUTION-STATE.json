@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "program_id": "RADAR-TEHRAN-QA",
-  "program_status": "IN_PROGRESS",
+  "program_status": "BLOCKED_ON_CI_RUNNER_ALLOCATION",
   "current_phase": "PHASE-0-BASELINE-AND-FIRST-REGRESSION",
   "current_work_package": "QA-WP-001-NIPS-GOLDEN-REFERENCE-CONTRACT",
   "repository": {
@@ -9,37 +9,85 @@
     "base_branch": "main",
     "qa_branch": "qa/radar-tehran-autonomous-qa-2026-11-27",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
-    "latest_qa_commit": "0e351f8244ee92261904ca5dd6f2022e80d40040"
+    "last_inspected_qa_commit_before_state_update": "b00b01881c33ddc7ed5898dc6812d6dac81e8dbd",
+    "pull_request": {
+      "number": 74,
+      "url": "https://github.com/bijanbijane/radartehran/pull/74",
+      "state": "open",
+      "draft": false,
+      "merged": false
+    }
   },
   "test_results": {
-    "executed": 0,
-    "passed": 0,
-    "failed": 0,
-    "skipped": 0,
-    "not_executed": 1,
-    "reason": "The connected MacBook is offline; GitHub repository APIs can write files but do not execute repository commands. CI execution is pending a draft PR run."
+    "test_suites_added": 1,
+    "test_cases_defined": 5,
+    "test_cases_executed": 0,
+    "test_cases_passed": 0,
+    "test_cases_failed": 0,
+    "test_cases_skipped": 0,
+    "ci_jobs_failed_before_runner": 5,
+    "ci_jobs_skipped": 1,
+    "reason": "No local test runner is available because the connected MacBook is offline. Five PR-triggered GitHub Actions workflows failed before runner allocation (runner_id=0, empty runner_name, steps=[]); no test commands ran and no job logs were available."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
   ],
   "suites_improved": [
-    "test:contracts now includes the NIPS golden-reference regression suite"
+    "test:contracts now includes tests/nips-golden-reference.test.ts and is invoked by CI Gate C"
   ],
-  "confirmed_defects": [],
-  "suspected_findings": [
-    "The NIPS golden-reference fixture has no dedicated automated structural regression test on main; a test has been added on the QA branch, pending execution."
+  "pre_execution_fixture_inspection": {
+    "performed": true,
+    "categories": 12,
+    "variables": 120,
+    "unique_variable_ids": 120,
+    "non_null_reference_values": 0,
+    "wrong_reference_statuses": 0,
+    "missing_required_fields": 0,
+    "note": "This was an independent JSON fixture inspection, not execution of the TypeScript test suite."
+  },
+  "confirmed_application_defects": [],
+  "infrastructure_findings": [
+    {
+      "id": "QA-INFRA-001",
+      "classification": "PRE_RUNNER_CI_FAILURE",
+      "severity": "BLOCKER",
+      "run_ids": [
+        45978213208,
+        45978213210,
+        45978213295,
+        45978213292,
+        45978213244
+      ],
+      "evidence": "Every failed job completed within approximately 2-3 seconds with runner_id=0, empty runner_name, and zero steps. Job log retrieval returned BlobNotFound.",
+      "root_cause": "UNCONFIRMED",
+      "likely_investigation": [
+        "GitHub Actions included minutes, usage, and spending budget",
+        "Repository Settings > Actions > General and hosted-runner policy",
+        "GitHub Support escalation if account and repository settings are clear"
+      ]
+    }
   ],
   "self_remediated_defects": [],
   "blockers": [
-    "No online remote execution device is available for local test execution."
+    "No online remote execution device is available for local test execution.",
+    "GitHub Actions jobs are failing before runner allocation; repository tests have not executed."
   ],
   "ci": {
     "workflow_files_inspected": [
       ".github/workflows/ci.yml"
     ],
-    "latest_commit_status": "No status checks were returned for the inspected main commit.",
-    "qa_branch_run": "PENDING"
+    "latest_main_commit_status": "No status checks were returned for the inspected main commit.",
+    "qa_pr_workflows": [
+      {"name": "Tehran Radar CI Quality Gates", "run_id": 45978213208, "conclusion": "failure_before_runner"},
+      {"name": "Cloudflare Native Auth Validation", "run_id": 45978213210, "conclusion": "failure_before_runner"},
+      {"name": "Tehran Radar Path-Filtered Checks", "run_id": 45978213295, "conclusion": "failure_before_runner"},
+      {"name": "Radar Backend Triad & Frontend Service Binding", "run_id": 45978213292, "conclusion": "failure_before_runner"},
+      {"name": "IRNI Geographic RPC Consumer Contract", "run_id": 45978213244, "conclusion": "failure_before_runner"}
+    ],
+    "e2e_job": "skipped_due_to_dependency_failure",
+    "job_logs": "UNAVAILABLE_BLOB_NOT_FOUND",
+    "public_status_page": "All systems operational; no incident reported on 2026-11-27 at time checked."
   },
-  "next_exact_action": "Open a draft pull request from the QA branch to main, then inspect the actual GitHub Actions run and fix any failures in scope.",
-  "updated_at": "2026-11-27T13:26:00+03:30"
+  "next_exact_action": "Inspect GitHub account Actions usage/budget and repository Actions settings. If clear, escalate run IDs to GitHub Support. Once runner allocation is restored, execute npm run test:contracts and inspect CI from the first actual step.",
+  "updated_at": "2026-11-27T13:30:00+03:30"
 }
