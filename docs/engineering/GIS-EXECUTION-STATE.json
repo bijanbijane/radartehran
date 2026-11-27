@@ -16,15 +16,18 @@
     "Opened draft PR #72; no merge performed.",
     "Inspected live Cloudflare D1 inventory and schemas read-only: three Radar databases; no radar-profile-db and no nips_ tables.",
     "Verified read-only D1 SELECT, JSON and math probes; documented that RTree runtime support remains unverified because introspection/EXPLAIN was denied by the REST query surface.",
-    "Corrected GIS ownership documentation to align with the NIPS ERD proposal for a dedicated radar-profile-db; no database was created."
+    "Corrected GIS ownership documentation to align with the NIPS ERD proposal for a dedicated radar-profile-db; no database was created.",
+    "Hardened point resolution, profile reads and boundary mutations against multiple ACTIVE versions within one entity history; added regression tests for fail-closed assignment and independent repair.",
+    "Verified the current branch HEAD and exact-SHA GitHub Actions workflow/job conclusions; job logs were unavailable, so no automated test result is claimed."
   ],
   "not_verified": [
-    "Automated GIS test suite execution on current PR head",
-    "Repository-wide TypeScript typecheck, lint, architecture check and build",
+    "Execution of npm run test:geospatial on branch HEAD b2c7265fda504af48726a19317c420058efbeef7",
+    "Repository-wide TypeScript typecheck, lint, architecture check and build on the current head",
     "D1 RTree support through the actual Worker binding runtime",
     "Production IRNI read-only resolver/service binding wiring",
     "NIPS profile database provisioning, owner/writer policy, migrations and repository",
-    "Authoritative Tehran neighborhood polygon dataset, license and CRS"
+    "Authoritative Tehran neighborhood polygon dataset, license and CRS",
+    "Complete persisted-snapshot/hydration integrity validation for duplicate ACTIVE boundary histories"
   ],
   "production_changes": false,
   "production_deployment": false,
@@ -32,46 +35,8 @@
   "database_created": false,
   "tests": {
     "command": "npm run test:geospatial",
-    "status": "CI_FAILED_UNDIAGNOSED",
-    "reviewed_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25",
-    "workflow_runs": [
-      {
-        "id": 45978910268,
-        "name": "Tehran Radar Path-Filtered Checks",
-        "conclusion": "failure",
-        "job_steps": 0,
-        "logs": "BlobNotFound"
-      },
-      {
-        "id": 45978910401,
-        "name": "Radar Backend Triad & Frontend Service Binding",
-        "conclusion": "failure",
-        "job_steps": 0,
-        "logs": "BlobNotFound"
-      },
-      {
-        "id": 45978910183,
-        "name": "Cloudflare Native Auth Validation",
-        "conclusion": "failure",
-        "job_steps": 0,
-        "logs": "BlobNotFound"
-      },
-      {
-        "id": 45978911690,
-        "name": "Tehran Radar CI Quality Gates",
-        "conclusion": "failure",
-        "job_steps": 0,
-        "logs": "BlobNotFound"
-      },
-      {
-        "id": 45978910352,
-        "name": "IRNI Geographic RPC Consumer Contract",
-        "conclusion": "failure",
-        "job_steps": 0,
-        "logs": "BlobNotFound"
-      }
-    ],
-    "reason": "All five workflows failed without exposed steps; logs could not be retrieved. It is unknown whether test/typecheck commands started. Repository issue #49 documents runner allocation failures."
+    "status": "NOT_VERIFIED",
+    "reason": "On HEAD b2c7265fda504af48726a19317c420058efbeef7, PR-triggered workflow runs concluded failure: path-detect, broad TypeScript/architecture/unit/storage/stress/build, D1/Worker binding, IRNI RPC and native-auth jobs. Dependent contracts/API/frontend/E2E jobs were skipped. GitHub job-log retrieval returned BlobNotFound, so it is not established that npm run test:geospatial executed. The authorized Desktop Commander MacBook is offline."
   },
   "d1_runtime_probes": {
     "read_only": true,
@@ -104,15 +69,57 @@
     },
     "radar-profile-db": "NOT_FOUND"
   },
-  "next_exact_action": "Restore a usable GitHub Actions runner or online local runner, then run npm run test:geospatial and repository typecheck/quality gates on the latest PR head. Diagnose the pre-step CI failures before treating any code test as failed or passed.",
+  "next_exact_action": "Restore an online execution runner; execute npm run test:geospatial, npm run test:unit, lint, architecture checks, typechecks and build on HEAD b2c7265fda504af48726a19317c420058efbeef7. Do not provision radar-profile-db or alter production bindings until ownership and authorization are explicitly approved.",
   "blockers": [
-    "Five GitHub Actions workflows failed with empty step lists and unavailable logs; runner allocation issue #49 remains unresolved.",
+    "No online execution runner; Desktop Commander MacBook offline; current exact-SHA GitHub Actions workflows fail, and their logs cannot be retrieved.",
     "No verified licensed Tehran neighborhood boundary dataset or source CRS packet.",
     "The GIS runtime persists JSON snapshots and is not a D1 spatial query engine.",
     "No radar-profile-db or NIPS persistence tables/repository exist in the live D1 inventory.",
     "RTree support is not verified in the D1 Worker runtime.",
-    "Production IRNI read-only resolver/service binding is not verified."
+    "Production IRNI read-only resolver/service binding is not verified.",
+    "Legacy snapshot validation, hydration and all non-point consumers still need an integrity audit for multiple ACTIVE versions."
   ],
-  "last_recorded_action": "Inspected latest PR head CI failures; all five workflows exposed no steps and logs returned BlobNotFound.",
-  "latest_inspected_pr_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25"
+  "last_recorded_action": "Committed duplicate ACTIVE boundary fail-closed behavior and independent-review repair tests; inspected exact-SHA CI failures and preserved the work as unverified.",
+  "latest_inspected_pr_head_sha": "f601b15715d2221c4b7a48d016f9350fcd685d25",
+  "latest_branch_head_sha": "b2c7265fda504af48726a19317c420058efbeef7",
+  "last_verified_commit_sha": null,
+  "ci": {
+    "branch_head_sha": "b2c7265fda504af48726a19317c420058efbeef7",
+    "combined_statuses": [],
+    "workflow_runs": [
+      {
+        "name": "Tehran Radar Path-Filtered Checks",
+        "run_id": 45978860143,
+        "conclusion": "failure",
+        "failed_job": "detect"
+      },
+      {
+        "name": "Tehran Radar CI Quality Gates",
+        "run_id": 45978860142,
+        "conclusion": "failure",
+        "failed_job": "TypeScript, Architecture, Unit, Storage, Stress & Build",
+        "skipped_job": "Real Browser E2E & Accessibility Suite (Playwright)"
+      },
+      {
+        "name": "Radar Backend Triad & Frontend Service Binding",
+        "run_id": 45978860503,
+        "conclusion": "failure",
+        "failed_job": "D1 domain isolation, Worker bundle & frontend RPC binding"
+      },
+      {
+        "name": "Cloudflare Native Auth Validation",
+        "run_id": 45978860128,
+        "conclusion": "failure",
+        "failed_job": "native-auth"
+      },
+      {
+        "name": "IRNI Geographic RPC Consumer Contract",
+        "run_id": 45978860069,
+        "conclusion": "failure",
+        "failed_job": "irni-rpc-contract"
+      }
+    ],
+    "job_log_retrieval": "BlobNotFound",
+    "interpretation": "Workflow failure is confirmed, but GIS test execution and the underlying runner failure cause are not confirmed."
+  }
 }
