@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "e98e0ab1bda58058a9e491c5331a293a02c1e869",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NO_LOCAL_WORKTREE; CALLSITE_INVENTORY_RECORDED; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
+    "head_commit": "d0ed7b6a85425ff9d408801609220a0c1ec83dff",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; GITHUB_ONLY_SCOPE; NO_LOCAL_WORKTREE; BROWSER_FIREBASE_GUARD_IMPLEMENTED_NOT_VERIFIED; GITHUB_ACTIONS_RUNNER_ALLOCATION_BLOCKED; RUNTIME_TESTS_NOT_EXECUTED",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-204-FIREBASE-SHARP-CALLSITE-INVENTORY",
-    "checkpoint_timestamp_utc": "2026-11-27T11:02:00.000Z",
-    "last_safe_operation": "Created and re-fetched docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Verified active Firebase Admin/Firestore call sites in the legacy Express path, Sharp image processing, SDK-free browser compatibility facade, stale Vite SDK references, and the Worker import boundary. Linked the inventory from NEXT-ACTIONS and recorded it in PROGRESS-LOG.",
-    "last_completed_operation": "GitHub-only documentation commits recorded the exact npm audit package versions, corrected NIPS shared D1 ownership docs, and mapped Firebase/Firestore/Sharp consumers. No runtime code, dependencies, lockfile, database, binding, secret, deployment or PR state changed. PR #67 remains Draft.",
-    "next_exact_action": "Use the call-site inventory to define the first safe replacement slice, starting with a domain-specific port and existing Cloudflare session/D1 route contract; do not remove Firebase Admin/Firestore or Sharp dependencies until each consumer has a verified replacement. Keep NIPS persistence blocked pending the IRNI-owned authenticated/versioned RPC. Wait for Actions runner allocation recovery.",
+    "checkpoint_id": "CHK-205-BROWSER-FIREBASE-GUARD-CI-RETRY",
+    "checkpoint_timestamp_utc": "2026-11-27T11:22:00.000Z",
+    "last_safe_operation": "Added a browser-source architecture guard against Firebase client/Admin SDK imports and regression fixtures for firebase/auth, @firebase/app and firebase-admin/firestore. Inspected latest PR #67 Actions runs/jobs/logs; all five workflows fail with zero steps and BlobNotFound logs. Updated PROGRESS-LOG, BLOCKERS and NEXT-ACTIONS.",
+    "last_completed_operation": "Committed scripts/check-architecture.ts and tests/architecture-guardrails.test.ts changes, then re-fetched and verified the guard predicate, browser source prefixes, violation code and three virtual import fixtures. The source/test change is implemented but not executed. No package/lockfile, production code path, D1, secret, binding, deployment or PR state changed.",
+    "next_exact_action": "When GitHub Actions runner allocation recovers, run npm run arch:check and npm run test:contracts first; then run npm run test:nips, npm run test:auth, IRNI RPC, geography catalog, Cloudflare, D1 triad and security suites. Continue Firebase/Firestore and Sharp call-site migration one approved domain at a time. Keep NIPS storage blocked until IRNI owner RPC exists.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1846,6 +1846,14 @@
       "status": "VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T11:02:00.000Z"
+    },
+    {
+      "operation_id": "OP-198",
+      "phase": "PHASE-6",
+      "description": "Add browser Firebase SDK import architecture guard and regression fixtures; capture latest GitHub Actions runner-allocation evidence.",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T11:22:00.000Z"
     }
   ],
   "tests": [
@@ -1967,14 +1975,15 @@
     "MED-006: Universal Sub-450 Line Ratchet & Multi-Artifact Reconciliation Guard"
   ],
   "blockers": [
-    "B-001: GitHub Actions runner allocation is failing before execution. Latest PR #67 runs fail with zero steps; job logs return BlobNotFound. Broader raw payload evidence shows runner_id=0 and blank runner identity. No workflow command ran.",
+    "B-001: GitHub Actions runner allocation is failing before execution. Latest PR #67 runs #45989808778, #45989808702, #45989808715, #45989808637 and #45989808717 fail with zero steps; logs return BlobNotFound. Wider raw payload evidence shows runner_id=0 and blank runner identity. No workflow command ran.",
     "B-002: NIPS persistence requires a separately versioned, authenticated, purpose-scoped IRNI-owned storage RPC and owner-side nips_ migration. Radar direct D1 binding to radar-neighborhood-db is prohibited.",
     "B-003: Version-pinned IRNI geography provider/Service Binding is not verified or available to the Radar runtime.",
     "B-004: Native-auth and lockfile workflow remediations remain unverified by successful GitHub Actions execution.",
     "B-005: Staging D1/IRNI Service Binding provisioning is incomplete. The staging-only Build Trigger correctly fails closed before Wrangler dry-run/deploy.",
     "B-006: npm audit reports 21 vulnerabilities (14 moderate, 5 high, 2 critical). Critical dev-only packages: vitest@3.2.7 and tinypool@1.1.1. High production paths include firebase@12.19.0, @firebase/firestore@4.17.2, @grpc/grpc-js@1.9.16 and sharp@0.33.5; firebase-admin@13.10.0 has moderate findings. Major-version fix candidates require compatibility tests; no package changes have been made.",
-    "B-007: Firebase Admin/Firestore and Sharp remain active in legacy Express/runtime code. The verified call-site inventory is docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Removing dependencies before migrating these consumers would break backend behavior.",
-    "B-008: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified."
+    "B-007: Firebase Admin/Firestore and Sharp remain active in legacy Express/runtime code. Verified call-site inventory: docs/engineering/RMEP-001/FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Removing dependencies before migrating consumers would break backend behavior.",
+    "B-008: Browser Firebase SDK import guard in scripts/check-architecture.ts and tests/architecture-guardrails.test.ts is IMPLEMENTED_BUT_NOT_VERIFIED because no Actions runner executes steps.",
+    "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified."
   ],
   "pending_authorization": [
     "REQ-DEPLOY-001: Live production cloud deployment (firebase deploy / Cloudflare production promotion) awaits explicit human operator authorization per RMEP-001 Section 4."
@@ -2220,6 +2229,6 @@
   },
   "resume": {
     "resume_from_task_id": "P6-NIPS-001",
-    "next_action": "Continue GitHub-only. Use FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md to migrate one domain at a time to approved Cloudflare-native adapters. Do not remove packages or edit lockfile until a verified Node 22/npm 10 execution path exists. NIPS storage remains blocked on IRNI owner RPC and migration contract. Keep PR #67 Draft."
+    "next_action": "Continue GitHub-only. First verify the new browser Firebase import guard with npm run arch:check and npm run test:contracts when a runner/executor is available. Then migrate Firebase Admin/Firestore and Sharp consumers using FIREBASE-SHARP-RETIREMENT-CALLSITE-INVENTORY.md. Do not remove dependencies or alter lockfile without tested replacements. NIPS storage remains blocked on IRNI owner RPC and migration contract. Keep PR #67 Draft."
   }
 }
