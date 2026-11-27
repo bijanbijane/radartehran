@@ -133,38 +133,58 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     const initialHandleBox = await sheetHandle.boundingBox();
     expect(initialHandleBox?.height ?? 0).toBeGreaterThanOrEqual(44);
 
-    // A deliberate downward drag must move the sheet to peek without toggling it closed.
+    // Exercise the mobile handle with Chromium's touch input path, not mouse events.
+    const cdpSession = await page.context().newCDPSession(page);
+    await cdpSession.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const dispatchTouch = async (
+      type: 'touchStart' | 'touchMove' | 'touchEnd' | 'touchCancel',
+      x: number,
+      y: number
+    ) => {
+      await cdpSession.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' || type === 'touchCancel'
+          ? []
+          : [{ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 }],
+      });
+    };
+
+    // A deliberate downward touch drag must move the sheet to peek without toggling it closed.
     const handleCenterX = initialHandleBox!.x + initialHandleBox!.width / 2;
     const handleCenterY = initialHandleBox!.y + initialHandleBox!.height / 2;
-    await page.mouse.move(handleCenterX, handleCenterY);
-    await page.mouse.down();
-    await page.mouse.move(handleCenterX, handleCenterY + 80, { steps: 8 });
-    await page.mouse.up();
+    await dispatchTouch('touchStart', handleCenterX, handleCenterY);
+    for (let step = 1; step <= 8; step += 1) {
+      await page.waitForTimeout(10);
+      await dispatchTouch('touchMove', handleCenterX, handleCenterY + step * 10);
+    }
+    await dispatchTouch('touchEnd', handleCenterX, handleCenterY + 80);
     await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
-    // An 8px+ movement below the snap threshold must suppress the synthetic click.
+    // An 8px+ touch movement below the snap threshold must suppress the synthetic click.
     const peekHandleBox = await sheetHandle.boundingBox();
     expect(peekHandleBox).not.toBeNull();
     const peekX = peekHandleBox!.x + peekHandleBox!.width / 2;
     const peekY = peekHandleBox!.y + peekHandleBox!.height / 2;
-    await page.mouse.move(peekX, peekY);
-    await page.mouse.down();
-    await page.mouse.move(peekX, peekY + 12, { steps: 2 });
+    await dispatchTouch('touchStart', peekX, peekY);
+    await page.waitForTimeout(20);
+    await dispatchTouch('touchMove', peekX, peekY + 12);
     await page.waitForTimeout(120);
-    await page.mouse.up();
+    await dispatchTouch('touchEnd', peekX, peekY + 12);
     await expect(sheet).toHaveAttribute('data-snap-state', 'peek');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
-    // Upward drag returns the inspector to its expanded state.
+    // Upward touch drag returns the inspector to its expanded state.
     const finalHandleBox = await sheetHandle.boundingBox();
     expect(finalHandleBox).not.toBeNull();
     const finalX = finalHandleBox!.x + finalHandleBox!.width / 2;
     const finalY = finalHandleBox!.y + finalHandleBox!.height / 2;
-    await page.mouse.move(finalX, finalY);
-    await page.mouse.down();
-    await page.mouse.move(finalX, finalY - 80, { steps: 8 });
-    await page.mouse.up();
+    await dispatchTouch('touchStart', finalX, finalY);
+    for (let step = 1; step <= 8; step += 1) {
+      await page.waitForTimeout(10);
+      await dispatchTouch('touchMove', finalX, finalY - step * 10);
+    }
+    await dispatchTouch('touchEnd', finalX, finalY - 80);
     await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'true');
 
@@ -178,38 +198,41 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(page.locator('#inspector-panel-market')).toBeVisible();
     await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
 
-    // A cancelled touch gesture must not be applied by a later pointerup event.
+    // Confirm a browser-generated pointercancel clears the gesture before a stale pointerup.
     const cancelBox = await sheetHandle.boundingBox();
     expect(cancelBox).not.toBeNull();
     const cancelX = cancelBox!.x + cancelBox!.width / 2;
-    await sheetHandle.dispatchEvent('pointerdown', {
-      pointerId: 42,
-      pointerType: 'touch',
-      isPrimary: true,
-      button: 0,
-      buttons: 1,
-      clientX: cancelX,
-      clientY: 200,
+    const cancelY = cancelBox!.y + cancelBox!.height / 2;
+    await sheetHandle.evaluate((element) => {
+      const button = element as HTMLButtonElement;
+      button.dataset.pointerCancelSeen = 'false';
+      button.addEventListener('pointercancel', (event) => {
+        button.dataset.pointerCancelSeen = 'true';
+        button.dataset.cancelledPointerId = String((event as PointerEvent).pointerId);
+      }, { once: true });
     });
-    await sheetHandle.dispatchEvent('pointercancel', {
-      pointerId: 42,
-      pointerType: 'touch',
-      isPrimary: true,
-      button: 0,
-      buttons: 0,
-      clientX: cancelX,
-      clientY: 260,
-    });
-    await sheetHandle.dispatchEvent('pointerup', {
-      pointerId: 42,
-      pointerType: 'touch',
-      isPrimary: true,
-      button: 0,
-      buttons: 0,
-      clientX: cancelX,
-      clientY: 260,
-    });
+    await dispatchTouch('touchStart', cancelX, cancelY);
+    await page.waitForTimeout(30);
+    await dispatchTouch('touchCancel', cancelX, cancelY);
+    await expect(sheetHandle).toHaveAttribute('data-pointer-cancel-seen', 'true');
+    await sheetHandle.evaluate((element, point) => {
+      const button = element as HTMLButtonElement;
+      const pointerId = Number(button.dataset.cancelledPointerId);
+      button.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        pointerType: 'touch',
+        isPrimary: true,
+        button: 0,
+        buttons: 0,
+        clientX: point.x,
+        clientY: point.y,
+      }));
+    }, { x: cancelX, y: cancelY });
     await expect(sheet).toHaveAttribute('data-snap-state', 'expanded');
+    await cdpSession.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await cdpSession.detach();
     await sheetHandle.click();
     await expect(sheet).toHaveAttribute('data-snap-state', 'collapsed');
     await expect(sheetHandle).toHaveAttribute('aria-expanded', 'false');
