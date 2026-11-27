@@ -10,7 +10,7 @@ import {
 import type { GeospatialModuleDependencies } from './types';
 import type { GeospatialService } from './service';
 import { getCloudflareSessionContext } from '../../../src/utils/serverCloudflareSessionBridge';
-import { getGeospatialPersistenceHealth, getLastGeospatialRecoveryReport } from './geospatialDurableRecovery';
+import { getGeospatialPersistenceHealth } from './geospatialDurableRecovery';
 
 export function createGeospatialRouter(
   service: GeospatialService,
@@ -24,15 +24,16 @@ export function createGeospatialRouter(
       next();
       return;
     }
-    const report = getLastGeospatialRecoveryReport();
     res.setHeader('Cache-Control', 'no-store');
     res.status(503).json(buildErrorEnvelope({
       code: 'GEOSPATIAL_PERSISTENCE_UNAVAILABLE',
       message: 'Geospatial services are unavailable until a verified durable snapshot is recovered.',
+      // Keep public outage responses intentionally low-detail. Recovery
+      // diagnostics can contain internal validation context and belong in
+      // authenticated operational telemetry, not an unauthenticated API body.
       details: {
         health,
-        recoveryRequirement: report?.recoveryRequirement ?? null,
-        validationErrors: report?.validationErrors ?? [],
+        recoveryRequired: true,
       },
       correlationId: resolveCorrelationId(req),
     }));
