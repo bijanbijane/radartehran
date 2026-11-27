@@ -8,7 +8,7 @@ import { createGeospatialService, type GeospatialService } from '../server/modul
 import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
 import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
 import type { PolygonGeometry } from '../server/modules/geospatial/types';
-import { classifyPointInPolygon, validatePolygonGeometry } from '../server/modules/geospatial/coordinateAndPolygonEngine';
+import { classifyPointInPolygon, simplifyPolygonGeometry, validatePolygonGeometry } from '../server/modules/geospatial/coordinateAndPolygonEngine';
 
 const SQUARE_A: PolygonGeometry = {
   type: 'Polygon',
@@ -196,6 +196,35 @@ test('rejects a spatial match from a different city than the requested city', as
 });
 
 
+
+test('falls back to canonical geometry when stride simplification creates a self-intersection', () => {
+  const concaveUShape: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [[
+      [51.30, 35.70],
+      [51.34, 35.70],
+      [51.34, 35.74],
+      [51.33, 35.74],
+      [51.33, 35.71],
+      [51.31, 35.71],
+      [51.31, 35.74],
+      [51.30, 35.74],
+      [51.30, 35.70],
+    ]],
+  };
+  const ring = concaveUShape.coordinates as [number, number][][];
+  const naiveStrideResult: PolygonGeometry = {
+    type: 'Polygon',
+    coordinates: [[ring[0][0], ring[0][2], ring[0][4], ring[0][6], ring[0][8]]],
+  };
+
+  assert.equal(validatePolygonGeometry(concaveUShape).valid, true);
+  assert.equal(validatePolygonGeometry(naiveStrideResult).valid, false);
+
+  const simplified = simplifyPolygonGeometry(concaveUShape, 2);
+  assert.deepEqual(simplified, concaveUShape);
+  assert.equal(validatePolygonGeometry(simplified).valid, true);
+});
 
 test('point-in-polygon respects interior rings for Polygon and MultiPolygon geometries', () => {
   assert.equal(
