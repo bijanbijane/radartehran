@@ -40,3 +40,32 @@
 - Added regression cases for an exterior-escaping hole, a hole touching the exterior, overlapping holes and nested holes.
 - Updated `GIS-ARCHITECTURE.md`, `GIS-DATA-DICTIONARY.md`, `GIS-SOURCE-REGISTER.md`, and the GIS execution/quality registers.
 - These additional tests are committed but remain NOT RUN. No passing status is claimed.
+
+
+## 2026-11-27 — Duplicate ACTIVE boundary lifecycle integrity
+
+**Branch HEAD reviewed:** `b2c7265fda504af48726a19317c420058efbeef7`  
+**Review PR:** [#72 — Draft](https://github.com/bijanbijane/radartehran/pull/72)
+
+### Changes committed
+
+- Point resolution now returns `MULTIPLE_ACTIVE_BOUNDARY_VERSIONS` and no neighborhood assignment when a query point intersects an entity history containing more than one ACTIVE version.
+- Profile boundary selection now returns no selected boundary unless exactly one ACTIVE version exists.
+- Auto-approved writes are rejected when a history already contains multiple ACTIVE versions.
+- The safe remediation path is retained: submit a `PENDING_REVIEW` version, then require an independent reviewer; approval supersedes all previous ACTIVE versions in that entity history.
+- Regression tests cover point-resolution failure, refusal of arbitrary profile reads, blocked auto-approval, and independent repair.
+
+### Verification
+
+- Source and regression test files were re-fetched from the branch after the updates.
+- For exact HEAD `b2c7265fda504af48726a19317c420058efbeef7`, the Path-Filtered Checks, CI Quality Gates, Backend Triad/Worker Binding, Native Auth, and IRNI RPC workflows report `failure`.
+- Dependent contract/API/frontend/E2E jobs were skipped. GitHub job-log retrieval returned `BlobNotFound`; therefore it is not established that the GIS test command executed.
+- The authorized MacBook/Desktop Commander device is offline. No local npm/typecheck/lint/build command was run.
+- Automated GIS tests remain **NOT VERIFIED**; no passing test result is claimed.
+
+### Remaining work
+
+- Validate legacy snapshots during hydration and add complete integrity checks for entity/history key agreement, unique version IDs, monotonic version sequences, and one ACTIVE record per entity.
+- Audit every point-resolution consumer and add an explicit profile-read reason for duplicate active history.
+- Implement tests for overlapping MultiPolygon components; execute endpoint-touch and collinear-overlap fixtures for segment intersection changes.
+- No production database, geometry dataset, Worker binding, secret, or deployment was modified by this work package.
