@@ -31,3 +31,10 @@
 ## Scope note
 
 All findings above are workflow/package command-contract defects. No claim is made that the underlying application tests pass or that GitHub Actions failures have been fully diagnosed.
+
+## QA-005 — Cloudflare Workers Build selected stale Bun lockfile
+
+- Severity: P1 (Preview build blocked before project build command)
+- Evidence: Cloudflare Workers Build `bdf2e772-1133-486a-98bf-f1d26c81355a` selected `bun install --frozen-lockfile` because the repository contains `bun.lock`; Bun reported the lockfile was out of sync with the root manifest (`@tailwindcss/vite` dependency-group mismatch). The lockfile also identifies the root workspace as `react-example`, while the root package manifest is `radartehran`, and its root dependency groups differ materially.
+- Correction: remove the stale Bun lockfile and explicitly pin the repository's existing npm lockfile workflow to `npm@10.9.2` in the root package manifest.
+- Verification: GitHub source read-back and a fresh Cloudflare Preview build are required. This edit does not claim a successful install or build.
