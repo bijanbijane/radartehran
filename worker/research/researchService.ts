@@ -513,9 +513,17 @@ export async function executeResearchSubjectErasure(params: {
   outboxId: string;
   subjectKey: string;
   subjectKeyVersion: string;
+  maxConsentRevision?: number | null;
   nowMs?: number;
 }): Promise<ResearchSubjectErasureResult> {
   const nowMs = params.nowMs ?? Date.now();
+  const maxConsentRevision =
+    params.maxConsentRevision === undefined || params.maxConsentRevision === null
+      ? null
+      : Number(params.maxConsentRevision);
+  if (maxConsentRevision !== null && (!Number.isSafeInteger(maxConsentRevision) || maxConsentRevision < 1)) {
+    throw new Error('RESEARCH_ERASURE_MAX_CONSENT_REVISION_INVALID');
+  }
   const nowIso = new Date(nowMs).toISOString();
 
   const existing = await params.researchDb
@@ -555,8 +563,10 @@ export async function executeResearchSubjectErasure(params: {
   }
 
   const countRow = await params.researchDb
-    .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2')
-    .bind(params.subjectKey, params.subjectKeyVersion)
+    .prepare(
+      'SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND (?3 IS NULL OR consent_revision <= ?4)',
+    )
+    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, maxConsentRevision)
     .first<{ cnt: number }>();
   if (!countRow || !Number.isSafeInteger(Number(countRow.cnt)) || Number(countRow.cnt) < 0) {
     throw new Error('RESEARCH_ERASURE_TARGET_COUNT_UNAVAILABLE');
@@ -566,9 +576,9 @@ export async function executeResearchSubjectErasure(params: {
   // Identify derived aggregation scopes impacted by this subject so stale counts are invalidated atomically.
   const impactedScopesRes = await params.researchDb
     .prepare(
-      'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2',
+      'SELECT DISTINCT event_type, city_id FROM research_events WHERE subject_key = ?1 AND subject_key_version = ?2 AND (?3 IS NULL OR consent_revision <= ?4)',
     )
-    .bind(params.subjectKey, params.subjectKeyVersion)
+    .bind(params.subjectKey, params.subjectKeyVersion, maxConsentRevision, maxConsentRevision)
     .all<{ event_type: string; city_id: string }>();
   if (!impactedScopesRes.success) throw new Error('RESEARCH_ERASURE_IMPACTED_SCOPE_READ_FAILED');
   const impactedScopes = impactedScopesRes.results ?? [];
@@ -606,12 +616,13 @@ export async function executeResearchSubjectErasure(params: {
     .prepare(
       `DELETE FROM research_events
        WHERE subject_key = ?1 AND subject_key_version = ?2
+         AND (?4 IS NULL OR consent_revision <= ?4)
          AND EXISTS (
            SELECT 1 FROM research_erasure_inbox
            WHERE outbox_id = ?3 AND subject_key = ?1 AND subject_key_version = ?2
          )`,
     )
-    .bind(params.subjectKey, params.subjectKeyVersion, params.outboxId);
+    .bind(params.subjectKey, params.subjectKeyVersion, params.outboxId, maxConsentRevision);
 
   const invalidateWindowStmts = impactedScopes.map((scope) =>
     params.researchDb
@@ -632,13 +643,39 @@ export async function executeResearchSubjectErasure(params: {
       ),
   );
 
+  const fenceRevision = maxConsentRevision ?? 2_147_483_647;
+  const updateConsentFenceStmt = params.researchDb
+    .prepare(
+      `INSERT INTO research_subject_consent_fences (
+        subject_key, subject_key_version, revoked_through_revision,
+        last_outbox_id, last_receipt_id, updated_at_iso
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+      ON CONFLICT(subject_key, subject_key_version) DO UPDATE SET
+        revoked_through_revision = MAX(
+          research_subject_consent_fences.revoked_through_revision,
+          excluded.revoked_through_revision
+        ),
+        last_outbox_id = excluded.last_outbox_id,
+        last_receipt_id = excluded.last_receipt_id,
+        updated_at_iso = excluded.updated_at_iso`,
+    )
+    .bind(
+      params.subjectKey,
+      params.subjectKeyVersion,
+      fenceRevision,
+      params.outboxId,
+      receiptId,
+      nowIso,
+    );
+
   const batchResults = await params.researchDb.batch([
     insertInboxStmt,
     deleteEventsStmt,
     ...invalidateWindowStmts,
+    updateConsentFenceStmt,
   ]);
   if (
-    batchResults.length !== 2 + invalidateWindowStmts.length ||
+    batchResults.length !== 3 + invalidateWindowStmts.length ||
     batchResults.some((r) => !r.success)
   ) {
     throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
