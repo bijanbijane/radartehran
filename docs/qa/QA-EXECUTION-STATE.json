@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "program": "RADAR_TEHRAN_AUTONOMOUS_QA",
+  "phase": "CI_CONTRACT_REPAIR",
+  "work_package": "QA-WP-002_CI_COMMAND_CONTRACTS",
+  "base_branch": "main",
+  "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+  "qa_branch": "qa/ci-contract-fixes-2026-11-27",
+  "latest_qa_commit": "1e0fa339ba72d3d0f1cf30cad0fe7e6f331d8fb0",
+  "pull_request": null,
+  "status": "IMPLEMENTED_PENDING_EXECUTION",
+  "tests": {
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "pending": [
+      "npm run test:auth",
+      "npm run test:triad",
+      "npm run test:irni-geographic-rpc",
+      "npm run typecheck:irni-geographic-rpc",
+      "npm run test:geography-catalog",
+      "npx tsx --test worker/db/writePause.test.ts",
+      "npm run test:cloudflare",
+      "GitHub Actions quality gates"
+    ]
+  },
+  "findings": [
+    {
+      "id": "QA-001",
+      "severity": "P1",
+      "status": "IMPLEMENTED_NOT_EXECUTED",
+      "summary": "test:triad was omitted from the test:cloudflare Gate G command; added."
+    },
+    {
+      "id": "QA-002",
+      "severity": "P1",
+      "status": "IMPLEMENTED_NOT_EXECUTED",
+      "summary": "Cloudflare Native Auth workflow referenced nonexistent test:cloudflare-native-auth; corrected to test:auth."
+    },
+    {
+      "id": "QA-003",
+      "severity": "P1",
+      "status": "IMPLEMENTED_NOT_EXECUTED",
+      "summary": "Radar Backend Triad workflow referenced nonexistent test:geo; corrected to test:geography-catalog."
+    },
+    {
+      "id": "QA-004",
+      "severity": "P1",
+      "status": "IMPLEMENTED_NOT_EXECUTED",
+      "summary": "IRNI Geographic RPC workflow referenced missing test:irni-geographic-rpc and typecheck:irni-geographic-rpc package scripts; both added."
+    }
+  ],
+  "limitations": [
+    "Authorized MacBook Desktop Commander device is Offline; local test execution is unavailable.",
+    "Recent GitHub Actions jobs return null step arrays; job log downloads returned 404 BlobNotFound and no diagnostic artifacts were available.",
+    "No application tests, typechecks, builds, or Wrangler dry-runs were executed in this session."
+  ],
+  "next_action": "Restore an executable runner, run all listed focused suites and the complete CI gates, inspect actual logs, and only then close the work package. Keep the PR Draft; no merge or production deployment."
+}
