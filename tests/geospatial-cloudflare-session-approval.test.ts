@@ -92,6 +92,17 @@ void (async () => {
     });
     assert.equal(nonAdmin.status, 403);
 
+    const creatorAdminAssertion = await assertionFor('boundary-creator', true, url);
+    const selfApproval = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'x-correlation-id': CORRELATION_ID,
+        'x-radar-worker-hop': '1',
+        'x-radar-session-assertion': creatorAdminAssertion,
+      },
+    });
+    assert.equal(selfApproval.status, 403);
+
     const adminAssertion = await assertionFor('independent-reviewer', true, url);
     const approved = await fetch(endpoint, {
       method: 'POST',
