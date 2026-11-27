@@ -65,3 +65,20 @@ Inspect GitHub Actions account/repository runner eligibility and billing policy;
 
 ### Exact next action
 Resolve hosted-runner eligibility/billing or repository Actions policy. Do not alter workflow YAML to compensate. Once a runner is allocated, execute `npm run test:contracts` first and capture actual test output.
+
+
+## 2026-11-27 — QA continuation: workflow contract audit
+
+- Revalidated PR #74: open, Draft, unmerged; current QA head at start of this package was `b9e43ded6f6ecb9675eafd3d3694dfbba64fe44d`.
+- Corrected a prior cross-branch reading error: `main/package.json` does not include the NIPS test in `test:contracts`, but the QA branch does. The PR #74 diff explicitly adds `tsx --test tests/nips-golden-reference.test.ts`; the suite is wired correctly on the QA branch. No duplicate change was needed.
+- Audited all 16 workflow YAML files and all 40 `npm run` invocations against root and workspace package scripts on `main` commit `456dcacb387b908797756863b10da1f7104b658e`. Found four missing command references:
+  - `cloudflare-native-auth-validation.yml`: `test:cloudflare-native-auth` (no package script; `test:auth` exists).
+  - `irni-geographic-rpc-contract.yml`: `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc` (both absent).
+  - `radar-backend-triad.yml`: `test:geo` (no package script; `test:geography-catalog` exists).
+- Independently audited the corresponding PR #79 branch: all 16 workflows / 40 `npm run` invocations have zero missing package scripts. PR #79 also moves the branch target from `pull_request.types` to `pull_request.branches` in `ci.yml`. These are source-level corrections only; PR #79 remains Draft/open/unmerged and has not been runtime-verified by GitHub Actions.
+- Latest five PR #74 workflow runs on head `b9e43ded...` are 46005424220, 46005424339, 46005424528, 46005424288, and 46005424272. All primary jobs report zero steps; the E2E job and three path-filtered downstream jobs were skipped. No test cases executed.
+- Checked Desktop Commander device availability: registered `MacBook-Air.local` remains Offline (last seen 23 hours ago). No local test execution path is currently available.
+- No application behavior was changed. Four confirmed CI configuration defects are recorded separately from application defects; fixes are present in unmerged PR #79 and remain unverified at runtime.
+
+### Next exact action
+Restore a real execution path (hosted runner allocation or authorized local device online), execute `npm run test:contracts` on the QA branch, then run focused auth, D1 triad, IRNI RPC, and geography tests. Keep PR #74 and PR #79 unmerged until checks and review complete.
