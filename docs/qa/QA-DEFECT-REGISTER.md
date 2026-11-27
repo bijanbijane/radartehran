@@ -27,3 +27,22 @@
 - **Commit:** `a488f9750211d9afec46d4ed33258c47e70171f2`.
 - **Regression verification:** GitHub read-back verified the YAML. Test execution remains pending because the latest Actions jobs exposed no steps/logs and the local runner is offline.
 - **Status:** `IMPLEMENTED_BUT_NOT_VERIFIED`.
+
+
+## QA-003 — Backend workflow calls a nonexistent geography script
+
+- **Severity:** P1 (CI command contract)
+- **File:** `.github/workflows/radar-backend-triad.yml`
+- **Expected:** Invoke a script defined by root `package.json`.
+- **Actual:** Workflow called `npm run test:geo`; root package scripts had no `test:geo` entry.
+- **Correction:** Replaced it with the existing `npm run test:geography-catalog`.
+- **Verification:** Source read-back confirms the corrected command. Execution pending.
+
+## QA-004 — IRNI RPC workflow calls two nonexistent npm scripts
+
+- **Severity:** P1 (CI command contract)
+- **Files:** `.github/workflows/irni-geographic-rpc-contract.yml`, `package.json`
+- **Expected:** The workflow's RPC test and isolated typecheck commands resolve to package scripts.
+- **Actual:** `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc` were absent.
+- **Correction:** Added the test script for the canonical route, RPC client, and v2 consumer suites; added strict typecheck using the existing `tsconfig.irni-geographic-rpc.json`.
+- **Verification:** Package read-back confirms both entries. Execution pending.
