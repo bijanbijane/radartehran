@@ -42,7 +42,10 @@ export async function executeUpsertNeighborhoodBoundary(params: {
       });
     }
 
-    const history = params.boundaryHistoryByEntity.get(input.entityId) ?? [];
+    const originalHistory = params.boundaryHistoryByEntity.get(input.entityId);
+    // Stage changes on a detached copy so a failed durable write cannot leave the
+    // in-memory lifecycle ahead of the persisted snapshot.
+    const history = originalHistory ? structuredClone(originalHistory) : [];
     const activeRecords = history.filter((record) => record.status === 'ACTIVE');
     if (activeRecords.length > 1 && input.autoApprove !== false) {
       throw new CoreApiError(
@@ -86,8 +89,14 @@ export async function executeUpsertNeighborhoodBoundary(params: {
 
     history.push(record);
     params.boundaryHistoryByEntity.set(input.entityId, history);
-    params.invalidateGeoCaches(input.cityId);
-    params.persistRuntime();
+    try {
+      params.invalidateGeoCaches(input.cityId);
+      params.persistRuntime();
+    } catch (error) {
+      if (originalHistory) params.boundaryHistoryByEntity.set(input.entityId, originalHistory);
+      else params.boundaryHistoryByEntity.delete(input.entityId);
+      throw error;
+    }
     return structuredClone(record);
   } finally {
     params.activeBoundaryLocks.delete(input.entityId);
@@ -118,10 +127,12 @@ export async function executeApproveNeighborhoodBoundary(params: {
 
   params.activeBoundaryLocks.add(input.entityId);
   try {
-    const history = params.boundaryHistoryByEntity.get(input.entityId);
-    if (!history?.length) {
+    const originalHistory = params.boundaryHistoryByEntity.get(input.entityId);
+    if (!originalHistory?.length) {
       throw new CoreApiError('NOT_FOUND', 404, 'Boundary history was not found.');
     }
+    // Keep approval mutations isolated until the durable snapshot is committed.
+    const history = structuredClone(originalHistory);
     const targetIndex = history.findIndex((record) => record.id === input.versionId);
     if (targetIndex < 0) {
       throw new CoreApiError('NOT_FOUND', 404, 'Boundary version was not found.');
@@ -158,8 +169,13 @@ export async function executeApproveNeighborhoodBoundary(params: {
     target.boundingBox = validation.boundingBox;
 
     params.boundaryHistoryByEntity.set(input.entityId, history);
-    params.invalidateGeoCaches(target.cityId);
-    params.persistRuntime();
+    try {
+      params.invalidateGeoCaches(target.cityId);
+      params.persistRuntime();
+    } catch (error) {
+      params.boundaryHistoryByEntity.set(input.entityId, originalHistory);
+      throw error;
+    }
     return structuredClone(target);
   } finally {
     params.activeBoundaryLocks.delete(input.entityId);
