@@ -13,8 +13,8 @@
   "repository": {
     "remote_identity": "github.com/bijanbijane/radartehran",
     "current_branch": "feat/nips-backend-runtime-foundation-2026-11-26",
-    "head_commit": "c65f6478473c890ed5ea8754faf3f5f896bf2ed7",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH; NIPS PUBLIC MODERATION STATE FIX AND WORKER STREAMING PARSER IMPLEMENTED_NOT_VERIFIED; ROOT CI NOW INCLUDES TEST_WORKER; ACTIONS RETRIES STILL FAIL BEFORE STEPS",
+    "head_commit": "8eeb46517310af6b0a392cfc72722d916aa6129b",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH; WORKER TEST SUITE ADDED TO ROOT CI; NIPS AND WORKER CODE FIXES IMPLEMENTED_NOT_VERIFIED; LATEST PR SYNCHRONIZATION RUNS FAIL WITH ZERO STEPS AND UNAVAILABLE LOGS",
     "last_verified_commit": "b8d292af786e3091ab85ebf73d4c38d036197717"
   },
   "current_phase": {
@@ -29,11 +29,11 @@
     "task_status": "IN_PROGRESS"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-211-WORKER-CI-COVERAGE-GAP-CLOSED-RUNNER-FAILURE-PERSISTS",
-    "checkpoint_timestamp_utc": "2026-11-27T14:50:00.000Z",
-    "last_safe_operation": "Added npm run test:worker to the main GitHub Actions quality-gate workflow, with a dedicated retained log file. Confirmed npm test includes test:unit, and test:unit includes test:nips.",
-    "last_completed_operation": "Retried failed jobs for all five PR #67 workflows on commit c2dd01f31ae211972c46c48cf687334b5d65f355. Reruns were accepted, but all five jobs again completed failure with empty step arrays; log retrieval returned BlobNotFound. No workflow commands executed. Static inspection found and fixed missing Worker request-boundary suite in root CI. Workflow change is committed as c65f6478473c890ed5ea8754faf3f5f896bf2ed7; not yet executed.",
-    "next_exact_action": "Wait for a new PR synchronization run on c65f6478473c890ed5ea8754faf3f5f896bf2ed7 and inspect whether runner steps are allocated. If steps execute, inspect the dedicated test:worker gate and npm test's test:nips inclusion; then address actual failures. Keep all code changes IMPLEMENTED_BUT_NOT_VERIFIED until successful command evidence exists.",
+    "checkpoint_id": "CHK-212-LATEST-CI-RUNNER-FAILURE-RECONFIRMED",
+    "checkpoint_timestamp_utc": "2026-11-27T15:00:00.000Z",
+    "last_safe_operation": "Verified root CI now explicitly includes npm run test:worker; confirmed npm test includes test:unit and test:unit includes test:nips. Rechecked five workflows triggered by the latest PR synchronization.",
+    "last_completed_operation": "Latest PR head before this state update was 8eeb46517310af6b0a392cfc72722d916aa6129b. Runs #46010894627 (Root CI), #46010894716 (Backend Triad), #46010894624 (Native Auth), #46010894622 (IRNI RPC), and #46010894679 (Path-Filtered) all concluded failure. Their primary jobs returned empty step arrays; log retrieval remains BlobNotFound. This is runner/setup failure evidence, not application test output. No test, typecheck, build or migration command executed.",
+    "next_exact_action": "Inspect the next PR synchronization run after this state checkpoint for runner step allocation. If steps become available, read retained CI artifacts and diagnose exact failures. If not, obtain an authorized Node 22/npm 10 execution environment. Keep Worker, NIPS and CI changes IMPLEMENTED_BUT_NOT_VERIFIED.",
     "resume_status": "READY"
   },
   "execution_history": {
@@ -1910,6 +1910,14 @@
       "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
       "idempotent": true,
       "timestamp_utc": "2026-11-27T14:50:00.000Z"
+    },
+    {
+      "operation_id": "OP-206",
+      "phase": "PHASE-6",
+      "description": "Reconcile latest PR synchronization CI runs after Worker test-gate addition; confirm all five workflows fail before steps and no executable test evidence exists.",
+      "status": "VERIFIED",
+      "idempotent": true,
+      "timestamp_utc": "2026-11-27T15:00:00.000Z"
     }
   ],
   "tests": [
@@ -2068,7 +2076,7 @@
     "B-009: Production IRNI ownership cutover remains incomplete: legacy NEIGHBORHOOD_DB and IRNI_PUBLISH_HMAC_SECRET remain on Radar production; IRNI_GEOGRAPHY Service Binding and irni-api Worker are absent. Do not change production bindings/secrets or migrate until owner-side RPC is deployed and verified.",
     "B-010: NIPS public-profile serializer allow-list and moderation-state suppression hardening plus sentinel regressions are committed but unverified. Root npm test includes test:unit, which includes npm run test:nips; awaiting a functioning Actions runner.",
     "B-011: Worker JSON streaming parser and regression tests are committed but unverified. Latest code commit has no Actions workflow/check-run records; this session has no authorized local Node/npm executor. Run npm run test:worker and required Worker/backend gates before verification.",
-    "B-001: GitHub Actions runner/step allocation remains blocked. Retried five PR #67 workflow runs #46010253564 (Path-Filtered), #46010253613 (Backend Triad), #46010253559 (Native Auth), #46010253699 (Root CI), and #46010253587 (IRNI RPC). Every rerun again completed failure with empty step arrays; log downloads return BlobNotFound. No command-level failure is established.",
+    "B-001: GitHub Actions runner/step allocation remains blocked on latest PR synchronization. Runs #46010894627 (Root CI), #46010894716 (Backend Triad), #46010894624 (Native Auth), #46010894622 (IRNI RPC), and #46010894679 (Path-Filtered) all concluded failure; primary jobs have empty step arrays and log downloads return BlobNotFound. No workflow command executed and no application-level test failure is established.",
     "B-011: Worker JSON streaming parser and regression tests remain IMPLEMENTED_BUT_NOT_VERIFIED. Static audit confirmed nine inspected route modules propagate parser status/code; body limits range 4 KiB–14 MiB. Root CI now explicitly runs npm run test:worker and retains its log, but no runner step has executed.",
     "B-012: SEC-NIPS-002 — public serialization previously exposed UNDER_REVIEW metric values despite blocked moderation state when evidence allowed redistribution, and did not defensively suppress explicit SUPPRESSED states at the public boundary. Both states now serialize as SUPPRESSED with null value and zero evidence count; regressions cover both. Verification pending npm run test:nips, typecheck, architecture and security gates.",
     "B-013: CI coverage gap found and fixed: root .github/workflows/ci.yml previously ran test:cloudflare but omitted the dedicated test:worker suite containing the request-body streaming regressions. Added npm run test:worker as an explicit Gate G step with ci-gate-g-worker-tests.log. Workflow change c65f6478473c890ed5ea8754faf3f5f896bf2ed7 is committed but has not executed."
