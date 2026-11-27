@@ -108,3 +108,10 @@ Re-fetched package scripts and both workflow files to verify the command names n
 ### B-006 — dependency vulnerabilities
 - Build output reports 21 npm audit findings (14 moderate, 5 high, 2 critical), but the advisory JSON and dependency paths are not present in accessible logs.
 - Next: retrieve full npm audit JSON from a working executor and triage direct/transitive exposure. No force upgrades.
+
+
+### B-007 — GitHub Actions runner allocation unavailable
+- The raw job payloads show `runner_id: 0`, empty runner name, zero steps, and immediate failure across the inspected recent PR runs, including PR #81's dedicated config guard.
+- Rerunning PR #81's failed workflow reproduced the same result.
+- This is a GitHub Actions runner/queue infrastructure blocker. No workflow commands ran; no code failure or pass can be inferred.
+- Next: wait for runner allocation to recover or use an available connected Node/npm executor. Keep PRs Draft until the actual checks execute.
