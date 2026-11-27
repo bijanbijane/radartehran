@@ -34,7 +34,7 @@ export function normalizeSubmissionLocationPrecision(value: LocationPrecision): 
 
 /** Downgrade legacy user-submitted records that mislabeled a neighborhood centroid as street-level. */
 export function normalizeUserSubmittedListingLocation(record: PropertyListingRecord): PropertyListingRecord {
-  if (record.listing.sourceKind !== 'user_submitted') return record;
+  if (!record?.listing || !record?.property || record.listing.sourceKind !== 'user_submitted') return record;
   const locationPrecision = normalizeSubmissionLocationPrecision(record.property.locationPrecision);
   return {
     ...record,
@@ -270,7 +270,7 @@ export function submitDraftAsPropertyListing(
       },
       verification: {
         identity: 'partial',
-        location: draft.locationPrecision === 'unavailable' ? 'unverified' : 'partial',
+        location: locationPrecision === 'unavailable' ? 'unverified' : 'partial',
         priceReasonableness: dupAssessment.level === 'high' ? 'partial' : 'verified',
         freshness: 'verified',
       },
