@@ -948,8 +948,8 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
           // This represents an ingestion that completes after the initial registry read
           // but before the revocation job is committed.
           await userSqlite.db.prepare(
-            \`INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
-             VALUES (?1, ?2, 'v1', ?3)\`,
+            `INSERT INTO user_research_subject_registry (uid, subject_key, subject_key_version, created_at_iso)
+             VALUES (?1, ?2, 'v1', ?3)`,
           ).bind(uid, subjectKey, new Date(t0 + 30).toISOString()).run();
           const written = await writePseudonymizedEventsToResearchDb({
             researchDb: researchSqlite.db, subjectKey, subjectKeyVersion: 'v1',
@@ -957,10 +957,10 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
           });
           assert.equal(written.acceptedCount, 1);
           await userSqlite.db.prepare(
-            \`INSERT INTO research_processing_permits (
+            `INSERT INTO research_processing_permits (
               permit_id, uid, subject_key, subject_key_version, consent_revision,
               consumer_kind, acquired_at_ms, expires_at_ms, released_at_ms
-            ) VALUES ('rperm_late_registry_7', ?1, ?2, 'v1', 1, 'http_ingest', ?3, ?4, NULL)\`,
+            ) VALUES ('rperm_late_registry_7', ?1, ?2, 'v1', 1, 'http_ingest', ?3, ?4, NULL)`,
           ).bind(uid, subjectKey, t0 + 15, t0 + 30_000).run();
         }
         return userSqlite.db.batch(statements);
