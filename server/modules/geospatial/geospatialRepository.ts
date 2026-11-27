@@ -6,6 +6,7 @@ import type {
   SpatialPublishableListing,
 } from './types';
 import { AtomicJsonRepository } from '../shared/atomicJsonRepository';
+import { getGeospatialPersistenceHealth } from './geospatialDurableRecovery';
 
 export interface PersistedGeospatialState {
   boundaryHistoryByEntity: Record<string, BoundaryVersionRecord[]>;
@@ -29,7 +30,16 @@ function defaultState(): PersistedGeospatialState {
   };
 }
 
+function assertGeospatialPersistenceWritable(): void {
+  const health = getGeospatialPersistenceHealth();
+  if (health === 'BLOCKED' || health === 'RECOVERING') {
+    throw new Error(`GEOSPATIAL_PERSISTENCE_${health}`);
+  }
+}
+
 export function loadGeospatialState(): PersistedGeospatialState {
+  // Do not expose a cached snapshot after recovery has rejected it.
+  if (getGeospatialPersistenceHealth() !== 'READY') return defaultState();
   return geoRepo.load(defaultState);
 }
 
@@ -56,10 +66,12 @@ export async function ensureGeospatialRepositoryHydrated(): Promise<PersistedGeo
 }
 
 export function persistGeospatialState(state: PersistedGeospatialState): void {
+  assertGeospatialPersistenceWritable();
   geoRepo.writeImmediate(state);
 }
 
 export async function persistGeospatialStateAwait(state: PersistedGeospatialState): Promise<void> {
+  assertGeospatialPersistenceWritable();
   await geoRepo.writeImmediateAwait(state);
 }
 
