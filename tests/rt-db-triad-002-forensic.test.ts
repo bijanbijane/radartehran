@@ -127,6 +127,9 @@ function createForensicSqliteD1(options: TestSqliteD1Options = {}): {
       return makeStmt(sql, values);
     },
     async first<T = Record<string, unknown>>(colName?: string): Promise<T | null> {
+      if (failResultPattern && sql.includes(failResultPattern)) {
+        throw new Error(`INJECTED_SQL_FAILURE:${failResultPattern}`);
+      }
       if (yieldBeforeFirst) {
         await new Promise((r) => setTimeout(r, 5));
       }
