@@ -41,9 +41,9 @@ Updated: 2026-11-27
 - Next exact action: confirm intended D1 binding and D1 batch SQL semantics; then implement the D1 transaction runner behind LegalRegulatoryStore and prove it against the existing Firestore transaction test contract before changing the production composition root.
 
 
-21. **Complete RT-DB-TRIAD-003 consent revocation barrier before claiming consent erasure is safe.** Wire leased permits into direct HTTP and Queue ingestion; release in `finally`; persist each event's `consent_revision`; reject writes fenced by `research_subject_consent_fences`; atomically create revision-scoped revocation jobs/outbox records when consent is revoked; drain active permits and reconcile outbox receipts; add the missing `POST /api/account/privacy/reconcile` route. Reconcile the six existing dormant scenario tests against the actual public API.
-22. **Activate the dormant TRIAD-003 suite only after its missing implementation is complete.** Add `tests/rt-db-triad-003-consent-barrier.test.ts` to an explicit npm test script and verify the typecheck/test inclusion contract; do not claim the suite is active while `tsconfig.json` excludes tests and `npm test` runs only TRIAD-001/002.
-23. **Verify concurrent outbox retry accounting.** Run `npm test` (TRIAD-001 and TRIAD-002) and `npm run typecheck` against the current PR #78 head when a local executor or hosted runner is available. Confirm the new overlapping-worker test yields attempt_count=2 and the later exponential backoff; current GitHub Actions runs failed before any runner was assigned.
+21. **[IMPLEMENTED — NOT VERIFIED] RT-DB-TRIAD-003 runtime barrier.** HTTP/Queue permits, consent revision/fence checks, durable revocation outbox, lease draining, revision-scoped erasure, receipt reconciliation, privacy routes, deterministic identities, expected-revision CAS and post-drain registry rescan are committed. Seven scenarios cover the runtime and the late-registry race.
+22. **[IMPLEMENTED — NOT VERIFIED] TRIAD test activation.** `npm test` invokes `npm run test:triad`, which runs TRIAD-001/002/003; the dedicated Backend Triad workflow path filters include TRIAD-001 and TRIAD-003 test files.
+23. **Verify the complete DB triad and retry regressions.** Run `npm test`, `npm run typecheck`, and the Worker/API bundle/route-contract checks against the exact latest PR #78 head once a runner is assigned. Confirm the seven TRIAD-003 scenarios and atomic outbox retry counter regression pass; no execution evidence exists yet.
 24. **Resolve hosted runner allocation through issue #49.** Do not repeatedly rerun unchanged workflows, weaken permissions, or attribute failures to application code until GitHub account-level Actions entitlement/billing/policy is checked.
 
 25. Reconnect MacBook-Air.local or resolve the GitHub Actions hosted-runner allocation blocker tracked in issue #49; do not rerun unchanged workflows until runner assignment works.
@@ -54,3 +54,5 @@ Updated: 2026-11-27
 29. After restoring a runner, run npm test (which now begins with all three DB triad suites), npm run typecheck, and the Worker bundle/API route-contract checks.
 30. Verify migration 0008 applies cleanly after user-d1/0007 in an isolated local SQLite/D1 test database; never apply it to production without separate authorization.
 31. Inspect the TRIAD-002 updated race test and all six TRIAD-003 scenarios for runtime outcomes; fix only actual failures.
+
+31. Re-check the latest CI run metadata after issue #49 is resolved. Do not rerun unchanged workflows while runner_id remains 0 or the job has zero steps.
