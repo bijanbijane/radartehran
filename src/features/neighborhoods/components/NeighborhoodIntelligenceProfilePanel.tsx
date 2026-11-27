@@ -1,5 +1,5 @@
 /** @file src/features/neighborhoods/components/NeighborhoodIntelligenceProfilePanel.tsx — Clean Petroleum-Themed Neighborhood Profile Panel (F-02) */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileText, MapPin, Layers, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 import {
   buildNeighborhoodIntelligenceProfile,
@@ -11,6 +11,7 @@ import {
 } from '../services/neighborhoodProfileEngine';
 import type { AggregatedMarketMetrics } from '../../../data/realMarketPriceAggregator';
 import type { NeighborhoodProfileBoundaryEvidence } from '../profile-contract/neighborhoodProfileEvidenceContract';
+import { fetchNeighborhoodProfileBoundaryEvidence, type NeighborhoodProfileBoundaryApiResult } from '../services/neighborhoodProfileBoundaryApi';
 
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 import { toPersianDigits } from '../../../utils/persianBidiFormat';
@@ -24,6 +25,23 @@ export interface NeighborhoodIntelligenceProfilePanelProps {
   /** Must come from a read-only backend endpoint returning the ACTIVE, reviewed boundary version. */
   approvedBoundaryEvidence?: NeighborhoodProfileBoundaryEvidence | null;
 }
+
+const BOUNDARY_BLOCK_REASON_FA: Record<string, string> = {
+  ACTIVE_BOUNDARY_NOT_FOUND: 'نسخه فعال مرز محله ثبت نشده است.',
+  BOUNDARY_CITY_MISMATCH: 'شهر مرز با شهر پرونده یکسان نیست.',
+  BOUNDARY_LEGACY_ID_MISMATCH: 'شناسه محله با رکورد مرز مطابقت ندارد.',
+  BOUNDARY_REVIEW_NOT_INDEPENDENT: 'بازبینی مرز مستقل از ایجادکننده نبوده است.',
+  CANONICAL_IDENTITY_RESOLVER_NOT_CONFIGURED: 'اتصال Resolver هویت کانونیک IRNI در سرویس تولیدی برقرار نیست.',
+  CANONICAL_IDENTITY_RESOLUTION_FAILED: 'دریافت هویت کانونیک از IRNI ناموفق بوده است.',
+  CANONICAL_IDENTITY_NOT_FOUND: 'هویت کانونیک محله در رجیستری پیدا نشد.',
+  CANONICAL_IDENTITY_MISMATCH: 'هویت کانونیک با شهر یا شناسه محله مطابقت ندارد.',
+  CANONICAL_IDENTITY_UNVERIFIED: 'هویت جغرافیایی هنوز تأیید نشده است.',
+  BOUNDARY_SOURCE_REGISTRY_NOT_CONFIGURED: 'رجیستری معتبر منابع هندسه متصل نیست.',
+  BOUNDARY_SOURCE_REGISTRY_FAILED: 'دریافت اطلاعات منبع هندسه ناموفق بوده است.',
+  BOUNDARY_SOURCE_NOT_REGISTERED: 'منبع هندسه در رجیستری ثبت نشده است.',
+  BOUNDARY_SOURCE_METADATA_INVALID: 'فراداده و سطح اعتبار منبع هندسه قابل تأیید نیست.',
+  BOUNDARY_GEOMETRY_HASH_MISMATCH: 'تمامیت هندسه با هش ثبت‌شده مطابقت ندارد.',
+};
 
 const MARKET_TAB_LABELS_FA: Record<NeighborhoodMarketTabId, string> = {
   sale: 'فروش',
@@ -44,6 +62,25 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
   const [activeSection, setActiveSection] = useState<NeighborhoodInternalSectionId>('overview');
   const [marketTab, setMarketTab] = useState<NeighborhoodMarketTabId>('sale');
   const [distanceMode, setDistanceMode] = useState<AccessibilityDistanceMode>('direct_distance');
+  const [boundaryReadModel, setBoundaryReadModel] = useState<NeighborhoodProfileBoundaryApiResult | null>(null);
+
+  useEffect(() => {
+    if (approvedBoundaryEvidence !== undefined) {
+      setBoundaryReadModel(null);
+      return;
+    }
+    const controller = new AbortController();
+    setBoundaryReadModel(null);
+    void fetchNeighborhoodProfileBoundaryEvidence(cityId, hood.id, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setBoundaryReadModel(result);
+      });
+    return () => controller.abort();
+  }, [hood.id, cityId, approvedBoundaryEvidence]);
+
+  const effectiveBoundaryEvidence = approvedBoundaryEvidence !== undefined
+    ? approvedBoundaryEvidence
+    : boundaryReadModel?.status === 'READY' ? boundaryReadModel.evidence : null;
 
   const profile = useMemo(
     () => buildNeighborhoodIntelligenceProfile(
@@ -51,9 +88,9 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
       allNeighborhoods.length ? allNeighborhoods : [hood],
       cityId,
       dealPricePerSqm,
-      { areaUnit, intlCurrency, locale: radarLocale, marketMetrics, exchangeRateRef: rateState.snapshot, approvedBoundaryEvidence },
+      { areaUnit, intlCurrency, locale: radarLocale, marketMetrics, exchangeRateRef: rateState.snapshot, approvedBoundaryEvidence: effectiveBoundaryEvidence },
     ),
-    [hood, allNeighborhoods, cityId, dealPricePerSqm, marketMetrics, approvedBoundaryEvidence, areaUnit, intlCurrency, radarLocale, rateState.snapshot],
+    [hood, allNeighborhoods, cityId, dealPricePerSqm, marketMetrics, effectiveBoundaryEvidence, areaUnit, intlCurrency, radarLocale, rateState.snapshot],
   );
 
   return (
@@ -334,6 +371,21 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                 <ShieldCheck className="w-4 h-4 text-[var(--color-brand-fg)]" aria-hidden="true" />
                 <span>{activeSection === 'environment' ? 'محیط زیست، آرامش و ویژگی‌های محله' : 'منابع داده و محدودیت‌های محاسبه'}</span>
               </div>
+              {activeSection === 'sources' && boundaryReadModel?.status === 'BLOCKED' && (
+                <div className="rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-3 text-[var(--color-text-secondary)] leading-6" data-testid="neighborhood-boundary-blockers">
+                  <div className="font-bold text-[var(--color-text-primary)]">دلایل عدم انتشار شواهد مرز</div>
+                  <ul className="mt-1 list-disc pr-5">
+                    {boundaryReadModel.reasonCodes.map((code) => (
+                      <li key={code}>{BOUNDARY_BLOCK_REASON_FA[code] ?? 'یکی از کنترل‌های اعتبارسنجی مرز تأیید نشده است.'}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {activeSection === 'sources' && boundaryReadModel?.status === 'UNAVAILABLE' && (
+                <div className="rounded-[8px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-3 text-[var(--color-text-secondary)] leading-6" data-testid="neighborhood-boundary-unavailable">
+                  دریافت شواهد مرز از API ممکن نشد؛ تا زمان دسترسی به پاسخ معتبر، مساحت محله منتشر نمی‌شود.
+                </div>
+              )}
               <p className="text-[var(--color-text-secondary)] leading-6">
                 {activeSection === 'environment'
                   ? 'شاخص‌های محیطی مانند آلودگی هوا، نویز، دمای سطح و پوشش سبز باید با ایستگاه یا لایه مکانی، بازه زمانی و روش سنجش مستقل نمایش داده شوند. داده مستند محیطی برای این پرونده هنوز متصل نیست.'
