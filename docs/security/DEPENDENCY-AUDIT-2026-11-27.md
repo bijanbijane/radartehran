@@ -43,3 +43,19 @@ Source: Cloudflare Workers Build audit command on the pre-remediation dependency
 - Typecheck, architecture, auth, Cloudflare/D1, storage, Vitest and build checks: **IN_PROGRESS**. Cloudflare build `433532e7-7cd4-4608-9691-7a081052dfe2` is queued; no test pass is claimed.
 - GitHub Actions: runner allocation remains unavailable (empty steps / `BlobNotFound` job logs).
 - Firebase/Firestore vulnerabilities remain an open retirement workstream, not silently accepted as fixed.
+
+
+## Post-remediation audit result
+
+Cloudflare verification build `433532e7-7cd4-4608-9691-7a081052dfe2` completed dependency installation (`npm ci`, 587 packages) and ran `npm audit --json` after the lockfile update:
+
+| Severity | Before | After |
+|---|---:|---:|
+| Critical | 2 | 0 |
+| High | 5 | 4 |
+| Moderate | 14 | 8 |
+| Total | 21 | 12 |
+
+The Vitest/Tinypool critical findings and Sharp high findings are absent from the post-remediation audit. The remaining four High findings are the Firebase/Firestore chain: `firebase`, `@firebase/firestore`, `@firebase/firestore-compat`, and `@grpc/grpc-js`. The eight Moderate findings remain primarily under `firebase-admin` and its Google Cloud transitive dependencies.
+
+The verification build has reached `npm run typecheck` (`tsc --noEmit`) and remains running. No typecheck, test-suite or build result is claimed yet.
