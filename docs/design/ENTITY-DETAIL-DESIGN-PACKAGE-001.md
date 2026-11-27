@@ -65,7 +65,7 @@ Interactions included:
 - Expand and collapse a field's sample source details.
 - Expand and collapse the history rule note.
 
-All sample property values and source identifiers are explicitly marked as illustrative. Save and compare are local prototype states only; they are not connected to the product's persistence or engagement APIs.
+All sample property values and source identifiers are explicitly marked as illustrative. Save and compare are local prototype states only; they are not connected to the product's persistence or engagement APIs. A separate state explorer also renders Loading, Success, Partial, Stale, Conflict, Restricted, Deleted, Archived, Not Found and Error variants; its selector is local prototype state.
 
 ## 5. Design specification
 
@@ -159,7 +159,7 @@ Missing data must remain unknown/unavailable; never silently coerce it to zero. 
 
 - **Information architecture:** reviewed against the entity types and section registry in the repository.
 - **Visual direction:** aligned with the current light canvas, petroleum brand and Vazirmatn typography tokens.
-- **Interaction:** tab switching, entity-type switching, source disclosure, favorite and comparison prototype states are interactive in ChatGPT.
+- **Interaction:** tab switching, entity-type switching, source disclosure, favorite and comparison prototype states are interactive in ChatGPT. The status-state explorer covers all ten principal page states listed above.
 - **Responsive:** content uses wrapping and minimum-width layouts to support narrow and wide viewports.
 - **RTL:** Persian-first content order and labels are used; browser-level bidi behavior and device rendering have not been tested.
 - **Data semantics:** the prototype labels illustrative values; it does not claim a live data connection.
