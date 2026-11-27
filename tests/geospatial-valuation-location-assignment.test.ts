@@ -292,6 +292,46 @@ test('polygon validation rejects overlapping or nested interior rings', () => {
   assert.ok(validatePolygonGeometry(nestedHoles).issues.some((issue) => issue.code === 'HOLE_OVERLAP'));
 });
 
+
+test('MultiPolygon validation rejects intersecting and nested components', () => {
+  const outer = (SQUARE_A.coordinates as [number, number][][])[0];
+  const overlapping: PolygonGeometry = {
+    type: 'MultiPolygon',
+    coordinates: [
+      [outer],
+      [[[51.35, 35.73], [51.38, 35.73], [51.38, 35.76], [51.35, 35.76], [51.35, 35.73]]],
+    ],
+  };
+  const touching: PolygonGeometry = {
+    type: 'MultiPolygon',
+    coordinates: [
+      [outer],
+      [[[51.40, 35.72], [51.42, 35.72], [51.42, 35.74], [51.40, 35.74], [51.40, 35.72]]],
+    ],
+  };
+  assert.ok(validatePolygonGeometry(overlapping).issues.some(
+    (issue) => issue.code === 'MULTIPOLYGON_COMPONENT_OVERLAP',
+  ));
+  assert.ok(validatePolygonGeometry(touching).issues.some(
+    (issue) => issue.code === 'MULTIPOLYGON_COMPONENT_OVERLAP',
+  ));
+});
+
+test('MultiPolygon validation permits disjoint components and an island inside a valid hole', () => {
+  const outer = (SQUARE_A.coordinates as [number, number][][])[0];
+  const hole = [[51.33, 35.73], [51.37, 35.73], [51.37, 35.77], [51.33, 35.77], [51.33, 35.73]];
+  const island = [[51.34, 35.74], [51.36, 35.74], [51.36, 35.76], [51.34, 35.76], [51.34, 35.74]];
+  const valid: PolygonGeometry = {
+    type: 'MultiPolygon',
+    coordinates: [
+      [outer, hole],
+      [island],
+      [[[51.50, 35.70], [51.52, 35.70], [51.52, 35.72], [51.50, 35.72], [51.50, 35.70]]],
+    ],
+  };
+  assert.equal(validatePolygonGeometry(valid).valid, true);
+});
+
 test('polygon validation checks closure and self-intersection of interior rings', () => {
   const unclosedHole: PolygonGeometry = {
     type: 'Polygon',
