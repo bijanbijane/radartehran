@@ -21,3 +21,13 @@ Active branch head: `9180bffe91577e9a53460fcf54e0058549813f0d`
 ## Immediate next action
 
 Open the failed rerun job `140435161931` in GitHub Actions and establish why the job has no returned steps/log artifact. If this is a runner/platform failure, restore CI execution first; then rerun the five PR #67 workflows and diagnose the first real command-level failure.
+
+
+## CHK-197 — Current exact next actions
+
+1. **Resolve GitHub Actions execution visibility.** Latest PR #67 head is `ee2023a59128a9bad17f37e144995b5a6d67bc1f`. All five associated workflows conclude FAILURE, but jobs return empty/null steps and logs return `BlobNotFound`. Inspect GitHub Actions UI/runner availability or obtain valid log access; do not modify application code based on a failure with no executed-step evidence.
+2. **Verify the two CI/build remediations.** The native-auth workflow now uses the existing `npm run test:auth` script. The stale `bun.lock` is removed and `.npmrc` aligns npm 10 installation with the committed lockfile. Both changes are committed but not yet verified by CI/Cloudflare preview on PR #67.
+3. **Execute local gates when a runner is available:** `npm run test:nips`, `npm run typecheck`, `npm run arch:check`, `npm run test:auth`, `npm run test:cloudflare`, and the D1 triad/write-pause tests.
+4. **Continue NIPS persistence only through the IRNI owner boundary.** Build the authenticated/versioned NIPS storage RPC and its owner-side additive migration in IRNI; Radar must not receive a direct D1 binding to the shared neighborhood database.
+5. **Implement Radar's RPC adapter only after the owner contract is executable.** Add request validation, service identity, idempotency, bounded payloads, immutable snapshot writes, CAS publication activation and integration tests.
+6. Keep PR #67 Draft; no merge, production deployment, remote migration, or secret change without explicit approval.
