@@ -35,6 +35,10 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: `${SMOKE_BASE_URL}/api/healthz`,
+    env: {
+      PORT: new URL(SMOKE_BASE_URL).port || '3000',
+      APP_URL: SMOKE_BASE_URL,
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

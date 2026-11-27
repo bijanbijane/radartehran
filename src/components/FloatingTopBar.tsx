@@ -129,17 +129,17 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         {primaryView === 'map' && !mobileFilterOpen && !showSearchDropdown && activeFilterCount > 0 && (
           <div className="self-start flex flex-wrap items-center gap-1.5 apple-vibrancy-bar px-2.5 py-1 rounded-[10px] text-xs font-bold pointer-events-auto" role="region" aria-label="فیلترهای فعال نقشه">
             {statusFilter !== 'all' && (
-              <button type="button" aria-label="حذف فیلتر وضعیت بودجه" onClick={() => setStatusFilter('all')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر وضعیت بودجه" onClick={() => setStatusFilter('all')} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
                 <span>{statusFilter === 'green' ? 'مناسب بودجه' : statusFilter === 'yellow' ? 'مرزی' : 'فراتر از بودجه'}</span><X className="w-3 h-3" />
               </button>
             )}
             {onlyOutsideTrafficZone && (
-              <button type="button" aria-label="حذف فیلتر خارج از طرح" onClick={() => setOnlyOutsideTrafficZone(false)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر خارج از طرح" onClick={() => setOnlyOutsideTrafficZone(false)} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
                 <span>خارج از طرح</span><X className="w-3 h-3" />
               </button>
             )}
             {onlyHighMetro && (
-              <button type="button" aria-label="حذف فیلتر دسترسی مترو" onClick={() => setOnlyHighMetro(false)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer">
+              <button type="button" aria-label="حذف فیلتر دسترسی مترو" onClick={() => setOnlyHighMetro(false)} className="min-h-[44px] md:min-h-[32px] inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
                 <span>مترو ۸+</span><X className="w-3 h-3" />
               </button>
             )}
@@ -148,11 +148,11 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         {lastSyncNotice && !mobileFilterOpen && ( <div role="status" className="self-start apple-vibrancy-bar px-3 py-1.5 rounded-[10px] text-xs font-bold text-[var(--color-brand-600)] pointer-events-auto max-w-md truncate">{lastSyncNotice}</div> )}
         {/* Floating Budget & Loan Filter Popover Card */}
         {mobileFilterOpen && ( <div role="dialog" aria-label="تنظیم بودجه، وام مسکن و محل کار" className="self-start w-full sm:w-[410px] apple-inspector-panel bg-[var(--color-bg-surface)]/95 border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] rounded-[16px] p-4 space-y-3.5 text-xs pointer-events-auto max-h-[82vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-2.5">
+            <div className="flex flex-col gap-2 border-b border-[var(--color-border-subtle)] pb-2.5">
               <div className="flex items-center gap-1.5 font-bold text-[var(--color-text-primary)]"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
-              <div className="flex items-center gap-1.5">
-                {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} title={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} aria-label={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer whitespace-nowrap">یافتن محله با بودجه من</button>}
-                <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>راهنما</span></button>
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} title={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} aria-label={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer whitespace-nowrap">یافتن محله با بودجه من</button>}
+                <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>راهنما</span></button>
                 <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="min-w-[44px] min-h-[44px] md:min-w-[36px] md:min-h-[36px] rounded-full bg-slate-200/70 dark:bg-[var(--color-bg-muted)] hover:bg-slate-200 text-slate-600 dark:text-[var(--color-text-secondary)] flex items-center justify-center cursor-pointer"><X className="w-4 h-4 stroke-[2]" /></button>
               </div>
             </div>
@@ -208,7 +208,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                     { id: 'mid' as const, label: `۶ تا ۱۵ سال (${mode === 'rent' ? '-۱۰٪' : '-۱۲٪'})` },
                     { id: 'older' as const, label: `۱۵+ سال (${mode === 'rent' ? '-۲۰٪' : '-۲۴٪'})` },
                   ].map((seg) => (
-                    <button key={seg.id} type="button" onClick={() => setBuildingAgeSegment(seg.id)} className={`min-h-[38px] py-1 px-1 rounded-lg text-xs font-bold transition cursor-pointer text-center ${buildingAgeSegment === seg.id ? 'bg-[var(--color-brand-600)] text-white shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)]'}`}>{seg.label}</button>
+                    <button key={seg.id} type="button" onClick={() => setBuildingAgeSegment(seg.id)} className={`min-h-[44px] md:min-h-[38px] py-1 px-1 rounded-lg text-xs font-bold transition cursor-pointer text-center ${buildingAgeSegment === seg.id ? 'bg-[var(--color-brand-600)] text-white shadow-xs' : 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-700 dark:text-[var(--color-text-secondary)] hover:bg-slate-100 dark:hover:bg-[var(--color-bg-elevated)] border border-slate-200 dark:border-[var(--color-border-strong)]'}`}>{seg.label}</button>
                   ))}
                 </div>
               </div>
@@ -241,15 +241,15 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                 { id: 'yellow' as const, label: `مرزی (${toPersianNum(counts.yellow)})` },
                 { id: 'red' as const, label: `فراتر (${toPersianNum(counts.red)})` },
               ].map((st) => (
-                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
+                <button key={st.id} type="button" onClick={() => setStatusFilter(st.id)} className={`min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center flex-1 py-1.5 rounded-[8px] font-bold transition cursor-pointer ${statusFilter === st.id ? 'bg-white dark:bg-[var(--color-bg-surface)] text-slate-900 dark:text-white font-bold shadow-xs' : 'text-slate-600 dark:text-[var(--color-text-muted)] hover:text-slate-900 dark:hover:text-white'}`}>{st.label}</button>
               ))}
             </div>
             <div className="pt-2 border-t border-slate-200/70 dark:border-[var(--color-border-subtle)] flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="flex-1 py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition cursor-pointer disabled:opacity-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" onClick={onSaveUserPreferences} disabled={savingPrefs} className="min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center py-2 px-3 rounded-[10px] bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-[var(--color-bg-canvas)] text-xs font-bold transition cursor-pointer disabled:opacity-50">
                   {savingPrefs ? 'در حال ذخیره...' : currentUser ? 'ذخیره در حساب ابری' : 'ورود با گوگل و ذخیره'}
                 </button>
-                <button type="button" onClick={onCopyBudgetShareLink} className="px-3 py-2 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer whitespace-nowrap">ارسال لینک این بودجه برای خانواده</button>
+                <button type="button" onClick={onCopyBudgetShareLink} className="min-w-0 min-h-[44px] md:min-h-[38px] inline-flex w-full items-center justify-center px-3 py-2 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer whitespace-normal text-center leading-snug">ارسال لینک این بودجه برای خانواده</button>
               </div>
               {prefsMessage && <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center">{prefsMessage}</span>}
             </div>

@@ -139,7 +139,76 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
   });
 
-  test('4. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
+  test('4. Mobile budget filter controls expose 44px hit areas without horizontal overflow', async ({ page }) => {
+    for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 844 },
+    ]) {
+      await test.step(`Budget filter hit areas at ${viewport.width}x${viewport.height}`, async () => {
+        await page.setViewportSize(viewport);
+        await page.goto('/?view=map', { waitUntil: 'domcontentloaded' });
+        await waitForLayoutStabilization(page);
+
+        const openFilter = page.getByRole('button', { name: /فیلتر بودجه و وام/ });
+        await expect(openFilter).toBeVisible();
+        await openFilter.click();
+
+        const dialog = page.getByRole('dialog', { name: 'تنظیم بودجه، وام مسکن و محل کار' });
+        await expect(dialog).toBeVisible();
+
+        const scopedControls = [
+          dialog.getByRole('button', { name: /با بودجه من کجای/ }),
+          dialog.getByRole('button', { name: 'راهنما' }),
+          dialog.getByRole('button', { name: /نوساز/ }),
+          dialog.getByRole('button', { name: /۶ تا ۱۵ سال/ }),
+          dialog.getByRole('button', { name: /۱۵\+ سال/ }),
+          dialog.getByRole('button', { name: /^همه/ }),
+          dialog.getByRole('button', { name: /^مناسب/ }),
+          dialog.getByRole('button', { name: /^مرزی/ }),
+          dialog.getByRole('button', { name: /^فراتر/ }),
+          dialog.getByRole('button', { name: /ورود با گوگل و ذخیره|ذخیره در حساب ابری/ }),
+          dialog.getByRole('button', { name: 'ارسال لینک این بودجه برای خانواده' }),
+        ];
+
+        for (const control of scopedControls) {
+          await expect(control).toBeVisible();
+          const height = await control.evaluate((element) => element.getBoundingClientRect().height);
+          expect(height).toBeGreaterThanOrEqual(44);
+        }
+
+        const dialogHasHorizontalOverflow = await dialog.evaluate((element) =>
+          element.scrollWidth > element.clientWidth
+        );
+        expect(dialogHasHorizontalOverflow).toBe(false);
+
+        await dialog.getByRole('button', { name: /^مناسب/ }).click();
+        await dialog.getByRole('button', { name: /فقط خارج از طرح ترافیک/ }).click();
+        await dialog.getByRole('button', { name: /فقط دسترسی عالی مترو/ }).click();
+        await dialog.getByRole('button', { name: 'بستن تنظیمات بودجه' }).click();
+
+        const activeFilters = page.getByRole('region', { name: 'فیلترهای فعال نقشه' });
+        await expect(activeFilters).toBeVisible();
+        for (const accessibleName of [
+          'حذف فیلتر وضعیت بودجه',
+          'حذف فیلتر خارج از طرح',
+          'حذف فیلتر دسترسی مترو',
+        ]) {
+          const dismissal = activeFilters.getByRole('button', { name: accessibleName });
+          await expect(dismissal).toBeVisible();
+          const height = await dismissal.evaluate((element) => element.getBoundingClientRect().height);
+          expect(height).toBeGreaterThanOrEqual(44);
+        }
+
+        const activeFiltersHaveHorizontalOverflow = await activeFilters.evaluate((element) =>
+          element.scrollWidth > element.clientWidth
+        );
+        expect(activeFiltersHaveHorizontalOverflow).toBe(false);
+
+      });
+    }
+  });
+
+  test('5. 8-Viewport Responsive Regression Matrix (320px to 1920px)', async ({ page }) => {
     for (const vp of RESPONSIVE_VIEWPORT_MATRIX) {
       await test.step(`Viewport ${vp.label} (${vp.width}x${vp.height})`, async () => {
         await assertResponsiveLayout(page, vp);

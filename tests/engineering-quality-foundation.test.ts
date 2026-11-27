@@ -2058,6 +2058,46 @@ async function runSuite(): Promise<void> {
     assert.equal(topBarSrc.includes('aria-label="بودجه کل خرید"'), true, 'FloatingTopBar budget input must have aria-label');
     assert.equal(topBarSrc.includes('aria-label="اسلایدر بودجه کل خرید"'), true, 'FloatingTopBar budget slider must have aria-label');
     assert.equal(topBarSrc.includes("با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟"), true, 'FloatingTopBar reverse budget button must use activeCity name instead of hardcoded تهران');
+    assert.ok(
+      topBarSrc.includes('className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-indigo-50') &&
+        topBarSrc.includes('className="min-h-[44px] md:min-h-[36px] px-2.5 py-1 rounded-[8px] bg-emerald-50'),
+      'Mobile budget filter reverse-budget and guide actions must retain 44px minimum touch targets'
+    );
+    assert.ok(
+      topBarSrc.includes('className={`min-h-[44px] md:min-h-[38px] py-1 px-1 rounded-lg') &&
+        topBarSrc.includes('min-h-[44px] md:min-h-[38px] inline-flex items-center justify-center flex-1 py-1.5 rounded-[8px]'),
+      'Mobile building-age and budget-status choices must retain 44px minimum touch targets'
+    );
+    const saveActionTag = topBarSrc.match(/<button\b(?=[^>]*onClick={onSaveUserPreferences})[^>]*>/)?.[0] ?? '';
+    const shareActionTag = topBarSrc.match(/<button\b(?=[^>]*onClick={onCopyBudgetShareLink})[^>]*>/)?.[0] ?? '';
+    assert.ok(
+      topBarSrc.includes('className="grid grid-cols-1 sm:grid-cols-2 gap-2"') &&
+        saveActionTag.includes('min-w-0') &&
+        saveActionTag.includes('min-h-[44px] md:min-h-[38px]') &&
+        saveActionTag.includes('w-full') &&
+        shareActionTag.includes('min-w-0') &&
+        shareActionTag.includes('min-h-[44px] md:min-h-[38px]') &&
+        shareActionTag.includes('w-full') &&
+        shareActionTag.includes('whitespace-normal') &&
+        !shareActionTag.includes('whitespace-nowrap'),
+      'Mobile save/share actions must independently retain 44px touch targets, fill their grid cells, and allow the share label to wrap'
+    );
+    assert.equal(
+      (topBarSrc.match(/min-h-\[44px\] md:min-h-\[32px\] inline-flex items-center gap-1 px-2 py-0\.5 rounded-\[6px\] bg-emerald-50/g) || []).length,
+      3,
+      'All three active map-filter dismissal actions must expose 44px mobile touch targets'
+    );
+    const activeFilterDismissalButtons = topBarSrc.match(/<button(?=[^>]*aria-label="حذف فیلتر[^"]*")[^>]*>/g) || [];
+    assert.equal(activeFilterDismissalButtons.length, 3, 'All active map-filter dismissal actions must remain individually labelled buttons');
+    assert.equal(
+      activeFilterDismissalButtons.every((tag) =>
+        tag.includes('focus-visible:outline-2') &&
+        tag.includes('focus-visible:outline-offset-2') &&
+        tag.includes('focus-visible:outline-emerald-600')
+      ),
+      true,
+      'All active map-filter dismissal actions must expose a visible keyboard focus indicator'
+    );
 
     const navCtxSrc = readComp('src/context/RadarNavigationContext.tsx');
     assert.equal(navCtxSrc.includes('if (typeof window === \'undefined\' || !hasExplicitNavChangeRef.current) return;'), true, 'RadarNavigationContext must guard initial URL replaceState with hasExplicitNavChangeRef');
