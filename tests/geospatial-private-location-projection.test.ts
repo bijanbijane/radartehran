@@ -16,6 +16,7 @@ function testPrivateFieldsStripped() {
     sqm: 80,
     priceMillion: 1000,
     coordinates: { lat: 35.7, lng: 51.4 },
+    coordinateAccuracy: 'EXACT_VERIFIED',
     exactPrivateAddress: 'خیابان محرمانه ۱۲',
     publicationStatus: 'PUBLISHED',
     verificationStatus: 'VERIFIED',
