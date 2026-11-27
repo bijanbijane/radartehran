@@ -414,6 +414,11 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const areaUnitToggleSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AreaUnitToggle.tsx'), 'utf8');
   const mapLegendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf8');
   const radarBottomNavSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/RadarBottomNav.tsx'), 'utf8');
+  assert.ok(
+    mapLegendSrc.includes('aria-label="بستن راهنمای نقشه"') &&
+      mapLegendSrc.includes('min-w-[44px] min-h-[44px]'),
+    'Map legend close control must retain its accessible name and provide a 44x44 CSS-pixel touch target'
+  );
   const mainEntrySrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
   const modelsTypeSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf8');
   const typeGuardsSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/typeGuards.ts'), 'utf8');
