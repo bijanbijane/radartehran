@@ -173,6 +173,6 @@ Re-fetched package scripts and both workflow files to verify the command names n
 ## CHK-210 — NIPS moderation-state disclosure fix (2026-11-27)
 
 - Finding SEC-NIPS-002: public serialization could expose an `UNDER_REVIEW` metric value despite the metric being counted as blocked, when evidence permission allowed redistribution.
-- Fixed in `server/modules/neighborhood-profile/repository.ts`: `UNDER_REVIEW` and `SUPPRESSED` now always serialize as `SUPPRESSED` with null value and zero evidence count.
+- Fixed in `server/modules/neighborhood-profile/repository.ts`: `UNDER_REVIEW` and `SUPPRESSED` now always serialize as `SUPPRESSED` with null value and zero evidence count. Regression fixtures cover both states with redistributable evidence and sentinel values.
 - Added a regression test using `DERIVED_ONLY` permission and a sentinel value.
 - **Verification blocker:** no local Node/npm executor and current Actions runner diagnostics remain unavailable. The change is IMPLEMENTED_BUT_NOT_VERIFIED pending `npm run test:nips`, typecheck, architecture and security gates.
