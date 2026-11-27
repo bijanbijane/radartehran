@@ -224,6 +224,14 @@ async function runTests(): Promise<void> {
   assert.equal(blockedReport.activated, false);
 
   resetGeospatialRecoveryStateForTests();
+  const stagedOnly = await runGeospatialDurableRecovery({
+    hydratedState: sampleState(),
+    remoteSnapshotPresent: true,
+    activateOnSuccess: false,
+  });
+  assert.equal(stagedOnly.health, 'READY');
+  assert.equal(stagedOnly.activated, false);
+  resetGeospatialRecoveryStateForTests();
   stageGeospatialSnapshotForActivation(sampleState());
   let persisted: PersistedGeospatialState | null = null;
   const activated = await activateStagedGeospatialSnapshot({
