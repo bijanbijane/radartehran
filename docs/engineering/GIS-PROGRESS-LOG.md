@@ -172,3 +172,10 @@
 - Added `npm run test:valuation-location` and wired both valuation source/test paths into the focused GIS workflow.
 - Re-audited `apps/api/server.ts`: GIS is mounted, but valuation service/router is not composed or mounted. Production endpoint and authoritative IRNI read-only resolver wiring remain blocked.
 - Exact-head GIS run [45987481282](https://github.com/bijanbijane/radartehran/actions/runs/45987481282) failed both jobs without step metadata/logs. Test and typecheck execution remain unverified.
+
+
+## 2026-11-27 — Upstream IRNI runtime contract checked directly
+
+Read-only inspection of `bijanbijane/Iran-Neighborhood-Intelligence` on `main`, `src/services/geographic-registry/radar-read-port-v1.ts`, found that `RADAR_GEOGRAPHIC_READ_CONTRACT_STATE` is explicitly `CONTRACT_FINALIZED_RUNTIME_NOT_IMPLEMENTED`. The upstream contract states that no runtime adapter is implemented and the Worker must report RPC unavailable until durable registry persistence and the live shared-D1 schema/ledger are verified. The port is identity/relationship read-only; it has no geometry retrieval method. This confirms that Radar's local v2 client/types and a Wrangler binding declaration cannot establish a functioning upstream provider.
+
+**Decision:** no attempt was made to construct a fake resolver, bridge, or geometry ingestion path. Keep coordinate-based valuation unavailable. The GIS blocker register now records the upstream evidence and dependency order: upstream durable read adapter → versioned authoritative geometry contract → non-production deployed RPC verification → Radar bridge/ingestion → valuation API composition and HTTP integration tests. No IRNI files, runtime resources, bindings, secrets, databases, or deployments were changed.
