@@ -290,7 +290,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
       `UPDATE research_consent_revocation_jobs
        SET status = ?1, updated_at_iso = ?2,
            completed_at_iso = CASE WHEN ?1 = 'COMPLETED' THEN ?2 ELSE NULL END
-       WHERE revocation_id = ?3`,
+       WHERE revocation_id = ?3 AND status != 'COMPLETED'`,
     )
     .bind(status, nowIso, revocationId)
     .run();
