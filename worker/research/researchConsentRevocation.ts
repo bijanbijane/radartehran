@@ -87,6 +87,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
   nowMs?: number;
   behavioralTelemetryConsent?: boolean;
   marketingCommunicationsConsent?: boolean;
+  consentVersion?: string;
 }): Promise<{
   privacy: Awaited<ReturnType<typeof getUserPrivacyConsentFromD1>>;
   revocation: (ResearchConsentRevocationResponse & { readonly revocationId: string }) | null;
@@ -151,6 +152,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
         researchAnalyticsConsent: false,
         behavioralTelemetryConsent: params.behavioralTelemetryConsent,
         marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+        consentVersion: params.consentVersion,
         consentSource: 'research_consent_revocation_barrier',
         expectedConsentRevision: existingJob.revokedConsentRevision,
         nowIso,
@@ -240,6 +242,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
         researchAnalyticsConsent: false,
         behavioralTelemetryConsent: params.behavioralTelemetryConsent,
         marketingCommunicationsConsent: params.marketingCommunicationsConsent,
+        consentVersion: params.consentVersion,
         consentSource: 'research_consent_revocation_barrier',
         expectedConsentRevision: revokedConsentRevision,
         nowIso,
