@@ -115,6 +115,7 @@
   - `tests/buyer-alert-contract.test.ts`: added source-level regression assertions for both 44px controls and their accessible labels. The test is included in the root `test:unit` script.
 - **Implementation status:** `IMPLEMENTED_BUT_NOT_VERIFIED`.
 - **CI status:** The PR head `d1ed74c054f729444b4b31692025a521366a32b6` triggered the repository CI Quality Gates, Cloudflare Native Auth Validation, Initial Frontend Bundle Budget, and Path-Filtered Checks; all four runs concluded `failure`. The Playwright E2E job was skipped. GitHub's job-log retrieval returned `BlobNotFound`, so the exact failing step and cause could not be established. Do not attribute these failures to this UI change without evidence.
+- **Related CI remediation:** The independently confirmed native-auth workflow script mismatch is being corrected separately in [PR #69](https://github.com/bijanbijane/radartehran/pull/69); it is not included in this frontend change set.
 - **Local verification:** No local typecheck, unit test, architecture check, production build, or rendered viewport test was executed in this session.
 - **Merge/deployment:** Not performed. PR remains Draft.
 - **Next exact action:** Obtain the failed check annotations/logs for PR #68, compare the failures against the same workflows on the base commit, then run `npm run lint`, `npm run arch:check`, the focused `tests/buyer-alert-contract.test.ts`, and `npm run build`. Only after those pass, inspect the drawer at mobile viewports (at minimum 320×568 and 390×844) and update this record.
