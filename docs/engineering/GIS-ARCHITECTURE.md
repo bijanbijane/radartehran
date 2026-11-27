@@ -79,3 +79,16 @@ The current GIS runtime's JSON snapshot persistence and the IRNI canonical D1 re
 - Duplicate ACTIVE versions now fail closed in point resolution and profile boundary reads; historical duplicates are not silently rewritten.
 - CI status for inspected PR head `f601b15715d2221c4b7a48d016f9350fcd685d25`: five GitHub Actions workflows concluded `failure`; their jobs exposed no steps and log retrieval returned `BlobNotFound`. It is not established whether GIS test commands started. Treat CI as FAILED / UNDIAGNOSED, not as a GIS test regression.
 - Live D1 schema inspection was read-only. No production data, D1 schema, Worker binding, database, or deployment was changed.
+
+
+## 5. MultiPolygon component topology
+
+- Each MultiPolygon component is validated independently for ring closure, coordinate validity, self-intersection and Polygon interior-ring rules.
+- Distinct components are rejected when any of their rings intersect or touch, or when one component's outer-ring vertex lies in the filled area of another component.
+- A component fully contained by a valid interior hole of another component is permitted; this represents a disjoint island in the hole rather than overlapping filled area.
+- Validation issue: `MULTIPOLYGON_COMPONENT_OVERLAP`.
+- Regression coverage includes overlapping components, shared-boundary contact, disjoint components and a component inside a valid hole.
+
+## 6. Focused verification workflow
+
+`.github/workflows/gis-spatial-integrity.yml` runs the dedicated `npm run test:geospatial` suite and repository TypeScript check for the GIS work branch. Its push trigger is intentionally scoped to the active GIS branch; it does not deploy or mutate runtime data.
