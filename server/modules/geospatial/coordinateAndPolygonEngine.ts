@@ -112,10 +112,17 @@ function segmentsIntersectIncludingTouch(
 }
 
 function extractPolygonRings(geometry: PolygonGeometry): LinearRingCoords[][] {
-  if (geometry.type === 'Polygon') {
-    return [geometry.coordinates as LinearRingCoords[]];
+  const coordinates = (geometry as { coordinates?: unknown } | null)?.coordinates;
+  const normalizePolygon = (value: unknown): LinearRingCoords[] => {
+    if (!Array.isArray(value)) return [];
+    return value.map((ring) => Array.isArray(ring) ? ring as LinearRingCoords : []);
+  };
+
+  if (geometry?.type === 'Polygon') return [normalizePolygon(coordinates)];
+  if (geometry?.type === 'MultiPolygon' && Array.isArray(coordinates)) {
+    return coordinates.map(normalizePolygon);
   }
-  return geometry.coordinates as LinearRingCoords[][];
+  return [];
 }
 
 export function validatePolygonGeometry(geometry: PolygonGeometry): PolygonValidationReport {
@@ -361,7 +368,16 @@ function classifyPointInRing(
   point: Wgs84Coordinate,
   ring: LinearRingCoords,
 ): 'INSIDE' | 'ON_EDGE' | 'OUTSIDE' {
-  if (ring.length < 4) return 'OUTSIDE';
+  if (
+    !Array.isArray(ring)
+    || ring.length < 4
+    || !ring.every((position) =>
+      Array.isArray(position)
+      && position.length >= 2
+      && Number.isFinite(position[0])
+      && Number.isFinite(position[1]),
+    )
+  ) return 'OUTSIDE';
   for (let i = 0; i < ring.length - 1; i++) {
     if (isPointOnSegment(point, ring[i], ring[i + 1])) return 'ON_EDGE';
   }
