@@ -202,6 +202,24 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     persistRuntime();
   }
 
+  function removeListingFromSpatialSearch(listingId: string): boolean {
+    const normalizedId = listingId.trim();
+    if (!normalizedId) {
+      throw new CoreApiError('VALIDATION_FAILED', 400, 'Listing ID is required.');
+    }
+
+    let removed = false;
+    for (const [cityId, cityMap] of spatialListingsByCity.entries()) {
+      if (!cityMap.delete(normalizedId)) continue;
+      removed = true;
+      if (cityMap.size === 0) spatialListingsByCity.delete(cityId);
+    }
+
+    // Avoid unnecessary writes when the listing is already absent.
+    if (removed) persistRuntime();
+    return removed;
+  }
+
   function searchListingsSpatially(query: SpatialSearchQuery): SpatialSearchResult {
     const startMs = Date.now();
     metrics.spatialQueriesCount += 1;
