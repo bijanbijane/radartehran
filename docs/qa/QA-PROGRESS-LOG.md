@@ -35,13 +35,28 @@
 - The Cloudflare build failure is therefore an expected failing security gate after successful installation, not a failed dependency installation or runner allocation.
 - Updated `QA-DEFECT-REGISTER.md` with this verified audit evidence and its limitations. No claim of runtime exploitability or remediation is made.
 - Updated the branch-scoped Cloudflare QA trigger to run clean install followed by `test:auth`, `test:triad`, `test:irni-geographic-rpc`, and `test:geography-catalog`. Its branch filter remains limited to `qa/ci-contract-fixes-2026-11-27`; deploy command remains an echo-only no-op; build caching remains disabled.
-- Dispatched focused test build `2c700586-8a6d-47b5-a6bd-c3dc14b593eb`. At last poll it was `queued` and had only initialized; no test suite has yet executed in that build.
+- Dispatched focused test build `2c700586-8a6d-47b5-a6bd-c3dc14b593eb`. It completed with `build_outcome=success`; clean install added 646 packages and all four requested suites completed with zero failures. Exact totals: Auth 62/62, D1 Triad 49/49 (14 + 35), IRNI RPC 23/23, Geography Catalog 8/8. Overall: **142 passed, 0 failed, 0 skipped**. Deploy command was an echo-only QA no-op; no Worker deployment occurred.
 - No GitHub PR was merged and no deployment, migration, or Production change occurred.
 
 ## Current test accounting
 
 - NIPS TypeScript cases defined: 5; executed: 0.
-- Focused auth/triad/IRNI/geography build: queued; executed test cases: 0 at last observation.
-- Dependency audit: executed; 22 advisories reported; security gate failed as expected.
+- Focused auth/triad/IRNI/geography build `2c700586-8a6d-47b5-a6bd-c3dc14b593eb`: successful; 142 passed, 0 failed, 0 skipped.
+- Dependency audit: executed; 22 advisories reported (14 moderate, 6 high, 2 critical); security gate remains open.
 - npm clean install and TypeScript check: verified successful in build `133c1163-ed8f-4f6b-9c0d-de34177f13f3`.
 - GitHub Actions failures before runner allocation are tracked separately and are not counted as failed test cases.
+
+
+## 2026-11-27 — Focused hosted QA execution verified
+
+- Build: `2c700586-8a6d-47b5-a6bd-c3dc14b593eb`; branch: `qa/ci-contract-fixes-2026-11-27`; Cloudflare Workers Builds; Node.js `24.22.1`; npm `12.2.3`.
+- Clean install: `npm ci --ignore-scripts --no-audit --no-fund`; 646 packages added.
+- `npm run test:auth`: **62 passed, 0 failed, 0 skipped**.
+- `npm run test:triad`: RT-DB-TRIAD-001 **14 passed**; RT-DB-TRIAD-002 **35 passed**; combined **49 passed, 0 failed, 0 skipped**.
+- `npm run test:irni-geographic-rpc`: **23 passed, 0 failed, 0 skipped**.
+- `npm run test:geography-catalog`: **8 passed, 0 failed, 0 skipped**.
+- Aggregate for this focused build: **142 passed, 0 failed, 0 skipped**.
+- The run verifies the invoked test suites in this hosted environment. It does not establish official boundary accuracy, live Cloudflare/D1 integration, complete product E2E behavior, or Production readiness.
+- The configured deploy command printed `QA verification only; no deployment requested.`; no Worker deployment was performed.
+- NIPS golden-reference TypeScript suite on PR #74 remains unexecuted. GitHub Actions startup failures remain a separate unresolved infrastructure blocker.
+- Dependency audit remains open with 22 findings; this test build deliberately used `--no-audit` and does not change the audit result.
