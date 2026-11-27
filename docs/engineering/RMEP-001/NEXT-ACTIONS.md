@@ -146,7 +146,7 @@ Before any Radar production deployment:
  
 ## CHK-210 — immediate verification queue
 
-1. First executable check: `npm run test:nips`; confirm the new `UNDER_REVIEW` public-disclosure regression and prior NIPS serializer tests pass.
+1. First executable check: `npm run test:nips`; confirm both `UNDER_REVIEW` and explicit `SUPPRESSED` public-disclosure regressions and prior NIPS serializer tests pass.
 2. Run root typecheck, `npm run arch:check`, `npm run test:security`, and the applicable Worker/auth/Cloudflare suites.
 3. Keep SEC-NIPS-002, NIPS serializer hardening, and Worker streaming parser **IMPLEMENTED_BUT_NOT_VERIFIED** until commands execute successfully.
 4. Keep PR #67 Draft. Do not implement Radar-side NIPS persistence until the IRNI-owned authenticated/versioned storage RPC and canonical geography Service Binding are available and verified.
