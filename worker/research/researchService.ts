@@ -132,15 +132,27 @@ export async function verifyQueuedResearchSubjectConsent(params: {
   | { readonly allowed: false; readonly statusCode: 403 | 503; readonly code: string }
 > {
   try {
-    const outbox = await params.userDb
+    const outboxRows = await params.userDb
       .prepare(
-        `SELECT outbox_id FROM research_erasure_outbox
-         WHERE subject_key = ?1 AND subject_key_version = ?2 LIMIT 1`,
+        `SELECT status, max_consent_revision FROM research_erasure_outbox
+         WHERE subject_key = ?1 AND subject_key_version = ?2`,
       )
       .bind(params.subjectKey, params.subjectKeyVersion)
-      .first<{ outbox_id: string }>();
-    if (outbox) {
-      return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
+      .all<{ status: string; max_consent_revision: number | null }>();
+    if (!outboxRows.success) {
+      return { allowed: false, statusCode: 503, code: 'RESEARCH_ERASURE_OUTBOX_READ_FAILED' };
+    }
+    for (const outbox of outboxRows.results ?? []) {
+      const maxRevision =
+        outbox.max_consent_revision === null ? null : Number(outbox.max_consent_revision);
+      if (
+        outbox.status !== 'COMPLETED' ||
+        maxRevision === null ||
+        params.expectedConsentRevision === undefined ||
+        params.expectedConsentRevision <= maxRevision
+      ) {
+        return { allowed: false, statusCode: 403, code: 'RESEARCH_ERASURE_PENDING_OR_COMPLETED' };
+      }
     }
 
     const reg = await params.userDb
