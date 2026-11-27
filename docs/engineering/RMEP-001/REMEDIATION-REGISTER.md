@@ -10,3 +10,4 @@ Updated: 2026-11-27
 | BE-004 | P1 | Verify Docker local Worker + USER_DB and Google OAuth callback | CHK-194 continuation record | BLOCKED | Restore local runtime and execute callback integration test |
 
 No production data changes, migrations, deployments, or merges were performed in this session.
+| BE-005 | P1 | Reject completed research-erasure receipt replay when outbox ID is paired with a different subject key/version | Completed inbox fast path previously selected receipt fields only; now validates subject identity before replay | IMPLEMENTED_BUT_NOT_VERIFIED | Run focused test and Worker typecheck; verify no regressions |
