@@ -62,6 +62,17 @@ export type NeighborhoodProfileBoundaryReadModelResult =
     };
 
 const SHA256_HEX = /^[a-f0-9]{64}$/i;
+
+/**
+ * Return a boundary only when a history contains exactly one ACTIVE version.
+ * Multiple active versions are ambiguous and must never be resolved by array order.
+ */
+export function pickActiveBoundaryVersion(
+  records: readonly BoundaryVersionRecord[],
+): BoundaryVersionRecord | null {
+  const active = records.filter((record) => record.status === 'ACTIVE');
+  return active.length === 1 ? active[0] : null;
+}
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 export function calculateNeighborhoodBoundaryGeometrySha256(
