@@ -31,3 +31,19 @@
 - Five PR workflows triggered after this commit still reported `failure` before exposing usable steps or logs: `45978898874`, `45978898800`, `45978898927`, `45978898737`, and `45978898828`. The exact cause is unconfirmed.
 - No test commands or assertions were observed; test counts remain 0 executed. The connected MacBook runner is offline.
 - Status: `IMPLEMENTED_BUT_NOT_VERIFIED`; no merge or deployment.
+
+
+## 2026-11-27 — QA-WP-002: CI command/script contract repair
+
+Static inspection of the actual workflow files and root `package.json` found three additional missing-command references:
+
+- `.github/workflows/radar-backend-triad.yml` invoked `npm run test:geo`, but no such script exists; the existing geography catalog regression script is `test:geography-catalog`.
+- `.github/workflows/irni-geographic-rpc-contract.yml` invoked `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc`, neither of which existed in `package.json`.
+
+Corrections on the QA branch:
+
+- Added `test:irni-geographic-rpc` to run the canonical route, RPC client, and v2 consumer test files with Node's test runner through tsx.
+- Added `typecheck:irni-geographic-rpc` using the existing strict `tsconfig.irni-geographic-rpc.json` project.
+- Replaced the stale `test:geo` reference with the existing `test:geography-catalog` script.
+
+Read-back verification: confirmed both new package scripts exist and the backend workflow no longer contains the missing `test:geo` command. Execution verification remains pending because no usable local runner is connected and GitHub Actions logs have not been retrievable. No test pass is claimed.
