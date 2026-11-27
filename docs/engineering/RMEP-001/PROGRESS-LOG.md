@@ -1404,3 +1404,8 @@
 - **CI routing:** Radar Backend Triad path filters now include tests/rt-db-triad-001.test.ts and tests/rt-db-triad-003-consent-barrier.test.ts. npm test now invokes all three DB triad suites through test:triad.
 - **Verification:** No tests/typecheck/build ran. On PR #78 head 7b4330e19603327aca6c662e3b43db2f8b606cf7, runs 45996050993 (Quality Gates), 45996051002 (Backend Triad), 45996050998 (Native Auth) and 45996051233 (Path-Filtered Checks) failed before runner assignment: runner_id=0, empty runner_name and zero steps; downstream jobs skipped. Issue #49 updated.
 - **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. PR #78 remains Draft; no merge, deployment, production migration or secret operation.
+
+
+## 2026-11-27 — latest Actions runner reproduction
+- On PR #78 code head `91226a55389ccf77e25b1dc070678d3f6c1fb9cd`, Backend Triad run 45996474063 job 140497002675, Quality Gates run 45996473971 job 140497002393, Native Auth run 45996473979 job 140497001806 and Path-Filtered Checks run 45996473964 detect job 140497002382 all failed before runner assignment (runner_id=0, empty runner name, zero steps). E2E and downstream path-filtered jobs were skipped.
+- No source checkout, dependency install, test, typecheck or build executed. Issue #49 updated with the run/job evidence. Do not classify this as a code failure.
