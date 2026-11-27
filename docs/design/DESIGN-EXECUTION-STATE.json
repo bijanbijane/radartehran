@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-003",
+  "package_id": "DESIGN-MAP-004",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -26,7 +26,11 @@
     "Rechecked Desktop Commander; development MacBook remains offline (last seen 23h ago), so browser capture and DOM geometry remain blocked.",
     "Inspected current FloatingTopBar, MapQuickControlsStrip, MapExplorerToolbar, and RadarWorkspaceShell source on the active branch.",
     "Verified MapQuickControlsStrip is imported but not rendered; identified overlapping ruler ownership wiring between FloatingTopBar and MapExplorerToolbar.",
-    "Created DESIGN-MAP-003 control ownership and integration contract with breakpoint placement, state invariants, and implementation acceptance criteria."
+    "Created DESIGN-MAP-003 control ownership and integration contract with breakpoint placement, state invariants, and implementation acceptance criteria.",
+    "Inspected active-branch mapSheetCoordinator and its tests; verified the reducer is a standalone pure model and is not integrated as the runtime panel state authority in RadarWorkspaceShell.",
+    "Compared the current NeighborhoodInspectorDrawer local peek/expanded state and hidden collapsed behavior against the three-state snap utility/tests and D2 acceptance contract.",
+    "Identified fragmented panel visibility and detent ownership across desktopMapPanelMode, mobileMapListOpen, ui.mobileSheetOpen, local snapMode, and separate floating panel booleans.",
+    "Created DESIGN-MAP-004 unified panel state architecture handoff with typed transition contract, geometry reconciliation, and regression acceptance criteria."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -41,7 +45,10 @@
     "Assign one canonical visible owner to every map action; keep global navigation, map context actions, and canvas navigation controls in separate groups.",
     "Treat MapQuickControlsStrip as an integration gap to resolve deliberately; do not mount it without reconciling duplicate buy/rent and ruler controls.",
     "Keep the spatial ruler in one canonical location and delegate to the existing RadarWorkspaceShell mode handler.",
-    "Require rendered-DOM target-size, overlap, focus, RTL/LTR, and light/dark evidence before accepting placement."
+    "Require rendered-DOM target-size, overlap, focus, RTL/LTR, and light/dark evidence before accepting placement.",
+    "Unify panel visibility and inspector detent under one typed workspace state authority; components should dispatch actions rather than maintain competing visibility copies.",
+    "Derive actual rendered inspector geometry from one shared geometry config only after browser evidence resolves 72px vs 78px collapsed height and current vh drift.",
+    "Treat spatial measure as an interaction mode coordinated by the shell, not as a sheet state."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -53,13 +60,15 @@
     "application_code_changed": false,
     "control_ownership_source_review": "VERIFIED",
     "control_ownership_contract": "DOCUMENTED — NOT RUNTIME VERIFIED",
-    "browser_dom_geometry": "BLOCKED_DESKTOP_DEVICE_OFFLINE"
+    "browser_dom_geometry": "BLOCKED_DESKTOP_DEVICE_OFFLINE",
+    "panel_state_source_review": "VERIFIED",
+    "panel_state_architecture": "DOCUMENTED — NOT RUNTIME VERIFIED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
     "Schematic prototype is not a real map and must not be treated as spatially accurate.",
     "Frontend implementation remains unauthorized.",
-    "Desktop Commander MacBook-Air.local remains offline (last seen 23h ago); visual and DOM verification for DESIGN-MAP-003 cannot run."
+    "Desktop Commander MacBook-Air.local remains offline; DESIGN-MAP-004 component/browser integration tests and rendered geometry cannot be captured."
   ],
-  "next_exact_action": "Reconnect development machine/browser; capture the DESIGN-MAP-003 viewport matrix and inspector detent geometry; then reconcile D1-D4 and PAGE-02 before requesting or performing implementation."
+  "next_exact_action": "Reconnect development machine/browser; run the DESIGN-MAP-004 panel transition and viewport matrix; resolve sheet geometry and FloatingTopBar overlap; then request explicit frontend implementation authorization."
 }
