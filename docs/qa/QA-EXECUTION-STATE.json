@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "program_id": "RADAR-TEHRAN-QA",
-  "program_status": "BLOCKED_ON_CI_RUNNER_ALLOCATION",
-  "current_phase": "PHASE-0-BASELINE-AND-FIRST-REGRESSION",
-  "current_work_package": "QA-WP-001-NIPS-GOLDEN-REFERENCE-CONTRACT",
+  "program_status": "ACTIVE_WITH_SECURITY_AND_CI_BLOCKERS",
+  "current_phase": "PHASE-2-FOCUSED-INTEGRATION-AND-CONTRACT-VALIDATION",
+  "current_work_package": "QA-WP-002-AUTH-TRIAD-IRNI-GEOGRAPHY-FOCUSED-EXECUTION",
   "repository": {
     "full_name": "bijanbijane/radartehran",
     "base_branch": "main",
@@ -16,20 +16,20 @@
       "state": "open",
       "draft": true,
       "merged": false,
-      "head_sha": "a1e03d3983d2ef3d63d50017eea79399a8645d9c"
+      "head_sha": "786b94e53c42b36bd07e611b9c6bb9260b23a9a6"
     },
-    "qa_head_commit": "807fa962ac6886a1d10ac62c46055cf4f51c66e9"
+    "qa_head_commit": "786b94e53c42b36bd07e611b9c6bb9260b23a9a6"
   },
   "test_results": {
     "test_suites_added": 1,
     "test_cases_defined": 5,
-    "test_cases_executed": 0,
-    "test_cases_passed": 0,
+    "test_cases_executed": 142,
+    "test_cases_passed": 142,
     "test_cases_failed": 0,
     "test_cases_skipped": 0,
     "ci_jobs_failed_before_runner": 5,
     "ci_jobs_skipped": 4,
-    "reason": "No repository test cases executed. Latest five workflows for PR #74 head 807fa962ac6886a1d10ac62c46055cf4f51c66e9 failed before steps. One failed CI quality-gates job was retried (job 140538295439); retry also completed failure with zero steps and E2E skipped. Job logs return BlobNotFound, so runner allocation root cause is not established."
+    "reason": "Cloudflare no-deploy Build 2c700586-8a6d-47b5-a6bd-c3dc14b593eb completed successfully on PR #79 QA branch: auth 62/62, D1 triad 49/49, IRNI RPC 23/23, geography catalog 8/8. Aggregate 142 passed, zero failed/skipped. NIPS five-case suite on PR #74 remains unexecuted. Dependency audit separately reports 22 advisories; GitHub Actions startup failures remain pre-runner infrastructure failures."
   },
   "suites_created": [
     "tests/nips-golden-reference.test.ts"
@@ -71,10 +71,11 @@
   ],
   "self_remediated_defects": [],
   "blockers": [
-    "GitHub Actions primary jobs repeatedly fail before executing steps. A targeted retry of the CI quality-gates job also failed with zero steps; logs are unavailable (BlobNotFound), so account quota, policy, or hosted-runner root cause remains unconfirmed.",
-    "Authorized Desktop Commander MacBook-Air.local was previously reported offline; no local execution path has been verified.",
-    "PR #79 has a confirmed package manifest/lockfile mismatch: package.json declares Vitest ^5.1.2 while package-lock.json declares ^3.0.8 and resolves 3.2.7. A clean npm ci has not been executed.",
-    "PR #79 reports 22 npm audit advisories (14 moderate, 6 high, 2 critical); remediation and post-upgrade audit remain unverified."
+    "Dependency security gate: npm audit reports 22 advisories (2 critical, 6 high, 14 moderate); remediation and fresh post-remediation audit remain outstanding.",
+    "GitHub Actions primary jobs repeatedly fail before runner allocation; root cause remains unconfirmed. Focused Cloudflare hosted QA path now works.",
+    "NIPS golden-reference TypeScript suite on PR #74 has five defined cases but remains unexecuted.",
+    "Full GIS dataset provenance, CRS, topology, boundary accuracy, coverage, and property assignment validation remain unverified.",
+    "Frontend E2E, responsive, cross-browser, accessibility, performance/load, and full regression suites remain unverified."
   ],
   "ci": {
     "workflow_files_inspected": [
@@ -267,5 +268,58 @@
       "missing_script_invocations": 0
     },
     "execution_status": "STATIC_SOURCE_AUDIT_ONLY_NO_WORKFLOW_STEPS_EXECUTED"
+  },
+  "hosted_test_execution": {
+    "build_id": "2c700586-8a6d-47b5-a6bd-c3dc14b593eb",
+    "branch": "qa/ci-contract-fixes-2026-11-27",
+    "runtime": {
+      "node": "24.22.1",
+      "npm": "12.2.3"
+    },
+    "install": "npm ci --ignore-scripts --no-audit --no-fund; 646 packages added",
+    "suites": [
+      {
+        "command": "npm run test:auth",
+        "passed": 62,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "npm run test:triad",
+        "passed": 49,
+        "failed": 0,
+        "skipped": 0,
+        "details": {
+          "triad001": 14,
+          "triad002": 35
+        }
+      },
+      {
+        "command": "npm run test:irni-geographic-rpc",
+        "passed": 23,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "npm run test:geography-catalog",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "total": {
+      "passed": 142,
+      "failed": 0,
+      "skipped": 0
+    },
+    "outcome": "success",
+    "deployment": "none; deploy command was echo-only QA no-op",
+    "limitations": [
+      "Tests ran on PR #79 branch, not PR #74 head",
+      "No official geographic boundary accuracy validation",
+      "No full live Production service validation",
+      "Lifecycle scripts skipped during npm ci",
+      "NIPS test suite on PR #74 not executed"
+    ]
   }
 }
