@@ -31,3 +31,11 @@ Open the failed rerun job `140435161931` in GitHub Actions and establish why the
 4. **Continue NIPS persistence only through the IRNI owner boundary.** Build the authenticated/versioned NIPS storage RPC and its owner-side additive migration in IRNI; Radar must not receive a direct D1 binding to the shared neighborhood database.
 5. **Implement Radar's RPC adapter only after the owner contract is executable.** Add request validation, service identity, idempotency, bounded payloads, immutable snapshot writes, CAS publication activation and integration tests.
 6. Keep PR #67 Draft; no merge, production deployment, remote migration, or secret change without explicit approval.
+
+
+## CHK-198 — updated immediate queue
+
+1. Resolve Actions runner/job initialization and restore step/log visibility; the latest run set still fails with null steps and `BlobNotFound`.
+2. Re-run the exact workflow commands after runner access is restored: `npm run test:auth`, `npm run test:irni-geographic-rpc`, `npm run typecheck:irni-geographic-rpc`, `npm run test:geography-catalog`, plus the root CI and D1 triad suites.
+3. Run NIPS foundation tests, TypeScript and architecture gates; fix only reproducible failures.
+4. Continue the IRNI-owned NIPS storage RPC and Radar RPC adapter only within the approved ownership boundary. No direct Radar D1 binding.
