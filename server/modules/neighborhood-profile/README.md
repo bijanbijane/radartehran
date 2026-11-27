@@ -1,6 +1,6 @@
 # NIPS Backend Profile Structure — v1
 
-**Status:** Runtime foundation implemented on a feature branch; production persistence/API integration remains blocked on the shared NIPS database and IRNI read-contract decisions.
+**Status:** Runtime foundation implemented on a feature branch. The owner approved shared storage in the existing `radar-neighborhood-db` (`NEIGHBORHOOD_DB`) on 2026-11-27. NIPS persistence is not yet implemented; its tables must be isolated with an `nips_` prefix and managed under `migrations/neighborhood-d1`. IRNI canonical identity/boundary reads remain behind the version-pinned `IRNI_GEOGRAPHY` Service Binding; no direct reads or writes to IRNI-owned registry tables are permitted.
 **Scope:** One canonical neighborhood profile. This is not a user profile and does not replace IRNI.
 **Design rule:** Begin from a clean profile contract. Legacy frontend profile structures are not authoritative schema inputs.
 
