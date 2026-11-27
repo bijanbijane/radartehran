@@ -43,7 +43,16 @@ export async function executeUpsertNeighborhoodBoundary(params: {
     }
 
     const history = params.boundaryHistoryByEntity.get(input.entityId) ?? [];
-    const prevActive = history.find((b) => b.status === 'ACTIVE');
+    const activeRecords = history.filter((record) => record.status === 'ACTIVE');
+    if (activeRecords.length > 1 && input.autoApprove !== false) {
+      throw new CoreApiError(
+        'CONFLICT',
+        409,
+        'Boundary history contains multiple ACTIVE versions. Submit a pending version for independent review before restoring a single active boundary.',
+        { activeBoundaryIds: activeRecords.map((record) => record.id).sort() },
+      );
+    }
+    const prevActive = activeRecords.length === 1 ? activeRecords[0] : undefined;
     if (prevActive && input.autoApprove !== false) {
       prevActive.status = 'SUPERSEDED';
     }
