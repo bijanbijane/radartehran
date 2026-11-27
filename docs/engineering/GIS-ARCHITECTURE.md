@@ -18,7 +18,8 @@
 2. Polygon vertices use GeoJSON position order `[longitude, latitude]`; runtime coordinate objects use `{ lat, lng }`.
 3. Boundary versions are retained in per-entity history with a status, version, source-provenance token, geometry digest, declared CRS, bounds and reviewer metadata.
 4. Point resolution prefilters candidate boundaries by bounding box, then evaluates polygon containment.
-5. Valuation location features may now be derived only from a unique, strictly interior neighborhood match. Edge, overlap, outside-coverage, city mismatch and caller-ID mismatch cases fail closed.
+5. Valuation location features may now be derived only from a unique, strictly interior neighborhood match. Edge, overlap, outside-coverage, city mismatch, caller-ID mismatch and duplicate ACTIVE versions in a relevant entity history fail closed.
+6. Boundary reads require exactly one ACTIVE version per entity. A duplicate ACTIVE lifecycle is never resolved by choosing the first stored row.
 6. NIPS neighborhood profiles remain a separate domain contract. Their identity/geography evidence must come from approved IRNI providers; profile values are not generated from geometry alone.
 
 ## 3. Geometry representation
@@ -41,7 +42,7 @@
 
 - A complete authoritative source registry and verified import dataset are not yet demonstrated by the current runtime types.
 - The polygon validator checks ring closure, coordinate validity, degeneracy, per-ring self-intersection, strict hole containment, and hole-to-hole overlap/nesting. The new hole-topology tests are committed but have not yet been executed in a local or CI runner. Intersections between separate MultiPolygon components and component overlap remain outstanding.
-- Point resolution still needs a broader audit for duplicate active versions within one entity history and for ambiguous result semantics across all consumers. Valuation feature derivation is fail-closed in this branch.
+- Historical duplicate ACTIVE versions are not automatically rewritten. Coordinate resolution reports `MULTIPLE_ACTIVE_BOUNDARY_VERSIONS`; profile boundary reads return no selected active record. Repair requires a pending boundary version and independent approval.
 - CRS transformation workflows and local metric projection policy are not yet established for all source datasets.
 
 
