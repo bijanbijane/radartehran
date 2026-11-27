@@ -18,8 +18,12 @@ export function detectActiveBoundaryBboxOverlaps(
 ): Array<{ entityA: string; entityB: string }> {
   const activeList: BoundaryVersionRecord[] = [];
   for (const history of boundaryHistoryByEntity.values()) {
-    const act = history.find((b) => b.status === 'ACTIVE' && b.cityId === cityId && b.level === level);
-    if (act) activeList.push(act);
+    const active = history.filter((record) =>
+      record.status === 'ACTIVE' && record.cityId === cityId && record.level === level,
+    );
+    // Corrupt histories are omitted from this geometric scan rather than reduced
+    // to an arbitrary first record. Snapshot validation reports the lifecycle conflict.
+    if (active.length === 1) activeList.push(active[0]);
   }
   const overlaps: Array<{ entityA: string; entityB: string }> = [];
   for (let i = 0; i < activeList.length; i++) {
