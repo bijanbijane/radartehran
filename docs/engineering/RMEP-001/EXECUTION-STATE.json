@@ -2195,6 +2195,18 @@
       "GitHub Actions failed-job logs and annotations were unavailable through the connected GitHub API wrapper (BlobNotFound / empty step metadata); exact CI failure root cause remains unknown.",
       "Docker local Worker + USER_DB runtime and real Google OAuth callback remain unverified per CHK-194."
     ],
-    "next_action": "Restore an online repository execution environment or expose GitHub Actions logs; inspect and fix the exact failed CI checks on the existing PR branches, then resume the residual Express Firestore-to-D1 adapter inventory and tests. Do not deploy, merge, or mutate production data."
+    "next_action": "Run tests/rt-db-triad-001.test.ts and targeted Worker typecheck on the branch; add a deterministic concurrent-delivery regression if the test harness can model serialized D1 batches. Then diagnose failed PR #71 checks and continue remaining Express Firestore adapter retirement.",
+    "code_work": {
+      "id": "BE-002",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "finding": "Concurrent deliveries of one research erasure outbox command could both pass the initial inbox lookup and INSERT OR REPLACE distinct receipt IDs under the unique outbox_id constraint, allowing a caller to return a receipt later overwritten by the competing delivery.",
+      "fix": "Use stable erasure/receipt identifiers derived from outbox_id, INSERT OR IGNORE, and read/validate the canonical committed inbox row before returning.",
+      "files": [
+        "worker/research/researchService.ts",
+        "tests/rt-db-triad-001.test.ts"
+      ],
+      "verification": "Regression assertions added for immutable canonical inbox receipt on duplicate delivery. Test execution unavailable because the connected MacBook is Offline; concurrency regression is not yet independently reproduced in an executable test.",
+      "last_code_commit": "a3713a1f05eb03639c127c6d995f805839f9292e"
+    }
   }
 }
