@@ -303,3 +303,23 @@ Implemented on the current PR branch: VERIFIED_COMPLETED_TRANSACTION and VERIFIE
 ## Latest validation follow-up — 2026-11-28
 
 The hosted GIS regression suite passed on head cc0c920 after the exact-coordinate fixture, boundary-history assertion, polygon simplification, and valuation source-status fixes. The hosted API architecture and contract checks also passed on that head. Both the GIS module typecheck and frontend lint then exposed one remaining reference to the old defaultEmpty helper in geospatialSnapshotValidation.ts; this final reference was changed to createEmptyGeospatialState() in commit 4ea0ecad. The new head requires fresh CI confirmation; previous results are not being carried forward as proof for the new commit.
+
+
+## Canonical listing lifecycle and coordinate provenance audit — 2026-11-28
+
+A read-only trace of the current property submission flow confirms that the missing GIS producer is not just an unconnected event hook:
+
+- `src/features/properties/submission/ListingSubmissionPage.tsx` exposes a location-precision selector, but the submission draft contract (`ListingSubmissionDraft`) contains no latitude/longitude coordinate input, device-geolocation result, coordinate source, or verification evidence.
+- `submitDraftAsPropertyListing` in `src/features/properties/services/listingService.ts` persists user submissions through UID-scoped browser storage (`saveMyListings` / `loadMyListings`), not a canonical server-side listing repository.
+- The same function copies `hood.lat` / `hood.lng` into the property record for every precision except `unavailable`. It then preserves the user's selected precision and assigns a 30 m privacy radius for `exact`, 250 m for `approximate`, or 600 m otherwise. The form does not collect a property point, so the selected `exact` value currently describes a neighborhood reference point as if it were an exact recorded point.
+- Repository code search for `indexListingForSpatialSearch` and `removeListingFromSpatialSearch` found only the geospatial service definition/export, its tests, and this blocker document; no listing create/update/moderation/archive/expiry producer calls either operation.
+
+**Data-integrity decision:** do not connect this browser-storage record directly to public GIS and do not set `coordinateAccuracy: EXACT_VERIFIED` from `locationPrecision`. A selected privacy label is not coordinate evidence. The existing PR #98 eligibility gate remains fail-closed.
+
+**Required upstream contract before integration:**
+1. Establish the authoritative server-side listing repository and lifecycle events for create, edit, moderation, publish, archive, removal and expiry.
+2. Define a trusted coordinate-evidence record that carries the actual WGS84 point, capture/source provenance, precision class, verification actor/process, verification timestamp, and listing/version binding. Client-supplied flags alone must not establish verification.
+3. Keep neighborhood-centroid fallback explicitly neighborhood-level; do not label it exact or approximate street-level. If no point evidence exists, do not index the listing in exact public spatial search.
+4. Make the lifecycle projection idempotent and reconcile removals/status changes, then test event replay, stale versions, city changes, coordinate changes and withdrawal.
+
+No frontend record, coordinate, browser storage, GIS index, database or production data was modified in this audit.
