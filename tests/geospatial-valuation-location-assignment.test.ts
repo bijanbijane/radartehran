@@ -96,7 +96,7 @@ async function withGeospatialService(
 
 async function addBoundary(
   service: GeospatialService,
-  input: { hoodId: number; geometry?: PolygonGeometry; cityId?: string },
+  input: { hoodId: number; geometry?: PolygonGeometry; cityId?: string; subNeighborhoodId?: string },
 ): Promise<void> {
   const cityId = input.cityId ?? 'tehran';
   await service.upsertNeighborhoodBoundary({
@@ -104,6 +104,7 @@ async function addBoundary(
     entityId: `hood:${cityId}:${input.hoodId}`,
     cityId,
     hoodId: input.hoodId,
+    subNeighborhoodId: input.subNeighborhoodId,
     level: 'neighborhood',
     nameFa: `محله آزمون ${input.hoodId}`,
     geometry: structuredClone(input.geometry ?? SQUARE_A),
@@ -461,7 +462,7 @@ test('polygon validation detects collinear overlap between non-adjacent ring seg
 
 test('does not treat a parent interior as resolved when the matched sub-neighborhood point is on its edge', async () => {
   await withGeospatialService(async (service) => {
-    await addBoundary(service, { hoodId: 10 });
+    await addBoundary(service, { hoodId: 10, subNeighborhoodId: 'legacy-parent-sub-id' });
     await service.upsertNeighborhoodBoundary({
       actorUid: 'gis-test-reviewer',
       entityId: 'sub:tehran:10:edge',
