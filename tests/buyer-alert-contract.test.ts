@@ -1068,6 +1068,12 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op185AdminOverviewSrc.includes('estimatedDealPricePerSqm'),
     'Price-bearing province controls, heatmap, map LOD and admin overview must expose the canonical deal-price projection'
   );
+  const mapLegendUiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf-8');
+  assert.ok(
+    mapLegendUiSrc.includes('min-w-[44px] min-h-[44px] items-center justify-center') &&
+      mapLegendUiSrc.includes('aria-label="بستن راهنمای نقشه"'),
+    'Map legend close control must retain an accessible label and a 44x44px touch target'
+  );
   console.log('[PASS] Buyer Alert Contract & WS-001..WS-005 + OP-DEC-001 Regression Tests Passed.');
 });
 
