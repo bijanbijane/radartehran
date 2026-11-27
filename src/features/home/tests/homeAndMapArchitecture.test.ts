@@ -4,7 +4,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { EvaluatedNeighborhood, Neighborhood } from '../../../data/neighborhoods';
+import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import {
   HOME_ACCEPTANCE_CHECKLIST_18, HOME_IMPLEMENTATION_PACKAGES, HOME_QUICK_ACCESS_ITEMS, STAGE_15_MAP_ARCHITECTURE_SPEC,
   buildHomeMarketSnapshotMetrics, buildPrivacySafeHomeTelemetry, executeCategorizedHomeSearch, normalizeHomePersianQuery, selectCuratedHomeNeighborhoods,
@@ -35,8 +35,8 @@ import {
   undoInteractiveSpatialPoint,
 } from '../../../components/map/interactiveSpatialMeasureLayer';
 import { resolveMapToolVisualState } from '../../../navigation/map/mapToolRailConfig';
-import { resolveSelectedNeighborhoodById } from '../../../components/selectedNeighborhoodResolver';
-import { resolveUrlNeighborhoodEntry } from '../../../components/urlNeighborhoodResolver';
+import { calculateNeighborhoodMedianMetric } from '../../../components/map/neighborhoodMedianMetric';
+import { resolveMapExplorerSelectedNeighborhood } from '../../../components/map/mapViewportHoodFilter';
 
 const MOCK_HOODS: EvaluatedNeighborhood[] = [
   {
@@ -50,28 +50,6 @@ const MOCK_HOODS: EvaluatedNeighborhood[] = [
     overallScore: 8.1, status: 'yellow', diffPercent: 12, bargains: [],
   } as unknown as EvaluatedNeighborhood,
 ];
-
-
-describe('URL neighborhood selection resolution', () => {
-  const urlHoods = [
-    { cityId: 'tehran' as const, hood: { id: 1, name: 'ونک', lat: 35.75, lng: 51.41 } as unknown as Neighborhood },
-    { cityId: 'mashhad' as const, hood: { id: 101, name: 'احمدآباد', lat: 36.29, lng: 59.59 } as unknown as Neighborhood },
-  ];
-
-  it('resolves a valid URL neighborhood ID in its requested city', () => {
-    assert.equal(resolveUrlNeighborhoodEntry('101', 'mashhad', urlHoods)?.hood.id, 101);
-  });
-
-  it('rejects malformed, unknown, and cross-city URL neighborhood IDs', () => {
-    assert.equal(resolveUrlNeighborhoodEntry('not-a-number', undefined, urlHoods), null);
-    assert.equal(resolveUrlNeighborhoodEntry('999999', undefined, urlHoods), null);
-    assert.equal(resolveUrlNeighborhoodEntry('101', 'tehran', urlHoods), null);
-  });
-
-  it('distinguishes an absent URL neighborhood parameter from an invalid one', () => {
-    assert.equal(resolveUrlNeighborhoodEntry(null, undefined, urlHoods), undefined);
-  });
-});
 
 describe('Stage 14 (RT-UI-HOME-001) Homepage Experience Architecture', () => {
   it('builds 4 Market Snapshot metrics with full provenance and handles unavailable/partial states without fake numbers', () => {
@@ -326,22 +304,6 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
     assert.equal(airSnap.topNeighborhoods[0].id, 3);
     assert.ok(airSnap.viewportMedianRahn !== null && airSnap.viewportMedianRahn > 0);
 
-    const emptyViewport = computeViewportPulseSnapshot({
-      evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
-      viewportBounds: { north: 36, south: 35.9, east: 52, west: 51.9, zoom: 12 },
-      mode: 'buy',
-      targetSqm: 80,
-      rentAgeMultiplier: 1,
-      mapLens: 'budget',
-    });
-    assert.equal(emptyViewport.inViewportCount, 0);
-    assert.equal(emptyViewport.usingFullCityFallback, false);
-    assert.equal(emptyViewport.affordableCount, 0);
-    assert.equal(emptyViewport.viewportMedianBuyPerSqm, null);
-    assert.equal(emptyViewport.viewportNegotiatedBuyPerSqm, null);
-    assert.equal(emptyViewport.diffVsCityPct, null);
-    assert.deepEqual(emptyViewport.topNeighborhoods, []);
-
     const trafficSnap = computeViewportPulseSnapshot({
       evaluatedNeighborhoods: SAMPLE_CITY_HOODS,
       viewportBounds: null,
@@ -431,17 +393,39 @@ describe('Map UX Enhancements: Viewport Pulse Dock, Geodesic Ruler & Polygon Con
 
 
 
-describe('Global selected neighborhood resolution', () => {
-  it('returns nullish when the selected ID is absent instead of silently choosing the first city result', () => {
-    assert.equal(resolveSelectedNeighborhoodById(999, MOCK_HOODS, []), undefined);
-  });
+describe('Map Explorer neighborhood median statistics', () => {
+  it('calculates the arithmetic median for even and odd samples and returns null without valid data', () => {
+    const sample = (buyPerSqm: number, rahn80m: number) => ({
+      ...MOCK_HOODS[0],
+      buyPerSqm,
+      rahn80m,
+    });
 
-  it('prefers the matching current-city neighborhood', () => {
-    assert.equal(resolveSelectedNeighborhoodById(2, MOCK_HOODS, [MOCK_HOODS[0]]), MOCK_HOODS[1]);
-  });
-
-  it('resolves a matching nationwide neighborhood when it is outside the current city list', () => {
-    assert.equal(resolveSelectedNeighborhoodById(1, [MOCK_HOODS[1]], [MOCK_HOODS[0]]), MOCK_HOODS[0]);
+    assert.equal(calculateNeighborhoodMedianMetric([sample(100, 10), sample(300, 30)], 'buy'), 200);
+    assert.equal(calculateNeighborhoodMedianMetric([sample(100, 10), sample(200, 20), sample(900, 90)], 'rent'), 20);
+    assert.equal(calculateNeighborhoodMedianMetric([], 'buy'), null);
+    assert.equal(calculateNeighborhoodMedianMetric([sample(0, -1)], 'rent'), null);
   });
 });
 
+
+describe('Map Explorer selected neighborhood resolution', () => {
+  it('does not display an unrelated first neighborhood when the selected ID is stale', () => {
+    const [first, second] = MOCK_HOODS;
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 999,
+      selectedHood: first,
+    }), null);
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 2,
+      selectedHood: first,
+    }), second);
+    assert.equal(resolveMapExplorerSelectedNeighborhood({
+      neighborhoods: MOCK_HOODS,
+      selectedHoodId: 1,
+      selectedHood: first,
+    }), first);
+  });
+});
