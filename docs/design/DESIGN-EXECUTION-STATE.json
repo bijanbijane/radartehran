@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "project": "bijanbijane/radartehran",
-  "package_id": "DESIGN-MAP-013",
+  "package_id": "DESIGN-MAP-014",
   "updated_at": "2026-11-27",
   "branch": "design/rt-map-workspace-ux-2026-11-27",
   "status": "DESIGN_SPEC_READY_PRODUCTION_VISUAL_QA_BLOCKED",
@@ -65,7 +65,9 @@
     "Traced selected modal and transient overlay state writers across eleven active-branch files, including central useAppUiState, RadarWorkspaceShell transitions, FloatingTopBar, ProductViewRouter, neighborhood entry points, and modal aggregators.",
     "Verified global Escape handler in useAppUiState clears a broad set of unrelated modal/map/search flags and FloatingTopBar independently clears four top-bar overlay flags; documented source-level event propagation conflict, partial shell closeFloatingMapPanels coordination, selected writer inventory, and regression contract in DESIGN-MAP-012.",
     "Expanded modal entrypoint and mount audit across AppModalsPortal, URL synchronization, ProductViewRouter, FloatingTopBar, RadarWorkspaceShell, and modal implementations for Share, Compare, Shortlist, Smart Suggest, Agency, Nationwide Province, Onboarding, Reverse Budget, and Expansion.",
-    "Verified Compare state is written by URL/history synchronization; reverse-budget is shell-local and separately portaled; admin modal flag is consumed by route navigation; AppModalsPortal is a conditional React aggregator rather than a universal portal host. Documented the expanded entrypoint/mounting matrix and regression criteria in DESIGN-MAP-013."
+    "Verified Compare state is written by URL/history synchronization; reverse-budget is shell-local and separately portaled; admin modal flag is consumed by route navigation; AppModalsPortal is a conditional React aggregator rather than a universal portal host. Documented the expanded entrypoint/mounting matrix and regression criteria in DESIGN-MAP-013.",
+    "Audited HedonicValuationModal, NeighborhoodPriceTrendModal, and the correctly located modals/InstantListingVerifierModal.tsx on the active branch for focus hook adoption, aria-modal naming, portal behavior, and visual layer declarations.",
+    "Verified Hedonic uses an inline React-tree z-50 dialog; Price Trend and Instant Listing Verifier use document.body portals with z-[9500]; all three use useDialogFocus. Documented the source-level risk that DOM-order topmost selection may diverge from CSS/portal visual order in mixed inline/portal stacks."
   ],
   "design_decisions": [
     "Keep map as the dominant surface.",
@@ -109,7 +111,8 @@
     "Remove global close-all-on-Escape behavior in favor of a single overlay authority that dismisses exactly one active topmost dismissible surface.",
     "Use explicit shell transitions for map-context mutual exclusion while preserving unrelated map layers, spatial points, and selected context according to declared transition policy.",
     "Include URL/history, shell-local state, lazy mounting, direct portal surfaces, and route replacement in the overlay transition model; button-only writer inventories are insufficient.",
-    "Treat route navigation such as admin as a route transition, not a modal stack entry, unless product architecture explicitly changes."
+    "Treat route navigation such as admin as a route transition, not a modal stack entry, unless product architecture explicitly changes.",
+    "Drive visual stacking order and keyboard/focus topmost ownership from the same explicit overlay stack; DOM order and independent z-index values must not be separate sources of truth."
   ],
   "qa": {
     "prototype_interaction_review": "REVIEWED",
@@ -176,7 +179,12 @@
     "reverse_budget_state_ownership": "SOURCE VERIFIED — SHELL-LOCAL STATE AND DIRECT PORTAL; ESCAPE RUNTIME NOT VERIFIED",
     "admin_modal_route_transition": "SOURCE VERIFIED — FLAG CONSUMED INTO /admin NAVIGATION",
     "app_modals_portal_architecture": "SOURCE VERIFIED — CONDITIONAL REACT AGGREGATOR, NOT UNIVERSAL PORTAL HOST",
-    "overlay_entrypoint_inventory": "EXPANDED AND VERIFIED FOR LISTED FAMILIES — GLOBAL COMPLETENESS NOT VERIFIED"
+    "overlay_entrypoint_inventory": "EXPANDED AND VERIFIED FOR LISTED FAMILIES — GLOBAL COMPLETENESS NOT VERIFIED",
+    "remaining_modal_focus_portal_source_review": "VERIFIED — HEDONIC, PRICE TREND, AND INSTANT LISTING VERIFIER",
+    "hedonic_modal_semantics": "VERIFIED — SHARED FOCUS HOOK, LABELLED MODAL, INLINE Z-50",
+    "price_trend_modal_semantics": "VERIFIED — SHARED FOCUS HOOK, LABELLED MODAL, BODY PORTAL Z-9500",
+    "instant_listing_verifier_semantics": "VERIFIED — SHARED FOCUS HOOK, LABELLED MODAL, BODY PORTAL Z-9500",
+    "inline_portal_visual_keyboard_order": "SOURCE RISK VERIFIED — DOM-ORDER TOPMOST AND CSS/PORTAL VISUAL STACK ARE SEPARATE; RUNTIME NOT REPRODUCED"
   },
   "blockers": [
     "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
@@ -193,7 +201,8 @@
     "DESIGN-MAP-010 RadarSheet multi-instance Escape/Tab/focus behavior and modality semantics require connected browser/device reproduction; application implementation remains unauthorized.",
     "DESIGN-MAP-011 requires browser/device reproduction of Escape precedence, modal-over-popover behavior, focus restoration, and outside-click ownership; frontend implementation remains unauthorized.",
     "DESIGN-MAP-012 browser/DOM regression and device QA remain blocked; selected state writers are traced but full repository-wide overlay writer graph remains open. Frontend implementation remains unauthorized.",
-    "DESIGN-MAP-013 component-specific focus and Escape behavior for HedonicValuationModal, NeighborhoodPriceTrendModal, and modals/InstantListingVerifierModal remain to be audited; URL/history and reverse-budget transitions require browser reproduction."
+    "DESIGN-MAP-013 component-specific focus and Escape behavior for HedonicValuationModal, NeighborhoodPriceTrendModal, and modals/InstantListingVerifierModal remain to be audited; URL/history and reverse-budget transitions require browser reproduction.",
+    "DESIGN-MAP-014 mixed inline/portal stacking, topmost keyboard ownership, and focus restoration require browser/device reproduction; remaining repository-wide dialog inventory is still incomplete."
   ],
-  "next_exact_action": "Audit HedonicValuationModal, NeighborhoodPriceTrendModal, and the correctly located src/components/modals/InstantListingVerifierModal.tsx for focus refs, Escape listeners, aria-modal semantics, portal ownership, and independent state transitions; then update the complete overlay matrix."
+  "next_exact_action": "Continue the repository-wide dialog inventory for remaining modal components and determine whether any additional inline/portal stacking or independent keyboard/focus patterns remain. Then consolidate all modal and non-modal state families into one transition matrix; browser/device reproduction remains blocked and implementation remains unauthorized."
 }
