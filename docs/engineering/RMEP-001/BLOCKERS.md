@@ -168,3 +168,11 @@ Re-fetched package scripts and both workflow files to verify the command names n
 - Static audit of nine Worker route modules found all inspected `readValidatedJsonBody` callers propagate the parser's HTTP status and error code. Body limits range from 4 KiB to 14 MiB. The 14 MiB JSON/base64 upload route is bounded but may have a high transient-memory profile due to chunk retention, byte concatenation, UTF-8 decoding and parsed JSON; no runtime memory measurement is available, so no speculative limit change was made.
 - **Status:** parser and NIPS serializer changes remain IMPLEMENTED_BUT_NOT_VERIFIED. No local Node/npm executor was used and no Actions steps ran.
 - **Next:** restore runner/log access or obtain an authorized Node 22/npm 10 executor. Run `npm ci`, `npm run test:worker`, `npm run test:nips`, Cloudflare/auth/security suites, typecheck, architecture check and Worker tsconfig compilation. Diagnose only failures backed by actual command output.
+
+ 
+## CHK-210 — NIPS moderation-state disclosure fix (2026-11-27)
+
+- Finding SEC-NIPS-002: public serialization could expose an `UNDER_REVIEW` metric value despite the metric being counted as blocked, when evidence permission allowed redistribution.
+- Fixed in `server/modules/neighborhood-profile/repository.ts`: `UNDER_REVIEW` and `SUPPRESSED` now always serialize as `SUPPRESSED` with null value and zero evidence count.
+- Added a regression test using `DERIVED_ONLY` permission and a sentinel value.
+- **Verification blocker:** no local Node/npm executor and current Actions runner diagnostics remain unavailable. The change is IMPLEMENTED_BUT_NOT_VERIFIED pending `npm run test:nips`, typecheck, architecture and security gates.
