@@ -87,17 +87,17 @@ Account: `Bijanbijane` (`5bafb2033937006704e81afcc0b18b38`).
 
 ## 6. CI and test evidence
 
-Latest observed PR #67 head before this tracker update: `006d41662ec3a05c921651b1060c6ca02aac4710`.
+Latest inspected PR #67 code head: `9180bffe91577e9a53460fcf54e0058549813f0d`. Subsequent documentation-only commits updated the same branch; no runtime source changed in this session.
 
 Five associated workflows were completed with `failure`:
 
-- Tehran Radar CI Quality Gates — run `45932044234`
-- Radar Backend Triad & Frontend Service Binding — run `45932044268`
-- Cloudflare Native Auth Validation — run `45932044243`
-- IRNI Geographic RPC Consumer Contract — run `45932044250`
-- Tehran Radar Path-Filtered Checks — run `45932044356`
+- Tehran Radar CI Quality Gates — run `45977620112`
+- Radar Backend Triad & Frontend Service Binding — run `45977619999`
+- Cloudflare Native Auth Validation — run `45977620040`
+- IRNI Geographic RPC Consumer Contract — run `45977620151`
+- Tehran Radar Path-Filtered Checks — run `45977620069`
 
-The fetched job records returned no steps; fetching their log artifacts returned `BlobNotFound`. Therefore the root causes cannot be attributed to implementation or baseline from the available logs. These checks are failures, not passes.
+All five runs concluded FAILURE. The root quality-gate job was rerun through GitHub; rerun job `140435161931` also concluded FAILURE. Its step list was empty and downloading its logs returned `BlobNotFound`. Therefore the exact failing command remains unknown; these checks are failures, not passes.
 
 | Validation | Status |
 |---|---|
@@ -166,3 +166,13 @@ IRNI PR #22 is an existing Draft implementation branch for the separate, read-on
 The current IRNI catalog type `VariableDefinition` includes data type, unit, category, geographic level, minimum geographic resolution, temporal semantics, measurement nature, source policy, validation rules, lifecycle, and schema version. It does not, by itself, provide a complete evaluated applicability decision for every canonical neighborhood. Golden Reference rows explicitly say applicability is unassessed and contain no real values. The provisioning implementation must therefore create explicit variable-state rows without guessing applicability; unresolved applicability must remain `BLOCKED` until an approved rule evaluates it.
 
 The existing IRNI schema-evolution document says no migration has been executed against a real database, and the current repository has no checked-in Worker D1 migration directory. The revision-19 geographic data snapshot reported by PR #22 is not, by itself, proof of an approved D1 schema-migration ledger. NIPS migration ordering/ledger ownership must be reconciled before any remote migration.
+
+
+## 9. 2026-11-27 connected-session resumption
+
+- Reconfirmed repository access, `main` baseline `456dcacb387b908797756863b10da1f7104b658e`, and NIPS feature branch code head `9180bffe91577e9a53460fcf54e0058549813f0d`.
+- Inspected PRs #67, #69 and #70. PR #67 remains the active backend workstream; PRs #69 and #70 remain Draft CI/build remediations.
+- Re-ran the failed PR #67 root quality-gate job. GitHub accepted the rerun, but the replacement job `140435161931` failed with an empty step list; log retrieval returned `BlobNotFound`.
+- Updated `BLOCKERS.md`, `NEXT-ACTIONS.md` and `REMEDIATION-REGISTER.md` with current run IDs and exact evidence limitations.
+- No runtime code, database migration, production binding, secret, deployment, merge or PR state was changed. The NIPS persistence implementation remains blocked on the IRNI-owned authenticated/versioned storage RPC and geography provider.
+- **Next:** diagnose Actions runner/job initialization using GitHub's native Actions UI or restore raw job logs; do not guess at source-level causes. Then continue the paired IRNI RPC and Radar adapter work without direct Radar D1 access.
