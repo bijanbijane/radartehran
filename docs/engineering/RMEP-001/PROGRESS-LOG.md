@@ -1395,3 +1395,12 @@
 - **Default test entrypoint:** npm test now invokes npm run test:triad; test:triad includes TRIAD-001, TRIAD-002 and TRIAD-003.
 - **Verification:** Source, migration and test changes re-read from GitHub. No tests/typecheck executed. Latest Quality Gates run 45995787426 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45995787483 and Native Auth run 45995787609 have null step metadata. E2E skipped. This is still the runner-allocation blocker in issue #49, not evidence of source test failure.
 - **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. PR #78 remains Draft; no merge/deploy/production migration.
+
+
+## 2026-11-27 — TRIAD-003 post-snapshot race closure
+- **Race closure:** Revocation no longer marks a job complete from the initial registry snapshot. The flow always enters reconciliation; only after all permits drain does it re-read the registry and create missing UID-free, revision-scoped outbox rows. Empty-outbox completion occurs only after this second scan.
+- **Concurrency:** Deterministic revocation/outbox IDs converge concurrent duplicate requests; expectedConsentRevision CAS and stale-intent cleanup prevent a losing privacy update from leaving an orphaned active job.
+- **Regression:** Added Scenario 7, which injects a completed research ingestion and active permit between the initial registry read and revocation commit; after permit release, reconciliation must discover the late registry row, erase the event and complete the job. SQL template literal syntax was re-read and corrected.
+- **CI routing:** Radar Backend Triad path filters now include tests/rt-db-triad-001.test.ts and tests/rt-db-triad-003-consent-barrier.test.ts. npm test now invokes all three DB triad suites through test:triad.
+- **Verification:** No tests/typecheck/build ran. On PR #78 head 7b4330e19603327aca6c662e3b43db2f8b606cf7, runs 45996050993 (Quality Gates), 45996051002 (Backend Triad), 45996050998 (Native Auth) and 45996051233 (Path-Filtered Checks) failed before runner assignment: runner_id=0, empty runner_name and zero steps; downstream jobs skipped. Issue #49 updated.
+- **Status:** IMPLEMENTED_BUT_NOT_VERIFIED. PR #78 remains Draft; no merge, deployment, production migration or secret operation.
