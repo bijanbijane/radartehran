@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "project": "bijanbijane/radartehran",
+  "package_id": "DESIGN-MAP-001",
+  "updated_at": "2026-11-27",
+  "branch": "design/rt-map-workspace-ux-2026-11-27",
+  "status": "DESIGN_PROTOTYPE_READY_IMPLEMENTATION_NOT_AUTHORIZED",
+  "current_task": "Map workspace UX/UI redesign and handoff",
+  "priority_basis": "PAGE-02 is NOT STARTED in docs/implementation/UX-AUDIT-IMPLEMENTATION-REGISTER.md; older mobile-map findings were reconciled against current source before selection.",
+  "completed": [
+    "Verified repository identity, default branch, and GitHub write permission.",
+    "Read AGENTS.md, ARCHITECTURE.md, RMEP-001 persistent memory, and current execution state.",
+    "Inspected map shell, global header, floating map toolbar, canvas toolbar, neighborhood inspector, mobile navigation, design tokens, and neighborhood reference data.",
+    "Reconciled stale audit findings: five-column mobile navigation is current; inspector has three-state semantics and pointer handling; drag handle is still 24px minimum height; current peek/expanded heights are 50dvh/84dvh.",
+    "Confirmed MapQuickControlsStrip has no callsite beyond its own module; FloatingTopBar imports but does not render it.",
+    "Explored three materially different map-workspace directions and selected spatial-first canvas with contextual inspector.",
+    "Produced an interactive chat prototype using repository-backed neighborhood reference values and explicit schematic-map disclosure.",
+    "Completed independent critique and documented limitations and developer handoff."
+  ],
+  "design_decisions": [
+    "Keep map as the dominant surface.",
+    "Keep global navigation/search/city context separate from map-only controls.",
+    "Use one canonical map action strip and avoid duplicate control ownership.",
+    "Use progressive disclosure for neighborhood detail.",
+    "Keep static reference values, observed listings, analytical estimates, and live signals visually distinct.",
+    "Reuse Vazirmatn, existing semantic tokens, 4px spacing scale, and 44px primary mobile touch targets."
+  ],
+  "qa": {
+    "prototype_interaction_review": "REVIEWED",
+    "independent_critique": "ACCEPTED_AS_CONCEPT_ONLY",
+    "production_visual_qa": "NOT_RUN",
+    "responsive_browser_validation": "NOT_RUN",
+    "rtl_device_validation": "NOT_RUN",
+    "screen_reader_validation": "NOT_RUN",
+    "application_code_changed": false
+  },
+  "blockers": [
+    "No browser/runtime screenshot or device inspection was available in this GitHub-only session.",
+    "Schematic prototype is not a real map and must not be treated as spatially accurate.",
+    "Frontend implementation remains unauthorized."
+  ],
+  "next_exact_action": "Capture current map workspace screenshots and viewport geometry at 360x800, 390x844, 768x1024, 1024x768, 1280x800, and 1440x900; then reconcile the measured layout against DESIGN-MAP-001 before any implementation."
+}
