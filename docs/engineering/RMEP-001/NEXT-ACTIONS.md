@@ -92,3 +92,16 @@ Before any Radar production deployment:
 2. Obtain a working Node 22/npm 10 executor to run the validator, `npm ci`, `npm audit --json`, `npm run test:triad`, and native auth contracts.
 3. Do not attribute GitHub Actions failures to source code until a runner executes the workflow steps.
 4. Keep NIPS persistent storage blocked until the IRNI-owned authenticated/versioned RPC and canonical geography service binding are verified.
+
+
+## CHK-203 — GitHub-only execution queue (2026-11-27)
+
+1. **Firebase/Firestore migration map:** enumerate every active import and runtime consumer of `firebase-admin/app`, `firebase-admin/firestore`, Firebase client packages, Firestore emulator/rules tests, and Firebase-specific Vite chunks. The browser compatibility facade is SDK-free, but legacy Express code still imports Firebase Admin. Map each consumer to an approved Cloudflare-native API/adapter before removing packages.
+2. **Sharp runtime migration:** map every `sharp` consumer, especially `src/utils/objectStorageUpload.ts`, to the supported image-processing path for each runtime. The Cloudflare Worker import boundary forbids Sharp; do not remove the Node/Express implementation until its replacement and byte-level/security parity tests are ready.
+3. **Dependency remediation:** audit identified 2 critical dev-only findings (`vitest@3.2.7`, `tinypool@1.1.1`) and 5 high findings (Firebase/Firestore, `@grpc/grpc-js`, Sharp). Audit fix suggestions include major upgrades. Do not run `npm audit fix --force`; regenerate package-lock only in a compatible Node 22/npm 10 executor and run focused plus full tests.
+4. **GitHub Actions infrastructure:** latest PR #67 runs #45987832174, #45987830960, #45987830877, #45987830888 and #45987830940 fail before steps; logs return `BlobNotFound`. Existing raw payload evidence points to `runner_id=0`. Wait for runner allocation recovery or use an available executor; do not patch source to address an infrastructure failure.
+5. **NIPS persistence:** continue only after IRNI implements the authenticated/versioned purpose-scoped NIPS storage RPC, additive `nips_*` schema and owner migration-ledger path. Radar must not bind `radar-neighborhood-db` directly. Keep SQL design-only.
+6. **Verification:** when a runner/executor becomes available, run `npm ci`, `npm run test:nips`, `npm run test:auth`, `npm run test:irni-geographic-rpc`, `npm run typecheck:irni-geographic-rpc`, `npm run test:geography-catalog`, `npm run test:cloudflare`, `npm run test:triad`, typecheck, architecture and security suites. Record actual exit codes; no result is assumed.
+7. Keep PR #67 Draft. No merge, production deployment, remote migration, direct shared-D1 binding, secret change or destructive operation.
+
+**Scope rule:** until the user changes the instruction, continue work only against the GitHub repository. Do not use Cloudflare dashboards/APIs or local machine execution.
