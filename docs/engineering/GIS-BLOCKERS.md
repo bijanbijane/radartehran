@@ -241,3 +241,17 @@ Do not repurpose this assertion or its `AUTH_INTERNAL_HMAC_SECRET` for the geogr
 ## Latest exact-head runner dispatch verification — 2026-11-27
 
 The active Draft PR branch currently points to `adfa8b15851c7b6c1e35e5505a233f72160e3c81`. All seven PR-triggered workflows for that commit concluded failure. Raw GitHub Jobs API inspection of GIS run `46017942983`, IRNI Geographic RPC run `46017943177`, and backend triad run `46017943056` confirms the sampled jobs have `runner_id=0`, empty `runner_name`, and zero recorded steps. The two GIS jobs started and completed within approximately two seconds without executing a step. This is confirmed pre-step runner allocation/dispatch failure, not a GIS assertion, test, install, or TypeScript failure. No application test execution is evidenced. Repeated workflow reruns are not useful until runner availability is restored. No repository source code, CI configuration, account settings, or production resources were changed during this verification.
+
+
+## Durable recovery cache isolation — 2026-11-27
+
+**Implemented on Draft PR #72, commit `39e5bde28ef6cec7441058abf1a0b301810cd57d`:**
+
+- Repository reads return a non-authoritative empty view while GIS persistence health is not `READY`; the rejected in-memory snapshot is not re-exposed.
+- Synchronous and awaited repository writes reject while recovery is `BLOCKED` or `RECOVERING`, preventing default/partial runtime state from replacing the authoritative snapshot.
+- The mounted GIS router returns HTTP 503 with `GEOSPATIAL_PERSISTENCE_UNAVAILABLE` until recovery is `READY`; the response includes the recovery requirement and validation diagnostics.
+- The regression test primes a real temporary cached snapshot, transitions recovery to `BLOCKED`, verifies the cached records are not returned, and verifies writes are rejected. Temporary repository files are removed in a `finally` block.
+
+**Verification:** GitHub read-back confirms the changed source/test files and PR head. Exact-head GIS workflow results remain unusable: the prior run `46024395473` failed both jobs with `steps=null` and no logs URL. The follow-up test commit `39e5bde28ef6cec7441058abf1a0b301810cd57d` has no workflow run returned by the commit-run query yet. Tests and typecheck are therefore **NOT VERIFIED**.
+
+The PR remains Draft and unmerged. No production deployment, migration, authoritative data replacement, or IRNI write was performed.
