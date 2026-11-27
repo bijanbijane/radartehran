@@ -1068,6 +1068,14 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op185AdminOverviewSrc.includes('estimatedDealPricePerSqm'),
     'Price-bearing province controls, heatmap, map LOD and admin overview must expose the canonical deal-price projection'
   );
+  const budgetFitUiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/listing/BudgetFitVerdict.tsx'), 'utf-8');
+  assert.ok(
+    budgetFitUiSrc.includes("line.fit === 'fits' ? CheckCircle2") &&
+      budgetFitUiSrc.includes("line.fit === 'tight' ? AlertTriangle : XCircle") &&
+      budgetFitUiSrc.includes('FitIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true"') &&
+      budgetFitUiSrc.includes('bg-rose-100 text-rose-800'),
+    'Budget affordability verdicts must pair persistent text labels with distinct decorative status icons and semantic status colors'
+  );
   console.log('[PASS] Buyer Alert Contract & WS-001..WS-005 + OP-DEC-001 Regression Tests Passed.');
 });
 
