@@ -687,6 +687,114 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       if (!afterRevoke.ok) assert.equal(afterRevoke.code, 'RESEARCH_CONSENT_REQUIRED');
     });
 
+    it('prevents a concurrent outbox-ID collision from erasing another subject before identity verification', async () => {
+      const researchSqlite = createRealSqliteD1();
+      applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
+      const nowIso = new Date().toISOString();
+      const expiresAtIso = new Date(Date.now() + 86_400_000).toISOString();
+
+      for (const [eventId, subjectKey] of [
+        ['ev_concurrent_a', 'sk_concurrent_subject_a'],
+        ['ev_concurrent_b', 'sk_concurrent_subject_b'],
+      ]) {
+        await researchSqlite.db
+          .prepare(
+            `INSERT INTO research_events (
+              event_id, subject_key, subject_key_version, event_type, schema_version,
+              city_id, hood_id, session_bucket, payload_json, occurred_at_iso, ingested_at_iso, expires_at_iso, idempotency_key
+            ) VALUES (?1, ?2, 'v1', 'radar.map.neighborhood_select', 1, 'tehran', 5, '2026-11-27', '{}', ?3, ?3, ?4, ?5)`,
+          )
+          .bind(eventId, subjectKey, nowIso, expiresAtIso, `idem_${eventId}`)
+          .run();
+      }
+
+      // Force both deliveries to observe an empty inbox before either may continue.
+      // Serialize batch() like D1's transaction boundary, so this is a deterministic
+      // overlapping-read / competing-commit test rather than timing-dependent Promise.all.
+      let initialReads = 0;
+      let releaseInitialReads!: () => void;
+      const initialReadsBarrier = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve;
+      });
+      let batchTail: Promise<void> = Promise.resolve();
+
+      const wrapStatement = (statement: D1PreparedStatement, sql: string): D1PreparedStatement =>
+        new Proxy(statement, {
+          get(target, property) {
+            if (property === 'bind') {
+              return (...values: unknown[]) => wrapStatement(target.bind(...values), sql);
+            }
+            if (property === 'first') {
+              return async (...args: unknown[]) => {
+                const result = await (target.first as (...innerArgs: unknown[]) => Promise<unknown>)(...args);
+                if (sql.startsWith('SELECT subject_key, subject_key_version, receipt_id, deleted_events_count')) {
+                  initialReads += 1;
+                  if (initialReads === 2) releaseInitialReads();
+                  await initialReadsBarrier;
+                }
+                return result;
+              };
+            }
+            const value = Reflect.get(target, property);
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+
+      const concurrentDb: D1Database = {
+        prepare(sql: string) {
+          return wrapStatement(researchSqlite.db.prepare(sql), sql);
+        },
+        async batch<T = unknown>(statements: D1PreparedStatement[]) {
+          const next = batchTail.then(() => researchSqlite.db.batch<T>(statements));
+          batchTail = next.then(() => undefined, () => undefined);
+          return next;
+        },
+        async exec(query: string) {
+          return researchSqlite.db.exec(query);
+        },
+      };
+
+      const deliveries = await Promise.allSettled([
+        executeResearchSubjectErasure({
+          researchDb: concurrentDb,
+          outboxId: 'outbox_concurrent_collision_001',
+          subjectKey: 'sk_concurrent_subject_a',
+          subjectKeyVersion: 'v1',
+        }),
+        executeResearchSubjectErasure({
+          researchDb: concurrentDb,
+          outboxId: 'outbox_concurrent_collision_001',
+          subjectKey: 'sk_concurrent_subject_b',
+          subjectKeyVersion: 'v1',
+        }),
+      ]);
+
+      assert.equal(initialReads, 2, 'Both deliveries must pass the initial empty-inbox read');
+      assert.equal(deliveries.filter((result) => result.status === 'fulfilled').length, 1);
+      assert.equal(deliveries.filter((result) => result.status === 'rejected').length, 1);
+
+      const canonicalInbox = researchSqlite.raw
+        .prepare('SELECT subject_key FROM research_erasure_inbox WHERE outbox_id = ?')
+        .get('outbox_concurrent_collision_001') as { subject_key: string } | undefined;
+      assert.ok(canonicalInbox, 'Exactly one delivery must claim the outbox identity');
+      const losingSubjectKey =
+        canonicalInbox?.subject_key === 'sk_concurrent_subject_a'
+          ? 'sk_concurrent_subject_b'
+          : 'sk_concurrent_subject_a';
+      const losingSubjectEvents = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?')
+        .get(losingSubjectKey) as { cnt: number };
+      assert.equal(
+        Number(losingSubjectEvents.cnt),
+        1,
+        'A competing outbox-ID collision must not delete events for the losing subject',
+      );
+      const winnerSubjectEvents = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?')
+        .get(canonicalInbox!.subject_key) as { cnt: number };
+      assert.equal(Number(winnerSubjectEvents.cnt), 0);
+    });
+
     it('connects Account Deletion to UID-free Outbox -> RESEARCH_DB Inbox across rotated keys with transient failure recovery', async () => {
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
