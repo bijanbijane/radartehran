@@ -111,7 +111,7 @@ export interface PolygonValidationReport {
 
 export interface PointResolutionResult {
   resolved: boolean;
-  status: 'RESOLVED_INSIDE' | 'RESOLVED_ON_EDGE' | 'AMBIGUOUS_OVERLAP' | 'OUTSIDE_KNOWN_BOUNDARIES';
+  status: 'RESOLVED_INSIDE' | 'RESOLVED_ON_EDGE' | 'AMBIGUOUS_OVERLAP' | 'OUTSIDE_KNOWN_BOUNDARIES' | 'MULTIPLE_ACTIVE_BOUNDARY_VERSIONS';
   confidence: 'high' | 'medium' | 'none';
   cityId?: string;
   districtId?: string;
