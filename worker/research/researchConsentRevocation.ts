@@ -150,7 +150,7 @@ export async function revokeUserResearchConsentWithBarrier(params: {
           subject.subject_key,
           subject.subject_key_version,
           nowIso,
-          revokedConsentRevision,
+          newConsentRevision,
         );
     }),
   ];
