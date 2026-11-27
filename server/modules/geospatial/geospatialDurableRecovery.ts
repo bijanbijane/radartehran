@@ -498,15 +498,15 @@ export async function activateStagedGeospatialSnapshot(options: {
   try {
     await options.persist(stagedSnapshot);
   } catch (error) {
-      persistenceHealth = 'BLOCKED';
-      const report: GeospatialRecoveryReport = {
-        health: 'BLOCKED',
-        schemaVersion: GEOSPATIAL_SNAPSHOT_SCHEMA,
-        recordCounts: validation.counts,
-        validationErrors: [error instanceof Error ? error.message : 'GEOSPATIAL_PERSIST_FAILED'],
-        recoveryRequirement: 'Remote persistence failed; previous version remains active.',
-        activated: false,
-      };
+    persistenceHealth = 'BLOCKED';
+    const report: GeospatialRecoveryReport = {
+      health: 'BLOCKED',
+      schemaVersion: GEOSPATIAL_SNAPSHOT_SCHEMA,
+      recordCounts: validation.counts,
+      validationErrors: [error instanceof Error ? error.message : 'GEOSPATIAL_PERSIST_FAILED'],
+      recoveryRequirement: 'Remote persistence failed; previous version remains active.',
+      activated: false,
+    };
     lastRecoveryReport = report;
     return report;
   }
@@ -544,6 +544,17 @@ export async function runGeospatialDurableRecovery(params: {
       }
       stageGeospatialSnapshotForActivation(params.hydratedState);
       if (params.activateOnSuccess) {
+        if (!params.persist) {
+          persistenceHealth = 'BLOCKED';
+          lastRecoveryReport = {
+            ...assessment,
+            health: 'BLOCKED',
+            validationErrors: ['GEOSPATIAL_RECOVERY_PERSISTOR_REQUIRED'],
+            recoveryRequirement: 'A durable persistence adapter is required before snapshot activation.',
+            activated: false,
+          };
+          return lastRecoveryReport;
+        }
         return activateStagedGeospatialSnapshot({ persist: params.persist });
       }
       // Validation and staging do not activate the candidate. Keep the report
