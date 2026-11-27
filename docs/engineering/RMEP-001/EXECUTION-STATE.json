@@ -15,9 +15,9 @@
     "default_branch": "main",
     "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
     "current_branch": "codex/backend-resume-2026-11-27",
-    "head_commit": "d622a1958d567140731f7ac87d6aa3140ed4a44e",
-    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; TRIAD-003 seven-scenario race regression committed and syntax-reviewed; npm test runs all DB triad suites; workflow path filters include TRIAD-001/003; test-only commit triggers Backend Triad but hosted jobs fail before runner assignment; no tests/typecheck execution; local MacBook Offline",
-    "last_verified_commit": "d622a1958d567140731f7ac87d6aa3140ed4a44e"
+    "head_commit": "ff4540a4139b3e733f88f861dedf9375f6d10610",
+    "working_tree_status": "REMOTE_GITHUB_BRANCH_VERIFIED; barrier-only consent revocation and TRIAD-001/002 regression updates committed; no tests/typecheck executed; hosted runners fail before assignment; local MacBook Offline",
+    "last_verified_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae"
   },
   "current_phase": {
     "phase_id": "PHASE-6",
@@ -33,11 +33,11 @@
     "next_task_id": "BE-013"
   },
   "checkpoint": {
-    "checkpoint_id": "CHK-205-TRIAD-003-TEST-TRIGGER-CONFIRMED-RUNNER-BLOCKED",
-    "checkpoint_timestamp_utc": "2026-11-27T12:16:38Z",
-    "last_safe_operation": "Completed post-drain registry rescan, deterministic revocation/outbox identities, expected-revision CAS, stale-intent cleanup, and seventh regression that models permit acquisition before the in-flight write. Confirmed test-only TRIAD-003 change triggers Backend Triad via corrected workflow path filters.",
-    "last_completed_operation": "Re-read latest PR #78 source, seven-scenario test, npm test scripts and workflow path filters. Inspected run 45997297157/45997297169/45997297190/45997297120 at job level; all primary jobs failed before runner assignment with runner_id=0 and zero steps. Updated issue #49 and engineering logs. No test/typecheck/build/migration/deployment or production mutation executed.",
-    "next_exact_action": "Resolve hosted GitHub Actions runner allocation through issue #49 or reconnect the local executor. Then run npm test, npm run typecheck, Worker/API typecheck and Backend Triad bundle checks against the exact current PR #78 head. Capture actual output and fix demonstrated failures only. Keep PR #78 Draft; do not merge, deploy or apply production migrations.",
+    "checkpoint_id": "CHK-201-TRIAD-003-BARRIER-ONLY-CONSENT-REVOCATION",
+    "checkpoint_timestamp_utc": "2026-11-27T12:19:01.668Z",
+    "last_safe_operation": "Required all research consent true-to-false transitions to pass through a durable revocation intent and barrier CAS; forwarded consentVersion through the account route; aligned TRIAD-001/002 regressions with permit drain, erasure, and stale queue revision semantics; updated engineering records.",
+    "last_completed_operation": "Committed source, migration, test, package and documentation changes; re-read affected source/test files, PR #78 and latest Actions metadata. No tests/typecheck executed.",
+    "next_exact_action": "Resolve GitHub Actions runner allocation issue #49 or reconnect MacBook-Air.local; run npm test and npm run typecheck; inspect all TRIAD-001/002/003 outcomes; run isolated Wrangler D1/Worker integration after validating migrations 0007/0008; only then continue one live Express Firestore adapter replacement.",
     "resume_status": "READY_WITH_VERIFICATION_BLOCKERS"
   },
   "execution_history": {
@@ -2217,7 +2217,10 @@
       "updateUserPrivacyConsentInD1 now accepts expectedConsentRevision; the revocation orchestrator uses this CAS and cancels an unapplied job/outbox if a concurrent privacy mutation wins while research consent remains enabled.",
       "Unrelated privacy mutations and consent re-grants are rejected while a revocation job remains DRAINING_PERMITS or PENDING_ERASURE; the barrier's own revocation/reconciliation CAS is the only allowed consent transition in that state.",
       "The prior TRIAD-002 race test expected an obsolete pre-commit 403 and conflicted with the new permit-drain contract. It now asserts that an already-permitted writer may finish, then reconciliation erases its event and completes the fence.",
-      "npm test now starts by running npm run test:triad, which executes TRIAD-001, TRIAD-002 and TRIAD-003."
+      "npm test now starts by running npm run test:triad, which executes TRIAD-001, TRIAD-002 and TRIAD-003.",
+      "Direct true-to-false research consent mutation through updateUserPrivacyConsentInD1 is now rejected unless the durable revocation job exists and the caller is the barrier/reconcile transition. The account API routes revocation through that barrier.",
+      "TRIAD-001 now asserts direct repository bypass rejection and completes consent erasure through the barrier; TRIAD-002 race coverage follows permit-drain semantics, and its queue assertions use CONSENT_REVISION_STALE_OR_REVOKED for old revisions.",
+      "Account privacy PATCH forwards consentVersion to the barrier; route registration and catalog remain in place."
     ],
     "blockers": [
       "Cannot run repository scripts or tests locally because the connected development device is Offline.",
@@ -2233,11 +2236,13 @@
       "The new atomic retry-counter code and regression are source-reviewed but not executed. CI on code/test head d0faff86e79dde909faeb3cacbfa57e65e55ae37 (runs 45990057254, 45990057424, 45990057265, 45990057325) failed before runner assignment: runner_id=0, empty runner name, zero steps.",
       "Latest CI on code head f5b2df10ba734461332af7e7c51b16919d8f69b9: Quality Gates run 45994140283, Backend Triad run 45994140162, Native Auth run 45994140401, plus related path-filtered and frontend budget workflows, failed before runner execution. Quality Gates job runner_id=0, runner_name empty, steps=0; Backend Triad and Native Auth step metadata are null. This matches open operational issue #49; source-level failures are not established.",
       "Local executor remains unavailable: MacBook-Air.local Offline (last seen 21h ago).",
-      "TRIAD-003 and TRIAD-002 race-test updates are committed but unverified. No test, typecheck, Worker bundle or migration execution has run locally or on a hosted runner.",
       "Latest CI on code/test head 352ada76f71159b48f662df05c0909e2369176da: Quality Gates run 45995787426 job 140494716436 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45995787483 and Native Auth run 45995787609 have null step metadata. E2E skipped. This matches open issue #49; no source-level test failure is established.",
-      "MacBook-Air.local remains Offline; local test execution is unavailable."
+      "MacBook-Air.local remains Offline; local test execution is unavailable.",
+      "All TRIAD suites, npm test, npm run typecheck, Worker bundle and isolated Wrangler D1 integration remain unexecuted. No pass is claimed.",
+      "Latest CI on head d622a1958d567140731f7ac87d6aa3140ed4a44e: Quality Gates run 45997297169 job 140499789069 has runner_id=0, empty runner_name and zero steps; Backend Triad run 45997297157 and Native Auth run 45997297190 have null step metadata; E2E skipped. This matches issue #49 and does not establish a source-level test failure.",
+      "MacBook-Air.local remains Offline."
     ],
-    "next_action": "Resolve GitHub Actions runner allocation issue #49 or reconnect MacBook-Air.local; run npm test, npm run typecheck and Worker bundle/API route-contract checks; verify migrations user-d1/0007 and 0008 plus research-d1/0003 in an isolated non-production database; then proceed with one mounted Express Firestore adapter migration.",
+    "next_action": "Restore hosted runner allocation or reconnect MacBook-Air.local; run npm test, npm run typecheck and isolated Wrangler D1/Worker integration; inspect all TRIAD suite outcomes before any next adapter replacement.",
     "code_work": {
       "id": "BE-002",
       "status": "DESIGN_COMPLETE_IMPLEMENTATION_BLOCKED",
@@ -2297,10 +2302,10 @@
         "tests/rt-db-triad-002-forensic.test.ts",
         "package.json"
       ],
-      "source_commit": "6ce26edb2df888fbba5d618835821a95be93cfd2",
+      "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
       "test_commit": "352ada76f71159b48f662df05c0909e2369176da",
-      "verification": "Source, migration and test files re-read from GitHub. No tests/typecheck executed. Latest Actions runner evidence shows runner_id=0/zero steps or null step metadata; local MacBook Offline.",
-      "next_action": "Run npm test and npm run typecheck when a runner is available; fix only demonstrated failures."
+      "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+      "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
     },
     {
       "id": "BE-012",
@@ -2313,10 +2318,17 @@
         "tests/rt-db-triad-003-consent-barrier.test.ts",
         "package.json"
       ],
-      "source_commit": "6ce26edb2df888fbba5d618835821a95be93cfd2",
+      "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
       "test_commit": "352ada76f71159b48f662df05c0909e2369176da",
-      "verification": "Source, migration and test files re-read from GitHub. No tests/typecheck executed. Latest Actions runner evidence shows runner_id=0/zero steps or null step metadata; local MacBook Offline.",
-      "next_action": "Run npm test and npm run typecheck when a runner is available; fix only demonstrated failures."
+      "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+      "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
+    },
+    {
+      "id": "BE-013",
+      "status": "IMPLEMENTED_BUT_NOT_VERIFIED",
+      "source_commit": "f39a15a7af3ca68b24d6558a5d1aa224e87487ae",
+      "verification": "Affected source, migration and test files re-read from GitHub; no tests/typecheck executed. Latest CI jobs have runner_id=0/zero steps or null step metadata; local MacBook Offline.",
+      "next_action": "Run npm test, npm run typecheck and isolated Wrangler D1/Worker integration when an executor is available."
     }
   ]
 }
