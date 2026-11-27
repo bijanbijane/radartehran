@@ -809,6 +809,17 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.ok(canonicalInbox, 'A completed outbox command must retain its canonical inbox receipt');
       assert.equal(canonicalInbox?.receipt_id, replayErasure.receiptId);
       assert.equal(canonicalInbox?.inbox_count, 1, 'Duplicate delivery must not replace or duplicate the immutable inbox receipt');
+
+      // Reusing a durable outbox ID for a different pseudonymous subject must fail closed.
+      await assert.rejects(
+        () => executeResearchSubjectErasure({
+          researchDb: researchSqlite.db,
+          outboxId: String(outboxRows[0].outbox_id),
+          subjectKey: 'subject_key_collision_attempt',
+          subjectKeyVersion: String(outboxRows[0].subject_key_version),
+        }),
+        /RESEARCH_SUBJECT_ERASURE_OUTBOX_IDENTITY_CONFLICT/,
+      );
     });
 
     it('enforces Legal Hold blocking account deletion (423)', async () => {
