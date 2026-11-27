@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "mission": "Independent QA and test engineering for Radar Tehran",
+  "phase": "baseline-and-ci-triage",
+  "status": "in_progress",
+  "started_at": "2026-11-27T13:26:00+03:30",
+  "repository": "bijanbijane/radartehran",
+  "base_branch": "main",
+  "qa_branch": "qa/radar-tehran-baseline-2026-11-27",
+  "base_commit": "456dcacb387b908797756863b10da1f7104b658e",
+  "last_verified_commit_sha": null,
+  "environment": {
+    "github_repository_access": "verified",
+    "local_execution": "blocked",
+    "desktop_commander_device": "MacBook-Air.local",
+    "desktop_commander_status": "offline",
+    "production_data_touched": false,
+    "production_deployment_attempted": false
+  },
+  "findings": [
+    {
+      "id": "QA-CI-001",
+      "severity": "HIGH",
+      "status": "confirmed-ci-failure-root-cause-unresolved",
+      "scope": "main commit 456dcacb387b908797756863b10da1f7104b658e",
+      "evidence": {
+        "workflow": "Tehran Radar CI Quality Gates",
+        "run_id": 45837739418,
+        "run_url": "https://github.com/bijanbijane/radartehran/actions/runs/45837739418",
+        "jobs": [
+          {
+            "name": "TypeScript, Architecture, Unit, Storage, Stress & Build",
+            "conclusion": "failure",
+            "job_id": 139970977818
+          },
+          {
+            "name": "Real Browser E2E & Accessibility Suite (Playwright)",
+            "conclusion": "skipped",
+            "job_id": 139971000087
+          }
+        ],
+        "additional_checks": [
+          {
+            "name": "Workers Builds: radartehran-api-staging",
+            "conclusion": "failure"
+          },
+          {
+            "name": "Workers Builds: radartehran-frontend",
+            "conclusion": "failure"
+          }
+        ],
+        "diagnostic_artifacts": 0,
+        "logs_retrieval": "GitHub job-log endpoint returned 404; root cause not established"
+      },
+      "regression_test": null,
+      "verification": "not_started"
+    }
+  ],
+  "test_execution": {
+    "executed": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "not_run": [
+      "all local suites; execution host offline"
+    ]
+  },
+  "blockers": [
+    {
+      "id": "QA-BLOCK-001",
+      "description": "Connected MacBook-Air.local is offline; repository commands cannot be executed locally from this session.",
+      "impact": "Cannot independently run npm scripts, inspect runtime behavior, or create local test output.",
+      "next_step": "Reconnect Desktop Commander device or provide an online authorized execution host."
+    },
+    {
+      "id": "QA-BLOCK-002",
+      "description": "GitHub Actions logs for failed main CI job are unavailable through the current GitHub log endpoint (404), and the run exposes no uploaded artifacts.",
+      "impact": "CI root cause cannot yet be classified as code, dependency, runner, or infrastructure failure.",
+      "next_step": "Restore access to job logs or rerun the workflow after the execution environment is available."
+    }
+  ],
+  "next_action": "Restore a live execution environment, reproduce the latest main CI failures, capture complete logs, and run the pending D1 triad/write-pause suites."
+}
