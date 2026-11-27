@@ -368,3 +368,8 @@ function defaultEmpty(): PersistedGeospatialState {
     importBatches: {},
   };
 }
+
+export function emptyGeospatialRecordCounts(): GeospatialRecordCounts {
+  return countGeospatialRecords(defaultEmpty());
+}
+
