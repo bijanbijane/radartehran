@@ -111,7 +111,8 @@
 - **Pull Request:** [#68 — improve mobile neighborhood-sheet drag target](https://github.com/bijanbijane/radartehran/pull/68) (Draft; not merged).
 - **Files changed:**
   - `src/components/NeighborhoodInspectorDrawer.tsx`: `radar-drawer-drag-handle` minimum height changed from `24px` to `44px`.
-  - `tests/buyer-alert-contract.test.ts`: added a source-level regression assertion for the 44px drag-handle target and its accessible label. The test is included in the root `test:unit` script.
+  - `src/components/MapLegend.tsx`: mobile legend close control minimum width/height changed from `32px` to `44px`.
+  - `tests/buyer-alert-contract.test.ts`: added source-level regression assertions for both 44px controls and their accessible labels. The test is included in the root `test:unit` script.
 - **Implementation status:** `IMPLEMENTED_BUT_NOT_VERIFIED`.
 - **CI status:** The PR head `d1ed74c054f729444b4b31692025a521366a32b6` triggered the repository CI Quality Gates, Cloudflare Native Auth Validation, Initial Frontend Bundle Budget, and Path-Filtered Checks; all four runs concluded `failure`. The Playwright E2E job was skipped. GitHub's job-log retrieval returned `BlobNotFound`, so the exact failing step and cause could not be established. Do not attribute these failures to this UI change without evidence.
 - **Local verification:** No local typecheck, unit test, architecture check, production build, or rendered viewport test was executed in this session.
