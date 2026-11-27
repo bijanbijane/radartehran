@@ -1002,6 +1002,15 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const firebasePreviewCheck = validateBackendWranglerConfig(withFirebasePreviewVar, { skipFsChecks: true });
       assert.equal(firebasePreviewCheck.ok, false);
       assert.ok(firebasePreviewCheck.errors.includes('RETIRED_FIREBASE_RUNTIME_VAR_FORBIDDEN:previews.FIREBASE_APP_CHECK_MODE'));
+
+      for (const legacyConfigPath of ['wrangler.jsonc', 'wrangler.backend.preview-check.jsonc']) {
+        const legacyConfig = fs.readFileSync(path.join(process.cwd(), legacyConfigPath), 'utf-8');
+        assert.equal(
+          /["'](?:FIREBASE|FIRESTORE)_/i.test(legacyConfig),
+          false,
+          `Retired Firebase runtime variables must not remain in ${legacyConfigPath}`,
+        );
+      }
     });
 
     it('verifies worker/** has zero forbidden Node/Express/firebase-admin/JSON-repo imports and zero IRNI D1 bindings', () => {
