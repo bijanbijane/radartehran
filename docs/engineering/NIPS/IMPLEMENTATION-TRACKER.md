@@ -186,3 +186,11 @@ The existing IRNI schema-evolution document says no migration has been executed 
 - These changes are source-verified but not run-verified. The five workflows triggered on the latest head all report FAILURE; their job step arrays are empty/null and raw log retrieval returns `BlobNotFound`. This is insufficient evidence to attribute failure to code.
 - No NIPS storage adapter, D1 migration, or IRNI RPC integration was added. The approved ownership boundary remains unchanged: IRNI owns the shared D1 and the NIPS storage RPC; Radar consumes the authenticated RPC and must not bind directly to the database.
 - **Next:** restore Actions job/log visibility; then run `npm run test:nips`, typecheck, architecture, auth and triad/write-pause suites. Continue with the IRNI owner-side RPC only after its contract and authorization are available.
+
+
+## 11. CHK-198 — workflow/package script consistency
+
+- Added the two missing root scripts consumed by `irni-geographic-rpc-contract.yml`: `test:irni-geographic-rpc` and `typecheck:irni-geographic-rpc`.
+- Corrected `radar-backend-triad.yml` from nonexistent `test:geo` to existing `test:geography-catalog`.
+- Re-fetched and verified the workflow commands and package script definitions match.
+- Latest branch code/config head at this checkpoint: `e006fda6be0bff13df920b3cdd6b3cdcba117651`. Five Actions workflows still fail with null steps and missing logs; no tests are marked passed.
