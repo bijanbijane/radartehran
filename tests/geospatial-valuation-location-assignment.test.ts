@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { CoreApiError } from '../server/modules/core';
+import { resolvePointInBoundaryStore } from '../server/modules/geospatial/geospatialPointResolution';
+import type { BoundaryVersionRecord } from '../server/modules/geospatial/types';
 import { createGeospatialService, type GeospatialService } from '../server/modules/geospatial/service';
 import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
 import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
@@ -326,3 +328,52 @@ test('classifies a point inside one neighborhood but on another neighborhood edg
     );
   });
 });
+
+test('fails closed when one neighborhood history contains multiple ACTIVE boundary versions', () => {
+  const makeRecord = (id: string, version: number, geometry: PolygonGeometry, boundingBox: BoundaryVersionRecord['boundingBox']): BoundaryVersionRecord => ({
+    id,
+    entityId: 'hood:tehran:10',
+    cityId: 'tehran',
+    hoodId: 10,
+    level: 'neighborhood',
+    nameFa: 'محله آزمون',
+    version,
+    status: 'ACTIVE',
+    geometry: structuredClone(geometry),
+    simplifiedGeometry: structuredClone(geometry),
+    boundingBox,
+    sourceProvenance: 'duplicate_active_version_regression_test',
+    createdByUid: 'test-creator',
+    createdAtIso: '2026-11-27T00:00:00.000Z',
+  });
+  const v1 = makeRecord('bnd_hood_tehran_10_v1', 1, SQUARE_A, {
+    minLat: 35.70, maxLat: 35.80, minLng: 51.30, maxLng: 51.40,
+  });
+  const v2 = makeRecord('bnd_hood_tehran_10_v2', 2, SQUARE_OVERLAP, {
+    minLat: 35.72, maxLat: 35.82, minLng: 51.34, maxLng: 51.44,
+  });
+  const metrics = {
+    spatialQueriesCount: 0,
+    totalQueryLatencyMs: 0,
+    pointResolutionFailuresCount: 0,
+    invalidGeometryEventsCount: 0,
+    importFailuresCount: 0,
+    cacheHitsCount: 0,
+    cacheMissesCount: 0,
+    geocodingErrorsCount: 0,
+  };
+
+  const result = resolvePointInBoundaryStore({
+    boundaryHistoryByEntity: new Map([[v1.entityId, [v1, v2]]]),
+    metrics,
+    rawLat: 35.75,
+    rawLng: 51.36,
+  });
+
+  assert.equal(result.resolved, false);
+  assert.equal(result.status, 'MULTIPLE_ACTIVE_BOUNDARY_VERSIONS');
+  assert.equal(result.confidence, 'none');
+  assert.deepEqual(result.candidateBoundaryIds, [v1.id, v2.id]);
+  assert.equal(metrics.pointResolutionFailuresCount, 1);
+});
+
