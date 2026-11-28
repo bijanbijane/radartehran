@@ -6,7 +6,7 @@ import { escapeHtmlAttr, buildExternalDivarUrl } from '../src/utils/security';
 import { calculateHedonicValuation, FAST_SALE_FACTOR } from '../src/data/hedonicPricingEngine';
 import { calculateDetailedValuation } from '../src/data/superModulesLogic';
 import { INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../src/data/neighborhoods';
-import { readAndReconcileExecutionState, PINNED_MASTER_PROMPT_SHA256 } from '../src/utils/rmepExecutionStateEngine';
+import { readAndReconcileExecutionState, PINNED_MASTER_PROMPT_SHA256, validateRmepExecutionState } from '../src/utils/rmepExecutionStateEngine';
 import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 
 console.log('🛡️ Running Architecture Guardrails & Refactoring Verification Suite...\n');
@@ -307,6 +307,21 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
   assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
+
+  const unrunIndex = reconciled.state?.tests.findIndex((item) => item.outcome === 'NOT_RUN') ?? -1;
+  assert.ok(reconciled.state && unrunIndex >= 0, 'Expected explicitly unrun checks to remain represented in the execution state');
+  const unrunRecord = reconciled.state.tests[unrunIndex];
+  assert.equal(unrunRecord.exit_code, null, 'NOT_RUN must not invent an exit code');
+  assert.equal(unrunRecord.evidence_path, null, 'NOT_RUN must not invent an evidence artifact');
+  assert.equal(validateRmepExecutionState(reconciled.state).valid, true, 'A correctly represented NOT_RUN record must validate');
+
+  const invalidExecutedState = structuredClone(reconciled.state);
+  invalidExecutedState.tests[unrunIndex] = { ...invalidExecutedState.tests[unrunIndex], outcome: 'PASSED', exit_code: 0 };
+  assert.equal(validateRmepExecutionState(invalidExecutedState).valid, false, 'Executed tests must require a real evidence path');
+
+  const invalidNotRunState = structuredClone(reconciled.state);
+  invalidNotRunState.tests[unrunIndex] = { ...invalidNotRunState.tests[unrunIndex], evidence_path: 'docs/qa/fabricated-evidence.json' };
+  assert.equal(validateRmepExecutionState(invalidNotRunState).valid, false, 'NOT_RUN tests must not claim an evidence path');
 });
 
 // 12. Gold Master v2.0 Map-Centric Split-Map Companion Mode, GIS Comparison Arc, FX & v6.4 Deal Price Parity Across All Views
