@@ -265,6 +265,15 @@ export async function assertRtlLayout(page: Page): Promise<void> {
  * Verifies layout integrity, overflow absence, navigation visibility, map geometry,
  * search input hit-test accessibility, inspector access, and modal bounds on a given viewport.
  */
+export async function openNeighborhoodSearch(page: Page): Promise<void> {
+  const searchInput = page.locator('input[aria-label="جست‌وجوی محله"]');
+  if (await searchInput.isVisible().catch(() => false)) return;
+  const trigger = page.locator('button[data-global-search-trigger="true"]');
+  await expect(trigger, 'global search trigger must be available before opening the neighborhood search').toBeVisible();
+  await trigger.click();
+  await expect(searchInput, 'opening global search must reveal the neighborhood search input').toBeVisible();
+}
+
 export async function assertResponsiveLayout(
   page: Page,
   vp: ResponsiveViewportCase
@@ -273,6 +282,7 @@ export async function assertResponsiveLayout(
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await waitForLayoutStabilization(page);
 
+  await openNeighborhoodSearch(page);
   const searchInput = page.locator('input[aria-label="جست‌وجوی محله"]');
   await expect(searchInput, `[${vp.label}] search input must be visible`).toBeVisible();
 
