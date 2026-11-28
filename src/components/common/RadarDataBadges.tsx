@@ -1,5 +1,6 @@
 /** @file src/components/common/RadarDataBadges.tsx — RT-UI-COMP-001 Cards, Credibility Badges & RTD10 Provenance */
 import React from 'react';
+import { RadarSurfaceCard } from './RadarSurfaceCard';
 import { CheckCircle2, Info, AlertTriangle, Clock } from 'lucide-react';
 import { DATA_CREDIBILITY_SPECS, type DataCredibilityStatus } from '../../design-system/componentSystem';
 
@@ -61,14 +62,11 @@ export const RadarCard: React.FC<{
   elevated?: boolean;
   className?: string;
   children: React.ReactNode;
-}> = ({ padding = 'standard', elevated = false, className = '', children }) => {
-  const pad = padding === 'compact' ? 'p-3' : padding === 'large' ? 'p-5' : 'p-4';
-  return (
-    <div className={`rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] ${elevated ? 'shadow-xs' : ''} ${pad} ${className}`}>
-      {children}
-    </div>
-  );
-};
+}> = ({ padding = 'standard', elevated = false, className = '', children }) => (
+  <RadarSurfaceCard padding={padding} elevated={elevated} className={className}>
+    {children}
+  </RadarSurfaceCard>
+);
 
 export const RadarMetricCard: React.FC<{
   title: string;
