@@ -133,6 +133,8 @@ test('component interaction invariants remain wired in critical files', () => {
 
   const useDialogFocusSource = fs.readFileSync(path.join(ROOT, 'src/components/useDialogFocus.ts'), 'utf8');
   assert.match(useDialogFocusSource, /isTopmostModalDialogElement/);
+  assert.match(useDialogFocusSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
+  assert.match(useDialogFocusSource, /if \(!escapeDisabledRef\.current && onCloseRef\.current\)/);
 
   const searchDropdownSource = fs.readFileSync(path.join(ROOT, 'src/components/SearchDropdownMenu.tsx'), 'utf8');
   assert.match(searchDropdownSource, /isNeighborhoodSearchInputFocused/);
