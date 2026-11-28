@@ -26,7 +26,7 @@ export function createGeospatialRouter(
     }
     res.setHeader('Cache-Control', 'no-store');
     res.status(503).json(buildErrorEnvelope({
-      code: 'GEOSPATIAL_PERSISTENCE_UNAVAILABLE',
+      code: 'PERSISTENCE_FAILED',
       message: 'Geospatial services are unavailable until a verified durable snapshot is recovered.',
       // Keep public outage responses intentionally low-detail. Recovery
       // diagnostics can contain internal validation context and belong in
