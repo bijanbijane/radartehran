@@ -139,6 +139,13 @@ test('component interaction invariants remain wired in critical files', () => {
   assert.match(primitivesSource, /isTopmostModalDialogElement\(panelRef\.current, openDialogs\)/);
   assert.match(primitivesSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*onClose\(\);/);
 
+  const secondaryModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/SecondaryModals.tsx'), 'utf8');
+  assert.match(secondaryModalsSource, /useDialogFocus\(showPulseModal,\s*\(\) => setShowPulseModal\(false\)\)/);
+  assert.match(secondaryModalsSource, /useDialogFocus\(showSeoDrawer,\s*\(\) => setShowSeoDrawer\(false\)\)/);
+  assert.match(secondaryModalsSource, /ref=\{pulseDialogRef\}/);
+  assert.match(secondaryModalsSource, /ref=\{seoDialogRef\}/);
+  assert.doesNotMatch(secondaryModalsSource, /useDialogFocus\(showPulseModal \|\| showSeoDrawer/);
+
   const searchDropdownSource = fs.readFileSync(path.join(ROOT, 'src/components/SearchDropdownMenu.tsx'), 'utf8');
   assert.match(searchDropdownSource, /isNeighborhoodSearchInputFocused/);
   assert.match(searchDropdownSource, /\[role="dialog"\]\[aria-modal="true"\]/);
