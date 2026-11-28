@@ -259,6 +259,20 @@ test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over
 });
 
 
+
+
+test('RT-UI-COLOR-004 keeps admin shell and workspace surfaces on canonical dark theme tokens', () => {
+  const router = readFileSync(new URL('../components/views/ProductViewRouter.tsx', import.meta.url), 'utf8');
+  const admin = readFileSync(new URL('../components/views/ProductAdminMonitoringView.tsx', import.meta.url), 'utf8');
+
+  assert.ok(router.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(admin.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(admin.includes('dark:bg-[var(--color-bg-surface)]'));
+  assert.ok(!router.includes('#0D1513'));
+  assert.ok(!admin.includes('#0D1513'));
+  assert.ok(!admin.includes('#131E1B'));
+});
+
 test('RT-UI-COLOR-003 keeps product view shell backgrounds on canonical theme tokens', () => {
   const standard = resolveProductViewRouterShellClasses(false, false);
   const split = resolveProductViewRouterShellClasses(true, true);
