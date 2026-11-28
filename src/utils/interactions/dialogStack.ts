@@ -118,3 +118,64 @@ export function acquireDialogScrollLock(
     }
   };
 }
+
+
+type DialogIsolationSnapshot = {
+  ariaHidden: string | null;
+  ariaModal: string | null;
+};
+
+const dialogIsolationSnapshots = new Map<Element, DialogIsolationSnapshot>();
+
+/**
+ * Recomputes assistive-technology isolation from the active modal's DOM path.
+ * Only siblings outside the topmost dialog path are hidden, so a dialog rendered
+ * inside the app tree or a body portal is never hidden by its own isolation pass.
+ * Original attributes are restored before each recomputation and on final close.
+ */
+export function syncDialogBackgroundIsolation(targetDocument?: Document | null): void {
+  const doc = targetDocument ?? (typeof document !== 'undefined' ? document : null);
+
+  for (const [element, snapshot] of dialogIsolationSnapshots) {
+    if (snapshot.ariaHidden === null) element.removeAttribute('aria-hidden');
+    else element.setAttribute('aria-hidden', snapshot.ariaHidden);
+    if (snapshot.ariaModal === null) element.removeAttribute('aria-modal');
+    else element.setAttribute('aria-modal', snapshot.ariaModal);
+  }
+  dialogIsolationSnapshots.clear();
+
+  if (!doc?.body) return;
+
+  const dialogs = Array.from(
+    doc.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
+  ).filter((dialog) => dialog.isConnected);
+  const topmostDialog = dialogs[dialogs.length - 1];
+  if (!topmostDialog) return;
+
+  const remember = (element: Element) => {
+    if (dialogIsolationSnapshots.has(element)) return;
+    dialogIsolationSnapshots.set(element, {
+      ariaHidden: element.getAttribute('aria-hidden'),
+      ariaModal: element.getAttribute('aria-modal'),
+    });
+  };
+
+  for (const dialog of dialogs) {
+    if (dialog === topmostDialog) continue;
+    remember(dialog);
+    dialog.setAttribute('aria-modal', 'false');
+  }
+
+  let current: Element = topmostDialog;
+  while (current.parentElement) {
+    const parent = current.parentElement;
+    for (const sibling of Array.from(parent.children)) {
+      if (sibling === current) continue;
+      if (parent === doc.body && /^(SCRIPT|STYLE|LINK|META)$/i.test(sibling.tagName)) continue;
+      remember(sibling);
+      sibling.setAttribute('aria-hidden', 'true');
+    }
+    if (parent === doc.body) break;
+    current = parent;
+  }
+}
