@@ -101,13 +101,13 @@ export function CasperDecisionSuiteModal({
         {/* Header with Epistemic Badge */}
         <div className="flex items-start justify-between border-b border-[var(--color-border-subtle)] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-600)] dark:bg-[#173530] dark:text-[#86d8cb]">
+            <div className="p-2.5 rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand-600)] dark:bg-[var(--color-brand-soft)] dark:text-[var(--color-brand-fg)]">
               <Brain className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="casper-modal-title" className="text-base font-bold text-[var(--color-text-primary)]">دستیار تصمیم‌گیری هوشمند مسکن</h3>
-                <span className="px-2 py-0.5 rounded-[6px] text-xs font-semibold bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:bg-[#173530] dark:text-[#86d8cb]">تحلیل سناریوی معامله</span>
+                <span className="px-2 py-0.5 rounded-[6px] text-xs font-semibold bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] dark:bg-[var(--color-brand-soft)] dark:text-[var(--color-brand-fg)]">تحلیل سناریوی معامله</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] mt-0.5">آزمون فرضیات، شبیه‌سازی استرس رکود و خنثی‌سازی خطاهای شناختی</p>
             </div>
