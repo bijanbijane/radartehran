@@ -261,6 +261,23 @@ test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over
 
 
 
+test('RT-UI-COLOR-006 keeps shared brand accents on canonical dark theme tokens', () => {
+  const primitives = readFileSync(new URL('../components/ui/RadarPrimitives.tsx', import.meta.url), 'utf8');
+  const casperModal = readFileSync(new URL('../components/CasperDecisionSuiteModal.tsx', import.meta.url), 'utf8');
+  const mapResults = readFileSync(new URL('../components/map/MapExplorerResultsSidebar.tsx', import.meta.url), 'utf8');
+
+  for (const source of [primitives, casperModal, mapResults]) {
+    assert.ok(!source.includes('#173530'));
+    assert.ok(!source.includes('#86d8cb'));
+    assert.ok(!source.includes('#244f48'));
+  }
+  assert.ok(primitives.includes('dark:bg-[var(--color-brand-soft)]'));
+  assert.ok(primitives.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(primitives.includes('dark:border-[var(--color-brand-soft-border)]'));
+  assert.ok(casperModal.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(mapResults.includes('dark:bg-[var(--color-brand-soft)]'));
+});
+
 test('RT-UI-COLOR-005 keeps map fallback surfaces on canonical dark theme tokens', () => {
   const indexCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
   const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
