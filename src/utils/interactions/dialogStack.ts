@@ -78,3 +78,43 @@ export function shouldRestoreDialogFocus<T extends { isConnected?: boolean }>(
   const topmostDialog = openDialogs[openDialogs.length - 1];
   return typeof topmostDialog.contains === 'function' && topmostDialog.contains(previousFocus);
 }
+
+
+/**
+ * Shared reference-counted body scroll lock for every modal implementation.
+ * All dialog systems must acquire/release through this coordinator so one
+ * surface cannot unlock page scrolling while another modal remains open.
+ */
+export interface DialogScrollLockTarget {
+  style: { overflow: string };
+}
+
+let activeDialogScrollLocks = 0;
+let lockedScrollTarget: DialogScrollLockTarget | null = null;
+let previousScrollOverflow: string | null = null;
+
+export function acquireDialogScrollLock(
+  target: DialogScrollLockTarget | null | undefined,
+): () => void {
+  if (!target) return () => undefined;
+
+  if (activeDialogScrollLocks === 0) {
+    lockedScrollTarget = target;
+    previousScrollOverflow = target.style.overflow;
+    target.style.overflow = 'hidden';
+  }
+
+  activeDialogScrollLocks += 1;
+  let released = false;
+
+  return () => {
+    if (released) return;
+    released = true;
+    activeDialogScrollLocks = Math.max(0, activeDialogScrollLocks - 1);
+    if (activeDialogScrollLocks === 0 && lockedScrollTarget) {
+      lockedScrollTarget.style.overflow = previousScrollOverflow ?? '';
+      lockedScrollTarget = null;
+      previousScrollOverflow = null;
+    }
+  };
+}
