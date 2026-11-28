@@ -334,6 +334,21 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
 });
 
 
+test('RT-UI-COLOR-012 keeps semantic alert class maps on canonical light/dark tokens', () => {
+  const classMaps = readFileSync(new URL('./classMaps.ts', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  for (const tone of ['success', 'warning', 'danger', 'info']) {
+    assert.ok(classMaps.includes(`bg-[var(--color-${tone}-bg)]`));
+    assert.ok(classMaps.includes(`text-[var(--color-${tone})]`));
+    assert.ok(classMaps.includes(`border-[var(--color-${tone}-border)]`));
+    assert.ok(lightTokens.includes(`--color-${tone}-border:`));
+    assert.ok(darkCss.includes(`--color-${tone}-border:`));
+  }
+  assert.doesNotMatch(classMaps, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|amber|rose|sky)-|dark:text-(emerald|amber|rose|sky)-/);
+});
+
 test('RT-UI-COLOR-011 keeps data credibility badges and metric cards on semantic theme tokens', () => {
   const badges = readFileSync(new URL('../components/common/RadarDataBadges.tsx', import.meta.url), 'utf8');
   const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
