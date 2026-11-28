@@ -7,6 +7,7 @@ on:
       - fix/ui-stage11-layout-contract-resolution
     paths:
       - "src/design-system/**"
+      - "src/components/common/**"
       - "src/styles/layers/themes.css"
       - "src/components/useDialogFocus.ts"
       - "src/components/ui/RadarPrimitives.tsx"
