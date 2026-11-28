@@ -348,10 +348,12 @@ test('RT-UI-COLOR-014 keeps shared form errors and destructive actions on danger
   assert.ok(button.includes('hover:bg-[var(--color-danger-solid-hover)]'));
   assert.ok(button.includes('active:bg-[var(--color-danger-solid-active)]'));
   assert.ok(button.includes('text-[var(--color-text-on-brand)]'));
-  for (const token of ['--color-danger-solid:', '--color-danger-solid-hover:', '--color-danger-solid-active:']) {
-    assert.ok(lightTokens.includes(token));
-    assert.ok(darkCss.includes(token));
-  }
+  assert.ok(lightTokens.includes(`--color-danger-solid: ${SEMANTIC_PALETTE.danger.solid};`));
+  assert.ok(lightTokens.includes(`--color-danger-solid-hover: ${SEMANTIC_PALETTE.danger.solidHover};`));
+  assert.ok(lightTokens.includes(`--color-danger-solid-active: ${SEMANTIC_PALETTE.danger.solidActive};`));
+  assert.ok(darkCss.includes(`--color-danger-solid: ${SEMANTIC_PALETTE.danger.solid};`));
+  assert.ok(darkCss.includes(`--color-danger-solid-hover: ${SEMANTIC_PALETTE.danger.solidHover};`));
+  assert.ok(darkCss.includes(`--color-danger-solid-active: ${SEMANTIC_PALETTE.danger.solidActive};`));
   assert.doesNotMatch(input + field + button, /#A61B1B|#8E1515|#751010|dark:text-rose-400/);
 });
 
