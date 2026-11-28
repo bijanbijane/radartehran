@@ -675,7 +675,7 @@ export async function executeResearchSubjectErasure(params: {
       nowIso,
     );
 
-  let batchResults: D1Result[];
+  let batchResults: Awaited<ReturnType<D1Database['batch']>>;
   try {
     batchResults = await params.researchDb.batch([
       insertInboxStmt,
