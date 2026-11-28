@@ -81,6 +81,8 @@ export function computeDeclutteredMarkerTiers(
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
       result.set(hood.id, tier); continue;
     }
+    // At zoom 12–13 only the selected neighborhood receives a text label.
+    // Defer all non-selected labels until zoom 14 to keep the map legible.
     if (zoom < 14) {
       result.set(hood.id, 'dot');
       continue;
