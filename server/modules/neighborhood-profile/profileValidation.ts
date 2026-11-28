@@ -1,5 +1,5 @@
 import { NIPS_DOMAIN_IDS, type NipsMetric, type NipsNeighborhoodProfile } from './types';
-import { NIPS_DEFAULT_PUBLICATION_POLICY, type NipsPublicationPolicy, type NipsProfileValidationIssue, count, isRecord, isIsoTimestamp, pushIssue, validateMetric, validateQualitySummary } from './validationCore';
+import { NIPS_DEFAULT_PUBLICATION_POLICY, type NipsPublicationPolicy, type NipsProfileValidationIssue, count, countMetricsByState, isRecord, isIsoTimestamp, pushIssue, validateMetric, validateQualitySummary } from './validationCore';
 import { validateNipsPublicationPolicy } from './publicationPolicyValidation';
 
 export function validateNipsNeighborhoodProfile(
