@@ -31,6 +31,18 @@ export interface GeospatialRecoveryReport {
 
 let persistenceHealth: GeospatialPersistenceHealth = 'READY';
 let lastRecoveryReport: GeospatialRecoveryReport | null = null;
+
+function defaultEmpty(): PersistedGeospatialState {
+  return {
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  };
+}
+
 let recoveryInFlight: Promise<GeospatialRecoveryReport> | null = null;
 let stagedSnapshot: PersistedGeospatialState | null = null;
 
