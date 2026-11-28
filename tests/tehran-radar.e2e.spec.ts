@@ -11,6 +11,7 @@ import {
   assertNoCrossCityDataLeakage,
   assertResponsiveLayout,
   assertRtlLayout,
+  openNeighborhoodSearch,
   switchCityAndAssertContext,
   waitForLayoutStabilization,
 } from './e2e/helpers/multicityRtlResponsiveHelpers';
@@ -28,6 +29,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     const response = await page.goto('/', { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBe(200);
     await waitForLayoutStabilization(page);
+    await openNeighborhoodSearch(page);
 
     const searchInput = page.locator('input[aria-label="جست‌وجوی محله"]');
     await expect(searchInput).toBeVisible();
@@ -66,6 +68,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
   test('2. Keyboard accessibility (Escape dialog dismissal) and NAV-011 isolated Admin security boundary', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await openNeighborhoodSearch(page);
     await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
 
     // NAV-011: Verify zero Admin links or buttons exist anywhere in public header or Tools popover
@@ -91,6 +94,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
 
     await page.locator('button:has-text("بازگشت به محیط عمومی")').click();
     await expect(adminPage).toBeHidden();
+    await openNeighborhoodSearch(page);
     await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
   });
 
