@@ -304,6 +304,9 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   assert.equal(reconciled.reconciled, true, 'Execution-state evidence must be internally reconciled even while the program remains partially verified');
   assert.equal(reconciled.discrepancies.length, 0, `Expected no internal execution-state discrepancies, got: ${reconciled.discrepancies.join('; ')}`);
   assert.ok(reconciled.state && reconciled.state.operations.length >= 192, 'Expected at least 192 recorded RMEP operations');
+  assert.ok(reconciled.state?.operations.slice(0, -1).every((operation) => operation.status === 'VERIFIED' && operation.idempotent), 'All historical operations must remain VERIFIED and idempotent');
+  assert.equal(reconciled.state?.operations.at(-1)?.status, 'IMPLEMENTED_BUT_NOT_VERIFIED', 'The active operation must retain its truthful unverified status');
+  assert.equal(reconciled.state?.current_workstream.task_status, 'IMPLEMENTED_BUT_NOT_VERIFIED', 'The active workstream must agree with the latest operation status');
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
   assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
