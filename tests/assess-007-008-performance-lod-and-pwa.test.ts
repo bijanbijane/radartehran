@@ -102,6 +102,18 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     'Selected neighborhood (401 Shiraz) must never be culled even when map is over Tehran'
   );
 
+  const selectedRed = { ...allHoods.find((hood) => hood.id === 401)!, status: 'red' as const };
+  const statusFilteredSelection = filterNeighborhoodsInViewportWithBuffer(
+    mockTehranMap,
+    allHoods.map((hood) => hood.id === 401 ? selectedRed : hood),
+    401,
+    'green'
+  );
+  assert.ok(
+    statusFilteredSelection.some((hood) => hood.id === 401),
+    'Selected neighborhood must remain visible even when excluded by the active status filter'
+  );
+
   // Macro-Zoom Clustering at Zoom 7
   const clustersZ7 = buildMacroZoomClusters(allHoods, 5, 7, () => ({
     stroke: '#10b981',
