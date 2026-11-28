@@ -303,8 +303,8 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/api/osm-tile/12/2632/1611' }),
-    'StaleWhileRevalidateMapTile',
-    'OSM tile proxy requests use the current Service Worker cache baseline until PR #16 is merged'
+    'NetworkOnlyMapTile',
+    'OSM tile proxy requests must bypass Service Worker caching under the current provider licensing policy'
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/assets/index-D8a91.js' }),
