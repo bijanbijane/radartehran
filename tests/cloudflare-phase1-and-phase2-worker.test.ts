@@ -53,7 +53,7 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
       .split('\n')
       .filter((line) => !line.trim().startsWith('//'))
       .join('\n')
-      .replace(/,\\s*([}\\]])/g, '$1');
+      .replace(/,\s*([}\]])/g, '$1');
     const parsed = JSON.parse(strippedJson) as Record<string, unknown>;
 
     assert.equal(parsed.name, 'radartehran');
