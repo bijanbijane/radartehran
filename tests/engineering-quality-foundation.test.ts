@@ -2087,14 +2087,17 @@ async function runSuite(): Promise<void> {
       3,
       'All three active map-filter dismissal actions must expose 44px mobile touch targets'
     );
-    const activeFilterDismissalButtons = topBarSrc.match(/<button(?=[^>]*aria-label="حذف فیلتر[^"]*")[^>]*>/g) || [];
-    assert.equal(activeFilterDismissalButtons.length, 3, 'All active map-filter dismissal actions must remain individually labelled buttons');
+    const activeFilterDismissalLabels = topBarSrc.match(/aria-label="حذف فیلتر[^"]*"/g) || [];
+    assert.equal(activeFilterDismissalLabels.length, 3, 'All active map-filter dismissal actions must remain individually labelled buttons');
     assert.equal(
-      activeFilterDismissalButtons.every((tag) =>
-        tag.includes('focus-visible:outline-2') &&
-        tag.includes('focus-visible:outline-offset-2') &&
-        tag.includes('focus-visible:outline-emerald-600')
-      ),
+      activeFilterDismissalLabels.every((label) => {
+        const start = topBarSrc.indexOf(label);
+        const end = topBarSrc.indexOf('</button>', start);
+        const buttonSource = topBarSrc.slice(start, end);
+        return buttonSource.includes('focus-visible:outline-2') &&
+          buttonSource.includes('focus-visible:outline-offset-2') &&
+          buttonSource.includes('focus-visible:outline-emerald-600');
+      }),
       true,
       'All active map-filter dismissal actions must expose a visible keyboard focus indicator'
     );
