@@ -23,6 +23,7 @@ import {
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
+import { COMPONENT_IMPLEMENTATION_REGISTRY, validateComponentRegistry } from './componentRegistry';
 import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
 import {
   BODY_TYPE_SCALE_PX,
@@ -475,4 +476,26 @@ test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible 
       `Dark theme focus indicator on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 3:1`
     );
   }
+});
+
+
+test('RT-UI-COMP-REG-001 maps inspected shared components to complete 13-field contracts', () => {
+  assert.equal(COMPONENT_IMPLEMENTATION_REGISTRY.length, 7);
+  assert.deepEqual(validateComponentRegistry(), []);
+  assert.equal(new Set(COMPONENT_IMPLEMENTATION_REGISTRY.map((entry) => entry.id)).size, COMPONENT_IMPLEMENTATION_REGISTRY.length);
+  for (const entry of COMPONENT_IMPLEMENTATION_REGISTRY) {
+    assert.ok(entry.implementation.startsWith('src/'));
+    assert.ok(entry.publicContract.length > 0);
+    assert.equal(Object.keys(entry.spec).length, 13);
+  }
+});
+
+test('RT-UI-COMP-REG-002 reports duplicate IDs and incomplete component contracts', () => {
+  const incomplete = {
+    ...COMPONENT_IMPLEMENTATION_REGISTRY[0],
+    spec: { ...COMPONENT_IMPLEMENTATION_REGISTRY[0].spec, purpose: '' },
+  };
+  const issues = validateComponentRegistry([COMPONENT_IMPLEMENTATION_REGISTRY[0], incomplete]);
+  assert.ok(issues.some((issue) => issue.code === 'duplicate_id'));
+  assert.ok(issues.some((issue) => issue.code === 'empty_spec_field' && issue.field === 'purpose'));
 });
