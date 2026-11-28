@@ -322,3 +322,13 @@ test('RT-UI-COLOR-007 keeps dark map attribution on canonical surface and text t
   assert.ok(!darkAttribution.includes('#8ca19a'));
   assert.ok(!darkAttribution.includes('rgba(19, 31, 28'));
 });
+
+test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on canonical dark brand foreground', () => {
+  const bottomNav = readFileSync(new URL('../components/navigation/radarBottomNavParts.tsx', import.meta.url), 'utf8');
+  const floatingTopBar = readFileSync(new URL('../components/FloatingTopBar.tsx', import.meta.url), 'utf8');
+
+  assert.ok(bottomNav.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(floatingTopBar.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(!bottomNav.includes('#86d8cb'));
+  assert.ok(!floatingTopBar.includes('#86d8cb'));
+});
