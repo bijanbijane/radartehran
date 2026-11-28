@@ -13,9 +13,8 @@ import type {
 import {
   buildNeighborhoodProfileBoundaryReadModel,
   calculateNeighborhoodBoundaryGeometrySha256,
-  pickActiveBoundaryVersion,
 } from '../server/modules/geospatial/neighborhoodProfileBoundaryReadModel';
-import { detectActiveBoundaryBboxOverlaps } from '../server/modules/geospatial/geospatialBoundaryReadModel';
+import { detectActiveBoundaryBboxOverlaps, pickActiveBoundaryVersion } from '../server/modules/geospatial/geospatialBoundaryReadModel';
 import { resetGeospatialRecoveryStateForTests, stageGeospatialSnapshotForActivation } from '../server/modules/geospatial/geospatialDurableRecovery';
 import { evaluateNeighborhoodProfileBoundary } from '../src/features/neighborhoods/profile-contract/neighborhoodProfileBoundaryContract';
 
