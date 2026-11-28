@@ -121,7 +121,7 @@ const BADGE_TONE_STYLES: Record<RadarBadgeTone, string> = {
   neutral:
     'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]',
   brand:
-    'bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] border-[var(--color-brand-200)] dark:bg-[#173530] dark:text-[#86d8cb] dark:border-[#244f48]',
+    'bg-[var(--color-brand-soft)] text-[var(--color-brand-700)] border-[var(--color-brand-200)] dark:bg-[var(--color-brand-soft)] dark:text-[var(--color-brand-fg)] dark:border-[var(--color-brand-soft-border)]',
   success:
     'bg-[var(--color-success-bg)] text-[var(--color-success)] border-emerald-200 dark:border-emerald-800/60',
   warning:
