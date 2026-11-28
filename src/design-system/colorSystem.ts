@@ -36,7 +36,7 @@ export const NEUTRAL_PALETTE = {
 export const SEMANTIC_PALETTE = {
   success: { fg: '#176B4C', bg: '#EAF5EE', border: '#B9DEC8' },
   warning: { fg: '#875000', bg: '#FFF4E5', border: '#F2D19B' },
-  danger: { fg: '#A61B1B', bg: '#FDECEC', border: '#F2B8B8' },
+  danger: { fg: '#A61B1B', bg: '#FDECEC', border: '#F2B8B8', solid: '#A61B1B', solidHover: '#8E1515', solidActive: '#751010' },
   info: { fg: '#155E9A', bg: '#EAF3FB', border: '#B9D8F0' },
   neutral: { fg: '#48534F', bg: '#F0F2F1', border: '#D8DEDA' },
   focusRing: '#2864DC',
