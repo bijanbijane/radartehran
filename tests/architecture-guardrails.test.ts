@@ -301,7 +301,7 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   const reconciled = readAndReconcileExecutionState(rootDir);
   assert.equal(reconciled.masterPromptVerification.exists, true, 'MASTER-PROMPT.md must exist');
   assert.equal(reconciled.masterPromptVerification.sha256, PINNED_MASTER_PROMPT_SHA256, 'MASTER-PROMPT.md SHA-256 must match pinned baseline');
-  assert.equal(reconciled.reconciled, true, 'Execution-state evidence must be internally reconciled even while the program remains partially verified');
+  assert.equal(reconciled.reconciled, true, `Execution-state evidence must be internally reconciled even while the program remains partially verified: ${reconciled.discrepancies.join('; ')}`);
   assert.equal(reconciled.discrepancies.length, 0, `Expected no internal execution-state discrepancies, got: ${reconciled.discrepancies.join('; ')}`);
   assert.ok(reconciled.state && reconciled.state.operations.length >= 192, 'Expected at least 192 recorded RMEP operations');
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
