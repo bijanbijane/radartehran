@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { parseJsonc } from '../scripts/cloudflare/jsoncUtils.mjs';
 import { REGISTERED_API_ROUTES } from '../src/utils/expressRouteCatalog';
 import { readValidatedJsonBody, resetWorkerRateLimitWindowsForTests } from '../worker/contextAndSecurity';
 import workerEntrypoint from '../worker/index';
@@ -56,12 +57,7 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
 
   it('1. validates wrangler.jsonc schema, environments, assets binding, and zero secret leakage', () => {
     const wranglerRaw = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.jsonc'), 'utf8');
-    const strippedJson = wranglerRaw
-      .split('\n')
-      .filter((line) => !line.trim().startsWith('//'))
-      .join('\n')
-      .replace(/,\s*([}\]])/g, '$1');
-    const parsed = JSON.parse(strippedJson) as Record<string, unknown>;
+    const parsed = parseJsonc(wranglerRaw, 'wrangler.jsonc') as Record<string, unknown>;
 
     assert.equal(parsed.name, 'radartehran');
     assert.equal(parsed.main, './worker/index.ts');
