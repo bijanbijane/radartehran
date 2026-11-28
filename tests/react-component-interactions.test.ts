@@ -212,3 +212,12 @@ test('component interaction invariants remain wired in critical files', () => {
   const routerSource = fs.readFileSync(path.join(ROOT, 'src/components/views/ProductViewRouter.tsx'), 'utf8');
   assert.match(routerSource, /<FeatureErrorBoundary[\s\S]*<React\.Suspense/);
 });
+
+
+test('MobileMoreSheet uses shared modal stack, focus restoration, and body scroll-lock ownership', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'src/components/navigation/MobileMoreSheet.tsx'), 'utf8');
+  assert.match(source, /acquireDialogScrollLock\(document\.body\)/);
+  assert.match(source, /isTopmostModalDialogElement\(dialog, openDialogs\)/);
+  assert.match(source, /shouldRestoreDialogFocus\(previouslyFocused, remainingDialogs\)/);
+  assert.match(source, /event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*closeRef\.current\(\);/);
+});
