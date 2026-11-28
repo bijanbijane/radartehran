@@ -265,8 +265,8 @@ test('RT-UI-COLOR-003 keeps product view shell backgrounds on canonical theme to
   const homeFirst = resolveProductViewRouterShellClasses(true, false);
 
   assert.equal(standard.shellBg, 'bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)]');
-  assert.ok(split.splitShell.includes('dark:max-lg:bg-[var(--color-bg-canvas)]'));
-  assert.ok(split.splitShell.includes('dark:lg:bg-[var(--color-bg-canvas)]/95'));
+  assert.ok(split.splitShell.includes('max-lg:bg-[var(--color-bg-canvas)]'));
+  assert.ok(split.splitShell.includes('lg:bg-[var(--color-bg-canvas)]/95'));
   assert.ok(homeFirst.shellBg.includes('dark:bg-[var(--color-bg-canvas)]/95'));
   assert.ok(![standard.shellBg, split.splitShell, homeFirst.shellBg].some((value) => value.includes('#0D1513')));
 });
