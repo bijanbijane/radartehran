@@ -2,6 +2,8 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
 
+import { RadarButton as CanonicalRadarButton } from '../common/RadarButton';
+
 export type RadarButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type RadarButtonSize = 'sm' | 'md' | 'lg';
 
@@ -11,24 +13,20 @@ export interface RadarButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
   leadingIcon?: React.ReactNode;
 }
 
-const BUTTON_VARIANT_STYLES: Record<RadarButtonVariant, string> = {
-  primary:
-    'bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white border border-transparent shadow-xs',
-  secondary:
-    'bg-[var(--color-brand-soft)] hover:bg-[var(--color-brand-100)] text-[var(--color-brand-700)] dark:bg-[#173530] dark:text-[#86d8cb] border border-[var(--color-brand-200)] dark:border-[#244f48]',
-  outline:
-    'bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] text-[var(--color-text-primary)] border border-[var(--color-border-strong)]',
-  ghost:
-    'bg-transparent hover:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] border border-transparent',
-  danger:
-    'bg-[var(--color-danger)] hover:opacity-90 text-white border border-transparent',
-};
+/** Backward-compatible variant mapping; all button rendering is owned by common/RadarButton. */
+export const RADAR_PRIMITIVE_BUTTON_VARIANT_MAP = {
+  primary: 'primary',
+  secondary: 'secondary',
+  outline: 'outline',
+  ghost: 'tertiary',
+  danger: 'destructive',
+} as const;
 
-const BUTTON_SIZE_STYLES: Record<RadarButtonSize, string> = {
-  sm: 'min-h-[44px] md:min-h-[36px] min-w-[44px] md:min-w-[36px] px-3 text-xs gap-1.5',
-  md: 'min-h-[44px] md:min-h-[40px] px-4 text-sm gap-2',
-  lg: 'min-h-[48px] px-5 text-sm gap-2',
-};
+export const RADAR_PRIMITIVE_BUTTON_SIZE_MAP = {
+  sm: 'sm',
+  md: 'md',
+  lg: 'lg',
+} as const;
 
 export interface RadarLinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
   href: string;
@@ -105,14 +103,16 @@ export const RadarButton: React.FC<RadarButtonProps> = ({
   type = 'button',
   ...rest
 }) => (
-  <button
+  <CanonicalRadarButton
     type={type}
-    className={`inline-flex items-center justify-center font-semibold rounded-[8px] transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANT_STYLES[variant]} ${BUTTON_SIZE_STYLES[size]} ${className}`}
+    variant={RADAR_PRIMITIVE_BUTTON_VARIANT_MAP[variant]}
+    size={RADAR_PRIMITIVE_BUTTON_SIZE_MAP[size]}
+    leadingIcon={leadingIcon}
+    className={`whitespace-nowrap shrink-0 ${className}`}
     {...rest}
   >
-    {leadingIcon}
     {children}
-  </button>
+  </CanonicalRadarButton>
 );
 
 export type RadarBadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
