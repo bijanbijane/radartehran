@@ -1,0 +1,52 @@
+name: npm 12 Lockfile Reconciliation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - '.github/workflows/npm12-lockfile-reconciliation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm12-lockfile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Regenerate and verify npm 12 lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR merge commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pin the Cloudflare build npm version
+        run: |
+          npm install --global npm@12.2.3 --no-audit --no-fund
+          test "$(npm --version)" = "12.2.3"
+
+      - name: Regenerate lockfile using npm 12
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify clean install using the regenerated lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Retain generated lockfile for reviewed application
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm12-regenerated-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3
