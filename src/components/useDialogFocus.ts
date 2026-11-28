@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../utils/interactions/dialogStack';
+import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../utils/interactions/dialogStack';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 const FOCUSABLE_SELECTOR =
@@ -19,9 +19,6 @@ function isElementFocusableVisible(el: HTMLElement): boolean {
   }
   return true;
 }
-
-let activeScrollLockCount = 0;
-let savedBaseBodyOverflow: string | null = null;
 
 /**
  * Lightweight WCAG 2.1 AA dialog focus & scroll-lock management hook.
@@ -55,11 +52,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     if (!open || typeof document === 'undefined') return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (activeScrollLockCount === 0) {
-      savedBaseBodyOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-    }
-    activeScrollLockCount += 1;
+    const releaseScrollLock = acquireDialogScrollLock(document.body);
 
     const container = containerRef.current;
     if (container) {
@@ -119,11 +112,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       if (typeof document !== 'undefined') {
-        activeScrollLockCount = Math.max(0, activeScrollLockCount - 1);
-        if (activeScrollLockCount === 0) {
-          document.body.style.overflow = savedBaseBodyOverflow ?? '';
-          savedBaseBodyOverflow = null;
-        }
+        releaseScrollLock();
         const prev = previousFocusRef.current;
         const remainingDialogs = Array.from(
           document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
