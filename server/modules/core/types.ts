@@ -147,6 +147,7 @@ export type CanonicalApiErrorCode =
   | 'RATE_LIMITED'
   | 'TRANSACTION_ABORTED'
   | 'PERSISTENCE_FAILED'
+  | 'GEOSPATIAL_PERSISTENCE_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorEnvelope {
