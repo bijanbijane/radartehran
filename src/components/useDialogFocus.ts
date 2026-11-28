@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { isTopmostModalDialogElement } from '../utils/interactions/dialogStack';
+import { isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../utils/interactions/dialogStack';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 const FOCUSABLE_SELECTOR =
@@ -125,9 +125,12 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
           savedBaseBodyOverflow = null;
         }
         const prev = previousFocusRef.current;
-        if (prev && prev.isConnected && typeof prev.focus === 'function') {
+        const remainingDialogs = Array.from(
+          document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
+        );
+        if (shouldRestoreDialogFocus(prev, remainingDialogs) && prev && typeof prev.focus === 'function') {
           prev.focus();
-        } else {
+        } else if (remainingDialogs.length === 0) {
           const fallbackTarget = document.querySelector<HTMLElement>('main, [role="main"], h1');
           if (fallbackTarget && typeof fallbackTarget.focus === 'function') {
             if (!fallbackTarget.hasAttribute('tabindex')) fallbackTarget.setAttribute('tabindex', '-1');
