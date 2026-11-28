@@ -344,6 +344,28 @@ async function runTests(): Promise<void> {
   resetGeospatialRecoveryStateForTests();
 
   resetGeospatialRecoveryStateForTests();
+  let unexpectedPersist = false;
+  const noStagedSnapshot = await activateStagedGeospatialSnapshot({
+    persist: async () => {
+      unexpectedPersist = true;
+    },
+  });
+  assert.equal(noStagedSnapshot.health, 'BLOCKED');
+  assert.equal(noStagedSnapshot.activated, false);
+  assert.ok(noStagedSnapshot.validationErrors.includes('GEOSPATIAL_NO_STAGED_SNAPSHOT'));
+  assert.deepEqual(noStagedSnapshot.recordCounts, {
+    boundaryEntities: 0,
+    activeBoundaries: 0,
+    poiRecords: 0,
+    spatialListingCities: 0,
+    spatialListings: 0,
+    overlayLayers: 0,
+    importBatches: 0,
+  });
+  assert.equal(unexpectedPersist, false);
+  resetGeospatialRecoveryStateForTests();
+
+  resetGeospatialRecoveryStateForTests();
   stageGeospatialSnapshotForActivation(sampleState());
   let persisted: PersistedGeospatialState | null = null;
   const activated = await activateStagedGeospatialSnapshot({
