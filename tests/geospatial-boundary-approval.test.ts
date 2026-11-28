@@ -135,15 +135,16 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
   });
   assert.equal(pending.status, 'PENDING_REVIEW');
   assert.equal(pending.previousVersionId, undefined);
-  assert.equal(history.filter((record) => record.status === 'ACTIVE').length, 2);
+  assert.equal(boundaryHistoryByEntity.get(entityId)?.filter((record) => record.status === 'ACTIVE').length, 2);
 
   const approved = await executeApproveNeighborhoodBoundary({
     ...common,
     input: { entityId, versionId: pending.id, reviewerUid: 'independent-reviewer' },
   });
   assert.equal(approved.status, 'ACTIVE');
-  assert.equal(history.filter((record) => record.status === 'ACTIVE').length, 1);
-  assert.equal(history.filter((record) => record.status === 'SUPERSEDED').length, 2);
+  const repairedHistory = boundaryHistoryByEntity.get(entityId) ?? [];
+  assert.equal(repairedHistory.filter((record) => record.status === 'ACTIVE').length, 1);
+  assert.equal(repairedHistory.filter((record) => record.status === 'SUPERSEDED').length, 2);
 
   // A failed durable write must restore the exact pre-mutation lifecycle for upserts.
   const rollbackActive = makeActive(1);
