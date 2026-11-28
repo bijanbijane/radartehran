@@ -93,6 +93,25 @@ jobs:
           test "$STATUS" = "200"
           grep -qi '<html' /tmp/frontend-preview.html
 
+      - name: Install Chromium for isolated visual QA
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture desktop and mobile Preview screenshots
+        env:
+          SMOKE_BASE_URL: ${{ steps.deploy.outputs.deployed_url }}
+        run: npx playwright test --config=playwright.preview.config.ts
+
+      - name: Retain Preview browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview-visual-qa
+          path: |
+            artifacts/frontend-preview/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Publish Preview URL and deployment boundary
         if: always()
         env:
