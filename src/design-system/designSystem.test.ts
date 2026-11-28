@@ -513,7 +513,7 @@ test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible 
 
 
 test('RT-UI-COMP-REG-001 maps inspected shared components to complete 13-field contracts', () => {
-  assert.equal(COMPONENT_IMPLEMENTATION_REGISTRY.length, 12);
+  assert.equal(COMPONENT_IMPLEMENTATION_REGISTRY.length, 13);
   assert.deepEqual(validateComponentRegistry(), []);
   assert.equal(new Set(COMPONENT_IMPLEMENTATION_REGISTRY.map((entry) => entry.id)).size, COMPONENT_IMPLEMENTATION_REGISTRY.length);
   for (const entry of COMPONENT_IMPLEMENTATION_REGISTRY) {
