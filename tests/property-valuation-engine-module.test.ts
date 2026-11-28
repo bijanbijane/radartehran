@@ -196,6 +196,18 @@ test('Employee 59 — 3. Evidence normalization, deduplication, outlier review o
   assert.equal(ev1.isCompletedTransaction, true);
   assert.equal(ev1.isAskingPrice, false);
 
+  // A source classified as a completed transaction is not baseline-eligible
+  // until an independent reviewer approves the evidence record.
+  const approvedTransaction = await service.reviewMarketEvidence({
+    actorUid: 'admin_reviewer_1',
+    decision: {
+      evidenceId: ev1.id,
+      action: 'APPROVE',
+      reason: 'Verified transaction source reviewed for baseline eligibility',
+    },
+  });
+  assert.equal(approvedTransaction.verificationStatus, 'VERIFIED');
+
   // Duplicate evidence detection
   const evDup = await service.ingestMarketEvidence({
     sourceType: 'ACTIVE_PUBLISHED_LISTING',
