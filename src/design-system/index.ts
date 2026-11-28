@@ -2,5 +2,6 @@
 export * from './tokens';
 export * from './themes';
 export * from './typography';
+export * from './iconographySystem';
 export * from './primitives';
 export * from './classMaps';
