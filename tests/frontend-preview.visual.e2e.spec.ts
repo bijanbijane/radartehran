@@ -37,6 +37,14 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     expect(mobileResponse!.status(), 'Mobile preview should return HTTP 200').toBe(200);
     await expect(mobilePage).toHaveTitle(/رادار/i);
     await expect(mobilePage.locator('input[placeholder*="محله"]')).toBeVisible();
+    await expect(mobilePage.getByRole('main')).toBeVisible();
+    await expect(mobilePage.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(mobilePage.getByRole('textbox', { name: /جست‌وجوی سراسری/ })).toBeVisible();
+
+    for (const destination of ['محله‌ها', 'بازار', 'نقشه', 'املاک']) {
+      await expect(mobilePage.getByRole('link', { name: destination, exact: true })).toBeVisible();
+    }
+    await expect(mobilePage.getByRole('button', { name: 'بخش‌های بیشتر', exact: true })).toBeVisible();
 
     const mobileLayout = await mobilePage.evaluate(() => ({
       viewportWidth: window.innerWidth,
