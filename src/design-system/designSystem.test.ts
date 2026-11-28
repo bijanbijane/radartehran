@@ -332,3 +332,35 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
   assert.ok(!bottomNav.includes('#86d8cb'));
   assert.ok(!floatingTopBar.includes('#86d8cb'));
 });
+
+
+test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible focus indicators', () => {
+  const textTokens = [
+    ['primary', DARK_THEME_TOKENS.textPrimary],
+    ['secondary', DARK_THEME_TOKENS.textSecondary],
+    ['muted', DARK_THEME_TOKENS.textMuted],
+  ] as const;
+  const surfaces = [
+    ['canvas', DARK_THEME_TOKENS.bgCanvas],
+    ['surface', DARK_THEME_TOKENS.bgSurface],
+    ['elevated', DARK_THEME_TOKENS.bgElevated],
+  ] as const;
+
+  for (const [textRole, foreground] of textTokens) {
+    for (const [surfaceRole, background] of surfaces) {
+      const ratio = computeHexContrastRatio(foreground, background);
+      assert.ok(
+        ratio >= 4.5,
+        `Dark theme ${textRole} text on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 4.5:1`
+      );
+    }
+  }
+
+  for (const [surfaceRole, background] of surfaces) {
+    const ratio = computeHexContrastRatio(DARK_THEME_TOKENS.focusRing, background);
+    assert.ok(
+      ratio >= 3,
+      `Dark theme focus indicator on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 3:1`
+    );
+  }
+});
