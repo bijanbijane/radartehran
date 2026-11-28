@@ -17,7 +17,7 @@ export const RadarInput = React.forwardRef<HTMLInputElement, RadarInputProps>(fu
     <input
       ref={ref}
       className={`w-full px-3 rounded-lg border text-sm font-medium bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] border-[var(--color-border-subtle)] disabled:opacity-50 ${HEIGHT[inputSize]} ${
-        invalid ? 'border-[#A61B1B] ring-1 ring-[#A61B1B]/30' : 'focus:border-[var(--color-brand-600)]'
+        invalid ? 'border-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/30' : 'focus:border-[var(--color-brand-600)]'
       } ${focusRing} ${className}`}
       {...rest}
     />
