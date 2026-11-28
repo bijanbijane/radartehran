@@ -3,6 +3,7 @@ import React from 'react';
 import { Search, X } from 'lucide-react';
 
 import { RadarButton as CanonicalRadarButton } from '../common/RadarButton';
+import { isTopmostModalDialogElement } from '../../utils/interactions/dialogStack';
 
 export type RadarButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type RadarButtonSize = 'sm' | 'md' | 'lg';
@@ -283,8 +284,13 @@ export const RadarSheet: React.FC<{
     (first || panel)?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' && e.key !== 'Tab') return;
+      const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (!isTopmostModalDialogElement(panelRef.current, openDialogs)) return;
       if (e.key === 'Escape') {
+        // Keep Escape owned by the visually/topologically topmost modal only.
         e.preventDefault();
+        e.stopPropagation();
         onClose();
         return;
       }
