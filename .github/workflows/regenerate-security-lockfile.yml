@@ -3,9 +3,10 @@ name: Security dependency lockfile regeneration
 on:
   push:
     branches:
-      - fix/security-deps-audit-2026-11-27
+      - fix/lockfile-cloudflare-npm12-2026-11-28
     paths:
       - .github/workflows/regenerate-security-lockfile.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,23 +16,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout security branch
+      - name: Checkout lockfile remediation branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Set up Cloudflare-matched Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.23.3
+          node-version: 24.22.1
 
-      - name: Pin npm to Cloudflare build version
-        run: npm install --global npm@10.9.2
+      - name: Pin npm to observed Cloudflare Workers Builds version
+        run: |
+          npm install --global npm@12.2.3
+          node --version
+          npm --version
 
       - name: Regenerate package lock from declared manifests
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
-      - name: Commit regenerated lockfile
+      - name: Verify clean install against regenerated lockfile
+        run: npm ci --no-audit --no-fund
+
+      - name: Commit regenerated lockfile only after clean-install validation
         run: |
           if git diff --quiet -- package-lock.json; then
             echo "package-lock.json is already synchronized"
@@ -39,12 +46,9 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
-            git commit -m "chore(deps): regenerate lockfile for security updates"
+            git commit -m "chore(deps): regenerate lockfile for Cloudflare npm 12"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
-
-      - name: Install exact lockfile
-        run: npm ci --no-audit --no-fund
 
       - name: Capture dependency audit
         if: always()
