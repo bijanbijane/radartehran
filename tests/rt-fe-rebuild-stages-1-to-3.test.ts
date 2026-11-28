@@ -563,23 +563,31 @@ test('AUTH-010: SessionManager preserves 100% of form drafts and return route on
 
 test('AUTH-011: Logout aborts all queued requests and allows 0 stale retries after logout', async () => {
   const sm = new SessionManager();
-  const queued = sm.enqueueRequestDuringRefresh({
-    id: 'q-after-logout',
-    method: 'GET',
-    execute: async () => 'should-not-run',
-  });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 204 });
 
-  sm.logoutAndClearAll();
-  await assert.rejects(() => queued, /SESSION_LOGGED_OUT_ABORTED/);
-  await assert.rejects(
-    () =>
-      sm.enqueueRequestDuringRefresh({
-        id: 'q-post-logout',
-        method: 'GET',
-        execute: async () => 'no',
-      }),
-    /SESSION_LOGGED_OUT_NO_RETRY/
-  );
+  try {
+    const queued = sm.enqueueRequestDuringRefresh({
+      id: 'q-after-logout',
+      method: 'GET',
+      execute: async () => 'should-not-run',
+    });
+    const queuedAbort = assert.rejects(() => queued, /SESSION_LOGGED_OUT_ABORTED/);
+
+    await sm.logoutAndClearAll();
+    await queuedAbort;
+    await assert.rejects(
+      () =>
+        sm.enqueueRequestDuringRefresh({
+          id: 'q-post-logout',
+          method: 'GET',
+          execute: async () => 'no',
+        }),
+      /SESSION_LOGGED_OUT_NO_RETRY/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('AUTH-012: Identity, Profile, Role, and Permission resolvers are decoupled (Role !== automatic full Permission)', () => {
