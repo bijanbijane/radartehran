@@ -3,7 +3,7 @@ import React from 'react';
 import { Search, X } from 'lucide-react';
 
 import { RadarButton as CanonicalRadarButton } from '../common/RadarButton';
-import { isTopmostModalDialogElement } from '../../utils/interactions/dialogStack';
+import { isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../../utils/interactions/dialogStack';
 
 export type RadarButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type RadarButtonSize = 'sm' | 'md' | 'lg';
@@ -311,7 +311,10 @@ export const RadarSheet: React.FC<{
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      previouslyFocused?.focus?.();
+      const remainingDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (shouldRestoreDialogFocus(previouslyFocused, remainingDialogs)) {
+        previouslyFocused?.focus?.();
+      }
     };
   }, [open, onClose]);
 
