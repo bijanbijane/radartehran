@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { RadarButton } from '../RadarButton';
 import { RadarCard as CommonRadarCard } from '../RadarCard';
-import { RadarField } from '../RadarField';
+import { RadarInputField } from '../RadarField';
 import { RadarInput } from '../RadarInput';
 import { DataCredibilityBadge, RadarCard as DataRadarCard } from '../RadarDataBadges';
 import { RadarButton as LegacyRadarButton, RadarCard as PrimitiveRadarCard } from '../../ui/RadarPrimitives';
@@ -45,7 +45,7 @@ test('RT-UI-COMP-BEH-003 RadarInput exposes invalid state to assistive technolog
 
 test('RT-UI-COMP-BEH-004 RadarInputField associates label, invalid input and alert description', () => {
   const html = renderToStaticMarkup(
-    <RadarField label="قیمت" value="۱۲۵۰۰" onChangeValue={() => undefined} numeric errorText="مقدار نامعتبر است" />,
+    <RadarInputField label="قیمت" value="۱۲۵۰۰" onChangeValue={() => undefined} numeric errorText="مقدار نامعتبر است" />,
   );
   const fieldId = html.match(/<label[^>]+for="([^"]+)"/)?.[1];
   const inputId = html.match(/<input[^>]+id="([^"]+)"/)?.[1];
