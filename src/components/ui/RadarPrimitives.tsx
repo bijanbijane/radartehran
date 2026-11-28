@@ -108,7 +108,7 @@ export const RadarButton: React.FC<RadarButtonProps> = ({
     variant={RADAR_PRIMITIVE_BUTTON_VARIANT_MAP[variant]}
     size={RADAR_PRIMITIVE_BUTTON_SIZE_MAP[size]}
     leadingIcon={leadingIcon}
-    className={`whitespace-nowrap shrink-0 ${className}`}
+    className={`whitespace-nowrap shrink-0 ${size === 'sm' ? 'min-w-[44px] md:min-w-[36px]' : ''} ${className}`}
     {...rest}
   >
     {children}
