@@ -1,5 +1,5 @@
 /** @file src/design-system/themes/dark.ts — Dark Theme Token Map */
-import { BRAND_PALETTE, RADAR_DARK_SURFACE_TEXT_TOKENS, SEMANTIC_PALETTE } from '../colorSystem';
+import { BRAND_PALETTE, RADAR_DARK_SURFACE_TEXT_TOKENS } from '../colorSystem';
 
 export const DARK_THEME_TOKENS = {
   mode: 'dark' as const,
@@ -15,7 +15,7 @@ export const DARK_THEME_TOKENS = {
   textMuted: RADAR_DARK_SURFACE_TEXT_TOKENS.textMuted,
   borderSubtle: RADAR_DARK_SURFACE_TEXT_TOKENS.borderSubtle,
   borderStrong: RADAR_DARK_SURFACE_TEXT_TOKENS.borderStrong,
-  focusRing: SEMANTIC_PALETTE.focusRing,
+  focusRing: RADAR_DARK_SURFACE_TEXT_TOKENS.focus,
   background: {
     primary: RADAR_DARK_SURFACE_TEXT_TOKENS.canvas,
     surface: RADAR_DARK_SURFACE_TEXT_TOKENS.surface,
