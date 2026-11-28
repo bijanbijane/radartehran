@@ -130,11 +130,11 @@ export class SessionManager {
     });
   }
 
-  logoutAndClearAll(): void {
+  logoutAndClearAll(): Promise<void> {
     this.isLoggedOut = true;
     this.currentToken = null;
     this.rejectAllQueued(new Error('SESSION_LOGGED_OUT_ABORTED'));
-    getAuthClient().logout('explicit_logout');
+    return getAuthClient().logout('explicit_logout');
   }
 
   private async flushQueueWithToken(accessToken: string): Promise<void> {
