@@ -183,7 +183,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                 <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2 text-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
-                    <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-xs">
+                    <span className="px-2 py-0.5 rounded-[6px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold text-xs">
                       پایلوت نقشه · وضعیت پایدار
                     </span>
                   </div>
