@@ -38,10 +38,12 @@ test('RT-UI-COMP-BEH-002 legacy RadarButton delegates danger to canonical destru
 test('RT-UI-COMP-BEH-003 RadarInput exposes invalid state to assistive technology', () => {
   const invalid = renderToStaticMarkup(<RadarInput invalid aria-label="جست‌وجو" />);
   const valid = renderToStaticMarkup(<RadarInput aria-label="جست‌وجو" />);
+  const nativeInvalid = renderToStaticMarkup(<RadarInput aria-invalid="grammar" aria-label="جست‌وجو" />);
 
   assert.match(invalid, /aria-invalid="true"/);
   assert.match(invalid, /border-\[var\(--color-danger\)\]/);
   assert.doesNotMatch(valid, /aria-invalid=/);
+  assert.match(nativeInvalid, /aria-invalid="grammar"/);
 });
 
 test('RT-UI-COMP-BEH-004 RadarInputField associates label, invalid input and alert description', () => {
