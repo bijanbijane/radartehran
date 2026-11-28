@@ -493,9 +493,13 @@ test('RT-UI-COMP-REG-001 maps inspected shared components to complete 13-field c
 test('RT-UI-COMP-REG-002 reports duplicate IDs and incomplete component contracts', () => {
   const incomplete = {
     ...COMPONENT_IMPLEMENTATION_REGISTRY[0],
+    owner: '',
+    governance: 'Unknown',
     spec: { ...COMPONENT_IMPLEMENTATION_REGISTRY[0].spec, purpose: '' },
-  };
+  } as unknown as (typeof COMPONENT_IMPLEMENTATION_REGISTRY)[number];
   const issues = validateComponentRegistry([COMPONENT_IMPLEMENTATION_REGISTRY[0], incomplete]);
   assert.ok(issues.some((issue) => issue.code === 'duplicate_id'));
   assert.ok(issues.some((issue) => issue.code === 'empty_spec_field' && issue.field === 'purpose'));
+  assert.ok(issues.some((issue) => issue.code === 'missing_owner'));
+  assert.ok(issues.some((issue) => issue.code === 'invalid_governance'));
 });
