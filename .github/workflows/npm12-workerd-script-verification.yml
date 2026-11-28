@@ -1,6 +1,12 @@
 name: npm 12 Workerd Install-Script Verification
 
 on:
+  push:
+    branches: [fix/ci-typecheck-and-triad-contracts-2026-11-28]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/npm12-workerd-script-verification.yml'
   pull_request:
     branches: [main]
     paths:
@@ -24,7 +30,7 @@ jobs:
       - name: Checkout exact PR head branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Node.js 22
@@ -66,7 +72,7 @@ jobs:
 
       - name: Commit reviewed allowScripts policy to PR branch
         env:
-          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
