@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../utils/interactions/dialogStack';
+import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus, syncDialogBackgroundIsolation } from '../utils/interactions/dialogStack';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 const FOCUSABLE_SELECTOR =
@@ -53,6 +53,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const releaseScrollLock = acquireDialogScrollLock(document.body);
+    syncDialogBackgroundIsolation(document);
 
     const container = containerRef.current;
     if (container) {
@@ -113,6 +114,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
       document.removeEventListener('keydown', handleKeyDown);
       if (typeof document !== 'undefined') {
         releaseScrollLock();
+        syncDialogBackgroundIsolation(document);
         const prev = previousFocusRef.current;
         const remainingDialogs = Array.from(
           document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
