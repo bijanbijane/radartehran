@@ -1965,8 +1965,10 @@ const regressionNavigationCases: Array<{ name: string; run: () => void }> = [
       assert.equal(ids.has('tools.all'), true);
       assert.equal(ids.has('services'), true);
       assert.equal(ids.has('admin.overview'), true);
-      assert.equal(findRegisteredRoute('/escrow')?.id, 'tools.all');
-      assert.equal(findRegisteredRoute('/admin/governance')?.id, 'admin.overview');
+      assert.equal(findRegisteredRoute('/escrow')?.id, 'tools.all:alias:1');
+      assert.equal(findRegisteredRoute('/escrow')?.canonicalRedirectPath, '/tools');
+      assert.equal(findRegisteredRoute('/admin/governance')?.id, 'admin.overview:alias:1');
+      assert.equal(findRegisteredRoute('/admin/governance')?.canonicalRedirectPath, '/admin');
     },
   },
   {
