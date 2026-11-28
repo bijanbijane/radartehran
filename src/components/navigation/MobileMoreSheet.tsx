@@ -13,6 +13,7 @@ import {
   acquireDialogScrollLock,
   isTopmostModalDialogElement,
   shouldRestoreDialogFocus,
+  syncDialogBackgroundIsolation,
 } from '../../utils/interactions/dialogStack';
 
 export interface MobileMoreSheetProps {
@@ -83,6 +84,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
     const activeElement = document.activeElement;
     previouslyFocusedRef.current = activeElement instanceof HTMLElement ? activeElement : null;
     const releaseScrollLock = acquireDialogScrollLock(document.body);
+    syncDialogBackgroundIsolation(document);
 
     const initialFocusFrame = window.requestAnimationFrame(() => {
       const dialog = dialogRef.current;
@@ -129,6 +131,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
       window.cancelAnimationFrame(initialFocusFrame);
       document.removeEventListener('keydown', handleDocumentKeyDown);
       releaseScrollLock();
+      syncDialogBackgroundIsolation(document);
       const previouslyFocused = previouslyFocusedRef.current;
       previouslyFocusedRef.current = null;
       const remainingDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
