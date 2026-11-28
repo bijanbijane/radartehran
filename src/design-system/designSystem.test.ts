@@ -334,6 +334,30 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
 });
 
 
+test('RT-UI-COLOR-011 keeps data credibility badges and metric cards on semantic theme tokens', () => {
+  const badges = readFileSync(new URL('../components/common/RadarDataBadges.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+  const credibilityStyles = badges.split('export const DataCredibilityBadge')[0];
+
+  assert.ok(credibilityStyles.includes('bg-[var(--color-success-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-success)]'));
+  assert.ok(credibilityStyles.includes('bg-[var(--color-info-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-info)]'));
+  assert.ok(credibilityStyles.includes('bg-[var(--color-warning-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-warning)]'));
+  assert.doesNotMatch(credibilityStyles, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|sky|amber)-|dark:text-(emerald|sky|amber)-/);
+  for (const token of ['--color-success-bg', '--color-success', '--color-info-bg', '--color-info', '--color-warning-bg', '--color-warning']) {
+    assert.ok(lightTokens.includes(token));
+    assert.ok(darkCss.includes(token));
+  }
+
+  assert.ok(badges.includes('bg-[var(--color-bg-surface)]'));
+  assert.doesNotMatch(badges, /bg-white dark:bg-\[var\(--color-bg-surface\)\]/);
+  assert.ok(badges.includes('data-value text-[var(--color-text-primary)]'));
+  assert.doesNotMatch(badges, /data-value text-\[var\(--color-text-primary\)\] dark:text-white/);
+});
+
 test('RT-UI-COLOR-010 keeps status and map placeholder surfaces on canonical semantic tokens', () => {
   const admin = readFileSync(new URL('../components/views/ProductAdminMonitoringView.tsx', import.meta.url), 'utf8');
   const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
