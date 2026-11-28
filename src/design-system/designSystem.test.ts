@@ -23,6 +23,7 @@ import {
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
+import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
 import {
   BODY_TYPE_SCALE_PX,
   EDITORIAL_READING_MEASURE,
@@ -255,4 +256,17 @@ test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over
     md: 'md',
     lg: 'lg',
   });
+});
+
+
+test('RT-UI-COLOR-003 keeps product view shell backgrounds on canonical theme tokens', () => {
+  const standard = resolveProductViewRouterShellClasses(false, false);
+  const split = resolveProductViewRouterShellClasses(true, true);
+  const homeFirst = resolveProductViewRouterShellClasses(true, false);
+
+  assert.equal(standard.shellBg, 'bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)]');
+  assert.ok(split.splitShell.includes('dark:max-lg:bg-[var(--color-bg-canvas)]'));
+  assert.ok(split.splitShell.includes('dark:lg:bg-[var(--color-bg-canvas)]/95'));
+  assert.ok(homeFirst.shellBg.includes('dark:bg-[var(--color-bg-canvas)]/95'));
+  assert.ok(![standard.shellBg, split.splitShell, homeFirst.shellBg].some((value) => value.includes('#0D1513')));
 });
