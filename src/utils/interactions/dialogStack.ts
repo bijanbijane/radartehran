@@ -69,9 +69,9 @@ export function isNeighborhoodSearchInputFocused(
  * to the currently topmost remaining modal. This prevents a lower dialog's
  * cleanup from stealing focus from a still-open child/sibling modal.
  */
-export function shouldRestoreDialogFocus(
-  previousFocus: { isConnected?: boolean } | null | undefined,
-  openDialogs: readonly { contains?(node: unknown): boolean }[],
+export function shouldRestoreDialogFocus<T extends { isConnected?: boolean }>(
+  previousFocus: T | null | undefined,
+  openDialogs: readonly { contains?(node: T): boolean }[],
 ): boolean {
   if (!previousFocus || previousFocus.isConnected === false) return false;
   if (openDialogs.length === 0) return true;
