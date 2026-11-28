@@ -466,6 +466,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
 
   assert.ok(discoverSrc.includes('RadarPaginationBar') && discoverSrc.includes('computePaginationSlice'), 'ProductDiscoverView must paginate neighborhood cards');
   assert.ok(homeSrc.includes('RadarPaginationBar') && homeSrc.includes('computePaginationSlice'), 'ProductHomeView must paginate featured neighborhoods');
+  assert.ok(homeSrc.includes('paginationSlice.items.map') && homeSrc.includes('pageSizeOptions={[6, 12, 0]}'), 'ProductHomeView must render the paginated curated slice and support bounded, expanded, and all-results page sizes');
   assert.ok(bargainsSrc.includes('RadarPaginationBar') && bargainsSrc.includes('computePaginationSlice'), 'NeighborhoodBargainsAndVotesTabs must paginate bargains and votes');
   assert.ok(
     drawerSrc.includes("isOverlayOnSecondaryView ? 'lg:top-[76px] lg:left-4 lg:right-auto' : 'lg:top-[124px] lg:right-4 lg:left-auto'"),
