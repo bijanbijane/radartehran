@@ -39,7 +39,7 @@ jobs:
           test "$(npm --version)" = "12.2.3"
 
       - name: Refresh lockfile metadata without running dependency scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm install --save-dev --save-exact workerd@1.20261123.1 --ignore-scripts --no-audit --no-fund
 
       - name: Generate the version-pinned workerd script approval
         run: npm install-scripts approve workerd
