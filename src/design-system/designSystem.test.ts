@@ -22,9 +22,10 @@ import {
   computeHexContrastRatio,
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
+import { COMPONENT_CATALOG } from './componentSystem';
 import { DESIGN_SPACING_BASE_UNIT_PX, DESIGN_SPACING_SCALE_PX, RADAR_SPACING_TOKENS, SPACING_TOKENS, isOnFourPxSpacingGrid } from './tokens/spacing';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
-import { COMPONENT_IMPLEMENTATION_REGISTRY, validateComponentRegistry } from './componentRegistry';
+import { COMPONENT_FAMILY_COVERAGE, COMPONENT_IMPLEMENTATION_REGISTRY, validateComponentFamilyCoverage, validateComponentRegistry } from './componentRegistry';
 import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
 import {
   BODY_TYPE_SCALE_PX,
@@ -534,4 +535,22 @@ test('RT-UI-COMP-REG-002 reports duplicate IDs and incomplete component contract
   assert.ok(issues.some((issue) => issue.code === 'empty_spec_field' && issue.field === 'purpose'));
   assert.ok(issues.some((issue) => issue.code === 'missing_owner'));
   assert.ok(issues.some((issue) => issue.code === 'invalid_governance'));
+});
+
+
+test('RT-UI-COMP-REG-003 maps every catalog family to an explicit owner, contract, state matrix and QA acceptance', () => {
+  assert.equal(COMPONENT_FAMILY_COVERAGE.length, COMPONENT_CATALOG.length);
+  assert.deepEqual(
+    COMPONENT_FAMILY_COVERAGE.map((entry) => entry.catalogId).sort(),
+    COMPONENT_CATALOG.map((entry) => entry.id).sort(),
+  );
+  assert.deepEqual(validateComponentFamilyCoverage(), []);
+  assert.ok(COMPONENT_FAMILY_COVERAGE.every((entry) => entry.knownGaps.trim().length > 0));
+});
+
+test('RT-UI-COMP-REG-004 detects missing and duplicate catalog-family coverage', () => {
+  const [first, ...remaining] = COMPONENT_FAMILY_COVERAGE;
+  const issues = validateComponentFamilyCoverage([...remaining, first]);
+  assert.ok(issues.some((issue) => issue.code === 'duplicate_catalog_id' && issue.catalogId === first.catalogId));
+  assert.ok(issues.some((issue) => issue.code === 'missing_catalog_family' && issue.catalogId === first.catalogId));
 });
