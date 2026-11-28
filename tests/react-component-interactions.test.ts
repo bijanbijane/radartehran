@@ -12,6 +12,7 @@ import {
   acquireDialogScrollLock,
   isTopmostModalDialogElement,
   shouldRestoreDialogFocus,
+  syncDialogBackgroundIsolation,
   isGlobalSearchTriggerTarget,
   resolveFloatingBarVisibility,
   isNeighborhoodSearchInputFocused,
@@ -243,4 +244,71 @@ test('shared modal systems recompute and restore background accessibility isolat
   for (const source of [focusHook, radarPrimitives, mobileMoreSheet]) {
     assert.match(source, /syncDialogBackgroundIsolation\(document\)/);
   }
+});
+
+
+test('syncDialogBackgroundIsolation preserves ancestors and restores siblings across nested modal transitions', () => {
+  class FakeElement {
+    tagName: string;
+    parentElement: FakeElement | null = null;
+    children: FakeElement[] = [];
+    isConnected = true;
+    private attributes = new Map<string, string>();
+
+    constructor(tagName: string, attributes: Record<string, string> = {}) {
+      this.tagName = tagName;
+      for (const [name, value] of Object.entries(attributes)) this.attributes.set(name, value);
+    }
+
+    append(child: FakeElement) {
+      child.parentElement = this;
+      this.children.push(child);
+      return child;
+    }
+
+    getAttribute(name: string) {
+      return this.attributes.get(name) ?? null;
+    }
+
+    setAttribute(name: string, value: string) {
+      this.attributes.set(name, value);
+    }
+
+    removeAttribute(name: string) {
+      this.attributes.delete(name);
+    }
+  }
+
+  const body = new FakeElement('BODY');
+  const appRoot = body.append(new FakeElement('DIV'));
+  const externalPortal = body.append(new FakeElement('DIV', { 'aria-hidden': 'false' }));
+  const backgroundMain = appRoot.append(new FakeElement('MAIN', { 'aria-hidden': 'false' }));
+  const parentDialog = appRoot.append(new FakeElement('DIV', { role: 'dialog', 'aria-modal': 'true' }));
+  const parentChrome = parentDialog.append(new FakeElement('HEADER'));
+  const childDialog = parentDialog.append(new FakeElement('DIV', { role: 'dialog', 'aria-modal': 'true' }));
+  const dialogs = [parentDialog, childDialog];
+  const fakeDocument = {
+    body,
+    querySelectorAll: () => dialogs.filter((dialog) => dialog.isConnected && dialog.getAttribute('aria-modal') === 'true'),
+  } as unknown as Document;
+
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'false');
+  assert.equal(childDialog.getAttribute('aria-modal'), 'true');
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'true');
+  assert.equal(parentChrome.getAttribute('aria-hidden'), 'true');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'true');
+
+  childDialog.isConnected = false;
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'true');
+  assert.equal(parentChrome.getAttribute('aria-hidden'), null);
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'true');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'true');
+
+  parentDialog.isConnected = false;
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'false');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'false');
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'true');
 });
