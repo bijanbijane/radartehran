@@ -404,7 +404,7 @@ export const COMPONENT_FAMILY_COVERAGE: readonly ComponentFamilyCoverage[] = [
     implementationRefs: ['src/components/common/RadarSurfaceCard.tsx', 'src/components/common/RadarCard.tsx', 'src/components/common/RadarDataBadges.tsx', 'src/components/ui/RadarPrimitives.tsx', 'src/features/properties/results/PropertyCard.tsx'],
     contractEvidence: 'The passive data/UI Card wrappers now delegate to RadarSurfaceCard; semantic common RadarCard and property-domain PropertyCard retain distinct contracts.',
     stateMatrix: 'Shared passive surface, metric presentation, semantic article content and experimental interactive-article states are recorded per API.',
-    qaAcceptance: 'RT-UI-COMP-BEH-005 verifies semantic article/passive wrapper differences; RT-UI-COMP-BEH-011 verifies shared surface classes and legacy padding mappings.'
+    qaAcceptance: 'RT-UI-COMP-BEH-005 verifies semantic article/passive wrapper differences; RT-UI-COMP-BEH-011 verifies shared surface classes and legacy padding mappings.',
     knownGaps: 'No unified Card migration is justified yet; common RadarCard interactive mode remains Experimental pending consumer and nested-interactive review.',
   },
   {
