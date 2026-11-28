@@ -44,7 +44,8 @@ export function SecondaryModals({
   const intlQuerySuffix = `${areaUnit !== 'sqm' ? `&unit=${areaUnit}` : ''}${intlCurrency !== 'IRT' ? `&currency=${intlCurrency}` : ''}${locale !== 'fa' ? `&lang=${locale}` : ''}`;
   const fmtUnitBuy = (sqmVal: number) => `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(sqmVal, areaUnit))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(sqmVal, areaUnit), intlCurrency, locale)})` : ''}`;
   const fmtUnitRent = (rahnVal: number) => `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(rahnVal)} م · اجاره: ${toPersianNum(Math.round(rahnVal * 0.03))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahnVal, intlCurrency, locale)})` : ''}`;
-  const dialogRef = useDialogFocus(showPulseModal || showSeoDrawer, () => { setShowPulseModal(false); setShowSeoDrawer(false); });
+  const pulseDialogRef = useDialogFocus(showPulseModal, () => setShowPulseModal(false));
+  const seoDialogRef = useDialogFocus(showSeoDrawer, () => setShowSeoDrawer(false));
   const safeEvaluated = useMemo(() => Array.isArray(evaluatedNeighborhoods) ? evaluatedNeighborhoods : [], [evaluatedNeighborhoods]);
 
   const sortedSeoNeighborhoods = useMemo(() => {
@@ -66,7 +67,7 @@ export function SecondaryModals({
     <>
       {showPulseModal && (
         <div role="dialog" aria-modal="true" aria-label={`نبض زنده بازار مسکن و شاخص هوای ${activeCityNameFa}`} onClick={() => setShowPulseModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-2xl w-full p-5 space-y-3.5 text-xs max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+          <div ref={pulseDialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-2xl w-full p-5 space-y-3.5 text-xs max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
@@ -191,7 +192,7 @@ export function SecondaryModals({
       )}
       {showSeoDrawer && (
         <div role="dialog" aria-modal="true" aria-label="فهرست سئو و صفحات اختصاصی محله‌ها" onClick={() => setShowSeoDrawer(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-4xl w-full p-5 max-h-[88vh] overflow-y-auto space-y-4 text-xs focus:outline-none shadow-2xl">
+          <div ref={seoDialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-4xl w-full p-5 max-h-[88vh] overflow-y-auto space-y-4 text-xs focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
