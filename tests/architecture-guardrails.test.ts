@@ -309,7 +309,9 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   assert.equal(reconciled.state?.current_workstream.task_status, 'IMPLEMENTED_BUT_NOT_VERIFIED', 'The active workstream must agree with the latest operation status');
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
-  assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
+  const checkpointId = reconciled.state?.checkpoint.checkpoint_id || '';
+  assert.match(checkpointId, /^CHK-\d{3}-[A-Z0-9]+(?:-[A-Z0-9]+)*$/);
+  assert.equal(checkpointId, 'CHK-195-FAIL-CLOSED-LEGACY-FIRESTORE-PROJECTION');
 });
 
 // 11a. RMEP-001 safely represents tests that were explicitly NOT_RUN without inventing evidence
