@@ -13,18 +13,6 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/frontend-visual-regression.yml"
-  push:
-    branches:
-      - fix/ui-stage12-theme-token-parity
-    paths:
-      - "src/**"
-      - "apps/frontend/**"
-      - "playwright.preview.config.ts"
-      - "tests/frontend-preview.visual.e2e.spec.ts"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/frontend-visual-regression.yml"
-
 permissions:
   contents: read
 
