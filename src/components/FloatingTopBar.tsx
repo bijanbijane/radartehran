@@ -111,7 +111,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                   if (onNavigateView) onNavigateView('tools');
                   else { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); }
                 }}
-                className="w-full min-h-[44px] px-3 py-2.5 rounded-[8px] bg-[var(--color-brand-soft)] hover:opacity-90 border border-[var(--color-brand-200)] text-[var(--color-brand-700)] dark:text-[#86d8cb] font-bold flex items-center justify-between gap-2 transition cursor-pointer"
+                className="w-full min-h-[44px] px-3 py-2.5 rounded-[8px] bg-[var(--color-brand-soft)] hover:opacity-90 border border-[var(--color-brand-200)] text-[var(--color-brand-700)] dark:text-[var(--color-brand-fg)] font-bold flex items-center justify-between gap-2 transition cursor-pointer"
               >
                 <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] shrink-0" /><span>همه ابزارها و محاسبه‌گرها</span></span>
                 <span className="text-xs bg-[var(--color-brand-600)] text-white px-2 py-0.5 rounded-[6px] font-bold tabular-nums shrink-0">{toPersianNum(superSummary.toolCount)}</span>
