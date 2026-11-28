@@ -334,6 +334,27 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
 });
 
 
+test('RT-UI-COLOR-014 keeps shared form errors and destructive actions on danger tokens', () => {
+  const input = readFileSync(new URL('../components/common/RadarInput.tsx', import.meta.url), 'utf8');
+  const field = readFileSync(new URL('../components/common/RadarField.tsx', import.meta.url), 'utf8');
+  const button = readFileSync(new URL('../components/common/RadarButton.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  assert.ok(input.includes('border-[var(--color-danger)]'));
+  assert.ok(field.includes('text-[var(--color-danger)]'));
+  assert.ok(field.includes('focus:ring-[var(--color-danger)]/20'));
+  assert.ok(button.includes('bg-[var(--color-danger-solid)]'));
+  assert.ok(button.includes('hover:bg-[var(--color-danger-solid-hover)]'));
+  assert.ok(button.includes('active:bg-[var(--color-danger-solid-active)]'));
+  assert.ok(button.includes('text-[var(--color-text-on-brand)]'));
+  for (const token of ['--color-danger-solid:', '--color-danger-solid-hover:', '--color-danger-solid-active:']) {
+    assert.ok(lightTokens.includes(token));
+    assert.ok(darkCss.includes(token));
+  }
+  assert.doesNotMatch(input + field + button, /#A61B1B|#8E1515|#751010|dark:text-rose-400/);
+});
+
 test('RT-UI-COLOR-013 keeps property lifecycle and QA status surfaces on semantic tokens', () => {
   const paths = [
     '../features/properties/results/PropertyCard.tsx',
