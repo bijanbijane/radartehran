@@ -555,3 +555,12 @@ test('RT-UI-COMP-REG-004 detects missing and duplicate catalog-family coverage',
   assert.ok(issues.some((issue) => issue.code === 'duplicate_catalog_id' && issue.catalogId === first.catalogId));
   assert.ok(issues.some((issue) => issue.code === 'missing_catalog_family' && issue.catalogId === omitted.catalogId));
 });
+
+
+test('RT-UI-COMP-REG-005 detects catalog group drift and invalid family status', () => {
+  const [first, ...remaining] = COMPONENT_FAMILY_COVERAGE;
+  const invalid = { ...first, group: 'Incorrect family', status: 'complete' } as unknown as (typeof COMPONENT_FAMILY_COVERAGE)[number];
+  const issues = validateComponentFamilyCoverage([...remaining, invalid]);
+  assert.ok(issues.some((issue) => issue.code === 'catalog_group_mismatch' && issue.catalogId === first.catalogId));
+  assert.ok(issues.some((issue) => issue.code === 'invalid_coverage_status' && issue.catalogId === first.catalogId));
+});
