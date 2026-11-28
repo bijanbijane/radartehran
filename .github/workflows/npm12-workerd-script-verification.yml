@@ -1,0 +1,66 @@
+name: npm 12 Workerd Install-Script Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'apps/frontend/**'
+      - '.github/workflows/npm12-workerd-script-verification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm12-workerd-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify npm 12 workerd install and frontend build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout PR merge commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pin the Cloudflare build npm version
+        run: |
+          npm install --global npm@12.2.3 --no-audit --no-fund
+          test "$(npm --version)" = "12.2.3"
+
+      - name: Install dependencies using current policy
+        run: npm ci --no-audit --no-fund
+
+      - name: Reconcile pinned workerd script approval with npm
+        run: npm install-scripts approve workerd
+
+      - name: Show effective install-script policy
+        run: |
+          npm install-scripts ls
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const allowed = pkg.allowScripts ?? {};
+            const workerd = Object.entries(allowed).find(([key]) => key.startsWith('workerd@'));
+            if (!workerd || workerd[1] !== true || workerd[0] !== 'workerd@1.20261123.1') {
+              throw new Error('Expected only the pinned workerd@1.20261123.1 install script approval');
+            }
+            console.log('Verified pinned workerd install-script approval.');
+          "
+
+      - name: Clean install with approved workerd script
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify workerd binary and frontend production build
+        run: |
+          npx workerd --version
+          npm run build -w radartehran-frontend
