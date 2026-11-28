@@ -344,16 +344,16 @@ test('RT-UI-COLOR-010 keeps status and map placeholder surfaces on canonical sem
   assert.ok(admin.includes('text-[var(--color-success)]'));
   assert.ok(!admin.includes('#EAF5EE'));
   assert.ok(!admin.includes('#176B4C'));
-  assert.ok(lightTokens.includes('--color-success: #176B4C;'));
-  assert.ok(lightTokens.includes('--color-success-bg: #EAF5EE;'));
+  assert.ok(lightTokens.includes(`--color-success: ${SEMANTIC_PALETTE.success.fg};`));
+  assert.ok(lightTokens.includes(`--color-success-bg: ${SEMANTIC_PALETTE.success.bg};`));
   assert.ok(darkCss.includes('--color-success: #4ADE80;'));
   assert.ok(darkCss.includes('--color-success-bg: rgba(16, 185, 129, 0.16);'));
 
   assert.ok(workspace.includes('bg-[var(--color-bg-sunken)]'));
   assert.ok(workspace.includes('dark:bg-[var(--color-bg-canvas)]'));
   assert.ok(!workspace.includes('bg-[#E9EFEC]'));
-  assert.ok(lightTokens.includes('--color-bg-sunken: #E9EFEC;'));
-  assert.ok(darkCss.includes('--color-bg-sunken: #0D1614;'));
+  assert.ok(lightTokens.includes(`--color-bg-sunken: ${NEUTRAL_PALETTE.surfaceSunken};`));
+  assert.ok(darkCss.includes(`--color-bg-sunken: ${DARK_THEME_TOKENS.bgMuted};`));
 });
 
 test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible focus indicators', () => {
