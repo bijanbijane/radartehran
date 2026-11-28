@@ -241,7 +241,7 @@ function validateImportBatch(value: unknown, key: string, errors: string[], limi
   }
 }
 
-function defaultEmpty(): PersistedGeospatialState {
+export function defaultEmpty(): PersistedGeospatialState {
   return {
     boundaryHistoryByEntity: {},
     poiStore: {},
