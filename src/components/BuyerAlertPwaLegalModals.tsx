@@ -50,9 +50,9 @@ export function BuyerAlertPwaLegalModals({
   const unitLabel = areaUnit === 'sqft' ? 'ft²' : 'متر';
   const isEn = radarLocale === 'en';
 
-  const dialogRef = useDialogFocus(showBuyerAlertModal || showPwaModal || showLegalModal, () => {
-    setShowBuyerAlertModal(false); setShowPwaModal(false); setShowLegalModal(false);
-  });
+  const buyerAlertDialogRef = useDialogFocus(showBuyerAlertModal, () => setShowBuyerAlertModal(false));
+  const pwaDialogRef = useDialogFocus(showPwaModal, () => setShowPwaModal(false));
+  const legalDialogRef = useDialogFocus(showLegalModal, () => setShowLegalModal(false));
   const safeNeighborhoods = useMemo(() => Array.isArray(neighborhoods) ? neighborhoods : [], [neighborhoods]);
   const selectedAlertHood = useMemo(() => safeNeighborhoods.find((n) => n.id === alertHoodId) || safeNeighborhoods[0], [safeNeighborhoods, alertHoodId]);
   const fallbackThresholds = useBuyerPriceThresholdAlerts(safeNeighborhoods);
@@ -67,7 +67,7 @@ export function BuyerAlertPwaLegalModals({
     <>
       {showBuyerAlertModal && (
         <div role="dialog" aria-modal="true" aria-label="ثبت شماره برای هشدار فوری ملک زیر قیمت" onClick={() => setShowBuyerAlertModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+          <div ref={buyerAlertDialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3.5 mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
@@ -214,7 +214,7 @@ export function BuyerAlertPwaLegalModals({
       )}
       {showPwaModal && (
         <div role="dialog" aria-modal="true" aria-label="راهنمای نصب وب‌اپلیکیشن" onClick={() => setShowPwaModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
+          <div ref={pwaDialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
@@ -244,7 +244,7 @@ export function BuyerAlertPwaLegalModals({
       )}
       {showLegalModal && (
         <div role="dialog" aria-modal="true" aria-label="چارچوب قانونی و سلب مسئولیت" onClick={() => setShowLegalModal(false)} className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
+          <div ref={legalDialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-[var(--color-bg-surface)] border border-slate-200 dark:border-[var(--color-border-subtle)] text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-[var(--color-border-subtle)] pb-3">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
