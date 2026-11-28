@@ -8,6 +8,10 @@ on:
     paths:
       - "src/design-system/**"
       - "src/styles/layers/themes.css"
+      - "src/components/useDialogFocus.ts"
+      - "src/components/ui/RadarPrimitives.tsx"
+      - "src/utils/interactions/dialogStack.ts"
+      - "tests/react-component-interactions.test.ts"
       - ".github/workflows/design-system-regression.yml"
   push:
     branches:
@@ -40,6 +44,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Run design-system token and component contract regressions
-        run: npx tsx --test src/design-system/designSystem.test.ts
+        run: npx tsx --test src/design-system/designSystem.test.ts tests/react-component-interactions.test.ts
       - name: Build production frontend
         run: npm run build
