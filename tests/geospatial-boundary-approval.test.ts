@@ -142,8 +142,11 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
     input: { entityId, versionId: pending.id, reviewerUid: 'independent-reviewer' },
   });
   assert.equal(approved.status, 'ACTIVE');
-  assert.equal(history.filter((record) => record.status === 'ACTIVE').length, 1);
-  assert.equal(history.filter((record) => record.status === 'SUPERSEDED').length, 2);
+  // Approval commits an isolated cloned history into the Map; inspect the committed value,
+  // not the pre-transaction array reference retained by this test.
+  const approvedHistory = boundaryHistoryByEntity.get(entityId) ?? [];
+  assert.equal(approvedHistory.filter((record) => record.status === 'ACTIVE').length, 1);
+  assert.equal(approvedHistory.filter((record) => record.status === 'SUPERSEDED').length, 2);
 
   // A failed durable write must restore the exact pre-mutation lifecycle for upserts.
   const rollbackActive = makeActive(1);

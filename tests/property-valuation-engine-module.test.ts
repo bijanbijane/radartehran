@@ -196,6 +196,18 @@ test('Employee 59 — 3. Evidence normalization, deduplication, outlier review o
   assert.equal(ev1.isCompletedTransaction, true);
   assert.equal(ev1.isAskingPrice, false);
 
+  // Ingested evidence is pending review by default; explicitly approve it before
+  // asserting that it contributes to the official verified baseline.
+  const approvedEv1 = await service.reviewMarketEvidence({
+    actorUid: 'admin_reviewer_1',
+    decision: {
+      evidenceId: ev1.id,
+      action: 'APPROVE',
+      reason: 'Verified transaction evidence reviewed for baseline inclusion',
+    },
+  });
+  assert.equal(approvedEv1.verificationStatus, 'VERIFIED');
+
   // Duplicate evidence detection
   const evDup = await service.ingestMarketEvidence({
     sourceType: 'ACTIVE_PUBLISHED_LISTING',

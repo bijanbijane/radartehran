@@ -306,6 +306,10 @@ test('RT-UI-LAYOUT-001 contracts distinguish page max-widths and spacing tokens'
   assert.equal(resolveLayoutContractForView('home').maxWidthPx, 1320);
   assert.equal(resolveLayoutContractForView('intelligence').maxWidthPx, 1320);
   assert.equal(resolveLayoutContractForView('discover').maxWidthPx, 1320);
+  assert.equal(resolveLayoutContractForView('discover').id, 'RT-L03');
+  assert.equal(resolveLayoutContractForView('discover', { areaSlug: 'saadat-abad' }).id, 'RT-L04');
+  assert.equal(resolveLayoutContractForView('discover', { areaSlug: '  ' }).id, 'RT-L03');
+  assert.equal(resolveViewContainerClass('discover', { areaSlug: 'saadat-abad' }).includes('1320'), true);
   assert.equal(resolveLayoutContractForView('map').maxWidthPx, 'flexible');
   assert.equal(resolveLayoutContractForView('admin').shell, 'admin');
   assert.ok(resolveViewContainerClass('home').includes('1320'));

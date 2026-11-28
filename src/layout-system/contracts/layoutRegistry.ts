@@ -28,6 +28,8 @@ export interface LayoutContract {
   shell: 'public' | 'admin';
   headerBehavior: 'sticky' | 'compact' | 'isolated_admin';
   supportsSplitMapCompanion: boolean;
+  /** Selects a route variant that is only valid for a resolved neighborhood slug. */
+  requiresAreaSlug?: boolean;
 }
 
 /** 4px spatial scale tokens defined in RT-UI-LAYOUT-001 §1.3 */
@@ -111,6 +113,7 @@ export const LAYOUT_CONTRACT_REGISTRY: readonly LayoutContract[] = [
   {
     id: 'RT-L04',
     viewId: 'discover',
+    requiresAreaSlug: true,
     nameEn: 'Neighborhood Detail Profile Layout',
     nameFa: 'صفحه اختصاصی کارنامه محله',
     pattern: 'Breadcrumb + Profile Summary + 12-Col Analytics Grid (max 1320px)',
@@ -236,17 +239,33 @@ export const LAYOUT_CONTRACT_REGISTRY: readonly LayoutContract[] = [
   },
 ];
 
-export function resolveLayoutContractForView(viewId: RouteDestinationId): LayoutContract {
+export interface LayoutResolutionContext {
+  /** Dynamic neighborhood slug from the canonical route resolver, when present. */
+  areaSlug?: string | null;
+}
+
+export function resolveLayoutContractForView(
+  viewId: RouteDestinationId,
+  context: LayoutResolutionContext = {},
+): LayoutContract {
   if (viewId === 'not_found') {
     return LAYOUT_CONTRACT_REGISTRY.find((c) => c.id === 'RT-L12')!;
   }
+
+  const hasAreaSlug = typeof context.areaSlug === 'string' && context.areaSlug.trim().length > 0;
   return (
-    LAYOUT_CONTRACT_REGISTRY.find((c) => c.viewId === viewId) ||
-    LAYOUT_CONTRACT_REGISTRY.find((c) => c.id === 'RT-L03')!
+    LAYOUT_CONTRACT_REGISTRY.find(
+      (contract) => contract.viewId === viewId && Boolean(contract.requiresAreaSlug) === hasAreaSlug,
+    ) ||
+    LAYOUT_CONTRACT_REGISTRY.find((contract) => contract.viewId === viewId) ||
+    LAYOUT_CONTRACT_REGISTRY.find((contract) => contract.id === 'RT-L03')!
   );
 }
 
-export function resolveViewContainerClass(viewId: RouteDestinationId): string {
-  const contract = resolveLayoutContractForView(viewId);
+export function resolveViewContainerClass(
+  viewId: RouteDestinationId,
+  context: LayoutResolutionContext = {},
+): string {
+  const contract = resolveLayoutContractForView(viewId, context);
   return `${contract.maxWidthClass} mx-auto px-4 sm:px-6 lg:px-8`;
 }
