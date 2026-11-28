@@ -53,6 +53,9 @@
     --color-warning-bg: #FFF4E5;
     --color-warning-border: #F2D19B;
     --color-danger: #A61B1B;
+    --color-danger-solid: #A61B1B;
+    --color-danger-solid-hover: #8E1515;
+    --color-danger-solid-active: #751010;
     --color-danger-bg: #FDECEC;
     --color-danger-border: #F2B8B8;
     --color-info: #155E9A;
