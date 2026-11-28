@@ -367,4 +367,4 @@ export function hasAuthoritativeGeospatialMinimum(counts: GeospatialRecordCounts
   );
 }
 
-export { countRecords, validatePersistedGeospatialState, hasAuthoritativeGeospatialMinimum, defaultEmpty };
+export { countRecords, defaultEmpty };
