@@ -2,7 +2,7 @@
  * RT-INFRA-009 — Deterministic geospatial snapshot validation, recovery & activation.
  */
 import type { PersistedGeospatialState } from './geospatialRepository';
-import { countRecords, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
+import { countRecords, defaultEmpty, validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 export { validatePersistedGeospatialState } from './geospatialSnapshotValidation';
 
 export const GEOSPATIAL_SNAPSHOT_SCHEMA = 'geospatial_state_v1';
