@@ -232,10 +232,12 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(applied.length, 11);
+      // There are 12 migration files: two independently named 0007 migrations
+      // both apply to the same ledger in deterministic filename order.
+      assert.equal(applied.length, 12);
       // Re-applying migrations must be idempotent
       const reapplied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
-      assert.equal(reapplied.length, 11);
+      assert.equal(reapplied.length, 12);
 
       // Prefer USER_DB over legacy DB
       const bothEnv: WorkerEnv = { USER_DB: userSqlite.db, DB: userSqlite.db, RESEARCH_DB: researchSqlite.db };
