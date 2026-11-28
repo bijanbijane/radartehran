@@ -334,6 +334,28 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
 });
 
 
+test('RT-UI-COLOR-010 keeps status and map placeholder surfaces on canonical semantic tokens', () => {
+  const admin = readFileSync(new URL('../components/views/ProductAdminMonitoringView.tsx', import.meta.url), 'utf8');
+  const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  assert.ok(admin.includes('bg-[var(--color-success-bg)]'));
+  assert.ok(admin.includes('text-[var(--color-success)]'));
+  assert.ok(!admin.includes('#EAF5EE'));
+  assert.ok(!admin.includes('#176B4C'));
+  assert.ok(lightTokens.includes('--color-success: #176B4C;'));
+  assert.ok(lightTokens.includes('--color-success-bg: #EAF5EE;'));
+  assert.ok(darkCss.includes('--color-success: #4ADE80;'));
+  assert.ok(darkCss.includes('--color-success-bg: rgba(16, 185, 129, 0.16);'));
+
+  assert.ok(workspace.includes('bg-[var(--color-bg-sunken)]'));
+  assert.ok(workspace.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(!workspace.includes('bg-[#E9EFEC]'));
+  assert.ok(lightTokens.includes('--color-bg-sunken: #E9EFEC;'));
+  assert.ok(darkCss.includes('--color-bg-sunken: #0D1614;'));
+});
+
 test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible focus indicators', () => {
   const textTokens = [
     ['primary', DARK_THEME_TOKENS.textPrimary],
