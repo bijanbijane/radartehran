@@ -50,10 +50,12 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     await mobilePage.keyboard.press('Enter');
 
     const originalBodyOverflow = await mobilePage.locator('body').evaluate((body) => body.style.overflow);
+    const originalAriaHiddenCount = await mobilePage.locator('[aria-hidden="true"]').count();
     const moreDialog = mobilePage.getByRole('dialog', { name: 'بخش‌های بیشتر' });
     await expect(moreDialog).toBeVisible();
     await expect(moreDialog).toHaveAttribute('aria-modal', 'true');
     await expect.poll(() => mobilePage.locator('body').evaluate((body) => body.style.overflow)).toBe('hidden');
+    await expect.poll(() => mobilePage.locator('[aria-hidden="true"]').count()).toBeGreaterThan(originalAriaHiddenCount + 1);
 
     const dialogFocusable = moreDialog.locator(
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
@@ -74,6 +76,7 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     await expect(moreDialog).toBeHidden();
     await expect(moreButton).toBeFocused();
     await expect.poll(() => mobilePage.locator('body').evaluate((body) => body.style.overflow)).toBe(originalBodyOverflow);
+    await expect.poll(() => mobilePage.locator('[aria-hidden="true"]').count()).toBe(originalAriaHiddenCount);
 
     const mobileLayout = await mobilePage.evaluate(() => ({
       viewportWidth: window.innerWidth,
