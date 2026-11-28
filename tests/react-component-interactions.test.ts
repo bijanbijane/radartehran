@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   isTopmostModalDialogElement,
+  shouldRestoreDialogFocus,
   isGlobalSearchTriggerTarget,
   resolveFloatingBarVisibility,
   isNeighborhoodSearchInputFocused,
@@ -40,6 +41,25 @@ test('isTopmostModalDialogElement handles empty, sibling, nested, and non-modal 
   assert.equal(isTopmostModalDialogElement(outerContainer, [outerDialog, innerDialog]), false);
   assert.equal(isTopmostModalDialogElement(innerContainer, [outerDialog, innerDialog]), true);
   assert.equal(isTopmostModalDialogElement(nonModalContainer, [outerDialog]), false);
+});
+
+
+test('shouldRestoreDialogFocus preserves focus ownership across nested modal cleanup', () => {
+  const trigger = { isConnected: true };
+  const parentControl = { isConnected: true };
+  const topmostDialog = {
+    contains: (node: unknown) => node === parentControl,
+  };
+
+  // Closing a lower dialog must not restore its outside trigger over the child dialog.
+  assert.equal(shouldRestoreDialogFocus(trigger, [topmostDialog]), false);
+  // Closing the top dialog may restore focus to the control in the remaining parent.
+  assert.equal(shouldRestoreDialogFocus(parentControl, [topmostDialog]), true);
+  // With no remaining modal, restore the original trigger.
+  assert.equal(shouldRestoreDialogFocus(trigger, []), true);
+  // A removed trigger cannot receive focus.
+  assert.equal(shouldRestoreDialogFocus({ isConnected: false }, []), false);
+  assert.equal(shouldRestoreDialogFocus(null, []), false);
 });
 
 test('isGlobalSearchTriggerTarget detects global header search trigger ancestors only', () => {
@@ -133,10 +153,12 @@ test('component interaction invariants remain wired in critical files', () => {
 
   const useDialogFocusSource = fs.readFileSync(path.join(ROOT, 'src/components/useDialogFocus.ts'), 'utf8');
   assert.match(useDialogFocusSource, /isTopmostModalDialogElement/);
+  assert.match(useDialogFocusSource, /shouldRestoreDialogFocus\(prev, remainingDialogs\)/);
   assert.match(useDialogFocusSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
   assert.match(useDialogFocusSource, /if \(!escapeDisabledRef\.current && onCloseRef\.current\)/);
   const primitivesSource = fs.readFileSync(path.join(ROOT, 'src/components/ui/RadarPrimitives.tsx'), 'utf8');
   assert.match(primitivesSource, /isTopmostModalDialogElement\(panelRef\.current, openDialogs\)/);
+  assert.match(primitivesSource, /shouldRestoreDialogFocus\(previouslyFocused, remainingDialogs\)/);
   assert.match(primitivesSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*onClose\(\);/);
 
   const secondaryModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/SecondaryModals.tsx'), 'utf8');
