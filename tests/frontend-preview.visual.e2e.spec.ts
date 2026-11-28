@@ -14,7 +14,7 @@ test('isolated frontend preview renders desktop and mobile shells', async ({ pag
   expect(response!.status(), 'Preview root should return HTTP 200').toBe(200);
 
   await expect(page).toHaveTitle(/رادار/i);
-  const neighborhoodSearch = page.locator('input[aria-label="جست‌وجوی محله"]');
+  const neighborhoodSearch = page.locator('input[placeholder*="محله"]');
   await expect(neighborhoodSearch).toBeVisible();
 
   await page.screenshot({
