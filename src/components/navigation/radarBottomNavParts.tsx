@@ -9,7 +9,7 @@ export const MOBILE_NAV_ORDER: PrimaryViewId[] = ['discover', 'intelligence', 'm
 
 export const tabIdle =
   'text-[var(--color-text-muted)] [@media(hover:hover)]:hover:text-[var(--color-text-primary)] [@media(hover:hover)]:hover:bg-[var(--color-bg-muted)]';
-export const tabActive = 'text-[var(--color-brand-700)] dark:text-[#86d8cb]';
+export const tabActive = 'text-[var(--color-brand-700)] dark:text-[var(--color-brand-fg)]';
 
 export function NavTabButton(props: {
   item: ProductNavigationItem;
