@@ -77,10 +77,10 @@ test('RT-UI-COMP-BEH-005 distinct Card contracts retain their intended passive a
   assert.match(primitiveCard, /^<div/);
   assert.doesNotMatch(dataCard, /role="button"/);
   assert.doesNotMatch(primitiveCard, /role="button"/);
-  const sharedSurfaceClasses = /rounded-\\[12px\\].*border.*bg-\\[var\\(--color-bg-surface\\)\\]/;
-  assert.match(canonicalSurface, sharedSurfaceClasses);
-  assert.match(dataCard, sharedSurfaceClasses);
-  assert.match(primitiveCard, sharedSurfaceClasses);
+  const hasSharedSurfaceClasses = (html: string) => html.includes('rounded-[12px]') && html.includes('border') && html.includes('bg-[var(--color-bg-surface)]');
+  assert.equal(hasSharedSurfaceClasses(canonicalSurface), true);
+  assert.equal(hasSharedSurfaceClasses(dataCard), true);
+  assert.equal(hasSharedSurfaceClasses(primitiveCard), true);
   assert.match(dataCard, /p-4/);
   assert.match(primitiveCard, /p-4 sm:p-5/);
   assert.doesNotMatch(primitiveCardWithoutPadding, /p-4/);
