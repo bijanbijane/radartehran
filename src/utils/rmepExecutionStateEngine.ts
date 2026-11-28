@@ -208,7 +208,7 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
     if (k === 'phase_6') {
       const phase6Allowed = v === 'VERIFIED' ||
         (v === 'PARTIALLY_VERIFIED' && parsed.current_phase?.phase_id === 'PHASE-6' &&
-          parsed.current_workstream?.task_status === 'IN_PROGRESS' &&
+          (parsed.current_workstream?.task_status === 'IN_PROGRESS' || parsed.current_workstream?.task_status === 'IMPLEMENTED_BUT_NOT_VERIFIED') &&
           parsed.program_status === 'PARTIALLY_VERIFIED');
       if (!phase6Allowed) discrepancies.push('Phase 6 status is inconsistent with the active RMEP workstream (got ' + v + ')');
     } else if (v !== 'VERIFIED') {
