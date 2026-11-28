@@ -79,6 +79,14 @@ jobs:
           SMOKE_BASE_URL: http://127.0.0.1:4173
         run: npx playwright test --config=playwright.preview.config.ts
 
+      - name: Collect frontend preview server log
+        if: always()
+        run: |
+          mkdir -p artifacts/frontend-preview
+          if [ -f /tmp/radartehran-vite-preview.log ]; then
+            cp /tmp/radartehran-vite-preview.log artifacts/frontend-preview/vite-preview.log
+          fi
+
       - name: Retain screenshots and browser diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,6 +95,5 @@ jobs:
           path: |
             artifacts/frontend-preview/
             test-results/
-            /tmp/radartehran-vite-preview.log
           if-no-files-found: warn
           retention-days: 14
