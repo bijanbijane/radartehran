@@ -22,6 +22,7 @@ import {
   computeHexContrastRatio,
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
+import { DESIGN_SPACING_BASE_UNIT_PX, DESIGN_SPACING_SCALE_PX, RADAR_SPACING_TOKENS, SPACING_TOKENS, isOnFourPxSpacingGrid } from './tokens/spacing';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
 import { COMPONENT_IMPLEMENTATION_REGISTRY, validateComponentRegistry } from './componentRegistry';
 import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
@@ -129,6 +130,37 @@ test('RT-UI-TYPE-001 enforces Vazirmatn UI baseline, 4-weight system, scales, bi
   assert.equal(formatUnifiedPercentFa(12.5), '۱۲٫۵٪');
   assert.deepEqual(formatTechnicalBidiToken('RT-48291'), { text: 'RT-48291', dir: 'ltr', isolate: true });
   assert.equal(TYPOGRAPHY_ACCEPTANCE_CRITERIA.length, 20);
+});
+
+test('RT-UI-COMP-TOKEN-001 derives CSS spacing aliases from the canonical geometry scale', () => {
+  assert.equal(DESIGN_SPACING_BASE_UNIT_PX, BASE_SPACING_UNIT_PX);
+  assert.equal(SPACING_TOKENS, DESIGN_SPACING_SCALE_PX);
+  assert.equal(RADAR_SPACING_TOKENS, SPACING_SCALE);
+  assert.deepEqual(
+    [
+      DESIGN_SPACING_SCALE_PX.space1, DESIGN_SPACING_SCALE_PX.space2,
+      DESIGN_SPACING_SCALE_PX.space3, DESIGN_SPACING_SCALE_PX.space4,
+      DESIGN_SPACING_SCALE_PX.space5, DESIGN_SPACING_SCALE_PX.space6,
+      DESIGN_SPACING_SCALE_PX.space8, DESIGN_SPACING_SCALE_PX.space10,
+      DESIGN_SPACING_SCALE_PX.space12, DESIGN_SPACING_SCALE_PX.space16,
+      DESIGN_SPACING_SCALE_PX.space20,
+    ],
+    Object.values(SPACING_SCALE),
+  );
+  assert.deepEqual(
+    [
+      DESIGN_SPACING_SCALE_PX['1'], DESIGN_SPACING_SCALE_PX['2'],
+      DESIGN_SPACING_SCALE_PX['3'], DESIGN_SPACING_SCALE_PX['4'],
+      DESIGN_SPACING_SCALE_PX['5'], DESIGN_SPACING_SCALE_PX['6'],
+      DESIGN_SPACING_SCALE_PX['8'], DESIGN_SPACING_SCALE_PX['10'],
+      DESIGN_SPACING_SCALE_PX['12'], DESIGN_SPACING_SCALE_PX['16'],
+      DESIGN_SPACING_SCALE_PX['20'],
+    ],
+    Object.values(SPACING_SCALE).map((value) => `${value}px`),
+  );
+  assert.equal(isOnFourPxSpacingGrid(28), true);
+  assert.equal(isOnFourPxSpacingGrid(13), false);
+  assert.equal(isOnFourPxSpacingGrid(-4), false);
 });
 
 test('RT-UI-SPACING-001 enforces 4px spacing grid, 12px/8px radii, component heights, map explorer proportions, and 23/23 criteria', () => {
