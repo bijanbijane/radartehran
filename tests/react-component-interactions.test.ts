@@ -146,6 +146,22 @@ test('component interaction invariants remain wired in critical files', () => {
   assert.match(secondaryModalsSource, /ref=\{seoDialogRef\}/);
   assert.doesNotMatch(secondaryModalsSource, /useDialogFocus\(showPulseModal \|\| showSeoDrawer/);
 
+  const buyerModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf8');
+  assert.match(buyerModalsSource, /useDialogFocus\(showBuyerAlertModal,\s*\(\) => setShowBuyerAlertModal\(false\)\)/);
+  assert.match(buyerModalsSource, /useDialogFocus\(showPwaModal,\s*\(\) => setShowPwaModal\(false\)\)/);
+  assert.match(buyerModalsSource, /useDialogFocus\(showLegalModal,\s*\(\) => setShowLegalModal\(false\)\)/);
+  assert.match(buyerModalsSource, /ref=\{buyerAlertDialogRef\}/);
+  assert.match(buyerModalsSource, /ref=\{pwaDialogRef\}/);
+  assert.match(buyerModalsSource, /ref=\{legalDialogRef\}/);
+  assert.doesNotMatch(buyerModalsSource, /useDialogFocus\(showBuyerAlertModal \|\| showPwaModal/);
+
+  const portfolioModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/PortfolioModals.tsx'), 'utf8');
+  assert.match(portfolioModalsSource, /useDialogFocus\(showVisitedModal,\s*\(\) => setShowVisitedModal\(false\)\)/);
+  assert.match(portfolioModalsSource, /useDialogFocus\(showTradeUpModal,\s*\(\) => setShowTradeUpModal\(false\)\)/);
+  assert.match(portfolioModalsSource, /ref=\{visitedDialogRef\}/);
+  assert.match(portfolioModalsSource, /ref=\{tradeUpDialogRef\}/);
+  assert.doesNotMatch(portfolioModalsSource, /useDialogFocus\(showVisitedModal \|\| showTradeUpModal/);
+
   const searchDropdownSource = fs.readFileSync(path.join(ROOT, 'src/components/SearchDropdownMenu.tsx'), 'utf8');
   assert.match(searchDropdownSource, /isNeighborhoodSearchInputFocused/);
   assert.match(searchDropdownSource, /\[role="dialog"\]\[aria-modal="true"\]/);
