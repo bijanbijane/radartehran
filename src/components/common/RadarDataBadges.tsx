@@ -5,15 +5,15 @@ import { DATA_CREDIBILITY_SPECS, type DataCredibilityStatus } from '../../design
 
 const CREDIBILITY_STYLES: Record<DataCredibilityStatus, { cls: string; Icon: React.FC<{ className?: string }> }> = {
   verified: {
-    cls: 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-border-subtle)]',
+    cls: 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-success-border)]',
     Icon: CheckCircle2,
   },
   estimated: {
-    cls: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[var(--color-border-subtle)]',
+    cls: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[var(--color-info-border)]',
     Icon: Info,
   },
   incomplete: {
-    cls: 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[var(--color-border-subtle)]',
+    cls: 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[var(--color-warning-border)]',
     Icon: AlertTriangle,
   },
   stale: {
