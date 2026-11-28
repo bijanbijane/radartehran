@@ -1937,7 +1937,8 @@
       "environment": "NOT_RUN_LOCAL_CHECKOUT_UNAVAILABLE",
       "timestamp_utc": "2026-11-27T17:00:00.000Z",
       "outcome": "NOT_RUN",
-      "evidence_path": null
+      "evidence_path": null,
+      "exit_code": null
     }
   ],
   "engineering_decisions": [
