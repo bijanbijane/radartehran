@@ -3,7 +3,7 @@ import React from 'react';
 import { Search, X } from 'lucide-react';
 
 import { RadarButton as CanonicalRadarButton } from '../common/RadarButton';
-import { isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../../utils/interactions/dialogStack';
+import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus } from '../../utils/interactions/dialogStack';
 
 export type RadarButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type RadarButtonSize = 'sm' | 'md' | 'lg';
@@ -271,6 +271,7 @@ export const RadarSheet: React.FC<{
   React.useEffect(() => {
     if (!open) return undefined;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const releaseScrollLock = acquireDialogScrollLock(document.body);
     const panel = panelRef.current;
     const getFocusable = () =>
       panel
@@ -311,6 +312,7 @@ export const RadarSheet: React.FC<{
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      releaseScrollLock();
       const remainingDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
       if (shouldRestoreDialogFocus(previouslyFocused, remainingDialogs)) {
         previouslyFocused?.focus?.();
