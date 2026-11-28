@@ -1,6 +1,7 @@
 /** @file src/components/ui/RadarPrimitives.tsx — Shared Design System UI Primitives (F-11) */
 import React from 'react';
 import { Search, X } from 'lucide-react';
+import { RadarSurfaceCard } from '../common/RadarSurfaceCard';
 
 import { RadarButton as CanonicalRadarButton } from '../common/RadarButton';
 import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus, syncDialogBackgroundIsolation } from '../../utils/interactions/dialogStack';
@@ -150,11 +151,9 @@ export const RadarCard: React.FC<{
   padded?: boolean;
   children: React.ReactNode;
 }> = ({ className = '', padded = true, children }) => (
-  <div
-    className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-[12px] ${padded ? 'p-4 sm:p-5' : ''} ${className}`}
-  >
+  <RadarSurfaceCard padding={padded ? 'standard-responsive' : 'none'} className={className}>
     {children}
-  </div>
+  </RadarSurfaceCard>
 );
 
 export interface RadarTabItem<T extends string> {
