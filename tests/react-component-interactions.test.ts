@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  acquireDialogScrollLock,
   isTopmostModalDialogElement,
   shouldRestoreDialogFocus,
   isGlobalSearchTriggerTarget,
@@ -60,6 +61,26 @@ test('shouldRestoreDialogFocus preserves focus ownership across nested modal cle
   // A removed trigger cannot receive focus.
   assert.equal(shouldRestoreDialogFocus({ isConnected: false }, []), false);
   assert.equal(shouldRestoreDialogFocus(null, []), false);
+});
+
+test('acquireDialogScrollLock keeps body locked until the final modal releases and is idempotent', () => {
+  const body = { style: { overflow: 'auto' } };
+  const releaseParent = acquireDialogScrollLock(body);
+
+  assert.equal(body.style.overflow, 'hidden');
+  const releaseChild = acquireDialogScrollLock(body);
+  assert.equal(body.style.overflow, 'hidden');
+
+  releaseParent();
+  assert.equal(body.style.overflow, 'hidden');
+  // StrictMode/repeated cleanup must not decrement the shared count twice.
+  releaseParent();
+  assert.equal(body.style.overflow, 'hidden');
+
+  releaseChild();
+  assert.equal(body.style.overflow, 'auto');
+  releaseChild();
+  assert.equal(body.style.overflow, 'auto');
 });
 
 test('isGlobalSearchTriggerTarget detects global header search trigger ancestors only', () => {
