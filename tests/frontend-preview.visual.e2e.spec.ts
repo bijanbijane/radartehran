@@ -3,19 +3,17 @@ import fs from 'node:fs';
 
 const artifactDirectory = 'artifacts/frontend-preview';
 
-test('isolated frontend preview renders desktop and mobile shells', async ({ page }) => {
+test('isolated frontend preview renders desktop and touch-enabled mobile shells without horizontal overflow', async ({ page, browser }) => {
   fs.mkdirSync(artifactDirectory, { recursive: true });
 
   const pageErrors: string[] = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('pageerror', (error) => pageErrors.push(`desktop: ${error.message}`));
 
-  const response = await page.goto('/', { waitUntil: 'domcontentloaded' });
-  expect(response, 'Preview root should return a document response').not.toBeNull();
-  expect(response!.status(), 'Preview root should return HTTP 200').toBe(200);
-
+  const desktopResponse = await page.goto('/', { waitUntil: 'domcontentloaded' });
+  expect(desktopResponse, 'Preview root should return a document response').not.toBeNull();
+  expect(desktopResponse!.status(), 'Preview root should return HTTP 200').toBe(200);
   await expect(page).toHaveTitle(/رادار/i);
-  const neighborhoodSearch = page.locator('input[placeholder*="محله"]');
-  await expect(neighborhoodSearch).toBeVisible();
+  await expect(page.locator('input[placeholder*="محله"]')).toBeVisible();
 
   await page.screenshot({
     path: `${artifactDirectory}/desktop.png`,
@@ -23,17 +21,45 @@ test('isolated frontend preview renders desktop and mobile shells', async ({ pag
     animations: 'disabled',
   });
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(neighborhoodSearch).toBeVisible();
-  const mobileHasHorizontalOverflow = await page.evaluate(
-    () => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > window.innerWidth
-  );
-  expect(mobileHasHorizontalOverflow, 'Mobile shell should not overflow horizontally').toBe(false);
-  await page.screenshot({
-    path: `${artifactDirectory}/mobile.png`,
-    fullPage: true,
-    animations: 'disabled',
+  const mobileContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    locale: 'fa-IR',
   });
 
-  expect(pageErrors, 'The app shell should not throw uncaught browser exceptions').toEqual([]);
+  try {
+    const mobilePage = await mobileContext.newPage();
+    mobilePage.on('pageerror', (error) => pageErrors.push(`mobile: ${error.message}`));
+
+    const mobileResponse = await mobilePage.goto('/', { waitUntil: 'domcontentloaded' });
+    expect(mobileResponse, 'Mobile preview should return a document response').not.toBeNull();
+    expect(mobileResponse!.status(), 'Mobile preview should return HTTP 200').toBe(200);
+    await expect(mobilePage).toHaveTitle(/رادار/i);
+    await expect(mobilePage.locator('input[placeholder*="محله"]')).toBeVisible();
+
+    const mobileLayout = await mobilePage.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+      hasTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+      mobileViewport: window.matchMedia('(max-width: 767px)').matches,
+    }));
+
+    expect(mobileLayout.hasTouch, 'Mobile context should expose touch input').toBe(true);
+    expect(mobileLayout.mobileViewport, 'Mobile context should activate mobile breakpoints').toBe(true);
+    expect(
+      mobileLayout.documentWidth,
+      `Mobile shell should not overflow horizontally (document ${mobileLayout.documentWidth}px, viewport ${mobileLayout.viewportWidth}px)`,
+    ).toBeLessThanOrEqual(mobileLayout.viewportWidth);
+
+    await mobilePage.screenshot({
+      path: `${artifactDirectory}/mobile.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+  } finally {
+    await mobileContext.close();
+  }
+
+  expect(pageErrors, 'Desktop and mobile shells should not throw uncaught browser exceptions').toEqual([]);
 });
