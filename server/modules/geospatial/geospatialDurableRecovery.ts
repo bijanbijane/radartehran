@@ -53,17 +53,6 @@ export function getGeospatialRecordCounts(state: PersistedGeospatialState): Geos
   return countRecords(state);
 }
 
-function defaultEmpty(): PersistedGeospatialState {
-  return {
-    boundaryHistoryByEntity: {},
-    poiStore: {},
-    poiDedupeIndex: {},
-    spatialListingsByCity: {},
-    overlayStore: {},
-    importBatches: {},
-  };
-}
-
 export function hasAuthoritativeGeospatialMinimum(counts: GeospatialRecordCounts): boolean {
   return (
     counts.activeBoundaries > 0 ||
