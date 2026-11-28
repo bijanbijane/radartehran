@@ -22,7 +22,10 @@ import {
   computeHexContrastRatio,
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
+import { COMPONENT_CATALOG } from './componentSystem';
+import { DESIGN_SPACING_BASE_UNIT_PX, DESIGN_SPACING_SCALE_PX, RADAR_SPACING_TOKENS, SPACING_TOKENS, isOnFourPxSpacingGrid } from './tokens/spacing';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
+import { COMPONENT_FAMILY_COVERAGE, COMPONENT_IMPLEMENTATION_REGISTRY, validateComponentFamilyCoverage, validateComponentRegistry } from './componentRegistry';
 import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
 import {
   BODY_TYPE_SCALE_PX,
@@ -128,6 +131,37 @@ test('RT-UI-TYPE-001 enforces Vazirmatn UI baseline, 4-weight system, scales, bi
   assert.equal(formatUnifiedPercentFa(12.5), '۱۲٫۵٪');
   assert.deepEqual(formatTechnicalBidiToken('RT-48291'), { text: 'RT-48291', dir: 'ltr', isolate: true });
   assert.equal(TYPOGRAPHY_ACCEPTANCE_CRITERIA.length, 20);
+});
+
+test('RT-UI-COMP-TOKEN-001 derives CSS spacing aliases from the canonical geometry scale', () => {
+  assert.equal(DESIGN_SPACING_BASE_UNIT_PX, BASE_SPACING_UNIT_PX);
+  assert.equal(SPACING_TOKENS, DESIGN_SPACING_SCALE_PX);
+  assert.equal(RADAR_SPACING_TOKENS, SPACING_SCALE);
+  assert.deepEqual(
+    [
+      DESIGN_SPACING_SCALE_PX.space1, DESIGN_SPACING_SCALE_PX.space2,
+      DESIGN_SPACING_SCALE_PX.space3, DESIGN_SPACING_SCALE_PX.space4,
+      DESIGN_SPACING_SCALE_PX.space5, DESIGN_SPACING_SCALE_PX.space6,
+      DESIGN_SPACING_SCALE_PX.space8, DESIGN_SPACING_SCALE_PX.space10,
+      DESIGN_SPACING_SCALE_PX.space12, DESIGN_SPACING_SCALE_PX.space16,
+      DESIGN_SPACING_SCALE_PX.space20,
+    ],
+    Object.values(SPACING_SCALE),
+  );
+  assert.deepEqual(
+    [
+      DESIGN_SPACING_SCALE_PX['1'], DESIGN_SPACING_SCALE_PX['2'],
+      DESIGN_SPACING_SCALE_PX['3'], DESIGN_SPACING_SCALE_PX['4'],
+      DESIGN_SPACING_SCALE_PX['5'], DESIGN_SPACING_SCALE_PX['6'],
+      DESIGN_SPACING_SCALE_PX['8'], DESIGN_SPACING_SCALE_PX['10'],
+      DESIGN_SPACING_SCALE_PX['12'], DESIGN_SPACING_SCALE_PX['16'],
+      DESIGN_SPACING_SCALE_PX['20'],
+    ],
+    Object.values(SPACING_SCALE).map((value) => `${value}px`),
+  );
+  assert.equal(isOnFourPxSpacingGrid(28), true);
+  assert.equal(isOnFourPxSpacingGrid(13), false);
+  assert.equal(isOnFourPxSpacingGrid(-4), false);
 });
 
 test('RT-UI-SPACING-001 enforces 4px spacing grid, 12px/8px radii, component heights, map explorer proportions, and 23/23 criteria', () => {
@@ -475,4 +509,58 @@ test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible 
       `Dark theme focus indicator on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 3:1`
     );
   }
+});
+
+
+test('RT-UI-COMP-REG-001 maps inspected shared components to complete 13-field contracts', () => {
+  assert.equal(COMPONENT_IMPLEMENTATION_REGISTRY.length, 13);
+  assert.deepEqual(validateComponentRegistry(), []);
+  assert.equal(new Set(COMPONENT_IMPLEMENTATION_REGISTRY.map((entry) => entry.id)).size, COMPONENT_IMPLEMENTATION_REGISTRY.length);
+  for (const entry of COMPONENT_IMPLEMENTATION_REGISTRY) {
+    assert.ok(entry.implementation.startsWith('src/'));
+    assert.ok(entry.publicContract.length > 0);
+    assert.equal(Object.keys(entry.spec).length, 13);
+  }
+});
+
+test('RT-UI-COMP-REG-002 reports duplicate IDs and incomplete component contracts', () => {
+  const incomplete = {
+    ...COMPONENT_IMPLEMENTATION_REGISTRY[0],
+    owner: '',
+    governance: 'Unknown',
+    spec: { ...COMPONENT_IMPLEMENTATION_REGISTRY[0].spec, purpose: '' },
+  } as unknown as (typeof COMPONENT_IMPLEMENTATION_REGISTRY)[number];
+  const issues = validateComponentRegistry([COMPONENT_IMPLEMENTATION_REGISTRY[0], incomplete]);
+  assert.ok(issues.some((issue) => issue.code === 'duplicate_id'));
+  assert.ok(issues.some((issue) => issue.code === 'empty_spec_field' && issue.field === 'purpose'));
+  assert.ok(issues.some((issue) => issue.code === 'missing_owner'));
+  assert.ok(issues.some((issue) => issue.code === 'invalid_governance'));
+});
+
+
+test('RT-UI-COMP-REG-003 maps every catalog family to an explicit owner, contract, state matrix and QA acceptance', () => {
+  assert.equal(COMPONENT_FAMILY_COVERAGE.length, COMPONENT_CATALOG.length);
+  assert.deepEqual(
+    COMPONENT_FAMILY_COVERAGE.map((entry) => entry.catalogId).sort(),
+    COMPONENT_CATALOG.map((entry) => entry.id).sort(),
+  );
+  assert.deepEqual(validateComponentFamilyCoverage(), []);
+  assert.ok(COMPONENT_FAMILY_COVERAGE.every((entry) => entry.knownGaps.trim().length > 0));
+});
+
+test('RT-UI-COMP-REG-004 detects missing and duplicate catalog-family coverage', () => {
+  const [first, ...remaining] = COMPONENT_FAMILY_COVERAGE;
+  const omitted = remaining[0];
+  const issues = validateComponentFamilyCoverage([first, ...remaining.slice(1), first]);
+  assert.ok(issues.some((issue) => issue.code === 'duplicate_catalog_id' && issue.catalogId === first.catalogId));
+  assert.ok(issues.some((issue) => issue.code === 'missing_catalog_family' && issue.catalogId === omitted.catalogId));
+});
+
+
+test('RT-UI-COMP-REG-005 detects catalog group drift and invalid family status', () => {
+  const [first, ...remaining] = COMPONENT_FAMILY_COVERAGE;
+  const invalid = { ...first, group: 'Incorrect family', status: 'complete' } as unknown as (typeof COMPONENT_FAMILY_COVERAGE)[number];
+  const issues = validateComponentFamilyCoverage([...remaining, invalid]);
+  assert.ok(issues.some((issue) => issue.code === 'catalog_group_mismatch' && issue.catalogId === first.catalogId));
+  assert.ok(issues.some((issue) => issue.code === 'invalid_coverage_status' && issue.catalogId === first.catalogId));
 });
