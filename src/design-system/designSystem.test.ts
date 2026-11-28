@@ -22,6 +22,15 @@ import {
   computeHexContrastRatio,
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
+import {
+  ICONOGRAPHY_ACCEPTANCE_CRITERIA,
+  ICONOGRAPHY_ROLES,
+  ICONOGRAPHY_RULES,
+  ICON_SIZE_TOKENS_PX,
+  getIconAccessibilityContract,
+  resolveDirectionalIconName,
+} from './iconographySystem';
+
 import { COMPONENT_CATALOG } from './componentSystem';
 import { DESIGN_SPACING_BASE_UNIT_PX, DESIGN_SPACING_SCALE_PX, RADAR_SPACING_TOKENS, SPACING_TOKENS, isOnFourPxSpacingGrid } from './tokens/spacing';
 import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
@@ -563,4 +572,30 @@ test('RT-UI-COMP-REG-005 detects catalog group drift and invalid family status',
   const issues = validateComponentFamilyCoverage([...remaining, invalid]);
   assert.ok(issues.some((issue) => issue.code === 'catalog_group_mismatch' && issue.catalogId === first.catalogId));
   assert.ok(issues.some((issue) => issue.code === 'invalid_coverage_status' && issue.catalogId === first.catalogId));
+});
+
+
+test('RT-UI-ICON-001 enforces semantic icon roles, shared sizes, RTL direction and accessible naming', () => {
+  assert.deepEqual(ICON_SIZE_TOKENS_PX, ICON_DIMENSIONS_PX);
+  assert.equal(ICONOGRAPHY_ROLES.navigation.defaultSize, 'md');
+  assert.equal(ICONOGRAPHY_ROLES.status.defaultSize, 'sm');
+  assert.equal(ICONOGRAPHY_RULES.iconToTextGapPx, 8);
+  assert.equal(ICONOGRAPHY_RULES.minimumInteractiveTargetPx, 44);
+  assert.equal(ICONOGRAPHY_RULES.preferredInteractiveTargetPx, 48);
+  assert.equal(resolveDirectionalIconName('back', 'rtl'), 'arrow-right');
+  assert.equal(resolveDirectionalIconName('back', 'ltr'), 'arrow-left');
+  assert.equal(resolveDirectionalIconName('next', 'rtl'), 'chevron-left');
+  assert.equal(resolveDirectionalIconName('previous', 'rtl'), 'chevron-right');
+  assert.deepEqual(getIconAccessibilityContract({ decorative: true }), {
+    decorative: true,
+    'aria-hidden': true,
+  });
+  assert.deepEqual(getIconAccessibilityContract({ decorative: false, label: 'بازگشت' }), {
+    decorative: false,
+    'aria-hidden': false,
+    role: 'img',
+    'aria-label': 'بازگشت',
+  });
+  assert.throws(() => getIconAccessibilityContract({ decorative: false, label: '  ' }), /non-empty accessible label/);
+  assert.equal(ICONOGRAPHY_ACCEPTANCE_CRITERIA.length, 12);
 });
