@@ -278,8 +278,8 @@ html body .leaflet-tooltip-bottom:before {
 
 html[data-apple-theme='dark'] body .leaflet-control-attribution,
 html.dark body .leaflet-control-attribution {
-  background-color: rgba(19, 31, 28, 0.88);
-  color: #8ca19a;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
+  color: var(--color-text-muted);
 }
 
 ::-webkit-scrollbar {
