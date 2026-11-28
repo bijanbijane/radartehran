@@ -405,9 +405,9 @@ export const COMPONENT_FAMILY_COVERAGE: readonly ComponentFamilyCoverage[] = [
     owner: 'src/components and src/utils/interactions',
     implementationRefs: ['src/components/useDialogFocus.ts', 'src/utils/interactions/dialogStack.ts', 'src/components/ui/RadarPrimitives.tsx'],
     contractEvidence: 'useDialogFocus, dialogStack and RadarSheet define focus, topmost ownership, scroll-lock and modal lifecycle contracts.',
-    stateMatrix: 'Open/closed, topmost/non-topmost, Escape, Tab trap, focus restoration and reference-counted body scroll lock are implemented; background inert/aria-hidden isolation is not implemented.',
+    stateMatrix: 'Open/closed, topmost/non-topmost, Escape, Tab trap, focus restoration, reference-counted body scroll lock and topmost-modal aria-hidden isolation are implemented; native inert isolation is not implemented.',
     qaAcceptance: 'Modal stack tests, Stage 12 frontend Playwright and RT-UI-COMP-BEH-009 cover modal ownership and rendered dialog semantics.',
-    knownGaps: 'Popover, tooltip and toast families are not represented in this shared overlay contract registry; full manual AT audit remains outstanding.',
+    knownGaps: 'Native inert isolation is not used; aria-hidden isolation is covered by fake-DOM sibling/nested-portal tests but needs mounted browser and assistive-technology verification. Popover, tooltip and toast families are outside this modal contract.',
   },
   {
     catalogId: 'C09', group: 'Data Display', status: 'partial',
