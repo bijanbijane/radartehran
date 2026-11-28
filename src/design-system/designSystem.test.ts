@@ -334,6 +334,25 @@ test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on 
 });
 
 
+test('RT-UI-COLOR-013 keeps property lifecycle and QA status surfaces on semantic tokens', () => {
+  const paths = [
+    '../features/properties/results/PropertyCard.tsx',
+    '../features/properties/detail/PropertyDetailPage.tsx',
+    '../features/properties/submission/ListingSubmissionPage.tsx',
+    '../components/views/InteractionQaLabTab.tsx',
+    '../components/views/ValidationAndImplementLabTab.tsx',
+  ];
+  const sources = paths.map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const legacyStatusColors = /#EAF5EE|#176B4C|#FFF4E5|#875000|#FDECEC|#A61B1B|#B3261E|#EAF3F0|#103B38|#C97A10/;
+  for (const source of sources) assert.doesNotMatch(source, legacyStatusColors);
+  assert.ok(sources[0].includes('bg-[var(--color-success-bg)]'));
+  assert.ok(sources[0].includes('bg-[var(--color-warning-bg)]'));
+  assert.ok(sources[1].includes('bg-[var(--color-brand-soft)]'));
+  assert.ok(sources[2].includes('text-[var(--color-danger)]'));
+  assert.ok(sources[3].includes('bg-[var(--color-danger-bg)]'));
+  assert.ok(sources[4].includes('bg-[var(--color-success-bg)]'));
+});
+
 test('RT-UI-COLOR-012 keeps semantic alert class maps on canonical light/dark tokens', () => {
   const classMaps = readFileSync(new URL('./classMaps.ts', import.meta.url), 'utf8');
   const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
