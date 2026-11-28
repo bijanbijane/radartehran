@@ -47,6 +47,13 @@ function createMockAssetsBinding(): WorkerEnv['ASSETS'] {
 }
 
 describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
+  it('0. allows only the pinned workerd install script under npm 12', () => {
+    const rootPackage = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8')) as {
+      allowScripts?: Record<string, boolean>;
+    };
+    assert.deepEqual(rootPackage.allowScripts, { 'workerd@1.20261123.1': true });
+  });
+
   it('1. validates wrangler.jsonc schema, environments, assets binding, and zero secret leakage', () => {
     const wranglerRaw = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.jsonc'), 'utf8');
     const strippedJson = wranglerRaw
