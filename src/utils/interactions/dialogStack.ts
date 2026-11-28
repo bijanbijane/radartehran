@@ -62,3 +62,19 @@ export function isNeighborhoodSearchInputFocused(
 ): boolean {
   return activeElement?.getAttribute?.('aria-label') === 'جست‌وجوی محله';
 }
+
+
+/**
+ * Allows a closing dialog to restore focus only when its saved target belongs
+ * to the currently topmost remaining modal. This prevents a lower dialog's
+ * cleanup from stealing focus from a still-open child/sibling modal.
+ */
+export function shouldRestoreDialogFocus(
+  previousFocus: { isConnected?: boolean } | null | undefined,
+  openDialogs: readonly { contains?(node: unknown): boolean }[],
+): boolean {
+  if (!previousFocus || previousFocus.isConnected === false) return false;
+  if (openDialogs.length === 0) return true;
+  const topmostDialog = openDialogs[openDialogs.length - 1];
+  return typeof topmostDialog.contains === 'function' && topmostDialog.contains(previousFocus);
+}
