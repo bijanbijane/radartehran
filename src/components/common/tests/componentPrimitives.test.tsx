@@ -48,7 +48,7 @@ test('RT-UI-COMP-BEH-004 RadarInputField associates label, invalid input and ale
     <RadarInputField label="قیمت" value="۱۲۵۰۰" onChangeValue={() => undefined} numeric errorText="مقدار نامعتبر است" />,
   );
   const fieldId = html.match(/<label[^>]+for="([^"]+)"/)?.[1];
-  const inputId = html.match(/<input\\b[^>]*\\sid="([^"]+)"/)?.[1];
+  const inputId = html.match(/<input\b[^>]*\sid="([^"]+)"/)?.[1];
   const describedBy = html.match(/aria-describedby="([^"]+)"/)?.[1];
 
   assert.ok(fieldId);
