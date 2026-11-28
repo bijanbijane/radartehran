@@ -439,7 +439,7 @@ export const COMPONENT_FAMILY_COVERAGE: readonly ComponentFamilyCoverage[] = [
 ] as const satisfies readonly ComponentFamilyCoverage[];
 
 export interface ComponentFamilyCoverageIssue {
-  readonly code: 'duplicate_catalog_id' | 'unknown_catalog_id' | 'missing_catalog_family' | 'missing_owner' | 'missing_implementation_reference' | 'missing_contract_evidence' | 'missing_state_matrix' | 'missing_qa_acceptance' | 'missing_known_gap';
+  readonly code: 'duplicate_catalog_id' | 'unknown_catalog_id' | 'catalog_group_mismatch' | 'invalid_coverage_status' | 'missing_catalog_family' | 'missing_owner' | 'missing_implementation_reference' | 'missing_contract_evidence' | 'missing_state_matrix' | 'missing_qa_acceptance' | 'missing_known_gap';
   readonly catalogId: string;
 }
 
@@ -447,13 +447,18 @@ export function validateComponentFamilyCoverage(
   entries: readonly ComponentFamilyCoverage[] = COMPONENT_FAMILY_COVERAGE,
 ): ComponentFamilyCoverageIssue[] {
   const issues: ComponentFamilyCoverageIssue[] = [];
-  const catalogIds = new Set(COMPONENT_CATALOG.map((entry) => entry.id));
+  const catalogById = new Map(COMPONENT_CATALOG.map((entry) => [entry.id, entry]));
   const seen = new Set<string>();
 
   for (const entry of entries) {
     if (seen.has(entry.catalogId)) issues.push({ code: 'duplicate_catalog_id', catalogId: entry.catalogId });
     seen.add(entry.catalogId);
-    if (!catalogIds.has(entry.catalogId)) issues.push({ code: 'unknown_catalog_id', catalogId: entry.catalogId });
+    const catalogEntry = catalogById.get(entry.catalogId);
+    if (!catalogEntry) issues.push({ code: 'unknown_catalog_id', catalogId: entry.catalogId });
+    else if (catalogEntry.group !== entry.group) issues.push({ code: 'catalog_group_mismatch', catalogId: entry.catalogId });
+    if (!['contract_verified', 'partial', 'not_verified'].includes(entry.status)) {
+      issues.push({ code: 'invalid_coverage_status', catalogId: entry.catalogId });
+    }
     if (!entry.owner.trim()) issues.push({ code: 'missing_owner', catalogId: entry.catalogId });
     if (entry.implementationRefs.length === 0 || entry.implementationRefs.some((path) => !path.startsWith('src/'))) {
       issues.push({ code: 'missing_implementation_reference', catalogId: entry.catalogId });
