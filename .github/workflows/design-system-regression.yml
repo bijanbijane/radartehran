@@ -5,8 +5,10 @@ on:
     branches:
       - main
       - fix/ui-stage11-layout-contract-resolution
+      - fix/ui-stage12-theme-token-parity
     paths:
       - "src/design-system/**"
+      - "src/components/common/**"
       - "src/styles/layers/themes.css"
       - "src/components/useDialogFocus.ts"
       - "src/components/ui/RadarPrimitives.tsx"
