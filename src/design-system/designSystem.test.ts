@@ -311,3 +311,14 @@ test('RT-UI-COLOR-003 keeps product view shell backgrounds on canonical theme to
   assert.ok(homeFirst.shellBg.includes('dark:bg-[var(--color-bg-canvas)]/95'));
   assert.ok(![standard.shellBg, split.splitShell, homeFirst.shellBg].some((value) => value.includes('#0D1513')));
 });
+
+
+test('RT-UI-COLOR-007 keeps dark map attribution on canonical surface and text tokens', () => {
+  const indexCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  const darkAttribution = indexCss.split('[data-apple-theme=\'dark\'] body .leaflet-control-attribution')[1]?.split('}')[0] ?? '';
+
+  assert.ok(darkAttribution.includes('var(--color-bg-surface)'));
+  assert.ok(darkAttribution.includes('var(--color-text-muted)'));
+  assert.ok(!darkAttribution.includes('#8ca19a'));
+  assert.ok(!darkAttribution.includes('rgba(19, 31, 28'));
+});
