@@ -1,0 +1,92 @@
+name: Radar Tehran Frontend Visual Regression
+
+on:
+  pull_request:
+    branches:
+      - main
+      - fix/ui-stage11-layout-contract-resolution
+    paths:
+      - "src/**"
+      - "apps/frontend/**"
+      - "playwright.preview.config.ts"
+      - "tests/frontend-preview.visual.e2e.spec.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/frontend-visual-regression.yml"
+  push:
+    branches:
+      - fix/ui-stage12-theme-token-parity
+    paths:
+      - "src/**"
+      - "apps/frontend/**"
+      - "playwright.preview.config.ts"
+      - "tests/frontend-preview.visual.e2e.spec.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/frontend-visual-regression.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-visual-regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-visual-regression:
+    name: Build and browser-check desktop/mobile frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend
+        run: npm run build -w radartehran-frontend
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start built frontend preview server
+        run: |
+          npm run preview -w radartehran-frontend -- --host 127.0.0.1 > /tmp/radartehran-vite-preview.log 2>&1 &
+          echo $! > /tmp/radartehran-vite-preview.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              echo "Frontend preview server is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/radartehran-vite-preview.log
+          exit 1
+
+      - name: Capture desktop and mobile browser evidence
+        env:
+          CI: "true"
+          SMOKE_BASE_URL: http://127.0.0.1:4173
+        run: npx playwright test --config=playwright.preview.config.ts
+
+      - name: Retain screenshots and browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-visual-regression
+          path: |
+            artifacts/frontend-preview/
+            test-results/
+            /tmp/radartehran-vite-preview.log
+          if-no-files-found: warn
+          retention-days: 14
