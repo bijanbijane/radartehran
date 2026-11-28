@@ -13,7 +13,7 @@ export function resolveProductViewRouterShellClasses(
   if (homeContentFirst) {
     return {
       shellBg: '',
-      splitShell: `max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[var(--color-bg-canvas)] dark:max-lg:bg-[#0D1513] max-lg:backdrop-blur-none lg:bg-[var(--color-bg-canvas)]/95 dark:lg:bg-[var(--color-bg-canvas)]/95 lg:backdrop-blur-xl ${SPLIT_WIDTH}`,
+      splitShell: `max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[var(--color-bg-canvas)] dark:max-lg:bg-[var(--color-bg-canvas)] max-lg:backdrop-blur-none lg:bg-[var(--color-bg-canvas)]/95 dark:lg:bg-[var(--color-bg-canvas)]/95 lg:backdrop-blur-xl ${SPLIT_WIDTH}`,
     };
   }
   return {
