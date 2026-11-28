@@ -81,7 +81,11 @@ export function computeDeclutteredMarkerTiers(
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
       result.set(hood.id, tier); continue;
     }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13 ? ['compact_chip'] : zoom < 14 ? ['standard_pill', 'compact_chip'] : ['detailed_pill', 'standard_pill', 'compact_chip'];
+    if (zoom < 14) {
+      result.set(hood.id, 'dot');
+      continue;
+    }
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = ['detailed_pill', 'standard_pill', 'compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
