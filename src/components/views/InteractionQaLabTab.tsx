@@ -97,12 +97,12 @@ export const InteractionQaLabTab: React.FC = () => {
     <div className="space-y-5" data-testid="interaction-qa-lab-tab">
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. تفکیک Draft و Applied Filters (§4.1 - §4.4)</span>
           </h3>
           {hasPendingDraftChanges && (
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-[6px] bg-[#FFF4E5] text-[#875000]">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-[6px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
               تغییرات پیش‌نویس اعمال‌نشده
             </span>
           )}
@@ -158,7 +158,7 @@ export const InteractionQaLabTab: React.FC = () => {
               type="button"
               aria-label={`حذف فیلتر ${c.labelFa}`}
               onClick={() => setFilters((s) => removeAppliedFilterChip(s, c.key))}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[#103B38] dark:text-emerald-300 text-[12px] font-semibold cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)] text-[12px] font-semibold cursor-pointer"
             >
               <span>{c.labelFa}</span>
               <X className="w-3 h-3" />
@@ -169,12 +169,12 @@ export const InteractionQaLabTab: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2">۲. کنترل Race Condition و Telemetry بدون PII</h3>
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] mb-2">۲. کنترل Race Condition و Telemetry بدون PII</h3>
           <p className="text-[12.5px] text-[var(--color-text-muted)] mb-3">ارسال متوالی درخواست «پاسداران» و بلافاصله «ونک» — پاسخ قدیمی منقضی می‌شود.</p>
           <RadarButton variant="secondary" size="sm" leadingIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={runRaceSimulation}>
             شبیه‌سازی جست‌وجوی همزمان A ← B
           </RadarButton>
-          <div className="mt-3 p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] text-[12px] font-semibold text-[#176B4C] dark:text-emerald-300">
+          <div className="mt-3 p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] text-[12px] font-semibold text-[var(--color-success)]">
             {raceWinner}
           </div>
           {telemetryPreview && (
@@ -185,7 +185,7 @@ export const InteractionQaLabTab: React.FC = () => {
         </RadarCard>
 
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2">۳. بازیابی خطای ارزش‌گذاری و شناسه یکتا (§9.3 - §9.5)</h3>
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] mb-2">۳. بازیابی خطای ارزش‌گذاری و شناسه یکتا (§9.3 - §9.5)</h3>
           <div className="flex items-center gap-2 mb-3">
             <input
               type="text"
@@ -198,7 +198,7 @@ export const InteractionQaLabTab: React.FC = () => {
                 const validSqm = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 95;
                 setRequestKey(createIdempotentRequestKey({ hoodId: 5, sqm: validSqm, buildYear: 1398, attemptNonce: 'demo1' }));
               }}
-              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-[13px] tabular-nums"
+              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-[13px] tabular-nums"
             />
             <RadarButton variant="outline" size="sm" loading={valSubmitting} onClick={() => runValuationSimulation(true)}>
               شبیه‌سازی خطای شبکه
@@ -207,18 +207,18 @@ export const InteractionQaLabTab: React.FC = () => {
               تلاش مجدد امن
             </RadarButton>
           </div>
-          {valError && <div role="alert" className="p-2.5 rounded-[8px] bg-[#FDECEC] text-[#A61B1B] text-[12px] font-medium">{valError}</div>}
-          {valResult && <div role="status" className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] text-[12px] font-semibold">{valResult}</div>}
+          {valError && <div role="alert" className="p-2.5 rounded-[8px] bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-[12px] font-medium">{valError}</div>}
+          {valResult && <div role="status" className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[var(--color-success)] text-[12px] font-semibold">{valResult}</div>}
         </RadarCard>
       </div>
 
       <RadarCard padding="standard" elevated>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۴. سناریوهای پذیرش تعاملات و Design QA (Stage 10 · RT-UI-VALIDATION-001)</span>
           </h3>
-          <span className="text-[12px] font-bold text-[#176B4C] tabular-nums">
+          <span className="text-[12px] font-bold text-[var(--color-success)] tabular-nums">
             {INTERACTION_ACCEPTANCE_CRITERIA.length}/۲۵ معیار مستند
           </span>
         </div>
@@ -228,10 +228,10 @@ export const InteractionQaLabTab: React.FC = () => {
               key={sc.id}
               type="button"
               onClick={() => setPassedFlows((p) => ({ ...p, [sc.id]: !p[sc.id] }))}
-              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] bg-white dark:bg-[var(--color-bg-surface)] text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] bg-[var(--color-bg-surface)] text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
             >
               <span className="font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">{sc.id}: {sc.titleFa}</span>
-              <CheckCircle2 className={`w-4 h-4 shrink-0 ${passedFlows[sc.id] ? 'text-[#176B4C]' : 'text-slate-300'}`} />
+              <CheckCircle2 className={`w-4 h-4 shrink-0 ${passedFlows[sc.id] ? 'text-[var(--color-success)]' : 'text-slate-300'}`} />
             </button>
           ))}
         </div>
