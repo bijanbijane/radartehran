@@ -5,12 +5,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { RadarButton } from '../RadarButton';
 import { RadarCard as CommonRadarCard } from '../RadarCard';
-import { RadarInputField } from '../RadarField';
+import { RadarEmptyStateCard, RadarInputField } from '../RadarField';
 import { RadarInput } from '../RadarInput';
-import { DataCredibilityBadge, RadarCard as DataRadarCard } from '../RadarDataBadges';
+import { DataCredibilityBadge, RadarCard as DataRadarCard, RadarMetricCard } from '../RadarDataBadges';
 import { RadarButton as LegacyRadarButton, RadarCard as PrimitiveRadarCard, RadarTabs, RadarSearchInput, RadarSheet } from '../../ui/RadarPrimitives';
-import { RadarEmptyStateCard } from '../RadarField';
-import { RadarMetricCard } from '../RadarDataBadges';
 
 test('RT-UI-COMP-BEH-001 canonical RadarButton renders native disabled/loading and accessible-name contracts', () => {
   const html = renderToStaticMarkup(
@@ -136,9 +134,7 @@ test('RT-UI-COMP-BEH-009 RadarSheet exposes labelled modal semantics only while 
 
 test('RT-UI-COMP-BEH-010 empty-state and metric cards retain descriptive content and data context', () => {
   const empty = renderToStaticMarkup(
-    <RadarEmptyStateCard title="نتیجه‌ای پیدا نشد" description="فیلترها را تغییر دهید">
-      <span>اقدام</span>
-    </RadarEmptyStateCard>,
+    <RadarEmptyStateCard title="نتیجه‌ای پیدا نشد" description="فیلترها را تغییر دهید" action={<span>اقدام</span>} />,
   );
   const metric = renderToStaticMarkup(
     <RadarMetricCard title="میانگین قیمت" valueText="۱۲۵" unitText="میلیون تومان" periodAndSource="پاییز ۱۴۰۵ · منبع: نمونه" credibility="verified" />,
