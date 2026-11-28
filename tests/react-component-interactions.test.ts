@@ -229,3 +229,18 @@ test('NeighborhoodPhotoGallery lightbox delegates focus and Escape lifecycle to 
   assert.match(source, /ref=\{lightboxRef\}/);
   assert.doesNotMatch(source, /onKeyDown=\{\(e\) => \{ if \(e\.key === 'Escape'\)/);
 });
+
+
+test('shared modal systems recompute and restore background accessibility isolation', () => {
+  const stack = fs.readFileSync(path.join(ROOT, 'src/utils/interactions/dialogStack.ts'), 'utf8');
+  const focusHook = fs.readFileSync(path.join(ROOT, 'src/components/useDialogFocus.ts'), 'utf8');
+  const radarPrimitives = fs.readFileSync(path.join(ROOT, 'src/components/ui/RadarPrimitives.tsx'), 'utf8');
+  const mobileMoreSheet = fs.readFileSync(path.join(ROOT, 'src/components/navigation/MobileMoreSheet.tsx'), 'utf8');
+
+  assert.match(stack, /dialogIsolationSnapshots/);
+  assert.match(stack, /setAttribute\('aria-hidden', 'true'\)/);
+  assert.match(stack, /removeAttribute\('aria-hidden'\)/);
+  for (const source of [focusHook, radarPrimitives, mobileMoreSheet]) {
+    assert.match(source, /syncDialogBackgroundIsolation\(document\)/);
+  }
+});
