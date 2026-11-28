@@ -203,31 +203,33 @@ test('rejects a spatial match from a different city than the requested city', as
 
 
 test('falls back to canonical geometry when stride simplification creates a self-intersection', () => {
-  const concaveUShape: PolygonGeometry = {
+  const concavePolygon: PolygonGeometry = {
     type: 'Polygon',
     coordinates: [[
-      [51.30, 35.70],
-      [51.34, 35.70],
-      [51.34, 35.74],
-      [51.33, 35.74],
-      [51.33, 35.71],
-      [51.31, 35.71],
-      [51.31, 35.74],
-      [51.30, 35.74],
-      [51.30, 35.70],
+      [51.303, 35.704],
+      [51.307, 35.707],
+      [51.306, 35.703],
+      [51.306, 35.706],
+      [51.301, 35.702],
+      [51.300, 35.705],
+      [51.302, 35.705],
+      [51.305, 35.707],
+      [51.303, 35.704],
     ]],
   };
-  const ring = concaveUShape.coordinates as [number, number][][];
-  const naiveStrideResult: PolygonGeometry = {
+  const ring = concavePolygon.coordinates as [number, number][][];
+  // Mirror simplifyPolygonGeometry's stride=2 selection exactly: first point,
+  // interior indices 1, 3, 5, 7, then the closing point.
+  const strideCandidate: PolygonGeometry = {
     type: 'Polygon',
-    coordinates: [[ring[0][0], ring[0][2], ring[0][4], ring[0][6], ring[0][8]]],
+    coordinates: [[ring[0][0], ring[0][1], ring[0][3], ring[0][5], ring[0][7], ring[0][8]]],
   };
 
-  assert.equal(validatePolygonGeometry(concaveUShape).valid, true);
-  assert.equal(validatePolygonGeometry(naiveStrideResult).valid, false);
+  assert.equal(validatePolygonGeometry(concavePolygon).valid, true);
+  assert.equal(validatePolygonGeometry(strideCandidate).valid, false);
 
-  const simplified = simplifyPolygonGeometry(concaveUShape, 2);
-  assert.deepEqual(simplified, concaveUShape);
+  const simplified = simplifyPolygonGeometry(concavePolygon, 2);
+  assert.deepEqual(simplified, concavePolygon);
   assert.equal(validatePolygonGeometry(simplified).valid, true);
 });
 
