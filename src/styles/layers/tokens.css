@@ -48,12 +48,16 @@
     /* Layer 3: Semantic & Distinct Accessible Focus Blue */
     --color-success: #176B4C;
     --color-success-bg: #EAF5EE;
+    --color-success-border: #B9DEC8;
     --color-warning: #875000;
     --color-warning-bg: #FFF4E5;
+    --color-warning-border: #F2D19B;
     --color-danger: #A61B1B;
     --color-danger-bg: #FDECEC;
+    --color-danger-border: #F2B8B8;
     --color-info: #155E9A;
     --color-info-bg: #EAF3FB;
+    --color-info-border: #B9D8F0;
     --color-focus: #2864DC;
 
     /* Typography Scale & Editorial Measure (Synced 1:1 with src/design-system/typographySystem.ts) */
