@@ -42,7 +42,7 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     await expect(mobilePage.getByRole('textbox', { name: /جست‌وجوی سراسری/ })).toBeVisible();
 
     for (const destination of ['محله‌ها', 'بازار', 'نقشه', 'املاک']) {
-      await expect(mobilePage.getByRole('link', { name: destination, exact: true })).toBeVisible();
+      await expect(mobilePage.getByRole('link', { name: destination, exact: true }).last()).toBeVisible();
     }
     await expect(mobilePage.getByRole('button', { name: 'بخش‌های بیشتر', exact: true })).toBeVisible();
 
