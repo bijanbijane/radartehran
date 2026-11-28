@@ -9,7 +9,7 @@ export interface RmepExecutionState { schema_version: '1.0'; program_id: 'RMEP-0
   execution_history: { completed_tasks: string[]; in_progress_tasks: string[]; verified_commits: string[]; uncommitted_changes_summary: string; };
   phase_statuses: { phase_1: RmepPhaseStatus; phase_2: RmepPhaseStatus; phase_3: RmepPhaseStatus; phase_4: RmepPhaseStatus; phase_5: RmepPhaseStatus; phase_6: RmepPhaseStatus; };
   operations: Array<{ operation_id: string; phase: string; description: string; status: RmepOperationStatus; idempotent: boolean; timestamp_utc: string; }>;
-  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number; outcome: 'PASSED' | 'FAILED'; evidence_path: string; }>;
+  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number | null; outcome: 'PASSED' | 'FAILED' | 'NOT_RUN'; evidence_path: string | null; }>;
   engineering_decisions: string[];
   blockers: Array<{ blocker_id: string; phase: string; description: string; requires_explicit_user_authorization: boolean; }>;
   pending_authorization: string[];
@@ -46,6 +46,17 @@ export function validateRmepExecutionState(state: RmepExecutionState): { valid: 
     reasons.push('Unsafe path reference in final_report_path');
   }
   for (const t of state.tests) {
+    if (t.outcome === 'NOT_RUN') {
+      if (t.exit_code !== null || t.evidence_path !== null) {
+        reasons.push(`NOT_RUN test '${t.test_name}' must not claim an exit code or evidence path`);
+      }
+      if (!t.command?.trim()) reasons.push(`NOT_RUN test '${t.test_name}' must retain its intended command`);
+      continue;
+    }
+    if (typeof t.evidence_path !== 'string' || t.evidence_path.trim().length === 0) {
+      reasons.push(`Executed test '${t.test_name}' must provide an evidence_path`);
+      continue;
+    }
     if (t.evidence_path.includes('..') || t.evidence_path.startsWith('/') || t.evidence_path.includes('\\')) {
       reasons.push(`Unsafe evidence_path: ${t.evidence_path}`);
     }
@@ -115,8 +126,18 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
     discrepancies.push('Recorded master prompt SHA-256 in state differs from actual file hash');
   }
   for (const testItem of parsed.tests) {
+    if (testItem.outcome === 'NOT_RUN') {
+      if (testItem.exit_code !== null || testItem.evidence_path !== null || !testItem.command?.trim()) {
+        discrepancies.push(`NOT_RUN test '${testItem.test_name}' must have null exit_code/evidence_path and a valid intended command`);
+      }
+      continue;
+    }
     if (testItem.exit_code !== 0 || testItem.outcome !== 'PASSED' || !testItem.command?.trim()) {
       discrepancies.push(`Test '${testItem.test_name}' is not PASSED with exit_code=0 and valid command`);
+    }
+    if (typeof testItem.evidence_path !== 'string' || testItem.evidence_path.trim().length === 0) {
+      discrepancies.push(`Executed test '${testItem.test_name}' is missing a valid evidence_path`);
+      continue;
     }
     const absEvidence = path.resolve(rootDir, testItem.evidence_path);
     if (!fs.existsSync(absEvidence)) {
