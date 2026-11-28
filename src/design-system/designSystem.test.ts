@@ -381,11 +381,17 @@ test('RT-UI-COLOR-012 keeps semantic alert class maps on canonical light/dark to
   const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
   const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
 
-  for (const tone of ['success', 'warning', 'danger', 'info']) {
+  const canonicalBorders = {
+    success: SEMANTIC_PALETTE.success.border,
+    warning: SEMANTIC_PALETTE.warning.border,
+    danger: SEMANTIC_PALETTE.danger.border,
+    info: SEMANTIC_PALETTE.info.border,
+  };
+  for (const [tone, border] of Object.entries(canonicalBorders)) {
     assert.ok(classMaps.includes(`bg-[var(--color-${tone}-bg)]`));
     assert.ok(classMaps.includes(`text-[var(--color-${tone})]`));
     assert.ok(classMaps.includes(`border-[var(--color-${tone}-border)]`));
-    assert.ok(lightTokens.includes(`--color-${tone}-border:`));
+    assert.ok(lightTokens.includes(`--color-${tone}-border: ${border};`));
     assert.ok(darkCss.includes(`--color-${tone}-border:`));
   }
   assert.doesNotMatch(classMaps, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|amber|rose|sky)-|dark:text-(emerald|amber|rose|sky)-/);
@@ -399,10 +405,13 @@ test('RT-UI-COLOR-011 keeps data credibility badges and metric cards on semantic
 
   assert.ok(credibilityStyles.includes('bg-[var(--color-success-bg)]'));
   assert.ok(credibilityStyles.includes('text-[var(--color-success)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-success-border)]'));
   assert.ok(credibilityStyles.includes('bg-[var(--color-info-bg)]'));
   assert.ok(credibilityStyles.includes('text-[var(--color-info)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-info-border)]'));
   assert.ok(credibilityStyles.includes('bg-[var(--color-warning-bg)]'));
   assert.ok(credibilityStyles.includes('text-[var(--color-warning)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-warning-border)]'));
   assert.doesNotMatch(credibilityStyles, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|sky|amber)-|dark:text-(emerald|sky|amber)-/);
   for (const token of ['--color-success-bg', '--color-success', '--color-info-bg', '--color-info', '--color-warning-bg', '--color-warning']) {
     assert.ok(lightTokens.includes(token));
