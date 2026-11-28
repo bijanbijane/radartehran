@@ -57,7 +57,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           {label}
         </label>
         {required && (
-          <span className="text-[13px] font-semibold text-[#A61B1B] dark:text-rose-400">ضروری</span>
+          <span className="text-[13px] font-semibold text-[var(--color-danger)]">ضروری</span>
         )}
       </div>
       <div className="relative flex items-center">
@@ -77,7 +77,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           onChange={(e) => onChangeValue(numeric ? normalizeNumericFieldDigits(e.target.value) : e.target.value)}
           className={`w-full ${INPUT_HEIGHTS[size]} rounded-[8px] border bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] px-3 text-[15px] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] transition-colors focus:outline-none focus:ring-2 ${
             hasError
-              ? 'border-[#A61B1B] focus:border-[#A61B1B] focus:ring-[#A61B1B]/20'
+              ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger)]/20'
               : 'border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)] focus:border-[var(--color-brand-600)] focus:ring-[var(--color-focus)]/20'
           } ${leadingIcon ? 'pr-9' : ''} ${unitLabel || trailingIcon ? 'pl-20' : ''} ${numeric ? 'tabular-nums text-left' : ''} disabled:bg-[var(--color-bg-muted)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed`}
         />
@@ -89,7 +89,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
         )}
       </div>
       {hasError ? (
-        <p id={errorId} role="alert" className="flex items-center gap-1.5 text-[13px] font-medium text-[#A61B1B] dark:text-rose-400 leading-[1.6]">
+        <p id={errorId} role="alert" className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-danger)] leading-[1.6]">
           <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span>{errorText}</span>
         </p>
