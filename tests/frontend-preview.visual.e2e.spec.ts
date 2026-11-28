@@ -46,11 +46,11 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     }
     const moreButton = mobilePage.getByRole('button', { name: 'بخش‌های بیشتر', exact: true });
     await expect(moreButton).toBeVisible();
+    const originalBodyOverflow = await mobilePage.locator('body').evaluate((body) => body.style.overflow);
+    const originalAriaHiddenCount = await mobilePage.locator('[aria-hidden="true"]').count();
     await moreButton.focus();
     await mobilePage.keyboard.press('Enter');
 
-    const originalBodyOverflow = await mobilePage.locator('body').evaluate((body) => body.style.overflow);
-    const originalAriaHiddenCount = await mobilePage.locator('[aria-hidden="true"]').count();
     const moreDialog = mobilePage.getByRole('dialog', { name: 'بخش‌های بیشتر' });
     await expect(moreDialog).toBeVisible();
     await expect(moreDialog).toHaveAttribute('aria-modal', 'true');
