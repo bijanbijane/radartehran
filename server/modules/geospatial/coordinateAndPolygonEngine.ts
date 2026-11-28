@@ -1,5 +1,4 @@
 import type { LinearRingCoords, PolygonGeometry, Wgs84Coordinate } from './types';
-import { normalizeAndValidateCoordinate } from './coordinateNormalization';
 import { validatePolygonGeometry } from './polygonTopologyEngine';
 
 export { normalizeAndValidateCoordinate } from './coordinateNormalization';
