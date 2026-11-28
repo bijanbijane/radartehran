@@ -203,7 +203,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           <button
             type="button"
             onClick={() => { clearSubmissionDraft(resolveEffectiveUid(currentUserUid)); onCancel(); }}
-            className="px-2.5 py-1.5 rounded-[8px] text-[#B3261E] font-bold hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-[8px] text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-bg)] cursor-pointer"
           >
             انصراف
           </button>
@@ -226,7 +226,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
               s.id === step
                 ? 'bg-[var(--color-brand-600)] text-white'
                 : s.id < step
-                ? 'bg-[#EAF5EE] text-[#176B4C]'
+                ? 'bg-[var(--color-success-bg)] text-[var(--color-success)]'
                 : 'bg-[var(--color-bg-muted)] dark:bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]'
             }`}
           >
@@ -255,7 +255,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                   type="button"
                   onClick={() => update({ transactionType: tx })}
                   className={`w-full p-2.5 rounded-[9px] border text-right font-bold cursor-pointer ${
-                    draft.transactionType === tx ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
+                    draft.transactionType === tx ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-600)] text-[var(--color-brand-fg)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
                   }`}
                 >
                   {TRANSACTION_TYPE_LABELS_FA[tx]}
@@ -270,7 +270,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                   type="button"
                   onClick={() => update({ propertyType: pt })}
                   className={`w-full p-2.5 rounded-[9px] border text-right font-bold cursor-pointer ${
-                    draft.propertyType === pt ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
+                    draft.propertyType === pt ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-600)] text-[var(--color-brand-fg)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]'
                   }`}
                 >
                   {PROPERTY_TYPE_LABELS_FA[pt]}
@@ -287,7 +287,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
               <select
                 value={draft.hoodId}
                 onChange={(e) => update({ hoodId: Number(e.target.value) })}
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold"
+                className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] font-bold"
               >
                 {evaluatedNeighborhoods.map((h) => (
                   <option key={h.id} value={h.id}>محله {h.name} ({h.zone})</option>
@@ -303,16 +303,16 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
                 value={draft.street}
                 onChange={(e) => update({ street: e.target.value })}
                 placeholder="مثال: بلوار ۲۴ متری، فرعی دنج..."
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
+                className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               />
-              {errors.street && <span role="alert" className="text-[#B3261E] text-[11px] block mt-1">{errors.street}</span>}
+              {errors.street && <span role="alert" className="text-[var(--color-danger)] text-[11px] block mt-1">{errors.street}</span>}
             </div>
             <div>
               <label className="font-bold block mb-1">سطح نمایش موقعیت روی نقشه (حریم خصوصی)</label>
               <select
                 value={draft.locationPrecision}
                 onChange={(e) => update({ locationPrecision: e.target.value as LocationPrecision })}
-                className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
+                className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]"
               >
                 <option value="approximate">محدوده تقریبی خیابان (پیشنهادی برای حفظ حریم خصوصی)</option>
                 <option value="neighborhood">فقط در سطح محله</option>
@@ -327,31 +327,31 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 tabular-nums">
             <div>
               <label className="font-bold block mb-1">متراژ (متر مربع)</label>
-              <input type="text" data-testid="submit-area-input" aria-invalid={Boolean(errors.areaSqm)} value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
-              {errors.areaSqm && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.areaSqm}</span>}
+              <input type="text" data-testid="submit-area-input" aria-invalid={Boolean(errors.areaSqm)} value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+              {errors.areaSqm && <span role="alert" className="text-[var(--color-danger)] text-[11px] block mt-0.5">{errors.areaSqm}</span>}
             </div>
             {draft.propertyType !== 'land' && (
               <>
                 <div>
                   <label className="font-bold block mb-1">سال ساخت (شمسی)</label>
-                  <input type="text" aria-invalid={Boolean(errors.buildYearJalali)} value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
-                  {errors.buildYearJalali && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.buildYearJalali}</span>}
+                  <input type="text" aria-invalid={Boolean(errors.buildYearJalali)} value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+                  {errors.buildYearJalali && <span role="alert" className="text-[var(--color-danger)] text-[11px] block mt-0.5">{errors.buildYearJalali}</span>}
                 </div>
                 <div>
                   <label className="font-bold block mb-1">تعداد اتاق خواب</label>
-                  <input type="text" aria-invalid={Boolean(errors.roomsCount)} value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
-                  {errors.roomsCount && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.roomsCount}</span>}
+                  <input type="text" aria-invalid={Boolean(errors.roomsCount)} value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+                  {errors.roomsCount && <span role="alert" className="text-[var(--color-danger)] text-[11px] block mt-0.5">{errors.roomsCount}</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="font-bold block mb-1">طبقه</label>
-                    <input type="text" aria-invalid={Boolean(errors.floorNumber)} value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
-                    {errors.floorNumber && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.floorNumber}</span>}
+                    <input type="text" aria-invalid={Boolean(errors.floorNumber)} value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+                    {errors.floorNumber && <span role="alert" className="text-[var(--color-danger)] text-[10px] block mt-0.5">{errors.floorNumber}</span>}
                   </div>
                   <div>
                     <label className="font-bold block mb-1">کل طبقات</label>
-                    <input type="text" aria-invalid={Boolean(errors.totalFloors)} value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
-                    {errors.totalFloors && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.totalFloors}</span>}
+                    <input type="text" aria-invalid={Boolean(errors.totalFloors)} value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-muted)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)]" />
+                    {errors.totalFloors && <span role="alert" className="text-[var(--color-danger)] text-[10px] block mt-0.5">{errors.totalFloors}</span>}
                   </div>
                 </div>
               </>
