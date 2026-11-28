@@ -1,4 +1,16 @@
-import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; import { buildNeighborhoodTooltipTrendSectionHtml } from './map/neighborhoodTooltipTrendHelpers'; import { formatPersianDeltaPercent, formatPersianScore, normalizeMapPinPriceText } from '../utils/persianBidiFormat'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10; export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
+import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; import { buildNeighborhoodTooltipTrendSectionHtml } from './map/neighborhoodTooltipTrendHelpers'; import { formatPersianDeltaPercent, formatPersianScore, normalizeMapPinPriceText } from '../utils/persianBidiFormat'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10;
+
+export function getMapLabelBudget(map: any): number {
+  try {
+    const size = typeof map?.getSize === 'function' ? map.getSize() : null;
+    const width = Number(size?.x);
+    const height = Number(size?.y);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 12;
+    return Math.min(40, Math.max(12, Math.floor((width * height) / 18_000)));
+  } catch {
+    return 12;
+  }
+} export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
 ): EvaluatedNeighborhood[] { let centerLat: number | null = null, centerLng: number | null = null, maxRadiusKm = 18; try { if (map && typeof map.getBounds === 'function') { const bounds = map.getBounds(); const center = typeof map.getCenter === 'function' ? map.getCenter() : bounds?.getCenter?.(); const ne = bounds?.getNorthEast?.(); if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) { centerLat = center.lat; centerLng = center.lng; if (ne && Number.isFinite(ne.lat) && Number.isFinite(ne.lng)) { const cornerDist = calcDistanceKm(center.lat, center.lng, ne.lat, ne.lng); if (cornerDist !== null && cornerDist > 0) maxRadiusKm = cornerDist + radialMarginKm; } } }
   } catch { } return neighborhoods.filter((hood) => { if (statusFilter !== 'all' && hood.status !== statusFilter) return false; if (hood.id === selectedHoodId) return true; if (isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, padRatio)) return true; if (centerLat !== null && centerLng !== null) { const dist = calcDistanceKm(centerLat, centerLng, hood.lat, hood.lng); if (dist !== null && dist <= maxRadiusKm) return true; }
     return false; }); }
@@ -50,6 +62,8 @@ export function computeDeclutteredMarkerTiers(
     return spA !== spB ? spB - spA : b.overallScore - a.overallScore;
   });
   const placedBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+  const labelBudget = getMapLabelBudget(map);
+  let placedLabelCount = 0;
   const horizontalGap = zoom <= 12 ? 22 : 11;
   const verticalGap = zoom <= 12 ? 14 : 8;
   const canPlaceBox = (x: number, y: number, w: number, h: number): boolean => {
@@ -79,11 +93,16 @@ export function computeDeclutteredMarkerTiers(
       const tier: MarkerVisualTier = zoom >= 14 ? 'detailed_pill' : 'standard_pill';
       const box = markerBox(hood, tier, hasSponsor);
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      placedLabelCount += 1;
       result.set(hood.id, tier); continue;
     }
     // At zoom 12–13 only the selected neighborhood receives a text label.
     // Defer all non-selected labels until zoom 14 to keep the map legible.
     if (zoom < 14) {
+      result.set(hood.id, 'dot');
+      continue;
+    }
+    if (placedLabelCount >= labelBudget) {
       result.set(hood.id, 'dot');
       continue;
     }
@@ -93,7 +112,7 @@ export function computeDeclutteredMarkerTiers(
       const box = markerBox(hood, tier, hasSponsor);
       if (!canPlaceBox(pt.x, pt.y, box.w, box.h)) continue;
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
-      result.set(hood.id, tier); placed = true; break;
+      result.set(hood.id, tier); placedLabelCount += 1; placed = true; break;
     }
     if (!placed) result.set(hood.id, 'dot');
   }
