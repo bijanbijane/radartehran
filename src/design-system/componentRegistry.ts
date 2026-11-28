@@ -197,7 +197,7 @@ export const COMPONENT_IMPLEMENTATION_REGISTRY = [
 ] as const satisfies readonly ComponentRegistryEntry[];
 
 export interface ComponentRegistryIssue {
-  readonly code: 'duplicate_id' | 'missing_spec_field' | 'empty_spec_field' | 'missing_implementation' | 'missing_contract';
+  readonly code: 'duplicate_id' | 'missing_name' | 'missing_owner' | 'missing_spec_field' | 'empty_spec_field' | 'missing_implementation' | 'missing_contract' | 'invalid_governance';
   readonly componentId: string;
   readonly field?: string;
 }
@@ -212,6 +212,11 @@ export function validateComponentRegistry(
     if (seenIds.has(entry.id)) issues.push({ code: 'duplicate_id', componentId: entry.id });
     seenIds.add(entry.id);
 
+    if (!entry.name.trim()) issues.push({ code: 'missing_name', componentId: entry.id });
+    if (!entry.owner.trim()) issues.push({ code: 'missing_owner', componentId: entry.id });
+    if (!['Experimental', 'Stable', 'Deprecated', 'Removed'].includes(entry.governance)) {
+      issues.push({ code: 'invalid_governance', componentId: entry.id });
+    }
     if (!entry.implementation.trim()) issues.push({ code: 'missing_implementation', componentId: entry.id });
     if (!entry.publicContract.trim()) issues.push({ code: 'missing_contract', componentId: entry.id });
 
