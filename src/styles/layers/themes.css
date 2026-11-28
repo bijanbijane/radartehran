@@ -36,6 +36,9 @@
     --color-warning-bg: rgba(245, 158, 11, 0.18);
     --color-warning-border: rgba(252, 211, 77, 0.36);
     --color-danger: #FDA4AF;
+    --color-danger-solid: #A61B1B;
+    --color-danger-solid-hover: #8E1515;
+    --color-danger-solid-active: #751010;
     --color-danger-bg: rgba(244, 63, 94, 0.18);
     --color-danger-border: rgba(253, 164, 175, 0.36);
     --color-info: #93C5FD;
