@@ -221,3 +221,11 @@ test('MobileMoreSheet uses shared modal stack, focus restoration, and body scrol
   assert.match(source, /shouldRestoreDialogFocus\(previouslyFocused, remainingDialogs\)/);
   assert.match(source, /event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*closeRef\.current\(\);/);
 });
+
+
+test('NeighborhoodPhotoGallery lightbox delegates focus and Escape lifecycle to useDialogFocus', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'src/components/NeighborhoodPhotoGallery.tsx'), 'utf8');
+  assert.match(source, /useDialogFocus\(showLightbox,\s*\(\) => setShowLightbox\(false\)\)/);
+  assert.match(source, /ref=\{lightboxRef\}/);
+  assert.doesNotMatch(source, /onKeyDown=\{\(e\) => \{ if \(e\.key === 'Escape'\)/);
+});
