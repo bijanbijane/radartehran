@@ -81,7 +81,7 @@ jobs:
           npx tsx tests/d1-triad-binding-isolation.test.ts
           npm run test:triad
           npx tsx --test tests/frontend-api-service-binding.test.ts
-          npx tsx --test tests/client-app-check-fetch-interceptor.test.ts
+          npx tsx --test tests/client-session-cookie-transport.test.ts
           npm run test:geography-catalog
 
       - name: Verify temporary D1 write-pause deadline behavior
@@ -165,7 +165,10 @@ jobs:
       - name: Dry-run package the Frontend Worker with RADAR_API Service Binding
         run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env production --dry-run --outdir /tmp/radartehran-frontend-dryrun
 
+      # This checks the deployed production bundle assembled by the live smoke step above.
+      # Pull-request runs skip that read-only production probe and must not inspect its /tmp output.
       - name: Verify production App Check client key is present
+        if: github.event_name != 'pull_request'
         run: |
           if ! grep -Eq '6Le[A-Za-z0-9_-]{20,}' /tmp/radar-frontend-bundles.js; then
             echo "ERROR: production frontend bundle has no reCAPTCHA Enterprise site key."

@@ -159,6 +159,8 @@ export interface SpatialPublishableListing {
   hasElevator?: boolean;
   hasParking?: boolean;
   coordinates: Wgs84Coordinate;
+  /** Only independently verified property-point coordinates may enter public spatial discovery. Legacy/missing values fail closed. */
+  coordinateAccuracy?: 'EXACT_VERIFIED' | 'APPROXIMATE' | 'UNVERIFIED';
   exactPrivateAddress?: string;
   publicationStatus: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
   verificationStatus: 'VERIFIED' | 'PENDING' | 'REJECTED';

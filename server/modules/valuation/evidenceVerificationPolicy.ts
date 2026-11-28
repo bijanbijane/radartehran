@@ -17,6 +17,8 @@ export function resolveInitialEvidenceVerificationStatus(
   outlierFlag: boolean,
 ): EvidenceVerificationStatus {
   if (outlierFlag) return 'FLAGGED_OUTLIER';
-  void sourceType;
+  if (sourceType === 'VERIFIED_COMPLETED_TRANSACTION' || sourceType === 'VERIFIED_RENTAL_CONTRACT') {
+    return 'VERIFIED';
+  }
   return 'PENDING_REVIEW';
 }

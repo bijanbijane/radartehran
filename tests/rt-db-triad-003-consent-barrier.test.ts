@@ -12,6 +12,7 @@ import { describe, it } from 'node:test';
 import {
   getResearchConsentRevocationJobFromD1,
   updateUserPrivacyConsentInD1,
+  upsertUserProfileInD1,
 } from '../worker/account/d1AccountRepository';
 import {
   acquireResearchProcessingPermitInD1,
@@ -22,10 +23,7 @@ import {
   revokeUserResearchConsentWithBarrier,
 } from '../worker/research/researchConsentRevocation';
 import { processPendingResearchErasureOutbox } from '../worker/account-lifecycle/workerLifecycleRuntime';
-import {
-  clearTestJwksForEdgeAuth,
-  registerTestJwkForEdgeAuth,
-} from '../worker/auth/firebaseEdgeAuth';
+import { RADAR_SESSION_COOKIE } from '../worker/auth/sessionAuth';
 import {
   executeQueuedResearchEventIngest,
   QueueJobExecutionError,
@@ -51,7 +49,8 @@ function createRealSqliteD1(): { db: D1Database; raw: DatabaseSync } {
   raw.exec('PRAGMA foreign_keys = OFF;');
 
   const makeStmt = (sql: string, boundArgs: unknown[] = []): D1PreparedStatement => {
-    const normalizedSql = sql.replace(/\?(\d+)/g, '?');
+    // SQLite supports numbered placeholders natively; stripping ?N breaks repeated-parameter semantics.
+    const normalizedSql = sql;
     const bindValues = (args: unknown[]): unknown[] =>
       args.map((v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v));
 
@@ -167,7 +166,6 @@ function createTestTriad() {
     USER_DB: userSqlite.db,
     DB: userSqlite.db,
     RESEARCH_DB: researchSqlite.db,
-    FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
     RESEARCH_HMAC_SECRET: 'rt_triad_003_barrier_hmac_secret_0123456789abcdef',
     RESEARCH_HMAC_KEY_VERSION: 'v1',
     INTERNAL_LIFECYCLE_RPC_SECRET: 'rt_triad_003_receipt_secret_0123456789abcdef',
@@ -808,115 +806,98 @@ describe('RT-DB-TRIAD-003 Section B: Research Consent Revocation Barrier & Fenci
     assert.equal(activePermit.ok, true);
     if (!activePermit.ok) return;
 
-    const base64Url = (input: string | Uint8Array): string =>
-      (typeof input === 'string' ? Buffer.from(input, 'utf8') : Buffer.from(input))
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/g, '');
-
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
+    await upsertUserProfileInD1(userSqlite.db, {
+      uid,
+      displayName: 'Consent barrier route test',
+      nowIso: new Date(t0).toISOString(),
+    });
+    const sessionToken = 'A'.repeat(64);
+    const tokenDigest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(sessionToken),
     );
-    const kid = 'kid_barrier_test_rs256';
-    registerTestJwkForEdgeAuth(kid, keyPair.publicKey);
+    const tokenHash = Array.from(new Uint8Array(tokenDigest), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
+    await userSqlite.db
+      .prepare(
+        `INSERT INTO user_sessions (
+          session_id, uid, token_hash, expires_at_iso, auth_provider,
+          created_at_iso, last_seen_at_iso, status
+        ) VALUES (?1, ?2, ?3, ?4, 'google', ?5, ?5, 'ACTIVE')`,
+      )
+      .bind(
+        'session_barrier_route_6',
+        uid,
+        tokenHash,
+        new Date(t0 + 60 * 60 * 1000).toISOString(),
+        new Date(t0 - 60_000).toISOString(),
+      )
+      .run();
 
-    try {
-      const nowSec = Math.floor(Date.now() / 1000);
-      const headerSeg = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
-      const payloadSeg = base64Url(
-        JSON.stringify({
-          iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
-          aud: 'gen-lang-client-0713157837',
-          sub: uid,
-          user_id: uid,
-          email: 'barrier-test@radartehran.local',
-          email_verified: true,
-          auth_time: nowSec - 60,
-          iat: nowSec - 10,
-          exp: nowSec + 3600,
-        }),
-      );
-      const signingInput = `${headerSeg}.${payloadSeg}`;
-      const sigBuf = await crypto.subtle.sign(
-        'RSASSA-PKCS1-v1_5',
-        keyPair.privateKey,
-        new TextEncoder().encode(signingInput),
-      );
-      const jwt = `${signingInput}.${base64Url(new Uint8Array(sigBuf))}`;
-
-      const makeCtx = (method: string, pathname: string, body?: unknown): WorkerRequestContext => {
-        const url = new URL(`https://api.radartehran.local${pathname}`);
-        const request = new Request(url.toString(), {
-          method,
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${jwt}`,
-          },
-          body: body !== undefined ? JSON.stringify(body) : undefined,
-        });
-        return {
-          request,
-          env,
-          url,
-          pathname,
-          method,
-          requestId: 'req_barrier_test',
-          correlationId: 'corr_barrier_test',
-          clientIp: '198.51.100.50',
-          trustedEdgeIp: true,
-          environment: 'development',
-          startedAtMs: Date.now(),
-          routeId: pathname,
-          implementationId: 'worker_account_routes',
-        };
+    const makeCtx = (method: string, pathname: string, body?: unknown): WorkerRequestContext => {
+      const url = new URL(`https://api.radartehran.local${pathname}`);
+      const request = new Request(url.toString(), {
+        method,
+        headers: {
+          'content-type': 'application/json',
+          cookie: `${RADAR_SESSION_COOKIE}=${sessionToken}`,
+          origin: url.origin,
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+      return {
+        request,
+        env,
+        url,
+        pathname,
+        method,
+        requestId: 'req_barrier_test',
+        correlationId: 'corr_barrier_test',
+        clientIp: '198.51.100.50',
+        trustedEdgeIp: true,
+        environment: 'development',
+        startedAtMs: Date.now(),
+        routeId: pathname,
+        implementationId: 'worker_account_routes',
       };
+    };
 
-      // PATCH /api/account/privacy while permit active -> HTTP 202 DRAINING_PERMITS
-      const patchRes = await handleAccountWorkerRoute(
-        makeCtx('PATCH', '/api/account/privacy', { researchAnalyticsConsent: false }),
-      );
-      assert.ok(patchRes);
-      assert.equal(patchRes.status, 202);
-      const patchJson = (await patchRes.json()) as {
-        status: string;
-        revocation: { status: string; completed: boolean; activePermitsRemaining: number };
-      };
-      assert.equal(patchJson.status, 'pending');
-      assert.equal(patchJson.revocation.status, 'DRAINING_PERMITS');
-      assert.equal(patchJson.revocation.completed, false);
-      assert.equal(patchJson.revocation.activePermitsRemaining, 1);
+    // PATCH /api/account/privacy while permit active -> HTTP 202 DRAINING_PERMITS
+    const patchRes = await handleAccountWorkerRoute(
+      makeCtx('PATCH', '/api/account/privacy', { researchAnalyticsConsent: false }),
+    );
+    assert.ok(patchRes);
+    assert.equal(patchRes.status, 202);
+    const patchJson = (await patchRes.json()) as {
+      status: string;
+      revocation: { status: string; completed: boolean; activePermitsRemaining: number };
+    };
+    assert.equal(patchJson.status, 'pending');
+    assert.equal(patchJson.revocation.status, 'DRAINING_PERMITS');
+    assert.equal(patchJson.revocation.completed, false);
+    assert.equal(patchJson.revocation.activePermitsRemaining, 1);
 
-      // Release permit, then call POST /api/account/privacy/reconcile -> HTTP 200 COMPLETED & 0 events
-      await releaseResearchProcessingPermitInD1({ userDb: userSqlite.db, permitId: activePermit.permitId });
+    // Release permit, then call POST /api/account/privacy/reconcile -> HTTP 200 COMPLETED & 0 events
+    await releaseResearchProcessingPermitInD1({ userDb: userSqlite.db, permitId: activePermit.permitId });
 
-      const reconcileRes = await handleAccountWorkerRoute(makeCtx('POST', '/api/account/privacy/reconcile'));
-      assert.ok(reconcileRes);
-      assert.equal(reconcileRes.status, 200);
-      const reconcileJson = (await reconcileRes.json()) as {
-        status: string;
-        reconciledCount: number;
-        results: Array<{ status: string; completed: boolean; erasedEventsCount: number }>;
-      };
-      assert.equal(reconcileJson.status, 'ok');
-      assert.equal(reconcileJson.reconciledCount, 1);
-      assert.equal(reconcileJson.results[0].status, 'COMPLETED');
-      assert.equal(reconcileJson.results[0].completed, true);
-      assert.equal(reconcileJson.results[0].erasedEventsCount, 1);
-      assert.equal(
-        Number((researchSqlite.raw.prepare('SELECT COUNT(*) AS c FROM research_events').get() as { c: number }).c),
-        0,
-      );
-    } finally {
-      clearTestJwksForEdgeAuth();
-    }
+    const reconcileRes = await handleAccountWorkerRoute(makeCtx('POST', '/api/account/privacy/reconcile'));
+    assert.ok(reconcileRes);
+    assert.equal(reconcileRes.status, 200);
+    const reconcileJson = (await reconcileRes.json()) as {
+      status: string;
+      reconciledCount: number;
+      results: Array<{ status: string; completed: boolean; erasedEventsCount: number }>;
+    };
+    assert.equal(reconcileJson.status, 'ok');
+    assert.equal(reconcileJson.reconciledCount, 1);
+    assert.equal(reconcileJson.results[0].status, 'COMPLETED');
+    assert.equal(reconcileJson.results[0].completed, true);
+    assert.equal(reconcileJson.results[0].erasedEventsCount, 1);
+    assert.equal(
+      Number((researchSqlite.raw.prepare('SELECT COUNT(*) AS c FROM research_events').get() as { c: number }).c),
+      0,
+    );
   });
 
   it('Scenario 7: Post-snapshot registration and completed permit are recovered before revocation completes', async () => {

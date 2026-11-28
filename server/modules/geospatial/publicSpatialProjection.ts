@@ -61,5 +61,6 @@ export function isListingEligibleForPublicSpatialSearch(listing: SpatialPublisha
   // Missing or unknown values fail closed rather than inheriting a public default.
   return listing.publicationStatus === 'PUBLISHED'
     && listing.verificationStatus === 'VERIFIED'
-    && listing.available === true;
+    && listing.available === true
+    && listing.coordinateAccuracy === 'EXACT_VERIFIED';
 }

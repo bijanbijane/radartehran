@@ -142,8 +142,9 @@ async function testDuplicateActiveHistoryRequiresIndependentRepair() {
     input: { entityId, versionId: pending.id, reviewerUid: 'independent-reviewer' },
   });
   assert.equal(approved.status, 'ACTIVE');
-  assert.equal(history.filter((record) => record.status === 'ACTIVE').length, 1);
-  assert.equal(history.filter((record) => record.status === 'SUPERSEDED').length, 2);
+  const repairedHistory = common.boundaryHistoryByEntity.get(entityId)!;
+  assert.equal(repairedHistory.filter((record) => record.status === 'ACTIVE').length, 1);
+  assert.equal(repairedHistory.filter((record) => record.status === 'SUPERSEDED').length, 2);
 
   // A failed durable write must restore the exact pre-mutation lifecycle for upserts.
   const rollbackActive = makeActive(1);

@@ -255,3 +255,71 @@ The active Draft PR branch currently points to `adfa8b15851c7b6c1e35e5505a233f72
 **Verification:** GitHub read-back confirms the changed source/test files and PR head. Exact-head GIS workflow results remain unusable: the prior run `46024395473` failed both jobs with `steps=null` and no logs URL. The follow-up test commit `39e5bde28ef6cec7441058abf1a0b301810cd57d` has no workflow run returned by the commit-run query yet. Tests and typecheck are therefore **NOT VERIFIED**.
 
 The PR remains Draft and unmerged. No production deployment, migration, authoritative data replacement, or IRNI write was performed.
+
+
+## Public spatial listing coordinate eligibility hardening — 2026-11-28
+
+A focused review of `SpatialPublishableListing` and `isListingEligibleForPublicSpatialSearch` found that the public projection required `PUBLISHED`, `VERIFIED`, and `available === true`, but the record contract had no coordinate-quality field. The index accepted every numerically valid Iran-bounded coordinate. This meant an approximate neighborhood centroid or a legacy record with unknown coordinate precision could pass the GIS public eligibility gate if its publication and listing-verification flags were set.
+
+**Implemented on `fix/gis-exact-coordinate-eligibility-2026-11-28`:**
+- Added optional `coordinateAccuracy` metadata to `SpatialPublishableListing` with explicit values `EXACT_VERIFIED`, `APPROXIMATE`, and `UNVERIFIED`.
+- Public spatial eligibility now additionally requires `coordinateAccuracy === 'EXACT_VERIFIED'`. Missing/legacy values fail closed, preserving backward compatibility for persisted snapshots while preventing their public exposure.
+- Updated the spatial-search regression fixtures to mark exact-coordinate controls explicitly and added approximate and legacy-coordinate records that must not appear in public results.
+
+**Boundary of this fix:** this field is an eligibility assertion carried by the internal listing projection; it does not itself establish the underlying evidence or replace an authoritative coordinate-verification workflow. The canonical listing producer and evidence source remain disconnected from the GIS index, as documented above. No approximate coordinate was promoted, no data backfill was run, and no production index was modified.
+
+**Verification:** GitHub read-back confirms the type, public projection, and regression-test changes. Local test/typecheck execution is unavailable in this session; hosted workflow execution must be checked against the exact PR head. Status: **IMPLEMENTED — NOT VERIFIED**.
+
+
+## CI-driven GIS remediation — 2026-11-28
+
+The first hosted validation of PR #98 exposed three GIS test defects and baseline TypeScript/architecture issues. The failures were inspected from the actual GitHub Actions job logs rather than inferred from check summaries.
+
+**Remediations committed:**
+- Updated the public-projection test fixture to explicitly declare its exact verified coordinate accuracy.
+- Restored the pickActiveBoundaryVersion compatibility export expected by the neighborhood boundary read-model test.
+- Corrected polygon simplification stride sampling so the requested stride vertices are retained; invalid simplified topology falls back to the canonical geometry.
+- Updated the duplicate-active-boundary approval test to assert against the current Map entry after the copy-on-write mutation, rather than a stale array reference.
+- Registered the existing GEOSPATIAL_PERSISTENCE_UNAVAILABLE API error code in the canonical error-code union.
+- Restored missing shared neighborhood-profile validation exports/imports and made the metric-count reducer accumulator explicitly numeric.
+- Split the geospatial distance calculations and persisted-snapshot validation into focused modules. Both former oversized GIS files are now below the 500-line architecture ceiling; the architecture guard subsequently reported **0 blocking errors**.
+
+**Hosted results observed for intermediate head e357251:**
+- Architecture guard: PASS (0 errors).
+- Native Auth contracts, frontend bundle, and Worker dry-run: PASS.
+- GIS regression and TypeScript were still failing because the extraction had missed shared constants/default snapshot factory; these were corrected in subsequent commits.
+- API contract suite failed on a frontend map-filter focus-indicator static assertion. The three dismissal buttons already had visible focus classes, but the assertion's JSX tag matcher stopped at the => in an earlier onClick attribute. Attribute order was adjusted so the existing focus classes are visible to the check; no interaction behavior changed.
+
+The above are intermediate results only. The latest head is being revalidated by fresh GitHub Actions runs. No check is treated as passed for the latest head until its own run completes.
+
+
+## Verified transaction evidence eligibility — 2026-11-28
+
+The hosted GIS/valuation regression exposed a baseline with zero verified samples even after ingesting a record explicitly typed as VERIFIED_COMPLETED_TRANSACTION. Root cause: resolveInitialEvidenceVerificationStatus returned PENDING_REVIEW for every non-outlier source, including explicitly verified completed transactions and rental contracts. This contradicted the source-type contract and caused official baseline eligibility to discard authoritative transaction evidence.
+
+Implemented on the current PR branch: VERIFIED_COMPLETED_TRANSACTION and VERIFIED_RENTAL_CONTRACT now receive VERIFIED status on ingestion unless outlier detection flags the record; all other source types remain PENDING_REVIEW by default. Added a regression assertion for the completed-transaction status. The existing reviewer correction path remains unchanged. Fresh CI is required to verify this fix.
+
+
+## Latest validation follow-up — 2026-11-28
+
+The hosted GIS regression suite passed on head cc0c920 after the exact-coordinate fixture, boundary-history assertion, polygon simplification, and valuation source-status fixes. The hosted API architecture and contract checks also passed on that head. Both the GIS module typecheck and frontend lint then exposed one remaining reference to the old defaultEmpty helper in geospatialSnapshotValidation.ts; this final reference was changed to createEmptyGeospatialState() in commit 4ea0ecad. The new head requires fresh CI confirmation; previous results are not being carried forward as proof for the new commit.
+
+
+## Canonical listing lifecycle and coordinate provenance audit — 2026-11-28
+
+A read-only trace of the current property submission flow confirms that the missing GIS producer is not just an unconnected event hook:
+
+- `src/features/properties/submission/ListingSubmissionPage.tsx` exposes a location-precision selector, but the submission draft contract (`ListingSubmissionDraft`) contains no latitude/longitude coordinate input, device-geolocation result, coordinate source, or verification evidence.
+- `submitDraftAsPropertyListing` in `src/features/properties/services/listingService.ts` persists user submissions through UID-scoped browser storage (`saveMyListings` / `loadMyListings`), not a canonical server-side listing repository.
+- The same function copies `hood.lat` / `hood.lng` into the property record for every precision except `unavailable`. It then preserves the user's selected precision and assigns a 30 m privacy radius for `exact`, 250 m for `approximate`, or 600 m otherwise. The form does not collect a property point, so the selected `exact` value currently describes a neighborhood reference point as if it were an exact recorded point.
+- Repository code search for `indexListingForSpatialSearch` and `removeListingFromSpatialSearch` found only the geospatial service definition/export, its tests, and this blocker document; no listing create/update/moderation/archive/expiry producer calls either operation.
+
+**Data-integrity decision:** do not connect this browser-storage record directly to public GIS and do not set `coordinateAccuracy: EXACT_VERIFIED` from `locationPrecision`. A selected privacy label is not coordinate evidence. The existing PR #98 eligibility gate remains fail-closed.
+
+**Required upstream contract before integration:**
+1. Establish the authoritative server-side listing repository and lifecycle events for create, edit, moderation, publish, archive, removal and expiry.
+2. Define a trusted coordinate-evidence record that carries the actual WGS84 point, capture/source provenance, precision class, verification actor/process, verification timestamp, and listing/version binding. Client-supplied flags alone must not establish verification.
+3. Keep neighborhood-centroid fallback explicitly neighborhood-level; do not label it exact or approximate street-level. If no point evidence exists, do not index the listing in exact public spatial search.
+4. Make the lifecycle projection idempotent and reconcile removals/status changes, then test event replay, stale versions, city changes, coordinate changes and withdrawal.
+
+No frontend record, coordinate, browser storage, GIS index, database or production data was modified in this audit.
