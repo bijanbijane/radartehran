@@ -149,7 +149,7 @@ test('FND-005: Application Shell enforces exactly 4 canonical layouts (public, a
 test('FND-006: Central Route Registry defines routes with layout, auth, and lazy boundaries', () => {
   assert.ok(AppRouterMod.CENTRAL_ROUTE_REGISTRY.length >= 6);
   const home = AppRouterMod.findRegisteredRoute('/');
-  assert.equal(home?.id, 'radar-map');
+  assert.equal(home?.id, 'home');
   assert.equal(home?.layout, 'main');
   const admin = AppRouterMod.findRegisteredRoute('/admin/governance');
   assert.equal(admin?.layout, 'admin');
