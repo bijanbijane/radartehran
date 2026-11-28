@@ -1,6 +1,18 @@
-import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; import { buildNeighborhoodTooltipTrendSectionHtml } from './map/neighborhoodTooltipTrendHelpers'; import { formatPersianDeltaPercent, formatPersianScore, normalizeMapPinPriceText } from '../utils/persianBidiFormat'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10; export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
+import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; import { buildNeighborhoodTooltipTrendSectionHtml } from './map/neighborhoodTooltipTrendHelpers'; import { formatPersianDeltaPercent, formatPersianScore, normalizeMapPinPriceText } from '../utils/persianBidiFormat'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10;
+
+export function getMapLabelBudget(map: any): number {
+  try {
+    const size = typeof map?.getSize === 'function' ? map.getSize() : null;
+    const width = Number(size?.x);
+    const height = Number(size?.y);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 12;
+    return Math.min(40, Math.max(12, Math.floor((width * height) / 18_000)));
+  } catch {
+    return 12;
+  }
+} export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
 ): EvaluatedNeighborhood[] { let centerLat: number | null = null, centerLng: number | null = null, maxRadiusKm = 18; try { if (map && typeof map.getBounds === 'function') { const bounds = map.getBounds(); const center = typeof map.getCenter === 'function' ? map.getCenter() : bounds?.getCenter?.(); const ne = bounds?.getNorthEast?.(); if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) { centerLat = center.lat; centerLng = center.lng; if (ne && Number.isFinite(ne.lat) && Number.isFinite(ne.lng)) { const cornerDist = calcDistanceKm(center.lat, center.lng, ne.lat, ne.lng); if (cornerDist !== null && cornerDist > 0) maxRadiusKm = cornerDist + radialMarginKm; } } }
-  } catch { } return neighborhoods.filter((hood) => { if (statusFilter !== 'all' && hood.status !== statusFilter) return false; if (hood.id === selectedHoodId) return true; if (isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, padRatio)) return true; if (centerLat !== null && centerLng !== null) { const dist = calcDistanceKm(centerLat, centerLng, hood.lat, hood.lng); if (dist !== null && dist <= maxRadiusKm) return true; }
+  } catch { } return neighborhoods.filter((hood) => { if (hood.id === selectedHoodId) return true; if (statusFilter !== 'all' && hood.status !== statusFilter) return false; if (isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, padRatio)) return true; if (centerLat !== null && centerLng !== null) { const dist = calcDistanceKm(centerLat, centerLng, hood.lat, hood.lng); if (dist !== null && dist <= maxRadiusKm) return true; }
     return false; }); }
 export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, zoom: number, getPalette: (h: EvaluatedNeighborhood) => { stroke: string; fill: string; pillBg: string }
 ): MacroCityCluster[] { const mergeRadiusKm = zoom <= 7 ? 85 : zoom === 8 ? 55 : 36; const rawGroups: EvaluatedNeighborhood[][] = [];
@@ -11,11 +23,15 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     const count = group.length; const palette = getPalette(primary); return {
       clusterId: `cluster-${idx}-${primary.id}`,
       lat: sumLat / count, lng: sumLng / count, count, avgBuyPerSqm: Math.round(sumBuy / count),
-      avgRahn80m: Math.round(sumRahn / count), primaryName: count > 3 && primary.id <= 500 ? 'تهران' : primary.name, containsSelected, dominantStroke: palette.stroke,
+      avgRahn80m: Math.round(sumRahn / count), primaryName: primary.name, containsSelected, dominantStroke: palette.stroke,
       dominantPillBg: palette.pillBg, sampleHood: primary,
     };
   });
 }
+export function getNeighborhoodMapLabel(name: string): string {
+  return formatCompactNeighborhoodName(name);
+}
+
 export function formatCompactNeighborhoodName(name: string): string {
   const cleaned = String(name || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
   const primary = cleaned.split(/\s+و\s+|[/،]/)[0]?.trim() || cleaned;
@@ -50,6 +66,8 @@ export function computeDeclutteredMarkerTiers(
     return spA !== spB ? spB - spA : b.overallScore - a.overallScore;
   });
   const placedBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+  const labelBudget = getMapLabelBudget(map);
+  let placedLabelCount = 0;
   const horizontalGap = zoom <= 12 ? 22 : 11;
   const verticalGap = zoom <= 12 ? 14 : 8;
   const canPlaceBox = (x: number, y: number, w: number, h: number): boolean => {
@@ -79,15 +97,26 @@ export function computeDeclutteredMarkerTiers(
       const tier: MarkerVisualTier = zoom >= 14 ? 'detailed_pill' : 'standard_pill';
       const box = markerBox(hood, tier, hasSponsor);
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      placedLabelCount += 1;
       result.set(hood.id, tier); continue;
     }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13 ? ['compact_chip'] : zoom < 14 ? ['standard_pill', 'compact_chip'] : ['detailed_pill', 'standard_pill', 'compact_chip'];
+    // At zoom 12–13 only the selected neighborhood receives a text label.
+    // Defer all non-selected labels until zoom 14 to keep the map legible.
+    if (zoom < 14) {
+      result.set(hood.id, 'dot');
+      continue;
+    }
+    if (placedLabelCount >= labelBudget) {
+      result.set(hood.id, 'dot');
+      continue;
+    }
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = ['compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
       if (!canPlaceBox(pt.x, pt.y, box.w, box.h)) continue;
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
-      result.set(hood.id, tier); placed = true; break;
+      result.set(hood.id, tier); placedLabelCount += 1; placed = true; break;
     }
     if (!placed) result.set(hood.id, 'dot');
   }
@@ -207,8 +236,8 @@ export function renderMacroClustersOnLeaflet(params: {
     );
     cMarker.on('click', () => {
       if (cluster.count === 1) {
+        // Selection state owns navigation; avoid a second competing camera transition.
         onSelectNeighborhood(cluster.sampleHood);
-        map.flyTo([cluster.lat, cluster.lng], 12, { duration: 0.65 });
       } else {
         map.flyTo([cluster.lat, cluster.lng], Math.min(12, Math.max(currentZoom + 2, 11)), { duration: 0.65 });
       }

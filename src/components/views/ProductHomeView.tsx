@@ -3,7 +3,7 @@
  * @description Focused 5-section Homepage Launchpad (AUD-002, AUD-003, AUD-007, AUD-008, AUD-014).
  * Hero + Map Preview -> Market Snapshot + Decision Toolbox Launchpad -> Top 6 Curated Neighborhoods -> Research/Services + Methodology Trust Strip.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SlidersHorizontal, ChevronLeft } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { formatPersianPrice, formatPersianScore } from '../../utils/persianBidiFormat';
@@ -24,6 +24,8 @@ import {
 import { selectCuratedHomeNeighborhoods } from '../../features/home/services/homeDataAdapter';
 import type { HomeResilienceScenarioId } from '../../features/home/types/home.types';
 import { getNeighborhoodPricePresentation } from '../../features/neighborhoods/services/neighborhoodPricePresentation';
+import { computePaginationSlice } from '../../utils/productViewRouterShellClasses';
+import { RadarPaginationBar } from '../common/RadarPaginationBar';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -54,13 +56,22 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
   const [resilienceScenario, setResilienceScenario] = useState<HomeResilienceScenarioId>('normal');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(6);
   const activeCity = p.activeCity || 'tehran';
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
 
   const featuredHoods = useMemo(
-    () => selectCuratedHomeNeighborhoods(p.evaluatedNeighborhoods, 'editorial_curated').slice(0, 6),
+    () => selectCuratedHomeNeighborhoods(p.evaluatedNeighborhoods, 'editorial_curated'),
     [p.evaluatedNeighborhoods],
   );
+  const paginationSlice = useMemo(() => computePaginationSlice(featuredHoods, currentPage, pageSize), [featuredHoods, currentPage, pageSize]);
+  useEffect(() => {
+    if (currentPage !== paginationSlice.currentPage) setCurrentPage(paginationSlice.currentPage);
+  }, [currentPage, paginationSlice.currentPage]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCity]);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : formatPersianPrice(p.buyTotalBudget, 'میلیون تومان'))
     : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : formatPersianPrice(p.totalRahnEquivalent, 'میلیون تومان رهن کامل'));
@@ -129,7 +140,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredHoods.map((hood) => {
+          {paginationSlice.items.map((hood) => {
             const dealPerSqm = dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm;
             const pres = getNeighborhoodPricePresentation({
               hood,
@@ -191,6 +202,15 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             );
           })}
         </div>
+        <RadarPaginationBar
+          slice={paginationSlice}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+          pageSizeOptions={[6, 12, 0]}
+          itemLabelFa="محله منتخب"
+          itemLabelEn="featured neighborhoods"
+          isEn={isEn}
+        />
       </section>
 
       {/* 5. Research Briefs, Properties/Services Entry & Compact Methodology Trust Strip */}

@@ -102,6 +102,18 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     'Selected neighborhood (401 Shiraz) must never be culled even when map is over Tehran'
   );
 
+  const selectedRed = { ...allHoods.find((hood) => hood.id === 401)!, status: 'red' as const };
+  const statusFilteredSelection = filterNeighborhoodsInViewportWithBuffer(
+    mockTehranMap,
+    allHoods.map((hood) => hood.id === 401 ? selectedRed : hood),
+    401,
+    'green'
+  );
+  assert.ok(
+    statusFilteredSelection.some((hood) => hood.id === 401),
+    'Selected neighborhood must remain visible even when excluded by the active status filter'
+  );
+
   // Macro-Zoom Clustering at Zoom 7
   const clustersZ7 = buildMacroZoomClusters(allHoods, 5, 7, () => ({
     stroke: '#10b981',
@@ -151,7 +163,8 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     lng: x,
   });
   const selectedMarker = markerAt(tehranSlice[0], 1, 0);
-  const candidateMarker = markerAt(tehranSlice[1], 2, 124);
+  // Keep the candidate just beyond the selected detailed pill's measured collision footprint.
+  const candidateMarker = markerAt(tehranSlice[1], 2, 128);
   const compactCollisionMarker = markerAt(tehranSlice[2], 3, 209);
   const tiersZ12 = computeDeclutteredMarkerTiers(
     markerMap,
@@ -302,8 +315,8 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/api/osm-tile/12/2632/1611' }),
-    'StaleWhileRevalidateMapTile',
-    'OSM tile proxy requests use the current Service Worker cache baseline until PR #16 is merged'
+    'NetworkOnlyMapTile',
+    'OSM tile proxy requests must bypass Service Worker caching under the current provider licensing policy'
   );
   assert.equal(
     classifyServiceWorkerRequestStrategy({ url: 'https://tehranradar.ir/assets/index-D8a91.js' }),
@@ -465,6 +478,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
 
   assert.ok(discoverSrc.includes('RadarPaginationBar') && discoverSrc.includes('computePaginationSlice'), 'ProductDiscoverView must paginate neighborhood cards');
   assert.ok(homeSrc.includes('RadarPaginationBar') && homeSrc.includes('computePaginationSlice'), 'ProductHomeView must paginate featured neighborhoods');
+  assert.ok(homeSrc.includes('paginationSlice.items.map') && homeSrc.includes('pageSizeOptions={[6, 12, 0]}'), 'ProductHomeView must render the paginated curated slice and support bounded, expanded, and all-results page sizes');
   assert.ok(bargainsSrc.includes('RadarPaginationBar') && bargainsSrc.includes('computePaginationSlice'), 'NeighborhoodBargainsAndVotesTabs must paginate bargains and votes');
   assert.ok(
     drawerSrc.includes("isOverlayOnSecondaryView ? 'lg:top-[76px] lg:left-4 lg:right-auto' : 'lg:top-[124px] lg:right-4 lg:left-auto'"),

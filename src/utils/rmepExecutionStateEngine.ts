@@ -1,7 +1,7 @@
 /** @file src/utils/rmepExecutionStateEngine.ts — RMEP-001 v4.1 Persistent Engineering Memory & Atomic Checkpoint Engine */
 import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const RMEP_PROGRAM_ID = 'RMEP-001' as const; export const RMEP_PROGRAM_VERSION = '4.1' as const; export const RMEP_MASTER_PROMPT_REL_PATH = 'docs/engineering/RMEP-001/MASTER-PROMPT.md' as const;
 export const RMEP_EXECUTION_STATE_REL_PATH = 'docs/engineering/RMEP-001/EXECUTION-STATE.json' as const; export const PINNED_MASTER_PROMPT_SHA256 = '4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63' as const;
-export type RmepPhaseStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'BLOCKED' | 'IMPLEMENTED' | 'TESTING' | 'PARTIALLY_VERIFIED' | 'VERIFIED' | 'AWAITING_AUTHORIZATION'; export type RmepOperationStatus = 'PLANNED' | 'PREPARED' | 'STARTED' | 'COMPLETED' | 'VERIFIED' | 'BLOCKED' | 'UNKNOWN';
+export type RmepPhaseStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'BLOCKED' | 'IMPLEMENTED' | 'IMPLEMENTED_BUT_NOT_VERIFIED' | 'TESTING' | 'PARTIALLY_VERIFIED' | 'VERIFIED' | 'AWAITING_AUTHORIZATION'; export type RmepOperationStatus = 'PLANNED' | 'PREPARED' | 'STARTED' | 'COMPLETED' | 'VERIFIED' | 'IMPLEMENTED_BUT_NOT_VERIFIED' | 'BLOCKED' | 'UNKNOWN';
 export interface RmepExecutionState { schema_version: '1.0'; program_id: 'RMEP-001'; program_version: '4.1'; execution_mode: 'AUTONOMOUS_SEQUENTIAL'; program_status: 'IN_PROGRESS' | 'COMPLETED_WITH_EVIDENCE' | 'PARTIALLY_VERIFIED' | 'BLOCKED';
   approved_master_prompt: { path: string; approved_commit: string; sha256: string; verification_status: 'VERIFIED' | 'PENDING' | 'MISMATCH' }; repository: { remote_identity: string; current_branch: string; head_commit: string; working_tree_status: string; last_verified_commit: string };
   current_phase: { phase_id: 'PHASE-1' | 'PHASE-2' | 'PHASE-3' | 'PHASE-4' | 'PHASE-5' | 'PHASE-6'; phase_name: string; phase_status: RmepPhaseStatus }; current_workstream: { workstream_id: string; workstream_name: string; task_id: string; task_status: RmepPhaseStatus }; checkpoint: { checkpoint_id: string;
@@ -9,7 +9,7 @@ export interface RmepExecutionState { schema_version: '1.0'; program_id: 'RMEP-0
   execution_history: { completed_tasks: string[]; in_progress_tasks: string[]; verified_commits: string[]; uncommitted_changes_summary: string; };
   phase_statuses: { phase_1: RmepPhaseStatus; phase_2: RmepPhaseStatus; phase_3: RmepPhaseStatus; phase_4: RmepPhaseStatus; phase_5: RmepPhaseStatus; phase_6: RmepPhaseStatus; };
   operations: Array<{ operation_id: string; phase: string; description: string; status: RmepOperationStatus; idempotent: boolean; timestamp_utc: string; }>;
-  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code: number; outcome: 'PASSED' | 'FAILED'; evidence_path: string; }>;
+  tests: Array<{ test_name: string; command: string; environment: string; timestamp_utc: string; exit_code?: number | null; outcome: 'PASSED' | 'FAILED' | 'NOT_RUN'; evidence_path: string | null; }>;
   engineering_decisions: string[];
   blockers: Array<{ blocker_id: string; phase: string; description: string; requires_explicit_user_authorization: boolean; }>;
   pending_authorization: string[];
@@ -34,22 +34,49 @@ export function verifyMasterPromptIntegrity(
 const SECRET_LEAK_PATTERN = /(AIzaSy[A-Za-z0-9_-]{30,}|-----BEGIN\s+(?:RSA\s+|EC\s+)?PRIVATE\s+KEY-----|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/i;
 export function validateRmepExecutionState(state: RmepExecutionState): { valid: boolean; reasons: string[] } {
   const reasons: string[] = [];
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return { valid: false, reasons: ['Execution state must be an object'] };
+  }
   if (state.program_id !== RMEP_PROGRAM_ID) reasons.push('Invalid program_id');
   if (state.program_version !== RMEP_PROGRAM_VERSION) reasons.push('Invalid program_version');
   if (SECRET_LEAK_PATTERN.test(JSON.stringify(state))) {
     reasons.push('Execution state must never contain secrets, API keys, or private keys');
   }
-  if (state.approved_master_prompt.path.includes('..') || state.approved_master_prompt.path.startsWith('/') || state.approved_master_prompt.path.includes('\\')) {
+
+  const approvedPath = state.approved_master_prompt?.path;
+  if (typeof approvedPath !== 'string' || !approvedPath.trim()) {
+    reasons.push('Missing approved_master_prompt.path');
+  } else if (approvedPath.includes('..') || approvedPath.startsWith('/') || approvedPath.includes('\\')) {
     reasons.push('Unsafe path reference in approved_master_prompt.path');
   }
-  if (state.final_report_path && (state.final_report_path.includes('..') || state.final_report_path.startsWith('/') || state.final_report_path.includes('\\'))) {
-    reasons.push('Unsafe path reference in final_report_path');
-  }
-  for (const t of state.tests) {
-    if (t.evidence_path.includes('..') || t.evidence_path.startsWith('/') || t.evidence_path.includes('\\')) {
-      reasons.push(`Unsafe evidence_path: ${t.evidence_path}`);
+
+  const reportPath: unknown = state.final_report_path;
+  if (reportPath !== undefined && reportPath !== null) {
+    if (typeof reportPath !== 'string' || reportPath.includes('..') || reportPath.startsWith('/') || reportPath.includes('\\')) {
+      reasons.push('Unsafe path reference in final_report_path');
     }
   }
+
+  if (!Array.isArray(state.tests)) {
+    reasons.push('Execution state tests must be an array');
+  } else {
+    for (const testRecord of state.tests) {
+      if (!testRecord || typeof testRecord !== 'object') {
+        reasons.push('Execution state contains an invalid test record');
+        continue;
+      }
+      const evidencePath: unknown = testRecord.evidence_path;
+      if (evidencePath === null && testRecord.outcome === 'NOT_RUN') continue;
+      if (typeof evidencePath !== 'string' || !evidencePath.trim()) {
+        reasons.push(`Missing evidence_path for test: ${String(testRecord.test_name ?? 'unknown')}`);
+        continue;
+      }
+      if (evidencePath.includes('..') || evidencePath.startsWith('/') || evidencePath.includes('\\')) {
+        reasons.push(`Unsafe evidence_path: ${evidencePath}`);
+      }
+    }
+  }
+
   return { valid: reasons.length === 0, reasons };
 }
 export async function writeExecutionStateAtomically(
@@ -111,12 +138,24 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
   ) as RmepExecutionState;
   const check = validateRmepExecutionState(parsed);
   if (!check.valid) discrepancies.push(...check.reasons);
-  if (parsed.approved_master_prompt.sha256 !== masterPromptVerification.sha256) {
+  if (parsed.approved_master_prompt?.sha256 !== masterPromptVerification.sha256) {
     discrepancies.push('Recorded master prompt SHA-256 in state differs from actual file hash');
   }
-  for (const testItem of parsed.tests) {
+  for (const testItem of Array.isArray(parsed.tests) ? parsed.tests : []) {
+    if (testItem.outcome === 'NOT_RUN' && testItem.evidence_path === null) {
+      // A deliberately unexecuted check has no exit code or evidence artifact by design.
+      // Preserve that truth without treating it as a passed test or attempting path resolution.
+      if (!testItem.command?.trim() || !testItem.environment?.includes('NOT_RUN')) {
+        discrepancies.push(`NOT_RUN test '${testItem.test_name}' must record its command and NOT_RUN environment`);
+      }
+      continue;
+    }
     if (testItem.exit_code !== 0 || testItem.outcome !== 'PASSED' || !testItem.command?.trim()) {
       discrepancies.push(`Test '${testItem.test_name}' is not PASSED with exit_code=0 and valid command`);
+    }
+    if (typeof testItem.evidence_path !== 'string' || !testItem.evidence_path.trim()) {
+      discrepancies.push(`Test '${testItem.test_name}' has no evidence path`);
+      continue;
     }
     const absEvidence = path.resolve(rootDir, testItem.evidence_path);
     if (!fs.existsSync(absEvidence)) {
@@ -138,7 +177,7 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       discrepancies.push(`Invalid JSON in test evidence file: ${testItem.evidence_path}`);
     }
   }
-  if (parsed.final_report_path && !fs.existsSync(path.resolve(rootDir, parsed.final_report_path))) {
+  if (typeof parsed.final_report_path === 'string' && parsed.final_report_path && !fs.existsSync(path.resolve(rootDir, parsed.final_report_path))) {
     discrepancies.push(`Missing final_report_path on disk: ${parsed.final_report_path}`);
   }
   const doNotRepeatSet = new Set(parsed.resume_instructions?.do_not_repeat ?? []);
@@ -154,7 +193,16 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
   ops.forEach((op, idx) => {
     const expectedId = `OP-${String(idx + 1).padStart(3, '0')}`;
     if (op.operation_id !== expectedId) discrepancies.push(`Non-sequential operation_id at index ${idx}: expected ${expectedId}, got ${op.operation_id}`);
-    if (op.status !== 'VERIFIED' || op.idempotent !== true) discrepancies.push(`Operation ${op.operation_id} is not VERIFIED + idempotent`);
+    const isActivePartiallyVerifiedOperation = idx === ops.length - 1
+      && op.status === 'IMPLEMENTED_BUT_NOT_VERIFIED'
+      && parsed.program_status === 'PARTIALLY_VERIFIED'
+      && parsed.current_phase?.phase_id === 'PHASE-6'
+      && parsed.current_phase?.phase_status === 'PARTIALLY_VERIFIED'
+      && parsed.current_workstream?.task_status === 'IMPLEMENTED_BUT_NOT_VERIFIED'
+      && parsed.phase_statuses?.phase_6 === 'PARTIALLY_VERIFIED';
+    if ((op.status !== 'VERIFIED' && !isActivePartiallyVerifiedOperation) || op.idempotent !== true) {
+      discrepancies.push(`Operation ${op.operation_id} is not VERIFIED + idempotent or the single active partially-verified operation`);
+    }
   });
   const latestOpId = ops.length > 0 ? ops[ops.length - 1].operation_id : '';
   if (latestOpId && !parsed.checkpoint?.last_completed_operation?.includes(latestOpId)) discrepancies.push(`checkpoint.last_completed_operation does not reference latest operation ${latestOpId}`);
@@ -177,8 +225,11 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
     if (k === 'phase_6') {
       const phase6Allowed = v === 'VERIFIED' ||
         (v === 'PARTIALLY_VERIFIED' && parsed.current_phase?.phase_id === 'PHASE-6' &&
-          parsed.current_workstream?.task_status === 'IN_PROGRESS' &&
-          parsed.program_status === 'PARTIALLY_VERIFIED');
+          parsed.current_phase?.phase_status === 'PARTIALLY_VERIFIED' &&
+          parsed.program_status === 'PARTIALLY_VERIFIED' &&
+          (parsed.current_workstream?.task_status === 'IN_PROGRESS' ||
+            (parsed.current_workstream?.task_status === 'IMPLEMENTED_BUT_NOT_VERIFIED' &&
+              ops.at(-1)?.status === 'IMPLEMENTED_BUT_NOT_VERIFIED')));
       if (!phase6Allowed) discrepancies.push('Phase 6 status is inconsistent with the active RMEP workstream (got ' + v + ')');
     } else if (v !== 'VERIFIED') {
       discrepancies.push('Phase status ' + k + ' is not VERIFIED (got ' + v + ')');

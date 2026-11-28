@@ -287,7 +287,8 @@ async function runTests() {
   assert.equal(reconciledState.state?.program_id, 'RMEP-001');
   assert.equal(reconciledState.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciledState.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
-  assert.equal(reconciledState.state?.current_workstream.task_status, 'IN_PROGRESS');
+  assert.equal(reconciledState.state?.current_workstream.task_status, 'IMPLEMENTED_BUT_NOT_VERIFIED');
+  assert.equal(reconciledState.state?.operations.at(-1)?.status, 'IMPLEMENTED_BUT_NOT_VERIFIED');
   assert.equal(reconciledState.state?.checkpoint.resume_status, 'READY');
   // Reconciliation means the checkpoint, evidence and current architecture agree.
   // It does not mean the full migration is complete; Phase 6 remains PARTIALLY_VERIFIED.

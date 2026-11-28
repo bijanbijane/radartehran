@@ -13,7 +13,8 @@ import { createExecutionTimer } from '../utils/diagnostics';
 import { profileLayerReconciliation } from './map/mapRenderProfiler';
 import { clearOverlayGroupRef, type MetroLineEntry, type TrafficZoneEntry } from './map/advancedOverlayReconcilers';
 import { mountLeafletMapLifecycle, type MapViewportSettledEvent } from './map/leafletMapLifecycle';
-import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
+import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, getLensPalette, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
+import { buildMacroZoomClusters, renderMacroClustersOnLeaflet } from './mapZoomLodAndDeclutter';
 import { clearWorkRouteAndLandmarkLayers, createEmptyWorkRouteAndLandmarkRefs, reconcileWorkRouteAndLandmarks } from './map/workRouteAndLandmarkLayers';
 import {
   appendInteractiveSpatialPoint,
@@ -64,6 +65,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const comparisonArcSigRef = useRef<string | null>(null);
   const markersMapRef = useRef<Record<number, { circle: any; marker: any; stroke: string; fill: string; pillBg: string; hasSponsor: boolean }>>({});
   const reconcilerRefs = useRef(createEmptyReconcilerRefs());
+  const macroClusterMarkersRef = useRef<any[]>([]);
   const workLandmarkRefs = useRef(createEmptyWorkRouteAndLandmarkRefs());
   const programmaticMoveRef = useRef<boolean>(false);
   const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +176,8 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       resolveHoodById: (hoodId) => neighborhoodsRef.current.find((h) => h.id === hoodId) || (selectedHoodRef.current?.id === hoodId ? selectedHoodRef.current : undefined),
       onTeardownLayers: (map) => {
         clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
+        macroClusterMarkersRef.current.forEach((marker) => { try { map?.removeLayer?.(marker); } catch { /* ignore */ } });
+        macroClusterMarkersRef.current = [];
         clearWorkRouteAndLandmarkLayers(map, workLandmarkRefs.current);
         markersMapRef.current = {};
         if (heatmapLayerRef.current && map) { map.removeLayer?.(heatmapLayerRef.current); heatmapLayerRef.current = null; }
@@ -312,6 +316,25 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const { cityScopedHoods, renderHoods, visibleHoods, lazyPolicy, currentZoom, currentSelectedId } = getSlice();
     const pres = presentationRef.current;
     clientGeoJsonLruCache.setMaxEntries(lazyPolicy.maxLruCacheSize);
+    if (currentZoom <= 9) {
+      clearNeighborhoodReconcilerLayers(map, reconcilerRefs.current);
+      macroClusterMarkersRef.current.forEach((marker) => { try { map.removeLayer?.(marker); } catch { /* ignore */ } });
+      const clusters = buildMacroZoomClusters(
+        visibleHoods,
+        currentSelectedId,
+        currentZoom,
+        (hood) => getLensPalette(hood, pres.mapLens, d3PriceScaleForCity),
+      );
+      macroClusterMarkersRef.current = renderMacroClustersOnLeaflet({
+        L, map, clusters, mode: pres.mode, currentZoom,
+        onSelectNeighborhood: handleNeighborhoodLayerSelect,
+      });
+      markersMapRef.current = {};
+      timer('success');
+      return;
+    }
+    macroClusterMarkersRef.current.forEach((marker) => { try { map.removeLayer?.(marker); } catch { /* ignore */ } });
+    macroClusterMarkersRef.current = [];
     reconcileNeighborhoodLayers({
       L, map, refs: reconcilerRefs.current, visibleHoods, allCityHoods: renderHoods, selectedHoodId: currentSelectedId,
       currentZoom, activeCity, mode: pres.mode, targetSqm: pres.targetSqm, rentAgeMultiplier: pres.rentAgeMultiplier,

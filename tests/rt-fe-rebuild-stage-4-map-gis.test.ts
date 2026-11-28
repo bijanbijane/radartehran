@@ -1894,7 +1894,7 @@ const regressionNavigationCases: Array<{ name: string; run: () => void }> = [
       const routeHome = findRegisteredRoute('/');
       const routeProfile = findRegisteredRoute('/profile');
       assert.equal(routeHome?.layout, 'main');
-      assert.equal(routeProfile?.layout, 'authenticated');
+      assert.equal(routeProfile?.layout, 'public');
 
       const savedUrl = '?lat=35.7575&lng=51.4100&zoom=15&neighborhood=2&view=split';
       const restored = parseViewportFromUrlParams(savedUrl);
@@ -1960,12 +1960,15 @@ const regressionNavigationCases: Array<{ name: string; run: () => void }> = [
   {
     name: 'GEO-170: Route registry contains all core Tehran Radar navigation targets',
     run: () => {
-      const ids = CENTRAL_ROUTE_REGISTRY.map((r) => r.id);
-      assert.equal(ids.includes('radar-map'), true);
-      assert.equal(ids.includes('escrow-deals'), true);
-      assert.equal(ids.includes('agency-workspace'), true);
-      assert.equal(ids.includes('service-workspace'), true);
-      assert.equal(ids.includes('admin-governance'), true);
+      const ids = new Set(CENTRAL_ROUTE_REGISTRY.map((r) => r.id));
+      assert.equal(ids.has('map'), true);
+      assert.equal(ids.has('tools.all'), true);
+      assert.equal(ids.has('services'), true);
+      assert.equal(ids.has('admin.overview'), true);
+      assert.equal(findRegisteredRoute('/escrow')?.id, 'tools.all:alias:1');
+      assert.equal(findRegisteredRoute('/escrow')?.canonicalRedirectPath, '/tools');
+      assert.equal(findRegisteredRoute('/admin/governance')?.id, 'admin.overview:alias:1');
+      assert.equal(findRegisteredRoute('/admin/governance')?.canonicalRedirectPath, '/admin');
     },
   },
   {

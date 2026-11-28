@@ -5,8 +5,19 @@ import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import { isValidIranianMobile, cleanIranianMobile } from '../src/utils/security';
 import type { BuyerAlertLeadItem } from '../src/types/models';
 import { findMigrationRegisterEntry } from '../worker/migrationRegister';
+import { resolveSelectedNeighborhoodById } from '../src/components/selectedNeighborhoodResolver';
+import type { EvaluatedNeighborhood } from '../src/data/neighborhoods';
 
 console.log('--- Running Buyer Alert Contract Tests ---');
+
+// Cross-city neighborhood resolution: current-city records take precedence,
+// nationwide data supplies valid cross-city selections, and unknown IDs stay unresolved.
+const makeEvaluatedNeighborhood = (id: number) => ({ id }) as unknown as EvaluatedNeighborhood;
+const currentCityHood = makeEvaluatedNeighborhood(10);
+const nationwideHood = makeEvaluatedNeighborhood(20);
+assert.equal(resolveSelectedNeighborhoodById(10, [currentCityHood], [nationwideHood]), currentCityHood);
+assert.equal(resolveSelectedNeighborhoodById(20, [currentCityHood], [nationwideHood]), nationwideHood);
+assert.equal(resolveSelectedNeighborhoodById(30, [currentCityHood], [nationwideHood]), undefined);
 
 // 1. Mobile number validation and normalization
 assert.equal(isValidIranianMobile('09123456789'), true, 'Valid mobile accepted');
@@ -152,9 +163,9 @@ const appSrc =
   fs.readFileSync(path.join(process.cwd(), 'src/components/RadarWorkspaceShell.tsx'), 'utf8');
 const appOrDerivedSrc = appSrc + fs.readFileSync(path.join(process.cwd(), 'src/components/useAppPersistenceAndDerivedState.ts'), 'utf8');
 assert.ok(
-  appOrDerivedSrc.includes('nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId1)') &&
-    appOrDerivedSrc.includes('nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId2)'),
-  'App.tsx / useAppPersistenceAndDerivedState compHood1 and compHood2 must fall back to nationwideEvaluatedNeighborhoods for cross-city comparison'
+  appOrDerivedSrc.includes('resolveSelectedNeighborhoodById(ui.compareId1, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods)') &&
+    appOrDerivedSrc.includes('resolveSelectedNeighborhoodById(ui.compareId2, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods)'),
+  'compHood1 and compHood2 must use the shared current-city-then-nationwide resolver for cross-city comparison'
 );
 assert.ok(
   appSrc.includes('ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); ui.setAlertHoodId(hood.id);'),

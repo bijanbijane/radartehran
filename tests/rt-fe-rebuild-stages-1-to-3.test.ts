@@ -149,7 +149,7 @@ test('FND-005: Application Shell enforces exactly 4 canonical layouts (public, a
 test('FND-006: Central Route Registry defines routes with layout, auth, and lazy boundaries', () => {
   assert.ok(AppRouterMod.CENTRAL_ROUTE_REGISTRY.length >= 6);
   const home = AppRouterMod.findRegisteredRoute('/');
-  assert.equal(home?.id, 'radar-map');
+  assert.equal(home?.id, 'home');
   assert.equal(home?.layout, 'main');
   const admin = AppRouterMod.findRegisteredRoute('/admin/governance');
   assert.equal(admin?.layout, 'admin');
@@ -561,25 +561,40 @@ test('AUTH-010: SessionManager preserves 100% of form drafts and return route on
   });
 });
 
-test('AUTH-011: Logout aborts all queued requests and allows 0 stale retries after logout', async () => {
+test('AUTH-011: Logout aborts queued requests, awaits server revocation, and allows 0 stale retries', async () => {
   const sm = new SessionManager();
-  const queued = sm.enqueueRequestDuringRefresh({
-    id: 'q-after-logout',
-    method: 'GET',
-    execute: async () => 'should-not-run',
-  });
+  const originalFetch = globalThis.fetch;
+  let logoutUrl = '';
+  let logoutMethod = '';
+  globalThis.fetch = async (input, init) => {
+    logoutUrl = String(input);
+    logoutMethod = String(init?.method ?? '');
+    return new Response(null, { status: 204 });
+  };
 
-  sm.logoutAndClearAll();
-  await assert.rejects(() => queued, /SESSION_LOGGED_OUT_ABORTED/);
-  await assert.rejects(
-    () =>
-      sm.enqueueRequestDuringRefresh({
-        id: 'q-post-logout',
-        method: 'GET',
-        execute: async () => 'no',
-      }),
-    /SESSION_LOGGED_OUT_NO_RETRY/
-  );
+  try {
+    const queued = sm.enqueueRequestDuringRefresh({
+      id: 'q-after-logout',
+      method: 'GET',
+      execute: async () => 'should-not-run',
+    });
+
+    await sm.logoutAndClearAll();
+    await assert.rejects(() => queued, /SESSION_LOGGED_OUT_ABORTED/);
+    assert.equal(logoutUrl, '/api/auth/logout');
+    assert.equal(logoutMethod, 'POST');
+    await assert.rejects(
+      () =>
+        sm.enqueueRequestDuringRefresh({
+          id: 'q-post-logout',
+          method: 'GET',
+          execute: async () => 'no',
+        }),
+      /SESSION_LOGGED_OUT_NO_RETRY/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('AUTH-012: Identity, Profile, Role, and Permission resolvers are decoupled (Role !== automatic full Permission)', () => {

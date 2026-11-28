@@ -367,7 +367,10 @@ test('public serializer allow-lists nested fields and redacts free-form internal
     publicView.domains.find((domain) => domain.domainId === 'demographics')?.readiness.reasons,
     ['Some readiness details are withheld.']
   );
-  assert.deepEqual(publicView.quality.overallReasons, ['Some readiness details are withheld.']);
+  assert.deepEqual(publicView.quality.overallReasons, [
+    'Some readiness details are withheld.',
+    'Some metrics are withheld by public redistribution policy.',
+  ]);
 
   const reviewMetric = publicView.domains
     .find((domain) => domain.domainId === 'demographics')?.metrics
