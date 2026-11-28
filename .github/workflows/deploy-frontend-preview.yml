@@ -1,0 +1,108 @@
+name: Deploy Frontend Preview (Isolated UI QA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_preview:
+        description: "Confirm deployment to the isolated non-production frontend preview Worker"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radartehran-frontend-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy-frontend-preview:
+    name: Build, Dry-Run & Deploy Isolated Frontend Preview
+    if: ${{ github.ref == 'refs/heads/fix/ui-stage12-theme-token-parity' && inputs.deploy_preview == true }}
+    runs-on: ubuntu-latest
+    environment: frontend-preview-deploy
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout selected Stage 12 branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@39370e3970a050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run focused design-system regression suite
+        run: npx tsx --test src/design-system/designSystem.test.ts
+
+      - name: Build frontend Worker and static assets
+        run: npm run build -w radartehran-frontend
+
+      - name: Validate isolated Preview Worker package (dry run)
+        run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env preview --dry-run --outdir /tmp/radartehran-frontend-preview-dryrun
+
+      - name: Verify preview-only deployment credentials (without printing values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_FRONTEND_PREVIEW_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node -e '
+            const token = process.env.CLOUDFLARE_API_TOKEN || "";
+            const account = process.env.CLOUDFLARE_ACCOUNT_ID || "";
+            console.log("Preview Worker token configured:", token.trim().length > 10);
+            console.log("Cloudflare account variable configured:", account.trim().length > 10);
+            if (token.trim().length <= 10 || account.trim().length <= 10) {
+              console.error("Configure CF_FRONTEND_PREVIEW_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the protected frontend-preview-deploy environment.");
+              process.exit(1);
+            }
+          '
+
+      - name: Deploy only the isolated frontend Preview Worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_FRONTEND_PREVIEW_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          DEPLOY_OUT="$(npx wrangler deploy --config apps/frontend/wrangler.jsonc --env preview 2>&1)" || {
+            printf '%s\n' "$DEPLOY_OUT"
+            exit 1
+          }
+          printf '%s\n' "$DEPLOY_OUT"
+          DEPLOYED_URL="$(printf '%s\n' "$DEPLOY_OUT" | grep -Eo 'https://radartehran-frontend-preview\.[a-zA-Z0-9_-]+\.workers\.dev' | head -n 1 || true)"
+          if [ -z "$DEPLOYED_URL" ]; then
+            echo "Could not identify the isolated Preview Worker URL from Wrangler output."
+            exit 1
+          fi
+          echo "deployed_url=$DEPLOYED_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Preview Worker serves the SPA
+        env:
+          DEPLOYED_URL: ${{ steps.deploy.outputs.deployed_url }}
+        run: |
+          STATUS="$(curl --silent --show-error --output /tmp/frontend-preview.html --write-out '%{http_code}' --max-time 30 "$DEPLOYED_URL/")"
+          echo "Preview root HTTP status: $STATUS"
+          test "$STATUS" = "200"
+          grep -qi '<html' /tmp/frontend-preview.html
+
+      - name: Publish Preview URL and deployment boundary
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          DEPLOYED_URL: ${{ steps.deploy.outputs.deployed_url }}
+        run: |
+          {
+            echo "## Isolated Frontend Preview"
+            echo "- Status: `$JOB_STATUS`"
+            echo "- Target: `radartehran-frontend-preview` (non-production)"
+            echo "- URL: ${DEPLOYED_URL:-not-deployed}"
+            echo "- Production Worker `radartehran-frontend` is not targeted by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
