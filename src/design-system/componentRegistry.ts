@@ -405,7 +405,7 @@ export const COMPONENT_FAMILY_COVERAGE: readonly ComponentFamilyCoverage[] = [
     owner: 'src/components and src/utils/interactions',
     implementationRefs: ['src/components/useDialogFocus.ts', 'src/utils/interactions/dialogStack.ts', 'src/components/ui/RadarPrimitives.tsx'],
     contractEvidence: 'useDialogFocus, dialogStack and RadarSheet define focus, topmost ownership, scroll-lock and modal lifecycle contracts.',
-    stateMatrix: 'Open/closed, topmost/non-topmost, Escape, Tab trap, focus restoration and background isolation are implemented and regression-tested.',
+    stateMatrix: 'Open/closed, topmost/non-topmost, Escape, Tab trap, focus restoration and reference-counted body scroll lock are implemented; background inert/aria-hidden isolation is not implemented.',
     qaAcceptance: 'Modal stack tests, Stage 12 frontend Playwright and RT-UI-COMP-BEH-009 cover modal ownership and rendered dialog semantics.',
     knownGaps: 'Popover, tooltip and toast families are not represented in this shared overlay contract registry; full manual AT audit remains outstanding.',
   },
