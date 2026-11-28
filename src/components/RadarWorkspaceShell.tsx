@@ -288,7 +288,7 @@ export function RadarWorkspaceShell() {
         {ui.primaryView === 'map' && (
           <h1 className="sr-only">نقشه تعاملی قیمت مسکن و محله‌های {CITY_DISPLAY_NAMES[ui.activeCity]?.fa || 'تهران'}</h1>
         )}
-        {isMapRegionVisible && <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC] dark:bg-[#0D1513]" />}
+        {isMapRegionVisible && <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC] dark:bg-[var(--color-bg-canvas)]" />}
         {isMapRegionVisible && !isMapLoaded && (
           <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-canvas)]/70 dark:bg-[var(--color-bg-surface)] backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-[var(--color-bg-muted)] shadow-md border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-xs font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]">
