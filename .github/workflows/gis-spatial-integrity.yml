@@ -3,6 +3,7 @@ name: GIS Spatial Integrity
 on:
   push:
     branches:
+      - main
       - feat/gis-spatial-integrity-2026-11-27
     paths:
       - "server/modules/geospatial/**"
