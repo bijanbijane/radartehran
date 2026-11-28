@@ -135,6 +135,9 @@ test('component interaction invariants remain wired in critical files', () => {
   assert.match(useDialogFocusSource, /isTopmostModalDialogElement/);
   assert.match(useDialogFocusSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
   assert.match(useDialogFocusSource, /if \(!escapeDisabledRef\.current && onCloseRef\.current\)/);
+  const primitivesSource = fs.readFileSync(path.join(ROOT, 'src/components/ui/RadarPrimitives.tsx'), 'utf8');
+  assert.match(primitivesSource, /isTopmostModalDialogElement\(panelRef\.current, openDialogs\)/);
+  assert.match(primitivesSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*onClose\(\);/);
 
   const searchDropdownSource = fs.readFileSync(path.join(ROOT, 'src/components/SearchDropdownMenu.tsx'), 'utf8');
   assert.match(searchDropdownSource, /isNeighborhoodSearchInputFocused/);
