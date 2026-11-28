@@ -241,6 +241,17 @@ function validateImportBatch(value: unknown, key: string, errors: string[], limi
   }
 }
 
+function defaultEmpty(): PersistedGeospatialState {
+  return {
+    boundaryHistoryByEntity: {},
+    poiStore: {},
+    poiDedupeIndex: {},
+    spatialListingsByCity: {},
+    overlayStore: {},
+    importBatches: {},
+  };
+}
+
 export function validatePersistedGeospatialState(
   state: unknown,
   options?: { maxErrors?: number },
