@@ -41,8 +41,9 @@ export function selectVisibleMapNeighborhoods(params: {
   const visibleHoods = [...renderHoods]
     .sort((a, b) => (a.id === selectedHoodId ? -1 : b.id === selectedHoodId ? 1 : a.id - b.id))
     .filter((hood) => {
-      if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
+      // Keep the selected neighborhood visible even when excluded by the status filter.
       if (hood.id === selectedHoodId) return true;
+      if (statusFilter !== 'all' && hood.status !== statusFilter) return false;
       return activeCity === 'tehran' || (isCameraAtTarget ? isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio)) : Math.abs(hood.lat - refLat) <= 0.55 && Math.abs(hood.lng - refLng) <= 0.65);
     });
   return { cityScopedHoods, renderHoods, visibleHoods, lazyPolicy, currentZoom, currentSelectedId: selectedHoodId };
