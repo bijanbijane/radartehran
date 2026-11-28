@@ -31,12 +31,16 @@
 
     --color-success: #4ADE80;
     --color-success-bg: rgba(16, 185, 129, 0.16);
+    --color-success-border: rgba(74, 222, 128, 0.36);
     --color-warning: #FCD34D;
     --color-warning-bg: rgba(245, 158, 11, 0.18);
+    --color-warning-border: rgba(252, 211, 77, 0.36);
     --color-danger: #FDA4AF;
     --color-danger-bg: rgba(244, 63, 94, 0.18);
+    --color-danger-border: rgba(253, 164, 175, 0.36);
     --color-info: #93C5FD;
     --color-info-bg: rgba(59, 130, 246, 0.18);
+    --color-info-border: rgba(147, 197, 253, 0.36);
 
     --color-surface-glass: rgba(19, 31, 28, 0.96);
     --color-fill-subtle: rgba(238, 244, 242, 0.1);
