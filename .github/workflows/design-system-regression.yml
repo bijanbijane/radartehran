@@ -1,0 +1,51 @@
+name: Radar Tehran Design System Regression
+
+on:
+  pull_request:
+    branches:
+      - main
+      - fix/ui-stage11-layout-contract-resolution
+      - fix/ui-stage12-theme-token-parity
+    paths:
+      - "src/design-system/**"
+      - "src/components/common/**"
+      - "src/styles/layers/themes.css"
+      - "src/components/useDialogFocus.ts"
+      - "src/components/ui/RadarPrimitives.tsx"
+      - "src/utils/interactions/dialogStack.ts"
+      - "tests/react-component-interactions.test.ts"
+      - ".github/workflows/design-system-regression.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/design-system/**"
+      - "src/styles/layers/themes.css"
+      - ".github/workflows/design-system-regression.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-system-regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  design-system-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run design-system token and component contract regressions
+        run: npx tsx --test src/design-system/designSystem.test.ts tests/react-component-interactions.test.ts
+      - name: Build production frontend
+        run: npm run build

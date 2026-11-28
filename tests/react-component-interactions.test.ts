@@ -9,7 +9,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  acquireDialogScrollLock,
   isTopmostModalDialogElement,
+  shouldRestoreDialogFocus,
+  syncDialogBackgroundIsolation,
   isGlobalSearchTriggerTarget,
   resolveFloatingBarVisibility,
   isNeighborhoodSearchInputFocused,
@@ -40,6 +43,45 @@ test('isTopmostModalDialogElement handles empty, sibling, nested, and non-modal 
   assert.equal(isTopmostModalDialogElement(outerContainer, [outerDialog, innerDialog]), false);
   assert.equal(isTopmostModalDialogElement(innerContainer, [outerDialog, innerDialog]), true);
   assert.equal(isTopmostModalDialogElement(nonModalContainer, [outerDialog]), false);
+});
+
+
+test('shouldRestoreDialogFocus preserves focus ownership across nested modal cleanup', () => {
+  const trigger = { isConnected: true };
+  const parentControl = { isConnected: true };
+  const topmostDialog = {
+    contains: (node: unknown) => node === parentControl,
+  };
+
+  // Closing a lower dialog must not restore its outside trigger over the child dialog.
+  assert.equal(shouldRestoreDialogFocus(trigger, [topmostDialog]), false);
+  // Closing the top dialog may restore focus to the control in the remaining parent.
+  assert.equal(shouldRestoreDialogFocus(parentControl, [topmostDialog]), true);
+  // With no remaining modal, restore the original trigger.
+  assert.equal(shouldRestoreDialogFocus(trigger, []), true);
+  // A removed trigger cannot receive focus.
+  assert.equal(shouldRestoreDialogFocus({ isConnected: false }, []), false);
+  assert.equal(shouldRestoreDialogFocus(null, []), false);
+});
+
+test('acquireDialogScrollLock keeps body locked until the final modal releases and is idempotent', () => {
+  const body = { style: { overflow: 'auto' } };
+  const releaseParent = acquireDialogScrollLock(body);
+
+  assert.equal(body.style.overflow, 'hidden');
+  const releaseChild = acquireDialogScrollLock(body);
+  assert.equal(body.style.overflow, 'hidden');
+
+  releaseParent();
+  assert.equal(body.style.overflow, 'hidden');
+  // StrictMode/repeated cleanup must not decrement the shared count twice.
+  releaseParent();
+  assert.equal(body.style.overflow, 'hidden');
+
+  releaseChild();
+  assert.equal(body.style.overflow, 'auto');
+  releaseChild();
+  assert.equal(body.style.overflow, 'auto');
 });
 
 test('isGlobalSearchTriggerTarget detects global header search trigger ancestors only', () => {
@@ -133,6 +175,36 @@ test('component interaction invariants remain wired in critical files', () => {
 
   const useDialogFocusSource = fs.readFileSync(path.join(ROOT, 'src/components/useDialogFocus.ts'), 'utf8');
   assert.match(useDialogFocusSource, /isTopmostModalDialogElement/);
+  assert.match(useDialogFocusSource, /shouldRestoreDialogFocus\(prev, remainingDialogs\)/);
+  assert.match(useDialogFocusSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
+  assert.match(useDialogFocusSource, /if \(!escapeDisabledRef\.current && onCloseRef\.current\)/);
+  const primitivesSource = fs.readFileSync(path.join(ROOT, 'src/components/ui/RadarPrimitives.tsx'), 'utf8');
+  assert.match(primitivesSource, /isTopmostModalDialogElement\(panelRef\.current, openDialogs\)/);
+  assert.match(primitivesSource, /shouldRestoreDialogFocus\(previouslyFocused, remainingDialogs\)/);
+  assert.match(primitivesSource, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*onClose\(\);/);
+
+  const secondaryModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/SecondaryModals.tsx'), 'utf8');
+  assert.match(secondaryModalsSource, /useDialogFocus\(showPulseModal,\s*\(\) => setShowPulseModal\(false\)\)/);
+  assert.match(secondaryModalsSource, /useDialogFocus\(showSeoDrawer,\s*\(\) => setShowSeoDrawer\(false\)\)/);
+  assert.match(secondaryModalsSource, /ref=\{pulseDialogRef\}/);
+  assert.match(secondaryModalsSource, /ref=\{seoDialogRef\}/);
+  assert.doesNotMatch(secondaryModalsSource, /useDialogFocus\(showPulseModal \|\| showSeoDrawer/);
+
+  const buyerModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf8');
+  assert.match(buyerModalsSource, /useDialogFocus\(showBuyerAlertModal,\s*\(\) => setShowBuyerAlertModal\(false\)\)/);
+  assert.match(buyerModalsSource, /useDialogFocus\(showPwaModal,\s*\(\) => setShowPwaModal\(false\)\)/);
+  assert.match(buyerModalsSource, /useDialogFocus\(showLegalModal,\s*\(\) => setShowLegalModal\(false\)\)/);
+  assert.match(buyerModalsSource, /ref=\{buyerAlertDialogRef\}/);
+  assert.match(buyerModalsSource, /ref=\{pwaDialogRef\}/);
+  assert.match(buyerModalsSource, /ref=\{legalDialogRef\}/);
+  assert.doesNotMatch(buyerModalsSource, /useDialogFocus\(showBuyerAlertModal \|\| showPwaModal/);
+
+  const portfolioModalsSource = fs.readFileSync(path.join(ROOT, 'src/components/PortfolioModals.tsx'), 'utf8');
+  assert.match(portfolioModalsSource, /useDialogFocus\(showVisitedModal,\s*\(\) => setShowVisitedModal\(false\)\)/);
+  assert.match(portfolioModalsSource, /useDialogFocus\(showTradeUpModal,\s*\(\) => setShowTradeUpModal\(false\)\)/);
+  assert.match(portfolioModalsSource, /ref=\{visitedDialogRef\}/);
+  assert.match(portfolioModalsSource, /ref=\{tradeUpDialogRef\}/);
+  assert.doesNotMatch(portfolioModalsSource, /useDialogFocus\(showVisitedModal \|\| showTradeUpModal/);
 
   const searchDropdownSource = fs.readFileSync(path.join(ROOT, 'src/components/SearchDropdownMenu.tsx'), 'utf8');
   assert.match(searchDropdownSource, /isNeighborhoodSearchInputFocused/);
@@ -140,4 +212,103 @@ test('component interaction invariants remain wired in critical files', () => {
 
   const routerSource = fs.readFileSync(path.join(ROOT, 'src/components/views/ProductViewRouter.tsx'), 'utf8');
   assert.match(routerSource, /<FeatureErrorBoundary[\s\S]*<React\.Suspense/);
+});
+
+
+test('MobileMoreSheet uses shared modal stack, focus restoration, and body scroll-lock ownership', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'src/components/navigation/MobileMoreSheet.tsx'), 'utf8');
+  assert.match(source, /acquireDialogScrollLock\(document\.body\)/);
+  assert.match(source, /isTopmostModalDialogElement\(dialog, openDialogs\)/);
+  assert.match(source, /shouldRestoreDialogFocus\(previouslyFocused, remainingDialogs\)/);
+  assert.match(source, /event\.preventDefault\(\);\s*event\.stopPropagation\(\);\s*closeRef\.current\(\);/);
+});
+
+
+test('NeighborhoodPhotoGallery lightbox delegates focus and Escape lifecycle to useDialogFocus', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'src/components/NeighborhoodPhotoGallery.tsx'), 'utf8');
+  assert.match(source, /useDialogFocus\(showLightbox,\s*\(\) => setShowLightbox\(false\)\)/);
+  assert.match(source, /ref=\{lightboxRef\}/);
+  assert.doesNotMatch(source, /onKeyDown=\{\(e\) => \{ if \(e\.key === 'Escape'\)/);
+});
+
+
+test('shared modal systems recompute and restore background accessibility isolation', () => {
+  const stack = fs.readFileSync(path.join(ROOT, 'src/utils/interactions/dialogStack.ts'), 'utf8');
+  const focusHook = fs.readFileSync(path.join(ROOT, 'src/components/useDialogFocus.ts'), 'utf8');
+  const radarPrimitives = fs.readFileSync(path.join(ROOT, 'src/components/ui/RadarPrimitives.tsx'), 'utf8');
+  const mobileMoreSheet = fs.readFileSync(path.join(ROOT, 'src/components/navigation/MobileMoreSheet.tsx'), 'utf8');
+
+  assert.match(stack, /dialogIsolationSnapshots/);
+  assert.match(stack, /setAttribute\('aria-hidden', 'true'\)/);
+  assert.match(stack, /removeAttribute\('aria-hidden'\)/);
+  for (const source of [focusHook, radarPrimitives, mobileMoreSheet]) {
+    assert.match(source, /syncDialogBackgroundIsolation\(document\)/);
+  }
+});
+
+
+test('syncDialogBackgroundIsolation preserves ancestors and restores siblings across nested modal transitions', () => {
+  class FakeElement {
+    tagName: string;
+    parentElement: FakeElement | null = null;
+    children: FakeElement[] = [];
+    isConnected = true;
+    private attributes = new Map<string, string>();
+
+    constructor(tagName: string, attributes: Record<string, string> = {}) {
+      this.tagName = tagName;
+      for (const [name, value] of Object.entries(attributes)) this.attributes.set(name, value);
+    }
+
+    append(child: FakeElement) {
+      child.parentElement = this;
+      this.children.push(child);
+      return child;
+    }
+
+    getAttribute(name: string) {
+      return this.attributes.get(name) ?? null;
+    }
+
+    setAttribute(name: string, value: string) {
+      this.attributes.set(name, value);
+    }
+
+    removeAttribute(name: string) {
+      this.attributes.delete(name);
+    }
+  }
+
+  const body = new FakeElement('BODY');
+  const appRoot = body.append(new FakeElement('DIV'));
+  const externalPortal = body.append(new FakeElement('DIV', { 'aria-hidden': 'false' }));
+  const backgroundMain = appRoot.append(new FakeElement('MAIN', { 'aria-hidden': 'false' }));
+  const parentDialog = appRoot.append(new FakeElement('DIV', { role: 'dialog', 'aria-modal': 'true' }));
+  const parentChrome = parentDialog.append(new FakeElement('HEADER'));
+  const childDialog = parentDialog.append(new FakeElement('DIV', { role: 'dialog', 'aria-modal': 'true' }));
+  const dialogs = [parentDialog, childDialog];
+  const fakeDocument = {
+    body,
+    querySelectorAll: () => dialogs.filter((dialog) => dialog.isConnected && dialog.getAttribute('aria-modal') === 'true'),
+  } as unknown as Document;
+
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'false');
+  assert.equal(childDialog.getAttribute('aria-modal'), 'true');
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'true');
+  assert.equal(parentChrome.getAttribute('aria-hidden'), 'true');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'true');
+
+  childDialog.isConnected = false;
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'true');
+  assert.equal(parentChrome.getAttribute('aria-hidden'), null);
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'true');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'true');
+
+  parentDialog.isConnected = false;
+  syncDialogBackgroundIsolation(fakeDocument);
+  assert.equal(backgroundMain.getAttribute('aria-hidden'), 'false');
+  assert.equal(externalPortal.getAttribute('aria-hidden'), 'false');
+  assert.equal(parentDialog.getAttribute('aria-modal'), 'true');
 });

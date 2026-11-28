@@ -52,6 +52,34 @@ jobs:
       - name: Deterministic dependency installation
         run: npm ci
 
+      - name: Capture detailed npm dependency audit report
+        id: dependency-audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > npm-audit-report.json
+          audit_exit_code=$?
+          set -e
+          node <<'NODE'
+          const fs = require('node:fs');
+          try {
+            const report = JSON.parse(fs.readFileSync('npm-audit-report.json', 'utf8'));
+            const metadata = report.metadata?.vulnerabilities;
+            if (metadata) {
+              console.log('npm audit vulnerability summary:', JSON.stringify(metadata));
+            } else {
+              console.log('npm audit returned no vulnerability metadata; inspect retained JSON report.');
+            }
+            if (report.error) console.log('npm audit registry/error response:', JSON.stringify(report.error));
+          } catch (error) {
+            console.log('npm audit output was not valid JSON:', error.message);
+          }
+          NODE
+          echo "npm_audit_exit_code=$audit_exit_code" >> "$GITHUB_OUTPUT"
+          # Audit findings are retained for triage and do not mask independent quality gates.
+          exit 0
+
+
       - name: Gate A — TypeScript Lint & Typecheck
         shell: bash
         run: |
@@ -110,6 +138,7 @@ jobs:
           path: |
             ci-gate-*.log
             architecture-baseline.json
+            npm-audit-report.json
           if-no-files-found: ignore
           retention-days: 7
 

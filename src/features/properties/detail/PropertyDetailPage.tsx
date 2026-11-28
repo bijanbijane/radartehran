@@ -97,8 +97,8 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
           <span
             className={`px-2.5 py-1 rounded-[7px] font-bold ${
               listing.status === 'published'
-                ? 'bg-[#EAF5EE] text-[#176B4C]'
-                : 'bg-[#FFF4E5] text-[#875000]'
+                ? 'bg-[var(--color-success-bg)] text-[var(--color-success)]'
+                : 'bg-[var(--color-warning-bg)] text-[var(--color-warning)]'
             }`}
           >
             وضعیت فایل: {LISTING_STATUS_LABELS_FA[listing.status]}
@@ -158,8 +158,8 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
             </div>
 
             {listing.marketContext.gapPercentFromV64 !== null && (
-              <div className="p-3 rounded-[9px] bg-[#EAF3F0] dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 text-xs">
-                <span className="text-[var(--color-brand-700)] dark:text-emerald-300 font-bold tabular-nums">
+              <div className="p-3 rounded-[9px] bg-[var(--color-brand-soft)] border border-[var(--color-brand-soft-border)] text-xs">
+                <span className="text-[var(--color-brand-fg)] font-bold tabular-nums">
                   {listing.marketContext.gapPercentFromV64 <= 0
                     ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از برآورد معامله محله`
                     : `+${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از برآورد معامله محله`}
@@ -181,7 +181,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   type="button"
                   onClick={() => onToggleSave(record)}
                   className={`py-2 px-2.5 rounded-[9px] border font-bold flex items-center justify-center gap-1 cursor-pointer ${
-                    isSaved ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]'
+                    isSaved ? 'bg-[var(--color-brand-soft)] border-[var(--color-brand-600)] text-[var(--color-brand-fg)]' : 'border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)]'
                   }`}
                 >
                   <Bookmark className="w-3.5 h-3.5" />

@@ -23,7 +23,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     'bg-transparent hover:bg-[var(--color-bg-muted)] active:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] dark:hover:bg-[var(--color-bg-elevated)] border border-transparent',
   outline:
     'bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-canvas)] dark:hover:bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] border border-[var(--color-border-strong)] dark:border-[var(--color-border-strong)]',
-  destructive: 'bg-[#A61B1B] hover:bg-[#8E1515] active:bg-[#751010] text-white border border-transparent shadow-xs',
+  destructive: 'bg-[var(--color-danger-solid)] hover:bg-[var(--color-danger-solid-hover)] active:bg-[var(--color-danger-solid-active)] text-[var(--color-text-on-brand)] border border-transparent shadow-xs',
   icon:
     'bg-[var(--color-bg-surface)] dark:bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-muted)] dark:hover:bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] dark:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-strong)] aspect-square !px-0',
 };

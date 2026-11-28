@@ -1,6 +1,7 @@
 /** @file src/design-system/designSystem.test.ts — Fast Node unit tests for RT-UI-VIS-001, RT-UI-COLOR-001, RT-UI-TYPE-001 & RT-UI-SPACING-001 */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CONTROLLED_GEOMETRY_TOKENS,
   DENSITY_PROFILES,
@@ -20,6 +21,9 @@ import {
   SEMANTIC_PALETTE,
   computeHexContrastRatio,
 } from './colorSystem';
+import { DARK_THEME_TOKENS } from './themes/dark';
+import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
+import { resolveProductViewRouterShellClasses } from '../utils/productViewRouterShellClasses';
 import {
   BODY_TYPE_SCALE_PX,
   EDITORIAL_READING_MEASURE,
@@ -93,7 +97,7 @@ test('RT-UI-COLOR-001 enforces 4-layer semantic colors, cartographic separation,
     const ratio = computeHexContrastRatio(pair.fg, pair.bg);
     assert.ok(ratio >= pair.minRatio, `Contrast failure for ${pair.id}: got ${ratio}:1 < ${pair.minRatio}:1`);
   }
-  assert.ok(computeHexContrastRatio(BRAND_PALETTE.brandFgDark, '#131F1C') >= 4.5);
+  assert.ok(computeHexContrastRatio(BRAND_PALETTE.brandFgDark, DARK_THEME_TOKENS.bgSurface) >= 4.5);
   assert.equal(COLOR_SYSTEM_ACCEPTANCE_CRITERIA.length, 20);
 });
 
@@ -211,3 +215,264 @@ test('RT-UI-COMP-001 & RT-UI-DS-IMPLEMENTATION-001 enforce 5-layer DS, 6 button 
   assert.equal(COMPONENT_ACCEPTANCE_CRITERIA.length, 22);
 });
 
+
+
+test('RT-UI-COLOR-002 keeps dark CSS theme values synchronized with canonical TypeScript theme tokens', () => {
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+  const cssTokenMap: Record<string, string> = {
+    '--color-bg-canvas': DARK_THEME_TOKENS.bgCanvas,
+    '--color-bg-surface': DARK_THEME_TOKENS.bgSurface,
+    '--color-bg-elevated': DARK_THEME_TOKENS.bgElevated,
+    '--color-bg-muted': DARK_THEME_TOKENS.bgMuted,
+    '--color-text-primary': DARK_THEME_TOKENS.textPrimary,
+    '--color-text-secondary': DARK_THEME_TOKENS.textSecondary,
+    '--color-text-muted': DARK_THEME_TOKENS.textMuted,
+    '--color-border-subtle': DARK_THEME_TOKENS.borderSubtle,
+    '--color-border-strong': DARK_THEME_TOKENS.borderStrong,
+    '--color-focus': DARK_THEME_TOKENS.focusRing,
+    '--color-brand-primary': DARK_THEME_TOKENS.brandPrimary,
+    '--color-brand-hover': DARK_THEME_TOKENS.brandHover,
+  };
+
+  for (const [cssName, expectedValue] of Object.entries(cssTokenMap)) {
+    assert.ok(
+      darkCss.includes(`${cssName}: ${expectedValue};`),
+      `Dark CSS token ${cssName} must match TypeScript theme value ${expectedValue}`,
+    );
+  }
+});
+
+
+test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over the canonical button variants and sizes', () => {
+  assert.deepEqual(RADAR_PRIMITIVE_BUTTON_VARIANT_MAP, {
+    primary: 'primary',
+    secondary: 'secondary',
+    outline: 'outline',
+    ghost: 'tertiary',
+    danger: 'destructive',
+  });
+  assert.deepEqual(RADAR_PRIMITIVE_BUTTON_SIZE_MAP, {
+    sm: 'sm',
+    md: 'md',
+    lg: 'lg',
+  });
+});
+
+
+
+
+test('RT-UI-COLOR-006 keeps shared brand accents on canonical dark theme tokens', () => {
+  const primitives = readFileSync(new URL('../components/ui/RadarPrimitives.tsx', import.meta.url), 'utf8');
+  const casperModal = readFileSync(new URL('../components/CasperDecisionSuiteModal.tsx', import.meta.url), 'utf8');
+  const mapResults = readFileSync(new URL('../components/map/MapExplorerResultsSidebar.tsx', import.meta.url), 'utf8');
+
+  for (const source of [primitives, casperModal, mapResults]) {
+    assert.ok(!source.includes('#173530'));
+    assert.ok(!source.includes('#86d8cb'));
+    assert.ok(!source.includes('#244f48'));
+  }
+  assert.ok(primitives.includes('dark:bg-[var(--color-brand-soft)]'));
+  assert.ok(primitives.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(primitives.includes('dark:border-[var(--color-brand-soft-border)]'));
+  assert.ok(casperModal.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(mapResults.includes('dark:bg-[var(--color-brand-soft)]'));
+});
+
+test('RT-UI-COLOR-005 keeps map fallback surfaces on canonical dark theme tokens', () => {
+  const indexCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
+
+  assert.ok(indexCss.includes('background-color: var(--color-bg-canvas);'));
+  assert.ok(workspace.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(!indexCss.includes('background-color: #0d1513;'));
+  assert.ok(!workspace.includes('dark:bg-[#0D1513]'));
+});
+
+test('RT-UI-COLOR-004 keeps admin shell and workspace surfaces on canonical dark theme tokens', () => {
+  const router = readFileSync(new URL('../components/views/ProductViewRouter.tsx', import.meta.url), 'utf8');
+  const admin = readFileSync(new URL('../components/views/ProductAdminMonitoringView.tsx', import.meta.url), 'utf8');
+
+  assert.ok(router.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(admin.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(admin.includes('dark:bg-[var(--color-bg-surface)]'));
+  assert.ok(!router.includes('#0D1513'));
+  assert.ok(!admin.includes('#0D1513'));
+  assert.ok(!admin.includes('#131E1B'));
+});
+
+test('RT-UI-COLOR-003 keeps product view shell backgrounds on canonical theme tokens', () => {
+  const standard = resolveProductViewRouterShellClasses(false, false);
+  const split = resolveProductViewRouterShellClasses(true, true);
+  const homeFirst = resolveProductViewRouterShellClasses(true, false);
+
+  assert.equal(standard.shellBg, 'bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)]');
+  assert.ok(split.splitShell.includes('max-lg:bg-[var(--color-bg-canvas)]'));
+  assert.ok(split.splitShell.includes('lg:bg-[var(--color-bg-canvas)]/95'));
+  assert.ok(homeFirst.shellBg.includes('dark:bg-[var(--color-bg-canvas)]/95'));
+  assert.ok(![standard.shellBg, split.splitShell, homeFirst.shellBg].some((value) => value.includes('#0D1513')));
+});
+
+
+test('RT-UI-COLOR-007 keeps dark map attribution on canonical surface and text tokens', () => {
+  const indexCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  const darkAttribution = indexCss.split('[data-apple-theme=\'dark\'] body .leaflet-control-attribution')[1]?.split('}')[0] ?? '';
+
+  assert.ok(darkAttribution.includes('var(--color-bg-surface)'));
+  assert.ok(darkAttribution.includes('var(--color-text-muted)'));
+  assert.ok(!darkAttribution.includes('#8ca19a'));
+  assert.ok(!darkAttribution.includes('rgba(19, 31, 28'));
+});
+
+test('RT-UI-COLOR-008 keeps active navigation and floating tools accent text on canonical dark brand foreground', () => {
+  const bottomNav = readFileSync(new URL('../components/navigation/radarBottomNavParts.tsx', import.meta.url), 'utf8');
+  const floatingTopBar = readFileSync(new URL('../components/FloatingTopBar.tsx', import.meta.url), 'utf8');
+
+  assert.ok(bottomNav.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(floatingTopBar.includes('dark:text-[var(--color-brand-fg)]'));
+  assert.ok(!bottomNav.includes('#86d8cb'));
+  assert.ok(!floatingTopBar.includes('#86d8cb'));
+});
+
+
+test('RT-UI-COLOR-014 keeps shared form errors and destructive actions on danger tokens', () => {
+  const input = readFileSync(new URL('../components/common/RadarInput.tsx', import.meta.url), 'utf8');
+  const field = readFileSync(new URL('../components/common/RadarField.tsx', import.meta.url), 'utf8');
+  const button = readFileSync(new URL('../components/common/RadarButton.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  assert.ok(input.includes('border-[var(--color-danger)]'));
+  assert.ok(field.includes('text-[var(--color-danger)]'));
+  assert.ok(field.includes('focus:ring-[var(--color-danger)]/20'));
+  assert.ok(button.includes('bg-[var(--color-danger-solid)]'));
+  assert.ok(button.includes('hover:bg-[var(--color-danger-solid-hover)]'));
+  assert.ok(button.includes('active:bg-[var(--color-danger-solid-active)]'));
+  assert.ok(button.includes('text-[var(--color-text-on-brand)]'));
+  assert.ok(lightTokens.includes(`--color-danger-solid: ${SEMANTIC_PALETTE.danger.solid};`));
+  assert.ok(lightTokens.includes(`--color-danger-solid-hover: ${SEMANTIC_PALETTE.danger.solidHover};`));
+  assert.ok(lightTokens.includes(`--color-danger-solid-active: ${SEMANTIC_PALETTE.danger.solidActive};`));
+  assert.ok(darkCss.includes(`--color-danger-solid: ${SEMANTIC_PALETTE.danger.solid};`));
+  assert.ok(darkCss.includes(`--color-danger-solid-hover: ${SEMANTIC_PALETTE.danger.solidHover};`));
+  assert.ok(darkCss.includes(`--color-danger-solid-active: ${SEMANTIC_PALETTE.danger.solidActive};`));
+  assert.doesNotMatch(input + field + button, /#A61B1B|#8E1515|#751010|dark:text-rose-400/);
+});
+
+test('RT-UI-COLOR-013 keeps property lifecycle and QA status surfaces on semantic tokens', () => {
+  const paths = [
+    '../features/properties/results/PropertyCard.tsx',
+    '../features/properties/detail/PropertyDetailPage.tsx',
+    '../features/properties/submission/ListingSubmissionPage.tsx',
+    '../components/views/InteractionQaLabTab.tsx',
+    '../components/views/ValidationAndImplementLabTab.tsx',
+  ];
+  const sources = paths.map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const legacyStatusColors = /#EAF5EE|#176B4C|#FFF4E5|#875000|#FDECEC|#A61B1B|#B3261E|#EAF3F0|#103B38|#C97A10/;
+  for (const source of sources) assert.doesNotMatch(source, legacyStatusColors);
+  assert.ok(sources[0].includes('bg-[var(--color-success-bg)]'));
+  assert.ok(sources[0].includes('bg-[var(--color-warning-bg)]'));
+  assert.ok(sources[1].includes('bg-[var(--color-brand-soft)]'));
+  assert.ok(sources[2].includes('text-[var(--color-danger)]'));
+  assert.ok(sources[3].includes('bg-[var(--color-danger-bg)]'));
+  assert.ok(sources[4].includes('bg-[var(--color-success-bg)]'));
+});
+
+test('RT-UI-COLOR-012 keeps semantic alert class maps on canonical light/dark tokens', () => {
+  const classMaps = readFileSync(new URL('./classMaps.ts', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  const canonicalBorders = {
+    success: SEMANTIC_PALETTE.success.border,
+    warning: SEMANTIC_PALETTE.warning.border,
+    danger: SEMANTIC_PALETTE.danger.border,
+    info: SEMANTIC_PALETTE.info.border,
+  };
+  for (const [tone, border] of Object.entries(canonicalBorders)) {
+    assert.ok(classMaps.includes(`bg-[var(--color-${tone}-bg)]`));
+    assert.ok(classMaps.includes(`text-[var(--color-${tone})]`));
+    assert.ok(classMaps.includes(`border-[var(--color-${tone}-border)]`));
+    assert.ok(lightTokens.includes(`--color-${tone}-border: ${border};`));
+    assert.ok(darkCss.includes(`--color-${tone}-border:`));
+  }
+  assert.doesNotMatch(classMaps, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|amber|rose|sky)-|dark:text-(emerald|amber|rose|sky)-/);
+});
+
+test('RT-UI-COLOR-011 keeps data credibility badges and metric cards on semantic theme tokens', () => {
+  const badges = readFileSync(new URL('../components/common/RadarDataBadges.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+  const credibilityStyles = badges.split('export const DataCredibilityBadge')[0];
+
+  assert.ok(credibilityStyles.includes('bg-[var(--color-success-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-success)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-success-border)]'));
+  assert.ok(credibilityStyles.includes('bg-[var(--color-info-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-info)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-info-border)]'));
+  assert.ok(credibilityStyles.includes('bg-[var(--color-warning-bg)]'));
+  assert.ok(credibilityStyles.includes('text-[var(--color-warning)]'));
+  assert.ok(credibilityStyles.includes('border-[var(--color-warning-border)]'));
+  assert.doesNotMatch(credibilityStyles, /#[0-9A-Fa-f]{3,8}|dark:bg-(emerald|sky|amber)-|dark:text-(emerald|sky|amber)-/);
+  for (const token of ['--color-success-bg', '--color-success', '--color-info-bg', '--color-info', '--color-warning-bg', '--color-warning']) {
+    assert.ok(lightTokens.includes(token));
+    assert.ok(darkCss.includes(token));
+  }
+
+  assert.ok(badges.includes('bg-[var(--color-bg-surface)]'));
+  assert.doesNotMatch(badges, /bg-white dark:bg-\[var\(--color-bg-surface\)\]/);
+  assert.ok(badges.includes('data-value text-[var(--color-text-primary)]'));
+  assert.doesNotMatch(badges, /data-value text-\[var\(--color-text-primary\)\] dark:text-white/);
+});
+
+test('RT-UI-COLOR-010 keeps status and map placeholder surfaces on canonical semantic tokens', () => {
+  const admin = readFileSync(new URL('../components/views/ProductAdminMonitoringView.tsx', import.meta.url), 'utf8');
+  const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
+  const lightTokens = readFileSync(new URL('../styles/layers/tokens.css', import.meta.url), 'utf8');
+  const darkCss = readFileSync(new URL('../styles/layers/themes.css', import.meta.url), 'utf8');
+
+  assert.ok(admin.includes('bg-[var(--color-success-bg)]'));
+  assert.ok(admin.includes('text-[var(--color-success)]'));
+  assert.ok(!admin.includes('#EAF5EE'));
+  assert.ok(!admin.includes('#176B4C'));
+  assert.ok(lightTokens.includes(`--color-success: ${SEMANTIC_PALETTE.success.fg};`));
+  assert.ok(lightTokens.includes(`--color-success-bg: ${SEMANTIC_PALETTE.success.bg};`));
+  assert.ok(darkCss.includes('--color-success: #4ADE80;'));
+  assert.ok(darkCss.includes('--color-success-bg: rgba(16, 185, 129, 0.16);'));
+
+  assert.ok(workspace.includes('bg-[var(--color-bg-sunken)]'));
+  assert.ok(workspace.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(!workspace.includes('bg-[#E9EFEC]'));
+  assert.ok(lightTokens.includes(`--color-bg-sunken: ${NEUTRAL_PALETTE.surfaceSunken};`));
+  assert.ok(darkCss.includes(`--color-bg-sunken: ${DARK_THEME_TOKENS.bgMuted};`));
+});
+
+test('RT-UI-COLOR-009 enforces WCAG AA contrast for dark-theme text and visible focus indicators', () => {
+  const textTokens = [
+    ['primary', DARK_THEME_TOKENS.textPrimary],
+    ['secondary', DARK_THEME_TOKENS.textSecondary],
+    ['muted', DARK_THEME_TOKENS.textMuted],
+  ] as const;
+  const surfaces = [
+    ['canvas', DARK_THEME_TOKENS.bgCanvas],
+    ['surface', DARK_THEME_TOKENS.bgSurface],
+    ['elevated', DARK_THEME_TOKENS.bgElevated],
+  ] as const;
+
+  for (const [textRole, foreground] of textTokens) {
+    for (const [surfaceRole, background] of surfaces) {
+      const ratio = computeHexContrastRatio(foreground, background);
+      assert.ok(
+        ratio >= 4.5,
+        `Dark theme ${textRole} text on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 4.5:1`
+      );
+    }
+  }
+
+  for (const [surfaceRole, background] of surfaces) {
+    const ratio = computeHexContrastRatio(DARK_THEME_TOKENS.focusRing, background);
+    assert.ok(
+      ratio >= 3,
+      `Dark theme focus indicator on ${surfaceRole} surface has ${ratio}:1 contrast; expected >= 3:1`
+    );
+  }
+});

@@ -239,7 +239,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
     );
   } else if (primaryView === 'admin') {
     return (
-      <div className="w-full h-full overflow-y-auto pointer-events-auto bg-[var(--color-bg-canvas)] dark:bg-[#0D1513]">
+      <div className="w-full h-full overflow-y-auto pointer-events-auto bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)]">
         <FeatureErrorBoundary sectionName="پنل نظارت و مدیریت" resetKey={ui.adminSection}>
           <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
             <ProductAdminMonitoringView

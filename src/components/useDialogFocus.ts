@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { isTopmostModalDialogElement } from '../utils/interactions/dialogStack';
+import { acquireDialogScrollLock, isTopmostModalDialogElement, shouldRestoreDialogFocus, syncDialogBackgroundIsolation } from '../utils/interactions/dialogStack';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 const FOCUSABLE_SELECTOR =
@@ -19,9 +19,6 @@ function isElementFocusableVisible(el: HTMLElement): boolean {
   }
   return true;
 }
-
-let activeScrollLockCount = 0;
-let savedBaseBodyOverflow: string | null = null;
 
 /**
  * Lightweight WCAG 2.1 AA dialog focus & scroll-lock management hook.
@@ -55,11 +52,8 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     if (!open || typeof document === 'undefined') return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (activeScrollLockCount === 0) {
-      savedBaseBodyOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-    }
-    activeScrollLockCount += 1;
+    const releaseScrollLock = acquireDialogScrollLock(document.body);
+    syncDialogBackgroundIsolation(document);
 
     const container = containerRef.current;
     if (container) {
@@ -79,8 +73,11 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
       const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
       if (!isTopmostModalDialogElement(containerRef.current, openDialogs)) return;
       if (e.key === 'Escape') {
+        // The topmost modal owns this Escape press; do not let the global window
+        // listener dismiss unrelated overlays or lower modal state.
+        e.preventDefault();
+        e.stopPropagation();
         if (!escapeDisabledRef.current && onCloseRef.current) {
-          e.preventDefault();
           onCloseRef.current();
         }
         return;
@@ -116,15 +113,15 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       if (typeof document !== 'undefined') {
-        activeScrollLockCount = Math.max(0, activeScrollLockCount - 1);
-        if (activeScrollLockCount === 0) {
-          document.body.style.overflow = savedBaseBodyOverflow ?? '';
-          savedBaseBodyOverflow = null;
-        }
+        releaseScrollLock();
+        syncDialogBackgroundIsolation(document);
         const prev = previousFocusRef.current;
-        if (prev && prev.isConnected && typeof prev.focus === 'function') {
+        const remainingDialogs = Array.from(
+          document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
+        );
+        if (shouldRestoreDialogFocus(prev, remainingDialogs) && prev && typeof prev.focus === 'function') {
           prev.focus();
-        } else {
+        } else if (remainingDialogs.length === 0) {
           const fallbackTarget = document.querySelector<HTMLElement>('main, [role="main"], h1');
           if (fallbackTarget && typeof fallbackTarget.focus === 'function') {
             if (!fallbackTarget.hasAttribute('tabindex')) fallbackTarget.setAttribute('tabindex', '-1');

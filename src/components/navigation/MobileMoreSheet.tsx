@@ -9,6 +9,12 @@ import type { PrimaryViewId, RadarLocale } from '../../utils/areaUnit';
 import { buildCanonicalPathForDestination } from '../../navigation/url/navigationUrlContract';
 import { AreaUnitToggle } from '../AreaUnitToggle';
 import { RadarLink } from '../ui/RadarPrimitives';
+import {
+  acquireDialogScrollLock,
+  isTopmostModalDialogElement,
+  shouldRestoreDialogFocus,
+  syncDialogBackgroundIsolation,
+} from '../../utils/interactions/dialogStack';
 
 export interface MobileMoreSheetProps {
   open: boolean;
@@ -77,6 +83,8 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
 
     const activeElement = document.activeElement;
     previouslyFocusedRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+    const releaseScrollLock = acquireDialogScrollLock(document.body);
+    syncDialogBackgroundIsolation(document);
 
     const initialFocusFrame = window.requestAnimationFrame(() => {
       const dialog = dialogRef.current;
@@ -86,15 +94,19 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
     });
 
     const handleDocumentKeyDown = (event: KeyboardEvent) => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (!isTopmostModalDialogElement(dialog, openDialogs)) return;
+
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         closeRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
 
-      const dialog = dialogRef.current;
-      if (!dialog) return;
       const focusable = getVisibleFocusableElements(dialog);
       if (focusable.length === 0) {
         event.preventDefault();
@@ -118,9 +130,16 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
     return () => {
       window.cancelAnimationFrame(initialFocusFrame);
       document.removeEventListener('keydown', handleDocumentKeyDown);
+      releaseScrollLock();
+      syncDialogBackgroundIsolation(document);
       const previouslyFocused = previouslyFocusedRef.current;
       previouslyFocusedRef.current = null;
-      if (previouslyFocused?.isConnected && !previouslyFocused.hasAttribute('disabled')) {
+      const remainingDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (
+        previouslyFocused?.isConnected
+        && !previouslyFocused.hasAttribute('disabled')
+        && shouldRestoreDialogFocus(previouslyFocused, remainingDialogs)
+      ) {
         previouslyFocused.focus();
       }
     };

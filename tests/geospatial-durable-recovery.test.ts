@@ -71,6 +71,26 @@ function sampleState(): PersistedGeospatialState {
 async function runTests(): Promise<void> {
   resetGeospatialRecoveryStateForTests();
 
+  let persistedWithoutStage = false;
+  const noStagedActivation = await activateStagedGeospatialSnapshot({
+    persist: async () => {
+      persistedWithoutStage = true;
+    },
+  });
+  assert.equal(noStagedActivation.health, 'BLOCKED');
+  assert.equal(noStagedActivation.activated, false);
+  assert.deepEqual(noStagedActivation.recordCounts, {
+    boundaryEntities: 0,
+    activeBoundaries: 0,
+    poiRecords: 0,
+    spatialListingCities: 0,
+    spatialListings: 0,
+    overlayLayers: 0,
+    importBatches: 0,
+  });
+  assert.ok(noStagedActivation.validationErrors.includes('GEOSPATIAL_NO_STAGED_SNAPSHOT'));
+  assert.equal(persistedWithoutStage, false);
+
   const empty = assessGeospatialSnapshot(
     {
       boundaryHistoryByEntity: {},

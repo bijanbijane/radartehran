@@ -5,15 +5,15 @@ import { DATA_CREDIBILITY_SPECS, type DataCredibilityStatus } from '../../design
 
 const CREDIBILITY_STYLES: Record<DataCredibilityStatus, { cls: string; Icon: React.FC<{ className?: string }> }> = {
   verified: {
-    cls: 'bg-[#EAF5EE] text-[#176B4C] border-[#BBE0CA] dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+    cls: 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-success-border)]',
     Icon: CheckCircle2,
   },
   estimated: {
-    cls: 'bg-[#EAF3FB] text-[#155E9A] border-[#BFD9F0] dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800',
+    cls: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[var(--color-info-border)]',
     Icon: Info,
   },
   incomplete: {
-    cls: 'bg-[#FFF4E5] text-[#875000] border-[#F4D3A1] dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+    cls: 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[var(--color-warning-border)]',
     Icon: AlertTriangle,
   },
   stale: {
@@ -64,7 +64,7 @@ export const RadarCard: React.FC<{
 }> = ({ padding = 'standard', elevated = false, className = '', children }) => {
   const pad = padding === 'compact' ? 'p-3' : padding === 'large' ? 'p-5' : 'p-4';
   return (
-    <div className={`rounded-[12px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] ${elevated ? 'shadow-xs' : ''} ${pad} ${className}`}>
+    <div className={`rounded-[12px] border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] ${elevated ? 'shadow-xs' : ''} ${pad} ${className}`}>
       {children}
     </div>
   );
@@ -82,7 +82,7 @@ export const RadarMetricCard: React.FC<{
       <span className="text-[13px] font-medium text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)]">{title}</span>
       <DataCredibilityBadge status={credibility} />
     </div>
-    <div className="data-value text-[var(--color-text-primary)] dark:text-white tabular-nums">{valueText}</div>
+    <div className="data-value text-[var(--color-text-primary)] tabular-nums">{valueText}</div>
     <div className="text-[13px] font-medium text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)] mt-1">{unitText}</div>
     <div className="text-[13px] text-[var(--color-text-muted)] dark:text-[var(--color-text-muted)] mt-2 pt-2 border-t border-[var(--color-border-subtle)]/80 dark:border-[var(--color-border-subtle)]">{periodAndSource}</div>
   </RadarCard>

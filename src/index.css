@@ -161,7 +161,7 @@ html body .leaflet-container {
 
 [data-apple-theme='dark'] .leaflet-container,
 html.dark .leaflet-container {
-  background-color: #0d1513;
+  background-color: var(--color-bg-canvas);
 }
 
 [data-apple-theme='dark'] .leaflet-tile-pane,
@@ -278,8 +278,8 @@ html body .leaflet-tooltip-bottom:before {
 
 html[data-apple-theme='dark'] body .leaflet-control-attribution,
 html.dark body .leaflet-control-attribution {
-  background-color: rgba(19, 31, 28, 0.88);
-  color: #8ca19a;
+  background-color: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
+  color: var(--color-text-muted);
 }
 
 ::-webkit-scrollbar {
@@ -390,7 +390,7 @@ table th {
   font-feature-settings: "tnum" 1;
 }
 
-/* Global Accessible Focus Ring (Distinct Focus Blue #2864DC light / #60A5FA dark) */
+/* Global Accessible Focus Ring: #2864DC light / #6B9BFF dark (canonical theme tokens). */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,

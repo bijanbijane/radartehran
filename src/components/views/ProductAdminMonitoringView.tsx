@@ -97,9 +97,9 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const sampleFx = formatMillionTomanAsIntlCurrency(100, 'IRT', 'fa');
 
   return (
-    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-[#0D1513] flex flex-col">
+    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-[var(--color-bg-canvas)] flex flex-col">
       {/* Independent Admin Context Top Bar */}
-      <header className="sticky top-0 z-20 bg-white dark:bg-[#131E1B] border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] px-4 h-14 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-20 bg-white dark:bg-[var(--color-bg-surface)] border-b border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           {p.isVerifiedAdmin && (
             <button type="button" onClick={() => setSidebarOpenMobile((o) => !o)} aria-label="منوی مدیریت" className="lg:hidden p-2 rounded-lg border border-slate-200 dark:border-[var(--color-border-strong)] text-slate-700 dark:text-[var(--color-text-primary)] cursor-pointer">
@@ -126,7 +126,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         {p.isVerifiedAdmin && (
           <aside
             aria-label="منوی بخش‌های مدیریت"
-            className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[#131E1B] border-l border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] p-3 space-y-1.5`}
+            className={`${sidebarOpenMobile ? 'fixed inset-y-14 right-0 z-30 block' : 'hidden'} lg:block lg:static w-64 shrink-0 bg-white dark:bg-[var(--color-bg-surface)] border-l border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] p-3 space-y-1.5`}
           >
             <div className="px-2.5 py-1.5 text-xs font-bold text-slate-500">گروه‌های عملیاتی پنل</div>
             {ADMIN_SIDEBAR_SECTIONS.map((sec) => {
@@ -180,10 +180,10 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
               )}
 
               {(currentSection === 'overview' || currentSection === 'operations') && (
-                <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[#131E1B] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2 text-xs">
+                <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] space-y-2 text-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (غیرشخصی)</span>
-                    <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-xs">
+                    <span className="px-2 py-0.5 rounded-[6px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold text-xs">
                       پایلوت نقشه · وضعیت پایدار
                     </span>
                   </div>

@@ -1,24 +1,24 @@
 /** @file src/design-system/themes/dark.ts — Dark Theme Token Map */
-import { BRAND_PALETTE, SEMANTIC_PALETTE } from '../colorSystem';
+import { BRAND_PALETTE, RADAR_DARK_SURFACE_TEXT_TOKENS } from '../colorSystem';
 
 export const DARK_THEME_TOKENS = {
   mode: 'dark' as const,
   direction: 'rtl' as const,
-  brandPrimary: '#2E8F83',
+  brandPrimary: BRAND_PALETTE.brand500,
   brandHover: BRAND_PALETTE.brand600,
-  bgCanvas: '#0A110F',
-  bgSurface: '#111C19',
-  bgElevated: '#172521',
-  bgMuted: '#0D1614',
-  textPrimary: '#F1F5F3',
-  textSecondary: '#C5D0CA',
-  textMuted: '#8A9891',
-  borderSubtle: '#22312C',
-  borderStrong: '#2E423B',
-  focusRing: SEMANTIC_PALETTE.focusRing,
+  bgCanvas: RADAR_DARK_SURFACE_TEXT_TOKENS.canvas,
+  bgSurface: RADAR_DARK_SURFACE_TEXT_TOKENS.surface,
+  bgElevated: RADAR_DARK_SURFACE_TEXT_TOKENS.surfaceSubtle,
+  bgMuted: RADAR_DARK_SURFACE_TEXT_TOKENS.surfaceSunken,
+  textPrimary: RADAR_DARK_SURFACE_TEXT_TOKENS.textPrimary,
+  textSecondary: RADAR_DARK_SURFACE_TEXT_TOKENS.textSecondary,
+  textMuted: RADAR_DARK_SURFACE_TEXT_TOKENS.textMuted,
+  borderSubtle: RADAR_DARK_SURFACE_TEXT_TOKENS.borderSubtle,
+  borderStrong: RADAR_DARK_SURFACE_TEXT_TOKENS.borderStrong,
+  focusRing: RADAR_DARK_SURFACE_TEXT_TOKENS.focus,
   background: {
-    primary: '#0A110F',
-    surface: '#111C19',
-    elevated: '#172521',
+    primary: RADAR_DARK_SURFACE_TEXT_TOKENS.canvas,
+    surface: RADAR_DARK_SURFACE_TEXT_TOKENS.surface,
+    elevated: RADAR_DARK_SURFACE_TEXT_TOKENS.surfaceSubtle,
   },
 } as const;

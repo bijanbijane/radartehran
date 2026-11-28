@@ -3,6 +3,7 @@ import { Camera, ChevronLeft, ChevronRight, Compass, Image as ImageIcon, Maximiz
 import { calcDistanceKm, EvaluatedNeighborhood, LocalLandmark, toPersianNum } from '../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState } from './mapAdvancedLayers';
+import { useDialogFocus } from './useDialogFocus';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
@@ -119,6 +120,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [radarLocale] = useRadarLocale();
   const [showLightbox, setShowLightbox] = useState<boolean>(false);
+  const lightboxRef = useDialogFocus(showLightbox, () => setShowLightbox(false));
   const isEn = radarLocale === 'en';
   React.useEffect(() => { setActiveIndex(0); }, [selectedHood.id]);
 
@@ -240,7 +242,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
       </div>
 
       {showLightbox && (
-        <div role="dialog" aria-modal="true" aria-label={activeItem.title} tabIndex={-1} onKeyDown={(e) => { if (e.key === 'Escape') setShowLightbox(false); }} onClick={() => setShowLightbox(false)} className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in-0 duration-200 focus:outline-none">
+        <div ref={lightboxRef} role="dialog" aria-modal="true" aria-label={activeItem.title} tabIndex={-1} onClick={() => setShowLightbox(false)} className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in-0 duration-200 focus:outline-none">
           <div onClick={(e) => e.stopPropagation()} className="relative max-w-xl w-full bg-slate-900 rounded-[20px] overflow-hidden border border-white/10 shadow-2xl space-y-3 p-4 text-white">
             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
               <div className="flex items-center gap-2">

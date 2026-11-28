@@ -91,14 +91,14 @@ export const ValidationAndImplementLabTab: React.FC = () => {
     <div className="space-y-5" data-testid="validation-implement-lab-tab">
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. دروازه‌های پذیرش مرحله دهم و ثبت اشکال (S0–S4 · Design Freeze Gate)</span>
           </h3>
           <span
             data-testid="design-freeze-gate-badge"
             className={`text-[11.5px] font-bold px-2.5 py-1 rounded-[6px] ${
-              gateStatus.allowed ? 'bg-[#EAF5EE] text-[#176B4C]' : 'bg-[#FDECEC] text-[#A61B1B]'
+              gateStatus.allowed ? 'bg-[var(--color-success-bg)] text-[var(--color-success)]' : 'bg-[var(--color-danger-bg)] text-[var(--color-danger)]'
             }`}
           >
             {gateStatus.statusLabelFa}
@@ -122,10 +122,10 @@ export const ValidationAndImplementLabTab: React.FC = () => {
             return (
               <div
                 key={iss.id}
-                className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-[12px]"
+                className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] flex flex-wrap items-center justify-between gap-2 text-[12px]"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`px-1.5 py-0.5 rounded-[4px] font-bold text-[11px] ${iss.status === 'open' ? 'bg-[#FDECEC] text-[#A61B1B]' : 'bg-[#EAF5EE] text-[#176B4C]'}`}>
+                  <span className={`px-1.5 py-0.5 rounded-[4px] font-bold text-[11px] ${iss.status === 'open' ? 'bg-[var(--color-danger-bg)] text-[var(--color-danger)]' : 'bg-[var(--color-success-bg)] text-[var(--color-success)]'}`}>
                     {iss.severity} · اولویت {score}
                   </span>
                   <span className="font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary)] truncate">{iss.descriptionFa}</span>
@@ -142,11 +142,11 @@ export const ValidationAndImplementLabTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <RadarCard padding="standard" elevated>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <Gauge className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>۲. بودجه Core Web Vitals و نقشه (MAP-P01..P06)</span>
             </h3>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-[6px] ${budgetEval.passedAll ? 'bg-[#EAF5EE] text-[#176B4C]' : 'bg-[#FFF4E5] text-[#875000]'}`}>
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-[6px] ${budgetEval.passedAll ? 'bg-[var(--color-success-bg)] text-[var(--color-success)]' : 'bg-[var(--color-warning-bg)] text-[var(--color-warning)]'}`}>
               {budgetEval.passedAll ? 'مطابق بودجه' : 'نیازمند بهینه‌سازی'}
             </span>
           </div>
@@ -168,7 +168,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
 
         <RadarCard padding="standard" elevated>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
               <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>۳. دامنه پایلوت نقشه (RT-PILOT-MAP-001)</span>
             </h3>
@@ -179,9 +179,9 @@ export const ValidationAndImplementLabTab: React.FC = () => {
               <div key={item.key} className="p-1.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] flex items-center justify-between gap-1">
                 <span className="truncate font-medium">{item.titleFa}</span>
                 {item.status === 'required' ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#176B4C] shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#C97A10] shrink-0" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-warning)] shrink-0" />
                 )}
               </div>
             ))}
@@ -191,7 +191,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
 
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <Flag className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۴. پرچم‌های انتشار تدریجی و بازگشت فوری (UI_FLAGS & Rollback · §9)</span>
           </h3>
@@ -208,10 +208,10 @@ export const ValidationAndImplementLabTab: React.FC = () => {
           {flags.map((flag) => (
             <label
               key={flag.key}
-              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-white dark:bg-[var(--color-bg-surface)] flex items-center justify-between gap-2 cursor-pointer text-[12px]"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] flex items-center justify-between gap-2 cursor-pointer text-[12px]"
             >
               <div className="min-w-0">
-                <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{flag.titleFa}</div>
+                <div className="font-bold text-[var(--color-text-primary)] truncate">{flag.titleFa}</div>
                 <div className="text-[10.5px] text-[var(--color-text-muted)]">{flag.rolloutPhase} · مالک: {flag.owner}</div>
               </div>
               <input
@@ -227,15 +227,15 @@ export const ValidationAndImplementLabTab: React.FC = () => {
       </RadarCard>
 
       <RadarCard padding="standard" elevated data-testid="stages-1-to-17-audit-matrix">
-        <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2.5">
+        <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] mb-2.5">
           ۵. ماتریس ممیزی و پذیرش مراحل ۱ تا ۱۷ (End-to-End Stage 1–17 Verification)
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11.5px] tabular-nums">
-          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۲–۱۳ (DS): {STAGE_12_DS_PHASES.length}/۹ فاز</div>
-          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۴ (Home): {HOME_ACCEPTANCE_CHECKLIST_18.length}/۱۸ معیار</div>
-          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۵ (Map): {MAP_IMPLEMENTATION_PACKAGES_19.length}/۱۹ بسته</div>
-          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۶ (Layers): {STAGE_16_ACCEPTANCE_CHECKLIST_25.length}/۲۵ معیار</div>
-          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۷ (Hood): {STAGE_17_ACCEPTANCE_CHECKLIST_30.length}/۳۰ معیار</div>
+          <div className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold">مرحله ۱۲–۱۳ (DS): {STAGE_12_DS_PHASES.length}/۹ فاز</div>
+          <div className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold">مرحله ۱۴ (Home): {HOME_ACCEPTANCE_CHECKLIST_18.length}/۱۸ معیار</div>
+          <div className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold">مرحله ۱۵ (Map): {MAP_IMPLEMENTATION_PACKAGES_19.length}/۱۹ بسته</div>
+          <div className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold">مرحله ۱۶ (Layers): {STAGE_16_ACCEPTANCE_CHECKLIST_25.length}/۲۵ معیار</div>
+          <div className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] font-bold">مرحله ۱۷ (Hood): {STAGE_17_ACCEPTANCE_CHECKLIST_30.length}/۳۰ معیار</div>
         </div>
       </RadarCard>
     </div>

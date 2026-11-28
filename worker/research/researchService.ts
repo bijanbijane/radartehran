@@ -675,12 +675,19 @@ export async function executeResearchSubjectErasure(params: {
       nowIso,
     );
 
-  const batchResults = await params.researchDb.batch([
-    insertInboxStmt,
-    invalidateWindowsStmt,
-    deleteEventsStmt,
-    updateConsentFenceStmt,
-  ]);
+  let batchResults: Awaited<ReturnType<D1Database['batch']>>;
+  try {
+    batchResults = await params.researchDb.batch([
+      insertInboxStmt,
+      invalidateWindowsStmt,
+      deleteEventsStmt,
+      updateConsentFenceStmt,
+    ]);
+  } catch {
+    // D1 batch implementations may reject instead of returning unsuccessful
+    // per-statement results. Preserve the stable domain error contract either way.
+    throw new Error('RESEARCH_SUBJECT_ERASURE_BATCH_FAILED');
+  }
   if (
     batchResults.length !== 4 ||
     batchResults.some((r) => !r.success)
