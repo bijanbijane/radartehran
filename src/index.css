@@ -390,7 +390,7 @@ table th {
   font-feature-settings: "tnum" 1;
 }
 
-/* Global Accessible Focus Ring (Distinct Focus Blue #2864DC light / #60A5FA dark) */
+/* Global Accessible Focus Ring: #2864DC light / #6B9BFF dark (canonical theme tokens). */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
