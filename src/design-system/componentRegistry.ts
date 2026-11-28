@@ -146,6 +146,31 @@ export const COMPONENT_IMPLEMENTATION_REGISTRY = [
       qa_acceptance: 'SSR tests cover article semantics and title/subtitle; interactive runtime keyboard behavior remains a follow-up.',
     }),
   },
+
+  {
+    id: 'RT-COMP-CARD-SURFACE-001',
+    name: 'RadarSurfaceCard',
+    layer: 'primitive',
+    owner: 'src/components/common',
+    implementation: 'src/components/common/RadarSurfaceCard.tsx',
+    publicContract: 'RadarSurfaceCardProps',
+    governance: 'Stable',
+    spec: spec({
+      id_and_name: 'RT-COMP-CARD-SURFACE-001 — RadarSurfaceCard',
+      purpose: 'Canonical passive surface primitive shared by legacy data and UI Card adapters.',
+      anatomy: 'Neutral div surface containing caller-provided content.',
+      dimensions: 'none, compact, standard, large, standard-responsive and large-responsive padding presets.',
+      color_and_typography: 'Canonical semantic surface, border, 12px radius and optional subtle elevation.',
+      interactive_states: 'Passive only; no click, hover or focus state is introduced.',
+      desktop_behavior: 'Block-level surface; wrapper and caller own content layout.',
+      mobile_behavior: 'Responsive padding presets are explicit; legacy adapters retain their previous spacing behavior.',
+      accessibility: 'Neutral grouping only; semantic headings and interactive controls remain in caller content.',
+      allowed_usage: 'Passive surface cards and compatibility adapters that need a shared visual shell.',
+      forbidden_usage: 'Clickable article, navigation link or metric/domain content without its own semantic contract.',
+      props_contract: 'padding preset, elevated, className and required children.',
+      qa_acceptance: 'SSR tests assert legacy wrappers delegate to the same canonical surface while preserving distinct padding presets.',
+    }),
+  },
   {
     id: 'RT-COMP-CARD-002',
     name: 'RadarDataBadges.RadarCard',
@@ -156,8 +181,8 @@ export const COMPONENT_IMPLEMENTATION_REGISTRY = [
     governance: 'Stable',
     spec: spec({
       id_and_name: 'RT-COMP-CARD-002 — RadarDataBadges.RadarCard',
-      purpose: 'Simple surface wrapper used by metric and design-lab content.',
-      anatomy: 'Single div surface with children.',
+      purpose: 'Backward-compatible data-card wrapper delegating passive surface rendering to RadarSurfaceCard.',
+      anatomy: 'Legacy props map to the shared RadarSurfaceCard surface and children slot.',
       dimensions: 'compact/standard/large padding presets.',
       color_and_typography: 'Semantic surface, border and optional elevation shadow tokens.',
       interactive_states: 'Non-interactive surface; no built-in hover or focus state.',
@@ -180,8 +205,8 @@ export const COMPONENT_IMPLEMENTATION_REGISTRY = [
     governance: 'Experimental',
     spec: spec({
       id_and_name: 'RT-COMP-CARD-003 — RadarPrimitives.RadarCard',
-      purpose: 'Generic passive card wrapper retained for legacy UI consumers.',
-      anatomy: 'Single div surface with optional padding and children.',
+      purpose: 'Backward-compatible generic UI Card adapter over RadarSurfaceCard.',
+      anatomy: 'Legacy padded boolean maps to the shared RadarSurfaceCard responsive padding preset.',
       dimensions: 'Boolean padded switch selects standard or zero padding.',
       color_and_typography: 'Semantic surface, subtle border and 12px radius.',
       interactive_states: 'Passive container; no click, hover or focus behavior.',
@@ -376,10 +401,10 @@ export const COMPONENT_FAMILY_COVERAGE: readonly ComponentFamilyCoverage[] = [
   {
     catalogId: 'C05', group: 'Cards', status: 'partial',
     owner: 'src/components/common, src/components/ui and src/features/properties',
-    implementationRefs: ['src/components/common/RadarCard.tsx', 'src/components/common/RadarDataBadges.tsx', 'src/components/ui/RadarPrimitives.tsx', 'src/features/properties/results/PropertyCard.tsx'],
-    contractEvidence: 'Three shared Card APIs and a property-domain card are separately typed and explicitly distinguished in the component registry.',
-    stateMatrix: 'Passive surface, metric presentation, article content and experimental interactive-article states are recorded per API.',
-    qaAcceptance: 'RT-UI-COMP-BEH-005 verifies distinct SSR semantics for all three shared Card APIs.',
+    implementationRefs: ['src/components/common/RadarSurfaceCard.tsx', 'src/components/common/RadarCard.tsx', 'src/components/common/RadarDataBadges.tsx', 'src/components/ui/RadarPrimitives.tsx', 'src/features/properties/results/PropertyCard.tsx'],
+    contractEvidence: 'The passive data/UI Card wrappers now delegate to RadarSurfaceCard; semantic common RadarCard and property-domain PropertyCard retain distinct contracts.',
+    stateMatrix: 'Shared passive surface, metric presentation, semantic article content and experimental interactive-article states are recorded per API.',
+    qaAcceptance: 'RT-UI-COMP-BEH-005 verifies semantic article/passive wrapper differences; RT-UI-COMP-BEH-011 verifies shared surface classes and legacy padding mappings.'
     knownGaps: 'No unified Card migration is justified yet; common RadarCard interactive mode remains Experimental pending consumer and nested-interactive review.',
   },
   {
