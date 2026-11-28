@@ -28,6 +28,10 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     };
   });
 }
+export function getNeighborhoodMapLabel(name: string): string {
+  return formatCompactNeighborhoodName(name);
+}
+
 export function formatCompactNeighborhoodName(name: string): string {
   const cleaned = String(name || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
   const primary = cleaned.split(/\s+و\s+|[/،]/)[0]?.trim() || cleaned;
@@ -106,7 +110,7 @@ export function computeDeclutteredMarkerTiers(
       result.set(hood.id, 'dot');
       continue;
     }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = ['detailed_pill', 'standard_pill', 'compact_chip'];
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = ['compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
