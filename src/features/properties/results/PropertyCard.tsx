@@ -100,7 +100,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             </span>
           </div>
           {verified && (
-            <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-[7px] bg-[#EAF5EE] text-[#176B4C] text-xs font-bold flex items-center gap-1">
+            <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-[7px] bg-[var(--color-success-bg)] text-[var(--color-success)] text-xs font-bold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
               <span>راستی‌آزمایی‌شده</span>
             </div>
@@ -186,7 +186,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 className={`text-xs font-bold shrink-0 px-2 py-0.5 rounded-[7px] ${
                   listing.marketContext.gapPercentFromV64 <= 0
                     ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-fg)]'
-                    : 'bg-amber-500/15 text-[#875000] dark:text-amber-300'
+                    : 'bg-[var(--color-warning-bg)] text-[var(--color-warning)]'
                 }`}
               >
                 {listing.marketContext.gapPercentFromV64 < 0
