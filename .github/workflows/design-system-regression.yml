@@ -6,6 +6,7 @@ on:
       - main
       - fix/ui-stage11-layout-contract-resolution
       - fix/ui-stage12-theme-token-parity
+      - feat/ui-stage13-component-registry-final
     paths:
       - "src/design-system/**"
       - "src/components/common/**"
