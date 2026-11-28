@@ -550,7 +550,8 @@ test('RT-UI-COMP-REG-003 maps every catalog family to an explicit owner, contrac
 
 test('RT-UI-COMP-REG-004 detects missing and duplicate catalog-family coverage', () => {
   const [first, ...remaining] = COMPONENT_FAMILY_COVERAGE;
-  const issues = validateComponentFamilyCoverage([...remaining, first]);
+  const omitted = remaining[0];
+  const issues = validateComponentFamilyCoverage([first, ...remaining.slice(1), first]);
   assert.ok(issues.some((issue) => issue.code === 'duplicate_catalog_id' && issue.catalogId === first.catalogId));
-  assert.ok(issues.some((issue) => issue.code === 'missing_catalog_family' && issue.catalogId === first.catalogId));
+  assert.ok(issues.some((issue) => issue.code === 'missing_catalog_family' && issue.catalogId === omitted.catalogId));
 });
