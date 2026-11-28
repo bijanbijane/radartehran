@@ -97,7 +97,7 @@ test('RT-UI-COLOR-001 enforces 4-layer semantic colors, cartographic separation,
     const ratio = computeHexContrastRatio(pair.fg, pair.bg);
     assert.ok(ratio >= pair.minRatio, `Contrast failure for ${pair.id}: got ${ratio}:1 < ${pair.minRatio}:1`);
   }
-  assert.ok(computeHexContrastRatio(BRAND_PALETTE.brandFgDark, '#131F1C') >= 4.5);
+  assert.ok(computeHexContrastRatio(BRAND_PALETTE.brandFgDark, DARK_THEME_TOKENS.bgSurface) >= 4.5);
   assert.equal(COLOR_SYSTEM_ACCEPTANCE_CRITERIA.length, 20);
 });
 
@@ -260,6 +260,16 @@ test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over
 
 
 
+
+test('RT-UI-COLOR-005 keeps map fallback surfaces on canonical dark theme tokens', () => {
+  const indexCss = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  const workspace = readFileSync(new URL('../components/RadarWorkspaceShell.tsx', import.meta.url), 'utf8');
+
+  assert.ok(indexCss.includes('background-color: var(--color-bg-canvas);'));
+  assert.ok(workspace.includes('dark:bg-[var(--color-bg-canvas)]'));
+  assert.ok(!indexCss.includes('background-color: #0d1513;'));
+  assert.ok(!workspace.includes('dark:bg-[#0D1513]'));
+});
 
 test('RT-UI-COLOR-004 keeps admin shell and workspace surfaces on canonical dark theme tokens', () => {
   const router = readFileSync(new URL('../components/views/ProductViewRouter.tsx', import.meta.url), 'utf8');
