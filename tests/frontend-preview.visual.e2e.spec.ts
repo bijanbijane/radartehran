@@ -44,7 +44,33 @@ test('isolated frontend preview renders desktop and touch-enabled mobile shells 
     for (const destination of ['محله‌ها', 'بازار', 'نقشه', 'املاک']) {
       await expect(mobilePage.getByRole('link', { name: destination, exact: true }).last()).toBeVisible();
     }
-    await expect(mobilePage.getByRole('button', { name: 'بخش‌های بیشتر', exact: true })).toBeVisible();
+    const moreButton = mobilePage.getByRole('button', { name: 'بخش‌های بیشتر', exact: true });
+    await expect(moreButton).toBeVisible();
+    await moreButton.focus();
+    await mobilePage.keyboard.press('Enter');
+
+    const moreDialog = mobilePage.getByRole('dialog', { name: 'بخش‌های بیشتر' });
+    await expect(moreDialog).toBeVisible();
+    await expect(moreDialog).toHaveAttribute('aria-modal', 'true');
+
+    const dialogFocusable = moreDialog.locator(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    const firstDialogControl = dialogFocusable.first();
+    const lastDialogControl = dialogFocusable.last();
+    await expect(firstDialogControl).toBeFocused();
+
+    await lastDialogControl.focus();
+    await mobilePage.keyboard.press('Tab');
+    await expect(firstDialogControl).toBeFocused();
+
+    await firstDialogControl.focus();
+    await mobilePage.keyboard.press('Shift+Tab');
+    await expect(lastDialogControl).toBeFocused();
+
+    await mobilePage.keyboard.press('Escape');
+    await expect(moreDialog).toBeHidden();
+    await expect(moreButton).toBeFocused();
 
     const mobileLayout = await mobilePage.evaluate(() => ({
       viewportWidth: window.innerWidth,
