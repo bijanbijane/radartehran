@@ -161,7 +161,7 @@ html body .leaflet-container {
 
 [data-apple-theme='dark'] .leaflet-container,
 html.dark .leaflet-container {
-  background-color: #0d1513;
+  background-color: var(--color-bg-canvas);
 }
 
 [data-apple-theme='dark'] .leaflet-tile-pane,
