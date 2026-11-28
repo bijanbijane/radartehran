@@ -23,7 +23,7 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     const count = group.length; const palette = getPalette(primary); return {
       clusterId: `cluster-${idx}-${primary.id}`,
       lat: sumLat / count, lng: sumLng / count, count, avgBuyPerSqm: Math.round(sumBuy / count),
-      avgRahn80m: Math.round(sumRahn / count), primaryName: count > 3 && primary.id <= 500 ? 'تهران' : primary.name, containsSelected, dominantStroke: palette.stroke,
+      avgRahn80m: Math.round(sumRahn / count), primaryName: primary.name, containsSelected, dominantStroke: palette.stroke,
       dominantPillBg: palette.pillBg, sampleHood: primary,
     };
   });
@@ -236,8 +236,8 @@ export function renderMacroClustersOnLeaflet(params: {
     );
     cMarker.on('click', () => {
       if (cluster.count === 1) {
+        // Selection state owns navigation; avoid a second competing camera transition.
         onSelectNeighborhood(cluster.sampleHood);
-        map.flyTo([cluster.lat, cluster.lng], 12, { duration: 0.65 });
       } else {
         map.flyTo([cluster.lat, cluster.lng], Math.min(12, Math.max(currentZoom + 2, 11)), { duration: 0.65 });
       }
