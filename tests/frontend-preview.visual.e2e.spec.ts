@@ -25,6 +25,10 @@ test('isolated frontend preview renders desktop and mobile shells', async ({ pag
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(neighborhoodSearch).toBeVisible();
+  const mobileHasHorizontalOverflow = await page.evaluate(
+    () => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > window.innerWidth
+  );
+  expect(mobileHasHorizontalOverflow, 'Mobile shell should not overflow horizontally').toBe(false);
   await page.screenshot({
     path: `${artifactDirectory}/mobile.png`,
     fullPage: true,
