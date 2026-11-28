@@ -1,7 +1,8 @@
 import type { PersistedGeospatialState } from './geospatialRepository';
-import type { BoundaryVersionRecord, PointOfInterestRecord, PolygonGeometry, LinearRingCoords, Wgs84Coordinate } from './types';
+import type { BoundaryVersionRecord, PolygonGeometry } from './types';
 import type { GeospatialRecordCounts } from './geospatialDurableRecovery';
-import { validatePolygonGeometry, classifyPointInRing } from './coordinateAndPolygonEngine';
+import { validatePolygonGeometry } from './coordinateAndPolygonEngine';
+import { classifyPointInRing } from './pointInRing';
 
 const IRAN_LAT = { min: 24, max: 40.5 };
 const IRAN_LNG = { min: 44, max: 64 };
