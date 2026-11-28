@@ -208,7 +208,7 @@ export const InteractionQaLabTab: React.FC = () => {
             </RadarButton>
           </div>
           {valError && <div role="alert" className="p-2.5 rounded-[8px] bg-[var(--color-danger-bg)] text-[var(--color-danger)] text-[12px] font-medium">{valError}</div>}
-          {valResult && <div role="status" className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[var(--color-success)] text-[12px] font-semibold">{valResult}</div>}
+          {valResult && <div role="status" className="p-2.5 rounded-[8px] bg-[var(--color-success-bg)] text-[var(--color-success)] text-[12px] font-semibold">{valResult}</div>}
         </RadarCard>
       </div>
 
