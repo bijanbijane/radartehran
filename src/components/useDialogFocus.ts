@@ -79,8 +79,11 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
       const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
       if (!isTopmostModalDialogElement(containerRef.current, openDialogs)) return;
       if (e.key === 'Escape') {
+        // The topmost modal owns this Escape press; do not let the global window
+        // listener dismiss unrelated overlays or lower modal state.
+        e.preventDefault();
+        e.stopPropagation();
         if (!escapeDisabledRef.current && onCloseRef.current) {
-          e.preventDefault();
           onCloseRef.current();
         }
         return;
