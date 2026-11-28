@@ -151,7 +151,8 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     lng: x,
   });
   const selectedMarker = markerAt(tehranSlice[0], 1, 0);
-  const candidateMarker = markerAt(tehranSlice[1], 2, 124);
+  // Keep the candidate just beyond the selected detailed pill's measured collision footprint.
+  const candidateMarker = markerAt(tehranSlice[1], 2, 128);
   const compactCollisionMarker = markerAt(tehranSlice[2], 3, 209);
   const tiersZ12 = computeDeclutteredMarkerTiers(
     markerMap,
