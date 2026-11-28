@@ -200,7 +200,7 @@ export const RADAR_DARK_SURFACE_TEXT_TOKENS = {
   'text-muted': '#8A9891',
   'border-subtle': '#22312C',
   'border-strong': '#2E423B',
-  focus: '#2864DC',
+  focus: '#6B9BFF',
 } as const;
 
 export const RADAR_SEMANTIC_STATUS_PALETTE = SEMANTIC_PALETTE;
