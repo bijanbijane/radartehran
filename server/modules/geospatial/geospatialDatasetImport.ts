@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { CoreApiError } from '../core';
 import { normalizeAndValidateCoordinate, validatePolygonGeometry } from './coordinateAndPolygonEngine';
 import { computePoiDedupeKey } from './poiAndSpatialSearchEngine';
 import type { UpsertNeighborhoodBoundaryParams } from './geospatialBoundaryMutations';
@@ -40,6 +41,7 @@ export async function executeImportGeographicDataset(params: {
   boundaryHistoryByEntity: Map<string, BoundaryVersionRecord[]>;
   poiDedupeIndex: Map<string, string>;
   importBatches: Map<string, GeospatialImportBatchResult>;
+  activeImportKeys: Set<string>;
   metrics: GeospatialObservabilityMetrics;
   nowIso: string;
   upsertNeighborhoodBoundary: (input: UpsertNeighborhoodBoundaryParams) => Promise<BoundaryVersionRecord>;
@@ -47,10 +49,18 @@ export async function executeImportGeographicDataset(params: {
   persistRuntime: () => Promise<void>;
 }): Promise<GeospatialImportBatchResult> {
   const input = params.input;
-  if (!input.dryRun && params.importBatches.has(input.idempotencyKey)) {
-    return structuredClone(params.importBatches.get(input.idempotencyKey)!);
+  const idempotencyKey = input.idempotencyKey.trim();
+  if (!idempotencyKey) {
+    throw new CoreApiError('VALIDATION_FAILED', 400, 'Dataset import idempotencyKey is required.');
   }
-
+  if (!input.dryRun && params.importBatches.has(idempotencyKey)) {
+    return structuredClone(params.importBatches.get(idempotencyKey)!);
+  }
+  if (!input.dryRun && params.activeImportKeys.has(idempotencyKey)) {
+    throw new CoreApiError('CONFLICT', 409, 'A dataset import with this idempotencyKey is already in progress.');
+  }
+  if (!input.dryRun) params.activeImportKeys.add(idempotencyKey);
+  try {
   const failedRecords: Array<{ index: number; reason: string }> = [];
   let importedBoundariesCount = 0;
   let importedPoisCount = 0;
@@ -123,7 +133,7 @@ export async function executeImportGeographicDataset(params: {
 
   const result: GeospatialImportBatchResult = {
     batchId: `gis_imp_${crypto.randomBytes(6).toString('hex')}`,
-    idempotencyKey: input.idempotencyKey,
+    idempotencyKey,
     dryRun: Boolean(input.dryRun),
     status: input.dryRun ? 'PREVIEW_READY' : failedRecords.length > 0 ? 'PARTIAL_WITH_FAILURES' : 'COMMITTED',
     importedBoundariesCount,
@@ -136,17 +146,20 @@ export async function executeImportGeographicDataset(params: {
   };
 
   if (!input.dryRun) {
-    const previousBatch = params.importBatches.get(input.idempotencyKey);
-    params.importBatches.set(input.idempotencyKey, result);
+    const previousBatch = params.importBatches.get(idempotencyKey);
+    params.importBatches.set(idempotencyKey, result);
     try {
       // The batch must not be reported as committed until its durable snapshot
       // has completed. The runtime hook is asynchronous in remote persistence mode.
       await params.persistRuntime();
     } catch (error) {
-      if (previousBatch) params.importBatches.set(input.idempotencyKey, previousBatch);
-      else params.importBatches.delete(input.idempotencyKey);
+      if (previousBatch) params.importBatches.set(idempotencyKey, previousBatch);
+      else params.importBatches.delete(idempotencyKey);
       throw error;
     }
   }
   return structuredClone(result);
+  } finally {
+    if (!input.dryRun) params.activeImportKeys.delete(idempotencyKey);
+  }
 }
