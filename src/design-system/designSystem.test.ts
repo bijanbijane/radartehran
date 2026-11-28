@@ -22,6 +22,7 @@ import {
   computeHexContrastRatio,
 } from './colorSystem';
 import { DARK_THEME_TOKENS } from './themes/dark';
+import { RADAR_PRIMITIVE_BUTTON_SIZE_MAP, RADAR_PRIMITIVE_BUTTON_VARIANT_MAP } from '../components/ui/RadarPrimitives';
 import {
   BODY_TYPE_SCALE_PX,
   EDITORIAL_READING_MEASURE,
@@ -238,4 +239,20 @@ test('RT-UI-COLOR-002 keeps dark CSS theme values synchronized with canonical Ty
       `Dark CSS token ${cssName} must match TypeScript theme value ${expectedValue}`,
     );
   }
+});
+
+
+test('RT-UI-COMP-002 keeps the legacy button API as a compatibility adapter over the canonical button variants and sizes', () => {
+  assert.deepEqual(RADAR_PRIMITIVE_BUTTON_VARIANT_MAP, {
+    primary: 'primary',
+    secondary: 'secondary',
+    outline: 'outline',
+    ghost: 'tertiary',
+    danger: 'destructive',
+  });
+  assert.deepEqual(RADAR_PRIMITIVE_BUTTON_SIZE_MAP, {
+    sm: 'sm',
+    md: 'md',
+    lg: 'lg',
+  });
 });
