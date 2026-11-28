@@ -306,7 +306,7 @@ verify('RMEP-001 state preserves master-prompt integrity and truthfully records 
   assert.ok(reconciled.state && reconciled.state.operations.length >= 192, 'Expected at least 192 recorded RMEP operations');
   assert.equal(reconciled.state?.program_status, 'PARTIALLY_VERIFIED');
   assert.equal(reconciled.state?.current_workstream.workstream_id, 'WS-CLOUDFLARE-NATIVE-MIGRATION');
-  assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-CLOUDFLARE-NATIVE-/);
+  assert.match(reconciled.state?.checkpoint.checkpoint_id || '', /^CHK-\d{3}-[A-Z0-9]+(?:-[A-Z0-9]+)*$/, 'Active checkpoint must use the canonical CHK-NNN-UPPERCASE-SLUG format');
 
   const unrunIndex = reconciled.state?.tests.findIndex((item) => item.outcome === 'NOT_RUN') ?? -1;
   assert.ok(reconciled.state && unrunIndex >= 0, 'Expected explicitly unrun checks to remain represented in the execution state');
