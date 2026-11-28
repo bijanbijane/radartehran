@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { RadarButton } from '../RadarButton';
 import { RadarCard as CommonRadarCard } from '../RadarCard';
+import { RadarSurfaceCard } from '../RadarSurfaceCard';
 import { RadarEmptyStateCard, RadarInputField } from '../RadarField';
 import { RadarInput } from '../RadarInput';
 import { DataCredibilityBadge, RadarCard as DataRadarCard, RadarMetricCard } from '../RadarDataBadges';
@@ -65,6 +66,8 @@ test('RT-UI-COMP-BEH-005 distinct Card contracts retain their intended passive a
   );
   const dataCard = renderToStaticMarkup(<DataRadarCard>شاخص</DataRadarCard>);
   const primitiveCard = renderToStaticMarkup(<PrimitiveRadarCard>قدیمی</PrimitiveRadarCard>);
+  const primitiveCardWithoutPadding = renderToStaticMarkup(<PrimitiveRadarCard padded={false}>بدون فاصله</PrimitiveRadarCard>);
+  const canonicalSurface = renderToStaticMarkup(<RadarSurfaceCard padding="standard" elevated>سطح اصلی</RadarSurfaceCard>);
 
   assert.match(commonPassive, /^<article/);
   assert.match(commonPassive, /<h3[^>]*>عنوان<\/h3>/);
@@ -74,6 +77,13 @@ test('RT-UI-COMP-BEH-005 distinct Card contracts retain their intended passive a
   assert.match(primitiveCard, /^<div/);
   assert.doesNotMatch(dataCard, /role="button"/);
   assert.doesNotMatch(primitiveCard, /role="button"/);
+  const sharedSurfaceClasses = /rounded-\\[12px\\].*border.*bg-\\[var\\(--color-bg-surface\\)\\]/;
+  assert.match(canonicalSurface, sharedSurfaceClasses);
+  assert.match(dataCard, sharedSurfaceClasses);
+  assert.match(primitiveCard, sharedSurfaceClasses);
+  assert.match(dataCard, /p-4/);
+  assert.match(primitiveCard, /p-4 sm:p-5/);
+  assert.doesNotMatch(primitiveCardWithoutPadding, /p-4/);
 });
 
 test('RT-UI-COMP-BEH-006 data credibility badges expose localized text and decorative icon hiding', () => {
@@ -148,4 +158,18 @@ test('RT-UI-COMP-BEH-010 empty-state and metric cards retain descriptive content
   assert.match(metric, /میلیون تومان/);
   assert.match(metric, /پاییز ۱۴۰۵/);
   assert.match(metric, /داده تأییدشده/);
+});
+
+
+test('RT-UI-COMP-BEH-011 passive legacy Card wrappers share the canonical RadarSurfaceCard implementation', () => {
+  const canonical = renderToStaticMarkup(<RadarSurfaceCard padding="large" elevated>canonical</RadarSurfaceCard>);
+  const dataWrapper = renderToStaticMarkup(<DataRadarCard padding="large" elevated>data</DataRadarCard>);
+  const legacyWrapper = renderToStaticMarkup(<PrimitiveRadarCard padded>legacy</PrimitiveRadarCard>);
+
+  const surfacePattern = /rounded-\[12px\].*border.*bg-\[var\(--color-bg-surface\)\]/;
+  assert.match(canonical, surfacePattern);
+  assert.match(dataWrapper, surfacePattern);
+  assert.match(legacyWrapper, surfacePattern);
+  assert.match(dataWrapper, /p-5/);
+  assert.match(legacyWrapper, /p-4 sm:p-5/);
 });
