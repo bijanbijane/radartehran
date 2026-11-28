@@ -1308,3 +1308,9 @@
 - Added migration 0011 with a unique (uid, revoked_consent_revision) index and an outbox retry-scan index. Migration is committed but has not been applied to any database.
 - Added TRIAD-003 regression cases and wired them into npm run test:triad. Test execution, typecheck, and Worker build remain NOT VERIFIED in this session.
 - Added a design-only legal-regulatory D1 migration plan; ownership remains unresolved and no migration or binding was introduced for that domain.
+
+
+## Continuation checkpoint CHK-195-FAIL-CLOSED-LEGACY-FIRESTORE-PROJECTION
+- Timestamp UTC: 2026-11-27T17:00:00.000Z
+- Operation: OP-194 — fail closed for legacy Firestore-to-D1 neighborhood projection messages.
+- Status: IMPLEMENTED_BUT_NOT_VERIFIED; the queue-entrypoint regression has not been executed. Phase 6 remains PARTIALLY_VERIFIED.
