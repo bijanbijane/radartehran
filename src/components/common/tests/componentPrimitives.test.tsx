@@ -8,7 +8,9 @@ import { RadarCard as CommonRadarCard } from '../RadarCard';
 import { RadarInputField } from '../RadarField';
 import { RadarInput } from '../RadarInput';
 import { DataCredibilityBadge, RadarCard as DataRadarCard } from '../RadarDataBadges';
-import { RadarButton as LegacyRadarButton, RadarCard as PrimitiveRadarCard } from '../../ui/RadarPrimitives';
+import { RadarButton as LegacyRadarButton, RadarCard as PrimitiveRadarCard, RadarTabs, RadarSearchInput, RadarSheet } from '../../ui/RadarPrimitives';
+import { RadarEmptyStateCard } from '../RadarField';
+import { RadarMetricCard } from '../RadarDataBadges';
 
 test('RT-UI-COMP-BEH-001 canonical RadarButton renders native disabled/loading and accessible-name contracts', () => {
   const html = renderToStaticMarkup(
@@ -81,4 +83,73 @@ test('RT-UI-COMP-BEH-006 data credibility badges expose localized text and decor
 
   assert.match(html, /داده تأییدشده/);
   assert.match(html, /aria-hidden="true"/);
+});
+
+
+test('RT-UI-COMP-BEH-007 RadarTabs renders an accessible tablist and roving selected state', () => {
+  const html = renderToStaticMarkup(
+    <RadarTabs
+      items={[{ id: 'overview', label: 'نمای کلی' }, { id: 'prices', label: 'قیمت‌ها', count: 3 }]}
+      activeId="overview"
+      onChange={() => undefined}
+      ariaLabel="بخش‌های ملک"
+    />,
+  );
+
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /aria-label="بخش‌های ملک"/);
+  assert.match(html, /role="tab" aria-selected="true" tabindex="0"/);
+  assert.match(html, /role="tab" aria-selected="false" tabindex="-1"/);
+  assert.match(html, /min-h-\[44px\]/);
+});
+
+test('RT-UI-COMP-BEH-008 RadarSearchInput provides an accessible name and conditional clear control', () => {
+  const empty = renderToStaticMarkup(
+    <RadarSearchInput value="" onChange={() => undefined} placeholder="جست‌وجو در محله‌ها" />,
+  );
+  const filled = renderToStaticMarkup(
+    <RadarSearchInput value="ونک" onChange={() => undefined} placeholder="جست‌وجو" ariaLabel="جست‌وجوی محله" />,
+  );
+
+  assert.match(empty, /type="search"/);
+  assert.match(empty, /aria-label="جست‌وجو در محله‌ها"/);
+  assert.doesNotMatch(empty, /aria-label="پاک کردن جستجو"/);
+  assert.match(filled, /aria-label="جست‌وجوی محله"/);
+  assert.match(filled, /aria-label="پاک کردن جستجو"/);
+});
+
+test('RT-UI-COMP-BEH-009 RadarSheet exposes labelled modal semantics only while open', () => {
+  const closed = renderToStaticMarkup(
+    <RadarSheet open={false} onClose={() => undefined} title="فیلترها">محتوا</RadarSheet>,
+  );
+  const opened = renderToStaticMarkup(
+    <RadarSheet open onClose={() => undefined} title="فیلترها">محتوای فیلتر</RadarSheet>,
+  );
+
+  assert.equal(closed, '');
+  assert.match(opened, /role="dialog"/);
+  assert.match(opened, /aria-modal="true"/);
+  assert.match(opened, /aria-labelledby=/);
+  assert.match(opened, /<h2[^>]*>فیلترها<\/h2>/);
+  assert.match(opened, /aria-label="بستن"/);
+});
+
+test('RT-UI-COMP-BEH-010 empty-state and metric cards retain descriptive content and data context', () => {
+  const empty = renderToStaticMarkup(
+    <RadarEmptyStateCard title="نتیجه‌ای پیدا نشد" description="فیلترها را تغییر دهید">
+      <span>اقدام</span>
+    </RadarEmptyStateCard>,
+  );
+  const metric = renderToStaticMarkup(
+    <RadarMetricCard title="میانگین قیمت" valueText="۱۲۵" unitText="میلیون تومان" periodAndSource="پاییز ۱۴۰۵ · منبع: نمونه" credibility="verified" />,
+  );
+
+  assert.match(empty, /نتیجه‌ای پیدا نشد/);
+  assert.match(empty, /فیلترها را تغییر دهید/);
+  assert.match(empty, /اقدام/);
+  assert.match(metric, /میانگین قیمت/);
+  assert.match(metric, /۱۲۵/);
+  assert.match(metric, /میلیون تومان/);
+  assert.match(metric, /پاییز ۱۴۰۵/);
+  assert.match(metric, /داده تأییدشده/);
 });
