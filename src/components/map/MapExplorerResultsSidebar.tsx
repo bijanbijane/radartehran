@@ -183,7 +183,7 @@ const MapExplorerSidebarPanel: React.FC<SidebarPanelProps> = ({
                 <div
                   className={`p-3 rounded-[12px] border transition ${
                     selected
-                      ? 'border-[var(--color-brand-600)] ring-2 ring-[var(--color-brand-600)]/40 bg-[var(--color-brand-soft)] dark:bg-[#173530]'
+                      ? 'border-[var(--color-brand-600)] ring-2 ring-[var(--color-brand-600)]/40 bg-[var(--color-brand-soft)] dark:bg-[var(--color-brand-soft)]'
                       : 'border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-strong)]'
                   }`}
                 >
